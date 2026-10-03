@@ -30,10 +30,13 @@ SQL lifecycle runner for native database behavior.
 ## Work
 
 1. Trace coordinator admission, pooled apply, direct apply, and reconcile for
-   each already-supported bank, coin, and item envelope. The current SQL pooled
-   apply and reconcile bank-only gates need an explicit dispatch/verification
-   decision for coin and item; retain refusal for every unsupported type. Prove
-   the actual coordinator path rather than relying on direct repository calls.
+   each already-supported bank, coin, and item envelope. Current source already
+   dispatches typed coin/item roots and has coordinator-journal component tests.
+   Their SQL pool boundaries use fresh fixture connections; coin/item ambiguity
+   is synthesized after a successful repository return. Qualify actual client
+   commit-reply loss, production pool lifecycle and live publication/restart
+   separately. Retain every unsupported-family refusal. Direct owner calls and
+   test ACKs do not qualify the actual gameplay publication path.
 2. Centralize the same-root completion checks without replacing the existing
    domain repositories: native before/after effects, canonical intent/plan,
    child receipts and references, source claims, inbox/outbox, and savepoint
@@ -74,3 +77,30 @@ plan provides a narrow documented registration interface and fixture for them;
 it does not claim their writers are covered. Plan 5 supplies the final route
 manifest and independent audit result. No live epoch is selected until all five
 plans pass the release gate.
+
+
+## October 3 current publication gaps
+
+One ordinary player-to-room drop is the next bounded publication route to
+qualify. Current production drop supplies only a void completion callback;
+stale live topology returns without a held publication obligation. Replay of
+an ordinary retained drop falls back to a blocked generic handler. The existing
+recovered callback only checks actor presence, so it must not substitute for
+native custody and materialization proof.
+
+Scope the typed repair to an already-authoritative ordinary-room single root
+and its complete descendants, retaining original UID graph, room vnum, native
+result and operation ID. Before acknowledgement, independently verify exact
+owner/root/parent/revision/state and command/result agreement, then establish
+one live graph or retain the fence. Stage a missing complete graph before
+publication; do not allocate replacement UIDs, overwrite newer custody or
+accept a partial descendant set. Prove the exact room payload survives ACK and
+two cold restarts on both SQL engines; Redis floor hints alone are insufficient.
+Legacy commands lacking sufficient proof remain held. Preserve inactive schema-1
+behavior and unsupported active refusals. Locker/bulk/pet/money/corpse/adoption
+and peer-give semantics remain separate routes. Source-established gaps are
+not yet an executed failing player journey.
+
+Coin callbacks also require separate review: current ACK ordering and replay's
+null callback do not prove pile publication survived restart. These are open
+R1/R2/R4/R8 requirements, not waived by the synthetic coordinator fixture.

@@ -36,22 +36,22 @@
       "sites": [
         [
           "src/account/account.c",
-          1965,
+          1964,
           "item_publication"
         ],
         [
           "src/account/account.c",
-          1966,
+          1965,
           "item_lifecycle"
         ],
         [
           "src/account/account.c",
-          1974,
+          1973,
           "item_publication"
         ],
         [
           "src/account/account.c",
-          1975,
+          1974,
           "item_lifecycle"
         ]
       ],
@@ -8222,12 +8222,12 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          4054,
+          4055,
           "direct_cash_assignment"
         ],
         [
           "src/cmd/actoth.c",
-          4062,
+          4063,
           "money_helper"
         ]
       ],
@@ -8304,22 +8304,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12180,
+          12208,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12367,
+          12395,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12448,
+          12476,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12546,
+          12574,
           "sql_economy"
         ]
       ],
@@ -8395,12 +8395,12 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          2569,
+          2570,
           "economic_submit"
         ],
         [
           "src/cmd/actoth.c",
-          2620,
+          2621,
           "economic_submit"
         ]
       ],
@@ -8652,17 +8652,17 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          6288,
+          6289,
           "economic_submit"
         ],
         [
           "src/cmd/actoth.c",
-          6483,
+          6484,
           "money_helper"
         ],
         [
           "src/cmd/actoth.c",
-          6495,
+          6496,
           "money_helper"
         ]
       ],
@@ -9148,7 +9148,7 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          2676,
+          2677,
           "economic_submit"
         ]
       ],
@@ -13834,7 +13834,7 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          7706,
+          7707,
           "item_publication"
         ]
       ],
@@ -14869,12 +14869,12 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          6908,
+          6909,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          7113,
+          7114,
           "item_lifecycle"
         ]
       ],
@@ -14920,27 +14920,27 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          6904,
+          6905,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          6912,
+          6913,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          7034,
+          7035,
           "economic_submit"
         ],
         [
           "src/cmd/actoth.c",
-          7073,
+          7074,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          7109,
+          7110,
           "item_publication"
         ]
       ],
@@ -16186,12 +16186,12 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          1378,
+          1379,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1382,
+          1383,
           "item_lifecycle"
         ]
       ],
@@ -16235,452 +16235,452 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          1016,
+          1017,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1019,
+          1020,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1022,
+          1023,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1025,
+          1026,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1028,
+          1029,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1031,
+          1032,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1034,
+          1035,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1037,
+          1038,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1040,
+          1041,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1043,
+          1044,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1046,
+          1047,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1049,
+          1050,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1052,
+          1053,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1055,
+          1056,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1059,
+          1060,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1069,
+          1070,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1072,
+          1073,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1075,
+          1076,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1078,
+          1079,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1081,
+          1082,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1084,
+          1085,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1087,
+          1088,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1091,
+          1092,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1100,
+          1101,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1103,
+          1104,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1106,
+          1107,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1109,
+          1110,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1112,
+          1113,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1115,
+          1116,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1118,
+          1119,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1121,
+          1122,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1124,
+          1125,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1127,
+          1128,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1130,
+          1131,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1133,
+          1134,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1136,
+          1137,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1139,
+          1140,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1143,
+          1144,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1152,
+          1153,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1155,
+          1156,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1158,
+          1159,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1161,
+          1162,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1164,
+          1165,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1167,
+          1168,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1170,
+          1171,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1173,
+          1174,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1176,
+          1177,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1179,
+          1180,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1182,
+          1183,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1185,
+          1186,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1188,
+          1189,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1191,
+          1192,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1194,
+          1195,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1203,
+          1204,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1206,
+          1207,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1209,
+          1210,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1212,
+          1213,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1215,
+          1216,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1218,
+          1219,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1221,
+          1222,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1224,
+          1225,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1227,
+          1228,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1231,
+          1232,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1240,
+          1241,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1243,
+          1244,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1246,
+          1247,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1249,
+          1250,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1252,
+          1253,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1255,
+          1256,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1258,
+          1259,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1262,
+          1263,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1271,
+          1272,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1274,
+          1275,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1277,
+          1278,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1280,
+          1281,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1283,
+          1284,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1286,
+          1287,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1289,
+          1290,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1292,
+          1293,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1295,
+          1296,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1298,
+          1299,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1301,
+          1302,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1304,
+          1305,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1313,
+          1314,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1316,
+          1317,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1319,
+          1320,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1322,
+          1323,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1325,
+          1326,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1329,
+          1330,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1347,
+          1348,
           "item_publication"
         ]
       ],
@@ -16724,12 +16724,12 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          1586,
+          1587,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1587,
+          1588,
           "item_publication"
         ]
       ],
@@ -17202,7 +17202,7 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          2913,
+          2914,
           "item_lifecycle"
         ]
       ],
@@ -17778,22 +17778,22 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          3904,
+          3905,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          3906,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actoth.c",
-          3969,
+          3907,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
           3970,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actoth.c",
+          3971,
           "item_publication"
         ]
       ],
@@ -17837,7 +17837,7 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          7606,
+          7607,
           "item_lifecycle"
         ]
       ],
@@ -18358,7 +18358,7 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          8165,
+          8166,
           "item_publication"
         ]
       ],
@@ -18829,27 +18829,27 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          4740,
+          4741,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          4752,
+          4753,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          4759,
+          4760,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          4768,
+          4769,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          4806,
+          4807,
           "item_lifecycle"
         ]
       ],
@@ -18893,32 +18893,32 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          1680,
+          1681,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          1683,
+          1684,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1687,
+          1688,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          1699,
+          1700,
           "item_lifecycle"
-        ],
-        [
-          "src/cmd/actoth.c",
-          1704,
-          "item_publication"
         ],
         [
           "src/cmd/actoth.c",
           1705,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actoth.c",
+          1706,
           "item_publication"
         ]
       ],
@@ -19061,17 +19061,17 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          4870,
+          4871,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          4911,
+          4912,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          4936,
+          4937,
           "item_lifecycle"
         ]
       ],
@@ -20347,27 +20347,27 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          3357,
+          3358,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          3375,
+          3376,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          3383,
+          3384,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          3425,
+          3426,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          3576,
+          3577,
           "economic_submit"
         ]
       ],
@@ -21778,7 +21778,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          5841,
+          5869,
           "sql_economy"
         ]
       ],
@@ -27489,42 +27489,42 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12204,
+          12232,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12205,
+          12233,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12206,
+          12234,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12207,
+          12235,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12238,
+          12266,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12239,
+          12267,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12240,
+          12268,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12241,
+          12269,
           "coin_assignment"
         ]
       ],
@@ -27562,42 +27562,42 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          4264,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          4265,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          4266,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
           4267,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4272,
+          4268,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4273,
+          4269,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4274,
+          4270,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
           4275,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          4276,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          4277,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          4278,
           "coin_assignment"
         ]
       ],
@@ -28462,22 +28462,22 @@
       "sites": [
         [
           "src/persistence/copyover.c",
-          2036,
+          2098,
           "item_lifecycle"
         ],
         [
           "src/persistence/copyover.c",
-          2038,
+          2100,
           "item_publication"
         ],
         [
           "src/persistence/copyover.c",
-          2053,
+          2115,
           "item_lifecycle"
         ],
         [
           "src/persistence/copyover.c",
-          2055,
+          2117,
           "item_publication"
         ]
       ],
@@ -28514,32 +28514,32 @@
       "sites": [
         [
           "src/persistence/copyover.c",
-          1465,
+          1519,
           "coin_assignment"
         ],
         [
           "src/persistence/copyover.c",
-          1497,
+          1551,
           "item_lifecycle"
         ],
         [
           "src/persistence/copyover.c",
-          1500,
+          1554,
           "item_publication"
         ],
         [
           "src/persistence/copyover.c",
-          1510,
+          1564,
           "item_lifecycle"
         ],
         [
           "src/persistence/copyover.c",
-          1513,
+          1567,
           "item_publication"
         ],
         [
           "src/persistence/copyover.c",
-          1991,
+          2053,
           "coin_assignment"
         ]
       ],
@@ -29416,7 +29416,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          10901,
+          10929,
           "sql_economy"
         ]
       ],
@@ -29454,7 +29454,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9480,
+          9508,
           "sql_economy"
         ]
       ],
@@ -29492,12 +29492,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9363,
+          9391,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          9443,
+          9471,
           "sql_economy"
         ]
       ],
@@ -29578,32 +29578,32 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          8468,
+          8496,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          8483,
+          8511,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          8522,
+          8550,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8584,
+          8612,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8759,
+          8787,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          8772,
+          8800,
           "item_publication"
         ]
       ],
@@ -29648,27 +29648,27 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          8464,
+          8492,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8479,
+          8507,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8664,
+          8692,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8755,
+          8783,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8768,
+          8796,
           "item_lifecycle"
         ]
       ],
@@ -29713,12 +29713,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          921,
+          924,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          974,
+          977,
           "item_lifecycle"
         ]
       ],
@@ -29765,7 +29765,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          6410,
+          6438,
           "item_lifecycle"
         ]
       ],
@@ -29812,27 +29812,27 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          4666,
+          4669,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          4911,
+          4914,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          4937,
+          4940,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          4941,
+          4944,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          4947,
+          4950,
           "item_publication"
         ]
       ],
@@ -29879,12 +29879,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          7229,
+          7257,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          7288,
+          7316,
           "item_publication"
         ]
       ],
@@ -29929,22 +29929,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          10331,
+          10359,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10403,
+          10431,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11138,
+          11166,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11283,
+          11311,
           "item_publication"
         ]
       ],
@@ -29989,27 +29989,27 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11207,
+          11235,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11254,
+          11282,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11272,
+          11300,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11278,
+          11306,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11286,
+          11314,
           "item_lifecycle"
         ]
       ],
@@ -30057,22 +30057,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9663,
+          9691,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          9665,
+          9693,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          9667,
+          9695,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          9668,
+          9696,
           "coin_assignment"
         ]
       ],
@@ -30117,17 +30117,17 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9769,
+          9797,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10105,
+          10133,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10143,
+          10171,
           "item_publication"
         ]
       ],
@@ -30174,42 +30174,42 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9523,
+          9551,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9529,
+          9557,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9539,
+          9567,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9781,
+          9809,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9852,
+          9880,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9900,
+          9928,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9910,
+          9938,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9920,
+          9948,
           "item_lifecycle"
         ]
       ],
@@ -30254,22 +30254,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          7340,
+          7368,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          7341,
+          7369,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          7350,
+          7378,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          7351,
+          7379,
           "item_lifecycle"
         ]
       ],
@@ -32177,7 +32177,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11787,
+          11815,
           "sql_economy"
         ]
       ],
@@ -32215,7 +32215,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11708,
+          11736,
           "ship_coffer_assignment"
         ]
       ],
@@ -32252,12 +32252,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11452,
+          11480,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          11507,
+          11535,
           "sql_economy"
         ]
       ],
@@ -45792,12 +45792,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          4746,
+          4749,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          4748,
+          4751,
           "item_lifecycle"
         ]
       ],
@@ -45882,25 +45882,25 @@
   "census": [
     {
       "path": "src/account/account.c",
-      "line": 1966,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj, FALSE);"
-    },
-    {
-      "path": "src/account/account.c",
-      "line": 1975,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj, FALSE);"
-    },
-    {
-      "path": "src/account/account.c",
       "line": 1965,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj, FALSE);"
+    },
+    {
+      "path": "src/account/account.c",
+      "line": 1974,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj, FALSE);"
+    },
+    {
+      "path": "src/account/account.c",
+      "line": 1964,
       "family": "item_publication",
       "excerpt": "P_obj obj = unequip_char(ch, i);"
     },
     {
       "path": "src/account/account.c",
-      "line": 1974,
+      "line": 1973,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
@@ -48276,829 +48276,829 @@
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4062,
+      "line": 4063,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch,"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 6483,
+      "line": 6484,
       "family": "money_helper",
       "excerpt": "if (total_to_give > 0 && SUB_MONEY(ch, (int)(total_to_give * split_coin_value), 0) != 0)"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 6495,
+      "line": 6496,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(gl->ch, (int)(share * split_coin_value));"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 2569,
+      "line": 2570,
       "family": "economic_submit",
       "excerpt": "if (!currency_transaction_submit("
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 2620,
+      "line": 2621,
       "family": "economic_submit",
       "excerpt": "if (!currency_transaction_submit("
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 2676,
+      "line": 2677,
       "family": "economic_submit",
       "excerpt": "ok = currency_transaction_submit("
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3576,
+      "line": 3577,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit(thief, object, NULL, source, destination,"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 6288,
+      "line": 6289,
       "family": "economic_submit",
       "excerpt": "if (currency_transaction_submit_coin(actor, payload, money_split_child_completion,"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7034,
+      "line": 7035,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4054,
+      "line": 4055,
       "family": "direct_cash_assignment",
       "excerpt": "victim->points.cash[vcoins]--;"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1016,
+      "line": 1017,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1019,
+      "line": 1020,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_SPROUTS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1022,
+      "line": 1023,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLUEBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1025,
+      "line": 1026,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FOREST_TOADSTOOL, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1028,
+      "line": 1029,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_CRABAPPLES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1031,
+      "line": 1032,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RASPBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1034,
+      "line": 1035,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_TREEROOT_MOSS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1037,
+      "line": 1038,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BROWN_TUBER, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1040,
+      "line": 1041,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RED_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1043,
+      "line": 1044,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_NIGHTSHADE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1046,
+      "line": 1047,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANDRAKE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1049,
+      "line": 1050,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GARLIC, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1052,
+      "line": 1053,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FAERIE_DUST, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1055,
+      "line": 1056,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_DRAGON_BLOOD, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1059,
+      "line": 1060,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GREEN_HERB, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1069,
+      "line": 1070,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_SWAMP_GRUB, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1072,
+      "line": 1073,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANGROVE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1075,
+      "line": 1076,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_SPROUTS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1078,
+      "line": 1079,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_NIGHTSHADE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1081,
+      "line": 1082,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANDRAKE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1084,
+      "line": 1085,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FAERIE_DUST, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1087,
+      "line": 1088,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GREEN_HERB, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1091,
+      "line": 1092,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_HUMAN_BONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1100,
+      "line": 1101,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1103,
+      "line": 1104,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLUEBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1106,
+      "line": 1107,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RASPBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1109,
+      "line": 1110,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_WIREGRASS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1112,
+      "line": 1113,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BROWN_TUBER, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1115,
+      "line": 1116,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_LICHEN, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1118,
+      "line": 1119,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RED_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1121,
+      "line": 1122,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_NIGHTSHADE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1124,
+      "line": 1125,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANDRAKE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1127,
+      "line": 1128,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GARLIC, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1130,
+      "line": 1131,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FAERIE_DUST, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1133,
+      "line": 1134,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_DRAGON_BLOOD, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1136,
+      "line": 1137,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GREEN_HERB, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1139,
+      "line": 1140,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_STRANGE_STONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1143,
+      "line": 1144,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_HUMAN_BONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1152,
+      "line": 1153,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1155,
+      "line": 1156,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_SPROUTS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1158,
+      "line": 1159,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLUEBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1161,
+      "line": 1162,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_CRABAPPLES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1164,
+      "line": 1165,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RASPBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1167,
+      "line": 1168,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_WIREGRASS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1170,
+      "line": 1171,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BROWN_TUBER, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1173,
+      "line": 1174,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_LICHEN, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1176,
+      "line": 1177,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLIND_CAVEWORM, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1179,
+      "line": 1180,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANDRAKE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1182,
+      "line": 1183,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GARLIC, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1185,
+      "line": 1186,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FAERIE_DUST, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1188,
+      "line": 1189,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_DRAGON_BLOOD, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1191,
+      "line": 1192,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_STRANGE_STONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1194,
+      "line": 1195,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_HUMAN_BONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1203,
+      "line": 1204,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1206,
+      "line": 1207,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLUEBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1209,
+      "line": 1210,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RASPBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1212,
+      "line": 1213,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BROWN_TUBER, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1215,
+      "line": 1216,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_LICHEN, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1218,
+      "line": 1219,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLIND_CAVEWORM, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1221,
+      "line": 1222,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FAERIE_DUST, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1224,
+      "line": 1225,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_DRAGON_BLOOD, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1227,
+      "line": 1228,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_STRANGE_STONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1231,
+      "line": 1232,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_HUMAN_BONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1240,
+      "line": 1241,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1243,
+      "line": 1244,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLIND_CAVEWORM, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1246,
+      "line": 1247,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GREEN_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1249,
+      "line": 1250,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_PURPLE_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1252,
+      "line": 1253,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_PINK_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1255,
+      "line": 1256,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANDRAKE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1258,
+      "line": 1259,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GARLIC, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1262,
+      "line": 1263,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FAERIE_DUST, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1271,
+      "line": 1272,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANGROVE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1274,
+      "line": 1275,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FOREST_TOADSTOOL, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1277,
+      "line": 1278,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_TREEROOT_MOSS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1280,
+      "line": 1281,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RED_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1283,
+      "line": 1284,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GREEN_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1286,
+      "line": 1287,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLUE_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1289,
+      "line": 1290,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_PURPLE_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1292,
+      "line": 1293,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_NIGHTSHADE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1295,
+      "line": 1296,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANDRAKE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1298,
+      "line": 1299,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GARLIC, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1301,
+      "line": 1302,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_DRAGON_BLOOD, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1304,
+      "line": 1305,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GREEN_HERB, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1313,
+      "line": 1314,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1316,
+      "line": 1317,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_WIREGRASS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1319,
+      "line": 1320,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_DESERT_GRASS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1322,
+      "line": 1323,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_NIGHTSHADE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1325,
+      "line": 1326,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_STRANGE_STONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1329,
+      "line": 1330,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_HUMAN_BONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1378,
+      "line": 1379,
       "family": "item_lifecycle",
       "excerpt": "treeobj = read_object(VOBJ_FORAGE_FIRST + number(0, VOBJ_FORAGE_NUM_TYPES - 1),"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1382,
+      "line": 1383,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(treeobj);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1586,
+      "line": 1587,
       "family": "item_lifecycle",
       "excerpt": "treeobj = read_object(20, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1683,
+      "line": 1684,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Transient artifacts?"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1699,
+      "line": 1700,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Transient artifacts?"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 2913,
+      "line": 2914,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4740,
+      "line": 4741,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(bottle);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4759,
+      "line": 4760,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(bottle);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4768,
+      "line": 4769,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(bottle);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4806,
+      "line": 4807,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(bottle);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4911,
+      "line": 4912,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(scroll);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4936,
+      "line": 4937,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(scroll);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 6908,
+      "line": 6909,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7113,
+      "line": 7114,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj_to_put);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7606,
+      "line": 7607,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1347,
+      "line": 1348,
       "family": "item_publication",
       "excerpt": "obj_to_char(forage_obj, ch);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1587,
+      "line": 1588,
       "family": "item_publication",
       "excerpt": "obj_to_room(treeobj, ch->in_room);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1680,
+      "line": 1681,
       "family": "item_publication",
       "excerpt": "obj = unequip_char(ch, l);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1687,
+      "line": 1688,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, ch->in_room);"
-    },
-    {
-      "path": "src/cmd/actoth.c",
-      "line": 1704,
-      "family": "item_publication",
-      "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/cmd/actoth.c",
       "line": 1705,
       "family": "item_publication",
+      "excerpt": "obj_from_char(obj);"
+    },
+    {
+      "path": "src/cmd/actoth.c",
+      "line": 1706,
+      "family": "item_publication",
       "excerpt": "obj_to_room(obj, ch->in_room);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3357,
+      "line": 3358,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3375,
+      "line": 3376,
       "family": "item_publication",
       "excerpt": "unequip_char(victim, actual_slot);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3383,
+      "line": 3384,
       "family": "item_publication",
       "excerpt": "obj_from_room(object);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3425,
+      "line": 3426,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, thief);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3904,
+      "line": 3905,
       "family": "item_publication",
       "excerpt": "obj = unequip_char(victim, eq_pos);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3906,
+      "line": 3907,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, ch);"
-    },
-    {
-      "path": "src/cmd/actoth.c",
-      "line": 3969,
-      "family": "item_publication",
-      "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/cmd/actoth.c",
       "line": 3970,
       "family": "item_publication",
+      "excerpt": "obj_from_char(obj);"
+    },
+    {
+      "path": "src/cmd/actoth.c",
+      "line": 3971,
+      "family": "item_publication",
       "excerpt": "obj_to_char(obj, ch);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4752,
+      "line": 4753,
       "family": "item_publication",
       "excerpt": "unequip_char(ch, HOLD);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4870,
+      "line": 4871,
       "family": "item_publication",
       "excerpt": "unequip_char(ch, HOLD);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 6904,
+      "line": 6905,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 6912,
+      "line": 6913,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, well);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7073,
+      "line": 7074,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj_to_put);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7109,
+      "line": 7110,
       "family": "item_publication",
       "excerpt": "obj_to_obj(obj_to_put, sub_object);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7706,
+      "line": 7707,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, wear), ch);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7706,
+      "line": 7707,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, wear), ch);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 8165,
+      "line": 8166,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, k), ch);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 8165,
+      "line": 8166,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, k), ch);"
     },
@@ -56214,61 +56214,61 @@
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 1465,
+      "line": 1519,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(mob) = mob_entry.gold;"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 1991,
+      "line": 2053,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(mob) = mob_entry.gold;"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 1497,
+      "line": 1551,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(mob_entry.equipment_vnums[w], VIRTUAL);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 1510,
+      "line": 1564,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(inv_entries[c].vnum, VIRTUAL);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 2036,
+      "line": 2098,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(mob_entry.equipment_vnums[w], VIRTUAL);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 2053,
+      "line": 2115,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(inv_entry.vnum, VIRTUAL);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 1500,
+      "line": 1554,
       "family": "item_publication",
       "excerpt": "equip_char(mob, obj, w, 0);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 1513,
+      "line": 1567,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, mob);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 2038,
+      "line": 2100,
       "family": "item_publication",
       "excerpt": "equip_char(mob, obj, w, 0);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 2055,
+      "line": 2117,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, mob);"
     },
@@ -60120,481 +60120,481 @@
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4264,
+      "line": 4267,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4265,
+      "line": 4268,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4266,
+      "line": 4269,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4267,
+      "line": 4270,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4272,
+      "line": 4275,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4273,
+      "line": 4276,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4274,
+      "line": 4277,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4275,
+      "line": 4278,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9663,
+      "line": 9691,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(mob) = remaining / 1000;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9665,
+      "line": 9693,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(mob) = remaining / 100;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9667,
+      "line": 9695,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(mob) = remaining / 10;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9668,
+      "line": 9696,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(mob) = remaining % 10;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12204,
+      "line": 12232,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12205,
+      "line": 12233,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12206,
+      "line": 12234,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12207,
+      "line": 12235,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12238,
+      "line": 12266,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = parsed.copper;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12239,
+      "line": 12267,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = parsed.silver;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12240,
+      "line": 12268,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = parsed.gold;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12241,
+      "line": 12269,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = parsed.platinum;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11708,
+      "line": 11736,
       "family": "ship_coffer_assignment",
       "excerpt": "ship->money = atoi(row[8]);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 921,
+      "line": 924,
       "family": "item_lifecycle",
       "excerpt": "P_obj proto = read_object(obj->R_num, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 974,
+      "line": 977,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(proto);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4666,
+      "line": 4669,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4746,
+      "line": 4749,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4748,
+      "line": 4751,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(items[loaded], FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 6410,
+      "line": 6438,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7229,
+      "line": 7257,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7341,
+      "line": 7369,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7351,
+      "line": 7379,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8464,
+      "line": 8492,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8479,
+      "line": 8507,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8522,
+      "line": 8550,
       "family": "item_lifecycle",
       "excerpt": "cur_corpse = read_object(corpse_rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8584,
+      "line": 8612,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8664,
+      "line": 8692,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8755,
+      "line": 8783,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8768,
+      "line": 8796,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9523,
+      "line": 9551,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9529,
+      "line": 9557,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9539,
+      "line": 9567,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item->obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9769,
+      "line": 9797,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9781,
+      "line": 9809,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9852,
+      "line": 9880,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9900,
+      "line": 9928,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9910,
+      "line": 9938,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9920,
+      "line": 9948,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10105,
+      "line": 10133,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10331,
+      "line": 10359,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10403,
+      "line": 10431,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11138,
+      "line": 11166,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11207,
+      "line": 11235,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11254,
+      "line": 11282,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11272,
+      "line": 11300,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11278,
+      "line": 11306,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11286,
+      "line": 11314,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4911,
+      "line": 4914,
       "family": "item_publication",
       "excerpt": "obj_to_obj(items[i], items[j]);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4937,
+      "line": 4940,
       "family": "item_publication",
       "excerpt": "equip_char(ch, items[i], slot, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4941,
+      "line": 4944,
       "family": "item_publication",
       "excerpt": "obj_to_char(items[i], ch);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4947,
+      "line": 4950,
       "family": "item_publication",
       "excerpt": "obj_to_char(items[i], ch);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7288,
+      "line": 7316,
       "family": "item_publication",
       "excerpt": "obj_to_obj(obj, chest_obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7340,
+      "line": 7368,
       "family": "item_publication",
       "excerpt": "P_obj obj = unequip_char(ch, i);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7350,
+      "line": 7378,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8468,
+      "line": 8496,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8483,
+      "line": 8511,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8759,
+      "line": 8787,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8772,
+      "line": 8800,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10143,
+      "line": 10171,
       "family": "item_publication",
       "excerpt": "equip_char(k->mob, k->equipment[slot], slot, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11283,
+      "line": 11311,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 5841,
+      "line": 5869,
       "family": "sql_economy",
       "excerpt": "\"DELETE FROM ships WHERE LOWER(owner_name)=LOWER('%s')\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9363,
+      "line": 9391,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO saved_items (\""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9443,
+      "line": 9471,
       "family": "sql_economy",
       "excerpt": "snprintf(del_query, sizeof(del_query), \"DELETE FROM saved_items WHERE item_key='%s'\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9480,
+      "line": 9508,
       "family": "sql_economy",
       "excerpt": "snprintf(query, sizeof(query), \"DELETE FROM saved_items WHERE item_key='%s'\", esc_key);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10901,
+      "line": 10929,
       "family": "sql_economy",
       "excerpt": "\"DELETE FROM saved_items WHERE id=%d AND item_key='%s'\", source_root_id,"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11452,
+      "line": 11480,
       "family": "sql_economy",
       "excerpt": "\"insert into ships (owner_name, ship_name, ship_class, frags, anchor_room, time_played, mainsail, race, money, flags) \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11507,
+      "line": 11535,
       "family": "sql_economy",
       "excerpt": "\"update ships set owner_name='%s', ship_name='%s', ship_class=%d, frags=%d, anchor_room=%d, time_played=%d, mainsail=%d, race=%d, money=%d, flags=%lu \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11787,
+      "line": 11815,
       "family": "sql_economy",
       "excerpt": "snprintf(query, sizeof(query), \"delete from ships where owner_name='%s'\", esc_owner);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12180,
+      "line": 12208,
       "family": "sql_economy",
       "excerpt": "\"insert ignore into account_banks (account_name, racewar) values ('%s', %d)\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12367,
+      "line": 12395,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set bank_copper=bank_copper+%d, \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12448,
+      "line": 12476,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set %s = %s - %d where account_name='%s' and racewar=%d and %s >= %d\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12546,
+      "line": 12574,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set bank_copper=bank_copper-%d, \""
     },

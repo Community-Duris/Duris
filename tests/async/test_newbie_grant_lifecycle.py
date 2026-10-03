@@ -119,6 +119,13 @@ P_char find_player_by_pid(int pid)
             return ch;
     return nullptr;
 }
+P_char find_character_by_runtime_id(uint64_t runtime_id)
+{
+    for (P_char ch = character_list; runtime_id && ch; ch = ch->next)
+        if (ch->runtime_id == runtime_id)
+            return ch;
+    return nullptr;
+}
 obj_to_char_result obj_to_char_checked(P_obj obj, P_char ch)
 {
     assert(OBJ_NOWHERE(obj));

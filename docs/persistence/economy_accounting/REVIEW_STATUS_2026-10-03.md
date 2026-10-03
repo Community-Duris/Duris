@@ -1,4 +1,4 @@
-# Experimental accounting review status � 2026-10-03
+# Experimental accounting review status - 2026-10-03
 
 The goal remains active. Full R1-R8 implementation and qualification are open;
 accounting activation and release are BLOCKED. Earlier source-specific results
@@ -74,32 +74,84 @@ milestone was qualifying. The unpublished alias commit rebases without source
 conflicts. Integrated native source: 836eceeb4d69be626e82d4ff9de4050fa99e5ebe.
 The preceding evidence stays pinned to 27c8bb63 and its unchanged components;
 it is not relabeled as qualification of the new maintenance integration.
-Fresh combined builds, owner/coverage checks and gameplay/recovery qualification
-remain pending and continue after milestone publication. Release remains blocked.
+The maintenance integration subsequently passes both strict production builds,
+pfile, full formatter and owner tests at source 836eceeb4d69be626e82d4ff9de4050fa99e5ebe.
+The SQL-erasure source below also qualifies the combined gameplay/recovery paths.
+The older evidence remains pinned to its original sources; release remains blocked.
 
 ## Next established defects and open gates
 
-A real native SQL whole-account probe reproduced successful credential/player
-deletion while retaining the personal quest alias. A separate disposable SQL
-journey is being developed for malformed/stale state, late transaction rollback,
-all-season erasure, retained unrelated PIDs, later cache writes and cold restart.
-The SQL owner must borrow the current transaction, lock and validate shared
-state, and preserve existing admission/fencing. Missing singleton state is a
-legitimate no-op; a missing table/query failure is not. Failed or ambiguous
-commit cache publication also needs qualification. Source review found existing
-exclusion-owner-loss guards on real connection loss; no production bypass is
-claimed from a same-session failure hypothesis.
+## SQL whole-account quest-alias erasure milestone
 
-The frozen published 0be1cdf30 broad run still discovers 848 tests. Account
-recovery, area-coin pickup and creation-prompt journeys failed their unchanged
-600-second server-build deadline before gameplay. Later tests remain running;
-there is no final broad pass. A separate full-world attempt on native 0bbfb55c
-also failed the same 600-second build deadline. Read-only reliability review
-confirmed every failed artifact build discards completed objects and the next
-same-input journey compiles from scratch. A repair must preserve input identity,
-kill compiler descendants safely, publish only complete objects and immutable
-successful binaries, and retain failed attempts/deadlines. Resumed compilation
-must not be reported as cold-build performance qualification.
+Real native SQL probes established successful account/player deletion while
+retaining aliases, and deletion despite malformed quest state. The SQL owner now
+locks and validates the shared singleton inside its existing deletion transaction,
+erases all captured PIDs across seasons, and rewrites state before destructive
+native writes. Missing singleton state is permitted; failed queries, malformed or
+stale catalogs, allocation/serialization failures and failed writes roll back.
+The helper borrows the caller's transaction and uses the real current season.
+MYSQL_RES and escaped-string allocations are released on exceptions. Successful
+whole-account deletion refreshes the runtime cache on SQL as on flatfile.
+
+Qualified native source: ce7550d67b3bb5bc7a8467a5a3e03eccf77d5ded on remote
+prefix c79e3ed429584b255bd72bb5fc37393b1c1d4c8a. All 1,226 native files match
+the frozen archive at /opt/duris-accounting-sql-account-erasure-review/source.
+Strict production SQL, flatfile and pfile builds and full formatter pass.
+SQL SHA-256: a1086dd4492bb3464bc6d1a5953216da3561794fd5a201c00ec3354d7d0e9e4b.
+Flatfile SHA-256: 7dd07a864329d70617a4e0d7afe9c459a2ab30cbe58e3237cf2bda7f83f69a32.
+
+- Actual MySQL and MariaDB whole-account journeys pass malformed/stale state,
+  quest-state write refusal, late native rollback, permanent fence/repaired retry,
+  all-season alias erasure, unrelated PID and X-marker retention, exactly one
+  acknowledgement, later same-process cache write and cold restart.
+- Actual character-deletion compatibility journeys pass both engines' admission,
+  soft-delete/late-cleanup refusal and rollback, playable retry and cold restart.
+- All three flatfile menu journeys pass both publication faults and ordinary
+  deletion, pending-journal crash/recovery, non-cancellable fencing and retries.
+  Fresh ASan/UBSan erasure-inspector compilation and all 18 journal boundaries
+  pass at this source after the maintenance header change. All three menu
+  repeats pass with the fresh inspector. SHA-256:
+  ec8187ae5006e1ad704dfd7fe66a0d4068c010022f7974f6eb5107a0a0966b94.
+  The first combined run reused the older inspector; it is retained separately.
+- All ten native recovery cases pass in 350.772 seconds, including both engines'
+  full dump/import, schema/history/value checks and isolated service boot.
+  This is bounded recovery evidence, not a measured workload budget.
+- Native component strict-warning and ASan/UBSan/leak checks pass 387 allocation
+  failures, including failure after escaped-buffer allocation, exact locked reads,
+  failed-query versus missing-row behavior, erasure and unchanged-state retry.
+  An initial WSL transport failure remains unavailable evidence; the retry passed.
+- Incoming maintenance, periodic rearm, Telnet/TTYPE/GMCP owner checks pass.
+  Census signatures are unchanged; line-only registry/assertion reanchoring,
+  54 writer contracts, 14 fixtures, standalone site and deletion contracts pass.
+  coverage_complete=False; release BLOCKED.
+
+This applies ordinary quest-erasure semantics, including deletion of containing
+quest transactions, not a new protected-history retention policy. Full personal
+store erasure, typed economic identity/retention, lost-COMMIT reply and cache-load
+failure qualification remain open. The existing real connection-loss exclusion
+owner guard is retained; no production bypass is claimed from a same-session
+failure hypothesis. SQL ships.money omission is established as the next bounded
+independent-audit issue; its fix is separate from this native milestone.
+
+The frozen published 0be1cdf30 broad run finished 848 tests: 829 passed,
+11 skipped and eight failed in 11,112.060 seconds. Account recovery, area-coin
+pickup and creation-prompt journeys failed the unchanged 600-second server-build
+deadline. Full-world subsequently reused a verified artifact but failed the
+unchanged 180-second player-authority-inspector build deadline before gameplay.
+Copyover custody, launcher, game-loop phase and spell-schedule harness failures
+need current-source investigation; their historical failures remain retained.
+This run excludes subsequent alias, fence-ack, Telnet and maintenance changes.
+It is not a current-source broad pass. A separate older full-world attempt on
+native 0bbfb55c failed the 600-second server-build deadline.
+
+Reliability review confirmed failed artifact builds discard completed objects.
+The separate cache repair now passes 11 real Make/compiler tests for atomic
+object/dependency publication, exact-key resumed work, source changes, concurrent
+publication, caller cancellation including SIGKILL, path refusal and preservation
+of a running executable. Full native/full-world checks are underway at source
+ce7550d6 with the candidate helper. Default 600-second/-j2 and strict warning
+gates are unchanged; no failed attempt is converted to a pass and resumed builds
+are not cold-build performance qualification.
 
 Captured staging-generation clone/rollback/mount proof remains blocked on the
 requested backup location. Complete writer/compound-gameplay/native audit,
@@ -125,3 +177,338 @@ Local ignored evidence SHA-256:
 - tmp/flat-account-alias-telnet-sql-journeys.local.log: d0a88e8acd9fe59c1feb58b1082b19638e46f5823a7674a5b4880c62631abd06
 - tmp/flat-account-alias-telnet-recovery.local.log: ea6cfb7b0356f89c84bdc5dff9f9843c908040247f412b95329b52ad813c3f68
 - tmp/sql-account-alias-red.local.log: 4013b213b730ebb36ff97175b7cdbd7f27b29a5b247faaeba5c7154e9b6188df
+
+SQL milestone local ignored evidence SHA-256:
+
+- tmp/sql-account-alias-red.local.log: 4013b213b730ebb36ff97175b7cdbd7f27b29a5b247faaeba5c7154e9b6188df
+- tmp/sql-account-erasure-before-actual.local.log: 3faff17fadc3af48463f0b0f1ef630773030f5d3ae34f8612b0b1d3de7ac2ef5
+- tmp/sql-account-erasure-build.local.log: 2e5c7103a9ab3d515ee8fe419fcdbe9a3d2d6aeec31ca13ef118a163bc7ef291
+- tmp/sql-account-erasure-formatter.local.log: f2efc2eb69dda6ceacbfd2534a79f615c4760f829f5ca75ab436cab8f61cb646
+- tmp/sql-account-erasure-final-write-fault-journeys.local.log: 82963aa74e255852afb2dda7f6625c06c4830c542cd5755a12e39f4753d81154
+- tmp/sql-account-erasure-character-journeys.local.log: d0a88e8acd9fe59c1feb58b1082b19638e46f5823a7674a5b4880c62631abd06
+- tmp/sql-account-erasure-flat-menu.local.log: 29b1b4d642554a3cba4efd3f813df8536fe7c8563a8e6e0a6593f45eb68be1fe
+- tmp/sql-account-erasure-recovery.local.log: 4c54a5047e0b171018d80b6cdb75c5aa0fc19dfad7cb620647e68cec429592e1
+- tmp/sql-account-erasure-owner.local.log: edf11dd2531193c641f73e557702f727186e76239c6981eb7490a99859e716af
+- tmp/sql-account-erasure-contracts-final.local.log: 1590fae54f3d824338fcf2e1474552a2b8fbe2a2ad5469efe15f12ee176c4ecc
+- tmp/flat-account-alias-maintenance-build.local.log: aeaaaf5d03684341bd0f54c5357c488dbe8f1aa68ad4ed3d55e37bd04f353365
+- tmp/flat-account-alias-maintenance-owner.local.log: 308ed3dfde88390bc85f2e269b7600de6e3efdc00c13b4aa2dc14e7eceb47846
+- tmp/qualified-0be1cdf30-broad.local.log: 6d436c4040a6f470c80868c4ff0dbc29b1d676e782d3fe7611c21c8af977095c
+- tmp/qualified-0be1cdf30-results.local.json: be4344babd47970d4765e28e42fec81692acc0a56ce85f1c4e124f716e096125
+
+Fresh native erasure evidence SHA-256:
+
+- tmp/sql-account-erasure-inspector-pin.local.log: ce6c6109964b9a27bd86b30d04fbf9ba14250048c7af2b4d36f4ba5457dde95b
+- tmp/sql-account-erasure-flat-inspector-native.local.log: d08aed62a026acff767dd9226dc2af9a6fcb4211b654c5666a36113cd5d950d1
+- tmp/sql-account-erasure-flat-menu-fresh.local.log: 29b1b4d642554a3cba4efd3f813df8536fe7c8563a8e6e0a6593f45eb68be1fe
+
+The inspector dependency comparison initially found the changed maintenance
+header; that refusal triggered the fresh build and repeat above. It is not a
+failed production erasure test.
+
+
+## SQL ship-coffer audit omission milestone
+
+The disposable native-SQL exporter regression reproduced missing ships.money
+while persisted coffers changed. The SELECT-only consistent cut now captures
+all ship IDs and exact nullable signed-INT copper values separately from mapped
+holdings. Ships join required InnoDB sources. Independent reconciliation validates
+identities/value bounds/uniqueness and recomputes coverage, reporting unsupported
+native authority and missing monetary revisions even for zero-valued rows;
+NULL remains unknown and negative value is reported invalid. No account key,
+revision, lineage or owner alias is inferred.
+
+Both actual MySQL and MariaDB SELECT-only probes pass positive/zero/NULL/negative
+capture, value change, missing/non-InnoDB source refusal and exact restoration,
+concurrent-writer read-view separation, CLI export/reconcile including detail
+limit zero, unchanged mapped holdings/economic evidence and exact pre/post reads.
+Five new independent coffer tests, 61 reconciler tests and ten exporter tests pass.
+The first extra CLI fixture reused an existing output path and correctly hit
+exclusive-create refusal; the repaired fixture uses a separate new file and both
+engines pass. This was a fixture failure, not an export overwrite policy change.
+
+Native source remains ce7550d67b3bb5bc7a8467a5a3e03eccf77d5ded, published in
+9f9d21132df1f30594454349c3d26c0225dd9eaf. This milestone changes diagnostic
+Python only; native build/gameplay/recovery proofs remain at their original
+source. Ship gameplay/enrollment, guild holdings, complete native authority/
+writer qualification, protected retention, full-world/captured clone and workload
+remain open. backend=sql_partial; complete=false; release BLOCKED.
+
+Ship milestone local source/evidence SHA-256:
+
+- scripts/economic_sql_audit_snapshot.py: 01bfb40618fe9eebaf3851c7bdc3cde6c00f7427cd48043ebef7bd009bb284c3
+- scripts/reconcile_economy_accounting.py: 5509777c3286f46499cf18480fc4de36ddea5284a3a885a3ec78e8e81d52e8dd
+- tests/async/run_economic_sql_audit_snapshot_mysql.py: 5a160e15a6659b003e44f2a05880ca8a4a4c749c3f217e9a5e4a47e7fe9084d0
+- tests/async/test_ship_coffer_audit.py: 24f6e5320244725da406dcaba2bb356c853542faae7d3fb51d1a3ec9bce620d1
+- tmp/audit-ship-coffer-red.local.log: e500904dab653c6c9bde3c6f54cc245aaff838429465dfe8b23ce160d292718f
+- tmp/audit-ship-coffer-green.local.log: 15321b41ca8e657492e907546d6d6ee19b2c2132a5a07b5d17cc21bf8fb29955
+- tmp/audit-ship-coffer-final.local.log: 4d8f7fcaeda84243829d62bac38c526961716ebefc4e2fa6c6af5eb46330e188
+- tmp/audit-ship-coffer-cli.local.log: 15321b41ca8e657492e907546d6d6ee19b2c2132a5a07b5d17cc21bf8fb29955
+
+
+## Launcher fixture watchdog dependency repair
+
+The current launcher regression reproduced the frozen-suite failure: its
+isolated project omitted scripts/game_loop_watchdog.py even though cycle_mud.sh
+requires it for configuration validation. The fixture now copies the actual
+watchdog dependency and also proves NaN stall configuration refuses with status
+78. Existing port/configuration/secret/backup/database-independent checks pass.
+Production scripts and native source ce7550d6 are unchanged. This is focused
+fixture proof; the frozen broad failure remains retained and current-source
+broad/full-world/workload gates are open.
+
+- tmp/current-flatfile-launcher-baseline.local.log: 9fc0dfd0d8ecabcd4b6b671cf09680f18ef68000fba30f7e8e96ab75c22d4d5c
+- tmp/current-flatfile-launcher-green.local.log: 3ee7202c269659c76b32f0de39beaa5c53d1dbaae226eb258b5975da9a65bdda
+- tests/async/test_flatfile_launcher.py: 4c6bb06e6708df7e107095e8ead76b86bbb5c71355e7358d953cca4a505c3ec2
+
+
+## Incoming persistent-transport integration
+
+GitHub advanced to 4e6922b600ba56d4fe2ff77b4bcc9cbd495dd20c (PR 692)
+before the launcher milestone push. The unpublished launcher commit rebases
+normally; cache and spell-fixture WIP were preserved. The upstream launcher
+fixture now includes the same real watchdog dependency, so the duplicate copy
+was removed and this milestone contributes the invalid-setting regression.
+Integrated native source: 4180f74573c8a4cfe669c057c36f9c36dfc6d7fa.
+Prior native/gameplay/recovery evidence remains pinned to ce7550d6 and earlier
+sources. Fresh transport-inclusive builds, owner/copyover/gameplay/recovery,
+line anchors and current-source broad qualification remain pending. The running
+full-world cache candidate also remains at ce7550d6; no evidence is relabeled.
+
+The launcher fixture passes again on integrated native source 4180f745,
+including invalid-watchdog refusal, after the normal unpublished-commit rebase.
+- tmp/current-692-flatfile-launcher-green.local.log: 3ee7202c269659c76b32f0de39beaa5c53d1dbaae226eb258b5975da9a65bdda (LF-normalized)
+- tests/async/test_flatfile_launcher.py: d559d11eca23b804556f3a4107b37d638bd3464ec3818dfbcae1fd3ef474af9e (LF-normalized)
+
+
+## Spell-schedule failure fixture queue initialization
+
+The current production-extracted schedule-failure harness reproduced the frozen
+strict-warning compile failure after txt_q acquired four accounting fields. The
+fixture now initializes the complete queued-command state and verifies bytes,
+entry count and overflow flags remain intact across rejected scheduling.
+Strict warnings, ASan and UBSan pass before and after the PR 692 integration.
+Player-facing spell behavior and native source are unchanged; the declined
+inactive spell-path change is not retried. These focused harness passes do not
+replace current-source gameplay/broad/workload qualification.
+
+- tmp/current-spell-schedule-baseline.local.log: 9583dd51a9f40c2cd46697afee2cb4a7227c533568c3fd41d7a9fac6b4ce5cc3 (LF-normalized)
+- tmp/current-spell-schedule-green.local.log: 9bd0442ec1aedadd38f305356c08392d6ba91a8d9e2fe02010a5e607f05b2f8f (LF-normalized)
+- tmp/current-692-spell-schedule-green.local.log: 9bd0442ec1aedadd38f305356c08392d6ba91a8d9e2fe02010a5e607f05b2f8f (LF-normalized)
+- tests/async/test_spell_schedule_failure_runtime.py: 7fc107145f6766662d0b4588ba7ff6b7e7086e08996da15b5ea2d22f3c242436 (LF-normalized)
+
+Current-source game-loop phase assertions and copyover custody already pass
+without edits on source ce7550d6; the latter exercises real save/exec/recovery,
+six publication faults and decode/materialization rollback under sanitizers.
+These earlier component proofs are not relabeled after transport integration.
+- tmp/current-copyover-custody-baseline.local.log: 72e020ec616d579b33f5c2877bebd943003df63bdb74b2219dc9075587fd23eb
+- tmp/current-game-loop-phase-confirmed.local.log: 31448a14c3ec710f22d04214dbb62aff42727c0d5a86d159daaff162fede212b
+
+
+## Interrupted-build artifact reuse repair
+
+The verified-artifact helper no longer discards completed compilation work on
+an unchanged-input timeout. Private exact-key workspaces retain only confirmed
+complete object/dependency pairs; compiler output is staged and atomically
+published after success. Changed-input or unconfirmed dead-owner work is
+isolated/discarded. A watchdog pipe and inherited lock stop compiler descendants
+when the caller exits, including SIGKILL. Pending work never qualifies as a
+published artifact. Successful builds copy a fresh immutable executable and
+hashed log, preserving already running executable inodes.
+
+Existing artifact checks and eleven real GNU Make/installed-compiler tests pass
+same-key resumed compilation, partial output refusal, changed inputs, concurrent
+publication, timeout/caller TERM/SIGKILL cleanup, path/lock refusal, strict flags
+and running-artifact preservation. The unchanged default 600-second deadline,
+-j2 and strict warning gates remain. There is no internal retry loop, fake
+metadata or deadline waiver. Attempt logs are retained.
+
+The full native strict-production flatfile server builds in 452.463 seconds on
+source ce7550d67b3bb5bc7a8467a5a3e03eccf77d5ded, with helper candidate.
+Immutable artifact SHA-256:
+103b44d0dda3059fc20bbe1027daef2834750de7fdb0e822082b6fae23059865.
+The actual full-world player/floor-item save, authority readback and process-
+restart journey then passes. This is one native build and journey; it does not
+qualify all workload budgets, captured staging generations, the newer transport
+integration or full R1-R8. Frozen broad failures remain unchanged. Fresh transport
+source 4180f745 build and qualification are underway; initial cache-copy setup
+failed before compilation and the continuation preserves the same frozen source.
+
+Cache milestone LF-normalized source/evidence SHA-256:
+
+- tests/async/server_build_artifacts.py: f0b456929ab6b9a7b2f7c8f3caf52feed2849ca2579aae4059bcd815db942e7d
+- tests/async/server_build_compiler.py: 13764ca38d439f11a38eedf125dd4135123e4bbde1cf5389aeb6101b6965e51d
+- tests/async/test_server_build_artifacts.py: 8f4e46b7612f49f77c9b9d13088400cde985b78633b7d85f3c129008b13f45d8
+- tests/async/test_server_build_artifacts_resume.py: 0779635d56c0aa18ccb6298070c0e1ff991541e4f5917b7c62f243bdb0e09d7d
+- tmp/sql-account-erasure-cache-full-world.local.log: a8daa8840feec5bbb4d6c4376297be48f4d43b77f260510a419baeade7a177e0
+
+
+## Persisted guild treasury audit capture
+
+The SELECT-only SQL cut reproduced a missing native.guild_treasuries collection
+on real MariaDB. It now captures all guild IDs and exact four unsigned-INT
+money values, including zero and UINT32_MAX. IDs remain reusable native locators;
+outcome_revision is excluded because ordinary deposits/withdrawals do not
+advance that prestige/construction revision. Guilds joins the required InnoDB
+sources (18). Raw candidates remain outside mapped holdings and no account key,
+lineage, origin or monetary revision is invented.
+
+Independent validation recomputes bounded coverage and reports unsupported
+native guild authority and missing monetary revisions for every row. Malformed
+vectors, aliases, fake revisions, duplicate IDs and forged counts refuse.
+Both MySQL and MariaDB pass SELECT-only value-change, fixed outcome revision,
+missing/nontransactional source refusal, exact restoration, concurrent-writer
+read-view isolation and CLI export/reconcile with detail limit zero. The first
+independent run caught a missing exception-detail guild locator; the final
+implementation safely emits the native ID. All 81 focused tests pass, including
+five guild tests, five coffer tests, 61 reconciler tests and ten exporter/origin
+checks. Failed attempts are retained.
+
+Native source remains transport-integrated 4180f745; this diagnostic milestone
+does not change gameplay or native persistence. Guild enrollment, money
+revision/lifetime, deposit/withdraw atomic roots and recovery, full native audit,
+protected retention, current broad suite, captured clone and measured workload
+remain open. backend=sql_partial; complete=false; full R1-R8 release BLOCKED.
+
+Guild milestone LF-normalized source/evidence SHA-256:
+
+- scripts/economic_sql_audit_snapshot.py: 33868861e79f466cdf7fe3631f80c149b421722fae91749bd3a3a227718d106a
+- scripts/reconcile_economy_accounting.py: 5a6a279ed376c008b3dc4609c38d904262011761d1fe12e967c2e6bdcb451abe
+- tests/async/run_economic_sql_audit_snapshot_mysql.py: a640edc204bfb34f85519582eb50f917d7028aefe83d1507129489f6a1feddf1
+- tests/async/test_guild_treasury_audit.py: 8624627ebc372008f10b059da358d1c425c72825b4567c265aa85ea305e8d75e
+- tmp/audit-guild-money-red.local.log: efdf9e7a2cac4b62810ce2a9c5b2de3b47349cd6dcf5c41564333ef057bf2ae4
+- tmp/audit-guild-money-green.local.log: 189e97c579fcaa5b290b3dd5c65d6ec42ccad60564e4888d1127210fdc3246b1
+- tmp/guild-treasury-focused.local.log: 92634f8a58687761906ab1a8d2a84f4ad4c777b2074778665d7e766ca64f9ccd
+- tmp/guild-treasury-focused-final.local.log: 8d7cdad19b122fd409a8572a5317020815a9107b1274b98d51984fff247ecbc5
+- tmp/audit-guild-money-final.local.log: 189e97c579fcaa5b290b3dd5c65d6ec42ccad60564e4888d1127210fdc3246b1
+
+
+## Queue extraction harness transport boundary repair
+
+The frozen 4180 queue owner failed strict compilation before sanitizer runtime:
+production-extracted functions referenced transport_frontend_input and
+transport_world_finish_pulse without their declarations. The harness now
+includes production net/transport.h. Its existing disabled-feature inline
+implementations match this fixture configuration; no fake transport doubles,
+queue assertions, deadlines or production behavior changed. Strict warnings,
+ASan and UBSan now pass all bounded session queue runtime regressions.
+
+The frozen incoming integration focused manifest records eleven other owner
+passes and the original queue failure. Persistent protocol/readiness/Telnet/
+WebSocket components, listener contracts, phases and 24 watchdog process cases
+pass. The repaired queue result is separate evidence; actual transport,
+readiness, accounting gameplay and R8 recovery are still under qualification.
+Native source remains 4180f74573c8a4cfe669c057c36f9c36dfc6d7fa.
+
+Queue milestone LF-normalized source/evidence SHA-256:
+
+- tests/async/session_queues_runtime_harness.cpp: b32a0e8cb94965833d02ea268e6b253a22ec1c7f5ec748f46ae6853489e934ab
+- tests/async/test_session_queues_runtime.py: 5f0799a51af578654a62b910ad7735693082ba22081fe019126d1ad02610c751
+- tmp/transport-4180-focused-summary.local.json: 2b93ef67fa94bdcad76cf5246518e3fc0a126650136038b665b62df6037c6bb7
+- tmp/transport-4180-session_queues_runtime.local.log: 1572f5981e864a1d6a3af199eb3fed4c8bca422ec2b5518506d5e95aad61e33b
+- tmp/transport-4180-session-queues-green.local.log: 9e97152ff5b6423370edf9302e4d6a6e96d243ca154cdff4a11c6b5b100f2125
+
+
+## Transport-integrated native qualification
+
+Integrated native source 4180f74573c8a4cfe669c057c36f9c36dfc6d7fa passes
+strict production SQL, flatfile and offline pfile builds plus full formatting.
+All 1,229 archived native source files match the qualified workspace. Executable
+SHA-256: SQL 54834b1568cf2fd2def39f80dff8370f664c37a7e684e5d7ee1ba0d2bbe7c0b1;
+flatfile 60e9bc740ccbf4de0e44a1f636da5537483a0e57c98bebbe711346f3d66ddd40.
+The inspector is freshly compiled against this source in 83.260 seconds;
+earlier inspectors are not relabeled.
+
+The real persistent-transport matrix passes authenticated Telnet/TLS/WebSocket
+exec, compression/framing/order/deduplication, startup/exit/retry failures,
+mixed authenticated sessions, orderly close, invalid input isolation, stale
+barrier/retry, disconnect/reconnect, frontend failure, modified handoff refusal,
+account-mutation barrier, bounded flood/backpressure and launcher watchdog.
+Watchdog verifies delegated world pulses, single lifecycle delivery, exec,
+cold restart and stalled-world detection. Listener measurements pass all
+existing limits: p95 first-byte 3.164 ms, TLS handshake 7.127 ms, WebSocket upgrade
+1.708 ms, 96-client burst 98.652 ms; measured idle CPU 0%, capacity 256 with extra
+connection refused, and median plain/TLS command spacing 250.840/250.822 ms.
+These are isolated test-server measurements, not mixed accounting workload.
+
+All ten native recovery cases pass in 545.753 seconds, including both MySQL and
+MariaDB full dump/import/private service boot, pending flatfile/legacy replay,
+WAL/quarantine refusal and locker/spell receipt qualification. These are
+fresh source-4180 proofs, distinct from earlier ce755 results. The frozen broad
+suite at published 70aaa41384cb40ae786d06241ec5313ccafef822 is running;
+no broad PASS, captured-staging-generation, full writer or R1-R8 completion is
+claimed.
+
+The incoming source preserves every lexical census identity and multiplicity:
+2,815 occurrences/2,756 sites/864 routes. Only source line anchors and matching
+contract assertions were refreshed after checking added/removed sets are empty.
+52 writer tests and 14 golden fixture contracts pass; 751 runtime/projection
+routes remain unqualified. coverage_complete=false; release BLOCKED.
+
+Source review also confirms typed coordinator coin/item dispatch already
+exists; Plan 1's bank-only starting-point text is corrected. Bank has actual
+wrapped post-COMMIT reply-loss proof. Coin/item fixtures synthesize ambiguity
+after repository success and use replacement SQL pool interfaces. Production
+pool contention/lifecycle and ordinary drop/give/pile publication recovery are
+still open, including room payload durability after ACK. No production or
+inactive-accounting behavior was changed by this qualification milestone.
+
+Transport integration LF-normalized evidence SHA-256:
+
+- tmp/transport-accounting-integration-build.local.log: 13d8fe903ef08b8ada7480b04b908caa66c3eb969db64029d1b22fcb47867670
+- tmp/transport-accounting-integration-build-continued.local.log: 9fa7e6a6966950ffe9fe8a0c499c4dd52c577e7cb0f9994ac9fcd3674af74891
+- tmp/transport-accounting-integration-formatter.local.log: f2efc2eb69dda6ceacbfd2534a79f615c4760f829f5ca75ab436cab8f61cb646
+- tmp/transport-4180-census-diff.local.json: 04470f08c38c9cfb4c04d74b2e5e0411b6c1859bde4dba7e7edc437ef0c7d549
+- tmp/transport-4180-site-reanchor.local.log: 230578a1e1b78bbb9c12ef9f015f57cb2e559cd75c16b1364632343d9e992ff2
+- tmp/transport-4180-contracts.local.log: fb3128ea6cea2359cce4eda435cdfdbf8961f55a3ef5722f96889e55da48e5d0
+- tmp/transport-4180-writer-tests.local.log: 209ba17e6accd8d3845078a0d57f82041fef10cb7c7285a1788c72ba7ac10841
+- tmp/transport-4180-journeys-driver.local.log: 76daa0a170a36547a196767068477e2f621ef2edad62d31eb9265d6f92b97fdf
+- tmp/transport-4180-journey.local.log: 685f2e3e799d4c72c70fd3d8aff411e4805cb9b5549656e9cbcc7c9eba5c8607
+- tmp/transport-4180-network-journey.local.log: 36115407587f0087540f001bdff7edee83ed8d0d83463c7448c25d48caca8732
+- tmp/transport-4180-network-measurements.local.json: 8bb1f335a04058c0df5949f2c64c66657689d4241ff470ae0e9d49b3e2f44378
+- tmp/transport-4180-recovery.local.log: efb878a1e87419c902e0c9cbc59cbef497ca3e33ff1be8f786595fc272d576e0
+
+
+## Native SQL runner dependency and API repair
+
+Exact strict compilation reproduced two maintained-test failures: the currency
+runner's item link omitted current native dependencies/query wrapping, and the
+legacy PA coin harness duplicated inherited pool discard and called an obsolete
+accounting API. After fixing those, the PA runner also failed its current link
+closure. The item and PA commands now use current accounting/coordinator/
+player-recovery/quest dependencies; the null connection checks the actual
+ENOTCONN error API. Existing guarded targets, cleanup, compiler warnings and
+backend flags remain; the item driver matches its maintained 64 MiB stack.
+
+The exact repaired commands compile with GCC 13/C++20 strict warnings:
+item 113.250 seconds, PA 84.244 seconds, both zero diagnostics. Both Bash syntax
+checks, seven typed-coin and ten currency contracts pass. All 1,229 native
+source files match source4180/current bytes; manifest/tree hashes are retained.
+Frozen binaries: item e50bef0ead8a0db43d8d1bfd067e79cb02a8e9d3d5334121bcafea724c633cbb;
+PA 22547f9ac2f850bd61a1258fbf6489dd0f0684cc9541b8e9c63ce168ac35992b.
+
+Primary native execution passes both complete item and legacy PA coin matrices
+on actual disposable MySQL and MariaDB, with separate fresh family schemas,
+the currency runner's current bootstrap/immutable migrations, coin-schema
+corruption/upgrade checks and native verifiers. Docker is unavailable here;
+services were freshly provisioned on loopback with private datadirs and
+terminated after each engine. This is exact-binary native component execution,
+not a Docker driver execution, player publication journey or production pool
+lifecycle proof. Runtime replay/rollback/custody/craft/quest/quarantine checks
+retain their bounded fixture scope. Production source and inactive behavior
+are unchanged. The separate coin/item actual lost-COMMIT reply and ordinary
+drop payload/publication requirements remain open; full R1-R8 stays blocked.
+
+Runner milestone LF-normalized source/evidence SHA-256:
+
+- tests/async/run_currency_transaction_schema_mysql.sh: f41a4d97f11555f924b41be4d1806ed20a84d2ddc14af124e6d8678b648604db
+- tests/async/run_pa_coin_sql.sh: e3c53dd7876d2c305581c42218857f11da5c0b6e8852bdde7cbdd90360c48350
+- tests/async/pa_coin_sql_harness.cpp: 4a1d57e224bcaebfcfe1b16df125693f92bb635090eef986d4a7592fb6178372
+- tmp/embedded-item-red.local.log: af772f33a8e9614e93fac1977833cdd1f159ae9afcd901cc91a6fe19c3c42ef1
+- tmp/embedded-item-green.local.log: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+- tmp/pa-coin-red.local.log: b56693b8b0d51fde43f4cdde9a50f24c2afa37f5e652a1376345d9630ed661b0
+- tmp/pa-coin-green.local.log: 8daf31e1f7a093997dccd4e9e109cc964bf14f085d51a7312672a3198b35bead
+- tmp/pa-coin-complete-green.local.log: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+- tmp/currency-contract-green.local.log: 8e58acf5241e640766d986b592bbcd84af60a37fd6e739d205a6a6dcba113201
+- tmp/typed-coin-contract-green.local.log: 83166b089fbcb82fac63f22522fa6ae99bb5e46368cd35d756277fd463dd6346
+- tmp/native-source-pin.local.json: 93030a45182074517c56c00b18edaadc1d8e7e178b23cc1b29856536f35bd129
+- tmp/currency-runner-native.local.log: e4b24c0c08a3d5264e64765d37185a6dd3407b6d9f4e1cbdebe41007d52ad0db

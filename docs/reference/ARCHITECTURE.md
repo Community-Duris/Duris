@@ -1,7 +1,7 @@
 # Architecture
 
-DurisMUD is a single-process, event-driven MUD server derived from the DikuMUD
-lineage, compiled as C++20 (`g++ -std=c++20`) from C-style sources. It serves
+DurisMUD is an event-driven MUD server with one authoritative world, derived from
+the DikuMUD lineage, compiled as C++20 (`g++ -std=c++20`) from C-style sources. It serves
 players over plain telnet, TLS telnet, and WebSocket; durable player state lives
 in MySQL, while Redis optionally holds immutable crash-recovery world generations.
 
@@ -12,7 +12,8 @@ for operations. A visual overview lives in
 
 ## Process model
 
-One process (`bin/server/dms`, staged as `bin/server/dms_new`). There is no
+By default, one process (`bin/server/dms`, staged as `bin/server/dms_new`) owns
+both client transports and the world. There is no
 fork-per-connection, player-save fork, or world-save fork; all socket I/O is
 multiplexed in a single `poll()` readiness/deadline loop. Bounded network turns
 service sockets between 250 ms simulation boundaries; command dispatch and world
@@ -37,6 +38,15 @@ phases retain their established cadence and order. See the
 Legacy hostname lookup may still use a short-lived child. It is unrelated to
 persistence and never receives player or world snapshot work.
 
+With `--persistent-transport`, a persistent parent owns listeners, client sockets,
+TLS, Telnet negotiation/MCCP and WebSocket framing/compression. Its single world
+child owns authentication, characters, command execution and all persistence
+workers listed above. Private authenticated IPC carries logical sessions; a
+durable copyover replaces only the world while eligible authenticated players
+continue on their original sockets. The parent does not start hostname workers.
+See [Persistent transport](../network/PERSISTENT_TRANSPORT.md) for the protocol,
+eligibility, ordering, bounds and failure/recovery contract.
+
 `main()` (`src/net/comm.c:205`) parses flags, then `game_loop()` (`src/net/comm.c:704`)
 runs until shutdown. Exit codes are meaningful - `scripts/cycle_mud.sh`
 interprets them to decide whether to restart (see [RUNBOOK.md](../operations/RUNBOOK.md)).
@@ -47,6 +57,7 @@ interprets them to decide whether to restart (see [RUNBOOK.md](../operations/RUN
 |--------|--------|
 | `[port]` | Listen port; must be > 1024. Default 7777 (`DFLT_PORT`, `src/core/config.h:21`). |
 | `-C` | Copyover boot - recover player sockets from `copyover.dat`. |
+| `--persistent-transport` | Keep client transports in a parent while replacing the single world child. |
 | `-m` | Mini mode (reduced area set); also disables ferries. |
 | `-z` | Mini mode with the area debugger on. |
 | `-f` | Disable ferries. |
@@ -81,7 +92,8 @@ target. See [CONFIGURATION.md](../operations/CONFIGURATION.md#persistence).
 - Per-pulse work is dispatched by pulse counters using `PULSE_*` constants
   (`src/core/config.h:84-91`): combat rounds every 16 pulses, mobile updates every
   30, ships/vehicles every 2, spellcasting every 9, etc.
-- Socket readiness comes from `select()` over input/output/exception sets.
+- Socket readiness comes from `poll()`; in persistent mode, the parent services
+  sockets and the world consumes authenticated IPC at the connection phase.
 - A per-pulse time budget is enforced between event-wheel callbacks (see
   below). Because the check happens *between* callbacks, one slow job overruns
   the pulse regardless of policy - an expensive callback has to be made cheaper
@@ -185,7 +197,9 @@ After world boot, two recovery paths may apply before socket input is accepted:
 
 - **Copyover recovery** (`copyover_boot`, `src/persistence/copyover.c`): listening sockets
   and live player connections are re-inherited from `copyover.dat`; combat state
-  is restored by `copyover_restore_combat()`.
+  is restored by `copyover_restore_combat()`. In persistent mode, the same durable
+  world handoff contains logical session slots instead of client fds; restoration
+  also verifies the live parent's committed identities and file digest.
 - **Redis restart recovery**: after a graceful restart or an unclean exit, a world generation
   is restored only after schema, completeness, sequence, checksum, size, and age
   validation. The generation and bounded binary floor-item trees are combined into one

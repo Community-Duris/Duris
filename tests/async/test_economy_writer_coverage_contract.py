@@ -531,9 +531,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          {"auction.money_claim_compensation"})
         self.assertEqual(owners[("src/economy/auction_houses.c", 2967, "sql_economy")],
                          {"auction.money_claim_legacy"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 9480, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 9508, "sql_economy")],
                          {"recovery.saved_sql_delete"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10901, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10929, "sql_economy")],
                          {"recovery.saved_sql"})
         shop_path = "src/persistence/economic_sql_shop_trade_transaction.c"
         for line in (887, 907, 940):
@@ -835,9 +835,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new other-command item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/cmd/actoth.c", 1347, "item_publication")],
+        self.assertEqual(owners[("src/cmd/actoth.c", 1348, "item_publication")],
                          {"item.forage_food_creation"})
-        self.assertEqual(owners[("src/cmd/actoth.c", 3969, "item_publication")],
+        self.assertEqual(owners[("src/cmd/actoth.c", 3970, "item_publication")],
                          {"item.legacy_steal_fallback"})
         self.assertEqual(self.routes["item.forage_doodle_probe"]["disposition"],
                          "non_writer_candidate")
@@ -867,9 +867,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new SQL item load sites")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/sql/sql_player.c", 10143, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10171, "item_publication")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 11283, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 11311, "item_publication")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",

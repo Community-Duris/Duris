@@ -18,6 +18,7 @@
 #include "net/ttype.h"
 #include "net/unicode.h"
 #include "net/websocket.h"
+#include "net/transport.h"
 
 /* external variables used by this module */
 extern P_desc descriptor_list;
@@ -294,6 +295,8 @@ int write_to_descriptor(P_desc player, const char *txt)
 {
 	if (!player || !txt)
 		return -1;
+	if (player->transport_session && transport_world_active())
+		return transport_world_output(player, 1, txt, strlen(txt));
 	if (player->write_failed)
 		return -1;
 
@@ -478,6 +481,8 @@ int write_to_descriptor_binary(P_desc player, const unsigned char *data, size_t 
 
 	if (!player || !data || len == 0)
 		return 0;
+	if (player->transport_session && transport_world_active())
+		return transport_world_output(player, 2, data, len);
 	if (player->websocket)
 		return 0; /* WebSocket output must always use framed send APIs. */
 

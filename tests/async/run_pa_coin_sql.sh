@@ -104,5 +104,5 @@ read -r -a CXX_CMD <<< "${CXX:-g++}"
     "${MYSQL_CFLAGS[@]}" tests/async/pa_coin_sql_harness.cpp \
     src/persistence/critical_command.c src/economy/currency_command.c src/world/epic_command.c \
     src/combat/combat_outcome_command.c \
-    "${MYSQL_LIBS[@]}" -lcrypto -o "$TMPDIR/pa_coin_sql_harness"
+    "${MYSQL_LIBS[@]}" -lcrypto -lz -o "$TMPDIR/pa_coin_sql_harness"
 "$TMPDIR/pa_coin_sql_harness"

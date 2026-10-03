@@ -368,3 +368,87 @@ See [remaining requirements](REMAINING_REQUIREMENTS.md) for R1-R8,
 [qualification checkpoint](QUALIFICATION_CHECKPOINT_2026-09-29.md) for dated
 build and journey evidence, and the
 [current writer matrix](writer_coverage_matrix.json) for inventory state.
+
+
+### October 3 SQL whole-account quest erasure qualification
+
+Native source ce7550d6 now validates and erases all-season quest aliases inside
+whole-account SQL deletion and refreshes cached state after success. Real RED
+probes precede both engines' malformed/stale/write-failure/rollback/retry/cache/
+cold-restart journeys. Strict backend/pfile builds, full formatting, 387 native
+allocation-fault sanitizer checks, combined flatfile and SQL character journeys,
+maintenance owner contracts and ten recovery cases pass. See the latest review
+status for exact source, artifact hashes and evidence boundaries. Protected quest
+history policy, broader personal stores, typed economic erasure, ambiguous commit
+cache behavior and complete R1-R8 remain open. SQL ship-coffer audit omission and
+safe interrupted-build reuse are the next separate issues; captured backup
+qualification still needs the requested local generation path. No inactive
+spell-path behavior, activation authority or acceptance deadline was changed.
+
+
+### October 3 bounded ship-coffer audit capture
+
+The SQL independent cut now includes every persisted ships.money candidate and
+reports unresolved authority/revision instead of silently omitting it. Both
+engines' SELECT-only refusal, read-view, CLI and exact-restoration probes and
+independent validation tests pass. These raw candidates are not mapped native
+holdings and do not qualify ship gameplay, issuance, claims or enrollment.
+Guilds' persisted denominations remain omitted and are the next established
+native-audit gap; outcome_revision is not their monetary revision. Full R7,
+writer/source completeness and all applicable R1-R8 gates remain open.
+
+The October 3 current launcher fixture now includes its real watchdog script
+and passes existing configuration/backup checks plus invalid-watchdog refusal.
+Its retained frozen-suite failure is not relabeled as a broad-suite pass.
+
+The schedule-failure fixture initializes all queue-accounting fields and now
+passes strict warnings and sanitizers on the transport integration, retaining
+queued command/counters on refusal. This fixes test drift without modifying
+player-facing spell code. Current broad and real gameplay gates remain open.
+
+
+The interrupted-build cache repair passes real compiler cancellation/resumption
+and immutable-publication tests, then a 452.463-second strict production build
+and full-world save/item/process-restart journey at native ce7550d6. Keep that
+bounded proof separate from the incoming transport source 4180f745, captured
+staging clone and measured integrated workload qualification. Current-source
+broad and all full R1-R8 gates remain open; 600 seconds/-j2 are unchanged.
+
+
+### October 3 bounded guild treasury audit capture
+
+The independent SQL cut now includes every guild's persisted unsigned
+money vector, distinct from mapped holdings and prestige/construction revisions.
+Both engines pass read-only value/refusal/consistent-view/CLI/exact-restoration
+probes; 81 focused tests pass. Guild money revision/lifetime and actual
+same-root deposit/withdraw gameplay/recovery remain unqualified. Full R7 and
+R1-R8 gates remain open. See the latest review status for source and failed/
+passing evidence; raw capture does not qualify enrollment or activation.
+
+
+The transport-integrated queue extraction fixture now includes the real
+transport interface and passes strict warnings/ASan/UBSan. Eleven other bounded
+transport owners and 24 watchdog fixtures pass at native 4180f745. Actual
+transport/listener/accounting journeys, recovery and current-source broad
+qualification remain independent open gates; no inactive behavior changed.
+
+
+### October 3 transport-integrated native qualification
+
+Native source 4180f745 passes strict backend/pfile/formatting, fresh inspector,
+all transport lifecycle/fault journeys, listener budgets and ten native recovery
+cases (545.753 seconds). Verified census identities are unchanged; refreshed
+line anchors, 52 writer tests and contract validation pass while coverage stays
+incomplete. The exact published-70aaa broad suite is running. Full-world/mixed
+accounting workloads, captured staging generation, complete writers/native audit
+and R1-R8 remain open. Plan 1 now distinguishes existing typed coordinator
+components from missing actual coin/item lost-COMMIT reply and ordinary live
+publication recovery proof. See latest review status for source/log hashes.
+
+
+The maintained currency/item and legacy PA native SQL runner drift is repaired:
+real strict RED links preceded current-closure/API GREEN, then exact binaries
+pass complete native item and coin matrices on both engines with source4180.
+This restores executable component qualification, not actual lost-COMMIT reply,
+production pool, ordinary drop payload/publication or player route completion.
+Those R1/R4/R8 issues and the broad/captured/workload gates remain open.

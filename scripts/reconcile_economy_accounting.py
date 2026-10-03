@@ -121,7 +121,7 @@ class Reconciler:
                 elif field == "source_event" and isinstance(value, str) and re.fullmatch(r"[0-9a-f]{96}", value):
                     safe[field] = value
                 elif field in ("uid", "parent_uid", "child_index", "line_index", "source_slot",
-                               "net_copper") and type(value) is int:
+                               "net_copper", "ship_id", "guild_id") and type(value) is int:
                     safe[field] = value
                 elif field == "table" and value in TABLES:
                     safe[field] = value
@@ -163,6 +163,8 @@ class Reconciler:
         native = snapshot.get("native")
         if not isinstance(native, dict):
             raise SnapshotError("missing native authority")
+        self.audit_ship_coffers(snapshot.get("backend"), native)
+        self.audit_guild_treasuries(snapshot.get("backend"), native)
         holdings = self.table(native, "holdings")
         items = self.table(native, "items")
         unreferenced_uid_events = native.get("unreferenced_uid_events")
@@ -590,6 +592,69 @@ class Reconciler:
                 "exceptions": self.exceptions, "truncated": sum(self.counts.values()) > len(self.exceptions),
                 "checked": {name: len(tables[name]) for name in TABLES} |
                            {"native_holdings": len(holdings), "native_items": len(items)}}
+
+    def audit_ship_coffers(self, backend: object, native: dict) -> None:
+        rows, coverage = native.get("ship_coffers"), native.get("ship_coffer_coverage")
+        if rows is None and coverage is None:
+            if backend == "sql_partial":
+                self.emit("missing_ship_coffer_coverage", scope="snapshot")
+            return
+        rows = self.table(native, "ship_coffers")
+        expected = dict(rows=len(rows), positive_rows=0, zero_rows=0,
+                        unknown_rows=0, invalid_rows=0, missing_revision_rows=len(rows))
+        if (not isinstance(coverage, dict) or set(coverage) != set(expected) or
+                any(type(value) is not int or not 0 <= value <= MAX_ROWS
+                    for value in coverage.values())):
+            raise SnapshotError("invalid ship coffer coverage")
+        seen = set()
+        for row in rows:
+            identity, amount = row.get("ship_id"), row.get("copper")
+            if (set(row) != {"ship_id", "copper"} or type(identity) is not int or
+                    not 1 <= identity < 2**31 or identity in seen or
+                    (amount is not None and
+                     (type(amount) is not int or not -(2**31) <= amount < 2**31))):
+                raise SnapshotError("invalid native ship coffer")
+            seen.add(identity)
+            bucket = ("unknown_rows" if amount is None else "invalid_rows" if amount < 0
+                      else "zero_rows" if amount == 0 else "positive_rows")
+            expected[bucket] += 1
+            self.emit("unsupported_native_ship_coffer", ship_id=identity)
+            self.emit("missing_ship_coffer_revision", ship_id=identity)
+            if amount is None:
+                self.emit("unknown_native_ship_coffer", ship_id=identity)
+            elif amount < 0:
+                self.emit("invalid_native_ship_coffer", ship_id=identity)
+        if coverage != expected:
+            raise SnapshotError("ship coffer coverage count mismatch")
+
+    def audit_guild_treasuries(self, backend: object, native: dict) -> None:
+        rows = native.get("guild_treasuries")
+        coverage = native.get("guild_treasury_coverage")
+        if rows is None and coverage is None:
+            if backend == "sql_partial":
+                self.emit("missing_guild_treasury_coverage", scope="snapshot")
+            return
+        rows = self.table(native, "guild_treasuries")
+        expected = dict(rows=len(rows), positive_rows=0, zero_rows=0,
+                        missing_revision_rows=len(rows))
+        if (not isinstance(coverage, dict) or set(coverage) != set(expected) or
+                any(type(value) is not int or not 0 <= value <= MAX_ROWS
+                    for value in coverage.values())):
+            raise SnapshotError("invalid guild treasury coverage")
+        seen = set()
+        for row in rows:
+            identity, balance = row.get("guild_id"), row.get("balance")
+            if (set(row) != {"guild_id", "balance"} or type(identity) is not int or
+                    not 1 <= identity < 2**32 or identity in seen or
+                    not isinstance(balance, list) or len(balance) != 4 or
+                    any(type(amount) is not int or not 0 <= amount < 2**32 for amount in balance)):
+                raise SnapshotError("invalid native guild treasury")
+            seen.add(identity)
+            expected["positive_rows" if any(balance) else "zero_rows"] += 1
+            self.emit("unsupported_native_guild_treasury", guild_id=identity)
+            self.emit("missing_guild_money_revision", guild_id=identity)
+        if coverage != expected:
+            raise SnapshotError("guild treasury coverage count mismatch")
 
     def audit_accounts(self, lineage: str, operations: dict, by_account: dict, origins: dict, native: dict,
                        deltas: dict) -> None:
