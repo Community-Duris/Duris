@@ -485,3 +485,12 @@ Actual typed coordinator integration with the production pool is the next
 bounded qualification; supplied factories and manual ACKs do not establish
 production factory contention or live item/pile publication. Full R1-R8 remains
 open. Room payload/season-fence implementation is separate unqualified WIP.
+
+
+The bounded coin/item coordinator matrices now also pass both engines with
+actual production sql_pool.c linked under ASan/UBSan, including successful
+COMMIT reply loss, fresh replacement, clean reborrow and shutdown. Native source
+c60330b58de9063dc1ad8510ced36310324d5d4c is pinned separately from room-payload
+WIP. The configured factory and ACK remain supplied by the fixture; typed bank,
+production boot/contention and ordinary gameplay cold-boot publication remain
+open. See the October 3 status for exact binary and evidence hashes.

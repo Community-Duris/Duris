@@ -39,7 +39,7 @@ extern "C" unsigned int __wrap_mysql_errno(MYSQL *connection)
 
 namespace
 {
-MYSQL *open_pool_test_connection()
+MYSQL *open_pool_test_connection(unsigned long flags = 0)
 {
 	const char *host = std::getenv("DB_HOST");
 	const char *user = std::getenv("DB_USER");
@@ -52,7 +52,15 @@ MYSQL *open_pool_test_connection()
 	if (!pooled)
 		return nullptr;
 	const unsigned int port = port_value ? static_cast<unsigned int>(atoi(port_value)) : 3306;
-	if (!mysql_real_connect(pooled, host, user, password, database, port, nullptr, 0))
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+	const bool reconnect = false;
+	const unsigned int timeout = 3;
+	assert(mysql_options(pooled, MYSQL_OPT_RECONNECT, &reconnect) == 0);
+	assert(mysql_options(pooled, MYSQL_OPT_CONNECT_TIMEOUT, &timeout) == 0);
+	assert(mysql_options(pooled, MYSQL_OPT_READ_TIMEOUT, &timeout) == 0);
+	assert(mysql_options(pooled, MYSQL_OPT_WRITE_TIMEOUT, &timeout) == 0);
+#endif
+	if (!mysql_real_connect(pooled, host, user, password, database, port, nullptr, flags))
 	{
 		mysql_close(pooled);
 		return nullptr;
@@ -61,6 +69,9 @@ MYSQL *open_pool_test_connection()
 }
 } // namespace
 
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+#include "economic_sql_real_pool_fixture.h"
+#else
 extern "C" MYSQL *sql_pool_acquire(void)
 {
 	auto *pooled = open_pool_test_connection();
@@ -86,6 +97,8 @@ extern "C" void sql_pool_discard_connection(MYSQL *pooled)
 	if (pooled)
 		mysql_close(pooled);
 }
+
+#endif
 
 namespace
 {
@@ -1657,6 +1670,9 @@ int main()
 	assert(connection);
 	const unsigned int port = port_value ? static_cast<unsigned int>(atoi(port_value)) : 3306;
 	assert(mysql_real_connect(connection, host, user, password, database, port, nullptr, 0));
+	#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+	economic_sql_real_pool_lifecycle real_pool_lifecycle;
+#endif
 	const std::string account = "currency_harness_account";
 	execute("DELETE FROM currency_wallet_baseline WHERE pid IN (SELECT pid FROM player_data "
 		"WHERE name='CurrencyHarness')");

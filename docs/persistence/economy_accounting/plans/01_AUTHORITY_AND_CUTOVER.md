@@ -117,6 +117,7 @@ one new borrowed handle. Foreign/unborrowed handles cannot replace another
 lease. Snapshot/death-conflict/locker callers always clear their original
 pointer, including failure. Real-session rollback/replenishment/shutdown passes
 on both engines; pure pool ordering/capacity checks pass under ASan/UBSan.
-Actual typed coordinator paths linked to this production pool remain the next
-component gate. Boot configuration, mixed workload and actual publication/replay
+Coin/item typed coordinator paths linked to this production pool now pass both
+engines under ASan/UBSan, including real COMMIT reply loss, exact replay and
+clean reborrow/shutdown. Typed bank remains an open actual-pool component gate. Boot configuration, mixed workload and actual publication/replay
 acceptance remain independent of this repair.

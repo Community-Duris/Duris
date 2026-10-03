@@ -612,3 +612,38 @@ Pool lease qualification LF-normalized evidence SHA-256:
 - tmp/pool-consumed-lease-source-pin.local.log: 54fad6a012951ec347fb13b375a8c57587a52841e1961c3ea768b2292f450257
 - tmp/pool-consumed-lease-recovery.local.log: 78021c998c37ac09818e4bf25e8df8910e7492fcb87871d6fc0c858c9f8bcb3f
 - tmp/pool-consumed-lease-recovery-final.local.log: b08258f2a93b77b9c917ac331721f53957454e1e19cd9c170da72df5ed38c077
+
+## Actual production-pool coin/item coordinator qualification
+
+The earlier native coordinator matrices supplied pool interfaces. This bounded
+fixture now links the actual sql_pool.c implementation. Wrappers only observe
+acquisition/release/replacement and arm the real successful-COMMIT reply-loss
+fault; the actual pool owns leases and replacement. Its disposable configured
+connection factory is supplied by the fixture, not production boot.
+
+Strict GCC 13 builds with ASan/UBSan pass both complete coin and item matrices
+on fresh private MySQL and MariaDB schemas. Lost successful COMMIT replies
+require a different server session, exact once-only replay/result, unchanged
+UID/revision/value witnesses and held publication until fixture acknowledgement.
+Every run finishes with zero borrowed leases, a clean autocommit reborrow, one
+available slot and completed shutdown. Nine unsafe runner targets refuse before
+compilation/service access. No Docker execution is claimed.
+
+The frozen native source c60330b58de9063dc1ad8510ced36310324d5d4c matches all
+1,229 archived native files, with zero mismatches. The room-payload WIP is
+excluded. Test-only additions are frozen at
+/opt/duris-accounting-real-pool-coordinator-review/source. Binary SHA-256:
+
+- coin: 1205074caf2ed169e2237890884637f60bafe18bf57e06c08ecaab1ca1133df4
+- item: 47d357313744783b3dc5d13fa541a2a899389ff83e03554167f62acde90757ee
+
+The typed bank owner still requires this actual-pool qualification. Production
+factory/boot, mixed contention, actual network loss and ordinary gameplay/ACK
+cold-boot publication are separate open gates. This component milestone does
+not complete R1-R8, captured-clone or measured accounting workloads. Accounting
+remains inactive and release BLOCKED.
+
+Evidence SHA-256 (LF-normalized):
+
+- tmp/real-pool-coordinator-build.local.log: c071af53c25f92bfe0b1d61bb5d63af4179d7c7e2c590bdcc4443ba09a7c438a
+- tmp/real-pool-coordinator-native.local.log: 72427ba2f53d1d7d231dd4c22cf67972ca0b7db68b38ca896b5bdcff22e61fcc
