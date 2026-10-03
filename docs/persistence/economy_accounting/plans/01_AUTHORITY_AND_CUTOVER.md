@@ -430,10 +430,23 @@ when a later callback returns retryable/ambiguous. Withdraw both proof stores
 for the failed PID before checkpointing unaffected work. A callback bad_alloc
 must remain unresolved, with no proof, rather than create a corruption archive;
 execution or COMMIT may already have happened. Genuine runtime, custody and death
-failures retain their quarantine rules. Paired native tests are being prepared;
-this repair is not yet qualified. Ordinary SQL exception rollback and pool-lease
-cleanup are separate: current ordinary apply can escape with a transaction or
-lease still held, including allocation during ambiguous-commit readback.
+failures retain their quarantine rules. This journal-only repair now has paired
+native qualification:19 before-source failures and four terminal controls become
+23 passing cases per backend mode, with unchanged19-case deferral regressions.
+Both incremental strict builds and actual inactive SQL/flatfile gameplay pass;
+October3 review and declaration9ef8c4b2 pin the exact evidence. General
+postcallback allocation safety remains open. Ordinary SQL exception rollback and
+pool-lease cleanup are separate: current ordinary apply can escape with a
+transaction or lease still held, including ambiguous-commit readback allocation.
+
+Worker submission and pending promotion also overwrite the mask of an already
+journaled typed snapshot after an older component ACK. Apply/ACK then differ from
+the exact original bytes, and typed required components can disappear. Keep
+sealed apply/ACK identity distinct from revision ownership; never acknowledge
+original bytes after applying narrowed data. Reapplying redundant item/pet
+components also needs current native authority validation, especially flatfile
+which lacks SQL apply-time custody comparison. This newly confirmed dependency
+is separate from admission allocation and remains unimplemented/unqualified.
 
 Publication ACK must retain the original operation until a complete affected-PID
 save census is clean, or every unresolved frame has a legitimate durable
