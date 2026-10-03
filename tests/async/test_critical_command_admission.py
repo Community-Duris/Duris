@@ -180,6 +180,8 @@ int main(int argc, char **argv)
     assert(critical_operation_id_equal(completion.operation_id, failed.operation_id));
     assert(completion.outcome == critical_apply_outcome::terminal_failure);
     assert(completion.error_code == EIO);
+    assert(completion.disposition == critical_completion_disposition::never_admitted);
+    assert(critical_completion_disposition_valid(completion));
     assert(!critical_command_coordinator_is_fenced(failed.keys[0], nullptr));
     assert(applied == 0);
     assert(critical_command_coordinator_drain(5000));

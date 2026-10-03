@@ -73,6 +73,9 @@ struct pending_currency
 	bool coin_physical_published = false;
 	unsigned int publication_attempts = 0;
 	bool publication_required = false;
+	bool receipt_received = false;
+	bool disposition_blocked = false;
+	bool disposition_blocked_this_batch = false;
 };
 
 std::unordered_map<std::string, pending_currency> pending;
@@ -88,7 +91,8 @@ bool same_publication_receipt(const critical_completion &left, const critical_co
 {
 	// Queue timestamps do not affect publication. Every field that can change the
 	// authoritative outcome or decoded result must match before a replay sleeps.
-	return left.outcome == right.outcome && left.durable_revision == right.durable_revision &&
+	return left.disposition == right.disposition && left.outcome == right.outcome &&
+	       left.durable_revision == right.durable_revision &&
 	       left.error_code == right.error_code && left.failure_stage == right.failure_stage &&
 	       left.attempt == right.attempt && left.result_size == right.result_size &&
 	       left.result_payload == right.result_payload;
@@ -185,7 +189,8 @@ bool publish_accounted_coin(std::unordered_map<std::string, pending_currency>::i
 		}
 		entry.coin_physical_published = true;
 	}
-	if (!critical_command_coordinator_acknowledge_publication(entry.completed.operation_id))
+	if (entry.completed.disposition != critical_completion_disposition::never_admitted &&
+	    !critical_command_coordinator_acknowledge_publication(entry.completed.operation_id))
 	{
 		entry.publication_state = currency_publication_state::retrying_callback;
 		return false;
@@ -416,6 +421,13 @@ bool publish(std::unordered_map<std::string, pending_currency>::iterator found, 
 {
 	pending_currency &entry = found->second;
 	const critical_completion &completion = entry.completed;
+	if (entry.disposition_blocked)
+		return false;
+	if (!critical_completion_disposition_valid(completion))
+	{
+		entry.disposition_blocked = true;
+		return retain_unresolved_publication(entry, "invalid_completion_disposition", true);
+	}
 	const bool committed = completion.outcome == critical_apply_outcome::applied ||
 			       completion.outcome == critical_apply_outcome::already_applied;
 	// Retry exhaustion ends automatic execution, not the transaction's uncertainty.
@@ -451,6 +463,7 @@ bool publish(std::unordered_map<std::string, pending_currency>::iterator found, 
 	// A failed checkpoint must keep the original ID and callback for retry; do
 	// not report a committed operation as rejected or issue another debit.
 	if (entry.publication_required &&
+	    completion.disposition != critical_completion_disposition::never_admitted &&
 	    !critical_command_coordinator_acknowledge_publication(completion.operation_id))
 	{
 		entry.publication_state = currency_publication_state::retrying_callback;
@@ -473,6 +486,15 @@ bool publish(std::unordered_map<std::string, pending_currency>::iterator found, 
 bool stage_publication_receipt(pending_currency &entry, const critical_completion &completion,
 			       bool retry_same_blocked_receipt)
 {
+	if (!critical_completion_disposition_valid(completion) ||
+	    (entry.receipt_received && entry.completed.disposition != completion.disposition))
+	{
+		// A durable result cannot later become a no-obligation rejection. Keep
+		// the original receipt; reconnect and ordinary pulses cannot discharge it.
+		entry.disposition_blocked = true;
+		return retain_unresolved_publication(entry, "invalid_completion_disposition", true);
+	}
+	const bool repairing_disposition = entry.disposition_blocked;
 	if (entry.coin && entry.publication_required && entry.coin_publication_started)
 	{
 		const bool committed = completion.outcome == critical_apply_outcome::applied ||
@@ -481,7 +503,8 @@ bool stage_publication_receipt(pending_currency &entry, const critical_completio
 		const bool original_committed =
 			entry.completed.outcome == critical_apply_outcome::applied ||
 			entry.completed.outcome == critical_apply_outcome::already_applied;
-		if (committed != original_committed ||
+		if (completion.disposition != entry.completed.disposition ||
+		    committed != original_committed ||
 		    completion.durable_revision != entry.completed.durable_revision ||
 		    completion.error_code != entry.completed.error_code ||
 		    completion.failure_stage != entry.completed.failure_stage ||
@@ -490,11 +513,13 @@ bool stage_publication_receipt(pending_currency &entry, const critical_completio
 			return retain_unresolved_publication(
 				entry, "changed_coin_publication_receipt", true);
 	}
-	if (!retry_same_blocked_receipt &&
+	if (!retry_same_blocked_receipt && !repairing_disposition &&
 	    currency_publication_state_is_blocked(entry.publication_state) &&
 	    same_publication_receipt(entry.completed, completion))
 		return false;
 	entry.completed = completion;
+	entry.receipt_received = true;
+	entry.disposition_blocked = false;
 	entry.publication_state = currency_publication_state::ready;
 	return true;
 }
@@ -1160,13 +1185,24 @@ void currency_transaction_handle_completions(const critical_completion *completi
 {
 	if (count && !completions)
 		return;
+	for (auto &[key, entry] : pending)
+	{
+		(void)key;
+		entry.disposition_blocked_this_batch = false;
+	}
 	for (size_t index = 0; index < count; ++index)
 	{
 		auto found = pending.find(operation_key(completions[index].operation_id));
 		if (found == pending.end())
 			continue;
-		if (!stage_publication_receipt(found->second, completions[index], false))
+		if (found->second.disposition_blocked_this_batch)
 			continue;
+		if (!stage_publication_receipt(found->second, completions[index], false))
+		{
+			found->second.disposition_blocked_this_batch =
+				found->second.disposition_blocked;
+			continue;
+		}
 	}
 	// Callbacks may submit the next bulk operation, so do not retain map iterators
 	// across them. Coin publication retries once per ordinary coordinator pulse.

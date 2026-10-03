@@ -74,6 +74,9 @@ struct pending_movement
 	bool craft_notified = false;
 	bool collector_invalidated;
 	critical_completion completed;
+	bool disposition_blocked = false;
+	bool disposition_blocked_this_batch = false;
+	bool publication_attempted_this_batch = false;
 };
 
 std::unordered_map<std::string, pending_movement> pending;
@@ -1586,6 +1589,19 @@ void retain_publication_failure(pending_movement &entry, const char *reason)
 void publish(std::unordered_map<std::string, pending_movement>::iterator found, P_char actor)
 {
 	pending_movement &entry = found->second;
+	entry.publication_attempted_this_batch = true;
+	if (entry.disposition_blocked)
+		return;
+	if (!critical_completion_disposition_valid(entry.completed))
+	{
+		entry.disposition_blocked = true;
+		retain_publication_failure(entry, "invalid_completion_disposition");
+		entry.publication_status = publication_state::blocked;
+		account_health();
+		return;
+	}
+	const bool never_admitted = entry.completed.disposition ==
+				    critical_completion_disposition::never_admitted;
 	const bool craft = entry.payload.reason == item_transfer_reason::craft;
 	const bool retained = entry.publication || craft;
 	if (retained && (entry.completed.outcome == critical_apply_outcome::ambiguous_commit ||
@@ -1617,15 +1633,15 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			account_health();
 			return;
 		}
-		if (critical_command_coordinator_acknowledge_publication(
-			    entry.completed.operation_id))
+		if (never_admitted || critical_command_coordinator_acknowledge_publication(
+					      entry.completed.operation_id))
 		{
 			const bool was_committed = committed;
 			const item_movement_completion_fn completion_fn = entry.completion;
 			const auto context = entry.context;
 			const size_t context_size = entry.context_size;
-			const unsigned int error_code = decoded ? entry.completed.error_code :
-								  EBADMSG;
+			const unsigned int error_code =
+				decoded || never_admitted ? entry.completed.error_code : EBADMSG;
 			pending.erase(found);
 			if (was_committed)
 				++health.committed;
@@ -1760,19 +1776,23 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			const size_t context_size = entry.context_size;
 			if (entry.completion)
 				entry.completion(actor, committed, result,
-						 decoded ? entry.completed.error_code : EBADMSG,
+						 decoded || never_admitted ?
+							 entry.completed.error_code :
+							 EBADMSG,
 						 context.data(), context_size);
 		}
 		found = pending.find(pending_key);
 		if (found == pending.end())
 			return;
-		if (!critical_command_coordinator_acknowledge_publication(operation_id))
+		if (!never_admitted &&
+		    !critical_command_coordinator_acknowledge_publication(operation_id))
 		{
 			found->second.publication_status = publication_state::ack_pending;
 			account_health();
 			return;
 		}
-		if (found->second.payload.continuation.kind ==
+		if (!never_admitted &&
+		    found->second.payload.continuation.kind ==
 			    item_transfer_continuation_kind::craft_recipe &&
 		    craft_progression_hooks.acknowledged)
 			craft_progression_hooks.acknowledged(operation_id);
@@ -1794,7 +1814,8 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		const std::string pending_key = found->first;
 		const auto context = entry.context;
 		const size_t context_size = entry.context_size;
-		const unsigned int error_code = decoded ? entry.completed.error_code : EBADMSG;
+		const unsigned int error_code =
+			decoded || never_admitted ? entry.completed.error_code : EBADMSG;
 		bool published = false;
 		try
 		{
@@ -1823,8 +1844,8 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			account_health();
 			return;
 		}
-		if (!critical_command_coordinator_acknowledge_publication(
-			    current->second.completed.operation_id))
+		if (!never_admitted && !critical_command_coordinator_acknowledge_publication(
+					       current->second.completed.operation_id))
 		{
 			current->second.publication_status = publication_state::ack_pending;
 			account_health();
@@ -3179,7 +3200,8 @@ void retry_publications(void)
 		for (const auto &[key, entry] : pending)
 			if ((entry.publication ||
 			     entry.payload.reason == item_transfer_reason::craft) &&
-			    entry.completion_ready &&
+			    entry.completion_ready && !entry.disposition_blocked &&
+			    !entry.publication_attempted_this_batch &&
 			    (entry.publication_status == publication_state::ready ||
 			     entry.publication_status == publication_state::retrying ||
 			     entry.publication_status == publication_state::owner_waiting ||
@@ -3193,7 +3215,8 @@ void retry_publications(void)
 	for (const std::string &key : retry_keys)
 	{
 		auto found = pending.find(key);
-		if (found == pending.end())
+		if (found == pending.end() || found->second.disposition_blocked ||
+		    found->second.publication_attempted_this_batch)
 			continue;
 		if (found->second.publication_status == publication_state::ack_pending)
 		{
@@ -3212,20 +3235,50 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 {
 	if (count && !completions)
 		return;
-	retry_publications();
+	for (auto &[key, entry] : pending)
+	{
+		(void)key;
+		entry.disposition_blocked_this_batch = false;
+		entry.publication_attempted_this_batch = false;
+	}
+	// Validate the complete incoming batch before retry, registry mutation or
+	// notification. A contradictory receipt must not race an old ACK-pending
+	// result, and a later duplicate in this batch cannot clear that contradiction.
 	for (size_t index = 0; index < count; ++index)
 	{
 		auto found = pending.find(operation_key(completions[index].operation_id));
 		if (found == pending.end())
 			continue;
-		found->second.completed = completions[index];
-		found->second.completion_ready = true;
+		auto &entry = found->second;
+		if (entry.disposition_blocked_this_batch)
+			continue;
+		if (!critical_completion_disposition_valid(completions[index]) ||
+		    (entry.completion_ready &&
+		     entry.completed.disposition != completions[index].disposition))
+		{
+			entry.disposition_blocked = true;
+			entry.disposition_blocked_this_batch = true;
+			retain_publication_failure(entry, "invalid_completion_disposition");
+			entry.publication_status = publication_state::blocked;
+			continue;
+		}
+		entry.completed = completions[index];
+		entry.completion_ready = true;
+		entry.disposition_blocked = false;
+	}
+	for (size_t index = 0; index < count; ++index)
+	{
+		auto found = pending.find(operation_key(completions[index].operation_id));
+		if (found == pending.end() || found->second.disposition_blocked ||
+		    found->second.publication_attempted_this_batch)
+			continue;
+		const auto &completion = found->second.completed;
 		item_transfer_result result = {};
 		if (!found->second.collector_invalidated &&
-		    (completions[index].outcome == critical_apply_outcome::applied ||
-		     completions[index].outcome == critical_apply_outcome::already_applied) &&
-		    item_transfer_command_decode_result(completions[index].result_payload.data(),
-							completions[index].result_size, &result) &&
+		    (completion.outcome == critical_apply_outcome::applied ||
+		     completion.outcome == critical_apply_outcome::already_applied) &&
+		    item_transfer_command_decode_result(completion.result_payload.data(),
+							completion.result_size, &result) &&
 		    result.collector_catalog_changed)
 		{
 			collector_catalog_cache_invalidate();
@@ -3254,6 +3307,7 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 			// live move.
 			publish(found, find_live_mobile(found->second.actor_runtime_id));
 	}
+	retry_publications();
 	pump_creation_grants();
 	account_health();
 }
@@ -3467,7 +3521,8 @@ void item_movement_transaction_player_ready(P_char actor)
 						item_owner_type::player &&
 					entry.second.payload.to_owner.id ==
 						static_cast<uint64_t>(GET_PID(actor));
-				return (source_ready || destination_ready) &&
+				return !entry.second.disposition_blocked &&
+				       (source_ready || destination_ready) &&
 				       entry.second.completion_ready;
 			});
 		if (found == pending.end())
