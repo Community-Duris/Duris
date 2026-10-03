@@ -694,9 +694,8 @@ static int repair_failed_connection(MYSQL **conn_io)
 	 * example, a dropped socket or a failed statement in a batch).  Discard
 	 * it rather than returning it to the shared worker pool. */
 	replacement = sql_pool_replace_connection(conn);
-	if (replacement)
-		*conn_io = replacement;
-	else
+	*conn_io = replacement;
+	if (!replacement)
 		logit(LOG_FILE, "locker_async: failed to replace poisoned persistence connection");
 	return 0;
 }
