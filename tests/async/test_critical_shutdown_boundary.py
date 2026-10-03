@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""Source contracts for retained cutover owners at app teardown boundaries."""
+"""Source contracts and native teardown checks for retained cutover owners."""
 
+import os
 from pathlib import Path
+import subprocess
+import tempfile
 import unittest
 
 
@@ -170,6 +173,97 @@ class CriticalShutdownBoundaryTests(unittest.TestCase):
         main = section(COMM, "const int game_exit_status = run_the_game(", "return game_exit_status;")
         self.assertLess(main.index("shutdown_mysql();"),
                         main.index("critical_command_coordinator_release_lifecycle_guard();"))
+
+    def test_native_final_teardown_retains_dependents_when_coordinator_refuses(self):
+        run_game = section(
+            COMM,
+            "int run_the_game(int port, int sslport)",
+            "/* Accept new connects, relay commands, and call 'heartbeat-functs' */",
+        )
+        teardown = run_game[run_game.index("game_loop(port, sslport);") :]
+        # Execute the actual final branch, including the coordinator call, both
+        # dependent-owner conditions, and the unchanged identify ordering. The
+        # leaf doubles model retained holds; they do not reproduce the branch.
+        branch = section(
+            teardown,
+            "const bool critical_coordinator_stopped = critical_command_coordinator_shutdown();",
+            "/* Don't need this anymore",
+        )
+        harness = r'''
+#include <cassert>
+#include <cstdio>
+#include <vector>
+
+static bool coordinator_result = false, _pwipe = false;
+static int coordinator_calls = 0, identify_calls = 0, refusal_logs = 0;
+static int player_calls = 0, locker_calls = 0, outbox_calls = 0;
+static bool player_literal_hold = true, locker_pending = true, outbox_pending = true;
+static std::vector<int> calls;
+enum { LOG_EXIT = 1 };
+bool critical_command_coordinator_shutdown() {
+    ++coordinator_calls;
+    calls.push_back(1);
+    return coordinator_result;
+}
+void logit(int, const char *, ...) { ++refusal_logs; }
+void locker_identify_shutdown() { ++identify_calls; calls.push_back(2); }
+void critical_outbox_shutdown() {
+    ++outbox_calls; outbox_pending = false; calls.push_back(3);
+}
+void locker_async_shutdown() {
+    ++locker_calls; locker_pending = false; calls.push_back(4);
+}
+void player_save_pipeline_shutdown() {
+    ++player_calls; player_literal_hold = false; calls.push_back(5);
+}
+static void actual_final_teardown() {
+// INSERT_ACTUAL_TEARDOWN
+}
+int main() {
+    for (bool stopped : {false, true}) {
+        for (bool pwipe : {false, true}) {
+            coordinator_result = stopped;
+            _pwipe = pwipe;
+            coordinator_calls = identify_calls = refusal_logs = 0;
+            player_calls = locker_calls = outbox_calls = 0;
+            player_literal_hold = locker_pending = outbox_pending = true;
+            calls.clear();
+            actual_final_teardown();
+            assert(coordinator_calls == 1 && identify_calls == 1);
+            assert(refusal_logs == (stopped ? 0 : 1));
+            if (!stopped) {
+                assert(player_calls == 0 && locker_calls == 0 && outbox_calls == 0);
+                assert(player_literal_hold && locker_pending && outbox_pending);
+                assert((calls == std::vector<int>{1, 2}));
+            } else if (pwipe) {
+                assert(player_calls == 0 && locker_calls == 0 && outbox_calls == 1);
+                assert(player_literal_hold && locker_pending && !outbox_pending);
+                assert((calls == std::vector<int>{1, 2, 3}));
+            } else {
+                assert(player_calls == 1 && locker_calls == 1 && outbox_calls == 1);
+                assert(!player_literal_hold && !locker_pending && !outbox_pending);
+                assert((calls == std::vector<int>{1, 2, 3, 4, 5}));
+            }
+        }
+    }
+    std::puts("Native final teardown: refusal/success x pwipe matrix passed");
+}
+'''.replace("// INSERT_ACTUAL_TEARDOWN", branch)
+        with tempfile.TemporaryDirectory(prefix="duris-critical-shutdown-") as directory:
+            source = Path(directory) / "teardown.cpp"
+            binary = Path(directory) / "teardown"
+            source.write_text(harness)
+            subprocess.run([
+                os.environ.get("CXX", "g++"), "-std=c++20", "-O1", "-g",
+                "-Wall", "-Wextra", "-Werror", "-pedantic",
+                "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
+                str(source), "-o", str(binary),
+            ], check=True, timeout=600)
+            env = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
+                       UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
+            result = subprocess.run([str(binary)], capture_output=True, text=True,
+                                    env=env, timeout=60)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":
