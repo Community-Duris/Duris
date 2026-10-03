@@ -135,7 +135,8 @@ run_check() {
 
     local output_file
     output_file=$(mktemp)
-    if DB_HOST="$DB_HOST" DB_PORT="${DB_PORT:-3306}" DB_USER="$DB_USER" \
+    if ENVIRONMENT="${ENVIRONMENT:-}" \
+       DB_HOST="$DB_HOST" DB_PORT="${DB_PORT:-3306}" DB_USER="$DB_USER" \
        DB_PASSWD="$DB_PASSWD" DB_NAME="$DB_NAME" \
        "$check_script" "$@" >"$output_file" 2>&1; then
         cat "$output_file"
