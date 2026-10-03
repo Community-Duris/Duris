@@ -102,7 +102,7 @@ bool has_innate(P_char, int) { return false; }
 int number(int, int) { return 0; }
 float get_epic_bonus(P_char, int) { return 0; }
 int writeShopKeeper(P_char, int) { return 0; }
-void ADD_MONEY(P_char ch, int amount) { GET_COPPER(ch) += amount; if (IS_PC(ch)) ++refunds; }
+void ADD_MONEY(P_char ch, int amount) { if (IS_PC(ch)) ++refunds; else GET_COPPER(ch) += amount; }
 int SUB_MONEY(P_char ch, int amount, int) { GET_COPPER(ch) -= amount; return 0; }
 bool transact(P_char, P_obj, P_char, int) { ++submissions; return true; }
 P_obj accept_gem_for_debt(P_char, P_char, int) { return nullptr; }
@@ -182,6 +182,13 @@ struct fixture {
         stock.next = &bag; bag.next = &rock; object_list = &stock;
     }
     void buy(const char *command) { char input[MAX_INPUT_LENGTH]; strcpy(input, command); shopping_buy(input, &player, &keeper, 0); }
+    void reject_grant() {
+        auto payment = payment_callback; payment_callback = nullptr;
+        GET_COPPER(&player) += payment_delta;
+        payment(&player, true, {}, 0, reinterpret_cast<const uint8_t *>(&payment_uid), sizeof(payment_uid));
+        const uint64_t uid = pending_item->obj_uid; extract_obj(pending_item, FALSE);
+        grant_callback(&player, uid, false, EIO);
+    }
     void complete(bool committed = true, bool publish = true, unsigned int error = 0) {
         if (mode == PERSISTENCE_MODE_FLATFILE_PRIMARY) {
             const auto payload = trade_payload; auto callback = trade_callback;
@@ -231,7 +238,7 @@ int main() {
                 assert((fixture_messages[0].find("Quantity purchase: buy <item> quantity <1-50> [into <container>]") != std::string::npos) == produced);
             }
         }
-        for (const char *command : {"ration quantity", "ration quantity 0", "ration backpack 51", "ration quantity 2 into", "ration quantity 2 extra", "ration quantity 2 into backpack extra", "ration backpack 2 extra", "ration quantity 2 from", "ration quantity 2 ''", "ration backpack ''", "ration quantity 2 into missing", "ration quantity 2 into rock"}) {
+        for (const char *command : {"ration quantity", "ration ''", "ration quantity 0", "ration backpack 51", "ration quantity 2 into", "ration quantity 2 extra", "ration quantity 2 into backpack extra", "ration backpack 2 extra", "ration quantity 2 from", "ration quantity 2 ''", "ration backpack ''", "ration quantity 2 into missing", "ration quantity 2 into rock"}) {
             fixture f(backend); f.buy(command); assert(submissions == 0 && GET_MONEY(&f.player) == 1000);
             assert(fixture_messages.size() == 1 && fixture_messages[0].find("nothing was purchased or charged") != std::string::npos);
         }
@@ -307,6 +314,12 @@ int main() {
         f.buy("ration quantity 2"); assert(submissions == 0 && GET_MONEY(&f.player) == 1000);
         assert(fixture_messages.size() == 1 && fixture_messages[0] ==
             "Shop trades and services are unavailable while economic accounting is active.\r\n");
+    }
+    {
+        fixture f(PERSISTENCE_MODE_MARIADB_PRIMARY);
+        f.buy("ration quantity 2"); f.reject_grant();
+        assert(fixture_messages.size() == 2 && rooms == 0 && refunds == 1 && GET_MONEY(&f.player) == 998);
+        assert(fixture_messages.back() == "Purchase stopped: 0 of 2 copies of an iron ration delivered to your inventory; 2 copper charged in total, including 2 copper being refunded for 1 undelivered copy. The remaining 1 were not charged because delivery was declined.\r\n");
     }
     assert(shop_purchase_price(0) == "0 copper");
     assert(shop_purchase_price(50LL * std::numeric_limits<int>::max()) == "107374182350 copper");
