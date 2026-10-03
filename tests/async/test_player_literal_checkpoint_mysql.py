@@ -152,6 +152,9 @@ def self_test() -> None:
                  ("DB_NAME", "economic_schema_test_literal_0123abcd"),
                  ("DB_NAME", "economic_schema_test_li_0123abcd;DROP DATABASE other"),
                  ("DB_NAME", "economic_schema_test_li_0123abcg"), ("DB_ALLOWED_TARGETS", ""),
+                 ("DB_NAME", "economic_schema_test_012345abcde"),
+                 ("DB_NAME", "economic_schema_test_012345abcdef0"),
+                 ("DB_NAME", "economic_schema_test_012345abcdeF"),
                  ("DB_SOCKET", "/tmp/socket"), ("TEST_DB_SOCKET", "/tmp/socket"), ("DB_PASSWD", ""))
     for key, value in negatives:
         assert not target_is_disposable(dict(valid, **{key: value})), key
