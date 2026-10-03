@@ -317,6 +317,32 @@ int main()
 	clear_clients();
 	close(pair[1]);
 
+	// A WebSocket close frame can follow application messages in the same read.
+	// Draining its close reply must preserve their connection-phase dispatch.
+	for (bool write_failed : { false, true })
+	{
+		assert(socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == 0);
+		d = add_client(pair[0]);
+		d->websocket = 1;
+		d->ws_state = WS_STATE_CLOSING;
+		d->network_input_remaining = WS_INPUT_BUFFER_SIZE;
+		d->ws_pending_application = reinterpret_cast<websocket_pending_application *>(1);
+		d->write_failed = write_failed;
+		const int dispatched = ws_boundary_dispatches;
+		assert(service_network_turn(context, 0));
+		assert(d->network_close_pending == (write_failed ? 1 : 2));
+		finish_connection_boundary();
+		assert(ws_boundary_dispatches == dispatched + (write_failed ? 0 : 1));
+		if (!write_failed)
+		{
+			assert(d->descriptor >= 0 && !d->ws_pending_application);
+			finish_connection_boundary();
+		}
+		assert(d->descriptor == -1 && used_descs == 0);
+		clear_clients();
+		close(pair[1]);
+	}
+
 	// Expiry stages teardown without a packet. The failed descriptor then stays
 	// quiescent until the connection phase can apply link-loss effects.
 	assert(socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == 0);
