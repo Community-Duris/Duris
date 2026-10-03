@@ -60,8 +60,8 @@ class SplitEconomyActivationContract(unittest.TestCase):
             ("src/cmd/actobj.c", 1336): "item.legacy_get",
             ("src/cmd/actobj.c", 6278): "item.legacy_give",
             ("src/cmd/actobj.c", 7842): "item.equipment_remove",
-            ("src/world/handler.c", 1856): "item.obj_to_char_admission",
-            ("src/world/handler.c", 2029): "item.obj_to_char_admission",
+            ("src/world/handler.c", 1740): "item.obj_to_char_admission",
+            ("src/world/handler.c", 1913): "item.obj_to_char_admission",
             ("src/world/handler.h", 15): "macro.checked_item_publication_declaration",
         }
         for row in checked:
@@ -403,7 +403,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         sites = {row["id"]: row["sites"] for row in registry["writers"]}
         expected = {
-            "world.mobile_template": ("src/world/db.c", {2298, 2299, 2300, 2301, 2689, 2690, 2691, 2692}),
+            "world.mobile_template": ("src/world/db.c", {2299, 2300, 2301, 2302, 2690, 2691, 2692, 2693}),
             "player.flatfile_baseline_projection": ("src/core/files.c", {1873, 1874, 1875, 1876, 1878, 1879, 1880, 1881}),
             "player.legacy_flatfile_load": ("src/core/files.c", {2431, 2432, 2433, 2434}),
             "recovery.pet_cash_discard": ("src/core/files.c", {4696, 4697, 4698, 4699, 4701, 4702, 4703, 4704}),
@@ -495,9 +495,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          {"auction.money_claim_compensation"})
         self.assertEqual(owners[("src/economy/auction_houses.c", 2967, "sql_economy")],
                          {"auction.money_claim_legacy"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 9480, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 9508, "sql_economy")],
                          {"recovery.saved_sql_delete"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10901, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10929, "sql_economy")],
                          {"recovery.saved_sql"})
         shop_path = "src/persistence/economic_sql_shop_trade_transaction.c"
         for line in (887, 907, 940):
@@ -757,11 +757,11 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new handler item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/world/handler.c", 3385, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/handler.c", 3269, "item_lifecycle")],
                          {"item.extraction"})
-        self.assertEqual(owners[("src/world/handler.c", 3999, "item_publication")],
+        self.assertEqual(owners[("src/world/handler.c", 3883, "item_publication")],
                          {"death.corpse_compaction_bone_grant"})
-        self.assertEqual(owners[("src/world/handler.c", 4368, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/handler.c", 4252, "item_lifecycle")],
                          {"death.resurrection_money_pile"})
         for route_id in ("item.prototype_weight_probe", "item.creation_candidate_reject",
                          "coin.wallet_pile_stage_cleanup", "death.corpse_compaction_stage_cleanup"):
@@ -827,9 +827,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new SQL item load sites")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/sql/sql_player.c", 10143, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10171, "item_publication")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 11283, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 11311, "item_publication")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",
