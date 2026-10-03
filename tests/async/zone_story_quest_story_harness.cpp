@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 58 &&
-				tracker.summary_for(7, 42).total == 1713,
+		require(catalog.story_mappings.size() == 59 &&
+				tracker.summary_for(7, 42).total == 1707,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -210,7 +210,9 @@ int main(int argc, char **argv)
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
 										    404, 2) == 9 &&
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
-										    660, 2) == 0,
+										    660, 2) == 0 &&
+				zone_story_quest_catalog::eligible_definition_count(file_catalog,
+										    777, 2) == 5,
 			"complete Alatorin/Newhaven/Faerie/Verspin/Ship Yards/Ultarium/Surface sidecars failed the native file loader");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -3263,6 +3265,123 @@ int main(int argc, char **argv)
 				recovered_ash.progress_for_zone(7, 42, 40).completed == 0 &&
 				recovered_ash.progress_for_zone(7, 42, 252).completed == 0,
 			"Ashrumite recovered services earned local or foreign quest credit");
+
+		const auto &hall_map = *std::find_if(catalog.story_mappings.begin(),
+						     catalog.story_mappings.end(),
+						     [](const auto &mapping)
+						     { return mapping.source_area == "hall"; });
+		const auto &hall_belt = story_for("hall", "jadem-sixteen-part-device");
+		const auto &hall_armor = story_for("hall", "xamael-platemail-of-awe");
+		const auto &hall_child = story_for("hall", "child-dagger-for-letter");
+		const auto &hall_letter = story_for("hall", "lost-aberrate-letter-for-hair");
+		service supplied_hall(catalog);
+		require(supplied_hall.discover_zone(7, 42, 777, 77700, 100, "arrival") ==
+					result::applied &&
+				supplied_hall.render_journal(7, 42, 777, 10, 1, 101, false, false)
+						.find("] " + hall_armor.title + "\r\n") ==
+					std::string::npos,
+			"Hall discovery revealed an unmet smith commission");
+		for (const auto &contact : hall_map.contacts)
+			require(supplied_hall.meet_npc(7, 42, contact.mob_vnum, 77700, 101) ==
+					result::applied,
+				"Hall fixture encounter failed");
+		const auto hall_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Hall journal section missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		supplies.carried[77744] = 2;
+		supplies.carried[77712] = 1;
+		supplies.carried[77729] = 2;
+		supplies.carried[77719] = 2;
+		supplies.carried[77742] = 4;
+		supplies.carried[77748] = 5;
+		supplies.carried[77726] = 1;
+		supplies.equipped[16] = 18309;
+		const auto hall_before = supplied_hall.serialize_state();
+		journal = supplied_hall.render_journal(7, 42, 777, 10, 1, 102, false, false,
+						       &supplies);
+		require(hall_section(hall_belt).find("[Missing now] " + hall_belt.steps[0].text) !=
+					std::string::npos &&
+				hall_section(hall_belt).find("[Missing now] " +
+							     hall_belt.steps[4].text) !=
+					std::string::npos &&
+				hall_section(hall_armor)
+						.find("[Missing now] " +
+						      hall_armor.steps[1].text) !=
+					std::string::npos &&
+				hall_section(hall_child)
+						.find("[Missing now] " +
+						      hall_child.steps[0].text) !=
+					std::string::npos,
+			"Hall short quantities, ordinary steel, local daggers or worn foreign proof fit a recipe");
+		supplies.carried[77712] = 2;
+		supplies.carried[77748] = 6;
+		supplies.carried[18309] = 1;
+		supplies.carried[77743] = 1;
+		for (const auto item : { 77745, 77713, 77724 })
+			supplies.carried[item] = 2;
+		for (const auto item : { 77720, 77750 })
+			supplies.carried[item] = 1;
+		journal = supplied_hall.render_journal(7, 42, 777, 10, 1, 103, false, false,
+						       &supplies);
+		require(hall_section(hall_belt).find("[Ready now] " + hall_belt.steps[4].text) !=
+					std::string::npos &&
+				hall_section(hall_belt).find("fourteen-item offering limit") !=
+					std::string::npos &&
+				hall_section(hall_armor)
+						.find("[Ready now] " + hall_armor.steps[6].text) !=
+					std::string::npos &&
+				hall_section(hall_armor)
+						.find("[Pending] " + hall_armor.steps[0].text) !=
+					std::string::npos &&
+				hall_section(hall_letter)
+						.find("[Ready now] " + hall_letter.steps[1].text) !=
+					std::string::npos &&
+				hall_section(hall_letter)
+						.find("[Pending] " + hall_letter.steps[0].text) !=
+					std::string::npos &&
+				supplied_hall.serialize_state() == hall_before &&
+				supplied_hall.progress_for_zone(7, 42, 777).completed == 0,
+			"Hall supplies bypassed a recipe limit, manufactured history or changed progress");
+		fee_warnings = 0;
+		for (size_t at = journal.find(unavailable); at != std::string::npos;
+		     at = journal.find(unavailable, at + unavailable.size()))
+			++fee_warnings;
+		require(fee_warnings == 2 &&
+				hall_section(story_for("hall", "shopkeeper-broken-tower-key"))
+						.find("separate guarded access service") !=
+					std::string::npos,
+			"Hall paid key services lost their guarded visibility");
+		for (const auto &entry : hall_map.stories)
+			if (entry.category == "service")
+				record(supplied_hall, entry.contracts.front(), entry.id.c_str(),
+				       777, 77908);
+		for (const auto &exclusion : hall_map.exclusions)
+			record(supplied_hall, exclusion.first, exclusion.first.c_str(), 777, 77906);
+		require(supplied_hall.progress_for_zone(7, 42, 777).completed == 0 &&
+				supplied_hall.progress_for_zone(7, 42, 777).total == 5,
+			"Hall support or elder refusal/shadowed receipts earned achievements");
+		record(supplied_hall, hall_letter.contracts.front(), "hall-supplied-letter", 777,
+		       77916);
+		require(supplied_hall.progress_for_zone(7, 42, 777).completed == 1,
+			"Hall supplied letter required personal dagger recovery or the child receipt");
+		service recovered_hall(catalog);
+		require(recovered_hall.deserialize_state(supplied_hall.serialize_state(), &error),
+			"Hall service/exclusion and supplied-letter receipt recovery failed");
+		// Historical receipts only: this does not execute the oversized belt or paid services.
+		for (const auto &entry : hall_map.stories)
+			if (entry.category != "service" && entry.id != hall_letter.id)
+				record(recovered_hall, entry.contracts.front(), entry.id.c_str(),
+				       777, 77908);
+		service restored_hall(catalog);
+		require(restored_hall.deserialize_state(recovered_hall.serialize_state(), &error) &&
+				restored_hall.progress_for_zone(7, 42, 777).completed == 5 &&
+				restored_hall.progress_for_zone(7, 42, 777).total == 5 &&
+				restored_hall.progress_for_zone(7, 42, 183).completed == 0,
+			"Hall historical recovery merged outcomes, counted exclusions or credited foreign dagger ownership");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

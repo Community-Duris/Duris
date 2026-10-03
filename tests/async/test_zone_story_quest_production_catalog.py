@@ -1402,7 +1402,74 @@ assert not edges[66117] and edges[66069][1] == (3,66001,66074)
 shop=(ROOT/"areas/shp/ashrumite.shp").read_text()
 assert len(re.findall(r"^#\d+~",shop,re.M)) == 12 and "#66032~" not in shop and "#66019~" not in shop
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite"):
+# Hall: two identical elder offerings have different semantics, recipes keep
+# exact quantities, and optional custody never qualifies a death source.
+hall=inventory_module.area_evidence(ROOT,"hall")
+hall_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="hall")
+hall_stories={s["id"]:s for s in hall_map["stories"]}
+assert (hall_map["schema_version"],hall_map["revision"],hall_map["coverage"])==(3,1,"complete")
+assert len(hall_stories)==9 and len(hall_map["contacts"])==27 and len(hall_map["exclusions"])==2
+assert sum(s["category"]=="service" for s in hall_stories.values())==4
+assert sum(t.get("optional",False) for s in hall_stories.values() for t in s["steps"])==23
+assert len(hall["requests"])==11 and len(hall["dialogue"])==14
+assert len(hall["mobs"])==55 and len(hall["items"])==53 and len(hall["reset_commands"])==395
+assert all(s["steps"][-1]["contracts"]==s["contracts"] for s in hall_stories.values())
+assert all(t.get("optional") for s in hall_stories.values() for t in s["steps"][:-1])
+bindings=[b for s in hall_stories.values() for b in s["contracts"]]+[b for x in hall_map["exclusions"] for b in x["contracts"]]
+assert len(bindings)==11 and {tuple(sorted(b.items())) for b in bindings}=={
+    tuple(sorted(r["block"]["binding"].items())) for r in hall["requests"]}
+assert {b["giver_vnum"] for x in hall_map["exclusions"] for b in x["contracts"]}=={77739}
+assert "consumes" in hall_map["exclusions"][0]["reason"] and "shadowed" in hall_map["exclusions"][1]["reason"]
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==777]
+assert len(units)==9 and sum(u["achievement"] for u in units)==5 and sum(u["daily_candidate"] for u in units)==2
+belt=hall_stories["jadem-sixteen-part-device"]
+assert [(t["item_vnums"],t["count"]) for t in belt["steps"][:-1]]==[([77712],2),([77729],2),([77719],2),([77742],4),([77748],6)]
+assert sum(t["count"] for t in belt["steps"][:-1])==16>native_limit
+armor=hall_stories["xamael-platemail-of-awe"]
+assert [(t["item_vnums"],t["count"]) for t in armor["steps"] if t["kind"]=="carried_item"]==[
+    ([77745],2),([77713],2),([77719],2),([77720],1),([77724],2),([77750],1)]
+assert sum(t["count"] for t in armor["steps"] if t["kind"]=="carried_item")==10
+assert "actual recipe requires one" in armor["summary"]
+assert hall_stories["child-dagger-for-letter"]["steps"][0]["item_vnums"]==[18309]
+assert hall_stories["lost-aberrate-letter-for-hair"]["steps"][0]["contracts"]==hall_stories["child-dagger-for-letter"]["contracts"]
+assert hall_stories["shopkeeper-first-tower-key"]["contracts"]==[{
+    "giver_vnum":77724,"completion_key":"give=C:10000,I:77724;receive=I:77728;disappear=0"}]
+assert hall_stories["xamael-repair-tower-key"]["contracts"]==[{
+    "giver_vnum":77740,"completion_key":"give=C:10000,I:77733;receive=I:77739;disappear=0"}]
+assert hall["items"][77728]["name"]==hall["items"][77739]["name"]=="a tiny key"
+contacts={c["mob_vnum"]:c for c in hall_map["contacts"]}
+for v,c in contacts.items(): assert c["keyword"] in hall["mobs"][v]["keywords"]
+for d in hall["dialogue"]: assert set(d["body"][0].rstrip("~").split())<=set(contacts[d["giver_vnum"]]["topics"])
+parent=room=None
+sources=collections.defaultdict(list)
+for reset in hall["reset_commands"]:
+    c,v=reset["command"],reset["arguments"]
+    assert v[5:]==[0,0,0]
+    if c in ("M","F"): parent,room=v[1],v[3]
+    if c in ("G","E") and v[1] in (77712,77713,77724,77729,77742,77751):
+        sources[v[1]].append((parent,room,v[2],v[4]))
+    assert not(c in ("O","G","E","P") and v[1]==77750)
+assert sources=={77712:[(77708,77805,1,100)],77713:[(77709,77806,1,100)],
+    77724:[(77721,77861,1,100)],77729:[(77727,77867,1,25)],
+    77742:[(77717,77854,1,100)],77751:[(77716,77845,1,100)]}
+assert any(r["command"]=="O" and r["arguments"][:5]==[0,77748,1,77928,10] for r in hall["reset_commands"])
+assert len(hall["special_assignments"])==12
+assert {(a["vnum"],a["function"]) for a in hall["special_assignments"] if a["kind"]=="mob"}=={
+    (77714,"morkoth_mother"),(77747,"akckx"),(77750,"human_girl"),(77751,"hoa_death"),(77752,"hoa_sin")}
+rooms={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/wld/hall.wld").read_text(encoding="utf8"),re.M|re.S)}
+assert set(rooms)==set(range(77700,77947))
+edges={v:{int(d):(int(f),int(k),int(t)) for d,f,k,t in re.findall(r"\bD(\d+)\s+[^~]*~[^~]*~\s*(-?\d+)\s+(-?\d+)\s+(-?\d+)",b,re.S)} for v,b in rooms.items()}
+assert {(v,d,t) for v,ds in edges.items() for d,(f,k,t) in ds.items() if t>0 and t not in rooms}=={(77700,0,813247)}
+assert edges[77879][1]==(3,77728,77881) and edges[77885][1]==(7,77739,77886)
+assert edges[77893][5]==(9,0,77944) and edges[77944][4]==(9,0,77893)
+assert not edges[77855] and edges[77854][1]==(0,0,77855)
+door_states={(r["arguments"][1],r["arguments"][2]):r["arguments"][3]
+             for r in hall["reset_commands"] if r["command"]=="D"}
+assert door_states[77885,1]==6 and door_states[77879,1]==2
+assert door_states[77893,5]==door_states[77944,4]==9
+assert "hidden, locked eastern tower entrance" in hall_stories["xamael-repair-tower-key"]["steps"][-1]["hint"]
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

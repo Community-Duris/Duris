@@ -1,0 +1,754 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "hall",
+  "coverage": "complete",
+  "introduction": "Explore ancient graves, upper templar dwellings, an underwater lake, a tower city and a lower settlement of troubled spirits. Five independent delivery or commission outcomes sit beside four preparation/access services; two elder contracts are excluded because one consumes proof without reward and shadows the other. Active, ready accounting is required. Source, payment, access and offering-limit blockers remain explicit.",
+  "orientation": [
+    "The ordinary active entrance connects the ancient stairway to the Underdark. A separate administrative dispersal link reaches the city fountain. Do not confuse an administrative route with ordinary player access.",
+    "The descent crosses graves, trapped catacombs, Fire Templar dwellings, an underground waterfall and lake, the city of Neoghtom and a lower settlement. Current and fall metadata, hidden doors and key custody affect the route; prose does not prove successful travel.",
+    "The tower support route uses ebony shard plus ten platinum for the southern key, silver shard plus one hundred platinum for a snapped key, then ten platinum for repair. All three paid exchanges remain guarded with accounting active. Two working keys share a visible name but fit different tower doors.",
+    "The eastern tower entrance is hidden and locked; finding it is separate from unlocking and entering it. The two working tiny keys are designed to break when used. Do not plan on reusing the earlier key for the later tower.",
+    "The ring-to-steel delivery and magical-steel preparation are separate stages. The armor recipe needs two magical bars, two gorgon-scale bags, two rocks, the exact design book, two ebony shards and one genius potion. Its dialogue asks for two potion samples; current terms require one.",
+    "The protective-device recipe needs sixteen separate pieces: two chains, two bangles, two rocks, four springs and six gears. The current safe offering limit is fourteen. Matching supplies can be shown as preparation, but cannot make this exchange available or complete it.",
+    "Several material sources have one-copy caps despite recipes requiring more copies. One gear ground declaration has chance ten; normal unforced ground resets accept only chance 100. Reset mode zero and retiring or holding-room recipients require episode review. Do not assume a source will replenish for a daily journey.",
+    "The park child accepts an exact foreign well-crafted dagger for a scorched letter; the letter recipient returns hair. The elder consumes the hair in a refusal that runs before its ore reward. These deliveries do not establish a king kill, reunion or personal recovery; the blocked elder route needs repair.",
+    "A custom soul-collector death procedure creates a guardian carrying a potion. Ordinary potion custody, another player handing it over, personally defeating a source and first accepted acquisition are different facts. Current optional checks establish only unequipped custody.",
+    "Getting or taking while the cathedral coin-pile procedure is dispatched can alter doors before any pickup succeeds, including an unrelated failed request. The shadow death procedure opens only one return direction. These world changes are not successful-pickup, access, all-shadow victory or campaign achievements.",
+    "Razor-stair, paralysis and sleep traps, equipment effects, local shop stock, ambient warnings and dragon or shadow combat are separately explained leads. They have no invented local quest terminals. Accepted source, effect, travel and campaign events require further integration.",
+    "Optional earlier receipts describe one producer route. Supplied matching materials fit without those receipts, personal kills, dialogue history or exploration order. Independent outcomes stay independent; a receipt does not replace an item consumed at a competing recipient."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 77718,
+      "name": "Old Neogi",
+      "keyword": "old",
+      "description": "Magick shop. Ask book, neogi, bar or steel. Ordinary steel becomes magical steel in a support barter; lore and preparation do not earn quest achievements.",
+      "topics": [
+        "book",
+        "neogi",
+        "bar",
+        "steel"
+      ]
+    },
+    {
+      "mob_vnum": 77724,
+      "name": "Neogi shopkeeper",
+      "keyword": "shopkeeper",
+      "description": "Shop of thieves. Ask key or tower. The two paid shard recipes make different key stages; the later one produces a broken key and retires this shopkeeper. Ordinary stock and key-making are separate services.",
+      "topics": [
+        "key",
+        "tower"
+      ]
+    },
+    {
+      "mob_vnum": 77735,
+      "name": "Manifestation of Jadem",
+      "keyword": "jadem",
+      "description": "Ruined mountain/ghost holding-room declaration. Ask belt or parts. The sixteen-part protective device exceeds the current fourteen-item offering limit and several source caps; supplied materials cannot bypass that guard.",
+      "topics": [
+        "belt",
+        "parts"
+      ]
+    },
+    {
+      "mob_vnum": 77739,
+      "name": "Seltran, the town elder",
+      "keyword": "seltran",
+      "description": "Lower-town hall. Both contracts accept the same hair. The refusal is loaded first, consumes it, leaves the elder present and gives nothing. The ore-producing retirement is shadowed. Neither contract earns authored quest/daily credit pending a deliberate repair.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77740,
+      "name": "Xamael, the blacksmith",
+      "keyword": "xamael",
+      "description": "Lower-town smithy. Ask mad, fix, brother, make, items or platemail. Paid key repair is guarded; the item-only armor recipe needs ten materials including one potion, despite the two-sample dialogue.",
+      "topics": [
+        "mad",
+        "fix",
+        "brother",
+        "make",
+        "items",
+        "platemail"
+      ]
+    },
+    {
+      "mob_vnum": 77741,
+      "name": "Old one-eyed woman",
+      "keyword": "one-eyed",
+      "description": "Lower-town community hostel. Ask sad or crying. The exact tarnished-ring delivery gives ordinary steel; grief, rescue and resurrection are not persisted outcomes.",
+      "topics": [
+        "sad",
+        "crying"
+      ]
+    },
+    {
+      "mob_vnum": 77742,
+      "name": "Tormented child",
+      "keyword": "little",
+      "description": "Lower-town park beside the remains. Ask torment. An exact foreign well-crafted dagger yields the scorched letter and retires this child; no king-kill prerequisite is checked.",
+      "topics": [
+        "torment"
+      ]
+    },
+    {
+      "mob_vnum": 77744,
+      "name": "Lost aberrate",
+      "keyword": "lost",
+      "description": "Void of living shades. A scorched letter yields hair and retires the recipient. This does not bypass the elder refusal, prove a rescue campaign or confirm a safe return route.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77708,
+      "name": "Young daughter",
+      "keyword": "daughter",
+      "description": "Upper templar dwelling. Wears a one-cap mechanical-chain necklace used twice by the protective-device recipe. Combat and accepted acquisition are separate from material custody.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77709,
+      "name": "Young warrior",
+      "keyword": "warrior",
+      "description": "Upper templar dwelling. Carries a one-cap gorgon-scale bag used twice by the armor recipe. The recipe and current supply limits need a builder decision.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77714,
+      "name": "Mother morkoth",
+      "keyword": "mother",
+      "description": "Lake cavern. Carries the rusty cathedral key and can call infant morkoths. Shared combat assistance is not a local quest completion or personal kill record.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77715,
+      "name": "Ssidrn",
+      "keyword": "ssidrn",
+      "description": "Lake quay. Carries the exact seaweed-covered mechanical-knowledge book for the armor recipe. A book found here does not record an examined-lore milestone.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77716,
+      "name": "Neogi soldier",
+      "keyword": "soldier",
+      "description": "City gate and tower group declarations. One gate-group soldier carries the HUGE gate key. A generic soldier encounter does not prove that exact carrier or successful gate access.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77717,
+      "name": "Neogi child",
+      "keyword": "cute",
+      "description": "City and holding-room appearances. Only the holding-room child declaration carries the spring. It has cap one, while the device needs four; child visibility and actual item availability are different facts.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77721,
+      "name": "Rasdarn",
+      "keyword": "rasdarn",
+      "description": "Northern tower upper chamber. Carries the tiny ebony shard used by the first paid key and twice by the armor commission. Its one-copy supply and competing consumers need qualification.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77727,
+      "name": "Captain of the guard",
+      "keyword": "captain",
+      "description": "City fountain. The exact Dreamer bangle is worn in a one-cap, 25-chance declaration. A source encounter or personal battle alone does not create two matching bangles.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77728,
+      "name": "Sakkaet",
+      "keyword": "sakkaet",
+      "description": "Southern tower upper chamber. Carries the silver shard for the second paid key service. Its resulting key is broken and the shopkeeper retires.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77734,
+      "name": "Aan",
+      "keyword": "aan",
+      "description": "Unholy domain beyond the eastern tower vortex. Carries Illesarus and can wear stone claws. Fighting this dragon, obtaining equipment and a full cathedral campaign have separate semantics; no local dragon-defeat quest receipt is implemented.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77738,
+      "name": "Old aberrate",
+      "keyword": "aberrate",
+      "description": "Lower-town center. Carries the tarnished golden ring used by the old one-eyed woman. His descriptive ghost warning is lore, without an addressed native topic or accepted rescue endpoint.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77746,
+      "name": "Convulsing mass",
+      "keyword": "mass",
+      "description": "Lost tunnels. One declaration carries adamantium rock at cap two and chance fifty. Current material checks do not prove personal combat or looting.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77747,
+      "name": "Akckx, collector of souls",
+      "keyword": "akckx",
+      "description": "Lost tunnels, at the gear chamber. Its death procedure creates a guardian soul with a potion of genius. Source spawn, guardian defeat, accepted pickup and first-source history are distinct and need accounting qualification.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77748,
+      "name": "Guardian soul",
+      "keyword": "guardian",
+      "description": "Created by the soul collector death procedure, without an ordinary local mobile reset. It carries the potion of genius. Seeing the guardian or being handed its potion is not proof of personally defeating the collector or recovering the first potion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77750,
+      "name": "Human maiden",
+      "keyword": "maiden",
+      "description": "Cathedral altar. Periodic speech warns about Aan and the three shadows. Hearing it has no accepted learned-topic or campaign milestone.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77751,
+      "name": "Shadow of Death",
+      "keyword": "death",
+      "description": "Deadly-shadows chamber. Its death procedure removes the cathedral south-exit block. It does not check that all three shadows were defeated, restore all door states or establish a persisted player campaign.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77752,
+      "name": "Shadow of Sin",
+      "keyword": "sin",
+      "description": "Deadly-shadows chamber. Its gaze checks its actual opponent for Freedom of Movement, with existing paladin/staff exemptions. Unprotected opponents can be paralyzed. This combat behavior has no quest-effect or shadow-campaign receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77753,
+      "name": "Shadow of Strife",
+      "keyword": "strife",
+      "description": "Deadly-shadows chamber. Native combat is separate from accepted quest outcomes; no all-three-shadows terminal or local quest completion is bound here.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77754,
+      "name": "Aruyka",
+      "keyword": "aruyka",
+      "description": "Lost-tunnel void chamber. Carries its own equipment and has no local accepted quest endpoint. Exploration or victory does not close a soul, cathedral or protective-device campaign.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "woman-ring-for-steel",
+      "title": "The forgotten ring and hidden steel",
+      "category": "request",
+      "summary": "The old one-eyed woman accepts a tarnished golden ring and returns a bar of steel. This delivery is one independent outcome. Her grief and the hidden steel provide a lead, without recording a healing, resurrection or family-reunion campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 77741,
+          "completion_key": "give=I:77741;receive=I:77744;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77741",
+          "text": "Carry the tarnished golden ring",
+          "kind": "carried_item",
+          "item_vnums": [
+            77741
+          ],
+          "count": 1,
+          "hint": "The old aberrate in the lower town has a declared ring source. Supplied matching rings fit. A tiny jagged ring used as a gear is a different material.",
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77741,
+              "completion_key": "give=I:77741;receive=I:77744;disappear=0"
+            }
+          ],
+          "hint": "Ask sad or crying, then offer the exact ring. The woman stays after the exchange. The ordinary steel bar can be used in a separate support exchange; an accepted ring receipt does not preserve a bar already used."
+        }
+      ]
+    },
+    {
+      "id": "old-neogi-magical-steel",
+      "title": "Prepare a magical steel bar",
+      "category": "service",
+      "summary": "The old Neogi accepts one ordinary bar of steel and returns one magical steel bar. This is armor preparation, with no quest or daily achievement. Two matching magical bars are needed for the armor commission.",
+      "contracts": [
+        {
+          "giver_vnum": 77718,
+          "completion_key": "give=I:77744;receive=I:77745;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-77741",
+          "text": "Optional history: obtain steel through the ring delivery",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 77741,
+              "completion_key": "give=I:77741;receive=I:77744;disappear=0"
+            }
+          ],
+          "hint": "This optional accepted receipt explains a producer route. Supplied exact material fits without it; history does not replace current custody or prove personal recovery."
+        },
+        {
+          "id": "material-77744",
+          "text": "Carry an ordinary bar of steel",
+          "kind": "carried_item",
+          "item_vnums": [
+            77744
+          ],
+          "count": 1,
+          "hint": "The lower-town ring delivery produces this exact ordinary bar. Supplied bars fit without that history. A magical steel bar is a separate kind.",
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77718,
+              "completion_key": "give=I:77744;receive=I:77745;disappear=0"
+            }
+          ],
+          "hint": "At the magick shop, ask bar or steel. This free support exchange consumes one ordinary bar and returns one magical bar. Ask book or neogi for local lore. Books and conversations are not learned-topic achievements."
+        }
+      ]
+    },
+    {
+      "id": "shopkeeper-first-tower-key",
+      "title": "The key for the southern tower",
+      "category": "service",
+      "summary": "The shopkeeper offers a tiny key for a tiny ebony shard and ten platinum. This paid access service earns no quest achievement and stays guarded while accounting is active. Carrying the shard does not open the tower.",
+      "contracts": [
+        {
+          "giver_vnum": 77724,
+          "completion_key": "give=C:10000,I:77724;receive=I:77728;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77724",
+          "text": "Carry the tiny ebony shard",
+          "kind": "carried_item",
+          "item_vnums": [
+            77724
+          ],
+          "count": 1,
+          "hint": "The first lord in the northern tower carries the exact ebony shard. Its command aliases misleadingly include ivory. The armor also needs two copies of this kind; using a shard for a key consumes it.",
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77724,
+              "completion_key": "give=C:10000,I:77724;receive=I:77728;disappear=0"
+            }
+          ],
+          "hint": "Ask key or tower in the shop of thieves. The native fee is 10,000 copper. The resulting tiny key fits the southern tower entrance. The later repaired tiny key has the same visible name but a different identity and target. Qualify payment and successful access separately."
+        }
+      ]
+    },
+    {
+      "id": "shopkeeper-broken-tower-key",
+      "title": "The silver shard and snapped key",
+      "category": "service",
+      "summary": "For a tiny silver shard and one hundred platinum, the shopkeeper produces a snapped silver key and leaves. This is a separate guarded access service, not a successful entry into the eastern tower or another quest achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 77724,
+          "completion_key": "give=C:100000,I:77732;receive=I:77733;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-77724",
+          "text": "Optional history: obtain the earlier tower key",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 77724,
+              "completion_key": "give=C:10000,I:77724;receive=I:77728;disappear=0"
+            }
+          ],
+          "hint": "This optional accepted receipt explains a producer route. Supplied exact material fits without it; history does not replace current custody or prove personal recovery."
+        },
+        {
+          "id": "material-77732",
+          "text": "Carry the tiny silver shard",
+          "kind": "carried_item",
+          "item_vnums": [
+            77732
+          ],
+          "count": 1,
+          "hint": "The second lord in the southern tower carries this shard. Supplied matching shards fit without earlier key-making history; a tiny ebony shard is not a substitute.",
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77724,
+              "completion_key": "give=C:100000,I:77732;receive=I:77733;disappear=1"
+            }
+          ],
+          "hint": "The native fee is 100,000 copper and the shopkeeper retires after acceptance. The broken key must be repaired in a separate paid service. Reset mode and the actual shopkeeper episode affect later availability. Payment remains guarded under active accounting."
+        }
+      ]
+    },
+    {
+      "id": "xamael-repair-tower-key",
+      "title": "Repair the snapped silver key",
+      "category": "service",
+      "summary": "The blacksmith accepts the snapped silver key and ten platinum, returning the tiny key for the eastern tower. This paid repair service earns no quest achievement and remains guarded while accounting is active.",
+      "contracts": [
+        {
+          "giver_vnum": 77740,
+          "completion_key": "give=C:10000,I:77733;receive=I:77739;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-77724",
+          "text": "Optional history: obtain the snapped key from the shopkeeper",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 77724,
+              "completion_key": "give=C:100000,I:77732;receive=I:77733;disappear=1"
+            }
+          ],
+          "hint": "This optional accepted receipt explains a producer route. Supplied exact material fits without it; history does not replace current custody or prove personal recovery."
+        },
+        {
+          "id": "material-77733",
+          "text": "Carry the snapped silver key",
+          "kind": "carried_item",
+          "item_vnums": [
+            77733
+          ],
+          "count": 1,
+          "hint": "The silver-shard shopkeeper service produces this exact broken key. Supplied broken keys fit. The already-working tiny keys are different kinds.",
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77740,
+              "completion_key": "give=C:10000,I:77733;receive=I:77739;disappear=0"
+            }
+          ],
+          "hint": "Ask fix at the blacksmith. The fee is 10,000 copper. This tiny key fits the hidden, locked eastern tower entrance; the first tiny key fits the southern tower. Current key custody, finding a hidden exit, unlocking, opening and completed travel are separate facts."
+        }
+      ]
+    },
+    {
+      "id": "jadem-sixteen-part-device",
+      "title": "Jadem's device of protection",
+      "category": "story",
+      "summary": "The apparition offers a protective belt for sixteen pieces: two mechanical chains, two bangles, two adamantium rocks, four springs and six gears. This native commission is currently unavailable under active accounting: it exceeds the fourteen-item offering limit. Several ordinary material supply caps also fall short of the required quantities.",
+      "contracts": [
+        {
+          "giver_vnum": 77735,
+          "completion_key": "give=I:77712,I:77712,I:77719,I:77719,I:77729,I:77729,I:77742,I:77742,I:77742,I:77742,I:77748,I:77748,I:77748,I:77748,I:77748,I:77748;receive=I:77749;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77712",
+          "text": "Carry two mechanical chains",
+          "kind": "carried_item",
+          "item_vnums": [
+            77712
+          ],
+          "count": 2,
+          "hint": "These necklaces of tiny steel links are worn by the young daughter on the upper templar platform. The declared cap is one, while the commission needs two distinct copies.",
+          "optional": true
+        },
+        {
+          "id": "material-77729",
+          "text": "Carry two bangles of the Dreamer",
+          "kind": "carried_item",
+          "item_vnums": [
+            77729
+          ],
+          "count": 2,
+          "hint": "The city guard captain wears this exact bangle in a one-cap, 25-chance declaration. Two copies are required. A source declaration does not establish live availability or personal defeat.",
+          "optional": true
+        },
+        {
+          "id": "material-77719",
+          "text": "Carry two adamantium rocks",
+          "kind": "carried_item",
+          "item_vnums": [
+            77719
+          ],
+          "count": 2,
+          "hint": "Two rocks are declared before the city gates; a convulsing mass in the lost tunnels has another two-cap, 50-chance declaration. The elder ore exchange is shadowed by a consuming refusal. Supplied matching rocks fit.",
+          "optional": true
+        },
+        {
+          "id": "material-77742",
+          "text": "Carry four springs",
+          "kind": "carried_item",
+          "item_vnums": [
+            77742
+          ],
+          "count": 4,
+          "hint": "The required coiled wire is carried by a child in the city holding-room declaration. Only one copy is declared. Ordinary city-child encounters do not automatically provide a spring.",
+          "optional": true
+        },
+        {
+          "id": "material-77748",
+          "text": "Carry six steel gears",
+          "kind": "carried_item",
+          "item_vnums": [
+            77748
+          ],
+          "count": 6,
+          "hint": "The required tiny jagged rings identify as steel gears. The soul collector chamber has one ground declaration with cap one and chance ten. Normal unforced ground resets require chance 100; six-copy supply needs deliberate qualification.",
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77735,
+              "completion_key": "give=I:77712,I:77712,I:77719,I:77719,I:77729,I:77729,I:77742,I:77742,I:77742,I:77742,I:77748,I:77748,I:77748,I:77748,I:77748,I:77748;receive=I:77749;disappear=1"
+            }
+          ],
+          "hint": "Ask belt and parts after finding the apparition near the ruined mountain structures; it begins in a holding room. The complete recipe consumes sixteen distinct items and retires the giver. Optional checks can describe current supplies but cannot bypass the offering limit or prove the belt was made. Wearing its reward has a separate stoneskin effect, without a quest-effect achievement."
+        }
+      ]
+    },
+    {
+      "id": "child-dagger-for-letter",
+      "title": "The tormented child's letter",
+      "category": "story",
+      "summary": "The child in the lower-town park accepts one exact foreign well-crafted dagger, gives a scorched letter and leaves. This delivery is one outcome. It does not prove a king was defeated, the remains were recovered or the child was resurrected.",
+      "contracts": [
+        {
+          "giver_vnum": 77742,
+          "completion_key": "give=I:18309;receive=I:77743;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-18309",
+          "text": "Carry the exact well-crafted dagger",
+          "kind": "carried_item",
+          "item_vnums": [
+            18309
+          ],
+          "count": 1,
+          "hint": "The active Temple of the Eleven GODS declares this dagger as equipment of the dark faced contortionate in room 18343. The local stone daggers and nearby templar weapons do not substitute. Supplied matching daggers fit.",
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77742,
+              "completion_key": "give=I:18309;receive=I:77743;disappear=1"
+            }
+          ],
+          "hint": "Ask torment, then offer the exact dagger. The native contract checks item identity, not how it was acquired. The child retires after acceptance. The scorched letter is a separate lead into the shades; reading, personal recovery and later delivery are not implied."
+        }
+      ]
+    },
+    {
+      "id": "lost-aberrate-letter-for-hair",
+      "title": "A letter in the living shades",
+      "category": "story",
+      "summary": "The lost aberrate accepts the scorched letter, returns a lock of hair and leaves. This is a separate delivery outcome. The hair points toward the lower-town elder, whose current refusal consumes it without giving the advertised ore.",
+      "contracts": [
+        {
+          "giver_vnum": 77744,
+          "completion_key": "give=I:77743;receive=I:77747;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-77742",
+          "text": "Optional history: receive the letter from the child",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 77742,
+              "completion_key": "give=I:18309;receive=I:77743;disappear=1"
+            }
+          ],
+          "hint": "This optional accepted receipt explains a producer route. Supplied exact material fits without it; history does not replace current custody or prove personal recovery."
+        },
+        {
+          "id": "material-77743",
+          "text": "Carry the scorched letter",
+          "kind": "carried_item",
+          "item_vnums": [
+            77743
+          ],
+          "count": 1,
+          "hint": "The park-child exchange produces this letter. Supplied matching letters fit without personal dagger recovery or the earlier receipt. The recipient is declared in the void of living shades.",
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77744,
+              "completion_key": "give=I:77743;receive=I:77747;disappear=1"
+            }
+          ],
+          "hint": "Offer the exact letter to the lost aberrate. Acceptance retires this giver and returns hair. Do not treat the hair as a confirmed reunion or ore reward: the elder has two identical offerings, and the consuming refusal runs first. Its shadowed positive reward and refusal are both excluded from authored achievement/daily credit."
+        }
+      ]
+    },
+    {
+      "id": "xamael-platemail-of-awe",
+      "title": "The platemail of awe",
+      "category": "story",
+      "summary": "The blacksmith can accept ten exact materials for the platemail of awe: two magical steel bars, two gorgon-scale bags, two adamantium rocks, the seaweed-covered design book, two ebony shards and one potion of genius. Dialogue asks for two potion samples; the actual recipe requires one. Supply and the custom potion source still need qualification.",
+      "contracts": [
+        {
+          "giver_vnum": 77740,
+          "completion_key": "give=I:77713,I:77713,I:77719,I:77719,I:77720,I:77724,I:77724,I:77745,I:77745,I:77750;receive=I:77746;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-77718",
+          "text": "Optional history: prepare a magical steel bar",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 77718,
+              "completion_key": "give=I:77744;receive=I:77745;disappear=0"
+            }
+          ],
+          "hint": "This optional accepted receipt explains a producer route. Supplied exact material fits without it; history does not replace current custody or prove personal recovery."
+        },
+        {
+          "id": "material-77745",
+          "text": "Carry two magical steel bars",
+          "kind": "carried_item",
+          "item_vnums": [
+            77745
+          ],
+          "count": 2,
+          "hint": "The old magick-shop barter converts ordinary steel one bar at a time. Supplied matching magical bars fit without that history; two ordinary bars do not.",
+          "optional": true
+        },
+        {
+          "id": "material-77713",
+          "text": "Carry two bags of gorgon scales",
+          "kind": "carried_item",
+          "item_vnums": [
+            77713
+          ],
+          "count": 2,
+          "hint": "The young warrior on the upper templar platform carries a bag. The declared cap is one, while the recipe requires two. The dialogue calls these steel scales.",
+          "optional": true
+        },
+        {
+          "id": "material-77719",
+          "text": "Carry two adamantium rocks",
+          "kind": "carried_item",
+          "item_vnums": [
+            77719
+          ],
+          "count": 2,
+          "hint": "Ground rocks before the city gates and a convulsing mass are declared sources. These rocks also compete with the protective-device recipe. The elder route is currently blocked by its refusal.",
+          "optional": true
+        },
+        {
+          "id": "material-77720",
+          "text": "Carry the seaweed-covered design book",
+          "kind": "carried_item",
+          "item_vnums": [
+            77720
+          ],
+          "count": 1,
+          "hint": "The master at the quay carries this small book, whose identified title is the Tome of Mechanical Knowledge I. Other books offered or described nearby are not substitutes.",
+          "optional": true
+        },
+        {
+          "id": "material-77724",
+          "text": "Carry two tiny ebony shards",
+          "kind": "carried_item",
+          "item_vnums": [
+            77724
+          ],
+          "count": 2,
+          "hint": "The first lord in the northern tower carries this exact kind, with a one-copy cap. The first paid tower key also consumes one. Silver shards and the ebony shard aliases ivory do not change its identity.",
+          "optional": true
+        },
+        {
+          "id": "material-77750",
+          "text": "Carry one potion of genius",
+          "kind": "carried_item",
+          "item_vnums": [
+            77750
+          ],
+          "count": 1,
+          "hint": "The soul collector death procedure creates a guardian soul carrying this potion in the lost tunnels. It has no ordinary reset or native exchange producer. The actual recipe consumes one sample despite dialogue asking for two. This check proves current custody only.",
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77740,
+              "completion_key": "give=I:77713,I:77713,I:77719,I:77719,I:77720,I:77724,I:77724,I:77745,I:77745,I:77750;receive=I:77746;disappear=0"
+            }
+          ],
+          "hint": "Ask mad, brother, make, items and platemail. The current item-only recipe consumes ten distinct items in one accepted offering and keeps the smith present. It does not require belt-making, tower receipts, earlier steel history, personal soul-collector defeat or personally looting a spawned guardian. Those need separately qualified events. The worn armor effect is separate from its delivery receipt."
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "contracts": [
+        {
+          "giver_vnum": 77739,
+          "completion_key": "give=I:77747;receive=;disappear=0"
+        }
+      ],
+      "reason": "The elder refusal consumes the same lock of hair without any reward and stays present. It is loaded before the positive ore recipe. It is not a quest/daily achievement or a persisted save-the-son prerequisite."
+    },
+    {
+      "contracts": [
+        {
+          "giver_vnum": 77739,
+          "completion_key": "give=I:77747;receive=I:77719;disappear=1"
+        }
+      ],
+      "reason": "The hair-for-ore retirement is shadowed by the identical consuming refusal, which the loader prepends and dispatches first. Preserve its native identity and historical receipt, but exclude the unreachable current outcome until a deliberate, qualified repair selects intended eligibility and binding."
+    }
+  ]
+}

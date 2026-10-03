@@ -77,6 +77,29 @@ repair, use a clearly named separate fix commit where practical and PR/news
 notes naming zone/interaction, player trigger, before/after, proof and limits.
 A journal correction or planned recipe change is not a shipped native repair.
 
+The Hall's [source dossier](../design/zone-stories/THE_HALL_OF_THE_ANCIENTS.md)
+shows a second class of mismatch: the loader prepends identical elder offerings,
+so the consuming refusal shadows the ore reward. Both remain excluded until
+eligibility is deliberately repaired; an item graph cannot infer a saved-son
+condition. Sixteen belt ingredients exceed the current fourteen-root offering
+limit, and one-copy source caps conflict with repeated quantities. Optional
+current-material checks must explain these blockers without enabling a recipe.
+Keep actual ten-item armor terms, including one potion, separate from the
+two-sample dialogue. Review exact source budgets and receipt rebinding before
+changing native balance or limits.
+
+Custom death-spawn guardians need atomic actor/item/source-episode lineage.
+A spawned potion in current custody does not prove a personal first recovery;
+a later player gift is different. Likewise a pre-command GET procedure can
+change cathedral doors before pickup, even on a failed request. Select intended
+accepted acquisition/coin settlement or an explicit attempt mechanism before
+adding objectives. Shared capture and event persistence need qualified runtime
+facts, not a new sidecar keyword that manufactures them.
+
+Sin's actual-opponent Freedom of Movement correction is a shipped separate
+combat fix with regression and PR/news evidence. The elder, recipe/source and
+cathedral changes remain plans; keep that distinction clear in builder notes.
+
 ## Schema version 1
 
 Version 1 remains supported. Use version 2 or 3 for new starter and hometown

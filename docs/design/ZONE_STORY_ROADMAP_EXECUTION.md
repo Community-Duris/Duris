@@ -48,6 +48,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [b0e4ea60a](https://github.com/Community-Duris/Duris/commit/b0e4ea60a9937da5fd1789edd43402cb59672ef5): quest journal naming | Journals/dailies qualify duplicate area names with the source area, and lookup accepts those exact qualified alternatives. Previously the ambiguity prompt could request a full name that was still ambiguous. | Player-facing: “Quest journals now distinguish areas that share the same name.” Feature/journey lookup regression evidence is recorded in the qualification document. |
 | [b0e4ea60a](https://github.com/Community-Duris/Duris/commit/b0e4ea60a9937da5fd1789edd43402cb59672ef5): quest state integrity | Save/recovery validation rejects missing required metadata and mismatched observation IDs; later accounting integration preserves caller-owned deletion and retry obligations. | Player-facing: “Zone quest progress saving and recovery now reject inconsistent records.” SQL/flat-file and feature regression evidence is recorded in the qualification document. |
 | [492c6f1bd](https://github.com/Community-Duris/Duris/commit/492c6f1bd7635f22782888a3567763b7b90a39eb): shared prototype audit | Builder source lookup includes active administrative-area prototypes, resolving valid paper 5 without adding discoverable ownership. Production regression verifies both facts. | Builder-facing audit correction. The Tharnadia map exchange already existed; do not announce a repaired paper quest. |
+| [7297b964e](https://github.com/Community-Duris/Duris/commit/7297b964ed3996c33a90dae4172cd0875addf174): Hall Shadow of Sin | Its gaze checks the actual opponent for Freedom of Movement rather than the callback actor. Periodic null actors no longer crash; bystander protection is not consumed, and target text substitutes correctly. | Player-facing: “The Shadow of Sin now correctly checks its opponent's Freedom of Movement, fixing a combat crash and misleading target text.” Actual procedure/null/unrelated-actor/effect/immunity regression and server build passed; live gameplay qualification remains open. |
 
 ## Progress
 
@@ -90,9 +91,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 35 | City of Torrhan | [Comprehensive source dossier](zone-stories/CITY_OF_TORRHAN.md): all 46 blocks/26 exchanges/eighteen addressed families, 289 rooms/152 mobs/125 objects/six shops, 447 resets/324 families; both literal and table/automatic bindings | Revision one: eight outcomes/fourteen services/four refusals, 23 contacts/28 optional checks; exact potion, ring, sword, crown and cloak cycle guidance | Active source/recipient episodes, competing materials, lineage/property presentation, access/choice and actual actor-state events; selected throne/stock/prose repairs require explicit fix/news reporting |
 | 36 | Golden Hall of the Crown | [Comprehensive source dossier](zone-stories/GOLDEN_HALL_OF_THE_CROWN.md): all 42 blocks/sixteen exchanges/seventeen addressed families, 300 rooms/91 mobs/106 objects/two shops, 534 resets/351 families, four literal assignments and automatic/shared bindings | Revision one: nine outcomes/seven services, 27 contacts/34 optional checks; exact note/key/totem/sword guidance, supplied finale and three independent rescues | Active source/recipient/returned-key lineage, three mixed fees, accepted access/travel/actor and pegasus events; builder-selected boulder/teacher/note/route/prose repairs require separate fix/news reporting |
 | 37 | Ashrumite Village | [Comprehensive source dossier](zone-stories/ASHRUMITE_VILLAGE.md): all 25 blocks/twelve exchanges/thirteen addressed families, 153 rooms/53 mobs/65 objects/twelve shops, 275 resets/181 families and fifteen literal/shared bindings | Revision two: twelve support services, sixteen contacts/21 optional checks; actual five-copy and same-name material guidance, complete intended/current repair matrix; no authored quest/daily units | All payments guarded; missing disc/two rewards/teacher equipment, stale eastern boundary and builder-selected crafting/price/guard/merchant/pet/prose work; source, paid-lore and full crafting lineage unqualified |
-| 38–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 38 | The Hall of the Ancients | [Comprehensive source dossier](zone-stories/THE_HALL_OF_THE_ANCIENTS.md): all 25 blocks/eleven exchanges/fourteen addressed families, 247 rooms/55 mobs/53 objects/one shop, 395 resets/153 families, twelve literal procedures and shared dispatch | Revision one: five outcomes/four services/two elder exclusions, 27 contacts/23 optional checks; actual sixteen-piece and ten-piece recipes, supplied foreign proof and source/access guidance | Separate Sin actual-opponent/null-actor combat fix ships; three mixed fees and oversized belt guarded; elder ordering, source budgets/chance, collector transaction, early death arming, GET settlement and campaign/access qualification pending |
+| 39–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Hall of the Ancients (`hall`).
+The next area is Sarmiz'Duul (`sarmiz`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -1765,3 +1767,64 @@ units and 2,227 projected rows; 37 of 220 roadmap areas are source-comprehensive
 with 183 remaining.** All 2,668 native definitions, revision-two fingerprint/
 registry and other fifty-seven maps remain unchanged. Continue with The Hall
 of the Ancients (`hall`). Active, ready accounting remains mandatory.
+
+## The Hall of the Ancients completed source map — October 3, 2026
+
+Reviewed all 25 native blocks: eleven exchanges/fourteen addressed M families,
+with six addressed speakers and none ambient. Complete source review covers
+247 rooms/116 exact prose groups/48 headers/56 metadata groups/182 exit
+families, 55 mobiles, 53 objects, one shop and 395 resets/153 families. Five
+chance declarations differ from 100; every reserved reset argument is zero.
+Twelve literal procedures, all Hall special implementations and relevant
+shared command/death/periodic/offering/reset/equipment behavior are explained
+in the [dossier](zone-stories/THE_HALL_OF_THE_ANCIENTS.md). The ordinary
+Underdark entrance/return is distinct from administrative city dispersal;
+all positive boundary/reset references resolve in the active inventory.
+
+Revision one has five independent outcomes, four preparation/access services,
+two elder exclusions, 27 contacts/all fourteen addressed topic families and
+23 optional checks. The exact recipes retain sixteen belt pieces and ten
+armor pieces, including only one genius potion despite the two-sample prose.
+The two visible tiny keys have different identities/targets; the foreign
+dagger's accepted receipt remains Hall-owned. Supplied materials skip optional
+producer histories without inventing kills, first recovery or a saved son.
+
+**Shipped native repair:** separate fix commit
+[7297b964e](https://github.com/Community-Duris/Duris/commit/7297b964ed3996c33a90dae4172cd0875addf174)
+repairs Sin's Freedom of Movement target and room substitution. The compiled
+actual procedure passes periodic null actors, unrelated actors, protection
+consumption, unprotected paralysis, paladin/staff immunity, absent opponent and
+non-trigger roll. Maintained server build and changed-line formatting pass.
+News: “The Shadow of Sin now correctly checks its opponent's Freedom of
+Movement, fixing a combat crash and misleading target text.” This is separate
+from journal authoring and every pending repair below.
+
+**Pending native repair/qualification:** the consuming elder refusal runs
+before the identical ore reward because Q loading prepends contracts. Belt
+size exceeds the fourteen-root durable limit; several repeated ingredients
+have cap one, while normal O resets cannot load the chance-ten gear. Builder
+must select balanced recipe/supply/rarity and elder eligibility policies.
+Armor dialogue omits ebony shards and asks for two potions instead of one.
+Collector death creates guardian/potion outside an atomic source transaction;
+its prototype already carries the death flag. Death's own flag is armed later
+and needs early-kill qualification. The cathedral coin procedure dispatches
+before pickup and can change doors on unrelated/failed GET. Keys, traps,
+portals, holding sources, retiring recipients and family/shadow/dragon closure
+need accepted event and episode semantics. No recipe, world-data or cathedral
+repair ships in this checkpoint; report each implemented fix separately.
+
+Focused journal/source fixtures cover exact quantities/kinds, worn versus
+carried foreign proof, one potion, optional producer histories, guarded fees,
+oversized guidance, read-only readiness and historical service/exclusion/
+independent-outcome recovery. These are native in-memory and source checks,
+not live acquisition, combat, crafting or travel certification. All 2,668
+native definitions, content fingerprint, revision and zone registry remain
+unchanged. The other 58 journals remain exact; Hall alone replaces fallback.
+The complete roadmap order remains 220 areas: first 38 comprehensive, 182
+pending. Continue with Sarmiz'Duul.
+
+Current catalog: **59 journals, 1,707 achievement units, 1,496 potential daily
+units and 2,225 projected rows; 38 of 220 roadmap areas are source-comprehensive,
+with 182 remaining.** Three paid Hall services stay guarded: two display the
+generic mixed-offering warning, while the retiring snapped-key recipe has the
+existing story-only classification and explicit authored payment guidance.

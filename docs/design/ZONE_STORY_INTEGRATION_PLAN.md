@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 58 authored journals, accounting-gated player surfaces, starter/town
+**Status: 59 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -14,8 +14,8 @@ Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
 Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
 the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
 Ship Yards, Ultarium, the Surface Realm, Tharnadia, Mini Zones and the City
-of Torrhan, Golden Hall of the Crown and Ashrumite Village now have complete
-source story maps; their active-world journeys remain unqualified. Savannah projects seventeen
+of Torrhan, Golden Hall of the Crown, Ashrumite Village and The Hall of the
+Ancients now have complete source story maps; their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
 checks. The [Savannah dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md)
@@ -412,6 +412,29 @@ inventory reset, stale east boundary, uneven guildguard/merchant roles and old
 pet restoration/prose remain pending repair findings. Ship actual repairs with
 separate fix commits where practical and concrete PR/news evidence. No native
 zone or quest repair ships in this checkpoint.
+
+The Hall of the Ancients' [comprehensive dossier](zone-stories/THE_HALL_OF_THE_ANCIENTS.md)
+covers all eleven exchanges/fourteen addressed families, 247 rooms, 55 mobiles,
+53 objects, one shop and 395 resets/153 families, with all twelve literal
+procedures and their shared dispatch. Its first journal has five independent
+outcomes, four support services, two elder exclusions, 27 contacts and 23
+optional checks. Three mixed-fee keys remain guarded, and the sixteen-part
+device exceeds the fourteen-root durable offering limit. The elder's consuming
+refusal is prepended before its identical hair-for-ore recipe; neither earns
+authored achievement/daily credit. The armor's actual ten-item recipe uses one
+genius potion despite two-sample dialogue and two unmentioned ebony shards.
+
+The Hall adds exact death-spawn/item-parent lineage, ordinary-versus-forced
+source-cap/chance qualification, attempted versus settled coin-pickup mechanisms
+and early death-callback arming to the shared plan. A source declaration cannot
+establish repeated supply, personal recovery or a completed family/shadow
+campaign. Select elder, recipe/supply, gear rarity and cathedral-trigger repairs
+deliberately; preserve frozen native terms and classify any changed bindings.
+One actual combat repair ships separately in
+[7297b964e](https://github.com/Community-Duris/Duris/commit/7297b964ed3996c33a90dae4172cd0875addf174):
+Sin's gaze checks its actual opponent, fixing a null-actor crash and wrong-target
+protection; its room target text is corrected. Other Hall repairs remain pending,
+with their exact before/after and qualification plans in the dossier.
 
 ## Accounting requirement and delivery sequence
 
@@ -1124,7 +1147,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 183 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 182 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1145,6 +1168,16 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   Retain typed-food/coin-only and paid town guards; extend draw/custody and
   actor/NPC semantic settlement before healing/lesson/pet milestones. Resolve
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
+- [x] Complete the Hall's eleven-exchange/fourteen-addressed source dossier:
+  247 rooms/55 mobiles/53 objects/one shop, 395 resets/153 families and all
+  twelve literal procedures/shared dispatch. Five outcomes/four services/two
+  elder exclusions, 27 contacts/23 optional checks and one separate Sin fix.
+- [ ] Select Hall elder acceptance/refusal and campaign policy, sixteen-root
+  offering or recipe policy, repeated-source caps/gear rarity, armor dialogue
+  and accepted cathedral mechanism. Qualify atomic collector/guardian/potion
+  issuance, first source versus gifts, early death arming, actual key/trap/
+  portal access and retiring/holding episodes. Record implemented fixes with
+  explicit zone/interaction, trigger, before/after, evidence and news wording.
 - [x] Complete Ashrumite's twelve-exchange/thirteen-addressed source dossier:
   all 153 rooms/53 mobiles/65 objects/twelve shops, 275 resets/181 families
   and fifteen literal/shared bindings. Revision two has twelve services,
@@ -1311,6 +1344,7 @@ contract classification; it does not claim complete objective coverage.
 | City of Torrhan | 1 | Complete: eight independent outcomes/fourteen support exchanges/four refusals across 26 native exchanges | [Source-comprehensive dossier](zone-stories/CITY_OF_TORRHAN.md); 23 contacts/eighteen addressed families, 28 optional checks and exact potion/sword/crown/cloak guidance | Eight achievement/potential daily units; live source/retirement, lineage, access/choice and actual royal transformation unqualified | Native supplied-route, exact-kind, service/refusal and recovery fixtures; qualify shared actor/lineage/property events and publish selected throne/stock/prose repairs distinctly |
 | Golden Hall of the Crown | 1 | Complete: nine outcomes/seven support services across all sixteen native exchanges | [Source-comprehensive dossier](zone-stories/GOLDEN_HALL_OF_THE_CROWN.md); 27 contacts/seventeen addressed families, 34 optional checks and exact note/key/totem/sword guidance | Nine achievements/seven potential dailies; both key-return rescues keep their daily exclusions; live sources, fees, access and pet events unqualified | Native supplied-proof, exact-kind, independent-rescue and recovery fixtures; qualify accepted actor/source/lineage/access/summon events and publish selected repairs clearly |
 | Ashrumite Village | 2 | Complete: twelve support services across every native exchange | [Source-comprehensive dossier](zone-stories/ASHRUMITE_VILLAGE.md); sixteen contacts/all thirteen addressed families, 21 optional checks and explicit intended/current crafting matrix | Zero authored achievements/dailies; all payments guarded, three quest prototypes missing; source, paid lore and actual craft lineage unqualified | Native exact same-name/five-copy, service-only recovery and missing-reference fixtures; select native repairs and qualify fees/source/output/access/pet events before a fresh journey |
+| The Hall of the Ancients | 1 | Complete: five outcomes/four services/two elder exclusions across eleven contracts | [Source-comprehensive dossier](zone-stories/THE_HALL_OF_THE_ANCIENTS.md); 27 contacts/all fourteen addressed families and 23 optional checks | Five achievements/two potential dailies; three mixed fees and sixteen-root device guarded; elder/supply/source/GET/access qualification open | Exact quantities/foreign proof/optional history and excluded receipt recovery; separate Sin null/wrong-target fix, other repairs pending with explicit news handoff |
 
 ## Twin Towers evidence and decisions
 

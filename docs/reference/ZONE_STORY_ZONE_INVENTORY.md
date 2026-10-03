@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 58 authored journals.
+2668 distinct Q contracts; 59 authored journals.
 
 Regenerate with:
 
@@ -101,7 +101,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Town of Moregeeth (`goblinht`) | 11 | 9 | 1 | Yes | [5 × a bat skull → a necklace of bat skulls](../../areas/qst/goblinht.qst#L144) | inn, world_quest |
 | Golden Hall of the Crown (`gold_hal`) | 16 | 17 | 9 | Yes | [1 × a brown strip of bear hide; 1 × a grey strip of olyx hide → a small earthen statue](../../areas/qst/gold_hal.qst#L46) | inn, reliance_pegasus, world_quest |
 | The Halfcut Hills (`halfcut`) | 13 | 15 | 4 | Fallback | [1 × the orc's scalp; 1 × the drow's scalp; 1 × the goblin's scalp; other required items → a duergar belt](../../areas/qst/halfcut.qst#L177) | crossbow_ambusher |
-| The Hall of the Ancients (`hall`) | 11 | 14 | 6 | Fallback | [2 × a necklace of tiny steel links; 2 × the bangle of the Dreamer; 2 × an adamantium rock; other required items → Jadem's magical device of protection](../../areas/qst/hall.qst#L77) | akckx, artifact_stone, hoa_death, hoa_plat, hoa_sin, human_girl |
+| The Hall of the Ancients (`hall`) | 11 | 14 | 6 | Yes | [2 × a necklace of tiny steel links; 2 × the bangle of the Dreamer; 2 × an adamantium rock; other required items → Jadem's magical device of protection](../../areas/qst/hall.qst#L77) | akckx, artifact_stone, hoa_death, hoa_plat, hoa_sin, human_girl |
 | The Mountain Settlement of the Harpies (`harpyht`) | 3 | 0 | 1 | Yes | [1 × a rusted key → some prisoner shackles](../../areas/qst/harpyht.qst#L9) | gargoyle_master, harpy_evil, harpy_good, money_changer |
 | Harrow -The Gnome Village (`harrow`) | 8 | 4 | 1 | Fallback | [1 × a token; 1 × leather alchemist sack; 1 × faerie dust → lucky alchemist sack](../../areas/qst/harrow.qst#L73) | inn |
 | Zalkapfaan, City of the Headless Horde (`headless`) | 8 | 2 | 0 | Fallback | [1 × a purchase requisition; 1 × the scales of a sea serpent → platemail of the sea serpent](../../areas/qst/headless.qst#L42) | — |
