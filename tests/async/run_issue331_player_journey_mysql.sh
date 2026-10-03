@@ -9,7 +9,9 @@ SUFFIX="issue331-player-${BASHPID}-${RANDOM}"
 NETWORK=bridge
 DB_CONTAINER="${SUFFIX}-db"
 RUNTIME_CONTAINER="${SUFFIX}-game"
-DB_NAME="duris_issue331_player_${BASHPID}_${RANDOM}"
+# The runtime prefixes this schema in GET_LOCK(), whose MySQL name limit is 64.
+# The fresh container already supplies isolation; a bounded suffix is sufficient.
+DB_NAME="duris_issue331_player_${RANDOM}"
 DB_PASSWORD="issue331-disposable-only"
 
 

@@ -9,7 +9,8 @@ SUFFIX="issue331-staff-${BASHPID}-${RANDOM}"
 NETWORK=bridge
 DB_CONTAINER="${SUFFIX}-db"
 RUNTIME_CONTAINER="${SUFFIX}-game"
-DB_NAME="duris_issue331_staff_${BASHPID}_${RANDOM}"
+# Keep the schema plus runtime exclusion prefix inside MySQL's 64-character limit.
+DB_NAME="duris_issue331_staff_${RANDOM}"
 DB_PASSWORD="issue331-disposable-only"
 
 DB_ID=""
