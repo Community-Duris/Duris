@@ -10,7 +10,8 @@ assert "hostname_lookup_workers" in comm
 assert "hostname_lookup_workers >= MAX_HOSTNAME_LOOKUP_WORKERS" in comm
 
 # SSL setup failure must close the accepted descriptor before returning.
-ssl_failure = comm[comm.index("/* SSL connection - initialize TLS */"):comm.index("used_descs++;", comm.index("/* SSL connection - initialize TLS */"))]
+ssl_start = comm.index("/* SSL connection - initialize TLS")
+ssl_failure = comm[ssl_start:comm.index("newd = (struct descriptor_data *)mm_get", ssl_start)]
 assert "shutdown(desc, 2);" in ssl_failure
 assert "close(desc);" in ssl_failure
 

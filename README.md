@@ -57,7 +57,8 @@ flowchart LR
 ```
 
 The C-style sources under `src/` are compiled as C++20. Network I/O and mutable game
-state remain on one `select()`-driven pulse loop. Immutable revisioned snapshots and
+state remain on one readiness/deadline loop using `poll()`, with commands and world
+phases retaining their 250 ms simulation boundaries. Immutable revisioned snapshots and
 non-coalescing operation-ID commands cross typed worker boundaries; the older item,
 scalar, and large-payload queues retain only bounded compatibility roles. MySQL or
 MariaDB is the durable authority for snapshots, ledgers, current rows, inbox/results,

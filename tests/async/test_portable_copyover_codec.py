@@ -127,6 +127,7 @@ def main():
         run("write", golden)
         assert golden.read_bytes() == expected, "portable bytes differ from independent specification"
         run("read", golden)
+        run("high-fds")  # Socket numbers are not bounded by the connection count.
         run("children")  # Preserve records beyond the old 64/256 recovery caps.
         run("sweep", golden)  # Every prefix and a high-bit flip at every byte.
         run("failures")
@@ -165,7 +166,7 @@ def main():
         mutate("short-record", 68, "<I", 669)
         mutate("record-version", 66, "<H", 2)
         mutate("record-kind", 64, "<H", 99)
-        mutate("bad-fd", 72, "<i", 0x7fffffff)
+        mutate("bad-fd", 72, "<i", -1)
         mutate("listener-fd-collision", 72, "<i", 7)
         mutate("bad-pet-count", 72 + 533, "<I", 11)
         mutate("bad-death-delay", 72 + 658, "<i", 3)

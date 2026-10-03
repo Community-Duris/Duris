@@ -90,7 +90,8 @@ The file limit is 128 MiB, each record payload is at most 2 MiB, each object tre
 has 1–512 items, and each mob has at most 32768 affects and 32768 inventory
 records. Mob affects and inventory are restored in full within these limits;
 the previous 64/256 recovery truncation is removed. Descriptor and listener FDs
-must fit `FD_SETSIZE`; listeners may be `-1`. Listener and player FDs cannot
+are signed 32-bit values, independent of the connection count and the former
+`select()` bitmap limit; listeners may be `-1`. Listener and player FDs cannot
 collide, player FDs are positive, and duplicate player names are rejected. Each
 world section has an additional ceiling of one million records, subject to the
 file limit and necessary minimum byte counts.

@@ -3,9 +3,11 @@
 #include "core/structs.h"
 #include "core/utils.h"
 #include "net/comm.h"
+#include "net/network_wakeup.h"
 #include "net/ws_handlers.h"
 
 #include <openssl/crypto.h>
+#include <poll.h>
 #include <cassert>
 #include <chrono>
 #include <condition_variable>
@@ -166,6 +168,7 @@ static account_load_request request()
 }
 int main()
 {
+	network_wakeup_drain();
 	query_control control;
 	assert(account_load_worker_init(query, &control));
 	auto descriptor = std::make_unique<descriptor_data>();
@@ -193,6 +196,9 @@ int main()
 	other->acct_name = str_dup("Other");
 	release(control);
 	drain(d);
+	pollfd wake{ network_wakeup_fd(), POLLIN, 0 };
+	assert(poll(&wake, 1, 0) == 1 && (wake.revents & POLLIN));
+	network_wakeup_drain();
 	assert(STATE(d) == CON_GET_ACCT_PASSWD && d->prompt_mode);
 	assert(account_list == other && other->next == d->account);
 	assert(d->account->num_ips == 1 && d->account->num_chars == 1);
