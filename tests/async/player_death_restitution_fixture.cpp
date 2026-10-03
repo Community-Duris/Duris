@@ -158,6 +158,15 @@ int main(int argc, char **argv)
 				snapshot.quest_xp_receipts.push_back(xp);
 			}
 		}
+		if (argc >= 2 && std::string(argv[1]) == "--craft-receipt")
+		{
+			snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION;
+			player_craft_receipt_snapshot craft = {};
+			craft.operation_id.bytes[0] = 89;
+			craft.discipline = 1;
+			craft.experience = 75;
+			snapshot.craft_receipts.push_back(craft);
+		}
 		if (argc >= 2 && std::string(argv[argc - 1]) == "--wards")
 		{
 			player_affect_snapshot af = {};

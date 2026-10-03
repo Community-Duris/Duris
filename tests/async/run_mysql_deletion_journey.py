@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Real character deletion, transactional refusal and retry on disposable SQL.
+"""Real account/character deletion, persistence refusal and retry on disposable SQL.
 
 Set TEST_DB_HOST (loopback), TEST_DB_USER and TEST_DB_PASSWORD for a disposable
 server; TEST_DB_PORT defaults to 3306. No checkout .env or existing schema is used. --server selects a freshly
@@ -128,6 +128,69 @@ def run(server):
                     client.send('save'); client.expect('Save complete for '+journey.CHARACTER+'.', timeout=30)
                     client.send('quit'); client.expect('ACCOUNT MENU', timeout=30)
                     print('account-fence-admission: native refusal preserved account fence, character and playable retry', flush=True)
+                    def quest_image(table='zone_story_quest_state'):
+                        return sql('SELECT HEX(state_blob) FROM '+table+' WHERE state_id=1')
+
+                    def quest_aliases():
+                        aliases = []
+                        for line in bytes.fromhex(quest_image()).decode().splitlines():
+                            if line.startswith('N|'):
+                                fields = line.split('|')
+                                assert len(fields) == 5
+                                aliases.append((int(fields[2]), bytes.fromhex(fields[3]).decode()))
+                        return aliases
+
+                    assert (pid, journey.CHARACTER) in quest_aliases(), 'SQL quest alias was never retained'
+                    before_quest = quest_image()
+                    client.send('7'); client.expect('Re-enter your account password')
+                    client.send(journey.PASSWORD); client.expect('PERMANENT ACCOUNT DELETION', timeout=30)
+                    sql('RENAME TABLE zone_story_quest_state TO account_quest_fixture_unavailable')
+                    try:
+                        client.send(journey.ACCOUNT)
+                        client.expect('Account deletion did not complete.', timeout=30)
+                        client.expect('to retry completion:')
+                        assert number("SELECT blocked FROM accounts WHERE account_name='"+journey.ACCOUNT+"'") == 2
+                        assert number(f'SELECT COUNT(*) FROM player_data WHERE pid={pid}') == 1
+                        assert number(f'SELECT COUNT(*) FROM account_characters WHERE pid={pid} AND deleted_at IS NULL') == 1
+                        assert number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid}') == items_before
+                        assert quest_image('account_quest_fixture_unavailable') == before_quest
+                        assert b'were permanently deleted.' not in client.transcript
+                        client.send('cancel')
+                        client.expect('Deletion has already started and cannot be cancelled.', timeout=30)
+                        client.expect('to retry completion:')
+                    finally:
+                        sql('RENAME TABLE account_quest_fixture_unavailable TO zone_story_quest_state')
+                    client.close(); client = None
+                    stop(); process = boot()
+                    client = journey.MudClient(plain)
+                    client.expect('Please enter your account name:'); client.send(journey.ACCOUNT)
+                    client.expect('Please enter your password:'); client.send(journey.PASSWORD)
+                    client.expect('to retry completion:', timeout=30)
+                    assert quest_image() == before_quest and (pid, journey.CHARACTER) in quest_aliases()
+                    assert number(f'SELECT COUNT(*) FROM player_data WHERE pid={pid}') == 1
+                    client.send(journey.ACCOUNT)
+                    client.expect('Your account and all of its characters were permanently deleted.', timeout=30)
+                    assert client.transcript.count(b'were permanently deleted.') == 1
+                    assert number("SELECT COUNT(*) FROM accounts WHERE account_name='"+journey.ACCOUNT+"'") == 0
+                    assert number(f'SELECT COUNT(*) FROM player_data WHERE pid={pid}') == 0
+                    assert number(f'SELECT COUNT(*) FROM account_characters WHERE pid={pid}') == 0
+                    assert number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid}') == 0
+                    assert (pid, journey.CHARACTER) not in quest_aliases()
+                    client.close(); client = None
+                    stop(); process = boot()
+                    # Reusing the synthetic account/name after cold boot proves
+                    # credential and alias removal; the fresh PID stays distinct.
+                    previous_pid = pid
+                    client = journey.MudClient(plain)
+                    journey.create_character(client)
+                    client.send('save'); client.expect('Save complete for '+journey.CHARACTER+'.', timeout=30)
+                    pid = number("SELECT pid FROM player_data WHERE name='"+journey.CHARACTER+"'")
+                    assert pid != previous_pid
+                    items_before = number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid}')
+                    assert items_before > 0 and (pid, journey.CHARACTER) in quest_aliases()
+                    assert (previous_pid, journey.CHARACTER) not in quest_aliases()
+                    client.send('quit'); client.expect('ACCOUNT MENU', timeout=30)
+                    print('account-quest-cleanup: persistence refusal retained fenced identities across restart; retry erased credentials and aliases before safe name reuse', flush=True)
                     # A deliberately unavailable lifecycle table tests native SQL
                     # admission with an inactive gameplay cache. Only this newly
                     # created disposable schema is touched; restore before retry.
@@ -204,4 +267,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--server', type=Path, required=True)
     args = parser.parse_args()
+    from run_mysql_account_deletion_journey import run as run_atomic_account_erasure
+    run_atomic_account_erasure(args.server.resolve())
     run(args.server.resolve())

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run actual typed coordinator/pool components on one disposable SQL schema."""
 import argparse
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -48,7 +49,12 @@ def compile_family(family, binary):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--family", choices=("coin", "item", "room"), required=True)
+    parser.add_argument("--server", type=Path,
+                        help="also run the room recovery journey using this frozen SQL server")
+    parser.add_argument("--server-sha256")
     args = parser.parse_args()
+    if bool(args.server) != bool(args.server_sha256) or (args.server and args.family != "room"):
+        parser.error("the room recovery journey requires both --server and --server-sha256")
     if not target_is_disposable(os.environ):
         raise SystemExit("explicit disposable loopback schema and port required")
     with tempfile.TemporaryDirectory(prefix="economic-real-pool-") as directory:
@@ -62,6 +68,13 @@ def main():
         subprocess.run(["bash", "-c", 'ulimit -s 65536 && exec "$1"',
                         "economic-real-pool", str(binary)], cwd=ROOT, env=environment,
                        check=True, timeout=120)
+        if args.server:
+            subprocess.run([
+                "python3", str(ROOT / "tests/async/run_sql_room_item_payload_recovery_journey.py"),
+                "--seed-binary", str(binary), "--seed-sha256", hashlib.sha256(binary.read_bytes()).hexdigest(),
+                "--server-binary", str(args.server), "--server-sha256", args.server_sha256,
+            ], cwd=ROOT, env=environment, check=True, timeout=600)
+    print(f"PASS: real SQL pool {args.family} qualification completed")
 
 if __name__ == "__main__":
     main()

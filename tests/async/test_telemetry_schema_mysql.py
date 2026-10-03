@@ -59,6 +59,12 @@ class TelemetrySchemaMysqlTest(unittest.TestCase):
                                 env=environment, capture_output=True)
         self.assertEqual(result.returncode == 0, expected == 0, result.stdout + result.stderr)
 
+    def setUp(self):
+        # This owner verifies sealed migration 0014's original shape. A fresh
+        # schema also lets every named case execute independently; later
+        # progression migrations are qualified by their own runtime owners.
+        self.sql((ROOT / "migrations/immutable/0014_telemetry_storage.sql").read_text())
+
     def test_apply_replay_and_verified_shape(self):
         sql = (ROOT / "migrations/immutable/0014_telemetry_storage.sql").read_text()
         self.sql(sql)

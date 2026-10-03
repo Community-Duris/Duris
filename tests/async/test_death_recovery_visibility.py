@@ -23,6 +23,9 @@ def function(text, signature):
 
 (ROOT / "bin/tests").mkdir(parents=True, exist_ok=True)
 fight = (ROOT / "src/combat/fight.c").read_text()
+utility = (ROOT / "src/core/utility.c").read_text()
+reporter = utility[utility.index("static int persistence_alert_format_is_numeric("):
+                   utility.index("unsigned long long persistence_next_item_uid(")]
 harness = r'''
 #include "persistence/death_recovery_visibility.h"
 #include "item/item_transfer_command.h"
@@ -31,6 +34,12 @@ harness = r'''
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <cctype>
+#include <chrono>
+#include <limits>
+#include <mutex>
+#include <vector>
+#define checked_snprintf snprintf
 struct obj_data { int value[8] = {}; };
 using P_obj = obj_data *;
 struct pc_data { uint64_t death_recovery_owner = 0, death_recovery_since_usec = 0,
@@ -46,14 +55,21 @@ unsigned reports_emitted = 0;
 uint64_t persistence_observability_now_usec() { return clock_usec; }
 #define IS_PC(ch) true
 #define AVATAR 0
-void persistence_report(persistence_severity, int, const char*, const char*, const char*, const char*, const char*, const char *format, ...) {
+std::vector<std::string> broadcasts;
+bool persistence_log_submit(const char *text) {
     ++reports_emitted;
-    char text[1024]; va_list arguments; va_start(arguments, format);
-    vsnprintf(text, sizeof(text), format, arguments); va_end(arguments); report = text;
+    report = text;
+    return true;
 }
+void wizlog(int level, const char *format, ...) {
+    assert(level == AVATAR);
+    char text[2048]; va_list arguments; va_start(arguments, format);
+    vsnprintf(text, sizeof(text), format, arguments); va_end(arguments);
+    broadcasts.emplace_back(text);
+}
+''' + reporter + r'''
 P_obj corpse_live_item(uint64_t) { return nullptr; }
 void note_corpse_transfer_dispute(P_char ch) { ch->disputed = true; }
-void persistence_alert(int, const char*, const char*, const char*, const char*, const char*, const char*, ...) {}
 bool corpse_lifecycle_transaction_note_item_transfer(uint32_t,uint32_t,uint64_t) { return true; }
 void obj_from_char(P_obj) {} void obj_to_obj(P_obj,P_obj) {}
 void mark_player_dirty_components(int,int) {} void writeCorpse(P_obj) {}
@@ -71,6 +87,9 @@ bool submit_next_corpse_item(P_char,P_obj) { return false; }
 struct corpse_transfer_context { uint64_t corpse_uid, item_uid, corpse_save_id; uint16_t item_count, root_count; };
 ''' + function(fight, "static void death_recovery_report(") + function(fight, "void corpse_item_completion(") + r'''
 int main() {
+    for (const char *unsafe : {"name=%s", "write=%n", "line\nbreak", "control\r", "pointer=%p"})
+        assert(death_recovery_literal_detail(unsafe) == nullptr);
+    assert(death_recovery_literal_detail(nullptr) == nullptr);
     char_data actor;
     corpse_transfer_context context{123,0,9001,15,15};
     item_transfer_result result{};
@@ -80,6 +99,7 @@ int main() {
     assert(report.find("item_uid=0 scope=batch captured_items=15 roots=15") != std::string::npos);
     assert(report.find("refusal=durable_topology_cardinality_mismatch") != std::string::npos);
     assert(report.find("custody=unresolved recovery_owner=death_disposition") != std::string::npos);
+    assert(broadcasts.size() == 1 && broadcasts.back().find("scope=batch") != std::string::npos);
     assert(std::string(death_recovery_refusal_name(90)) == "legacy_transfer_size_mismatch");
     uint64_t last = 0, emitted = 0;
     for (uint64_t count = 1; count <= 4096; ++count)
@@ -97,6 +117,10 @@ int main() {
     death_recovery_report(&actor, persistence_severity::ok, "completed", "custody=durable");
     assert(report.find("count=4097 elapsed_sec=4096") != std::string::npos);
     assert(report.find("custody=durable") != std::string::npos);
+    persistence_report(persistence_severity::info, AVATAR, "test", "none", "none", "none",
+        "private_detail", "name=%s", "private-player-name");
+    assert(report.find("detail=") == std::string::npos);
+    assert(report.find("private-player-name") == std::string::npos);
     char correlation[33], other[33];
     death_recovery_correlation((uint64_t{42}<<32)|9001, correlation);
     death_recovery_correlation((uint64_t{42}<<32)|9002, other);
@@ -148,4 +172,4 @@ assert case["recovery_required"] and case["recovery_owner"] == "retained_death_c
 assert case["death_disposition"] == "completed_with_retained_conflict"
 decoded["recovery_disposition"] = "retained_not_completed"
 assert recovery.summarize(decoded, owners)["death_disposition"] == "retained_not_completed"
-print("[PASS] executable batch UID, named refusals, bounded alerts, correlation and terminal custody states")
+print("[PASS] production reporter preserves batch UID, named refusals and correlation while rejecting private string formats; bounded alerts and terminal custody states")
