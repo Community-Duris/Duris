@@ -251,7 +251,9 @@ def login_player(journey, account: str, character: str):
     journey.PASSWORD = PASSWORD
     journey.CHARACTER = character
     journey.EMAIL = f"{account.lower()}@invalid.example"
-    return journey.reconnect_character(GAME_PORT, expected_room="The Regression Arena")
+    return journey.reconnect_character(
+        GAME_PORT, expected_room="The Regression Arena", account=account, character=character,
+    )
 
 
 def mirror_artifact_legacy_projection(wrapper: Path, artifact_vnum: int) -> None:
@@ -997,14 +999,13 @@ def main() -> int:
         enable_sql_trace(wrapper)
 
         staff_client = login_player(journey, STAFF_ACCOUNT, STAFF_NAME)
+        save_and_wait(staff_client, wrapper, STAFF_NAME, staff_pid)
+        if sql_one(wrapper, f"SELECT level FROM player_data WHERE pid={staff_pid}") != "61":
+            raise JourneyFailure("actual staff login/save did not preserve its configured level")
+        evidence.append("distinct staff login and SQL-acknowledged identity/level: verified")
         lock_name, lock_marker = acquire_recipient_lock(recipient_pid)
         wait_for_lock(wrapper, lock_name)
         lock_held = True
-        expect_response(
-            staff_client,
-            ("Regression Arena",),
-            timeout=2,
-        ) if False else None
         staff_client.send("restitution begin")
         matched, _ = expect_response(staff_client, ("staging started",), timeout=30)
         if matched != "staging started":
@@ -1015,15 +1016,21 @@ def main() -> int:
             if matched != "chunk accepted":
                 raise JourneyFailure(f"staff chunk {index} was not accepted")
         staff_client.send("restitution commit")
+        admission_states = (
+            "admitted but durability is not confirmed", "queued for journal durability",
+            "journal-uncertain",
+        )
         matched, commit_output = expect_response(
             staff_client,
-            ("Restitution submission accepted", "journal-uncertain",
-             "recipient must be offline", "pending save", "fence is unavailable",
-             "coordinator is unavailable", "not a canonical"),
+            (*admission_states, "refused:"),
             timeout=30,
         )
-        if matched not in ("Restitution submission accepted", "journal-uncertain"):
+        if matched not in admission_states:
             raise JourneyFailure(f"actual staff submission rejected: {commit_output[-1500:]}")
+        if any(part not in commit_output for part in (
+            plan["restitution_id_hex"], "delivery=not complete", "recipient fence=held",
+        )):
+            raise JourneyFailure(f"staff admission omitted identity/delivery/fence state: {commit_output[-1500:]}")
         evidence.append(f"actual in-game staff submission: verified ({matched})")
 
         fence_transcript = attempt_fenced_login(journey, RECIPIENT_ACCOUNT, RECIPIENT_NAME)

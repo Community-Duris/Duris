@@ -60,7 +60,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
             ("src/cmd/actobj.c", 768): "item.pet_give_publication",
             ("src/cmd/actobj.c", 1336): "item.legacy_get",
             ("src/cmd/actobj.c", 6278): "item.legacy_give",
-            ("src/cmd/actobj.c", 7842): "item.equipment_remove",
+            ("src/cmd/actobj.c", 7908): "item.equipment_remove",
             ("src/world/handler.c", 1856): "item.obj_to_char_admission",
             ("src/world/handler.c", 2029): "item.obj_to_char_admission",
             ("src/world/handler.h", 15): "macro.checked_item_publication_declaration",
