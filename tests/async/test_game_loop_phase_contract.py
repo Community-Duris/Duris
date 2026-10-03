@@ -42,12 +42,13 @@ activity = function_region("static void run_activity_phase", "static void run_co
 combat = function_region("static void run_combat_phase", "static void run_pulse_reset_phase")
 reset = function_region("static void run_pulse_reset_phase", "/**\n * Run network and simulation pulses")
 
-for needle in ("persistence_log_poll();", "checkpointing();", "select(",
+for needle in ("persistence_log_poll();", "select(",
                "drain_new_connections(s, 0, \"Telnet\");", "process_input(point);",
                "ssl_negotiate(point->sslses);"):
     assert contains(connection, needle)
 assert contains(connection, "return false;")
 assert not contains(connection, "critical_command_coordinator_pulse")
+assert not contains(connection, "checkpointing();")
 
 for needle in ("session_input_authentication_pending(point)",
                "descriptor_latency.finish();", "repair_session_command_gate(t_ch)",
@@ -88,6 +89,8 @@ calls = [f"{phase}(context)" for phase in PHASES]
 positions = [index(loop, call) for call in calls]
 assert positions == sorted(positions)
 assert contains(loop, "if (!run_connection_phase(context))")
+assert count(loop, "game_loop_watchdog_completed();") == 1
+assert index(loop, "run_pulse_reset_phase(context)") < index(loop, "game_loop_watchdog_completed();")
 
 # The orchestration boundary makes the important cross-phase relationships
 # executable as source contracts: output remains before events, and recurring
