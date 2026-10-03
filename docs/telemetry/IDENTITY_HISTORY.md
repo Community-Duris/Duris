@@ -3,8 +3,9 @@
 The offline contract in `scripts/telemetry/identity_history.py` implements dated
 reviewed account/controller associations and exact interval attribution for the
 accepted balance expansion. Native account lifetime/token preparation is implemented
-alongside that contract. Authenticated live capture, restricted association SQL
-registration and published report integration remain required.
+alongside that contract. Typed authenticated live capture is implemented;
+restricted association SQL registration, identity handoff and published report
+integration remain required.
 This module does not query current account ownership or identify a person from a
 name, email, IP address or device. The authoritative delivery record is
 [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
@@ -63,8 +64,8 @@ Copyover retains an original session identity, but starts another producer's
 monotonic clock. Old-producer ownership timestamps cannot label the new process's
 intervals. A fresh authenticated copyover observation can retain a known account
 token from the handoff; attribution begins at its new clock anchor. The account-load
-token cache is implemented. Typed authenticated observations and the live identity
-handoff are still pending implementation.
+token cache and typed authenticated observations are implemented. The live identity
+handoff and report generation integration remain required.
 
 Controller attribution requires compatible UTC labels: both endpoints are known,
 their difference equals monotonic duration, and no clock-discontinuity or UTC
@@ -134,9 +135,9 @@ withdrawal, replay/conflict, fresh copyover clocks, first-observation boundaries
 clock ambiguity, overlapping and sequential characters, independent presence,
 unknown-controller populations, configuration separation and bounds. These are
 offline executable semantics. Native lifetime/token allocation has its own SQL
-qualification below. Authenticated source capture, missing-identity gameplay,
-wire handoff and reviewed association/report publication require their remaining
-integration and real personal-server journeys.
+qualification below. Typed source capture and missing-identity gameplay adapters
+have focused native qualification below. Wire handoff and reviewed association/report
+publication require their remaining integration and real personal-server journeys.
 
 ## Native account lifetime and scoped token preparation
 
@@ -175,7 +176,7 @@ from retained SQL identity, but does not yet emit a typed identity handoff.
 
 Preparation can precede password verification. It emits no ownership fact and
 must not be counted as authentication, participation or an active account. A
-future authenticated capture boundary will copy the cached token into an observed
+authenticated playing-descriptor boundary copies the cached token into an observed
 fact. Unknown token zero never substitutes a name, a PID or an invented account;
 preparation failure does not change the account-load result or authentication.
 Accounts loaded while telemetry is disabled stay unknown until an actual reload
@@ -210,7 +211,66 @@ TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_re
 TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --identity
 ```
 
-This source increment prepares durable account identity. It does not complete
-authenticated ownership observations, controller proof/review registration,
-identity generation publication, character portfolios or their personal-local
-gameplay qualification.
+Durable preparation and typed authenticated capture are implemented. Controller
+proof/review registration, identity wire handoff, identity generation publication,
+character portfolios and their personal-local gameplay qualification remain required.
+
+## Authenticated ownership source observations
+
+Migration `0057_telemetry_ownership_observations` adds two nullable typed columns
+to the existing raw fact stream. Kind 9 supplies a nonzero scoped opaque account
+token for observed login, reconnect, copyover or ownership change, or token zero
+with the explicit unavailable source. Other record kinds leave both columns NULL.
+The SQL check enforces this union distinction; the verifier and boot fingerprint
+cover the unsigned widths, defaults, order and exact enforced check expression.
+Earlier sealed migrations remain unchanged.
+
+The producer observes only the logical PC of an authenticated playing descriptor
+with an admitted session and connection. It copies the account-load cache only
+when its scope matches and the current bounded account roster contains the PC
+exactly once. Missing identity, foreign membership, a blocked account, wrong scope,
+duplicate membership or a cyclic/over-capacity roster remains unavailable. At most
+16 roster entries are inspected. Capture performs no SQL, filesystem I/O, waiting
+or owned allocation and copies no account names or connection addresses.
+
+Presence, context and player evidence deduplicate an unchanged owner. A new
+connection observes reconnect; an actual token change or loss creates an observed
+boundary. Copyover preserves the original session and emits a fresh observation
+from its new producer clock and prepared account cache. These facts do not add
+duration or checkpoint totals. Time before the first ownership observation remains
+unknown, including after delayed admission or a new process.
+
+Each existing session slot retains one exact unadmitted boundary, including its
+original payload and clock point, plus one earliest unknown-loss
+marker if another boundary is observed under backpressure. Further changes remain
+unknown until a fresh current observation anchors recovery. The producer never
+backdates a later owner across the uncertain span. An unadmitted retry gets a fresh
+key in transport admission order; successful admission establishes the immutable
+key used by downstream SQL retries. Retries drain before checkpoints
+and handoff, and closed or detached slots retain pending facts until a later pulse
+admits them. A handoff refuses continuity while these facts cannot be admitted.
+The bounded outage journal and offline exporter recognize ownership loss evidence.
+
+Native session and gameplay fixtures cover boundaries, replay after admission loss,
+bounded overflow, logout retention, malformed membership and reconnect/copyover.
+The repository fixture covers exact persisted kind-9 fields, identical/conflicting
+replays, unavailable token zero, inactive NULL columns and all existing writer roles.
+The mixed SQL rollup fixture validates kind 9 while preserving definition-1/2
+playtime and observation totals, cursor/retry semantics and report privileges.
+
+```sh
+python3 tests/async/test_telemetry_session_state.py
+python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize
+python3 tests/async/test_telemetry_outage.py
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --observations
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --observations
+```
+
+Definitions 1 and 2 validate and advance past ownership without projecting account
+or controller amounts. Reviewed incident publication version 1 retains its sealed
+families 1–8 contract. The identity report generation must integrate kind-9 source
+loss/incident coverage, reviewed controller registration and retained corrections,
+identity handoff and exact effort/portfolio publication. Those requirements and
+the real personal-local gameplay gate remain in the accepted scope.

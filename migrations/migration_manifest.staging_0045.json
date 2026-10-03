@@ -738,6 +738,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "72e84f8fcea1dee822d1f73a8275696da27d3079124a1bdf5a2dff86c27686a8",
       "verify_checksum": "4f3d1d21ded4380197fea2917335af873786dc279a0b6778a236182b99795e24"
+    },
+    {
+      "id": "0057_telemetry_ownership_observations",
+      "sequence": 57,
+      "description": "Capture typed authenticated account ownership observations without adding effort",
+      "apply": "immutable/0057_telemetry_ownership_observations.sql",
+      "verify": "immutable/0057_telemetry_ownership_observations.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "6da0f3c861f1c8b49acfd982a314ed3a04267799a353942a061e8b1fa48327c5",
+      "verify_checksum": "029ab78e7c3c54ceceb21f54f86a502393aa32e0008332e2574bd50381b1515c"
     }
   ]
 }

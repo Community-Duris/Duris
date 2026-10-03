@@ -174,6 +174,16 @@ struct telemetry_session_slot
 	telemetry_counter_update last_counter_snapshot;
 	telemetry_connection_transition last_transition_snapshot;
 	telemetry_session_exit last_exit_snapshot;
+	/* One exact unadmitted boundary plus one earliest unknown-loss boundary.
+	 * Further changes under backpressure stay unknown until a fresh observation.
+	 * Original clocks/payloads survive retries; keys follow queue admission order.
+	 * Admitted SQL retries retain their keys downstream. No owned allocation. */
+	telemetry_record ownership_pending[2];
+	telemetry_ownership_payload ownership_last_sample;
+	std::uint8_t ownership_pending_count;
+	std::uint8_t ownership_has_sample;
+	std::uint8_t ownership_overflow;
+	std::uint8_t ownership_needs_anchor;
 };
 
 struct telemetry_session_state
@@ -226,6 +236,12 @@ telemetry_session_state_transition(telemetry_session_state *state,
 telemetry_session_state_result
 telemetry_session_state_update_counters(telemetry_session_state *state,
 					telemetry_counter_update update) noexcept;
+
+/* Called only by authenticated playing-descriptor adapters. It retains bounded
+ * unadmitted boundaries, deduplicates unchanged ownership, and never adds time. */
+telemetry_session_state_result
+telemetry_session_state_observe_ownership(telemetry_session_state *state,
+					  telemetry_ownership_payload observation) noexcept;
 
 /* Uses the injected clock and emits one absolute checkpoint at the observation. */
 telemetry_session_state_result

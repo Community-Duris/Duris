@@ -37,6 +37,7 @@ struct fake_repository
 	bool saw_idle_combat = false;
 	std::vector<telemetry_interval_payload> intervals; // worker writes; read after join
 	std::vector<telemetry_session_lifecycle_payload> lifecycles;
+	std::vector<telemetry_ownership_payload> ownership;
 };
 
 telemetry_repository_outcome fake_init(void *context, telemetry_repository_config) noexcept
@@ -70,6 +71,11 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 			fake->intervals.push_back(records[index].payload.interval);
 		if (records[index].header.kind == telemetry_record_kind::session_lifecycle)
 			fake->lifecycles.push_back(records[index].payload.lifecycle);
+		if (records[index].header.kind == telemetry_record_kind::ownership)
+		{
+			assert(telemetry_record_is_valid(records[index]));
+			fake->ownership.push_back(records[index].payload.ownership);
+		}
 		if (records[index].header.kind == telemetry_record_kind::interval &&
 		    records[index].payload.interval.context == telemetry_activity_context::combat)
 		{
@@ -711,8 +717,17 @@ void check_resume_queue_pressure()
 	player.only.pc = &pc;
 	pc.pid = 8101;
 	player.in_room = -1;
+	acct_chars owner_member{};
+	owner_member.pid = pc.pid;
+	acct_entry owner_account{};
+	owner_account.acct_character_list = &owner_member;
+	owner_account.telemetry_account_token = 33U;
+	owner_account.telemetry_environment_id = options.config.environment_id;
+	owner_account.telemetry_season_id = options.config.season_id;
 	descriptor_data descriptor{};
 	descriptor.connected = CON_PLAYING;
+	descriptor.character = &player;
+	descriptor.account = &owner_account;
 	const auto resumed = telemetry_runtime_game_session_resume(&player, &descriptor, nullptr);
 	const bool retained_ids = player.telemetry_session_sequence != 0 &&
 				  descriptor.telemetry_connection_sequence != 0;
@@ -721,8 +736,13 @@ void check_resume_queue_pressure()
 	login_player.only.pc = &login_pc;
 	login_pc.pid = 8102;
 	login_player.in_room = -1;
+	acct_chars login_member{};
+	login_member.pid = login_pc.pid;
+	owner_member.next = &login_member;
 	descriptor_data login_descriptor{};
 	login_descriptor.connected = CON_PLAYING;
+	login_descriptor.character = &login_player;
+	login_descriptor.account = &owner_account;
 	const auto login = telemetry_runtime_game_enter(&login_player, &login_descriptor);
 	const bool login_retained_ids = login_player.telemetry_session_sequence != 0 &&
 					login_descriptor.telemetry_connection_sequence != 0;
@@ -731,6 +751,15 @@ void check_resume_queue_pressure()
 	while (telemetry_transport_health_copy().queue_depth != 0 &&
 	       std::chrono::steady_clock::now() < drain_deadline)
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	telemetry_monotonic_usec recovery_cut{};
+	telemetry_utc_usec recovery_utc{};
+	assert(telemetry_runtime_now(&recovery_cut, &recovery_utc));
+	// Admit newer keys before retrying either retained ownership boundary.
+	// The real transport rejects stale keys even when SQL would accept them.
+	assert(telemetry_runtime_game_enter(&churn, &churn_descriptor).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	(void)telemetry_runtime_game_session_exit(&churn, &churn_descriptor,
+						  telemetry_session_end_reason::logout);
 	// Queue loss must not strand an admitted classifier/session pair.
 	const auto evidence = telemetry_runtime_game_evidence(
 		&player, &descriptor, telemetry_runtime_evidence_kind::player_action);
@@ -757,12 +786,148 @@ void check_resume_queue_pressure()
 	assert(login_retained_ids && login.outcome == telemetry_runtime_outcome::queue_full &&
 	       login.records_dropped > 0 &&
 	       login_evidence.outcome == telemetry_runtime_outcome::accepted);
+	assert(fake.ownership.size() == 2U);
+	for (const auto &owner : fake.ownership)
+	{
+		assert(owner.account_token == 33U);
+		assert(owner.session.pid == 8101 || owner.session.pid == 8102);
+		assert(owner.at_monotonic_usec < recovery_cut);
+	}
+}
+
+void check_authenticated_ownership_path()
+{
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	const auto options = enabled_options();
+	telemetry_test_start_runtime(options);
+	char_data player{};
+	pc_only_data pc{};
+	player.only.pc = &pc;
+	pc.pid = 8300;
+	player.in_room = -1;
+	acct_chars member{};
+	member.pid = pc.pid;
+	acct_entry account{};
+	account.acct_character_list = &member;
+	account.telemetry_account_token = 11U;
+	account.telemetry_environment_id = options.config.environment_id;
+	account.telemetry_season_id = options.config.season_id;
+	descriptor_data descriptor{};
+	descriptor.character = &player;
+	descriptor.account = &account;
+	descriptor.connected = CON_PLAYING;
+	assert(telemetry_runtime_game_enter(&player, &descriptor).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	const auto session = player.telemetry_session_sequence;
+	const auto first_connection = descriptor.telemetry_connection_sequence;
+	assert(telemetry_runtime_game_presence(&player, &descriptor).records_emitted == 0U);
+	auto observe = [&]()
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		const auto result = telemetry_runtime_game_presence(&player, &descriptor);
+		assert(result.outcome == telemetry_runtime_outcome::accepted &&
+		       result.records_emitted == 1U);
+	};
+	account.telemetry_account_token = 12U;
+	observe();
+	account.telemetry_environment_id = options.config.environment_id + 1U;
+	observe();
+	account.telemetry_environment_id = options.config.environment_id;
+	observe();
+	member.pid = pc.pid + 1;
+	observe();
+	member.pid = pc.pid;
+	observe();
+	member.next = &member; // A cyclic list must stay bounded and cannot establish ownership.
+	observe();
+	member.next = nullptr;
+	observe();
+	account.acct_blocked = ACCOUNT_BLOCK_DELETION;
+	observe();
+	account.acct_blocked = 0;
+	observe();
+	assert(telemetry_runtime_game_connection_transition(
+		       &player, &descriptor, telemetry_connection_transition_kind::detached)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	assert(telemetry_runtime_game_connection_transition(
+		       &player, &descriptor, telemetry_connection_transition_kind::attached)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	assert(descriptor.telemetry_connection_sequence != first_connection);
+	const auto handoff = telemetry_runtime_game_handoff_copy(&player);
+	assert(handoff.outcome == telemetry_runtime_outcome::accepted);
+	telemetry_monotonic_usec now{};
+	telemetry_utc_usec utc{};
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	assert(fake.ownership.size() == 11U);
+	const std::uint64_t tokens[] = { 11U, 12U, 0U, 12U, 0U, 12U, 0U, 12U, 0U, 12U, 12U };
+	for (std::size_t index = 0U; index < fake.ownership.size(); ++index)
+	{
+		const auto &row = fake.ownership[index];
+		assert(row.session.id.session_seq == session && row.session.pid == pc.pid);
+		assert(row.account_token == tokens[index]);
+		if (index)
+			assert(row.at_monotonic_usec >
+			       fake.ownership[index - 1U].at_monotonic_usec);
+		const auto expected =
+			index == 0U	  ? telemetry_ownership_source::authenticated_login :
+			index == 10U	  ? telemetry_ownership_source::reconnect :
+			row.account_token ? telemetry_ownership_source::ownership_changed :
+					    telemetry_ownership_source::unavailable;
+		assert(row.source == expected);
+	}
+	assert(fake.ownership[6].quality_flags & TELEMETRY_QUALITY_CARDINALITY_OVERFLOW);
+	fake_repository next_fake{};
+	const telemetry_transport_repository_binding next_repository = {
+		fake_init, fake_apply, fake_request_stop, fake_shutdown, &next_fake
+	};
+	assert(telemetry_transport_bind_for_tests(&next_repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	const auto next_options = enabled_options();
+	telemetry_test_start_runtime(next_options);
+	char_data recovered{};
+	recovered.only.pc = &pc;
+	recovered.in_room = -1;
+	descriptor_data next_descriptor{};
+	next_descriptor.character = &recovered;
+	next_descriptor.account = &account;
+	next_descriptor.connected = CON_PLAYING;
+	assert(telemetry_runtime_game_session_resume(&recovered, &next_descriptor, &handoff.handoff)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	assert(next_fake.ownership.size() == 1U);
+	const auto &resumed_owner = next_fake.ownership[0];
+	assert(resumed_owner.account_token == 12U &&
+	       resumed_owner.source == telemetry_ownership_source::copyover);
+	assert(resumed_owner.session.id.producer.boot_id ==
+	       handoff.handoff.session.id.producer.boot_id);
+	assert(resumed_owner.connection.producer.boot_id !=
+		       handoff.handoff.previous_producer.boot_id ||
+	       resumed_owner.connection.producer.process_id !=
+		       handoff.handoff.previous_producer.process_id);
+	std::puts(
+		"PASS: authenticated ownership observes scoped caches, transfers, unavailable identity and reconnect");
 }
 
 } // namespace
 
 int main()
 {
+	check_authenticated_ownership_path();
 	check_deferred_startup_presence();
 	check_resume_capacity_rollback();
 	check_resume_queue_pressure();

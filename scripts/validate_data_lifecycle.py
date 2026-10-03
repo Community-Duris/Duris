@@ -45,6 +45,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0054_telemetry_incident_coverage.sql",
     ROOT / "migrations" / "immutable" / "0055_telemetry_observation_projections.sql",
     ROOT / "migrations" / "immutable" / "0056_telemetry_account_identity.sql",
+    ROOT / "migrations" / "immutable" / "0057_telemetry_ownership_observations.sql",
 )
 
 ROOT_FIELDS = {

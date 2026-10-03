@@ -34,6 +34,14 @@ def progression(**updates):
     return row
 
 
+def ownership(**updates):
+    row = progression(record_kind=9, ownership_account_token=11, ownership_source=1,
+                      connection_boot_id=100, connection_process_id=200, connection_seq=1)
+    row = {name: value for name, value in row.items() if name in obs.OWNERSHIP_ALLOWED_COLUMNS}
+    row.update(updates)
+    return row
+
+
 def encounter(event=1, revision=1, **updates):
     row = {"ingest_id": revision, "boot_id": 100, "process_id": 200, "record_seq": revision,
            "schema_version": 1, "record_kind": 7, "occurrence_utc_usec": 100 + revision,
@@ -80,6 +88,23 @@ def page(rows):
 
 
 class ObservationSemantics(unittest.TestCase):
+    def test_ownership_validates_and_advances_without_existing_report_metrics(self):
+        for version in (1, 2):
+            target = RollupTarget(version, 1, 8, 7)
+            for row in (ownership(), ownership(ownership_account_token=0, ownership_source=5),
+                        ownership(session_boot_id=77, at_utc_usec=UTC_UNKNOWN,
+                                  occurrence_utc_usec=UTC_UNKNOWN, ownership_source=3)):
+                result = build_page_contributions([row], target)
+                self.assertEqual(result.page_last_ingest_id, row["ingest_id"])
+                self.assertEqual(result.output_fanout, 0)
+                self.assertEqual(result.sessions, {})
+            for row in (ownership(ownership_account_token=0), ownership(ownership_source=5),
+                        ownership(ownership_source=6), ownership(ownership_account_token=True),
+                        ownership(connection_seq=0), ownership(connection_boot_id=99),
+                        ownership(at_utc_usec=101), ownership(progression_applied_xp=0), ownership(duration_usec=0),
+                        ownership(ownership_account_token=1 << 64)):
+                with self.assertRaises(SemanticError):
+                    build_page_contributions([row], target)
     def test_mixed_stream_preserves_legacy_totals_and_validates_all_known_families(self):
         rows = [progression(), encounter(revision=2), combat()]
         source = deepcopy(rows)
@@ -201,7 +226,7 @@ class ObservationSemantics(unittest.TestCase):
         with self.assertRaises(BoundsExceeded):
             build_page_contributions([encounter(event=2, revision=2)], TARGET, max_output_fanout=1)
         with self.assertRaises(SemanticError):
-            build_page_contributions([combat(record_kind=9)], TARGET)
+            build_page_contributions([combat(record_kind=10)], TARGET)
         for row in (progression(connection_boot_id=True), progression(schema_version=True), combat(combat_actor_pid=0, combat_actor_kind=2),
                     progression(quality_flags=1 << 10)):
             with self.assertRaises(SemanticError):
@@ -280,7 +305,9 @@ def sql_qualification():
                 combat(combat_actor_kind=2, combat_actor_pid=-1, combat_actor_id=88),
                 combat(combat_actor_kind=3, combat_actor_pid=-1, combat_actor_id=89, combat_owner_subject_id=0),
                 progression(at_utc_usec=UTC_UNKNOWN, occurrence_utc_usec=UTC_UNKNOWN, quality_flags=1 << 9,
-                            progression_source=6, progression_reason=3)]
+                            progression_source=6, progression_reason=3),
+                ownership(), ownership(ownership_account_token=0, ownership_source=5),
+                ownership(ownership_source=3, session_boot_id=77)]
         def insert(row, ingest):
             row = dict(row, ingest_id=ingest, record_seq=ingest, ingested_utc_usec=1_000)
             assert set(row) <= set(RAW_COLUMNS)
@@ -291,7 +318,7 @@ def sql_qualification():
         bounds = RollupBounds(page_size=3, max_rows=100, max_runtime_s=60)
         target = RollupTarget(2, 1, 8, 7)
         result = RollupEngine(rollup).run(target, bounds=bounds)
-        assert result.complete and result.final_cursor == len(rows) and result.pages == 6
+        assert result.complete and result.final_cursor == len(rows) and result.pages == 7
         try: report.read_report(target, "progression_observations")
         except GenerationConflict: pass
         else: raise AssertionError("building observations visible as published")
@@ -394,6 +421,35 @@ def sql_qualification():
                         cursor.execute(statement)
                 except pymysql.err.OperationalError as error: assert error.args[0] in (1142, 1143)
                 else: raise AssertionError("restricted role unexpectedly permitted operation")
+        for row in (ownership(ownership_account_token=0), ownership(ownership_source=5),
+                    ownership(ownership_source=None), progression(ownership_account_token=11, ownership_source=1)):
+            try:
+                insert(row, len(rows) + 50)
+            except pymysql.MySQLError as error:
+                assert error.args[0] in (3819, 4025), error
+            else:
+                raise AssertionError("malformed ownership payload passed SQL check")
+        owner_verifier = ["bash", "migrations/immutable/0057_telemetry_ownership_observations.sh"]
+        verified = subprocess.run(owner_verifier, env=environment, capture_output=True, text=True, timeout=30)
+        assert verified.returncode == 0, verified.stderr
+        with admin.cursor() as cursor:
+            cursor.execute("ALTER TABLE telemetry_interval MODIFY ownership_source SMALLINT UNSIGNED NULL")
+        refused = subprocess.run(owner_verifier, env=environment, capture_output=True, text=True, timeout=30)
+        assert refused.returncode != 0 and "column shape differs" in refused.stderr
+        with admin.cursor() as cursor:
+            cursor.execute("ALTER TABLE telemetry_interval MODIFY ownership_source TINYINT UNSIGNED NULL")
+            drop = "DROP CONSTRAINT" if "mariadb" in os.environ["TELEMETRY_REPOSITORY_DB_IMAGE"] else "DROP CHECK"
+            cursor.execute(f"ALTER TABLE telemetry_interval {drop} chk_telemetry_ownership_payload")
+            cursor.execute("ALTER TABLE telemetry_interval ADD CONSTRAINT chk_telemetry_ownership_payload CHECK (ownership_account_token IS NULL OR ownership_account_token>=0)")
+        refused = subprocess.run(owner_verifier, env=environment, capture_output=True, text=True, timeout=30)
+        assert refused.returncode != 0 and "payload check differs" in refused.stderr
+        source = (ROOT / "migrations/immutable/0057_telemetry_ownership_observations.sql").read_text()
+        restore = re.search(r"'(ALTER TABLE telemetry_interval ADD CONSTRAINT [^']+)'", source).group(1)
+        with admin.cursor() as cursor:
+            cursor.execute(f"ALTER TABLE telemetry_interval {drop} chk_telemetry_ownership_payload")
+            cursor.execute(restore)
+        verified = subprocess.run(owner_verifier, env=environment, capture_output=True, text=True, timeout=30)
+        assert verified.returncode == 0, verified.stderr
         verified = subprocess.run(["bash", "migrations/immutable/0055_telemetry_observation_projections.sh"],
                                   env=environment, capture_output=True, text=True, timeout=30)
         assert verified.returncode == 0, verified.stderr

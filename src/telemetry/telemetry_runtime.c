@@ -2355,6 +2355,60 @@ bool game_transition_payload(const struct char_data *character,
 	return telemetry_connection_transition_is_valid(*transition);
 }
 
+telemetry_capture_result game_observe_ownership(
+	const struct char_data *character, const struct descriptor_data *descriptor,
+	telemetry_ownership_source source = telemetry_ownership_source::authenticated_login) noexcept
+{
+	telemetry_capture_result result{};
+	result.outcome = telemetry_runtime_outcome::accepted;
+	result.admission = telemetry_queue_admission::accepted_control_reserve;
+	// Login/copyover can admit a session before the descriptor becomes playing.
+	// Only an authenticated playing descriptor supplies an ownership observation.
+	if (character == nullptr || descriptor == nullptr || !IS_PC(character) ||
+	    character->only.pc == nullptr || descriptor->connected != CON_PLAYING ||
+	    (descriptor->original != nullptr ? descriptor->original : descriptor->character) !=
+		    character)
+		return result;
+	telemetry_session_enter entry{};
+	if (!ensure_current_config() || !game_enter_payload(character, descriptor, &entry) ||
+	    !game_entry_is_admitted(entry))
+		return game_capture_invalid();
+	telemetry_ownership_payload observation{};
+	observation.session = entry.session;
+	observation.connection = entry.connection;
+	observation.at_monotonic_usec = entry.at_monotonic_usec;
+	observation.at_utc_usec = entry.at_utc_usec;
+	observation.dimensions = entry.dimensions;
+	observation.config_id = entry.config_id;
+	observation.classifier_version = entry.classifier_version;
+	observation.policy_version = entry.policy_version;
+	observation.quality_flags = entry.quality_flags;
+	const auto *account = descriptor->account;
+	if (account != nullptr && account->acct_blocked == 0 &&
+	    account->telemetry_account_token != 0U &&
+	    account->telemetry_environment_id == entry.session.environment_id &&
+	    account->telemetry_season_id == entry.session.season_id)
+	{
+		unsigned matches = 0U, inspected = 0U;
+		const auto *member = account->acct_character_list;
+		for (; member != nullptr && inspected < MAX_CHARS_PER_ACCOUNT;
+		     member = member->next, ++inspected)
+			if (member->pid == entry.session.pid && member->blocked == 0)
+				++matches;
+		if (member != nullptr)
+			observation.quality_flags |= TELEMETRY_QUALITY_CARDINALITY_OVERFLOW;
+		else if (matches == 1U)
+			observation.account_token = account->telemetry_account_token;
+	}
+	observation.source = observation.account_token ? source :
+							 telemetry_ownership_source::unavailable;
+	result = capture_from_session(
+		telemetry_session_state_observe_ownership(&R.session, observation));
+	if (result.records_emitted)
+		wake_worker();
+	return result;
+}
+
 bool game_exit_payload(const struct char_data *character, const struct descriptor_data *descriptor,
 		       telemetry_session_end_reason reason, telemetry_session_exit *exit) noexcept
 {
@@ -2672,7 +2726,7 @@ telemetry_capture_result telemetry_runtime_game_enter(struct char_data *characte
 		game_clear_session(character);
 		return game_capture_invalid();
 	}
-	const telemetry_capture_result result = telemetry_runtime_session_enter(enter);
+	telemetry_capture_result result = telemetry_runtime_session_enter(enter);
 	// A dropped lifecycle record can follow successful state admission. Keep
 	// those IDs, but roll back an entry that had no state slot to install.
 	if (!game_entry_is_admitted(enter))
@@ -2680,6 +2734,8 @@ telemetry_capture_result telemetry_runtime_game_enter(struct char_data *characte
 		game_clear_connection(descriptor);
 		game_clear_session(character);
 	}
+	else
+		merge_capture(result, game_observe_ownership(character, descriptor));
 	return result;
 }
 
@@ -2700,10 +2756,7 @@ telemetry_capture_result telemetry_runtime_game_presence(struct char_data *chara
 		if (!game_session_ref(character, &session) ||
 		    !game_connection_id(descriptor, &connection))
 			return game_capture_invalid();
-		telemetry_capture_result result{};
-		result.outcome = telemetry_runtime_outcome::accepted;
-		result.admission = telemetry_queue_admission::accepted_control_reserve;
-		return result;
+		return game_observe_ownership(character, descriptor);
 	}
 	telemetry_capture_result result{};
 	if (descriptor->telemetry_resume_pending != 0U)
@@ -2822,7 +2875,7 @@ telemetry_runtime_game_session_resume(struct char_data *character,
 	if (!absent)
 		entry.quality_flags |= supplied.quality_flags;
 	const telemetry_session_resume resume = { supplied, entry };
-	const telemetry_capture_result result = telemetry_runtime_session_resume(resume);
+	telemetry_capture_result result = telemetry_runtime_session_resume(resume);
 	// Queue loss and failed state admission share queue_full. Preserve game IDs
 	// only when a matching connected session actually exists; lifecycle queue
 	// loss after slot installation must not erase an admitted session.
@@ -2831,6 +2884,8 @@ telemetry_runtime_game_session_resume(struct char_data *character,
 			 result.outcome == telemetry_runtime_outcome::queue_full))
 	{
 		game_clear_pending_resume(descriptor);
+		merge_capture(result, game_observe_ownership(character, descriptor,
+							     telemetry_ownership_source::copyover));
 		return result;
 	}
 	game_clear_connection(descriptor);
@@ -2876,6 +2931,7 @@ telemetry_capture_result telemetry_runtime_game_context(struct char_data *charac
 	update.classifier_version = R.config.classifier_version;
 	update.policy_version = R.config.policy_version;
 	telemetry_capture_result result = telemetry_runtime_update_context(update);
+	merge_capture(result, game_observe_ownership(character, descriptor));
 	merge_capture(result, telemetry_runtime_game_encounter_observe(character));
 	if ((character->specials.act & PLR_AFK) != 0U)
 	{
@@ -2919,7 +2975,7 @@ telemetry_runtime_game_connection_transition(struct char_data *character,
 			game_clear_connection(descriptor);
 		return game_capture_invalid();
 	}
-	const telemetry_capture_result result = telemetry_runtime_connection_transition(transition);
+	telemetry_capture_result result = telemetry_runtime_connection_transition(transition);
 	if (kind == telemetry_connection_transition_kind::attached)
 	{
 		telemetry_session_enter entry{};
@@ -2927,6 +2983,10 @@ telemetry_runtime_game_connection_transition(struct char_data *character,
 		entry.connection = transition.connection;
 		if (!game_entry_is_admitted(entry))
 			game_clear_connection(descriptor);
+		else
+			merge_capture(result, game_observe_ownership(
+						      character, descriptor,
+						      telemetry_ownership_source::reconnect));
 	}
 	if (kind == telemetry_connection_transition_kind::detached)
 		game_clear_connection(descriptor);
@@ -2968,6 +3028,8 @@ telemetry_capture_result telemetry_runtime_game_evidence(struct char_data *chara
 	telemetry_runtime_evidence evidence{};
 	if (!game_evidence_payload(character, descriptor, kind, &evidence))
 		return game_capture_invalid();
+	if (kind != telemetry_runtime_evidence_kind::linkdead)
+		merge_capture(prepared, game_observe_ownership(character, descriptor));
 	merge_capture(prepared, telemetry_runtime_record_evidence(evidence));
 	return prepared;
 }

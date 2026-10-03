@@ -54,6 +54,13 @@ COMBAT_RAW_COLUMNS = tuple("combat_" + name for name in (
     "participant_count", "dropped_participant_count", "power_band", "opponent_power_band", "opponent_count",
     "modifier_flags", "start_monotonic_usec", "end_monotonic_usec", "start_utc_usec", "end_utc_usec",
     *COMBAT_METRICS, "quality_flags"))
+OWNERSHIP_RAW_COLUMNS = ("ownership_account_token", "ownership_source")
+OWNERSHIP_ALLOWED_COLUMNS = frozenset(("ingest_id", "boot_id", "process_id", "record_seq",
+    "schema_version", "record_kind", "occurrence_utc_usec", "ingested_utc_usec",
+    "environment_id", "season_id", *SESSION, "subject_id", "pid", "connection_boot_id",
+    "connection_process_id", "connection_seq", "at_monotonic_usec", "at_utc_usec",
+    *DIMENSIONS, "config_id", "classifier_version", "policy_version", "quality_flags",
+    *OWNERSHIP_RAW_COLUMNS))
 
 XP_DIMENSIONS = ("level", *DIMENSIONS, "config_id", "classifier_version", "policy_version", "source", "reason",
                  "observation_status", "modifier_flags")
@@ -109,35 +116,52 @@ def _quality(row: Mapping[str, Any], name: str) -> int:
 
 def validate_observation(row: Mapping[str, Any]) -> dict[str, Any]:
     """Parse exactly the active typed family; never infer absent union fields."""
-    kind = _get(row, "record_kind", 6, 8)
+    kind = _get(row, "record_kind", 6, 9)
     result = {name: _get(row, name, 1) for name in ("ingest_id", "boot_id", "process_id", "record_seq")}
     if _get(row, "schema_version", 1, 1) != 1:
         raise ObservationError("schema_version")
     result.update(record_kind=kind, occurrence_utc_usec=_signed(row, "occurrence_utc_usec"))
-    prefix = "" if kind == 6 else "encounter_" if kind == 7 else "combat_"
+    for family, columns in ((6, PROGRESSION_RAW_COLUMNS), (7, ENCOUNTER_RAW_COLUMNS),
+                            (8, COMBAT_RAW_COLUMNS), (9, OWNERSHIP_RAW_COLUMNS)):
+        if family != kind and any(row.get(name) is not None for name in columns):
+            raise ObservationError("inactive_observation_fields")
+    prefix = "" if kind in (6, 9) else "encounter_" if kind == 7 else "combat_"
     for name in ("environment_id", "season_id", "config_id"):
         result[name] = _get(row, prefix + name, 1)
     for name in ("classifier_version", "policy_version"):
         result[name] = _get(row, prefix + name, 1, (1 << 32) - 1)
     result["zone_vnum"] = _get(row, prefix + "zone_vnum", -1, (1 << 31) - 1)
     result["quality_flags"] = _quality(row, prefix + "quality_flags")
-    if kind == 6:
+    if kind in (6, 9):
         for name in SESSION:
             result[name] = _get(row, name, 1)
         result["subject_id"] = _get(row, "subject_id", 1)
         result["pid"] = _get(row, "pid", 1, (1 << 31) - 1)
         connection = [row.get(name) for name in ("connection_boot_id", "connection_process_id", "connection_seq")]
-        if all(value == 0 for value in connection):
+        if kind == 6 and all(value == 0 for value in connection):
             for name, value in zip(("connection_boot_id", "connection_process_id", "connection_seq"), connection):
                 integer(value, name, 0, 0)
         else:
             for name, value in zip(("connection_boot_id", "connection_process_id", "connection_seq"), connection):
-                integer(value, name, 1)
+                result[name] = integer(value, name, 1)
         for name in DIMENSIONS:
             if name != "zone_vnum":
                 result[name] = _get(row, name, 0, (1 << (32 if name == "group_size" else 16)) - 1)
         result["at_monotonic_usec"] = _get(row, "at_monotonic_usec")
         result["at_utc_usec"] = _signed(row, "at_utc_usec")
+        if kind == 9:
+            if any(value is not None and name not in OWNERSHIP_ALLOWED_COLUMNS
+                   for name, value in row.items()):
+                raise ObservationError("inactive_ownership_fields")
+            result["account_token"] = _get(row, "ownership_account_token")
+            result["source"] = _get(row, "ownership_source", 1, 5)
+            if (result["account_token"] == 0) != (result["source"] == 5):
+                raise ObservationError("ownership_token_source")
+            if result["at_utc_usec"] != result["occurrence_utc_usec"]:
+                raise ObservationError("ownership_clock_pair")
+            if (result["connection_boot_id"], result["connection_process_id"]) != (result["boot_id"], result["process_id"]):
+                raise ObservationError("ownership_producer_clock")
+            return result
         for name, lower, upper in (("kind", 1, 3), ("source", 0, 12), ("reason", 0, 6),
                                     ("observation_status", 1, 3), ("modifier_flags", 0, 511),
                                     ("before_level", 0, 65535), ("after_level", 0, 65535)):
@@ -298,7 +322,7 @@ class ObservationPage:
             self.episodes.setdefault(_identity(row, EPISODE_KEY), []).append(row)
             if row["event"] in (2, 3, 5):
                 self.participants.setdefault(_identity(row, PARTICIPANT_KEY), []).append(row)
-        else:
+        elif row["record_kind"] == 8:
             self.actors.setdefault(_identity(row, ACTOR_KEY), []).append(row)
 
 

@@ -186,9 +186,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 56)
+        self.assertEqual(len(manifest.migrations), 57)
         self.assertEqual(manifest.migrations[-1].migration_id,
-                         "0056_telemetry_account_identity")
+                         "0057_telemetry_ownership_observations")
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
@@ -336,7 +336,7 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(runner.run_pending(staging, executor),
                          [item.migration_id for item in staging.migrations[45:]])
         self.assertEqual(executor.rows[:45], rows)
-        self.assertEqual(len(executor.rows), 56)
+        self.assertEqual(len(executor.rows), 57)
         replay = FakeExecutor(executor.rows)
         self.assertEqual(runner.run_pending(staging, replay), [])
         self.assertEqual(replay.events, ["lock", "baseline", "unlock"])
@@ -369,9 +369,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(runner.run_pending(master, resumed),
                          [item.migration_id for item in master.migrations[31:]])
         self.assertEqual(resumed.rows[:31], prefix)
-        self.assertEqual(len(resumed.rows), 56)
+        self.assertEqual(len(resumed.rows), 57)
         self.assertEqual(resumed.rows[-1].migration_id,
-                         "0056_telemetry_account_identity")
+                         "0057_telemetry_ownership_observations")
         replay = FakeExecutor(resumed.rows)
         self.assertEqual(runner.run_pending(master, replay), [])
         self.assertEqual(replay.events, ["lock", "baseline", "unlock"])

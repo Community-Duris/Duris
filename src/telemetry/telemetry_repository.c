@@ -476,6 +476,22 @@ fields record_fields(const telemetry_record &record)
 	case telemetry_record_kind::encounter:
 		encounter_fields(values, record.payload.encounter);
 		break;
+	case telemetry_record_kind::ownership:
+	{
+		const auto &p = record.payload.ownership;
+		session_fields(values, p.session);
+		connection_fields(values, p.connection);
+		FIELD(values, p, at_monotonic_usec);
+		FIELD(values, p, at_utc_usec);
+		number(values, telemetry_column_id::ownership_account_token, p.account_token);
+		number(values, telemetry_column_id::ownership_source, p.source);
+		dimension_fields(values, p.dimensions);
+		FIELD(values, p, config_id);
+		FIELD(values, p, classifier_version);
+		FIELD(values, p, policy_version);
+		FIELD(values, p, quality_flags);
+		break;
+	}
 	case telemetry_record_kind::combat_summary:
 		combat_summary_fields(values, record.payload.combat_summary);
 		break;
@@ -606,6 +622,10 @@ std::string signature(const telemetry_record &record)
 	case telemetry_record_kind::combat_summary:
 		value += ':' + std::to_string(record.payload.combat_summary.reserved);
 		break;
+	case telemetry_record_kind::ownership:
+		for (auto byte : record.payload.ownership.reserved)
+			value += ':' + std::to_string(byte);
+		break;
 	case telemetry_record_kind::configuration:
 		value += ':' + std::to_string(record.payload.configuration.config.reserved);
 		value += ':' + std::to_string(record.payload.configuration.config.schema_version);
@@ -669,6 +689,8 @@ const telemetry_session_ref *session_of(const telemetry_record &record)
 		return &record.payload.gap.session;
 	case telemetry_record_kind::progression:
 		return &record.payload.progression.session;
+	case telemetry_record_kind::ownership:
+		return &record.payload.ownership.session;
 	default:
 		return nullptr;
 	}
@@ -984,6 +1006,14 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 			       p.classifier_version);
 			number(expected, telemetry_column_id::policy_version, p.policy_version);
 		}
+		else if (record.header.kind == telemetry_record_kind::ownership)
+		{
+			const auto &p = record.payload.ownership;
+			config_id = p.config_id;
+			number(expected, telemetry_column_id::classifier_version,
+			       p.classifier_version);
+			number(expected, telemetry_column_id::policy_version, p.policy_version);
+		}
 		else
 			config_id = record.payload.checkpoint.config_id;
 		auto config = query("SELECT " + names(expected, true) +
@@ -1075,6 +1105,8 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 			quality |= record.payload.interval.quality_flags;
 		else if (record.header.kind == telemetry_record_kind::progression)
 			quality |= record.payload.progression.quality_flags;
+		else if (record.header.kind == telemetry_record_kind::ownership)
+			quality |= record.payload.ownership.quality_flags;
 		else
 			quality |= record.payload.gap.quality_flags |
 				   TELEMETRY_QUALITY_SEQUENCE_GAP;

@@ -594,7 +594,7 @@ def _validate_common_row(row: Mapping[str, Any], previous_ingest_id: int | None)
     if isinstance(schema_version, bool) or not isinstance(schema_version, int) or schema_version != 1:
         raise SemanticError(f"unsupported raw telemetry schema_version {schema_version!r}")
     kind = row.get("record_kind")
-    if isinstance(kind, bool) or not isinstance(kind, int) or kind not in range(1, 9):
+    if isinstance(kind, bool) or not isinstance(kind, int) or kind not in range(1, 10):
         raise SemanticError(f"unsupported raw telemetry record_kind {kind!r}")
     return ingest_id
 
@@ -932,9 +932,13 @@ def build_page_contributions(
         if replay_key in seen_replay_keys:
             raise SemanticError("raw page contains a duplicate replay key")
         seen_replay_keys.add(replay_key)
-        if kind in (6, 7, 8):
+        if kind in (6, 7, 8, 9):
             try:
                 observation = observations.validate_observation(row)
+                # Ownership is retained for the identity generation. It adds
+                # no duration or new metrics to the existing v1/v2 definitions.
+                if kind == 9:
+                    continue
                 # Version 1 keeps its playtime meaning while advancing over
                 # every valid family in the immutable mixed-kind input stream.
                 if target.definition_version == 1:

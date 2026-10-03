@@ -80,9 +80,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_story_quest_state','zone_touch_outcome','zone_touch_outcome_participant',"
 	"'zone_touches','zone_trophy','zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"a49eb217416d48ad1f52547cde9aa3e600cc70fe2336df67e5a28b632f21e085";
+	"28c673f3d71bd266e3fb86ad49c0a16d7445e2608a90d90fcdad2a0ee830a5a6";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"8afda714aaf1d23e379251844a69e06713df16fcb56bf6ebc6817739dfc3088c";
+	"c3cecee89a45cf2730dba4c043650c1c58e971a3f5a6b54712bb79fe3025c541";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -110,33 +110,35 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * a durable quest XP receipt mask and migration 0048 adds per-recipient XP
  * entitlements. Migration 0049 adds player spell-effect receipts, 0051 adds
  * player item runtime state, and 0052 indexes quest item witness reads. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0056_telemetry_account_identity";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 56;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0057_telemetry_ownership_observations";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 57;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"72e84f8fcea1dee822d1f73a8275696da27d3079124a1bdf5a2dff86c27686a8";
+	"6da0f3c861f1c8b49acfd982a314ed3a04267799a353942a061e8b1fa48327c5";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"4f3d1d21ded4380197fea2917335af873786dc279a0b6778a236182b99795e24";
+	"029ab78e7c3c54ceceb21f54f86a502393aa32e0008332e2574bd50381b1515c";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"9fc33c1bd9f9a525bb6150247075ff4fea6863877d5fec86e54e2b63ac7b3c6c";
-constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0056_telemetry_account_identity";
-constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 56;
+	"0fd8332bf5decd2ead0831da4fabe3e27e5e24b9d070fdbb62780fdab0a71895";
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID =
+	"0057_telemetry_ownership_observations";
+constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 57;
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM =
-	"72e84f8fcea1dee822d1f73a8275696da27d3079124a1bdf5a2dff86c27686a8";
+	"6da0f3c861f1c8b49acfd982a314ed3a04267799a353942a061e8b1fa48327c5";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
-	"4f3d1d21ded4380197fea2917335af873786dc279a0b6778a236182b99795e24";
+	"029ab78e7c3c54ceceb21f54f86a502393aa32e0008332e2574bd50381b1515c";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
-	"d4c29d0d94fc9397a7d76cd9dd7e5ae60049a1cf853bce890484f2ed0a098f21";
+	"1009438bdff32e115a7105a003c0cfd150d845a5829cc1f79f4746a77bb415a4";
 /* Master recorded runtime state at 0031; its accounting upgrade retains that prefix. */
-constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID = "0056_telemetry_account_identity";
-constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 56;
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID =
+	"0057_telemetry_ownership_observations";
+constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 57;
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM =
-	"72e84f8fcea1dee822d1f73a8275696da27d3079124a1bdf5a2dff86c27686a8";
+	"6da0f3c861f1c8b49acfd982a314ed3a04267799a353942a061e8b1fa48327c5";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_VERIFY_CHECKSUM =
-	"4f3d1d21ded4380197fea2917335af873786dc279a0b6778a236182b99795e24";
+	"029ab78e7c3c54ceceb21f54f86a502393aa32e0008332e2574bd50381b1515c";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM =
-	"cc649948b279479528dec844eee883bee9e183e80f264f2d4c0051430ac92045";
+	"f37918cc0691026f49ff4aedc266101a335ef419f8b698db4c2e779533e5349b";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
-	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequence_number LIMIT 57";
+	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequence_number LIMIT 58";
 constexpr const char *RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL =
 	"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN "
 	"('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND "

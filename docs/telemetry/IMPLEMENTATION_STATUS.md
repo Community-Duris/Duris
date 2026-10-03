@@ -11,13 +11,14 @@ work. A future production deployment is a separate operational decision.
 | Requirement | State | Evidence or remaining work |
 | --- | --- | --- |
 | #561: full writer startup contract | Implemented and locally qualified | Validate every current writer column, type, signedness, width, nullable/default semantics, InnoDB engine and 12 required indexes. Exercise effective SELECT/INSERT/session UPDATE with zero-row statements and rollback. Reject admission until the worker qualifies; later transient outages retain buffering. |
-| #565: shared serialization/schema descriptor | Implemented and locally qualified | `telemetry_columns.inc` supplies the column identities used by serializers and startup validation. Preserve all record kinds 1–8, replay keys and column prefixes. Reserved/padding/absent union fields and sink-generated fields have explicit exclusions. |
+| #565: shared serialization/schema descriptor | Implemented and locally qualified | `telemetry_columns.inc` supplies the column identities used by serializers and startup validation. Preserve all record kinds 1–9, admitted replay keys and column prefixes. Reserved/padding/absent union fields and sink-generated fields have explicit exclusions. |
 | #566: durable outage/loss evidence | Implemented and locally qualified | Worker registration before SQL initialization/admission; protected exclusive checksummed storage; bounded coherent samples; clean drain versus known abandonment and unknown tails; real restart/exec/SIGKILL and storage-failure tests. Offline read-only export preserves unknown ends. See [OUTAGE_STORAGE.md](OUTAGE_STORAGE.md) and the qualified #567 report integration below. |
 | #567: reviewed incident coverage | Implemented and locally qualified | Consecutive retained inventory versions, nullable unknown ends, committed first verified post-fix references, explicit backlog/reconstruction dispositions and atomic published coverage snapshots. Reports preserve gaps, source uncertainty and bounded private-role separation. Full local MariaDB/MySQL chains, capacity, digest/permission negatives, lost commit replies and unchanged v1 totals qualified. Historical facts require evidence; synthetic fixtures do not establish a real incident history. See [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Initial session qualification/capacity recovery | Implemented and locally qualified | Existing descriptor sweep and context/evidence adapters retry missing entry. Deferred copyover retains one handoff in descriptor memory; supplied keys/totals/revision survive. No earlier unobserved time or human activity is invented. True capacity refusal rolls back IDs; lifecycle queue loss retains admitted IDs. See [SESSION_LIFECYCLE.md](SESSION_LIFECYCLE.md). |
 | Publish existing progression/encounter/combat observations | Implemented and locally qualified | Definition 2 publishes five bounded projections from typed kinds 6–8. Cumulative participant/actor facts replace earlier measurements, threshold consumption stays separate from XP, unknown tails remain NULL, and published read-only snapshots retain incident coverage. Both engines passed the full 55-step chain and replay, rollback, constraints and role negatives. See [OBSERVATION_PROJECTIONS.md](OBSERVATION_PROJECTIONS.md). |
 | Native account lifetime and scoped token preparation | Implemented and locally qualified | Migration 0056 retains retired lifetimes, follows actual renames and issues one opaque token per scoped lifetime. Account-load caching, transaction/entropy/allocation failures, ambiguity, simultaneous preparation, deletion/recreation and restricted permissions passed on both local SQL engines. Preparation itself emits no authentication or participation evidence. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
-| Character/account/confirmed controller association | In progress | Offline dated review/correction, ownership cuts, same-producer attribution and unknown linkage are qualified; native lifetime/token allocation and account-load caching are now qualified. Remaining: authenticated typed capture, wire handoff, restricted SQL registry/publication and real source journeys. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
+| Authenticated ownership observations | Implemented and locally qualified | Kind 9 observes scoped cached identity only on an authenticated playing descriptor with matching current account membership. Bounded admission recovery preserves original clock/payload, explicit loss spans and fresh transport key order. Reconnect/copyover, missing identity, logout retention, native writer replay/permissions, mixed-stream report compatibility and ownership outage export are qualified. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
+| Character/account/confirmed controller association | In progress | Offline dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation and typed authenticated source capture are qualified. Remaining: identity wire handoff, restricted SQL registry/publication, ownership incident coverage for identity generations and real personal source journeys. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Shared battles and changing rosters | Pending | Link opponents and support actors to a shared battle, retain mode/roster segments, ownership-aware pets, compact context, observed outcomes and censored boundaries. |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and offline exact account/controller effort union are qualified. Rested/assistance provenance, milestone exposure/censoring, published portfolio amounts, switching and comparable rates remain required. |
@@ -281,8 +282,48 @@ TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_reposi
 
 Account-load preparation can occur before password verification and emits no
 ownership fact. Allocator row counts cannot stand in for participating accounts.
-The authenticated observation producer and identity handoff, reviewed SQL
+Typed authenticated source capture is qualified below. Identity handoff, reviewed SQL
 association registry, published portfolios, shared battles/zone attempts, four
 balance suites, canonical economic rewards and final personal-server gate remain
 in the accepted implementation scope. Production and staging access are not
 prerequisites.
+
+## Qualified authenticated ownership source
+
+Migration `0057_telemetry_ownership_observations` adds two nullable raw columns
+and a guarded payload check. Both MariaDB 10.11.14 and MySQL 8.0.46 passed the
+full 57-step chain, all nine native writer record kinds, identical/conflicting
+replays and effective restricted writer permissions. The canonical descriptor
+now has 153 column identities and 193 mappings; its 12 required indexes are unchanged.
+All three retained histories, compiled constants and engine-measured fingerprints
+are synchronized. The inventory remains 236 SQL tables and 51 non-database stores.
+
+Each engine's mixed SQL fixture consumes 21 facts across seven pages, including
+known, unavailable and new-producer ownership. Existing definition-1/2 amounts
+retain their meaning; ownership advances the cursor without adding duration,
+XP or account/controller metrics. All five existing observation publications,
+restricted report roles, ambiguity/retry, budget refusal and atomic rollback
+passed. Malformed ownership combinations fail SQL checks, and changed column
+widths or check expressions fail the new verifier. Kind 9 requires a full current
+connection producer and rejects inactive union fields or contradictory UTC labels.
+
+Native session fixtures preserve actual boundaries through backpressure and bounded
+overflow, require fresh recovery anchors, and retain facts after logout. Admission
+retries receive fresh ordered keys; admitted SQL retries retain immutable keys.
+The actual gameplay adapter passes scope/membership/deletion-fence negatives,
+cyclic-list bounds, known/unavailable changes, reconnect and a fresh copyover
+producer. The real transport regression admits newer keys before retrying retained
+ownership and verifies the original observation clocks. ASan/UBSan passed.
+
+Durable outage and offline export now preserve ownership family masks. Native
+outage/runtime restart and storage-failure checks, header contracts, health checks,
+runtime lifecycle/copyover, 13 observation and 12 review semantic tests, seven
+budget tests, 24 immutable-history tests, 10 boot contracts and 22 lifecycle checks
+passed. The maintained SQL server build and touched formatting passed.
+
+Reviewed incident publication version 1 retains its sealed families 1–8 contract.
+Identity publication must integrate kind-9 incident/loss coverage and the reviewed
+association version before claiming complete account/controller coverage. Identity
+wire handoff, portfolios, shared battles, zone attempts, canonical rewards, four
+balance suites and the final real personal-local gate remain required. The complete
+accepted scope is unchanged; production and staging access remain unnecessary.

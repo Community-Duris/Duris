@@ -104,6 +104,11 @@ def repository_mapping_contract() -> None:
     assert "FIELD(values, summary" not in combat, (
         f"engine={engine} migration=0025_telemetry_combat_summaries "
         "record_kind=8 unprefixed_FIELD_mapping")
+    ownership = function_body(repository, "case telemetry_record_kind::ownership:",
+                              "case telemetry_record_kind::combat_summary:")
+    ownership_schema = migration_columns("0057_telemetry_ownership_observations.sql")
+    self_owned_columns = [name for name in mapped_columns(ownership) if name.startswith("ownership_")]
+    assert self_owned_columns == ownership_schema, "ownership fields must map to their typed nullable columns"
 
 
 def sql_environment() -> tuple[dict[str, str], list[str], str]:

@@ -435,6 +435,29 @@ static telemetry_record combat_summary_record(unsigned long long sequence)
 	CHECK(telemetry_record_is_valid(record));
 	return record;
 }
+static telemetry_record ownership_record(std::uint64_t sequence, std::uint64_t token = 11U)
+{
+	const auto interval = interval_record();
+	telemetry_record record{};
+	record.header = interval.header;
+	record.header.kind = telemetry_record_kind::ownership;
+	record.header.key.record_seq = sequence;
+	auto &p = record.payload.ownership;
+	p.session = interval.payload.interval.session;
+	p.connection = { record.header.key.producer, 7309U };
+	p.at_monotonic_usec = 1200U;
+	p.at_utc_usec = record.header.occurrence_utc_usec;
+	p.account_token = token;
+	p.source = token ? telemetry_ownership_source::authenticated_login :
+			   telemetry_ownership_source::unavailable;
+	p.dimensions = interval.payload.interval.dimensions;
+	p.config_id = interval.payload.interval.config_id;
+	p.classifier_version = interval.payload.interval.classifier_version;
+	p.policy_version = interval.payload.interval.policy_version;
+	CHECK(telemetry_record_is_valid(record));
+	return record;
+}
+
 static void seed_config()
 {
 	expect_one(normal_interval_configs[0], telemetry_apply_outcome::applied);
@@ -462,6 +485,8 @@ static telemetry_record record_kind_fixture(telemetry_record_kind kind)
 		return encounter_record(7307U);
 	case telemetry_record_kind::combat_summary:
 		return combat_summary_record(7308U);
+	case telemetry_record_kind::ownership:
+		return ownership_record(7309U);
 	default:
 		CHECK(false);
 		return {};
@@ -496,6 +521,9 @@ static void change_one_field(telemetry_record &record)
 	case telemetry_record_kind::combat_summary:
 		++record.payload.combat_summary.damage_dealt;
 		break;
+	case telemetry_record_kind::ownership:
+		++record.payload.ownership.account_token;
+		break;
 	default:
 		CHECK(false);
 	}
@@ -504,7 +532,7 @@ static void change_one_field(telemetry_record &record)
 
 static void every_record_kind_round_trip_tests()
 {
-	for (unsigned int number = 1U; number <= 8U; ++number)
+	for (unsigned int number = 1U; number <= 9U; ++number)
 	{
 		const auto kind = static_cast<telemetry_record_kind>(number);
 		std::string label = "record-kind:" + std::to_string(number);
@@ -590,12 +618,33 @@ static void typed_extension_mapping_tests()
 	const auto progression = progression_record(20, 25);
 	const auto encounter = encounter_record(21);
 	const auto combat = combat_summary_record(22);
-	const telemetry_record batch[] = { interval, progression, encounter, combat };
+	const auto owner = ownership_record(23);
+	const auto unknown = ownership_record(24, 0U);
+	const telemetry_record batch[] = {
+		interval, progression, encounter, combat, owner, unknown
+	};
 	const auto result = telemetry_repository_apply(batch, std::size(batch));
 	CHECK(result.outcome == telemetry_batch_outcome::committed);
 	CHECK(result.applied_count == std::size(batch));
 	CHECK(result.duplicate_count == 0U && result.invalid_count == 0U &&
 	      result.conflict_count == 0U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=9 AND "
+		     "ownership_account_token=11 AND ownership_source=1 AND at_monotonic_usec=1200 "
+		     "AND duration_usec IS NULL AND progression_applied_xp IS NULL AND combat_damage_dealt IS NULL") ==
+	      1U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=9 AND "
+		     "ownership_account_token=0 AND ownership_source=5") == 1U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind<>9 AND "
+		     "(ownership_account_token IS NOT NULL OR ownership_source IS NOT NULL)") ==
+	      0U);
+	expect_one(owner, telemetry_apply_outcome::duplicate_identical);
+	expect_one(unknown, telemetry_apply_outcome::duplicate_identical);
+	auto owner_conflict = owner;
+	owner_conflict.payload.ownership.account_token++;
+	expect_one(owner_conflict, telemetry_apply_outcome::duplicate_conflict);
+	owner_conflict = ownership_record(25);
+	owner_conflict.payload.ownership.source = telemetry_ownership_source::unavailable;
+	expect_one(owner_conflict, telemetry_apply_outcome::rejected_invalid);
 
 	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=6 "
 		     "AND progression_kind=1 AND progression_source=5 AND progression_reason=1 "
@@ -1367,7 +1416,7 @@ int main()
 	bounds_and_lifecycle_tests();
 	shutdown_fixture();
 	mysql_close(observer);
-	std::puts("SQL repository runtime: PASS (record kinds 1-8, 10 golden fixtures, and focused "
+	std::puts("SQL repository runtime: PASS (record kinds 1-9, 10 golden fixtures, and focused "
 		  "failure/isolation regressions)");
 }
 #endif

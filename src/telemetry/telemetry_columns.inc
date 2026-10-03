@@ -147,6 +147,8 @@ TELEMETRY_COLUMN(combat_casting_aborts, bigint, true, 0U)
 TELEMETRY_COLUMN(combat_casting_elapsed_usec, bigint, true, 0U)
 TELEMETRY_COLUMN(combat_tanking_usec, bigint, true, 0U)
 TELEMETRY_COLUMN(combat_quality_flags, int, true, 0U)
+TELEMETRY_COLUMN(ownership_account_token, bigint, true, 0U)
+TELEMETRY_COLUMN(ownership_source, tinyint, true, 0U)
 TELEMETRY_COLUMN(failure_class, tinyint, true, 0U)
 TELEMETRY_COLUMN(sql_error_code, int, true, 0U)
 TELEMETRY_COLUMN(payload_sha256, binary, false, 32U)
@@ -285,7 +287,8 @@ TELEMETRY_TABLE_COLUMN(telemetry_interval, encounter_classifier_version, true, f
 TELEMETRY_TABLE_COLUMN(telemetry_interval, encounter_policy_version, true, false, null_value)
 TELEMETRY_TABLE_COLUMN(telemetry_interval, encounter_zone_vnum, true, false, null_value)
 TELEMETRY_TABLE_COLUMN(telemetry_interval, encounter_group_key, true, false, null_value)
-TELEMETRY_TABLE_COLUMN(telemetry_interval, encounter_participant_subject_id, true, false, null_value)
+TELEMETRY_TABLE_COLUMN(telemetry_interval, encounter_participant_subject_id, true, false,
+		       null_value)
 TELEMETRY_TABLE_COLUMN(telemetry_interval, encounter_participant_pid, true, false, null_value)
 TELEMETRY_TABLE_COLUMN(telemetry_interval, encounter_start_monotonic_usec, true, false, null_value)
 TELEMETRY_TABLE_COLUMN(telemetry_interval, encounter_start_utc_usec, true, false, null_value)
@@ -313,7 +316,8 @@ TELEMETRY_TABLE_COLUMN(telemetry_interval, combat_owner_subject_id, true, false,
 TELEMETRY_TABLE_COLUMN(telemetry_interval, combat_actor_kind, true, false, null_value)
 TELEMETRY_TABLE_COLUMN(telemetry_interval, combat_unique_player_count, true, false, null_value)
 TELEMETRY_TABLE_COLUMN(telemetry_interval, combat_participant_count, true, false, null_value)
-TELEMETRY_TABLE_COLUMN(telemetry_interval, combat_dropped_participant_count, true, false, null_value)
+TELEMETRY_TABLE_COLUMN(telemetry_interval, combat_dropped_participant_count, true, false,
+		       null_value)
 TELEMETRY_TABLE_COLUMN(telemetry_interval, combat_power_band, true, false, null_value)
 TELEMETRY_TABLE_COLUMN(telemetry_interval, combat_opponent_power_band, true, false, null_value)
 TELEMETRY_TABLE_COLUMN(telemetry_interval, combat_opponent_count, true, false, null_value)
@@ -334,6 +338,8 @@ TELEMETRY_TABLE_COLUMN(telemetry_interval, combat_casting_aborts, true, false, n
 TELEMETRY_TABLE_COLUMN(telemetry_interval, combat_casting_elapsed_usec, true, false, null_value)
 TELEMETRY_TABLE_COLUMN(telemetry_interval, combat_tanking_usec, true, false, null_value)
 TELEMETRY_TABLE_COLUMN(telemetry_interval, combat_quality_flags, true, false, null_value)
+TELEMETRY_TABLE_COLUMN(telemetry_interval, ownership_account_token, true, false, null_value)
+TELEMETRY_TABLE_COLUMN(telemetry_interval, ownership_source, true, false, null_value)
 
 TELEMETRY_TABLE_COLUMN(telemetry_quarantine, boot_id, false, false, unconstrained)
 TELEMETRY_TABLE_COLUMN(telemetry_quarantine, process_id, false, false, unconstrained)
@@ -350,14 +356,25 @@ TELEMETRY_TABLE_COLUMN(telemetry_quarantine, quarantined_at, false, false, curre
 TELEMETRY_TABLE_COLUMN(telemetry_quarantine, recovery_state, false, false, zero)
 
 TELEMETRY_INDEX(telemetry_config, PRIMARY, true, "environment_id,config_id")
-TELEMETRY_INDEX(telemetry_session, PRIMARY, true, "environment_id,season_id,session_boot_id,session_process_id,session_seq")
-TELEMETRY_INDEX(telemetry_session, uq_telemetry_session_identity, true, "session_boot_id,session_process_id,session_seq")
-TELEMETRY_INDEX(telemetry_session, idx_telemetry_session_subject, false, "environment_id,season_id,subject_id")
+TELEMETRY_INDEX(telemetry_session, PRIMARY, true,
+		"environment_id,season_id,session_boot_id,session_process_id,session_seq")
+TELEMETRY_INDEX(telemetry_session, uq_telemetry_session_identity, true,
+		"session_boot_id,session_process_id,session_seq")
+TELEMETRY_INDEX(telemetry_session, idx_telemetry_session_subject, false,
+		"environment_id,season_id,subject_id")
 TELEMETRY_INDEX(telemetry_interval, PRIMARY, true, "ingest_id")
 TELEMETRY_INDEX(telemetry_interval, uq_telemetry_replay, true, "boot_id,process_id,record_seq")
-TELEMETRY_INDEX(telemetry_interval, idx_telemetry_checkpoint, false, "environment_id,season_id,session_boot_id,session_process_id,session_seq,checkpoint_revision")
-TELEMETRY_INDEX(telemetry_interval, idx_telemetry_subject, false, "environment_id,season_id,subject_id,ingest_id")
+TELEMETRY_INDEX(
+	telemetry_interval, idx_telemetry_checkpoint, false,
+	"environment_id,season_id,session_boot_id,session_process_id,session_seq,checkpoint_revision")
+TELEMETRY_INDEX(telemetry_interval, idx_telemetry_subject, false,
+		"environment_id,season_id,subject_id,ingest_id")
 TELEMETRY_INDEX(telemetry_quarantine, PRIMARY, true, "boot_id,process_id,record_seq")
-TELEMETRY_INDEX(telemetry_quarantine, idx_telemetry_quarantine_recovery, false, "recovery_state,quarantined_at")
-TELEMETRY_INDEX(telemetry_interval, uq_telemetry_encounter_event, true, "encounter_boot_id,encounter_process_id,encounter_seq,encounter_event,encounter_revision,encounter_participant_pid")
-TELEMETRY_INDEX(telemetry_interval, uq_telemetry_combat_summary, true, "combat_encounter_boot_id,combat_encounter_process_id,combat_encounter_seq,combat_actor_kind,combat_actor_id,combat_actor_pid,combat_revision")
+TELEMETRY_INDEX(telemetry_quarantine, idx_telemetry_quarantine_recovery, false,
+		"recovery_state,quarantined_at")
+TELEMETRY_INDEX(
+	telemetry_interval, uq_telemetry_encounter_event, true,
+	"encounter_boot_id,encounter_process_id,encounter_seq,encounter_event,encounter_revision,encounter_participant_pid")
+TELEMETRY_INDEX(
+	telemetry_interval, uq_telemetry_combat_summary, true,
+	"combat_encounter_boot_id,combat_encounter_process_id,combat_encounter_seq,combat_actor_kind,combat_actor_id,combat_actor_pid,combat_revision")

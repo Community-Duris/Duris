@@ -414,7 +414,7 @@ RAW_COLUMNS = (
     "pulse_slot_count",
     "backend",
     "enabled",
-) + observations.PROGRESSION_RAW_COLUMNS + observations.ENCOUNTER_RAW_COLUMNS + observations.COMBAT_RAW_COLUMNS
+) + observations.PROGRESSION_RAW_COLUMNS + observations.ENCOUNTER_RAW_COLUMNS + observations.COMBAT_RAW_COLUMNS + observations.OWNERSHIP_RAW_COLUMNS
 
 SESSION_COLUMNS = (
     "definition_version",

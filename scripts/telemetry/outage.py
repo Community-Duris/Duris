@@ -17,11 +17,11 @@ MAX_PRODUCERS = 256
 WORDS = 40
 MAX_BYTES = 64 + MAX_PRODUCERS * WORDS * 8
 UNKNOWN_UTC = -(1 << 63)
-KNOWN_KINDS = (1 << 9) - 2
+KNOWN_KINDS = (1 << 10) - 2
 PHASES = {1: "running", 2: "clean_drained", 3: "abandoned", 4: "unknown_tail"}
 FAMILIES = {1: "interval", 2: "session_lifecycle", 3: "session_checkpoint",
             4: "coverage_gap", 5: "configuration", 6: "progression",
-            7: "encounter", 8: "combat_summary"}
+            7: "encounter", 8: "combat_summary", 9: "ownership"}
 FIELDS = (
     "boot_id", "process_id", "environment_id", "season_id",
     "registered_monotonic_usec", "registered_utc_usec",

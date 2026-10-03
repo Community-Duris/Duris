@@ -37,6 +37,7 @@ def main() -> None:
             packet = json.loads(exported.stdout)
             assert packet["producer_count"] == 2 and packet["generation"] == 4
             previous, current = packet["observations"]
+            assert "ownership" in previous["record_families"]
             assert previous["phase"] == "unknown_tail" and previous["tail_end_utc_usec"] is None
             assert previous["tail_end_monotonic_usec"] is None and previous["observed_monotonic_usec"] == 400
             assert previous["rejected_detail_admissions"] == 3 and previous["unattempted_records"] == 4

@@ -21,7 +21,7 @@ constexpr const char *PENDING = "outages.pending";
 constexpr const char *LOCK = "outages.owner";
 constexpr unsigned char MAGIC[] = { 'D', 'M', 'S', 'T', 'L', 'J', '0', '1' };
 using words = std::array<std::uint64_t, TELEMETRY_OUTAGE_DISK_WORDS>;
-constexpr std::uint64_t KNOWN_KINDS = (std::uint64_t{ 1U } << 9U) - 2U;
+constexpr std::uint64_t KNOWN_KINDS = (std::uint64_t{ 1U } << 10U) - 2U;
 words encode(const telemetry_outage_observation &value);
 
 struct file_guard
