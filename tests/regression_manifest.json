@@ -554,7 +554,7 @@
   "test_password_async_runtime.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":7.433,"purpose":"Exercise the real shared worker/session adapter and #191 latency recorder."},
   "test_patrol_event_size.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.03,"purpose":"patrol event size"},
   "test_persistence_backup.py": {"profile":"recovery","mode":"unittest","minimum_cases":39,"cpu":1,"memory_mb":256,"seconds":15.072,"purpose":"Linux filesystem/unit regressions; all authority is disposable synthetic data."},
-  "test_persistence_backup_integration.py": {"profile":"recovery","mode":"unittest","minimum_cases":9,"cpu":1,"memory_mb":256,"seconds":0.087,"purpose":"Disposable Linux/MariaDB/native recovery integration."},
+  "test_persistence_backup_integration.py": {"profile":"recovery","mode":"unittest","minimum_cases":10,"cpu":1,"memory_mb":256,"seconds":0.087,"purpose":"Disposable Linux/MariaDB/native recovery integration."},
   "test_persistence_event_schema.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.023,"purpose":"persistence event schema"},
   "test_persistence_flush_pwipe_fencing.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.031,"purpose":"persistence flush pwipe fencing"},
   "test_persistence_log.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":1.861,"purpose":"Exercise the real reporter and worker against disposable files and injected I/O faults."},
@@ -864,5 +864,12 @@
   "test_zone_story_quest_repository.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":1.165,"purpose":"zone story quest repository"},
   "test_zone_story_quest_state_schema.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.023,"purpose":"Offline contract for the durable zone-story quest state schema."},
   "test_zone_story_quest_tracking_contract.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":1.103,"purpose":"zone story quest tracking contract"},
-  "test_zone_touch_repository.py": {"profile":"native","mode":"unittest","minimum_cases":4,"cpu":1,"memory_mb":512,"seconds":3.979,"purpose":"Contract and validation tests for zone_touch_repository."}
+  "test_zone_touch_repository.py": {"profile":"native","mode":"unittest","minimum_cases":4,"cpu":1,"memory_mb":512,"seconds":3.979,"purpose":"Contract and validation tests for zone_touch_repository."},
+  "test_account_delete_admission_runtime.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":4,"purpose":"Execute guarded account-deletion admission and held-lease refusal."},
+  "test_account_load.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":2,"memory_mb":1024,"seconds":25,"purpose":"Execute account-loading lifecycle, ownership fences and repository limits."},
+  "test_game_loop_watchdog.py": {"profile":"native","mode":"unittest","minimum_cases":24,"cpu":1,"memory_mb":512,"seconds":45,"purpose":"Execute bounded world-loop supervision, stalled callbacks and lifecycle recovery."},
+  "test_persistence_diagnostics.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":6,"purpose":"Execute bounded diagnostic capture and backend-neutral report generation."},
+  "test_persistence_doctor.py": {"profile":"fast","mode":"unittest","minimum_cases":10,"cpu":1,"memory_mb":256,"seconds":2,"purpose":"Verify read-only diagnostic findings, TLS, protected output and optional native SQL.","also_profiles":["database"]},
+  "test_persistence_restore_socket.py": {"profile":"fast","mode":"unittest","minimum_cases":7,"cpu":1,"memory_mb":256,"seconds":1,"purpose":"Verify native restore engine and socket bounds refuse before initialization."},
+  "test_session_queues_runtime.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":2,"memory_mb":1024,"seconds":15,"purpose":"Execute bounded session queue admission, overflow, routing and output handling."}
 }}
