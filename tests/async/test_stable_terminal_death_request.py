@@ -174,8 +174,9 @@ literal_array_end += len("literal_inventory_checkpoints = {};")
 # Extract only actual storage; a backend guard around the next declaration
 # must not leak an unmatched preprocessor block into this component harness.
 HARNESS += PIPELINE[literal_start:literal_array_end] + "\n"
-HARNESS += section(PIPELINE, "literal_inventory_checkpoint *find_literal_inventory_locked(int pid)",
-                   "bool literal_inventory_blob(")
+literal_lookup_start = PIPELINE.index("literal_inventory_checkpoint *find_literal_inventory_locked(int pid)")
+literal_lookup_end = PIPELINE.index("\n}", literal_lookup_start) + 2
+HARNESS += PIPELINE[literal_lookup_start:literal_lookup_end] + "\n"
 HARNESS += find_fence + accounting + retained_scan + retain + requeue + ack_gate
 HARNESS += r'''
 }

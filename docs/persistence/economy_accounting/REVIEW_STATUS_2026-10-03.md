@@ -1142,3 +1142,67 @@ ca48c22d8aac83dcc59bd701ae67e2f465c4234084de59821ca3e2e5f6ad5726;
 area pickup 2bf1cc8cab9d8d4fbbf2c0a84dc3d52ec925927c4b2069657fe1de93017d6985;
 network readiness d6291769c6d851f04bfb838384c575cac6168d5b731e5768371d16e691b1e083.
 All R1-R8 release gates and the final current-head integrated run remain open.
+
+
+## Restored SQL ordinary-drop obligation and authoritative hydration
+
+The save pipeline now admits a bounded restored ordinary-drop obligation from
+its original retained schema-2 command, without inventing a live runtime token
+or capture/ACK revision. Registration requires an initialized, non-stopping SQL
+pipeline, actual accounting-envelope support and complete ordinary literal graph
+capture; save-journal replay need not have finished. Exact retries retain one
+hold. Changed operation IDs/bytes, unsupported shapes, allocation failure and
+shared 256-scope/32-MiB limits refuse without damaging prior holds. Flatfile
+registration remains unsupported.
+
+Account/nanny authoritative hydration now distinguishes restored obligations
+from live checkpoint holds while preserving real quarantine, target, pinned-death
+and degraded-recovery gates. Saves and lifecycle mutation remain held. Live token
+release cannot discard a restored obligation; the original-operation release API
+is allocation-free and actor independent. Its caller must already have a durable
+coordinator publication ACK. No production replay observer or ACK caller uses
+these new APIs yet, so this is component implementation and qualification only.
+
+Seven focused owners pass. The 24-production-source native fixture passes strict
+warnings and ASan/UBSan compilation in 458.533 seconds within its unchanged
+600-second budget, then passes on fresh guarded MariaDB and MySQL targets with
+actual capture, pipeline, journal, worker, repository and pool integration.
+Existing exact-save/coalescing, physical SQL payload, actual COMMIT-reply-loss,
+cold component reads and save-journal replay assertions remain. Added manual
+restored-command checks cover replay-in-progress registration, runtime-zero
+survival, clean hydration versus real fences, lifecycle refusal, exact/conflicting
+retry, shared count/byte budgets, allocation failure, actorless release and
+resumed saving. The pinned-death check is an extracted owner test; these checks
+do not drive critical replay, publication ACK, copyover or an active drop journey.
+
+Both strict production backends complete incrementally with unchanged flags and
+-j2. Initial SQL and flatfile header-fanout rebuilds each exceed the original
+600-second driver budget; their failed logs remain preserved and are not cold
+build passes. The current strict flatfile binary also passes all actual inactive
+creation, starter-kit, invitation/helper, hardcore, world-entry, save, cold-restart
+and relog scenarios in 162.558 seconds with unchanged five-second waits. These
+isolated worlds qualify inactive creation behavior, not SQL held-drop gameplay.
+The initial native fixture omitted publication_required and failed its command
+support assertion; its successful compile and failed MariaDB run remain separate.
+The corrected factory has a native RED-to-GREEN reproduction. A focused-owner QA
+run missing the public environment template is also retained separately from its
+corrected passing run. No production admission gate was loosened.
+
+Primary evidence: `tmp/restored-drop-obligation-qualified-final2-summary.local.json`,
+SHA-256 0f1f85cfad9285e9c2797a1f199e0d268d920b7994dade70dff30ffc4bd67eee.
+The primary verifies 541 raw native compile inputs, 2,222 LF-normalized frozen
+public inputs and 1,229 production source/Makefile inputs against current source.
+Native binary: 60dcf1226bdff76dc004239616db1c4e65792aeba916c1dc7e6df76fdf2407fd;
+qualification metadata: e777e21a6c99a8f1503f2bc79a6c233a0a2a7ea4600877245a1ba406bfb8ce6a.
+Strict production SQL: c356899040a940f9699423752d5fb082e75b2845cce386993e94f9caa039d385;
+flatfile: dba9e47402788be76a2ca81ee09cd80bbd335fa6a59d5f4e94b67fd177892db0.
+The summary retains engine, gameplay, owner and original-failure log pins.
+
+Next: bind successful retained receipts to immutable full-literal room payload
+and native ledger proof, wire replay registration and actor-independent exact
+materialization, and release only after durable publication ACK in both ACK
+paths. Actual producer/refusal/reconnect/copyover/two-cold-boot qualification,
+other writer families, flatfile parity and the final current-head integrated run
+remain open. Inventory stays 868 routes, 2,817 occurrences, 2,758 unique sites,
+zero unmapped; coverage_complete=false and release=BLOCKED. All R1-R8 acceptance
+gates remain required.

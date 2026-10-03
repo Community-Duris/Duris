@@ -140,6 +140,17 @@ bool player_save_pipeline_literal_inventory_hold(const player_literal_inventory_
 bool player_save_pipeline_literal_inventory_release(const player_literal_inventory_token &token,
 						    const critical_operation_id &operation_id);
 bool player_save_pipeline_literal_inventory_cancel(const player_literal_inventory_token &token);
+// Critical replay restores a SQL ordinary-drop obligation without inventing a
+// live runtime token or checkpoint revision. Identical immutable commands are
+// idempotent; conflicting identity or capacity refuses before admission.
+bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &command);
+// A restored drop may hydrate authoritative state while saves/lifecycle remain
+// held. All other recovery, target-login and pinned-death fences still refuse.
+bool player_save_pipeline_authoritative_hydration_admitted(int pid);
+// Called only after the coordinator has durably acknowledged publication. This
+// original-ID release needs no live actor and cannot allocate or fail afterward.
+void player_save_pipeline_sql_drop_publication_acknowledged(
+	const critical_operation_id &operation_id) noexcept;
 
 // Capture progression and its quest reward identities in one save-journal frame.
 // SQL applies the experience snapshot and receipt mask in the same transaction.

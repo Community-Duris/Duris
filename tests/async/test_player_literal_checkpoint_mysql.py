@@ -33,6 +33,9 @@ SOURCES = (
     "src/persistence/persistence_observability.c", "src/sql/sql_pool.c",
     "src/player/player_save_worker.c", "src/player/player_revision_state.c",
     "src/player/player_save_pipeline.c", "src/account/character_identity.c",
+    "src/economy/item_transfer_accounting.c", "src/economy/economic_accounting_intent.c",
+    "src/economy/economic_accounting_plan.c", "src/economy/economic_accounting_types.c",
+    "src/persistence/sql_room_item_payload.c",
 )
 
 
@@ -94,7 +97,7 @@ def compile_native(binary: Path) -> None:
              "-ffunction-sections", "-fdata-sections", "-Isrc"]
     flags += shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True, timeout=10))
     flags += list(SOURCES)
-    flags += ["-Wl,--gc-sections", "-Wl,--wrap=mysql_real_query,--wrap=mysql_errno",
+    flags += ["-Wl,--gc-sections", "-Wl,--wrap=mysql_real_query,--wrap=mysql_errno,--wrap=_Znwm",
               "-Wl,--wrap=sql_pool_acquire,--wrap=sql_pool_release,--wrap=sql_pool_replace_connection"]
     flags += shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True, timeout=10))
     flags += ["-lcrypto", "-o", str(binary)]

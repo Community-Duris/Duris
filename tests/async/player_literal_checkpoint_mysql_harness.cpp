@@ -3,14 +3,17 @@
 #include "core/prototypes.h"
 #include "core/files.h"
 #include "item/item_ownership_runtime.h"
+#include "economy/item_transfer_accounting.h"
 #include "magic/spell_item_lifecycle.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_save_journal.h"
 #include "player/player_save_worker.h"
 #include "player/player_snapshot_codec.h"
+#include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_repository.h"
 #include "player/craft_progression_hooks.h"
 #include "sql/sql_pool.h"
+#include "persistence/sql_room_item_payload.h"
 #include "world/quest_reward_recovery.h"
 
 #include <algorithm>
@@ -27,6 +30,7 @@
 #include <iterator>
 #include <map>
 #include <mutex>
+#include <new>
 #include <string>
 #include <thread>
 #include <vector>
@@ -46,6 +50,7 @@ std::atomic<MYSQL *> hidden_connection{ nullptr };
 std::atomic<unsigned> hidden_commits{ 0 }, pool_acquisitions{ 0 }, pool_releases{ 0 },
 	replacements{ 0 };
 MYSQL *escape_connection = nullptr;
+std::atomic<bool> fail_next_game_allocation{ false }, forbid_game_allocation{ false };
 
 void check(bool condition, const char *message)
 {
@@ -356,6 +361,109 @@ struct live_graph
 	}
 };
 
+critical_operation_id restored_operation(uint32_t serial)
+{
+	critical_operation_id operation{};
+	operation.bytes[0] = 0x72;
+	for (unsigned index = 0; index < 4; ++index)
+		operation.bytes[index + 1] = static_cast<uint8_t>(serial >> (8 * index));
+	return operation;
+}
+
+std::vector<player_item_snapshot> captured_drop_graph(live_graph &graph)
+{
+	std::vector<player_item_snapshot> items;
+	size_t estimated = 0;
+	check(player_item_snapshot_tree_capture_literal(&graph.objects[0], &items, &estimated) ==
+			      player_snapshot_capture_result::ok &&
+		      items.size() == 4 && estimated,
+	      "actual literal runtime tree capture for restored command");
+	return items;
+}
+
+item_transfer_payload restored_payload(const std::vector<player_item_snapshot> &items, int pid)
+{
+	item_transfer_payload payload{};
+	payload.from_owner = { item_owner_type::player, static_cast<uint64_t>(pid), 0 };
+	payload.to_owner = { item_owner_type::room, 22800, 0 };
+	payload.reason = item_transfer_reason::player_drop;
+	payload.reason_id = 22800;
+	payload.expected_from_revision = payload.expected_to_revision = 1;
+	payload.selected_item_uid = payload.target_root_item_uid = items.front().object_uid;
+	payload.item_count = static_cast<uint16_t>(items.size());
+	for (size_t index = 0; index < items.size(); ++index)
+		payload.items[index] = { items[index].object_uid,
+					 items.front().object_uid,
+					 index ? items[items[index].parent_index].object_uid : 0,
+					 1,
+					 items[index].vnum,
+					 item_custody_state::active };
+	const auto blob = encode(items);
+	check(blob.size() <= payload.item_blob.size(), "bounded canonical drop graph");
+	payload.item_blob_size = blob.size();
+	std::copy(blob.begin(), blob.end(), payload.item_blob.begin());
+	return payload;
+}
+
+critical_command restored_command(const item_transfer_payload &payload, uint32_t serial)
+{
+	critical_command command{};
+	check(item_transfer_command_build(&command, restored_operation(serial), payload,
+					  critical_source_site::command,
+					  critical_deadline_class::interactive),
+	      "actual item-transfer command builder");
+	command.accepted_at_usec = 1;
+	std::vector<uint8_t> intent;
+	check(item_transfer_accounting_intent(command, restored_operation(9001),
+					      restored_operation(9002), payload.from_owner.id,
+					      &intent) == economic_accounting_error::ok,
+	      "actual typed EAI1 drop intent builder");
+	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	command.accounting_intent = std::move(intent);
+	// The generic builder creates an unretained schema-1 command. Retention
+	// belongs to the final schema-2 envelope, after freezing its admission.
+	command.publication_required = true;
+	check(critical_command_envelope_valid(command), "valid retained accounting envelope");
+	check(item_transfer_accounting_command_supported(command),
+	      "structurally supported typed accounting command");
+	return command;
+}
+
+size_t encoded_command_bytes(const critical_command &command)
+{
+	std::vector<uint8_t> encoded;
+	check(critical_command_encode(command, &encoded) == critical_command_codec_result::ok,
+	      "actual original command encoding");
+	return encoded.size();
+}
+
+std::vector<player_item_snapshot> padded_drop_graph(std::vector<player_item_snapshot> items,
+						    size_t target)
+{
+	check(encode(items).size() <= target && target <= ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES,
+	      "bounded canonical padding target");
+	while (encode(items).size() < target)
+	{
+		player_item_extra_description_snapshot description{};
+		description.keyword = "capacity";
+		items[0].extra_descriptions.push_back(std::move(description));
+		const auto size = encode(items).size();
+		if (size > target)
+		{
+			items[0].extra_descriptions.pop_back();
+			const auto remaining = target - encode(items).size();
+			check(items[0].name.size() + remaining <= PLAYER_SNAPSHOT_MAX_STRING_BYTES,
+			      "short final padding remains a bounded literal string");
+			items[0].name.append(remaining, 'x');
+			break;
+		}
+		items[0].extra_descriptions.back().description.assign(
+			std::min(target - size, PLAYER_SNAPSHOT_MAX_STRING_BYTES), 'x');
+	}
+	check(encode(items).size() == target, "exact canonical graph byte bound");
+	return items;
+}
+
 void verify_projection(MYSQL *connection, const std::vector<player_item_snapshot> &expected,
 		       uint64_t durable)
 {
@@ -477,6 +585,105 @@ void make_journal(const std::filesystem::path &directory, const std::vector<char
 		      "private native journal file");
 	}
 }
+
+// Direct registration/release API proof only: these synthetic commands are not
+// submitted/applied/ACKed by a coordinator. Real observer/replay routing remains
+// a separate qualification; no authority receipt is inferred from these calls.
+void restored_capacity_checks(live_graph &graph, MYSQL *observer,
+			      const std::vector<player_item_snapshot> &expected,
+			      player_revision_t *final_revision)
+{
+	const auto items = captured_drop_graph(graph);
+	const auto payload = restored_payload(items, fixture_pid + 1000);
+	std::vector<critical_command> retained;
+	for (size_t index = 0; index < PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS; ++index)
+	{
+		auto next = payload;
+		next.from_owner.id += index;
+		auto command = restored_command(next, 10000 + index);
+		check(player_save_pipeline_restore_sql_drop_obligation(command),
+		      "every bounded restored-scope slot is available");
+		retained.push_back(std::move(command));
+	}
+	auto excess = payload;
+	excess.from_owner.id += PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS;
+	check(!player_save_pipeline_restore_sql_drop_obligation(restored_command(excess, 11000)) &&
+		      player_save_pipeline_restore_sql_drop_obligation(retained.front()),
+	      "slot capacity refuses new scope but admits exact idempotent duplicate");
+	player_literal_inventory_token sentinel{ -1, 9, 9, 9 }, refused = sentinel;
+	const auto before = revision();
+	check(player_save_pipeline_literal_inventory_begin(&graph.actor, &graph.objects[0], 22800,
+							   &refused) ==
+			      player_literal_inventory_state::refused &&
+		      refused == sentinel && same_revision(before, revision()),
+	      "live scopes share restored slot capacity without marking or replacing output");
+	player_save_pipeline_sql_drop_publication_acknowledged(retained.front().operation_id);
+	player_literal_inventory_token token;
+	check(player_save_pipeline_literal_inventory_begin(&graph.actor, &graph.objects[0], 22800,
+							   &token) ==
+		      player_literal_inventory_state::pending,
+	      "released slot admits actual live checkpoint");
+	await(
+		[&]
+		{
+			return player_save_pipeline_literal_inventory_poll(token, &graph.actor) ==
+			       player_literal_inventory_state::database_acknowledged;
+		});
+	*final_revision = revision().current_revision;
+	verify_projection(observer, expected, *final_revision);
+	check(player_save_pipeline_literal_inventory_cancel(token),
+	      "cancel unheld live capacity scope");
+	for (const auto &command : retained)
+		player_save_pipeline_sql_drop_publication_acknowledged(command.operation_id);
+
+	const auto padded = padded_drop_graph(items, ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES);
+	const auto large = restored_payload(padded, fixture_pid + 2000);
+	size_t used_bytes = 0;
+	retained.clear();
+	for (size_t index = 0; index < PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS; ++index)
+	{
+		auto next = large;
+		next.from_owner.id += index;
+		auto command = restored_command(next, 12000 + index);
+		const auto bytes = encoded_command_bytes(command);
+		if (!player_save_pipeline_restore_sql_drop_obligation(command))
+		{
+			check(used_bytes + bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES &&
+				      retained.size() < PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS - 1,
+			      "encoded command byte capacity fails before exhausting slots");
+			break;
+		}
+		used_bytes += bytes;
+		retained.push_back(std::move(command));
+	}
+	check(!retained.empty() && retained.size() < PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS - 1,
+	      "large commands establish byte rather than slot pressure");
+	const auto small = restored_command(payload, 13000);
+	const size_t available = PLAYER_SAVE_PIPELINE_MAX_BYTES - used_bytes;
+	check(available > encoded_command_bytes(small), "remaining byte budget admits exact tail");
+	const size_t tail_blob =
+		encode(items).size() + available - 1 - encoded_command_bytes(small);
+	const auto tail = restored_command(
+		restored_payload(padded_drop_graph(items, tail_blob), fixture_pid + 3000), 13000);
+	check(encoded_command_bytes(tail) == available - 1 &&
+		      player_save_pipeline_restore_sql_drop_obligation(tail),
+	      "fill exact byte budget leaving one byte and an unused slot");
+	refused = sentinel;
+	const auto byte_before = revision();
+	check(player_save_pipeline_literal_inventory_begin(&graph.actor, &graph.objects[0], 22800,
+							   &refused) ==
+			      player_literal_inventory_state::refused &&
+		      refused == sentinel && same_revision(byte_before, revision()),
+	      "live literal capture shares restored byte budget without dirty marking");
+	check(player_save_pipeline_restore_sql_drop_obligation(retained.front()),
+	      "byte-saturated exact duplicate needs no extra storage");
+	player_save_pipeline_sql_drop_publication_acknowledged(tail.operation_id);
+	for (const auto &command : retained)
+		player_save_pipeline_sql_drop_publication_acknowledged(command.operation_id);
+	check(player_save_pipeline_save_admitted(fixture_pid + 2000) &&
+		      player_save_pipeline_save_admitted(fixture_pid + 3000),
+	      "all synthetic capacity obligations released independently");
+}
 } // namespace
 
 // These leaves model the fixture's empty grant/receipt subsystems. Unexpected
@@ -581,6 +788,18 @@ player_save_apply_result player_death_conflict_apply_from_pool(const player_snap
 #endif
 
 extern "C" int __real_mysql_real_query(MYSQL *, const char *, unsigned long);
+extern "C" void *__real__Znwm(size_t);
+extern "C" void *__wrap__Znwm(size_t bytes)
+{
+	if ((fail_next_game_allocation.load() || forbid_game_allocation.load()) &&
+	    std::this_thread::get_id() == game_thread)
+	{
+		check(!forbid_game_allocation.load(), "publication release must not allocate");
+		if (fail_next_game_allocation.exchange(false))
+			throw std::bad_alloc();
+	}
+	return __real__Znwm(bytes);
+}
 extern "C" unsigned int __real_mysql_errno(MYSQL *);
 extern "C" MYSQL *__real_sql_pool_acquire(void);
 extern "C" void __real_sql_pool_release(MYSQL *);
@@ -803,6 +1022,7 @@ int main(int argc, char **argv)
 		const auto held_health = player_save_pipeline_health_copy();
 		const auto held_journal = player_save_journal_health_copy();
 		check(!player_save_pipeline_save_admitted(fixture_pid) &&
+			      !player_save_pipeline_authoritative_hydration_admitted(fixture_pid) &&
 			      player_save_pipeline_sealed_save_pending(fixture_pid) &&
 			      player_save_pipeline_target_save_pending(fixture_pid) &&
 			      !player_save_pipeline_acquire_target_save_login_fence(
@@ -955,9 +1175,182 @@ int main(int argc, char **argv)
 			player_save_pipeline_reset_for_tests();
 			const auto replay = directory / ("replay-" + std::to_string(boot));
 			make_journal(replay, retained_frames);
+			const auto drop_items = captured_drop_graph(graph);
+			const auto drop = restored_payload(drop_items, fixture_pid);
+			sql_room_item_payload_batch pure_capture;
+			check(sql_room_item_payload_capture(drop, &pure_capture) &&
+				      encode(pure_capture.items) == encode(drop_items),
+			      "actual pure SQL room capture preserves canonical complete graph");
+			const auto command = restored_command(drop, 20000);
+			check(!player_save_pipeline_restore_sql_drop_obligation(command),
+			      "uninitialized pipeline cannot restore a scope");
+			unsigned replay_barrier;
+			{
+				std::lock_guard<std::mutex> lock(barrier_mutex);
+				replay_barrier = barriers_requested = barriers_entered + 1;
+			}
 			check(player_save_pipeline_init(replay.c_str()),
 			      "native journal cold replay init");
+			await_barrier(replay_barrier);
+			check(!player_save_pipeline_loads_allowed() &&
+				      !player_save_pipeline_health_copy().replay_complete &&
+				      player_save_pipeline_restore_sql_drop_obligation(command),
+			      "restored obligation registers during real blocked save-journal replay");
+			player_save_pipeline_quiesce();
+			auto quiesced = drop;
+			quiesced.from_owner.id = fixture_pid + 20;
+			const auto quiesced_command = restored_command(quiesced, 20001);
+			check(!player_save_pipeline_health_copy().accepting &&
+				      player_save_pipeline_restore_sql_drop_obligation(command) &&
+				      player_save_pipeline_restore_sql_drop_obligation(
+					      quiesced_command),
+			      "initialized quiesced pipeline can restore duplicate and new obligations");
+			player_save_pipeline_sql_drop_publication_acknowledged(
+				quiesced_command.operation_id);
+			player_save_pipeline_resume();
+			auto allocation_drop = drop;
+			allocation_drop.from_owner.id = fixture_pid + 21;
+			const auto allocation_command = restored_command(allocation_drop, 20008);
+			fail_next_game_allocation = true;
+			check(!player_save_pipeline_restore_sql_drop_obligation(
+				      allocation_command) &&
+				      !fail_next_game_allocation.load() &&
+				      player_save_pipeline_save_admitted(fixture_pid + 21) &&
+				      !player_save_pipeline_save_admitted(fixture_pid),
+			      "actual allocation failure refuses without partial scope or prior-hold mutation");
+			check(player_save_pipeline_restore_sql_drop_obligation(allocation_command),
+			      "retry same typed command after allocation failure");
+			player_save_pipeline_sql_drop_publication_acknowledged(
+				allocation_command.operation_id);
+			auto changed = command;
+			++changed.accepted_at_usec;
+			check(item_transfer_accounting_command_supported(changed) &&
+				      !player_save_pipeline_restore_sql_drop_obligation(changed) &&
+				      !player_save_pipeline_restore_sql_drop_obligation(
+					      restored_command(drop, 20002)) &&
+				      !player_save_pipeline_restore_sql_drop_obligation(
+					      restored_command(quiesced, 20000)),
+			      "same PID/operation refuses changed original bytes, changed ID, and changed PID");
+			auto changed_items = drop_items;
+			changed_items[0].description += "changed intent";
+			check(!player_save_pipeline_restore_sql_drop_obligation(restored_command(
+				      restored_payload(changed_items, fixture_pid), 20000)),
+			      "same original ID refuses changed canonical command payload");
+			auto unsupported = drop;
+			unsupported.reason = item_transfer_reason::player_give;
+			unsupported.to_owner = { item_owner_type::player, fixture_pid + 20, 0 };
+			check(!player_save_pipeline_restore_sql_drop_obligation(
+				      restored_command(unsupported, 20003)),
+			      "supported typed player give is outside pure SQL room drop shape");
+			changed_items = drop_items;
+			changed_items[0].string_mask &= ~STRUNG_DESC3;
+			changed_items[0].action_description.clear();
+			check(!player_save_pipeline_restore_sql_drop_obligation(restored_command(
+				      restored_payload(changed_items, fixture_pid), 20004)),
+			      "prototype-dependent partial text cannot register a restored room scope");
+			for (unsigned invalid = 0; invalid < 3; ++invalid)
+			{
+				changed = command;
+				if (!invalid)
+					changed.publication_required = false;
+				else if (invalid == 1)
+					changed.operation_id = {};
+				else
+				{
+					changed.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+					changed.accounting_intent.clear();
+				}
+				check(!player_save_pipeline_restore_sql_drop_obligation(changed),
+				      "publication/envelope/typed schema guards refuse invalid commands");
+			}
+			check(player_revision_hydrate(fixture_pid, final_revision),
+			      "cold replay revision baseline");
+			release_barrier(replay_barrier);
 			await([] { return player_save_pipeline_loads_allowed(); });
+			constexpr int fenced_pid = fixture_pid + 30;
+			check(player_save_pipeline_acquire_target_save_login_fence(fenced_pid, 0),
+			      "actual target-login fence acquisition");
+			auto fenced_drop = drop;
+			fenced_drop.from_owner.id = fenced_pid;
+			const auto fenced_command = restored_command(fenced_drop, 20006);
+			check(player_save_pipeline_restore_sql_drop_obligation(fenced_command) &&
+				      !player_save_pipeline_authoritative_hydration_admitted(
+					      fenced_pid),
+			      "restored scope cannot bypass actual target-login fence");
+			player_save_pipeline_release_target_save_login_fence(fenced_pid, 0);
+			check(player_save_pipeline_authoritative_hydration_admitted(fenced_pid) &&
+				      !player_save_pipeline_save_admitted(fenced_pid),
+			      "target-fence release leaves restored save hold in place");
+			player_save_pipeline_sql_drop_publication_acknowledged(
+				fenced_command.operation_id);
+			check(!player_save_pipeline_save_admitted(fixture_pid) &&
+				      player_save_pipeline_authoritative_hydration_admitted(
+					      fixture_pid) &&
+				      player_save_pipeline_sealed_save_pending(fixture_pid) &&
+				      player_save_pipeline_target_save_pending(fixture_pid) &&
+				      !player_save_pipeline_acquire_target_save_login_fence(
+					      fixture_pid, final_revision),
+			      "restored held scope allows only authoritative hydration after replay");
+			const auto restore_before = revision();
+			check(player_save_pipeline_terminal(&graph.actor, RENT_INN, 22800, 1,
+							    false) ==
+					      player_save_terminal_result::unavailable &&
+				      player_save_pipeline_terminal_death(
+					      &graph.actor, &graph.objects[0], nullptr,
+					      restored_operation(20005), 22800, 1,
+					      false) == player_save_terminal_result::unavailable &&
+				      same_revision(restore_before, revision()),
+			      "restored hold refuses terminal/death before dirty mark or capture");
+			check(player_save_pipeline_mark(fixture_pid, PLAYER_COMPONENT_INVENTORY) &&
+				      player_save_pipeline_checkpoint_dirty(&graph.actor,
+									    RENT_CRASH, 22800) ==
+					      player_save_pipeline_result::unavailable,
+			      "restored scope preserves dirty marks while rejecting capture");
+			const player_literal_inventory_token restored_token{ fixture_pid, 0,
+									     first_uid, 0 };
+			check(!player_save_pipeline_literal_inventory_release(
+				      restored_token, command.operation_id) &&
+				      !player_save_pipeline_literal_inventory_cancel(
+					      restored_token),
+			      "live token APIs cannot remove restored held scope");
+			unregister_character_runtime_id(&graph.actor);
+			character_list = nullptr;
+			player_save_pipeline_pulse();
+			check(!player_save_pipeline_save_admitted(fixture_pid) &&
+				      player_save_pipeline_authoritative_hydration_admitted(
+					      fixture_pid),
+			      "runtime-zero restored hold survives pulse without a registered runtime actor");
+			forbid_game_allocation = true;
+			player_save_pipeline_sql_drop_publication_acknowledged(
+				restored_operation(20099));
+			forbid_game_allocation = false;
+			check(!player_save_pipeline_save_admitted(fixture_pid),
+			      "wrong original ID cannot release scope");
+			forbid_game_allocation = true;
+			player_save_pipeline_sql_drop_publication_acknowledged(
+				command.operation_id);
+			forbid_game_allocation = false;
+			check(player_save_pipeline_save_admitted(fixture_pid),
+			      "exact original ID releases scope without actor");
+			player_save_pipeline_sql_drop_publication_acknowledged(
+				command.operation_id);
+			register_character_runtime_id(&graph.actor);
+			character_list = &graph.actor;
+			player_literal_inventory_token released_token;
+			check(player_save_pipeline_literal_inventory_begin(
+				      &graph.actor, &graph.objects[0], 22800, &released_token) ==
+				      player_literal_inventory_state::pending,
+			      "actual save checkpoint resumes after original-ID release");
+			await(
+				[&]
+				{
+					return player_save_pipeline_literal_inventory_poll(
+						       released_token, &graph.actor) ==
+					       player_literal_inventory_state::database_acknowledged;
+				});
+			final_revision = revision().current_revision;
+			check(player_save_pipeline_literal_inventory_cancel(released_token),
+			      "released-scope save completes cleanly");
 			const auto replay_health = player_save_journal_health_copy();
 			check(replay_health.records == 0 &&
 				      replay_health.replayed + replay_health.duplicates > 0 &&
@@ -972,6 +1365,41 @@ int main(int argc, char **argv)
 			verify_projection(observer, expected, final_revision);
 			player_save_pipeline_shutdown();
 		}
+		player_save_pipeline_reset_for_tests();
+		check(player_revision_hydrate(fixture_pid, final_revision),
+		      "capacity fixture real durable revision");
+		const auto capacity = directory / "restored-capacity";
+		make_journal(capacity);
+		check(player_save_pipeline_init(capacity.c_str()), "actual capacity pipeline init");
+		await([] { return player_save_pipeline_loads_allowed(); });
+		restored_capacity_checks(graph, observer, expected, &final_revision);
+		constexpr int quarantined_pid = fixture_pid + 40;
+		player_snapshot quarantined;
+		graph.pc.pid = quarantined_pid;
+		check(player_snapshot_capture_literal_inventory(
+			      &graph.actor, 1, item_components, RENT_CRASH, 22800, first_uid,
+			      &quarantined) == player_snapshot_capture_result::ok,
+		      "actual capture for private journal fault");
+		graph.pc.pid = fixture_pid;
+		check(player_save_journal_append(quarantined) == player_save_journal_result::ok,
+		      "real private pending journal frame");
+		player_save_journal_worker_terminal(quarantined, nullptr);
+		check(player_save_journal_pid_quarantined(quarantined_pid),
+		      "actual terminal-failure journal hook establishes durable PID quarantine");
+		const auto quarantined_command = restored_command(
+			restored_payload(captured_drop_graph(graph), quarantined_pid), 20007);
+		check(player_save_pipeline_restore_sql_drop_obligation(quarantined_command) &&
+			      !player_save_pipeline_authoritative_hydration_admitted(
+				      quarantined_pid),
+		      "valid restored obligation cannot bypass actual journal quarantine");
+		player_save_pipeline_sql_drop_publication_acknowledged(
+			quarantined_command.operation_id);
+		check(!player_save_pipeline_save_admitted(quarantined_pid) &&
+			      !player_save_pipeline_authoritative_hydration_admitted(
+				      quarantined_pid),
+		      "original-ID release cannot erase independent durable quarantine");
+		await([] { return player_save_journal_health_copy().records == 0; });
+		player_save_pipeline_shutdown();
 		check(!sql_pool_in_use(),
 		      "zero native pool leases after two cold component replays");
 		auto *clean = sql_pool_acquire();
@@ -992,5 +1420,6 @@ int main(int argc, char **argv)
 	std::cout
 		<< "PASS: actual native literal capture/pipeline/journal/worker/repository/pool; journal-only refusal; "
 		   "newer coalescing and exact DB ACK; complete SQL payload/custody; real COMMIT reply loss; "
-		   "operation hold ownership; two independent cold component reads and native journal replays; inactive fixture only\n";
+		   "operation hold ownership; two independent cold component reads and native journal replays; "
+		   "manual typed restored-scope replay fences, conflicts, release and shared capacities; inactive fixture only\n";
 }

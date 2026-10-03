@@ -22,6 +22,15 @@ on the pinned 226-table schema on disposable MySQL 8.0.46 and MariaDB 10.11.14 t
 The writer inventory covers 868 routes, 2,817 occurrences and 2,758 unique sites
 with zero unmapped sites. These counts do not replace route qualification.
 
+Restored SQL ordinary-drop obligation registration and clean authoritative
+hydration now have bounded component qualification on both engines. Original
+operation release is actor independent and allocation-free, but production
+critical replay/publication ACK callers remain unwired. Current strict inactive
+flatfile creation/save/restart/relog journeys pass; initial production build
+deadline failures and component fixture setup failures remain preserved. The
+October 3 review status pins this milestone and its limits. Complete ordinary-drop
+producer/replay/copyover, historical receipt proof and all R1-R8 gates remain open.
+
 Independent reconciliation now checks every native item's parent edge even when
 lineage history replaces its epoch-local history or its opening origin is
 missing. Corruption/recovery probes pass through the read-only SQL exporter on
