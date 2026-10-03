@@ -157,7 +157,12 @@ def self_test() -> None:
                  ("DB_NAME", "economic_schema_test_012345abcdeF"),
                  ("DB_SOCKET", "/tmp/socket"), ("TEST_DB_SOCKET", "/tmp/socket"), ("DB_PASSWD", ""))
     for key, value in negatives:
-        assert not target_is_disposable(dict(valid, **{key: value})), key
+        changed = dict(valid, **{key: value})
+        if key == "DB_NAME":
+            # Isolate the namespace rule: a mismatched allowlist would reject
+            # every changed name even if the namespace check were removed.
+            changed["DB_ALLOWED_TARGETS"] = "127.0.0.1/" + value
+        assert not target_is_disposable(changed), key
     print(f"PASS: supplied SQL fixture guard; {len(negatives)} negative cases; no compile or service execution")
 
 
