@@ -368,3 +368,19 @@ See [remaining requirements](REMAINING_REQUIREMENTS.md) for R1-R8,
 [qualification checkpoint](QUALIFICATION_CHECKPOINT_2026-09-29.md) for dated
 build and journey evidence, and the
 [current writer matrix](writer_coverage_matrix.json) for inventory state.
+
+
+### October 3 SQL whole-account quest erasure qualification
+
+Native source ce7550d6 now validates and erases all-season quest aliases inside
+whole-account SQL deletion and refreshes cached state after success. Real RED
+probes precede both engines' malformed/stale/write-failure/rollback/retry/cache/
+cold-restart journeys. Strict backend/pfile builds, full formatting, 387 native
+allocation-fault sanitizer checks, combined flatfile and SQL character journeys,
+maintenance owner contracts and ten recovery cases pass. See the latest review
+status for exact source, artifact hashes and evidence boundaries. Protected quest
+history policy, broader personal stores, typed economic erasure, ambiguous commit
+cache behavior and complete R1-R8 remain open. SQL ship-coffer audit omission and
+safe interrupted-build reuse are the next separate issues; captured backup
+qualification still needs the requested local generation path. No inactive
+spell-path behavior, activation authority or acceptance deadline was changed.

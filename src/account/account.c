@@ -222,7 +222,6 @@ void remove_deleted_account_runtime(P_desc deleting_session,
 				    const std::vector<account_deletion_identity> &identities)
 {
 #ifndef _PFILE_
-	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 	{
 		std::string error;
 		if (!zone_story_quest_runtime::refresh_after_erasure(&error))
