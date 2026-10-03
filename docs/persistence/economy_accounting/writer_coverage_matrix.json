@@ -117,7 +117,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1953
+          1952
         ],
         "file": "src/account/account.c",
         "function": "cleanup_temp_char",
@@ -9518,7 +9518,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3598
+          3599
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_steal",
@@ -9625,8 +9625,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          473,
-          12335
+          476,
+          12363
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -9754,7 +9754,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2533
+          2534
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_deposit",
@@ -10129,7 +10129,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6301
+          6302
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_split",
@@ -10636,7 +10636,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2631
+          2632
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_withdraw",
@@ -16110,7 +16110,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7686
+          7687
         ],
         "file": "src/cmd/actoth.c",
         "function": "ascend_committed",
@@ -17432,7 +17432,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6916
+          6917
         ],
         "file": "src/cmd/actoth.c",
         "function": "try_to_donate",
@@ -17493,7 +17493,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6916
+          6917
         ],
         "file": "src/cmd/actoth.c",
         "function": "try_to_donate",
@@ -18755,7 +18755,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1355
+          1356
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_forage",
@@ -18816,7 +18816,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1002
+          1003
         ],
         "file": "src/cmd/actoth.c",
         "function": "forage_sect",
@@ -18877,7 +18877,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1355
+          1356
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_forage",
@@ -19488,7 +19488,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2810
+          2811
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_hide",
@@ -20103,7 +20103,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3598
+          3599
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_steal",
@@ -20164,7 +20164,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7592
+          7593
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_lick",
@@ -20781,7 +20781,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7977
+          7978
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_old_descend",
@@ -21333,7 +21333,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4637
+          4638
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_quaff",
@@ -21393,7 +21393,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1623
+          1624
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_quit",
@@ -21578,7 +21578,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4810
+          4811
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_recite",
@@ -22914,7 +22914,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3530
+          3531
         ],
         "file": "src/cmd/actoth.c",
         "function": "submit_trusted_steal",
@@ -24704,8 +24704,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          299,
-          5481
+          302,
+          5484
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_account",
@@ -24769,8 +24769,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          274,
-          1246
+          277,
+          1249
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_player",
@@ -30979,8 +30979,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          469,
-          12200
+          472,
+          12228
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -31040,8 +31040,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          239,
-          4134
+          242,
+          4137
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_status",
@@ -31958,7 +31958,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1904
+          1966
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_restore_mob_from_buffer",
@@ -32020,7 +32020,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1233
+          1260
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_recover",
@@ -33067,8 +33067,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          422,
-          11000
+          425,
+          11028
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33129,8 +33129,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          418,
-          9470
+          421,
+          9498
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_saved_item",
@@ -33191,8 +33191,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          414,
-          9416
+          417,
+          9444
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_saved_item",
@@ -33318,8 +33318,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          387,
-          8330
+          390,
+          8358
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33366,8 +33366,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          387,
-          8330
+          390,
+          8358
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33414,7 +33414,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          916
+          919
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_format_item_diff_fields_and_free_proto",
@@ -33477,7 +33477,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6320
+          6348
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_locker_items_filtered",
@@ -33540,8 +33540,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          257,
-          4588
+          260,
+          4591
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -33604,8 +33604,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          557,
-          7181
+          560,
+          7209
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_private_chest_items",
@@ -33668,8 +33668,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          422,
-          11000
+          425,
+          11028
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33716,8 +33716,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          422,
-          11000
+          425,
+          11028
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33780,7 +33780,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9558
+          9586
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -33842,7 +33842,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9558
+          9586
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -33889,7 +33889,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9510
+          9538
         ],
         "file": "src/sql/sql_player.c",
         "function": "discard_shopkeeper_restore_stage",
@@ -33936,7 +33936,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7330
+          7358
         ],
         "file": "src/sql/sql_player.c",
         "function": "free_temp_char",
@@ -36232,8 +36232,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          447,
-          11777
+          450,
+          11805
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -36292,8 +36292,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          439,
-          11659
+          442,
+          11687
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -36353,8 +36353,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          435,
-          11405
+          438,
+          11433
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -50920,8 +50920,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          257,
-          4588
+          260,
+          4591
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",

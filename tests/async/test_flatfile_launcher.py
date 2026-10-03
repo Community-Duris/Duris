@@ -72,6 +72,11 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary
     if checked.returncode != 0 or "database-independent configuration" not in checked.stdout:
         raise AssertionError("flat-file config check required a database:\n" + checked.stdout)
 
+    invalid_watchdog_env = dict(flat_env, DURIS_WATCHDOG_STALL_SECONDS="nan")
+    rejected = run(script, invalid_watchdog_env, "--check-config")
+    if rejected.returncode != 78 or "DURIS_WATCHDOG_STALL_SECONDS must be finite" not in rejected.stdout:
+        raise AssertionError("launcher bypassed the real watchdog configuration check")
+
     alternate_port_env = dict(flat_env)
     alternate_port_env["DURIS_DEV_PORT"] = "14000"
     checked = run(script, alternate_port_env, "--dev", "--check-config")

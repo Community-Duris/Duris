@@ -6,6 +6,7 @@
 #include "net/network_readiness.h"
 #include "net/session_input.h"
 #include "net/telnet.h"
+#include "net/transport.h"
 #include "net/ttype.h"
 #include "net/unicode.h"
 #include "net/websocket.h"

@@ -82,6 +82,11 @@ TABLES = (
     "CREATE TABLE auction_money_pickups (pid BIGINT,money BIGINT,"
     "claim_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE shopkeepers (id BIGINT,cash BIGINT,shop_revision BIGINT UNSIGNED) ENGINE=InnoDB",
+    "CREATE TABLE ships (id INT NOT NULL PRIMARY KEY,money INT NULL) ENGINE=InnoDB",
+    "CREATE TABLE guilds (id INT UNSIGNED NOT NULL PRIMARY KEY,"
+    "copper INT UNSIGNED NOT NULL,silver INT UNSIGNED NOT NULL,"
+    "gold INT UNSIGNED NOT NULL,platinum INT UNSIGNED NOT NULL,"
+    "outcome_revision BIGINT UNSIGNED NOT NULL) ENGINE=InnoDB",
     "CREATE TABLE item_current_owner (item_uid BIGINT,root_item_uid BIGINT,parent_item_uid BIGINT,"
     "owner_type INT,owner_id BIGINT,owner_context_id BIGINT,item_revision BIGINT UNSIGNED,state INT,"
     "vnum INT,coin_payload MEDIUMBLOB) ENGINE=InnoDB",
@@ -283,6 +288,86 @@ try:
         try:
             snapshot = capture(audit, LINEAGE, EPOCH)
             assert snapshot["complete"] is False and snapshot["quiescent"] is True
+            with setup.cursor() as cursor:
+                cursor.execute("INSERT INTO guilds VALUES "
+                               "(31,1,2,3,4,9),(32,0,0,0,0,10),"
+                               "(33,4294967295,4294967295,4294967295,4294967295,11)")
+            guild_snapshot = capture(audit, LINEAGE, EPOCH)
+            assert guild_snapshot["native"]["guild_treasuries"] == [
+                {"guild_id":31,"balance":[1,2,3,4]},
+                {"guild_id":32,"balance":[0,0,0,0]},
+                {"guild_id":33,"balance":[4294967295]*4}]
+            guild_counts = Reconciler().audit(guild_snapshot)["exception_counts"]
+            assert guild_counts["unsupported_native_guild_treasury"] == 3
+            assert guild_counts["missing_guild_money_revision"] == 3
+            guild_details = Reconciler().audit(guild_snapshot)["exceptions"]
+            assert {row["guild_id"] for row in guild_details if row["code"] in
+                    ("unsupported_native_guild_treasury", "missing_guild_money_revision")} == {31,32,33}
+            with setup.cursor() as cursor:
+                cursor.execute("UPDATE guilds SET copper=7 WHERE id=31")
+                cursor.execute("SELECT outcome_revision FROM guilds WHERE id=31")
+                assert cursor.fetchone()["outcome_revision"] == 9
+            changed_guild = capture(audit, LINEAGE, EPOCH)
+            assert changed_guild["native"]["guild_treasuries"][0]["balance"] == [7,2,3,4]
+            assert changed_guild["native"]["holdings"] == snapshot["native"]["holdings"]
+            assert changed_guild["complete"] is False
+            with setup.cursor() as cursor:
+                cursor.execute("DELETE FROM guilds")
+            assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("guild money changes independently of outcome_revision: raw native values and missing monetary revision reported",flush=True)
+            for alteration, restoration in (
+                    ("RENAME TABLE guilds TO guilds_hidden", "RENAME TABLE guilds_hidden TO guilds"),
+                    ("ALTER TABLE guilds ENGINE=MyISAM", "ALTER TABLE guilds ENGINE=InnoDB")):
+                with setup.cursor() as cursor:
+                    cursor.execute(alteration)
+                try:
+                    capture(audit, LINEAGE, EPOCH)
+                    raise AssertionError("missing/nontransactional guild source passed capture")
+                except exporter.ExportError:
+                    pass
+                finally:
+                    with setup.cursor() as cursor:
+                        cursor.execute(restoration)
+                assert capture(audit, LINEAGE, EPOCH) == snapshot
+            # Persisted coffers are real native value even without a supported
+            # accounting lifetime/revision. Capture IDs/value only, with no
+            # fabricated mapped holding or owner alias.
+            with setup.cursor() as cursor:
+                cursor.execute("INSERT INTO ships VALUES (25,7),(26,0),(27,NULL),(28,-1)")
+            ship_snapshot = capture(audit, LINEAGE, EPOCH)
+            assert ship_snapshot["native"]["ship_coffers"] == [
+                {"ship_id":25,"copper":7}, {"ship_id":26,"copper":0},
+                {"ship_id":27,"copper":None}, {"ship_id":28,"copper":-1}]
+            ship_counts = Reconciler().audit(ship_snapshot)["exception_counts"]
+            assert ship_counts["unsupported_native_ship_coffer"] == 4
+            assert ship_counts["missing_ship_coffer_revision"] == 4
+            assert ship_counts["unknown_native_ship_coffer"] == 1
+            assert ship_counts["invalid_native_ship_coffer"] == 1
+            with setup.cursor() as cursor:
+                cursor.execute("UPDATE ships SET money=11 WHERE id=25")
+            changed_ship = capture(audit, LINEAGE, EPOCH)
+            assert changed_ship["native"]["ship_coffers"][0]["copper"] == 11
+            assert changed_ship["native"]["holdings"] == snapshot["native"]["holdings"]
+            assert changed_ship["complete"] is False
+            with setup.cursor() as cursor:
+                cursor.execute("DELETE FROM ships")
+            assert capture(audit, LINEAGE, EPOCH) == snapshot
+            for alteration, restoration in (
+                    ("RENAME TABLE ships TO ships_hidden", "RENAME TABLE ships_hidden TO ships"),
+                    ("ALTER TABLE ships ENGINE=MyISAM", "ALTER TABLE ships ENGINE=InnoDB")):
+                with setup.cursor() as cursor:
+                    cursor.execute(alteration)
+                try:
+                    capture(audit, LINEAGE, EPOCH)
+                    raise AssertionError("missing/nontransactional ship source passed capture")
+                except exporter.ExportError:
+                    pass
+                finally:
+                    with setup.cursor() as cursor:
+                        cursor.execute(restoration)
+                assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("ship coffer value change: unsupported authority/revision reported; exact restore and mapped holdings retained",flush=True)
+
             assert len(snapshot["operations"]) == 3
             assert len(snapshot["receipts"]) == len(snapshot["operations"])
             assert all(row["status"] == 1 and row["result_code"] == 0 and
@@ -942,12 +1027,17 @@ try:
                 pass
             with setup.cursor() as writer:
                 writer.execute("DELETE FROM item_current_owner WHERE item_uid=85")
+            with setup.cursor() as writer:
+                writer.execute("INSERT INTO ships VALUES (25,7)")
+                writer.execute("INSERT INTO guilds VALUES (31,1,2,3,4,9)")
             original = exporter.read_origins_in_transaction
 
             def concurrent_change(cursor, lineage, epoch):
                 origins = original(cursor, lineage, epoch)
                 with setup.cursor() as writer:
                     writer.execute("UPDATE player_data SET copper=3 WHERE pid=7")
+                    writer.execute("UPDATE ships SET money=11 WHERE id=25")
+                    writer.execute("UPDATE guilds SET copper=7 WHERE id=31")
                 return origins
 
             with mock.patch.object(exporter, "read_origins_in_transaction",
@@ -956,8 +1046,14 @@ try:
             wallet = next(row for row in fenced["native"]["holdings"]
                           if row["account_key"] == key(1, 7).hex())
             assert wallet["balance"] == [2, 0, 0, 0]
+            assert fenced["native"]["ship_coffers"] == [{"ship_id":25,"copper":7}]
+            assert capture(audit, LINEAGE, EPOCH)["native"]["ship_coffers"] == [{"ship_id":25,"copper":11}]
+            assert fenced["native"]["guild_treasuries"] == [{"guild_id":31,"balance":[1,2,3,4]}]
+            assert capture(audit, LINEAGE, EPOCH)["native"]["guild_treasuries"] == [{"guild_id":31,"balance":[7,2,3,4]}]
             with setup.cursor() as cursor:
                 cursor.execute("UPDATE player_data SET copper=2 WHERE pid=7")
+                cursor.execute("DELETE FROM ships")
+                cursor.execute("DELETE FROM guilds")
             with tempfile.TemporaryDirectory(prefix="duris-sql-audit-") as directory:
                 output = Path(directory) / "partial.json"
                 command = [sys.executable, str(ROOT / "scripts/economic_sql_audit_snapshot.py"),
@@ -973,6 +1069,44 @@ try:
                      str(output)], capture_output=True, text=True, timeout=30)
                 assert result.returncode == 1
                 assert json.loads(result.stdout)["exception_counts"] == expected_exceptions
+                with setup.cursor() as cursor:
+                    cursor.execute("INSERT INTO ships VALUES (25,7)")
+                before_ship_cli = capture(audit, LINEAGE, EPOCH)
+                ship_output = Path(directory) / "ship-partial.json"
+                subprocess.run(command[:-1]+[str(ship_output)], env=environment, check=True, timeout=30)
+                assert json.loads(ship_output.read_text(encoding="utf-8")) == before_ship_cli
+                ship_cli = subprocess.run(
+                    [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                     str(ship_output), "--limit", "0"], capture_output=True, text=True, timeout=30)
+                assert ship_cli.returncode == 1
+                ship_report = json.loads(ship_cli.stdout)
+                assert ship_report["exception_counts"]["unsupported_native_ship_coffer"] == 1
+                assert ship_report["exception_counts"]["missing_ship_coffer_revision"] == 1
+                assert ship_report["exceptions"] == []
+                assert capture(audit, LINEAGE, EPOCH) == before_ship_cli
+                with setup.cursor() as cursor:
+                    cursor.execute("DELETE FROM ships")
+                assert capture(audit, LINEAGE, EPOCH) == snapshot
+
+                with setup.cursor() as cursor:
+                    cursor.execute("INSERT INTO guilds VALUES (31,1,2,3,4,9)")
+                before_guild_cli = capture(audit, LINEAGE, EPOCH)
+                guild_output = Path(directory) / "guild-partial.json"
+                subprocess.run(command[:-1]+[str(guild_output)], env=environment, check=True, timeout=30)
+                assert json.loads(guild_output.read_text(encoding="utf-8")) == before_guild_cli
+                guild_cli = subprocess.run(
+                    [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                     str(guild_output), "--limit", "0"], capture_output=True, text=True, timeout=30)
+                assert guild_cli.returncode == 1
+                guild_report = json.loads(guild_cli.stdout)
+                assert guild_report["exception_counts"]["unsupported_native_guild_treasury"] == 1
+                assert guild_report["exception_counts"]["missing_guild_money_revision"] == 1
+                assert guild_report["exceptions"] == []
+                assert capture(audit, LINEAGE, EPOCH) == before_guild_cli
+                with setup.cursor() as cursor:
+                    cursor.execute("DELETE FROM guilds")
+                assert capture(audit, LINEAGE, EPOCH) == snapshot
+
             with setup.cursor() as cursor:
                 cursor.execute("DELETE FROM economic_accounting_coin_posting "
                                "WHERE operation_id=%s AND line_index=1", (root,))

@@ -107,6 +107,26 @@ def child_parent_death_signal(parent: int) -> None:
         os._exit(BOOT_FAILURE)
 
 
+def delegated_world(record: bytes, sender: int, supervisor: int, started: float,
+                    now: float) -> tuple[int, float] | None:
+    """Only the launched supervisor may nominate its directly owned world."""
+    if sender != supervisor:
+        return None
+    try:
+        version, parent, world, timestamp = record.decode("ascii").split()
+        world = int(world)
+        emitted = int(timestamp) / 1_000_000
+        if (version != "2" or int(parent) != supervisor or world <= 1
+                or not started <= emitted <= now + 0.01):
+            return None
+        status = Path(f"/proc/{world}/status").read_text()
+        if f"PPid:\t{supervisor}\n" not in status:
+            return None
+        return world, emitted
+    except (ValueError, UnicodeError, OSError):
+        return None
+
+
 def signal_group(child: subprocess.Popen, signum: int, cleanup: bool = False) -> None:
     # This child is the leader of a new session, never the launcher's group.
     if cleanup or child.poll() is None:
@@ -114,6 +134,14 @@ def signal_group(child: subprocess.Popen, signum: int, cleanup: bool = False) ->
             os.killpg(child.pid, signum)
         except ProcessLookupError:
             pass
+
+
+def owned_world_running(world: int, supervisor: int) -> bool:
+    try:
+        status = Path(f"/proc/{world}/stat").read_text().rsplit(")", 1)[1].split()
+        return status[0] != "Z" and os.getpgid(world) == supervisor
+    except (OSError, IndexError):
+        return False
 
 
 def diagnostic_snapshot(pid: int, reason: str) -> None:
@@ -143,13 +171,13 @@ def snapshot_procfs(pid: int, stream) -> None:
             print(f"unavailable: {error}", file=stream, flush=True)
 
 
-def capture_diagnostics(child: subprocess.Popen, reason: str) -> None:
+def capture_diagnostics(child: subprocess.Popen, reason: str, world_pid: int) -> None:
     print(f"GAME LOOP WATCHDOG: {reason}", file=sys.stderr, flush=True)
     try:
         # Both file writes and procfs inspection run separately with a hard
         # budget; diagnostics cannot hold up the game termination deadline.
         diagnostic = subprocess.Popen(
-            [sys.executable, __file__, "--diagnose", str(child.pid), reason],
+            [sys.executable, __file__, "--diagnose", str(world_pid), reason],
             start_new_session=True,
         )
         try:
@@ -166,6 +194,7 @@ def capture_diagnostics(child: subprocess.Popen, reason: str) -> None:
 
 
 def observe(command: list[str], limits: Deadlines) -> int:
+    persistent_transport = "--persistent-transport" in command
     receiver, sender = socket.socketpair(socket.AF_UNIX, socket.SOCK_DGRAM)
     receiver.setsockopt(socket.SOL_SOCKET, socket.SO_PASSCRED, 1)
     receiver.setblocking(False)
@@ -181,13 +210,22 @@ def observe(command: list[str], limits: Deadlines) -> int:
     sender.close()
     progress = Progress(child.pid, started, limits)
     stopping_at: float | None = None
+    forced_cleanup = False
 
     def forward(signum: int, _frame) -> None:
         nonlocal stopping_at
         if signum in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGUSR2):
             if stopping_at is None:
                 stopping_at = time.monotonic()
-        signal_group(child, signum)
+        if persistent_transport:
+            # The transport forwards once to its world. Group delivery here
+            # would send the same lifecycle request to the world twice.
+            try:
+                child.send_signal(signum)
+            except ProcessLookupError:
+                pass
+        else:
+            signal_group(child, signum)
 
     handlers = {signum: signal.signal(signum, forward) for signum in (
         signal.SIGTERM, signal.SIGINT, signal.SIGHUP,
@@ -215,19 +253,31 @@ def observe(command: list[str], limits: Deadlines) -> int:
                     for level, kind, data in credentials:
                         if level == socket.SOL_SOCKET and kind == socket.SCM_CREDENTIALS:
                             pid, _uid, _gid = struct.unpack("3i", data)
-                    progress.receive(record, pid, time.monotonic())
+                    received_at = time.monotonic()
+                    delegation = (delegated_world(record, pid, child.pid, started, received_at)
+                                  if persistent_transport else None)
+                    if delegation is not None:
+                        world, emitted = delegation
+                        if world != progress.pid:
+                            progress = Progress(world, emitted, limits)
+                    else:
+                        progress.receive(record, pid, received_at)
 
             now = time.monotonic()
             deadline = (stopping_at + limits.shutdown
                         if stopping_at is not None else progress.deadline)
             if now >= deadline:
+                forced_cleanup = True
                 age = "none" if progress.last_completed is None else f"{now - progress.last_completed:.3f}s"
-                reason = (f"pid={child.pid} phase={progress.phase} deadline expired; "
+                reason = (f"pid={progress.pid} supervisor={child.pid} phase={progress.phase} deadline expired; "
                           f"completed={progress.sequence} last_completed_age={age}")
-                capture_diagnostics(child, reason)
+                capture_diagnostics(child, reason, progress.pid)
                 # SIGABRT creates native thread stacks via a core dump without
                 # a cooperative game callback; SIGKILL bounds blocked/ignored aborts.
-                child.send_signal(signal.SIGABRT)
+                if persistent_transport:
+                    signal_group(child, signal.SIGABRT)
+                else:
+                    child.send_signal(signal.SIGABRT)
                 try:
                     child.wait(timeout=limits.abort)
                 except subprocess.TimeoutExpired:
@@ -244,6 +294,13 @@ def observe(command: list[str], limits: Deadlines) -> int:
     finally:
         receiver.close()
         try:
+            # Frontend death closes IPC. Let the surviving world finish its
+            # bounded durable shutdown before removing the owned process group.
+            world_exit_deadline = time.monotonic() + limits.shutdown
+            while (persistent_transport and not forced_cleanup and progress.pid != child.pid
+                   and owned_world_running(progress.pid, child.pid)
+                   and time.monotonic() < world_exit_deadline):
+                time.sleep(0.05)
             signal_group(child, signal.SIGKILL, cleanup=True)
             child.wait(timeout=1)
         except subprocess.TimeoutExpired as error:

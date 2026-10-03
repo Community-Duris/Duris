@@ -51,6 +51,37 @@ unmapped legacy row is a candidate for investigation, not proof that its
 balance belongs to the selected epoch. The remaining native classes and their
 lineage scope still require independent enumeration before `complete: true`.
 
+Persisted ship coffers are separate raw candidates: `native.ship_coffers`
+contains only `ship_id` and nullable signed-INT `copper`, with no owner alias,
+lineage, account key or fabricated revision. Every `ships` row is included,
+including zero/NULL/negative values. `native.ship_coffer_coverage` records rows,
+positive/zero/unknown/invalid rows and missing-revision rows. The independent
+reconciler validates identities, exact value bounds and uniqueness, recomputes
+these counts, and reports `unsupported_native_ship_coffer` and
+`missing_ship_coffer_revision` for each row; NULL also reports
+`unknown_native_ship_coffer`, and negative values `invalid_native_ship_coffer`.
+A partial SQL snapshot missing this collection reports
+`missing_ship_coffer_coverage`. Counts remain accurate with detail limit zero.
+The exporter requires the `ships` source to be present and InnoDB in the same
+read-only consistent cut. These candidates are outside mapped `native.holdings`;
+ship lifetimes, origins, revisions, gameplay writers and runtime-only funds
+remain unqualified. This evidence retains `complete: false`.
+
+Persisted guild treasuries are likewise separate raw candidates:
+`native.guild_treasuries` contains only `guild_id` and four unsigned-INT
+denominations in `balance`. Every `guilds` row is included, including zero
+and unloaded guilds. IDs are reusable native locators, not accounting lifetimes.
+`outcome_revision` tracks prestige/construction and is not a money revision.
+`native.guild_treasury_coverage` records rows, positive/zero rows and
+missing-revision rows. The independent reconciler validates unsigned bounds,
+unique IDs and exact collection shape, recomputes coverage and reports
+`unsupported_native_guild_treasury` and `missing_guild_money_revision` for
+each row. Missing SQL coverage reports `missing_guild_treasury_coverage`;
+counts remain intact with detail limit zero. The exporter requires `guilds`
+to be InnoDB within the same SELECT-only consistent cut. These raw values
+remain outside mapped holdings: enrollment, durable lifetimes, origins,
+monetary revisions and gameplay writers still need qualification.
+
 Its `source_claims` collection covers nonbaseline claims across the selected
 lineage, including claims from other epochs. The SQL rows carry their owning
 operation's lineage, epoch, source and outcome so the reconciler can distinguish
