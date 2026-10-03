@@ -50,7 +50,7 @@ inherited endpoint's family/type and parent PID at boot. Descriptor numbers and
 the parent PID in `DURIS_TRANSPORT_FD`/`DURIS_TRANSPORT_PARENT` are runtime
 capabilities set by the supervisor, not operator configuration or public tokens.
 
-Version 1 uses a 32-byte header: `DTP1`, a 16-bit version, a 16-bit message type,
+Version 2 uses a 32-byte header: `DTP1`, a 16-bit version, a 16-bit message type,
 64-bit session ID, 64-bit sequence, 32-bit payload length and 32-bit detail.
 Integers are big endian; bounded length-prefixed strings carry metadata and
 identities. No pointers or native structure layouts cross IPC. Login credentials
@@ -61,6 +61,8 @@ placed in a `select()` descriptor set.
 Unsupported versions, inconsistent sequences, invalid peer credentials and
 oversize frames fail the channel closed. Frontend/world protocol versions must
 match; a protocol upgrade requires a cold restart of both processes.
+Version 2 adds per-attempt barrier identities; upgrading a frontend from the
+earlier version 1 development build therefore requires restarting both roles.
 
 The trusted peer/proxy checks run against the real socket in the parent. Only
 the existing configured immediate proxy can supply PROXY/forwarded addresses.
@@ -92,6 +94,10 @@ cleanup.
    event stays retained for the replacement; partially executed command
    expansions veto the operation until the queue empties. Application handlers
    that completed while waiting for the barrier are acknowledged before commit.
+   Every attempt has a fresh random barrier ID in addition to the world epoch.
+   PAUSE/PAUSED, COMMIT/COMMITTED and ABORT carry that pair in the session/sequence
+   header fields. Delayed replies from an earlier attempt cannot approve the new
+   attempt, and a stale abort cannot resume its input delivery.
 4. The existing terminal saves, command/outbox, locker, ship, maintenance and
    Redis ownership drains must succeed. The existing world copyover record
    captures logical descriptors, world objects, combat, pets and recovery state.
@@ -262,6 +268,9 @@ above `FD_SETSIZE` and excludes sessions with pending teardown from handoff.
 The `invalid_client_input` case sends NUL-bearing WebSocket and GMCP text from
 separate clients while an authenticated TLS player continues playing and saving
 on the original world and compression stream.
+The `stale_barrier` case replays an earlier successful PAUSED response ahead of a
+new refusal while a TLS client is still negotiating. The refusal must hold, and
+a later eligible retry must restore gameplay successfully.
 
 The architectural references are [DikuMUD2 Mplex](https://github.com/Seifert69/DikuMUD2/blob/master/dm-dist-ii/Mplex/mplex.c),
 [DikuMUD3](https://github.com/Seifert69/DikuMUD3), and

@@ -53,6 +53,7 @@ bool welcome_received = false;
 bool backend_ready = false;
 bool committed = false;
 uint64_t epoch = 0;
+uint64_t barrier = 0;
 size_t frontend_input_bytes = 0;
 std::string handoff_digest;
 steady::time_point pause_deadline;
@@ -389,14 +390,18 @@ bool consume_world_frame(const message &m)
 	}
 	if (!welcome_received)
 		return false;
-	if (m.kind == type::paused && m.sequence == epoch)
+	if (m.kind == type::paused)
 	{
+		if (!barrier || m.session != epoch || m.sequence != barrier)
+			return true; // A timed-out attempt cannot approve a later handoff.
 		pause_received = true;
 		pause_allowed = m.detail == 1;
 		return m.detail <= 1;
 	}
-	if (m.kind == type::committed && m.sequence == epoch)
+	if (m.kind == type::committed)
 	{
+		if (!barrier || m.session != epoch || m.sequence != barrier)
+			return true;
 		commit_received = true;
 		return true;
 	}
@@ -585,6 +590,7 @@ bool consume_frontend_frame(const message &m)
 		backend_ready = true;
 		paused = false;
 		committed = false;
+		barrier = 0;
 		handoff.clear();
 		handoff_digest.clear();
 		for (auto &[id, s] : sessions)
@@ -599,8 +605,9 @@ bool consume_frontend_frame(const message &m)
 	}
 	if (m.kind == type::pause)
 	{
-		if (m.sequence != epoch || paused || !backend_ready)
+		if (m.session != epoch || !m.sequence || paused || !backend_ready)
 			return false;
+		barrier = m.sequence;
 		paused = true;
 		pause_deadline = steady::now() + std::chrono::seconds(replacement_timeout_seconds);
 		bool allowed = true;
@@ -610,12 +617,12 @@ bool consume_frontend_frame(const message &m)
 			if (!s.opened || !s.binding.playing)
 				allowed = false;
 		}
-		return send_message(type::paused, 0, epoch, allowed ? 1 : 0);
+		return send_message(type::paused, epoch, barrier, allowed ? 1 : 0);
 	}
 	if (m.kind == type::abort)
 	{
-		if (m.sequence != epoch)
-			return false;
+		if (m.session != epoch || m.sequence != barrier)
+			return true; // A stale abort must not resume a newer paused attempt.
 		paused = false;
 		committed = false;
 		handoff.clear();
@@ -624,7 +631,8 @@ bool consume_frontend_frame(const message &m)
 	}
 	if (m.kind == type::commit)
 	{
-		if (m.sequence != epoch || !paused || committed || m.payload.size() != 32)
+		if (m.session != epoch || m.sequence != barrier || !paused || committed ||
+		    m.payload.size() != 32)
 			return false;
 		std::string actual;
 		if (!digest_file(copyover_state_file(), actual, false) || actual != m.payload)
@@ -640,7 +648,7 @@ bool consume_frontend_frame(const message &m)
 			}
 		handoff_digest = actual;
 		committed = true;
-		return send_message(type::committed, 0, epoch);
+		return send_message(type::committed, epoch, barrier);
 	}
 	const auto found = sessions.find(m.session);
 	if (found == sessions.end())
@@ -855,6 +863,7 @@ void fail_clients()
 	paused = false;
 	committed = false;
 	epoch = 0;
+	barrier = 0;
 	handoff_digest.clear();
 }
 }
@@ -1005,7 +1014,8 @@ bool transport_world_quiesce()
 	transport_world_finish_pulse();
 	pause_received = false;
 	pause_allowed = false;
-	if (!send_message(type::pause, 0, epoch))
+	barrier = nonce();
+	if (!send_message(type::pause, epoch, barrier))
 		return false;
 	paused = true;
 	if (!wait_world(pause_received) || !pause_allowed)
@@ -1032,15 +1042,15 @@ bool transport_world_commit(const char *path)
 	}
 	std::string digest;
 	commit_received = false;
-	return digest_file(path, digest, true) && send_message(type::commit, 0, epoch, 0, digest) &&
-	       wait_world(commit_received);
+	return digest_file(path, digest, true) &&
+	       send_message(type::commit, epoch, barrier, 0, digest) && wait_world(commit_received);
 }
 
 void transport_world_abort()
 {
 	if (!is_world || !paused)
 		return;
-	send_message(type::abort, 0, epoch);
+	send_message(type::abort, epoch, barrier);
 	paused = false;
 }
 

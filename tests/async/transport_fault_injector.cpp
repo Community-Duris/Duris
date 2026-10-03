@@ -30,6 +30,23 @@ extern "C" ssize_t send(int fd, const void *data, size_t length, int flags)
 	if (!mode || length < 32 || memcmp(bytes, "DTP1", 4))
 		return original(fd, data, length, flags);
 	const unsigned type = (bytes[6] << 8) | bytes[7];
+	if (type == 10 && length == 32 && strstr(mode, "stale-barrier"))
+	{
+		static unsigned pauses = 0;
+		static unsigned char first_pause[32];
+		if (++pauses == 1)
+			memcpy(first_pause, bytes, sizeof(first_pause));
+		else if (pauses == 2)
+		{
+			const ssize_t replayed =
+				original(fd, first_pause, sizeof(first_pause), flags);
+			(void)replayed;
+			constexpr char marker[] = "transport-test: stale barrier replayed\n";
+			const ssize_t marked = write(STDERR_FILENO, marker, sizeof(marker) - 1);
+			(void)marked;
+			usleep(500000);
+		}
+	}
 	if (type == 8 && !getenv("DURIS_TRANSPORT_FD") && strstr(mode, "trace-close"))
 	{
 		constexpr char marker[] = "transport-test: frontend close sent\n";

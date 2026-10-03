@@ -415,6 +415,37 @@ def run_frontend_failure(binary, injector):
     finally: fixture.close()
 
 
+def run_stale_barrier(binary, injector):
+    fixture = Fixture(binary, injector); client = None; negotiating = None
+    try:
+        fixture.env["DURIS_TEST_TRANSPORT_FAULT"] += ",stale-barrier"
+        fixture.seed_player(); client = fixture.login("tls")
+        world = fixture.world_pid()
+        fixture.process.send_signal(signal.SIGUSR1)
+        client.expect("Copyover FAILED", timeout=30)  # First barrier succeeds; file publication fails.
+        fixture.copyover.parent.mkdir(mode=0o700)
+        # This transport has not entered the world. It must still veto handoff.
+        negotiating = socket.create_connection(("127.0.0.1", fixture.ports[1]))
+        client.send("look"); client.expect("The Regression Arena")
+        fixture.process.send_signal(signal.SIGUSR1)
+        client.expect("a connection cannot survive this handoff", timeout=30)
+        assert "stale barrier replayed" in (fixture.runtime / "server.out").read_text()
+        assert not fixture.copyover.exists() and fixture.world_pid() == world
+        assert b"Copyover complete!" not in client.transcript
+        negotiating.close(); negotiating = None
+        client.send("look"); client.expect("The Regression Arena")
+        fixture.process.send_signal(signal.SIGUSR1)
+        client.expect("Copyover complete!", timeout=90)
+        client.send("save"); client.expect(f"Save complete for {journey.CHARACTER}.")
+        assert fixture.world_pid() == world and not client.inflater.eof
+        print("stale barrier: an earlier acknowledgement cannot bypass a negotiating-session veto; retry succeeded", flush=True)
+    except Exception:
+        fixture.diagnostics(client); raise
+    finally:
+        if negotiating: negotiating.close()
+        fixture.close()
+
+
 def run_invalid_client_input(binary, injector):
     fixture = Fixture(binary, injector); client = None
     try:
@@ -791,6 +822,7 @@ def main():
     cases = dict(startup=run_startup, lifecycle_exit=run_lifecycle_exit,
                  lifecycle_failure=run_lifecycle_failure, mixed=run_mixed_sessions,
                  orderly_close=run_orderly_close, invalid_client_input=run_invalid_client_input,
+                 stale_barrier=run_stale_barrier,
                  disconnect_race=run_disconnect_race, frontend_failure=run_frontend_failure,
                  invalid_handoff=run_invalid_handoff, application_barrier=run_application_barrier,
                  bounds=run_bounds, watchdog=run_watchdog)
@@ -800,12 +832,14 @@ def main():
     selection.add_argument("--case", choices=cases)
     args = parser.parse_args()
     build = ROOT / "bin/tests"; build.mkdir(parents=True, exist_ok=True)
-    injector = build / "transport-faults.so"
-    subprocess.run(["g++", "-std=c++20", "-shared", "-fPIC", "-Wall", "-Wextra", "-Werror",
-                    "tests/async/transport_fault_injector.cpp", "-ldl", "-o", str(injector)], cwd=ROOT, check=True)
-    if not journey.INSPECTOR.exists():
-        journey.build_inspector()
     with tempfile.TemporaryDirectory(prefix="transport-server-", dir=build) as temporary:
+        # Each invocation owns its preload image; another journey must not
+        # overwrite a shared library while it is mapped by a running server.
+        injector = Path(temporary) / "transport-faults.so"
+        subprocess.run(["g++", "-std=c++20", "-shared", "-fPIC", "-Wall", "-Wextra", "-Werror",
+                        "tests/async/transport_fault_injector.cpp", "-ldl", "-o", str(injector)], cwd=ROOT, check=True)
+        if not journey.INSPECTOR.exists():
+            journey.build_inspector()
         source = args.server.resolve() if args.server else journey.build_flatfile_server(Path(temporary))
         binary = Path(temporary) / "transport-server"
         copy_binary(source, binary)  # Freeze one build for the entire replacement matrix.
