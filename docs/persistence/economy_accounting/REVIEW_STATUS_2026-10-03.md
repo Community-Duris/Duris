@@ -748,3 +748,16 @@ owner, manifest and all five frozen qualification log hashes against
 `tmp/contract-drift-three-summary.local.json` SHA-256
 8afeaec1177fcf411ee513dd806ffa5ad6bdf76bd54113f23b7e0e0e543a687d.
 The original frozen broad failure remains recorded separately.
+
+## Mail-worker wakeup-leaf boundary contract repair
+
+The mail-worker contract incorrectly treated the POSIX-only network wakeup
+leaf as an engine dependency. The revised boundary verifies its complete
+header closure and rejects transitive engine headers, pointers and callbacks.
+All 653 account source checks pass, including four negative mutations; actual
+mail_sender.c also compiles standalone with strict warnings and no engine link.
+The frozen three-contract evidence above pins this component. A separate final
+current-source scan retains all 1,228 production source hashes through the run:
+`tmp/contract-drift-account-current-final-summary.local.json` SHA-256
+edc29be0862760139976abf3052f73450b944a6aa40c3bb60af0b60a4a0cd748.
+No SMTP/service or full accounting qualification is claimed.

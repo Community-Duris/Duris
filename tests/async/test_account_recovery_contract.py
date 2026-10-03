@@ -104,6 +104,22 @@ def strip_strings(code: str) -> str:
     return re.sub(r'"(?:[^"\\\n]|\\.)*"', '""', code)
 
 
+def mail_worker_headers_safe(worker: str, wakeup: str) -> bool:
+    """The worker may use the POSIX wakeup leaf, never an engine dependency."""
+    worker = strip_comments(worker)
+    wakeup = strip_comments(wakeup)
+    worker_headers = set(re.findall(r'#include\s+"([^"]+)"', worker))
+    leaf_headers = re.findall(r'#include\s+[<"]([^>"]+)[>"]', wakeup)
+    forbidden = r"\b(?:P_char|P_desc|P_obj|descriptor_data|char_data|obj_data|" \
+                r"descriptor_list|character_list|world|logit|statuslog|wizlog|persistence_alert)\b"
+    return (
+        worker_headers == {"net/mail_sender.h", "net/network_wakeup.h"}
+        and set(leaf_headers) == {"errno.h", "fcntl.h", "unistd.h"}
+        and not re.search(r'#include\s+"', wakeup)
+        and re.search(forbidden, strip_strings(wakeup)) is None
+    )
+
+
 def call_arguments(code: str, name: str):
     """The argument text of every `name(` call in already comment-stripped code,
     parentheses balanced."""
@@ -419,11 +435,16 @@ def test_log_hygiene() -> None:
         mailer.count("getenv(") == config_body.count("getenv(") and config_body.count("getenv(") >= 7,
         "getenv( appears only inside mail_sender_config_from_env, once per MAIL_* key",
     )
-    engine_includes = [
-        line for line in re.findall(r'#include\s+"([^"]+)"', mailer)
-        if line != "net/mail_sender.h"
-    ]
-    check(engine_includes == [], "mail_sender.c includes no engine header", str(engine_includes))
+    wakeup = read_source("network_wakeup.h")
+    check(mail_worker_headers_safe(mailer, wakeup),
+          "mail_sender.c uses only its value interface and the engine-independent POSIX wakeup leaf")
+    for label, worker, leaf in (
+        ("worker engine include", mailer + '\n#include "core/prototypes.h"', wakeup),
+        ("transitive leaf engine include", mailer, wakeup + '\n#include "core/structs.h"'),
+        ("leaf engine pointer", mailer, wakeup + '\nextern P_desc descriptor_list;'),
+        ("leaf engine callback", mailer, wakeup + '\nvoid notify() { logit(0, "wake"); }'),
+    ):
+        check(not mail_worker_headers_safe(worker, leaf), f"mail worker rejects {label}")
     for module, text in (("account_recovery.c", core), ("account_recovery_nanny.c", nanny),
                          ("mail_sender.c", mailer)):
         check("persistence_alert(" not in text, f"{module}: no persistence_alert for mail failures")
