@@ -1,4 +1,5 @@
 #include "player/player_snapshot_codec.h"
+#include "player/player_load_items.h"
 #include "core/defines.h"
 
 #include <cstdint>
@@ -228,13 +229,31 @@ void write_operation(std::ostream &out, const critical_operation_id &operation_i
 
 int main(int argc, char **argv)
 {
-	if (argc != 2 || std::string(argv[1]) != "decode-death")
+	if (argc != 2 ||
+	    (std::string(argv[1]) != "decode-death" && std::string(argv[1]) != "decode-evidence" &&
+	     std::string(argv[1]) != "decode-items"))
 	{
-		std::cerr << "usage: player_death_restitution_codec decode-death < payload\n";
+		std::cerr
+			<< "usage: player_death_restitution_codec decode-death|decode-evidence|decode-items < payload\n";
 		return 2;
 	}
 	const std::vector<uint8_t> encoded((std::istreambuf_iterator<char>(std::cin)),
 					   std::istreambuf_iterator<char>());
+	if (std::string(argv[1]) == "decode-items")
+	{
+		std::vector<player_item_snapshot> items;
+		if (player_item_snapshot_list_decode(encoded.data(), encoded.size(), &items) !=
+		    player_snapshot_codec_result::ok)
+			return 4;
+		for (const auto &item : items)
+			if (!player_load_item_snapshot_metadata_valid(item))
+				return 4;
+		json_array(std::cout, items,
+			   [](std::ostream &out, const auto &item)
+			   { write_item(out, item, true); });
+		std::cout << '\n';
+		return 0;
+	}
 	if (encoded.size() < sizeof(uint32_t))
 	{
 		std::cerr << "payload is truncated\n";
@@ -246,10 +265,30 @@ int main(int argc, char **argv)
 				      (static_cast<uint32_t>(encoded[3]) << 24);
 	player_snapshot snapshot = {};
 	const auto result = player_snapshot_decode(encoded.data(), encoded.size(), &snapshot);
-	if (result != player_snapshot_codec_result::ok || !snapshot.death)
+	if (result != player_snapshot_codec_result::ok ||
+	    (std::string(argv[1]) == "decode-death" && !snapshot.death))
 	{
 		std::cerr << "death payload rejected by player_snapshot_codec\n";
 		return 4;
+	}
+	if (std::string(argv[1]) == "decode-evidence")
+	{
+		std::cout << "{\"wire_version\":" << wire_version
+			  << ",\"schema_version\":" << snapshot.schema_version
+			  << ",\"pid\":" << snapshot.pid << ",\"revision\":" << snapshot.revision
+			  << ",\"operation_id_hex\":";
+		write_operation(std::cout, snapshot.death ? snapshot.death->operation_id :
+							    critical_operation_id{});
+		std::cout << ",\"items\":";
+		const auto &items = snapshot.death ? snapshot.death->corpse : snapshot.items;
+		for (const auto &item : items)
+			if (!player_load_item_snapshot_metadata_valid(item))
+				return 4;
+		json_array(std::cout, items,
+			   [](std::ostream &out, const auto &item)
+			   { write_item(out, item, true); });
+		std::cout << "}\n";
+		return 0;
 	}
 	const auto &death = *snapshot.death;
 	std::cout << "{\"wire_version\":" << wire_version

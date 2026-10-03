@@ -1426,11 +1426,13 @@ def fetch_related_deaths(db: Mysql, source_pid: int, revision: int, uids: Iterab
 
 def ensure_codec() -> Path:
     CODEC_BINARY.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
-    if CODEC_BINARY.exists() and CODEC_BINARY.stat().st_mtime_ns >= CODEC_SOURCE.stat().st_mtime_ns:
+    sources = [CODEC_SOURCE, ROOT / "src/player/player_snapshot_codec.c", ROOT / "src/player/player_load_items.c"]
+    if CODEC_BINARY.exists() and CODEC_BINARY.stat().st_mtime_ns >= max(path.stat().st_mtime_ns for path in sources):
         return CODEC_BINARY
     command = [
         "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-Isrc",
-        str(CODEC_SOURCE), str(ROOT / "src/player/player_snapshot_codec.c"),
+        "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-I/usr/include/libxml2",
+        *map(str, sources),
         "-o", str(CODEC_BINARY),
     ]
     try:
@@ -5738,6 +5740,22 @@ def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(description="Audited disputed-death item restitution: offline SQL or read-only native preparation")
     root.add_argument("--env-file", help="explicit database environment file")
     sub = root.add_subparsers(dest="command", required=True)
+    repair_prepare = sub.add_parser("repair-prepare", help="read-only exact-UID missing payload repair preparation")
+    repair_prepare.add_argument("--item-uid", required=True, type=int)
+    repair_prepare.add_argument("--evidence", type=Path)
+    repair_prepare.add_argument("--backup-receipt", type=Path)
+    repair_prepare.add_argument("--artifact", required=True, type=Path)
+    repair_prepare.add_argument("--overwrite", action="store_true")
+    add_policy_arguments(repair_prepare, target_info=True)
+    for name in ("repair-apply", "repair-verify"):
+        repair = sub.add_parser(name, help="guarded exact-UID payload repair " + name.split("-")[1])
+        repair.add_argument("--plan", required=True, type=Path)
+        repair.add_argument("--evidence", required=True, type=Path)
+        repair.add_argument("--offline-proof", required=True, type=Path)
+        repair.add_argument("--approve", action="store_true")
+        repair.add_argument("--actor", required=True)
+        repair.add_argument("--reason", required=True)
+        add_policy_arguments(repair, target_info=True, maintenance=True)
     target_info = sub.add_parser(
         "target-info", help="read the actual database identity and optional maintenance boundary"
     )
@@ -5843,6 +5861,9 @@ def parser() -> argparse.ArgumentParser:
 def main(argv: list[str]) -> int:
     args = parser().parse_args(argv)
     load_env_file(args.env_file)
+    if args.command.startswith("repair-"):
+        from player_item_payload_repair import run
+        return run(sys.modules[__name__], args)
     if args.command == "target-info":
         policy, _ = policy_for_command(args)
         db = Mysql(policy)
