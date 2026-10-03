@@ -761,3 +761,14 @@ current-source scan retains all 1,228 production source hashes through the run:
 `tmp/contract-drift-account-current-final-summary.local.json` SHA-256
 edc29be0862760139976abf3052f73450b944a6aa40c3bb60af0b60a4a0cd748.
 No SMTP/service or full accounting qualification is claimed.
+
+## Kingdom removal-generation ordering contract repair
+
+The cache invalidation contract omitted the new runtime-identity retirement
+before extraction. It now requires retirement and one generation increment
+immediately after the null guard, before maintenance or nested callbacks.
+All 441 kingdom source checks pass, including six mutations proving that
+missing/reordered invalidation and retirement still refuse. Primary verified
+the owner and frozen log in the same three-contract evidence above. This is
+source-contract evidence, not a new native combat/kingdom gameplay proof or
+passing broad rerun. No production source changed for these three repairs.
