@@ -647,3 +647,44 @@ Evidence SHA-256 (LF-normalized):
 
 - tmp/real-pool-coordinator-build.local.log: c071af53c25f92bfe0b1d61bb5d63af4179d7c7e2c590bdcc4443ba09a7c438a
 - tmp/real-pool-coordinator-native.local.log: 72427ba2f53d1d7d231dd4c22cf67972ca0b7db68b38ca896b5bdcff22e61fcc
+
+## Six broad-fixture dependency/lifetime repairs
+
+The frozen published-70aaa broad run established compile failures after runtime
+identity and dispatcher wakeup integration. Five retained fixtures lacked the
+actual authoritative identity-map linkage/lifecycle; the dispatcher lacked its
+wakeup dependency. Fixtures now register and retire identities through the real
+production map, preserve delayed-completion assertions and test retired identity
+refusal after storage reuse. The mock-layout spell fixture extracts the actual
+map implementation. Dispatcher uses the real header-local pipe and checks
+readable notification and drain. No production spell path was changed.
+
+All six focused owners pass strict native warnings and ASan/UBSan: corpse's 15
+batch combinations, input queue, publication retention/fences/allocation cases,
+spell publication, dispatcher's three quarantine/retry cases and zone-purge's
+four immediate-free/move combinations. The corpse secondary wakeup harness
+retains its existing unsanitized build. Source dependencies are pinned at
+8cc56007b8fab2dd7bfdbad2c52ac338c055478c. Primary verified all six current owner
+and clean log hashes against the native evidence. Shared helper formatting and
+whitespace checks pass. Initial failed/mixed logs are retained separately.
+
+The qualification is component-only, with synthetic journals/apply boundaries
+and spell mock layouts; no database/live-player qualification is claimed. The
+original frozen broad suite continues with its original failures. These repairs
+are not a passing rerun or full R1-R8 completion. Accounting remains inactive.
+
+Evidence: tmp/fixture-identity-six-summary.local.json SHA-256
+31788b08bf13524d79909d3df24c5b11967162dad70136422c02832092a3e669.
+
+Remote 44f4c54035ad54e0b3450e14346c8150be4ff2f6 integrated PR 693 while this
+milestone qualified. The fixture commit rebases onto that update. Its new
+always-null retention lookup stub is removed in favor of the actual linked map.
+All six focused owners pass again with incoming native alchemy/save-ACK changes;
+44 key source/header/fixture inputs remain unchanged through qualification.
+The first concurrent corpse compile exceeded its unchanged 180-second gate
+without diagnostics; the serial retry passes that same gate. Both logs remain.
+Primary verified all six current owner/clean-log hashes. This integrated
+component evidence is separate from the earlier 8cc56007 qualification and the
+still-running frozen broad suite. Integrated evidence:
+tmp/fixture-alchemy-six-summary.local.json SHA-256
+5c38979f6d840a29ea06c640d0ee469a08d0366d0fae83423ef428176c6775ac.

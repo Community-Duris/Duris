@@ -494,3 +494,9 @@ c60330b58de9063dc1ad8510ced36310324d5d4c is pinned separately from room-payload
 WIP. The configured factory and ACK remain supplied by the fixture; typed bank,
 production boot/contention and ordinary gameplay cold-boot publication remain
 open. See the October 3 status for exact binary and evidence hashes.
+
+Six focused broad-fixture dependency/lifetime repairs now pass strict native
+ASan/UBSan (corpse/input/retention/spell/dispatcher/zone). Actual runtime identity
+and wakeup dependencies replace missing fixture linkage. Production inactive
+spell behavior is unchanged. The frozen broad run retains its original failures;
+focused repairs do not qualify a complete rerun. Details/pins are in October 3 status.
