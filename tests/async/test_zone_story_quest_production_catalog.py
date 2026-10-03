@@ -575,7 +575,71 @@ assert jade_sources[76688] == [("E", 76712, 76915, 1, 100)]
 assert jade_sources[76710] == [("G", 76725, 76938, 1, 100)]
 assert not jade_sources[233]
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade"):
+savannah = inventory_module.area_evidence(ROOT, "savannah")
+assert len(savannah["requests"]) == 17 and len(savannah["dialogue"]) == 17
+assert len(savannah["mobs"]) == 59 and len(savannah["items"]) == 39
+assert len(savannah["reset_commands"]) == 315 and not savannah["special_assignments"]
+assert collections.Counter(r["command"] for r in savannah["reset_commands"]) == {"M": 200, "E": 73, "F": 20, "G": 16, "D": 6}
+savannah_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "savannah")
+assert savannah_mapping["schema_version"] == 3 and savannah_mapping["coverage"] == "complete"
+savannah_contacts = {c["mob_vnum"]: c for c in savannah_mapping["contacts"]}
+assert len(savannah_contacts) == 17 and {r["block"]["giver_vnum"] for r in savannah["requests"]} <= savannah_contacts.keys()
+all_native_blocks = inventory_module.native_blocks(ROOT)
+raw_savannah_topics = [b for b in all_native_blocks if b["source"] == "areas/qst/savannah.qst" and b["kind"] == "M"]
+assert len(raw_savannah_topics) == 19
+# Plain command suggestions must survive a second source alias containing an
+# apostrophe, even while the conservative evidence index omits that family.
+for block in raw_savannah_topics:
+    aliases = block["body"][0].split("~")[0].lower().split()
+    safe = [a for a in aliases if re.fullmatch(r"[a-z0-9_-]{1,64}", a)]
+    assert safe and safe[0] in savannah_contacts[block["giver_vnum"]]["topics"]
+assert savannah_contacts[138527]["topics"] == ["contest"]
+assert savannah_contacts[138545]["topics"] == ["contest"]
+for vnum, contact in savannah_contacts.items():
+    assert contact["keyword"] in savannah["mobs"][vnum]["keywords"]
+savannah_stories = {s["id"]: s for s in savannah_mapping["stories"]}
+assert collections.Counter(s["category"] for s in savannah_stories.values()) == {"story": 2, "request": 3, "service": 12}
+assert not savannah_mapping["exclusions"]
+assert sum(t.get("optional", False) for s in savannah_stories.values() for t in s["steps"]) == 12
+native_savannah = {(r["block"]["giver_vnum"], r["block"]["binding"]["completion_key"]): r["block"] for r in savannah["requests"]}
+assert {(r["giver_vnum"], r["completion_key"]) for s in savannah_stories.values() for r in s["contracts"]} == set(native_savannah)
+legendary = {"lyre": (138267, 138535), "drums": (138268, 138533), "horn": (138269, 138534), "flute": (138271, 138536), "mandolin": (138272, 138537), "harp": (138270, 138538)}
+kunji_binding = {"giver_vnum": 138261, "completion_key": "give=I:138267,I:138268,I:138269,I:138270,I:138271,I:138272;receive=I:138279;disappear=1"}
+for name, (katana, base) in legendary.items():
+    initial = savannah_stories["legendary-" + name]
+    epic = savannah_stories["epic-" + name]
+    assert initial["contracts"] == [{"giver_vnum": 138500, "completion_key": f"give=I:{katana};receive=I:{base};disappear=0"}]
+    assert epic["contracts"] == [{"giver_vnum": 138500, "completion_key": f"give=I:138279,I:{base};receive=I:{base + 6};disappear=1"}]
+    history = {t["id"]: t for t in epic["steps"] if t["kind"] == "completion" and t.get("optional")}
+    assert history["matching-base-preparation"]["contracts"] == initial["contracts"]
+    assert history["retribution-preparation"]["contracts"] == [kunji_binding]
+    assert "leaves after" in epic["steps"][-1]["hint"]
+for story in savannah_stories.values():
+    binding = story["contracts"][0]
+    block = native_savannah[(binding["giver_vnum"], binding["completion_key"])]
+    required = collections.Counter({t["item_vnums"][0]: t["count"] for t in story["steps"] if t["kind"] == "carried_item" and not t.get("optional")})
+    assert required == collections.Counter(n for k, n in block["give"] if k == "I")
+savannah_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 1385]
+assert len(savannah_units) == 17 and sum(u["achievement"] for u in savannah_units) == 5 and sum(u["daily_candidate"] for u in savannah_units) == 5
+assert sum(r["definition"]["daily_eligible"] for r in savannah["requests"]) == 17
+savannah_sources = collections.defaultdict(list)
+parent = room = None
+for reset in savannah["reset_commands"]:
+    command, values = reset["command"], reset["arguments"]
+    if command in {"M", "F"}:
+        parent, room = values[1], values[3]
+    if command in {"G", "E"}:
+        savannah_sources[values[1]].append((command, parent, room, values[2], values[4]))
+assert savannah_sources[138526] == [("G", 138522, 138519, 3, 100), ("G", 138523, 138519, 3, 100), ("G", 138522, 138519, 3, 100)]
+assert savannah_sources[138528] == [("G", 138517, 138538, 3, 100), ("G", 138515, 138538, 3, 100), ("G", 138515, 138578, 3, 100)]
+assert savannah_sources[138530] == [("G", 138519, 138533, 1, 100)]
+assert savannah_sources[138516] == [("G", 138537, 138512, 1, 100)]
+assert savannah_sources[138514] == [("G", 138546, 138629, 1, 100)]
+assert not any(r["command"] in {"M", "F"} and r["arguments"][1] == 138558 for r in savannah["reset_commands"])
+assert "hostel" not in {z["source_area"] for z in catalog["zones"]}
+assert not any(138539 <= n <= 138544 for b in all_native_blocks for k, n in b["give"] if k == "I")
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 47 &&
-				tracker.summary_for(7, 42).total == 2217,
+		require(catalog.story_mappings.size() == 48 &&
+				tracker.summary_for(7, 42).total == 2205,
 			"native story projection disagreed with the complete source audit");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -1959,6 +1959,124 @@ int main(int argc, char **argv)
 				restored_jade.progress_for_zone(7, 42, 766).completed == 17 &&
 				restored_jade.progress_for_zone(7, 42, 766).total == 17,
 			"Jade recovery counted equivalent fish, services or exclusions twice");
+		const auto &savannah_map =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "savannah"; });
+		const auto &epic_drums = story_for("savannah", "epic-drums");
+		service supplied_savannah(catalog);
+		require(supplied_savannah.discover_zone(7, 42, 1385, 138584, 100, "arrival") ==
+				result::applied,
+			"Savannah discovery fixture failed");
+		journal = supplied_savannah.render_journal(7, 42, 1385, 10, 1, 101, false, false);
+		require(journal.find("] " + epic_drums.title) == std::string::npos,
+			"Savannah discovery exposed an unseen Lynstar service");
+		for (const auto &contact : savannah_map.contacts)
+			require(supplied_savannah.meet_npc(7, 42, contact.mob_vnum, 138584, 102) ==
+					result::applied,
+				"Savannah encounter fixture failed");
+		const auto savannah_section = [&](const auto &story)
+		{
+			const auto at = journal.find("] " + story.title + "\r\n");
+			require(at != std::string::npos, "Savannah journal row missing");
+			const auto end = journal.find("\r\n  [", at + 1);
+			return journal.substr(at, end == std::string::npos ? end : end - at);
+		};
+		// Supplied exact offerings skip source and preparation history. Current
+		// quantities and matching instrument kinds still gate readiness.
+		for (const auto &recipe : savannah_map.stories)
+		{
+			supplies = {};
+			for (const auto &step : recipe.steps)
+				if (step.kind == "carried_item" && !step.optional)
+					supplies.carried[step.item_vnums.front()] = step.count;
+			const auto before_read = supplied_savannah.serialize_state();
+			journal = supplied_savannah.render_journal(7, 42, 1385, 10, 1, 125, false,
+								   false, &supplies);
+			require(savannah_section(recipe).find(
+					"Next: " + recipe.steps.back().text) != std::string::npos &&
+					supplied_savannah.serialize_state() == before_read,
+				"supplied Savannah offering required history or a read awarded progress");
+			for (const auto &step : recipe.steps)
+			{
+				if (step.optional)
+				{
+					require(savannah_section(recipe).find(
+							"Next: " + step.text) == std::string::npos,
+						"optional Savannah preparation became a required next step");
+					continue;
+				}
+				if (step.kind != "carried_item")
+					continue;
+				const int item = step.item_vnums.front();
+				supplies.carried[item] = step.count - 1;
+				supplies.equipped[16] = item;
+				journal = supplied_savannah.render_journal(7, 42, 1385, 10, 1, 126,
+									   false, false, &supplies);
+				require(savannah_section(recipe).find("Next: " + step.text) !=
+						std::string::npos,
+					"a worn item replaced a missing exact root or third animal part");
+				supplies.equipped.clear();
+				supplies.carried[item] = step.count;
+			}
+		}
+		const auto kunji_history = std::find_if(
+			epic_drums.steps.begin(), epic_drums.steps.end(),
+			[](const auto &step) { return step.id == "retribution-preparation"; });
+		require(kunji_history != epic_drums.steps.end() && kunji_history->optional,
+			"optional foreign Kunji preparation missing");
+		record(supplied_savannah, kunji_history->contracts.front(), "savannah-kunji", 1382,
+		       138428);
+		record(supplied_savannah,
+		       story_for("savannah", "legendary-drums").contracts.front(),
+		       "savannah-base-drums", 1385, 138665);
+		supplies = {};
+		supplies.carried[138279] = 1;
+		supplies.carried[138535] = 1;
+		journal = supplied_savannah.render_journal(7, 42, 1385, 10, 1, 127, false, false,
+							   &supplies);
+		const auto missing_drums =
+			std::find_if(epic_drums.steps.begin(), epic_drums.steps.end(),
+				     [](const auto &step) {
+					     return step.kind == "carried_item" &&
+						    step.item_vnums.front() == 138533;
+				     });
+		require(missing_drums != epic_drums.steps.end() &&
+				savannah_section(epic_drums).find("Next: " + missing_drums->text) !=
+					std::string::npos,
+			"base history or a different instrument replaced the current matching drums");
+		supplies.carried[138533] = 1;
+		supplies.carried.erase(138279);
+		journal = supplied_savannah.render_journal(7, 42, 1385, 10, 1, 128, false, false,
+							   &supplies);
+		const auto missing_sword =
+			std::find_if(epic_drums.steps.begin(), epic_drums.steps.end(),
+				     [](const auto &step) {
+					     return step.kind == "carried_item" &&
+						    step.item_vnums.front() == 138279;
+				     });
+		require(missing_sword != epic_drums.steps.end() &&
+				savannah_section(epic_drums).find("Next: " + missing_sword->text) !=
+					std::string::npos &&
+				supplied_savannah.progress_for_zone(7, 42, 1385).completed == 0,
+			"Kunji history replaced spent Retribution or credited a local collection");
+		service credited_savannah(catalog);
+		for (const auto &recipe : savannah_map.stories)
+			if (recipe.category == "service")
+				record(credited_savannah, recipe.contracts.front(),
+				       recipe.id.c_str(), 1385, 138665);
+		require(credited_savannah.progress_for_zone(7, 42, 1385).completed == 0 &&
+				credited_savannah.progress_for_zone(7, 42, 1385).total == 5,
+			"instrument trades invented collection or tribal achievements");
+		for (const auto &recipe : savannah_map.stories)
+			if (recipe.category != "service")
+				record(credited_savannah, recipe.contracts.front(),
+				       recipe.id.c_str(), 1385, 138584);
+		service restored_savannah(catalog);
+		require(restored_savannah.deserialize_state(credited_savannah.serialize_state(),
+							    &error) &&
+				restored_savannah.progress_for_zone(7, 42, 1385).completed == 5 &&
+				restored_savannah.progress_for_zone(7, 42, 1385).total == 5,
+			"Savannah receipt recovery merged named requests or counted gear services");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

@@ -49,9 +49,10 @@ neither every branch nor every historical prerequisite.
 | 22 | The Realm of Barovia | [Comprehensive source dossier](zone-stories/THE_REALM_OF_BAROVIA.md): nine exchanges/78 M blocks, 168 rooms, 57 mobs, 66 objects, 405 resets/all 194 families; shared roles, foreign keys/Gertruda and legacy combat/session policy reviewed | Revision 1: five stories/one request/three services, 24 contacts/all 41 addressed blocks and ten optional checks; exact collection, independent letters, heart and daughter routes | Active sources/access; quest-person lineage; ordered group combat/attempt bridge; foreign brittle gates; selected brooch/letter/orb/barricade/reveal policies |
 | 23 | Lost Temple of Tikitzopl | [Comprehensive source dossier](zone-stories/LOST_TEMPLE_OF_TIKITZOPL.md): 29 Q/nine M, 234 rooms, 76 mobs, 97 objects, 340 resets/all 202 families, five assigned procedures and bounded foreign components/routes reviewed | Revision 1: two stories/two requests/25 services, nineteen contacts/all topics and 44 optional checks; exact key, distinct/duplicate ingredients and competing Orb guidance | Active sources/mode-zero availability; exact allocation/lineage; accepted lore and confirmed access/return; successful reflection/class outcomes and builder-selected crypt/prose/closure |
 | 24 | The Jade Empire | [Comprehensive source dossier](zone-stories/THE_JADE_EMPIRE.md): 37 Q/four M, 340 rooms, 134 mobs, 130 objects, 583 resets/all 331 families, three shops, two literal room services/computed smith and bounded foreign proofs/routes | Revision 1: eight stories/nine requests/seventeen services/two exclusions, 38 contacts/all three addressed topics and 35 optional checks; equivalent fish and exact allocation/access guidance | Paid net/map/mixed fees, legacy mithril and deliberate forge/mining refusal; accepted fishing/source/capture/recipient, same-kind replacement, load-room encounters and real key/water/foreign travel; builder-selected belt/lore/prose repairs |
-| 25–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 25 | Savannah of Broken Trusts | [Comprehensive source dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md): seventeen Q/nineteen M, 167 rooms, 59 mobs, 39 objects, 315 resets/all 105 families; shared native/access/falling/bard and bounded foreign Mitashi/Air/Hostel review | Revision 1: two stories/three requests/twelve equipment services, seventeen contacts/all nineteen raw topics and twelve optional checks | Active parts/sword stock, exact allocation, retiring appearances and well/tunnel access; source/learned-topic evidence; builder-selected absent sister/tribal endpoints and alias/prose/protection decisions |
+| 26–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is the Savannah of Broken Trusts, followed by Alatorin - the Forge City.
+The next area is Alatorin - the Forge City, followed by the City of Newhaven.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -1031,3 +1032,45 @@ authoritative harness formatting, whitespace and cached SQL build. All 2,668
 native definitions/terms and the other 46 maps remain unchanged as parsed
 objects; 567 changed-document links resolve. No accounting activation,
 migration, DB/server operation or merge is part of the source mapping.
+
+## Savannah of Broken Trusts checkpoint
+
+Completed priority 25 with the
+[source dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md) and
+[reproducible index](../reference/zone-story-audits/savannah.md). Reviewed all
+36 native blocks, 167 rooms, 59 mobs, 39 objects and 315 resets/all 105 families;
+there is no literal local special, explicit local data procedure or shop file.
+Shared exact giving, stock generation, ordinary followers/movement, doors/search,
+examination, falling and bard use/sleep boundaries were reviewed. Bounded
+foreign evidence covers six Mitashi swords/carriers, Kunji/Retribution and
+warehouse rooms, the nine-item Air consumer and retained but inactive Hostel data.
+
+Revision 1 projects seventeen contracts into five named delivery achievements/
+potential dailies and twelve separate instrument equipment services. Seventeen
+contacts cover all nineteen addressed topic families; twelve optional checks
+retain matching-base and Kunji history without requiring it for supplied items.
+No single instrument exchange completes a collection. Three tusks and three
+skins pay different gifts; feather, bones and Kahir essence have their own
+outcomes. Native cash reward remains supported. Exact stock declarations fit
+the three-part counts, but actual generation and availability remain unqualified.
+
+| Capability / repair | Evidence and qualification proposal |
+| --- | --- |
+| ZSQ-SAV-SOURCE / ACCESS | Parts are ordinary stock, not automatic fresh kill products. Well drops into a pit with no up edge; its secret western exit connects to termite tunnels, while Kahir uses a different closed/unkeyed wall and the laboratory route has falling. Add explicit accepted source/search/open/arrival episodes and test both approaches, gifts, hazard and escape. |
+| ZSQ-SAV-ALLOCATION / EPISODES | Six cap-one sword kinds pay six separate base recipes or one six-kind Kunji recipe. Each epic consumes matching base plus current Retribution and retires Lynstar; Kunji also retires. Fresh all-six epic construction uses seven copies of each katana and six appearances of each giver, while gifts can shorten preparation. Qualify exact UID allocation, stock generation, recipient episodes, foreign competing relic and recovery. |
+| ZSQ-SAV-COLLECTION / TRIBAL | No active consumer accepts the six epic instruments; referenced Hostel is absent from the active list. M'Bele/god claws exist without god stock or reviewed chief-death finale. Builder chooses real recipient/reward/episode or lore retirement; sidecar metadata cannot implement collection, war, god appearance or homeward escort. |
+| ZSQ-SAV-DIALOGUE | Conservative extractor drops two whole families because `m'bele` is among otherwise valid aliases. Chief/Watcher `contest` topics are authored now. Plan a focused usable-alias/raw-source distinction and affected-index regression; accepted learned topics remain a separate adapter. |
+| ZSQ-SAV-PROSE / NOSLEEP | Correct repeated lyre versus actual recipes and village-versus-pit description if selected; clarify absent sister/god/escort lore fairly. One invisible NOSLEEP item is carried instead of worn, which protects against reviewed bard sleep but not the equipment-only sleep spell path; qualify intended protection before changing its reset. |
+
+Current catalog: 48 journals, 2,205 achievement units, 1,854 potential daily
+units and 2,482 projected rows, preserving all 2,668 native definitions and
+other 47 parsed maps. Twenty-five of 220 roadmap areas are source-comprehensive,
+with 195 pending. Continue with Alatorin - the Forge City, then Newhaven.
+Alatorin's 495 contracts require a complete district/service-family audit.
+The full roadmap goal remains active; played active-world qualification is
+independent of source completeness. Accounting remains mandatory.
+
+Focused source/native checks, cached SQL build, formatting, term/map preservation
+and local document link verification accompany this checkpoint. Fixtures are
+synthetic states, not played sources, travel, songs or recipient episodes.
+No accounting activation, DB migration/server operation or merge is included.

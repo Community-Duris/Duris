@@ -13,9 +13,9 @@ named stories without changing native receipt IDs. Twin Towers replaces 84
 contracts with 10 achievement units and 3 daily groups, excluding 40 returned
 offerings and displaying 24 supporting contracts as 12 non-achievement services.
 The global projection now has
-2,217 achievement units and 1,866 daily candidate units after adding starter/town
+2,205 achievement units and 1,854 daily candidate units after adding starter/town
 mappings and deeper journals, equipment/crafting services,
-intermediate outcomes, and explicit missing-item exclusions. There are 47
+intermediate outcomes, and explicit missing-item exclusions. There are 48
 area sidecars and 2,482 projected units including services and administrative
 content. Other areas
 retain native-contract fallback; these counts do not claim full semantic review.
@@ -107,7 +107,16 @@ replacement, real royal/foreign rescue keys and foreign proof ownership are
 covered by source/native fixtures. Paid net/map/mixed offerings, legacy mithril,
 deliberate forge/mining refusal, load-room movement and fishing publication have
 explicit repair and gameplay-qualification plans.
-Twenty-four source-comprehensive areas remain distinct from played
+Savannah adds five named achievements/potential dailies and twelve distinct
+instrument services across seventeen contracts. Seventeen contacts cover all
+nineteen raw addressed families, including two with usable plain aliases omitted
+by the inventory's conservative apostrophe filter. Twelve optional checks retain
+foreign Kunji and matching-base preparation without requiring it for gifts.
+Exact three-part supply, six-kind allocation, spent ingredients, retiring
+appearances and real well/tunnel access have source/native regression coverage.
+Absent sister collection/tribal-god terminals and selected alias/prose/protection
+repairs have explicit builder decisions and qualification proposals.
+Twenty-five source-comprehensive areas remain distinct from played
 active-world qualification.
 All raw definitions, receipt identities, zone registry and source fingerprint
 remain unchanged. Comprehensive source dossiers for these areas are tracked in

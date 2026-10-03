@@ -1,0 +1,1004 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "savannah",
+  "coverage": "complete",
+  "introduction": "Meet the savannah's tribes, rocchasers, hidden researcher and Watcher. Their named requests have exact delivery outcomes. Lynstar's equipment trades remain distinct supporting services, while the sister and tribal-war legends are unfinished leads. Active, ready accounting is required.",
+  "orientation": [
+    "Enter from the western surface trail to meet Dromis and Kylian's companions. Ask Dromis about savannah and Kylian about roc. Topics explain lore; hearing a keyword does not award an achievement.",
+    "The roc in the northeastern clearing carries the tailfeather for Kylian. He pays 10,000 copper and an insignia, accepting supplied proof as well. His gratitude does not record your own kill or send the companions home.",
+    "The Tukluk shaman in the northwestern village accepts three tusks together for a curio, or three gazelle skins together for sleeves. These are different requests and rewards; a mixed batch or one of each does not qualify. Neither delivery records the defeat of the Butsus.",
+    "Three tusks are declared on elephants at the watering hole. The three skin declarations belong to a large gazelle and its follower near the center and another follower in the dusty clearing. Exact stock is limited; every animal of a species need not carry a quest part.",
+    "A proud lion near the central savannah carries the one declared pile of lion bones. Descend through the huge baobab, pass the falling shaft and follow the underground tunnels west to Sprithnog. His laboratory plaque requests the bones for monocles; ordinary golem stock is separate.",
+    "Ask the Watcher about contest or interfere. Enter the giant termite mound and find the secret, closed wall into the Kahir burial chamber. One essence declaration is carried by a ghostly host among five. No item key opens that wall. Bring the current essence to the Watcher for his cloak and departure.",
+    "Lynstar is declared in the pit beneath the Butsu village, rather than on the village paths. The well drops down and has no upward exit. A secret, closed western connection links the pit to the termite tunnels, providing a separate approach and way out.",
+    "Each Mitashi katana pays a different legendary instrument: Shadows Breath → lyre; The North Wind → drums; Divine Fury → horn; Celestial Dragon → flute; Torrential Rain → mandolin; The Lotus Blossom → harp. These are six separate equipment services, not interchangeable collection terminals.",
+    "Kunji Pishida in the abandoned Mitashi warehouse basement accepts all six distinct katanas together for Retribution and leaves. Giving a katana to Lynstar instead spends that copy. A supplied Retribution can skip the Kunji exchange, but a receipt cannot replace the sword after it is consumed.",
+    "Each epic upgrade needs one current Retribution plus its matching legendary instrument. Lynstar leaves after an upgrade, so additional epic instruments require another available appearance or supplied instruments. Repeated lyre wording in dialogue does not change the six exact recipes.",
+    "Using only these fresh native recipes to make all six epic instruments consumes seven copies of each original katana: one set for the six base instruments and six sets for six Retributions. Kunji and Lynstar each need six available appearances. Declared cap-one sword stock and active generation must be qualified; gifts can shorten this preparation.",
+    "Lynstar says her sister in the Drakenwood Hostel wants the six epic instruments. That full-set request is an unfinished lead with no supported ending in the journal. Each instrument trade remains available separately when Lynstar and the supplies are present.",
+    "Dromis predicts M'Bele will appear after a chief is defeated. The journal does not yet track that ending. Tukluk deliveries and Kahir proof have their own rewards without awarding tribal victory or a god-summoning achievement.",
+    "The North Wind katana and the Watcher's cloak also pay a separate nine-item relic request on the Plane of Air. That foreign recipient owns its own reward and receipt; one current item cannot pay both uses. Local hints do not discover or complete the foreign story.",
+    "Instrument use belongs to the normal bard system: equip the correct instrument and know an appropriate song. A trade receipt records the equipment exchange, rather than learned songs or a successful performance. Remove equipment before offering it in a quest.",
+    "Readiness shows current exact carried quantities. Supplies, recipient appearances and ordinary travel need active-world qualification. Item names, NORENT restrictions and animal stock do not prove freshness or personal hunting; gifts are valid unless a future objective explicitly requires personal recovery."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 138500,
+      "name": "Lynstar",
+      "keyword": "bard",
+      "description": "Lynstar is in the pit beneath the Butsu village, reached through the well or termite tunnels. She makes six distinct legendary instruments and six matching epic upgrades. Each epic upgrade consumes Retribution and she leaves afterward; her sister's full-set request is an unfinished lead.",
+      "topics": [
+        "katana"
+      ]
+    },
+    {
+      "mob_vnum": 138512,
+      "name": "Dromis",
+      "keyword": "dromis",
+      "description": "Dromis stands at the western savannah entrance. Ask about savannah for the tribal legend, or his other book topics for distant lore. The journal does not yet track his predicted chief-defeat and M'Bele appearance.",
+      "topics": [
+        "savannah",
+        "turol",
+        "cimmeria",
+        "fonstaf",
+        "planes",
+        "cheese",
+        "books"
+      ]
+    },
+    {
+      "mob_vnum": 138527,
+      "name": "The Tukluk Chief",
+      "keyword": "chief",
+      "description": "The Tukluk chief in the northwestern village describes the conflict with the Butsus. Ask about contest. The journal does not award a tribal victory or M'Bele appearance for defeating him.",
+      "topics": [
+        "contest"
+      ]
+    },
+    {
+      "mob_vnum": 138529,
+      "name": "a Tukluk shaman",
+      "keyword": "shaman",
+      "description": "The Tukluk shaman in the northwestern village requests three tusks or three gazelle skins. These pay separate curio and sleeves outcomes; mixing the kinds does not qualify. His claimed aid to the tribe has no recorded battle stage.",
+      "topics": [
+        "animal"
+      ]
+    },
+    {
+      "mob_vnum": 138538,
+      "name": "Kylian Brightstar",
+      "keyword": "kylian",
+      "description": "Kylian and his two companions start at the western entrance. Ask about roc. He accepts the exact tailfeather for an insignia and 10,000 copper, but that delivery does not require your own kill or dispatch a homeward escort.",
+      "topics": [
+        "roc",
+        "ange",
+        "luncke"
+      ]
+    },
+    {
+      "mob_vnum": 138539,
+      "name": "Ange de Morte",
+      "keyword": "ange",
+      "description": "Ange follows Kylian and offers companion lore and a memorial response. Her dialogue is informational and does not award a separate quest achievement.",
+      "topics": [
+        "kylian",
+        "luncke",
+        "ange"
+      ]
+    },
+    {
+      "mob_vnum": 138540,
+      "name": "Luncke",
+      "keyword": "luncke",
+      "description": "Luncke follows Kylian and offers companion lore. Conversation does not prove a battle or journey back to Edgeland.",
+      "topics": [
+        "kylian",
+        "ange"
+      ]
+    },
+    {
+      "mob_vnum": 138542,
+      "name": "Sprithnog the Alchemist",
+      "keyword": "sprithnog",
+      "description": "Sprithnog works in the laboratory beneath the huge baobab. His plaque requests lion bones. The directly carried bones earn monocles; the declared stone golems are separate ordinary stock.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 138545,
+      "name": "the Watcher of the Contest",
+      "keyword": "watcher",
+      "description": "The Watcher starts in the savannah and may wander. Ask about contest or interfere for the sealed Kahir burial. He accepts the exact essence for a cloak and leaves; no personal hunt or M'Bele appearance is inferred.",
+      "topics": [
+        "contest"
+      ]
+    },
+    {
+      "mob_vnum": 138537,
+      "name": "a roc",
+      "keyword": "roc",
+      "description": "The roc in the northeastern clearing carries the tailfeather sought by Kylian. A first pickup or personal kill requires separate source evidence; the native reward accepts a supplied feather.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 138522,
+      "name": "an elephant",
+      "keyword": "elephant",
+      "description": "Ordinary elephants gather at the watering hole; two tusk stock declarations are attached to them. Not every elephant carries a tusk.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 138523,
+      "name": "a bull elephant",
+      "keyword": "elephant",
+      "description": "The bull elephant at the watering hole has the third tusk declaration. The shaman needs three current tusks together.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 138517,
+      "name": "a large gazelle",
+      "keyword": "gazelle",
+      "description": "A large gazelle near the center of the savannah carries one declared skin. Its ordinary follower has another; a third is on a follower at the dusty clearing.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 138515,
+      "name": "a gazelle",
+      "keyword": "gazelle",
+      "description": "Follower gazelles have two of the three skin declarations. Other gazelles need not carry a skin, and supplied exact skins are accepted by the shaman.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 138519,
+      "name": "a proud lion",
+      "keyword": "lion",
+      "description": "The proud lion near the central savannah carries the one declared pile of lion bones for Sprithnog. Other lions do not gain this stock merely by sharing the species name.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 138546,
+      "name": "the ghostly remnants of the Kahir tribe",
+      "keyword": "kahir",
+      "description": "The ghostly Kahir host is declared behind the secret, closed wall beneath the termite mound. The essence is one stock declaration among five hosts; it is not a generated death reward for each host.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 138552,
+      "name": "the Butsu chief",
+      "keyword": "chief",
+      "description": "The Butsu chief is ordinary stock in the southern village. The tribal-war legend has no reviewed victory or god-summoning endpoint. The village well and termite tunnels lead toward Lynstar's pit.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "legendary-lyre",
+      "title": "Trade for the Legendary Lyre",
+      "category": "service",
+      "summary": "An equipment service. a katana called 'Shadows Breath' → the legendary lyre of healing and harming.",
+      "contracts": [
+        {
+          "giver_vnum": 138500,
+          "completion_key": "give=I:138267;receive=I:138535;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-138267",
+          "kind": "carried_item",
+          "item_vnums": [
+            138267
+          ],
+          "count": 1,
+          "text": "Directly carry a katana called 'Shadows Breath'.",
+          "hint": "Lord Kawasawa wears Shadows Breath in his upper meeting room in the City of Mitashi. Each exact katana can pay its corresponding instrument trade or become one of the six different swords given together to Kunji for Retribution. One copy cannot pay both. Remove worn offerings from equipment before delivery."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138267;receive=I:138535;disappear=0"
+            }
+          ],
+          "text": "Give the exact offering to Lynstar for the legendary lyre of healing and harming.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. Lynstar is declared in the pit beneath the Butsu village. The village well drops into the pit; its secret western exit connects to the termite tunnels, which are an alternative approach. Her sister's full collection is an unfinished lead. These trades improve your equipment; the journal does not yet track that collection, song performances or the battles in her tale."
+        }
+      ]
+    },
+    {
+      "id": "legendary-drums",
+      "title": "Trade for the Legendary Drums",
+      "category": "service",
+      "summary": "An equipment service. a katana called 'The North Wind' → the legendary drums of chaos and heroism.",
+      "contracts": [
+        {
+          "giver_vnum": 138500,
+          "completion_key": "give=I:138268;receive=I:138533;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-138268",
+          "kind": "carried_item",
+          "item_vnums": [
+            138268
+          ],
+          "count": 1,
+          "text": "Directly carry a katana called 'The North Wind'.",
+          "hint": "Lord Hanyo wears The North Wind in his upper meeting room in the City of Mitashi. It also pays the foreign north-wind relic request. Each exact katana can pay its corresponding instrument trade or become one of the six different swords given together to Kunji for Retribution. One copy cannot pay both. Remove worn offerings from equipment before delivery."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138268;receive=I:138533;disappear=0"
+            }
+          ],
+          "text": "Give the exact offering to Lynstar for the legendary drums of chaos and heroism.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. Lynstar is declared in the pit beneath the Butsu village. The village well drops into the pit; its secret western exit connects to the termite tunnels, which are an alternative approach. Her sister's full collection is an unfinished lead. These trades improve your equipment; the journal does not yet track that collection, song performances or the battles in her tale."
+        }
+      ]
+    },
+    {
+      "id": "legendary-horn",
+      "title": "Trade for the Legendary Horn",
+      "category": "service",
+      "summary": "An equipment service. a katana called 'Divine Fury' → the legendary horn of flight and dragons.",
+      "contracts": [
+        {
+          "giver_vnum": 138500,
+          "completion_key": "give=I:138269;receive=I:138534;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-138269",
+          "kind": "carried_item",
+          "item_vnums": [
+            138269
+          ],
+          "count": 1,
+          "text": "Directly carry a katana called 'Divine Fury'.",
+          "hint": "Lord Murimasi wears Divine Fury in his upper meeting room in the City of Mitashi. Each exact katana can pay its corresponding instrument trade or become one of the six different swords given together to Kunji for Retribution. One copy cannot pay both. Remove worn offerings from equipment before delivery."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138269;receive=I:138534;disappear=0"
+            }
+          ],
+          "text": "Give the exact offering to Lynstar for the legendary horn of flight and dragons.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. Lynstar is declared in the pit beneath the Butsu village. The village well drops into the pit; its secret western exit connects to the termite tunnels, which are an alternative approach. Her sister's full collection is an unfinished lead. These trades improve your equipment; the journal does not yet track that collection, song performances or the battles in her tale."
+        }
+      ]
+    },
+    {
+      "id": "legendary-harp",
+      "title": "Trade for the Legendary Harp",
+      "category": "service",
+      "summary": "An equipment service. a katana called 'The Lotus Blossom' → the legendary harp of peace and calming.",
+      "contracts": [
+        {
+          "giver_vnum": 138500,
+          "completion_key": "give=I:138270;receive=I:138538;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-138270",
+          "kind": "carried_item",
+          "item_vnums": [
+            138270
+          ],
+          "count": 1,
+          "text": "Directly carry a katana called 'The Lotus Blossom'.",
+          "hint": "Lord Ajikira carries The Lotus Blossom in his upper meeting room in the City of Mitashi. Each exact katana can pay its corresponding instrument trade or become one of the six different swords given together to Kunji for Retribution. One copy cannot pay both. Remove worn offerings from equipment before delivery."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138270;receive=I:138538;disappear=0"
+            }
+          ],
+          "text": "Give the exact offering to Lynstar for the legendary harp of peace and calming.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. Lynstar is declared in the pit beneath the Butsu village. The village well drops into the pit; its secret western exit connects to the termite tunnels, which are an alternative approach. Her sister's full collection is an unfinished lead. These trades improve your equipment; the journal does not yet track that collection, song performances or the battles in her tale."
+        }
+      ]
+    },
+    {
+      "id": "legendary-flute",
+      "title": "Trade for the Legendary Flute",
+      "category": "service",
+      "summary": "An equipment service. a katana called 'Celestial Dragon' → the legendary flute of sleeping and charming.",
+      "contracts": [
+        {
+          "giver_vnum": 138500,
+          "completion_key": "give=I:138271;receive=I:138536;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-138271",
+          "kind": "carried_item",
+          "item_vnums": [
+            138271
+          ],
+          "count": 1,
+          "text": "Directly carry a katana called 'Celestial Dragon'.",
+          "hint": "Lord Yumi wears Celestial Dragon in his upper meeting room in the City of Mitashi. Each exact katana can pay its corresponding instrument trade or become one of the six different swords given together to Kunji for Retribution. One copy cannot pay both. Remove worn offerings from equipment before delivery."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138271;receive=I:138536;disappear=0"
+            }
+          ],
+          "text": "Give the exact offering to Lynstar for the legendary flute of sleeping and charming.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. Lynstar is declared in the pit beneath the Butsu village. The village well drops into the pit; its secret western exit connects to the termite tunnels, which are an alternative approach. Her sister's full collection is an unfinished lead. These trades improve your equipment; the journal does not yet track that collection, song performances or the battles in her tale."
+        }
+      ]
+    },
+    {
+      "id": "legendary-mandolin",
+      "title": "Trade for the Legendary Mandolin",
+      "category": "service",
+      "summary": "An equipment service. a katana called 'Torrential Rain' → the legendary mandolin of revelations and forgetfulness.",
+      "contracts": [
+        {
+          "giver_vnum": 138500,
+          "completion_key": "give=I:138272;receive=I:138537;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-138272",
+          "kind": "carried_item",
+          "item_vnums": [
+            138272
+          ],
+          "count": 1,
+          "text": "Directly carry a katana called 'Torrential Rain'.",
+          "hint": "Lady Kitsuro carries Torrential Rain in her upper meeting room in the City of Mitashi. Each exact katana can pay its corresponding instrument trade or become one of the six different swords given together to Kunji for Retribution. One copy cannot pay both. Remove worn offerings from equipment before delivery."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138272;receive=I:138537;disappear=0"
+            }
+          ],
+          "text": "Give the exact offering to Lynstar for the legendary mandolin of revelations and forgetfulness.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. Lynstar is declared in the pit beneath the Butsu village. The village well drops into the pit; its secret western exit connects to the termite tunnels, which are an alternative approach. Her sister's full collection is an unfinished lead. These trades improve your equipment; the journal does not yet track that collection, song performances or the battles in her tale."
+        }
+      ]
+    },
+    {
+      "id": "epic-drums",
+      "title": "Upgrade the Legendary Drums",
+      "category": "service",
+      "summary": "An equipment service. a katana called 'Retribution', the legendary drums of chaos and heroism → the epic drums of chaos and heroism.",
+      "contracts": [
+        {
+          "giver_vnum": 138500,
+          "completion_key": "give=I:138279,I:138533;receive=I:138539;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "matching-base-preparation",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138268;receive=I:138533;disappear=0"
+            }
+          ],
+          "text": "Optional: obtain the matching legendary instrument from Lynstar.",
+          "hint": "Lynstar trades a katana called 'The North Wind' for this exact instrument. A supplied instrument works without that earlier exchange. This is the matching base for its own epic upgrade; another instrument kind cannot replace it. Keep the offering directly carried rather than equipped for playing."
+        },
+        {
+          "id": "retribution-preparation",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 138261,
+              "completion_key": "give=I:138267,I:138268,I:138269,I:138270,I:138271,I:138272;receive=I:138279;disappear=1"
+            }
+          ],
+          "text": "Optional: obtain Retribution from Kunji in Mitashi.",
+          "hint": "Kunji Pishida in the abandoned Mitashi warehouse basement accepts Shadows Breath, The North Wind, Divine Fury, The Lotus Blossom, Celestial Dragon and Torrential Rain together for Retribution, then leaves. Six copies of one kind do not qualify. Each epic upgrade consumes one current Retribution; an earlier Kunji receipt cannot replace it."
+        },
+        {
+          "id": "item-138279",
+          "kind": "carried_item",
+          "item_vnums": [
+            138279
+          ],
+          "count": 1,
+          "text": "Directly carry a katana called 'Retribution'.",
+          "hint": "Kunji Pishida in the abandoned Mitashi warehouse basement accepts Shadows Breath, The North Wind, Divine Fury, The Lotus Blossom, Celestial Dragon and Torrential Rain together for Retribution, then leaves. Six copies of one kind do not qualify. Each epic upgrade consumes one current Retribution; an earlier Kunji receipt cannot replace it."
+        },
+        {
+          "id": "item-138533",
+          "kind": "carried_item",
+          "item_vnums": [
+            138533
+          ],
+          "count": 1,
+          "text": "Directly carry the legendary drums of chaos and heroism.",
+          "hint": "Lynstar trades a katana called 'The North Wind' for this exact instrument. A supplied instrument works without that earlier exchange. This is the matching base for its own epic upgrade; another instrument kind cannot replace it. Keep the offering directly carried rather than equipped for playing."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138279,I:138533;receive=I:138539;disappear=1"
+            }
+          ],
+          "text": "Give the exact offerings together to Lynstar for the epic drums of chaos and heroism.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. The recipient leaves after the accepted exchange. A later attempt requires another available recipient. Lynstar is declared in the pit beneath the Butsu village. The village well drops into the pit; its secret western exit connects to the termite tunnels, which are an alternative approach. Each epic recipe consumes Retribution and its own matching instrument. Lynstar leaves after one upgrade, so one appearance cannot make the whole set. Her sister's full collection is an unfinished lead. These trades improve your equipment; the journal does not yet track that collection, song performances or the battles in her tale."
+        }
+      ]
+    },
+    {
+      "id": "epic-horn",
+      "title": "Upgrade the Legendary Horn",
+      "category": "service",
+      "summary": "An equipment service. a katana called 'Retribution', the legendary horn of flight and dragons → the epic horn of flight and dragons.",
+      "contracts": [
+        {
+          "giver_vnum": 138500,
+          "completion_key": "give=I:138279,I:138534;receive=I:138540;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "matching-base-preparation",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138269;receive=I:138534;disappear=0"
+            }
+          ],
+          "text": "Optional: obtain the matching legendary instrument from Lynstar.",
+          "hint": "Lynstar trades a katana called 'Divine Fury' for this exact instrument. A supplied instrument works without that earlier exchange. This is the matching base for its own epic upgrade; another instrument kind cannot replace it. Keep the offering directly carried rather than equipped for playing."
+        },
+        {
+          "id": "retribution-preparation",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 138261,
+              "completion_key": "give=I:138267,I:138268,I:138269,I:138270,I:138271,I:138272;receive=I:138279;disappear=1"
+            }
+          ],
+          "text": "Optional: obtain Retribution from Kunji in Mitashi.",
+          "hint": "Kunji Pishida in the abandoned Mitashi warehouse basement accepts Shadows Breath, The North Wind, Divine Fury, The Lotus Blossom, Celestial Dragon and Torrential Rain together for Retribution, then leaves. Six copies of one kind do not qualify. Each epic upgrade consumes one current Retribution; an earlier Kunji receipt cannot replace it."
+        },
+        {
+          "id": "item-138279",
+          "kind": "carried_item",
+          "item_vnums": [
+            138279
+          ],
+          "count": 1,
+          "text": "Directly carry a katana called 'Retribution'.",
+          "hint": "Kunji Pishida in the abandoned Mitashi warehouse basement accepts Shadows Breath, The North Wind, Divine Fury, The Lotus Blossom, Celestial Dragon and Torrential Rain together for Retribution, then leaves. Six copies of one kind do not qualify. Each epic upgrade consumes one current Retribution; an earlier Kunji receipt cannot replace it."
+        },
+        {
+          "id": "item-138534",
+          "kind": "carried_item",
+          "item_vnums": [
+            138534
+          ],
+          "count": 1,
+          "text": "Directly carry the legendary horn of flight and dragons.",
+          "hint": "Lynstar trades a katana called 'Divine Fury' for this exact instrument. A supplied instrument works without that earlier exchange. This is the matching base for its own epic upgrade; another instrument kind cannot replace it. Keep the offering directly carried rather than equipped for playing."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138279,I:138534;receive=I:138540;disappear=1"
+            }
+          ],
+          "text": "Give the exact offerings together to Lynstar for the epic horn of flight and dragons.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. The recipient leaves after the accepted exchange. A later attempt requires another available recipient. Lynstar is declared in the pit beneath the Butsu village. The village well drops into the pit; its secret western exit connects to the termite tunnels, which are an alternative approach. Each epic recipe consumes Retribution and its own matching instrument. Lynstar leaves after one upgrade, so one appearance cannot make the whole set. Her sister's full collection is an unfinished lead. These trades improve your equipment; the journal does not yet track that collection, song performances or the battles in her tale."
+        }
+      ]
+    },
+    {
+      "id": "epic-lyre",
+      "title": "Upgrade the Legendary Lyre",
+      "category": "service",
+      "summary": "An equipment service. a katana called 'Retribution', the legendary lyre of healing and harming → the epic lyre of healing and harming.",
+      "contracts": [
+        {
+          "giver_vnum": 138500,
+          "completion_key": "give=I:138279,I:138535;receive=I:138541;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "matching-base-preparation",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138267;receive=I:138535;disappear=0"
+            }
+          ],
+          "text": "Optional: obtain the matching legendary instrument from Lynstar.",
+          "hint": "Lynstar trades a katana called 'Shadows Breath' for this exact instrument. A supplied instrument works without that earlier exchange. This is the matching base for its own epic upgrade; another instrument kind cannot replace it. Keep the offering directly carried rather than equipped for playing."
+        },
+        {
+          "id": "retribution-preparation",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 138261,
+              "completion_key": "give=I:138267,I:138268,I:138269,I:138270,I:138271,I:138272;receive=I:138279;disappear=1"
+            }
+          ],
+          "text": "Optional: obtain Retribution from Kunji in Mitashi.",
+          "hint": "Kunji Pishida in the abandoned Mitashi warehouse basement accepts Shadows Breath, The North Wind, Divine Fury, The Lotus Blossom, Celestial Dragon and Torrential Rain together for Retribution, then leaves. Six copies of one kind do not qualify. Each epic upgrade consumes one current Retribution; an earlier Kunji receipt cannot replace it."
+        },
+        {
+          "id": "item-138279",
+          "kind": "carried_item",
+          "item_vnums": [
+            138279
+          ],
+          "count": 1,
+          "text": "Directly carry a katana called 'Retribution'.",
+          "hint": "Kunji Pishida in the abandoned Mitashi warehouse basement accepts Shadows Breath, The North Wind, Divine Fury, The Lotus Blossom, Celestial Dragon and Torrential Rain together for Retribution, then leaves. Six copies of one kind do not qualify. Each epic upgrade consumes one current Retribution; an earlier Kunji receipt cannot replace it."
+        },
+        {
+          "id": "item-138535",
+          "kind": "carried_item",
+          "item_vnums": [
+            138535
+          ],
+          "count": 1,
+          "text": "Directly carry the legendary lyre of healing and harming.",
+          "hint": "Lynstar trades a katana called 'Shadows Breath' for this exact instrument. A supplied instrument works without that earlier exchange. This is the matching base for its own epic upgrade; another instrument kind cannot replace it. Keep the offering directly carried rather than equipped for playing."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138279,I:138535;receive=I:138541;disappear=1"
+            }
+          ],
+          "text": "Give the exact offerings together to Lynstar for the epic lyre of healing and harming.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. The recipient leaves after the accepted exchange. A later attempt requires another available recipient. Lynstar is declared in the pit beneath the Butsu village. The village well drops into the pit; its secret western exit connects to the termite tunnels, which are an alternative approach. Each epic recipe consumes Retribution and its own matching instrument. Lynstar leaves after one upgrade, so one appearance cannot make the whole set. Her sister's full collection is an unfinished lead. These trades improve your equipment; the journal does not yet track that collection, song performances or the battles in her tale."
+        }
+      ]
+    },
+    {
+      "id": "epic-flute",
+      "title": "Upgrade the Legendary Flute",
+      "category": "service",
+      "summary": "An equipment service. a katana called 'Retribution', the legendary flute of sleeping and charming → the epic flute of sleeping and charming.",
+      "contracts": [
+        {
+          "giver_vnum": 138500,
+          "completion_key": "give=I:138279,I:138536;receive=I:138542;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "matching-base-preparation",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138271;receive=I:138536;disappear=0"
+            }
+          ],
+          "text": "Optional: obtain the matching legendary instrument from Lynstar.",
+          "hint": "Lynstar trades a katana called 'Celestial Dragon' for this exact instrument. A supplied instrument works without that earlier exchange. This is the matching base for its own epic upgrade; another instrument kind cannot replace it. Keep the offering directly carried rather than equipped for playing."
+        },
+        {
+          "id": "retribution-preparation",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 138261,
+              "completion_key": "give=I:138267,I:138268,I:138269,I:138270,I:138271,I:138272;receive=I:138279;disappear=1"
+            }
+          ],
+          "text": "Optional: obtain Retribution from Kunji in Mitashi.",
+          "hint": "Kunji Pishida in the abandoned Mitashi warehouse basement accepts Shadows Breath, The North Wind, Divine Fury, The Lotus Blossom, Celestial Dragon and Torrential Rain together for Retribution, then leaves. Six copies of one kind do not qualify. Each epic upgrade consumes one current Retribution; an earlier Kunji receipt cannot replace it."
+        },
+        {
+          "id": "item-138279",
+          "kind": "carried_item",
+          "item_vnums": [
+            138279
+          ],
+          "count": 1,
+          "text": "Directly carry a katana called 'Retribution'.",
+          "hint": "Kunji Pishida in the abandoned Mitashi warehouse basement accepts Shadows Breath, The North Wind, Divine Fury, The Lotus Blossom, Celestial Dragon and Torrential Rain together for Retribution, then leaves. Six copies of one kind do not qualify. Each epic upgrade consumes one current Retribution; an earlier Kunji receipt cannot replace it."
+        },
+        {
+          "id": "item-138536",
+          "kind": "carried_item",
+          "item_vnums": [
+            138536
+          ],
+          "count": 1,
+          "text": "Directly carry the legendary flute of sleeping and charming.",
+          "hint": "Lynstar trades a katana called 'Celestial Dragon' for this exact instrument. A supplied instrument works without that earlier exchange. This is the matching base for its own epic upgrade; another instrument kind cannot replace it. Keep the offering directly carried rather than equipped for playing."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138279,I:138536;receive=I:138542;disappear=1"
+            }
+          ],
+          "text": "Give the exact offerings together to Lynstar for the epic flute of sleeping and charming.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. The recipient leaves after the accepted exchange. A later attempt requires another available recipient. Lynstar is declared in the pit beneath the Butsu village. The village well drops into the pit; its secret western exit connects to the termite tunnels, which are an alternative approach. Each epic recipe consumes Retribution and its own matching instrument. Lynstar leaves after one upgrade, so one appearance cannot make the whole set. Her sister's full collection is an unfinished lead. These trades improve your equipment; the journal does not yet track that collection, song performances or the battles in her tale."
+        }
+      ]
+    },
+    {
+      "id": "epic-mandolin",
+      "title": "Upgrade the Legendary Mandolin",
+      "category": "service",
+      "summary": "An equipment service. a katana called 'Retribution', the legendary mandolin of revelations and forgetfulness → the epic mandolin of revelations and forgetfulness.",
+      "contracts": [
+        {
+          "giver_vnum": 138500,
+          "completion_key": "give=I:138279,I:138537;receive=I:138543;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "matching-base-preparation",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138272;receive=I:138537;disappear=0"
+            }
+          ],
+          "text": "Optional: obtain the matching legendary instrument from Lynstar.",
+          "hint": "Lynstar trades a katana called 'Torrential Rain' for this exact instrument. A supplied instrument works without that earlier exchange. This is the matching base for its own epic upgrade; another instrument kind cannot replace it. Keep the offering directly carried rather than equipped for playing."
+        },
+        {
+          "id": "retribution-preparation",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 138261,
+              "completion_key": "give=I:138267,I:138268,I:138269,I:138270,I:138271,I:138272;receive=I:138279;disappear=1"
+            }
+          ],
+          "text": "Optional: obtain Retribution from Kunji in Mitashi.",
+          "hint": "Kunji Pishida in the abandoned Mitashi warehouse basement accepts Shadows Breath, The North Wind, Divine Fury, The Lotus Blossom, Celestial Dragon and Torrential Rain together for Retribution, then leaves. Six copies of one kind do not qualify. Each epic upgrade consumes one current Retribution; an earlier Kunji receipt cannot replace it."
+        },
+        {
+          "id": "item-138279",
+          "kind": "carried_item",
+          "item_vnums": [
+            138279
+          ],
+          "count": 1,
+          "text": "Directly carry a katana called 'Retribution'.",
+          "hint": "Kunji Pishida in the abandoned Mitashi warehouse basement accepts Shadows Breath, The North Wind, Divine Fury, The Lotus Blossom, Celestial Dragon and Torrential Rain together for Retribution, then leaves. Six copies of one kind do not qualify. Each epic upgrade consumes one current Retribution; an earlier Kunji receipt cannot replace it."
+        },
+        {
+          "id": "item-138537",
+          "kind": "carried_item",
+          "item_vnums": [
+            138537
+          ],
+          "count": 1,
+          "text": "Directly carry the legendary mandolin of revelations and forgetfulness.",
+          "hint": "Lynstar trades a katana called 'Torrential Rain' for this exact instrument. A supplied instrument works without that earlier exchange. This is the matching base for its own epic upgrade; another instrument kind cannot replace it. Keep the offering directly carried rather than equipped for playing."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138279,I:138537;receive=I:138543;disappear=1"
+            }
+          ],
+          "text": "Give the exact offerings together to Lynstar for the epic mandolin of revelations and forgetfulness.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. The recipient leaves after the accepted exchange. A later attempt requires another available recipient. Lynstar is declared in the pit beneath the Butsu village. The village well drops into the pit; its secret western exit connects to the termite tunnels, which are an alternative approach. Each epic recipe consumes Retribution and its own matching instrument. Lynstar leaves after one upgrade, so one appearance cannot make the whole set. Her sister's full collection is an unfinished lead. These trades improve your equipment; the journal does not yet track that collection, song performances or the battles in her tale."
+        }
+      ]
+    },
+    {
+      "id": "epic-harp",
+      "title": "Upgrade the Legendary Harp",
+      "category": "service",
+      "summary": "An equipment service. a katana called 'Retribution', the legendary harp of peace and calming → the epic harp of peace and calming.",
+      "contracts": [
+        {
+          "giver_vnum": 138500,
+          "completion_key": "give=I:138279,I:138538;receive=I:138544;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "matching-base-preparation",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138270;receive=I:138538;disappear=0"
+            }
+          ],
+          "text": "Optional: obtain the matching legendary instrument from Lynstar.",
+          "hint": "Lynstar trades a katana called 'The Lotus Blossom' for this exact instrument. A supplied instrument works without that earlier exchange. This is the matching base for its own epic upgrade; another instrument kind cannot replace it. Keep the offering directly carried rather than equipped for playing."
+        },
+        {
+          "id": "retribution-preparation",
+          "kind": "completion",
+          "optional": true,
+          "contracts": [
+            {
+              "giver_vnum": 138261,
+              "completion_key": "give=I:138267,I:138268,I:138269,I:138270,I:138271,I:138272;receive=I:138279;disappear=1"
+            }
+          ],
+          "text": "Optional: obtain Retribution from Kunji in Mitashi.",
+          "hint": "Kunji Pishida in the abandoned Mitashi warehouse basement accepts Shadows Breath, The North Wind, Divine Fury, The Lotus Blossom, Celestial Dragon and Torrential Rain together for Retribution, then leaves. Six copies of one kind do not qualify. Each epic upgrade consumes one current Retribution; an earlier Kunji receipt cannot replace it."
+        },
+        {
+          "id": "item-138279",
+          "kind": "carried_item",
+          "item_vnums": [
+            138279
+          ],
+          "count": 1,
+          "text": "Directly carry a katana called 'Retribution'.",
+          "hint": "Kunji Pishida in the abandoned Mitashi warehouse basement accepts Shadows Breath, The North Wind, Divine Fury, The Lotus Blossom, Celestial Dragon and Torrential Rain together for Retribution, then leaves. Six copies of one kind do not qualify. Each epic upgrade consumes one current Retribution; an earlier Kunji receipt cannot replace it."
+        },
+        {
+          "id": "item-138538",
+          "kind": "carried_item",
+          "item_vnums": [
+            138538
+          ],
+          "count": 1,
+          "text": "Directly carry the legendary harp of peace and calming.",
+          "hint": "Lynstar trades a katana called 'The Lotus Blossom' for this exact instrument. A supplied instrument works without that earlier exchange. This is the matching base for its own epic upgrade; another instrument kind cannot replace it. Keep the offering directly carried rather than equipped for playing."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138500,
+              "completion_key": "give=I:138279,I:138538;receive=I:138544;disappear=1"
+            }
+          ],
+          "text": "Give the exact offerings together to Lynstar for the epic harp of peace and calming.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. The recipient leaves after the accepted exchange. A later attempt requires another available recipient. Lynstar is declared in the pit beneath the Butsu village. The village well drops into the pit; its secret western exit connects to the termite tunnels, which are an alternative approach. Each epic recipe consumes Retribution and its own matching instrument. Lynstar leaves after one upgrade, so one appearance cannot make the whole set. Her sister's full collection is an unfinished lead. These trades improve your equipment; the journal does not yet track that collection, song performances or the battles in her tale."
+        }
+      ]
+    },
+    {
+      "id": "three-tusks-for-the-tukluk",
+      "title": "Three Tusks for the Tukluk",
+      "category": "request",
+      "summary": "A named delivery outcome. 3 copies of an elephant's tusk → an ivory curio.",
+      "contracts": [
+        {
+          "giver_vnum": 138529,
+          "completion_key": "give=I:138526,I:138526,I:138526;receive=I:138527;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-138526",
+          "kind": "carried_item",
+          "item_vnums": [
+            138526
+          ],
+          "count": 3,
+          "text": "Directly carry 3 copies of an elephant's tusk.",
+          "hint": "Three tusks are declared on two ordinary elephants and one bull elephant at the watering hole. Give three separate current tusks together to the Tukluk shaman. Skins and mixed animal parts do not substitute; the native delivery also accepts supplied tusks."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138529,
+              "completion_key": "give=I:138526,I:138526,I:138526;receive=I:138527;disappear=0"
+            }
+          ],
+          "text": "Give the exact offerings together to a Tukluk shaman for an ivory curio.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. This is the exact parts delivery and its distinct reward. It does not apply a recorded tribal combat buff or decide the war."
+        }
+      ]
+    },
+    {
+      "id": "three-skins-for-the-tukluk",
+      "title": "Three Skins for the Tukluk",
+      "category": "request",
+      "summary": "A named delivery outcome. 3 copies of an gazelle skin → some gazelle-skin sleeves.",
+      "contracts": [
+        {
+          "giver_vnum": 138529,
+          "completion_key": "give=I:138528,I:138528,I:138528;receive=I:138529;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-138528",
+          "kind": "carried_item",
+          "item_vnums": [
+            138528
+          ],
+          "count": 3,
+          "text": "Directly carry 3 copies of an gazelle skin.",
+          "hint": "Three skins are declared on a large gazelle and its follower in the savannah, plus a follower in the dusty clearing. Give three separate current skins together to the Tukluk shaman. Tusks do not substitute. These are stocked items, without a required freshness clock or personal kill."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138529,
+              "completion_key": "give=I:138528,I:138528,I:138528;receive=I:138529;disappear=0"
+            }
+          ],
+          "text": "Give the exact offerings together to a Tukluk shaman for some gazelle-skin sleeves.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. This is the exact parts delivery and its distinct reward. It does not apply a recorded tribal combat buff or decide the war."
+        }
+      ]
+    },
+    {
+      "id": "the-rocchasers-tailfeather",
+      "title": "The Rocchasers' Tailfeather",
+      "category": "story",
+      "summary": "A named delivery outcome. a roc's tailfeather → 10000 copper, the insignia of swirling feathers and flowing water.",
+      "contracts": [
+        {
+          "giver_vnum": 138538,
+          "completion_key": "give=I:138516;receive=C:10000,I:138517;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-138516",
+          "kind": "carried_item",
+          "item_vnums": [
+            138516
+          ],
+          "count": 1,
+          "text": "Directly carry a roc's tailfeather.",
+          "hint": "The roc in the northeastern clearing carries this exact feather. Kylian accepts a supplied feather too. The accepted delivery pays an insignia and 10,000 copper; it does not prove your own kill or escort the three companions to Edgeland."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138538,
+              "completion_key": "give=I:138516;receive=C:10000,I:138517;disappear=0"
+            }
+          ],
+          "text": "Give the exact offering to Kylian Brightstar for 10000 copper, the insignia of swirling feathers and flowing water.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. Kylian and his two ordinary followers remain in the world; the homeward journey is narration rather than an implemented escort."
+        }
+      ]
+    },
+    {
+      "id": "lion-bones-for-sprithnog",
+      "title": "Lion Bones for Sprithnog",
+      "category": "request",
+      "summary": "A named delivery outcome. a pile of lion bones → a set of gnomish monocles of spell-reading.",
+      "contracts": [
+        {
+          "giver_vnum": 138542,
+          "completion_key": "give=I:138530;receive=I:138531;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-138530",
+          "kind": "carried_item",
+          "item_vnums": [
+            138530
+          ],
+          "count": 1,
+          "text": "Directly carry a pile of lion bones.",
+          "hint": "A proud lion near the central savannah carries the one declared pile of lion bones. Other lions need not carry it. Descend below the huge baobab and follow the tunnels west to Sprithnog's laboratory; the vertical passage has a falling hazard. Remove the exact bones from equipment or containers before delivery."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138542,
+              "completion_key": "give=I:138530;receive=I:138531;disappear=0"
+            }
+          ],
+          "text": "Give the exact offering to Sprithnog the Alchemist for a set of gnomish monocles of spell-reading.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. The laboratory golems are ordinary stock. This receipt does not create a new golem or record a personal hunt."
+        }
+      ]
+    },
+    {
+      "id": "the-kahir-legacy",
+      "title": "The Kahir Legacy",
+      "category": "story",
+      "summary": "A named delivery outcome. the crystallized essence of the Kahir tribe → the cloak of the ageless spirit of the wind.",
+      "contracts": [
+        {
+          "giver_vnum": 138545,
+          "completion_key": "give=I:138514;receive=I:138515;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-138514",
+          "kind": "carried_item",
+          "item_vnums": [
+            138514
+          ],
+          "count": 1,
+          "text": "Directly carry the crystallized essence of the Kahir tribe.",
+          "hint": "A ghostly Kahir host carries the one declared essence in the sealed underground burial room. Enter the giant termite mound, follow the tunnels and find the secret, closed southern wall into the Kahir chamber; it has no item key. Bring the essence itself to the Watcher. Delivery does not prove your own combat, underground travel or creation of the essence."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 138545,
+              "completion_key": "give=I:138514;receive=I:138515;disappear=1"
+            }
+          ],
+          "text": "Give the exact offering to the Watcher of the Contest for the cloak of the ageless spirit of the wind.",
+          "hint": "Directly carry the exact current offering outside equipment and containers. Supplied items qualify without personal source, combat, travel or earlier exchange history. The recipient leaves after the accepted exchange. A later attempt requires another available recipient. This receipt records delivery of the Kahir proof and the Watcher's departure, without recording a tribal victory or summoning M'Bele. The cloak can also be consumed by a separate foreign relic request."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
