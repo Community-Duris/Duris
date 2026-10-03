@@ -75,6 +75,87 @@ player_revision_t append_inflight_revision = 0;
  * rejected recapture creates a new revision and an unbounded wizlog loop. */
 std::set<int32_t> custody_recapture_armed;
 
+struct literal_inventory_checkpoint
+{
+	player_literal_inventory_token token = {};
+	std::vector<uint8_t> payload;
+	player_revision_t captured_revision = 0;
+	player_revision_t acknowledged_revision = 0;
+	critical_operation_id operation_id = {};
+	bool held = false;
+};
+std::array<literal_inventory_checkpoint, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS>
+	literal_inventory_checkpoints = {};
+#ifndef __NO_MYSQL__
+uint64_t literal_inventory_generation = 0;
+#endif
+constexpr player_component_mask_t LITERAL_INVENTORY_COMPONENTS = PLAYER_COMPONENT_EQUIPMENT |
+								 PLAYER_COMPONENT_INVENTORY;
+
+literal_inventory_checkpoint *find_literal_inventory_locked(int pid)
+{
+	for (auto &checkpoint : literal_inventory_checkpoints)
+		if (checkpoint.token.pid == pid)
+			return &checkpoint;
+	return nullptr;
+}
+
+bool literal_inventory_blob(const player_snapshot &snapshot, uint64_t root_uid,
+			    std::vector<uint8_t> *blob)
+{
+	if (!root_uid || !blob || snapshot.items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+	    (snapshot.components & LITERAL_INVENTORY_COMPONENTS) != LITERAL_INVENTORY_COMPONENTS)
+		return false;
+	try
+	{
+		std::vector<int32_t> indices(snapshot.items.size(), PLAYER_SNAPSHOT_NO_PARENT);
+		std::vector<player_item_snapshot> selected;
+		bool found = false;
+		for (size_t index = 0; index < snapshot.items.size(); ++index)
+		{
+			const auto &item = snapshot.items[index];
+			if (item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.parent_index >= static_cast<int32_t>(index))
+				return false;
+			const bool root = item.object_uid == root_uid;
+			if (root && (found || item.parent_index != PLAYER_SNAPSHOT_NO_PARENT ||
+				     item.equipment_slot != 0))
+				return false;
+			const bool child = item.parent_index >= 0 &&
+					   indices[item.parent_index] >= 0;
+			if (!root && !child)
+				continue;
+			if (!item.object_uid || item.equipment_slot ||
+			    item.string_mask !=
+				    (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3))
+				return false;
+			found = found || root;
+			indices[index] = static_cast<int32_t>(selected.size());
+			selected.push_back(item);
+			selected.back().parent_index = child ? indices[item.parent_index] :
+							       PLAYER_SNAPSHOT_NO_PARENT;
+		}
+		return found &&
+		       player_item_snapshot_list_encode(selected, blob) ==
+			       player_snapshot_codec_result::ok &&
+		       !blob->empty() && blob->size() <= ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+void note_literal_enqueue_locked(literal_inventory_checkpoint *checkpoint,
+				 player_revision_t revision)
+{
+	if (checkpoint)
+	{
+		checkpoint->captured_revision = revision;
+		checkpoint->acknowledged_revision = 0;
+	}
+}
+
 player_save_apply_fn selected_snapshot_apply()
 {
 #ifdef __NO_MYSQL__
@@ -586,12 +667,22 @@ bool merge_craft_receipts(player_snapshot *target, const player_snapshot &source
 /** Admit or coalesce a snapshot within queue and byte limits before notifying the dispatcher. */
 player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 {
+	const player_revision_t literal_revision = snapshot.revision;
 	if (player_save_journal_pid_quarantined(snapshot.pid))
 		return player_save_pipeline_result::unavailable;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	if (!health.initialized || stop_requested ||
 	    find_target_save_login_fence_locked(snapshot.pid))
 		return player_save_pipeline_result::unavailable;
+	literal_inventory_checkpoint *literal = find_literal_inventory_locked(snapshot.pid);
+	if (literal)
+	{
+		std::vector<uint8_t> blob;
+		if (literal->held ||
+		    !literal_inventory_blob(snapshot, literal->token.root_uid, &blob) ||
+		    blob != literal->payload)
+			return player_save_pipeline_result::capture_failed;
+	}
 	if (terminal_fence *fence = find_terminal_fence_locked(snapshot.pid);
 	    fence && fence->death_pinned)
 		return player_save_pipeline_result::unavailable;
@@ -661,6 +752,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 		retained_bytes =
 			retained_bytes - queued.encoded_size_bound + snapshot.encoded_size_bound;
 		queued = std::move(snapshot);
+		note_literal_enqueue_locked(literal, literal_revision);
 		++health.coalesced;
 		update_depth_locked();
 		return player_save_pipeline_result::coalesced;
@@ -683,6 +775,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 		++health.overloads;
 		return player_save_pipeline_result::overloaded;
 	}
+	note_literal_enqueue_locked(literal, literal_revision);
 	++health.captured;
 	update_depth_locked();
 	append_available.notify_one();
@@ -760,6 +853,7 @@ void player_save_pipeline_shutdown(void)
 	for (terminal_fence &fence : terminal_fences)
 		clear_terminal_fence_locked(fence);
 	target_save_login_fences.fill({});
+	literal_inventory_checkpoints.fill({});
 	retained_bytes = 0;
 	accepting = false;
 	append_inflight = false;
@@ -830,11 +924,24 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 		    fence && fence->death_pinned)
 			return player_save_pipeline_result::unavailable;
 	}
+	uint64_t literal_root_uid = 0;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (auto *literal = find_literal_inventory_locked(GET_PID(ch)))
+		{
+			if (literal->held || literal->token.actor_runtime_id != ch->runtime_id)
+				return player_save_pipeline_result::unavailable;
+			literal_root_uid = literal->token.root_uid;
+		}
+	}
 	player_snapshot pending_effects;
-	player_component_mask_t required_components = 0;
+	player_component_mask_t required_components =
+		literal_root_uid ? LITERAL_INVENTORY_COMPONENTS : 0;
+	player_component_mask_t quest_components = 0;
 	if (!quest_reward_recovery_pending_save_receipts(
-		    GET_PID(ch), &pending_effects.quest_xp_receipts, &required_components))
+		    GET_PID(ch), &pending_effects.quest_xp_receipts, &quest_components))
 		return player_save_pipeline_result::capture_failed;
+	required_components |= quest_components;
 	if (!spell_component_retirement_pending_save_receipts(
 		    GET_PID(ch), &pending_effects.spell_effect_receipts))
 		return player_save_pipeline_result::capture_failed;
@@ -902,8 +1009,13 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 	if (!player_revision_queue(GET_PID(ch), &queued_revision, &components))
 		return player_save_pipeline_result::capture_failed;
 	player_snapshot snapshot;
-	if (player_snapshot_capture(ch, queued_revision, components, save_intent, room_vnum,
-				    &snapshot) != player_snapshot_capture_result::ok)
+	const auto captured = literal_root_uid ?
+				      player_snapshot_capture_literal_inventory(
+					      ch, queued_revision, components, save_intent,
+					      room_vnum, literal_root_uid, &snapshot) :
+				      player_snapshot_capture(ch, queued_revision, components,
+							      save_intent, room_vnum, &snapshot);
+	if (captured != player_snapshot_capture_result::ok)
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		++health.capture_failures;
@@ -973,6 +1085,198 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 	return enqueue_snapshot(std::move(snapshot));
 }
 
+namespace
+{
+bool literal_actor_matches(const player_literal_inventory_token &token, P_char actor)
+{
+	return actor && IS_PC(actor) && actor->only.pc && GET_PID(actor) == token.pid &&
+	       actor->runtime_id && actor->runtime_id == token.actor_runtime_id &&
+	       find_character_by_runtime_id(token.actor_runtime_id) == actor && token.root_uid &&
+	       token.generation && !IS_SET(actor->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED);
+}
+}
+
+player_literal_inventory_state
+player_save_pipeline_literal_inventory_begin(P_char actor, P_obj root, int room_vnum,
+					     player_literal_inventory_token *token_out)
+{
+#ifdef __NO_MYSQL__
+	(void)actor;
+	(void)root;
+	(void)room_vnum;
+	(void)token_out;
+	return player_literal_inventory_state::refused;
+#else
+	if (!actor || !root || !token_out || !IS_PC(actor) || !actor->only.pc ||
+	    GET_PID(actor) <= 0 || !actor->runtime_id ||
+	    find_character_by_runtime_id(actor->runtime_id) != actor || !root->obj_uid ||
+	    !OBJ_CARRIED_BY(root, actor) ||
+	    IS_SET(actor->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED) ||
+	    player_save_journal_pid_quarantined(GET_PID(actor)))
+		return player_literal_inventory_state::refused;
+	player_snapshot captured;
+	std::vector<uint8_t> blob;
+	if (player_snapshot_capture_literal_inventory(
+		    actor, 1, LITERAL_INVENTORY_COMPONENTS, RENT_CRASH, room_vnum, root->obj_uid,
+		    &captured) != player_snapshot_capture_result::ok ||
+	    !literal_inventory_blob(captured, root->obj_uid, &blob))
+		return player_literal_inventory_state::refused;
+	player_literal_inventory_token token;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || stop_requested || !accepting ||
+		    !health.replay_complete || health.replay_blocked ||
+		    find_target_save_login_fence_locked(GET_PID(actor)) ||
+		    find_terminal_fence_locked(GET_PID(actor)))
+			return player_literal_inventory_state::refused;
+		if (auto *existing = find_literal_inventory_locked(GET_PID(actor)))
+		{
+			if (!literal_actor_matches(existing->token, actor) ||
+			    existing->token.root_uid != root->obj_uid ||
+			    existing->payload != blob || existing->held)
+				return player_literal_inventory_state::refused;
+			*token_out = existing->token;
+			return player_literal_inventory_state::pending;
+		}
+		if (literal_inventory_generation == std::numeric_limits<uint64_t>::max())
+			return player_literal_inventory_state::refused;
+		literal_inventory_checkpoint *slot = nullptr;
+		for (auto &candidate : literal_inventory_checkpoints)
+			if (!candidate.token.pid)
+			{
+				slot = &candidate;
+				break;
+			}
+		if (!slot)
+			return player_literal_inventory_state::refused;
+		token = { GET_PID(actor), actor->runtime_id, root->obj_uid,
+			  ++literal_inventory_generation };
+		slot->token = token;
+		slot->payload = std::move(blob);
+	}
+	const auto queued = player_save_pipeline_request(actor, LITERAL_INVENTORY_COMPONENTS,
+							 RENT_CRASH, room_vnum);
+	if (queued != player_save_pipeline_result::queued &&
+	    queued != player_save_pipeline_result::coalesced)
+	{
+		player_save_pipeline_literal_inventory_cancel(token);
+		return player_literal_inventory_state::refused;
+	}
+	*token_out = token;
+	return player_literal_inventory_state::pending;
+#endif
+}
+
+player_literal_inventory_state
+player_save_pipeline_literal_inventory_poll(const player_literal_inventory_token &token,
+					    P_char actor)
+{
+#ifdef __NO_MYSQL__
+	(void)token;
+	(void)actor;
+	return player_literal_inventory_state::refused;
+#else
+	if (!literal_actor_matches(token, actor) || player_save_journal_pid_quarantined(token.pid))
+	{
+		player_save_pipeline_literal_inventory_cancel(token);
+		return player_literal_inventory_state::refused;
+	}
+	player_snapshot captured;
+	std::vector<uint8_t> blob;
+	if (player_snapshot_capture_literal_inventory(
+		    actor, 1, LITERAL_INVENTORY_COMPONENTS, RENT_CRASH, NOWHERE, token.root_uid,
+		    &captured) != player_snapshot_capture_result::ok ||
+	    !literal_inventory_blob(captured, token.root_uid, &blob))
+	{
+		player_save_pipeline_literal_inventory_cancel(token);
+		return player_literal_inventory_state::refused;
+	}
+	if (player_save_worker_pid_pending(token.pid))
+		return player_literal_inventory_state::pending;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	auto *literal = find_literal_inventory_locked(token.pid);
+	if (!literal || literal->token != token || literal->held)
+		return player_literal_inventory_state::refused;
+	if (literal->payload != blob)
+	{
+		*literal = {};
+		return player_literal_inventory_state::refused;
+	}
+	player_revision_snapshot revision = {};
+	if (!player_revision_snapshot_copy(token.pid, &revision) || revision.overflowed)
+		return player_literal_inventory_state::refused;
+	if (!literal->captured_revision ||
+	    literal->acknowledged_revision != literal->captured_revision ||
+	    revision.current_revision != literal->captured_revision ||
+	    revision.acknowledged_revision != literal->captured_revision ||
+	    revision.dirty_components || revision.unacknowledged_components ||
+	    revision.queued_components || revision.inflight_components ||
+	    append_inflight_pid == token.pid || any_snapshot_is_retained_locked(token.pid))
+		return player_literal_inventory_state::pending;
+	return player_literal_inventory_state::database_acknowledged;
+#endif
+}
+
+bool player_save_pipeline_literal_inventory_hold(const player_literal_inventory_token &token,
+						 const critical_operation_id &operation_id)
+{
+#ifdef __NO_MYSQL__
+	(void)token;
+	(void)operation_id;
+	return false;
+#else
+	if (std::all_of(operation_id.bytes.begin(), operation_id.bytes.end(),
+			[](uint8_t byte) { return !byte; }) ||
+	    player_save_pipeline_literal_inventory_poll(
+		    token, find_character_by_runtime_id(token.actor_runtime_id)) !=
+		    player_literal_inventory_state::database_acknowledged ||
+	    player_save_worker_pid_pending(token.pid))
+		return false;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	auto *literal = find_literal_inventory_locked(token.pid);
+	player_revision_snapshot revision = {};
+	if (!health.initialized || stop_requested || !accepting || !health.replay_complete ||
+	    health.replay_blocked || find_terminal_fence_locked(token.pid) ||
+	    find_target_save_login_fence_locked(token.pid) || !literal || literal->token != token ||
+	    literal->held || !literal->captured_revision ||
+	    literal->acknowledged_revision != literal->captured_revision ||
+	    !player_revision_snapshot_copy(token.pid, &revision) || revision.overflowed ||
+	    revision.current_revision != literal->captured_revision ||
+	    revision.acknowledged_revision != literal->captured_revision ||
+	    revision.dirty_components || revision.unacknowledged_components ||
+	    revision.queued_components || revision.inflight_components ||
+	    append_inflight_pid == token.pid || any_snapshot_is_retained_locked(token.pid))
+		return false;
+	literal->operation_id = operation_id;
+	literal->held = true;
+	return true;
+#endif
+}
+
+bool player_save_pipeline_literal_inventory_release(const player_literal_inventory_token &token,
+						    const critical_operation_id &operation_id)
+{
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	auto *literal = find_literal_inventory_locked(token.pid);
+	if (!literal || literal->token != token || !literal->held ||
+	    literal->operation_id.bytes != operation_id.bytes)
+		return false;
+	*literal = {};
+	return true;
+}
+
+bool player_save_pipeline_literal_inventory_cancel(const player_literal_inventory_token &token)
+{
+	if (token.pid <= 0 || !token.actor_runtime_id || !token.root_uid || !token.generation)
+		return false;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	auto *literal = find_literal_inventory_locked(token.pid);
+	if (!literal || literal->token != token || literal->held)
+		return false;
+	*literal = {};
+	return true;
+}
+
 player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int save_intent,
 								  int room_vnum)
 {
@@ -1030,6 +1334,14 @@ bool begin_terminal_fence(int pid, player_revision_t *revision, bool pin_death =
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	if (!health.initialized || find_target_save_login_fence_locked(pid))
 		return false;
+	if (auto *literal = find_literal_inventory_locked(pid))
+	{
+		if (literal->held)
+			return false;
+		// No operation was admitted. A terminal intent supersedes this capture
+		// request, while its already queued immutable saves retain normal order.
+		*literal = {};
+	}
 	if (terminal_fence *existing = find_terminal_fence_locked(pid);
 	    existing && existing->death_pinned)
 		return false;
@@ -1073,6 +1385,8 @@ bool retain_and_enqueue_death_snapshot(player_snapshot snapshot, uint64_t corpse
 
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	terminal_fence *fence = find_terminal_fence_locked(snapshot.pid);
+	if (auto *literal = find_literal_inventory_locked(snapshot.pid); literal && literal->held)
+		return false;
 	if (!health.initialized || stop_requested || !fence || !fence->death_pinned ||
 	    fence->revision != snapshot.revision || fence->death_snapshot ||
 	    !player_snapshot_is_death_request_schema(snapshot.schema_version) || !snapshot.death ||
@@ -1411,6 +1725,14 @@ void player_save_pipeline_pulse(void)
 		player_save_worker_pulse(completions, PLAYER_SAVE_PIPELINE_PULSE_BUDGET);
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		for (auto &literal : literal_inventory_checkpoints)
+			if (literal.token.pid && !literal.held)
+			{
+				P_char actor = find_character_by_runtime_id(
+					literal.token.actor_runtime_id);
+				if (!literal_actor_matches(literal.token, actor))
+					literal = {};
+			}
 		health.completions += completed;
 		for (size_t index = 0; index < completed; ++index)
 		{
@@ -1437,6 +1759,17 @@ void player_save_pipeline_pulse(void)
 				      (unsigned long long)completion.completed_at_usec);
 			}
 			(void)acknowledge_terminal_fence_completion_locked(completions[index]);
+			const auto &completion = completions[index];
+			if (auto *literal = find_literal_inventory_locked(completion.pid);
+			    literal && !literal->held &&
+			    literal->captured_revision == completion.revision &&
+			    completion.durable_revision == completion.revision &&
+			    !completion.error_code &&
+			    (completion.components & LITERAL_INVENTORY_COMPONENTS) ==
+				    LITERAL_INVENTORY_COMPONENTS &&
+			    (completion.outcome == player_save_apply_outcome::applied ||
+			     completion.outcome == player_save_apply_outcome::already_applied))
+				literal->acknowledged_revision = completion.revision;
 			// The worker only ever UPDATEs player_data. A missing row means the
 			// character never got its baseline INSERT, and every further async
 			// save would fail the same way; record it for the sync fallback.
@@ -1616,10 +1949,12 @@ player_save_pipeline_diagnostic player_save_pipeline_diagnostic_copy(int pid)
 	result.available = true;
 	result.health = health;
 	const terminal_fence *fence = find_terminal_fence_locked(pid);
+	const auto *literal = find_literal_inventory_locked(pid);
 	result.pid_admission_open = !find_target_save_login_fence_locked(pid) &&
-				    !(fence && fence->death_pinned);
+				    !(fence && fence->death_pinned) && !(literal && literal->held);
 	result.retained_save = !health.initialized || stop_requested || !accepting || fence ||
-			       append_inflight_pid == pid || any_snapshot_is_retained_locked(pid);
+			       literal || append_inflight_pid == pid ||
+			       any_snapshot_is_retained_locked(pid);
 	return result;
 }
 
@@ -1650,7 +1985,8 @@ bool player_save_pipeline_sealed_save_pending(int pid)
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		if (!health.initialized || stop_requested || !accepting ||
 		    find_target_save_login_fence_locked(pid) || find_terminal_fence_locked(pid) ||
-		    append_inflight_pid == pid || any_snapshot_is_retained_locked(pid))
+		    find_literal_inventory_locked(pid) || append_inflight_pid == pid ||
+		    any_snapshot_is_retained_locked(pid))
 			return true;
 	}
 	if (player_save_worker_pid_pending(pid))
@@ -1670,8 +2006,8 @@ bool player_save_pipeline_target_save_pending(int pid)
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		if (!health.initialized || stop_requested || !accepting ||
-		    find_terminal_fence_locked(pid) || append_inflight_pid == pid ||
-		    any_snapshot_is_retained_locked(pid))
+		    find_terminal_fence_locked(pid) || find_literal_inventory_locked(pid) ||
+		    append_inflight_pid == pid || any_snapshot_is_retained_locked(pid))
 			return true;
 	}
 	if (player_save_worker_pid_pending(pid))
@@ -1696,7 +2032,8 @@ bool player_save_pipeline_acquire_target_save_login_fence(int pid,
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		if (!health.initialized || stop_requested || !accepting ||
 		    find_terminal_fence_locked(pid) || find_target_save_login_fence_locked(pid) ||
-		    append_inflight_pid == pid || any_snapshot_is_retained_locked(pid) ||
+		    find_literal_inventory_locked(pid) || append_inflight_pid == pid ||
+		    any_snapshot_is_retained_locked(pid) ||
 		    !allocate_target_save_login_fence_locked(pid, expected_revision))
 			return false;
 	}
@@ -1760,6 +2097,8 @@ bool player_save_pipeline_save_admitted(int pid)
 		return false;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	if (find_target_save_login_fence_locked(pid))
+		return false;
+	if (auto *literal = find_literal_inventory_locked(pid); literal && literal->held)
 		return false;
 	if (terminal_fence *fence = find_terminal_fence_locked(pid); fence && fence->death_pinned)
 		return false;

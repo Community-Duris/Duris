@@ -139,6 +139,32 @@ int main()
     player_revision_snapshot before = {};
     assert(player_revision_snapshot_copy(player.pid, &before));
     assert(before.current_revision == 70 && !find_terminal_fence_locked(player.pid));
+    auto &literal = literal_inventory_checkpoints[0];
+    literal.token = {player.pid, 71, corpse.obj_uid, 1};
+    literal.payload = {3, 4, 5};
+    literal.held = true;
+    const auto held_captures = capture_count;
+    const auto held_pipeline_captures = health.captured;
+    assert(saved(&player, &corpse) == player_save_terminal_result::unavailable);
+    player_revision_snapshot after_held = {};
+    assert(player_revision_snapshot_copy(player.pid, &after_held));
+    assert(after_held.current_revision == before.current_revision &&
+           after_held.acknowledged_revision == before.acknowledged_revision &&
+           after_held.dirty_components == before.dirty_components &&
+           after_held.queued_components == before.queued_components &&
+           !find_terminal_fence_locked(player.pid) && pinned_death_count_locked() == 0 &&
+           pending_append.empty() && !retained_bytes && capture_count == held_captures &&
+           health.captured == held_pipeline_captures && literal.held);
+    literal.held = false;
+    capture_result = player_snapshot_capture_result::limit_exceeded;
+    assert(saved(&player, &corpse) == player_save_terminal_result::invalid);
+    assert(!literal.token.pid && literal.payload.empty() &&
+           !find_terminal_fence_locked(player.pid) && !pinned_death_count_locked() &&
+           pending_append.empty() && !retained_bytes);
+    capture_result = player_snapshot_capture_result::ok;
+    // Restore the baseline independently after the superseding failed intent.
+    player_revision_forget(player.pid);
+    assert(player_revision_hydrate(player.pid, 70));
     assert(player_save_pipeline_terminal_death(nullptr, &corpse, &wallet, operation,
                                               22806, 1, false) == player_save_terminal_result::invalid);
     player.npc = true;
@@ -245,7 +271,7 @@ with tempfile.TemporaryDirectory(prefix='duris-death-entrypoints-') as temp:
     source = Path(temp) / 'entrypoints.cpp'
     binary = Path(temp) / 'entrypoints'
     source.write_text(HARNESS)
-    subprocess.run([base['compiler'], '-std=c++20', '-Wall', '-Wextra', '-Wpedantic',
+    subprocess.run([base['compiler'], *base['SANITIZER_FLAGS'], '-std=c++20', '-Wall', '-Wextra', '-Wpedantic',
                     '-Werror', '-Isrc', str(source), 'src/player/player_revision_state.c',
                     '-pthread', '-o', str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary)], cwd=ROOT, check=True, timeout=15)
@@ -253,3 +279,4 @@ print('[PASS] real death entrypoints preserve missing-corpse, capture/queue refu
 print('[PASS] repeated capture failures beyond fence capacity release every pin and retained byte')
 print('[PASS] real timeout/resume/wait retain identity and reject journal-only release until exact database ACK')
 print('[PASS] pending craft capture refusal clears pins; exact frozen craft identity/discipline/XP survive timeout and retry')
+print('[PASS] held literal publication refuses death before capture/pin; unheld lease is superseded even when later capture fails')
