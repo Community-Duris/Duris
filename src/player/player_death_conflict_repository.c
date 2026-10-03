@@ -648,9 +648,9 @@ player_save_apply_result player_death_conflict_apply_from_pool(const player_snap
 	if (applied.outcome == player_save_apply_outcome::ambiguous_commit ||
 	    connection_error(applied.error_code))
 	{
-		if (MYSQL *replacement = sql_pool_replace_connection(connection))
+		connection = sql_pool_replace_connection(connection);
+		if (connection)
 		{
-			connection = replacement;
 			// Same-request replay proves a terminal receipt, not merely a counter
 			// that an unrelated checkpoint could have advanced.
 			applied = player_death_conflict_apply(connection, request);

@@ -710,9 +710,14 @@ flatfile_shop_trade_materialization_result flatfile_item_transfer_materializatio
 	    !craft_pouch_mutation_from_payload(payload, &pouch))
 		return flatfile_shop_trade_materialization_result::invalid;
 	if (root.empty() || !lock.matches(root) || critical_operation_id_is_zero(operation_id) ||
-	    !mutation || (!payload.item_blob_size && !pouch.before.object_uid) ||
-	    payload.item_blob_size > payload.item_blob.size())
+	    !mutation || payload.item_blob_size > payload.item_blob.size())
 		return flatfile_shop_trade_materialization_result::invalid;
+	// An intended failed craft can retain a publication receipt while creating
+	// no item or pouch after-image. Input retirement remains in the custody root.
+	if (!payload.item_blob_size && !pouch.before.object_uid)
+		return payload.reason == item_transfer_reason::craft ?
+			       flatfile_shop_trade_materialization_result::unchanged :
+			       flatfile_shop_trade_materialization_result::invalid;
 	std::vector<uint8_t> item_blob;
 	std::vector<player_item_snapshot> items;
 	try

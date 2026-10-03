@@ -75,6 +75,9 @@
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "item/item_transfer_command.h"
 #include "item/item_transfer_repository.h"
+#include "item/item_ownership_runtime.h"
+#include "persistence/sql_room_item_payload.h"
+#include "player/player_snapshot_capture.h"
 
 // external tables
 extern P_index obj_index;
@@ -11025,6 +11028,256 @@ done:
 	return true;
 }
 
+// Exact room payload restoration never adopts or rewrites a legacy source.
+// Staging has no artifact/corpse writes; original UIDs publish only after the
+// complete graph is checked against the immutable bytes and current custody.
+extern bool updateArtis;
+
+static void sql_room_item_clear_uids(P_obj object)
+{
+	if (!object)
+		return;
+	object->obj_uid = 0;
+	for (P_obj child = object->contains; child; child = child->next_content)
+		sql_room_item_clear_uids(child);
+}
+
+static bool sql_room_item_can_place_restored(P_obj object, int room)
+{
+	return object && world && room >= 0 && room <= top_of_world && OBJ_NOWHERE(object) &&
+	       !object->next_content && object->type != ITEM_MONEY && object->type != ITEM_CORPSE &&
+	       !IS_ARTIFACT(object);
+}
+
+static void sql_room_item_place_restored(P_obj object, int room) noexcept
+{
+	// A verified cold restore installs the retained placement. Replaying a drop
+	// here would add decay, redirect water objects, merge coins or start falling
+	// after the payload/custody proof. No economic write or gameplay hook runs.
+	// The admitted graph contains no corpses, so world-activity corpse counters
+	// cannot change. Recompute only the room's derived lighting cache.
+	object->loc_p = LOC_ROOM;
+	object->loc.room = room;
+	object->next_content = world[room].contents;
+	world[room].contents = object;
+	if (IS_SET(object->extra_flags, ITEM_LIT) ||
+	    (object->type == ITEM_LIGHT && object->value[2] == -1))
+		room_light(room, REAL);
+}
+
+class sql_room_item_stage_guard
+{
+    public:
+	sql_room_item_stage_guard()
+		: corpse(skip_corpse_save)
+		, artifact(updateArtis)
+	{
+		skip_corpse_save = 1;
+		updateArtis = false;
+	}
+	~sql_room_item_stage_guard()
+	{
+		for (P_obj root : roots)
+		{
+			sql_room_item_clear_uids(root);
+			extract_obj(root, FALSE);
+		}
+		skip_corpse_save = corpse;
+		updateArtis = artifact;
+	}
+	std::vector<P_obj> roots;
+
+    private:
+	int corpse;
+	bool artifact;
+};
+
+static bool sql_room_item_publish(const sql_room_item_graph &graph,
+				  std::unordered_set<uint64_t> *published)
+{
+	if (!published || graph.items.empty() || graph.items.size() != graph.identities.size())
+		return false;
+	const int room = real_room(static_cast<int>(graph.owner.id));
+	if (room == NOWHERE)
+		return false;
+	std::unordered_map<uint64_t, size_t> expected;
+	for (size_t index = 0; index < graph.items.size(); ++index)
+		if (!expected.emplace(graph.items[index].object_uid, index).second ||
+		    published->count(graph.items[index].object_uid))
+			return false;
+	for (P_obj live = object_list; live; live = live->next)
+		if (expected.count(live->obj_uid))
+			return false;
+	sql_room_item_stage_guard stage;
+	player_load_item_materialize_metrics metrics;
+	if (!player_load_item_graph_materialize_detached(graph.items, graph.identities, graph.owner,
+							 graph.owner_revision, false, true,
+							 &stage.roots, &metrics) ||
+	    stage.roots.size() != 1)
+	{
+#ifdef DURIS_SQL_ROOM_ITEM_RECOVERY_TEST
+		printf("ROOM_ITEM_PAYLOAD_REFUSAL stage=materialize outcome=%u roots=%zu\n",
+		       static_cast<unsigned int>(metrics.outcome), stage.roots.size());
+#endif
+		return false;
+	}
+	// Detached materialization recalculates container weight using prototype
+	// shells. Exact persisted weights remain authoritative for this graph.
+	for (P_obj live = object_list; live; live = live->next)
+	{
+		const auto found = expected.find(live->obj_uid);
+		if (found != expected.end())
+			live->weight = graph.items[found->second].weight;
+	}
+	std::vector<player_item_snapshot> captured;
+	size_t estimated = 0;
+	if (player_item_snapshot_tree_capture(stage.roots[0], &captured, &estimated) !=
+		    player_snapshot_capture_result::ok ||
+	    captured.size() != graph.items.size())
+		return false;
+	std::unordered_set<uint64_t> seen;
+	for (size_t index = 0; index < captured.size(); ++index)
+	{
+		auto item = captured[index];
+		const auto found = expected.find(item.object_uid);
+		if (found == expected.end() || !seen.insert(item.object_uid).second)
+			return false;
+		const auto &identity = graph.identities[found->second];
+		if (item.parent_index < -1 || item.parent_index >= static_cast<int32_t>(index) ||
+		    identity.parent_item_uid !=
+			    (item.parent_index < 0 ? 0 : captured[item.parent_index].object_uid))
+			return false;
+		auto durable = graph.items[found->second];
+		item.parent_index = durable.parent_index = -1;
+		item.equipment_slot = durable.equipment_slot = 0;
+		std::vector<uint8_t> actual, expected_bytes;
+		if (player_item_snapshot_list_encode({ item }, &actual) !=
+			    player_snapshot_codec_result::ok ||
+		    player_item_snapshot_list_encode({ durable }, &expected_bytes) !=
+			    player_snapshot_codec_result::ok ||
+		    actual != expected_bytes)
+		{
+#ifdef DURIS_SQL_ROOM_ITEM_RECOVERY_TEST
+			printf("ROOM_ITEM_PAYLOAD_REFUSAL stage=byte_compare uid=%llu extra2=%llu/%llu dynamic=%zu/%zu size=%zu/%zu\n",
+			       static_cast<unsigned long long>(item.object_uid),
+			       static_cast<unsigned long long>(item.extra2_flags),
+			       static_cast<unsigned long long>(durable.extra2_flags),
+			       item.dynamic_affects.size(), durable.dynamic_affects.size(),
+			       actual.size(), expected_bytes.size());
+#endif
+			return false;
+		}
+	}
+	std::unordered_set<P_obj> staged_objects;
+	for (P_obj live = object_list; live; live = live->next)
+		if (expected.count(live->obj_uid))
+		{
+			// Each staged UID must occur exactly once in the native global list.
+			if (!seen.erase(live->obj_uid))
+				return false;
+			staged_objects.insert(live);
+			live->db_item_id = 0;
+		}
+	if (!seen.empty() || staged_objects.size() != graph.items.size())
+		return false;
+	std::vector<item_ownership_runtime_entry> ownership;
+	for (size_t index = 0; index < graph.items.size(); ++index)
+	{
+		const auto &identity = graph.identities[index];
+		ownership.push_back({ identity.item_uid, identity.root_item_uid,
+				      identity.parent_item_uid, identity.owner,
+				      identity.item_revision, identity.owner_revision,
+				      graph.items[index].vnum, identity.state });
+	}
+	// Reserve all bookkeeping before publishing any root.
+	auto next_published = *published;
+	for (const auto &entry : ownership)
+		next_published.insert(entry.item_uid);
+	if (!sql_room_item_can_place_restored(stage.roots[0], room) ||
+	    !item_ownership_runtime_hydrate_many_atomic(ownership.data(), ownership.size()))
+		return false;
+	sql_room_item_place_restored(stage.roots[0], room);
+	published->swap(next_published);
+#ifdef DURIS_SQL_ROOM_ITEM_RECOVERY_TEST
+	// Qualification observer reads the published native graph and runtime custody.
+	// It supplies no expected fields and bypasses no admission or startup guard.
+	std::vector<player_item_snapshot> observed;
+	std::vector<uint8_t> observed_bytes;
+	size_t observed_size = 0;
+	if (player_item_snapshot_tree_capture(stage.roots[0], &observed, &observed_size) ==
+		    player_snapshot_capture_result::ok &&
+	    player_item_snapshot_list_encode(observed, &observed_bytes) ==
+		    player_snapshot_codec_result::ok)
+	{
+		printf("ROOM_ITEM_PAYLOAD_RECOVERY uid=%llu payload=",
+		       static_cast<unsigned long long>(stage.roots[0]->obj_uid));
+		for (uint8_t byte : observed_bytes)
+			printf("%02x", static_cast<unsigned int>(byte));
+		printf("\n");
+		for (const auto &item : observed)
+		{
+			item_ownership_runtime_entry entry{};
+			if (!item_ownership_runtime_lookup(item.object_uid, &entry))
+				continue;
+			printf("ROOM_ITEM_PAYLOAD_CUSTODY uid=%llu root=%llu parent=%llu owner=%u room=%llu revision=%llu owner_revision=%llu vnum=%d state=%u\n",
+			       static_cast<unsigned long long>(entry.item_uid),
+			       static_cast<unsigned long long>(entry.root_item_uid),
+			       static_cast<unsigned long long>(entry.parent_item_uid),
+			       static_cast<unsigned int>(entry.owner.type),
+			       static_cast<unsigned long long>(entry.owner.id),
+			       static_cast<unsigned long long>(entry.item_revision),
+			       static_cast<unsigned long long>(entry.owner_revision), entry.vnum,
+			       static_cast<unsigned int>(entry.state));
+		}
+		fflush(stdout);
+	}
+#endif
+	stage.roots.clear();
+	return true;
+}
+
+static bool sql_restore_exact_room_items(std::unordered_set<uint64_t> *published, bool *available)
+{
+	if (sql_in_transaction() || !sql_room_item_payload_available(DB, available))
+		return false;
+	if (!*available)
+		return true;
+	std::vector<uint64_t> roots;
+	if (!sql_begin_transaction())
+		return false;
+	const bool enumerated = sql_room_item_payload_roots(DB, &roots);
+	const bool released = sql_rollback();
+	if (!enumerated || !released)
+		return false;
+	for (uint64_t uid : roots)
+	{
+		if (!sql_begin_transaction())
+			return false;
+		bool restored = false;
+		try
+		{
+			sql_room_item_graph graph;
+			const bool payload_read = sql_room_item_payload_read(DB, uid, &graph);
+#ifdef DURIS_SQL_ROOM_ITEM_RECOVERY_TEST
+			printf("ROOM_ITEM_PAYLOAD_STAGE stage=read ok=%u uid=%llu\n",
+			       static_cast<unsigned int>(payload_read),
+			       static_cast<unsigned long long>(uid));
+#endif
+			restored = payload_read && sql_room_item_publish(graph, published);
+		}
+		catch (const std::bad_alloc &)
+		{
+			restored = false;
+		}
+		if (!sql_rollback())
+			return false;
+		if (!restored)
+			logit(LOG_SYS,
+			      "sql_restore_saved_items: exact room graph refused; immutable payload and custody retained");
+	}
+	return true;
+}
+
 void sql_restore_saved_items(void)
 {
 	if (!DB)
@@ -11038,6 +11291,13 @@ void sql_restore_saved_items(void)
 		return;
 	}
 	std::unordered_set<uint64_t> published_uids;
+	bool exact_available = false;
+	if (!sql_restore_exact_room_items(&published_uids, &exact_available))
+	{
+		logit(LOG_SYS,
+		      "sql_restore_saved_items: exact payload schema/lifetime unavailable; source rows retained");
+		return;
+	}
 
 	MYSQL_RES *result =
 		db_query("SELECT item_key, room_vnum, id, vnum, weight, cost, timer, extra_flags, "
@@ -11064,6 +11324,42 @@ void sql_restore_saved_items(void)
 		int item_id = atoi(row[2]);
 		int vnum = atoi(row[3]);
 		const uint64_t saved_uid = row[28] ? strtoull(row[28], NULL, 10) : 0;
+		if (exact_available)
+		{
+			char *escaped = sql_escape_string(item_key);
+			if (!escaped)
+				continue;
+			MYSQL_RES *overlap = db_query(
+				"SELECT obj_uid FROM saved_items WHERE item_key='%s' ORDER BY id LIMIT 3001",
+				escaped);
+			free(escaped);
+			if (!overlap)
+				continue;
+			bool retained_exact = mysql_num_rows(overlap) > ITEM_TRANSFER_MAX_ITEMS;
+			MYSQL_ROW saved;
+			while (!retained_exact && (saved = mysql_fetch_row(overlap)))
+			{
+				uint64_t uid = 0;
+				if (saved[0] &&
+				    [&]()
+				    {
+					    const char *end = saved[0] + strlen(saved[0]);
+					    const auto parsed = std::from_chars(saved[0], end, uid);
+					    return parsed.ec != std::errc{} || parsed.ptr != end;
+				    }())
+				{
+					retained_exact = true;
+					break;
+				}
+				bool enrolled = false;
+				if (uid && (!sql_room_item_payload_present(DB, uid, &enrolled) ||
+					    enrolled))
+					retained_exact = true;
+			}
+			mysql_free_result(overlap);
+			if (retained_exact)
+				continue;
+		}
 		int destination_root_id = 0;
 		int source_count = 0;
 		bool retired = false;

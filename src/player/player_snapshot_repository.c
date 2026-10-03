@@ -2436,13 +2436,9 @@ player_save_apply_result player_snapshot_repository_apply_from_pool(const player
 	if (applied.outcome == player_save_apply_outcome::ambiguous_commit ||
 	    connection_error(applied.error_code))
 	{
-		MYSQL *replacement = sql_pool_replace_connection(connection);
-		if (!replacement)
-		{
-			sql_pool_release(connection);
+		connection = sql_pool_replace_connection(connection);
+		if (!connection)
 			return applied;
-		}
-		connection = replacement;
 	}
 	if (applied.outcome == player_save_apply_outcome::ambiguous_commit)
 	{

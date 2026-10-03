@@ -1786,6 +1786,145 @@
       "required_markers": [],
       "schema_prefix": "economic_schema_test_",
       "migrated": true
+    },
+    {
+      "id": "player_literal_checkpoint_mysql",
+      "path": "tests/async/test_player_literal_checkpoint_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--qualify"
+      ],
+      "environment": {},
+      "timeout_seconds": 1200,
+      "covers": [
+        "test_player_literal_checkpoint_mysql.py"
+      ],
+      "required_markers": [
+        "PASS: actual native literal capture/pipeline/journal/worker/repository/pool; journal-only refusal;"
+      ],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "economic_sql_bank_real_pool",
+      "path": "tests/async/run_economic_sql_bank_transaction_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--real-pool"
+      ],
+      "environment": {},
+      "timeout_seconds": 1200,
+      "covers": [
+        "run_economic_sql_bank_transaction_mysql.py"
+      ],
+      "required_markers": [
+        "SQL actual pool bank: distinct lost-COMMIT replacement session, clean reborrow and zero-lease shutdown passed"
+      ],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "economic_sql_real_pool_coin",
+      "path": "tests/async/run_economic_sql_real_pool_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--family",
+        "coin"
+      ],
+      "environment": {},
+      "timeout_seconds": 1200,
+      "covers": [
+        "run_economic_sql_real_pool_mysql.py"
+      ],
+      "required_markers": [
+        "PASS: real SQL pool coin qualification completed"
+      ],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "economic_sql_real_pool_item",
+      "path": "tests/async/run_economic_sql_real_pool_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--family",
+        "item"
+      ],
+      "environment": {},
+      "timeout_seconds": 1200,
+      "covers": [
+        "run_economic_sql_real_pool_mysql.py"
+      ],
+      "required_markers": [
+        "PASS: real SQL pool item qualification completed"
+      ],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "economic_sql_real_pool_room",
+      "path": "tests/async/run_economic_sql_real_pool_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--family",
+        "room",
+        "--server",
+        "{sql_binary}",
+        "--server-sha256",
+        "{binary_sha256}"
+      ],
+      "environment": {},
+      "timeout_seconds": 1200,
+      "covers": [
+        "run_economic_sql_real_pool_mysql.py",
+        "run_sql_room_item_payload_recovery_journey.py"
+      ],
+      "required_markers": [
+        "PASS: real SQL pool room qualification completed",
+        "PASS: ACK then two complete native SQL cold boots; exact payload, UIDs, revisions and topology;"
+      ],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
     }
   ]
 }

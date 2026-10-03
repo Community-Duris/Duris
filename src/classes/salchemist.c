@@ -66,46 +66,6 @@ bool is_neg_good(sbyte location);
 
 namespace
 {
-struct alchemy_craft_context
-{
-	int skill;
-	int kind;
-	unsigned int count;
-};
-
-void alchemy_craft_completed(P_char ch, bool committed, const item_transfer_result &, unsigned int,
-			     const uint8_t *context, size_t context_size)
-{
-	alchemy_craft_context craft = {};
-	if (context && context_size == sizeof(craft))
-		memcpy(&craft, context, sizeof(craft));
-	if (!committed)
-	{
-		send_to_char(
-			"The craft could not be committed; your ingredients were preserved.\r\n",
-			ch);
-		return;
-	}
-	if (craft.kind == 1)
-	{
-		notch_skill(ch, SKILL_MIXPOISON, 6.25);
-		send_to_char_f(ch, "You finish mixing %u poison%s.\r\n", craft.count,
-			       craft.count == 1 ? "" : "s");
-	}
-	else if (craft.kind == 4)
-	{
-		act("...creating a real masterpiece!", TRUE, ch, 0, 0, TO_ROOM);
-		act("Hurrah! Hurrah!", FALSE, ch, 0, 0, TO_CHAR);
-		wizlog(56, "Encrust committed for %s.", GET_NAME(ch));
-	}
-	else if (craft.kind == 5)
-	{
-		act("You broke your item in the process.", FALSE, ch, 0, 0, TO_CHAR);
-		act("...and breaks it in the process.", TRUE, ch, 0, 0, TO_ROOM);
-		wizlog(56, "%s ruined an encrust attempt.", GET_NAME(ch));
-	}
-}
-
 bool collect_required_objects(P_char ch, const int required[],
 			      const std::unordered_set<P_obj> &used, std::vector<P_obj> *objects)
 {
@@ -645,13 +605,19 @@ void do_mixpoison(P_char ch, char *argument, int /*cmd*/)
 		}
 		if (outputs.empty())
 			continue;
-		const alchemy_craft_context context = { SKILL_MIXPOISON, 1,
-							static_cast<unsigned int>(outputs.size()) };
+		craft_recipe_continuation terms = {
+			.player_pid = static_cast<uint32_t>(GET_PID(ch)),
+			.discipline = craft_recipe_discipline::poison,
+			.recipe_vnum = static_cast<uint32_t>(poison_data[i].vnum),
+			.pouch_mutation = {},
+			.output_count = static_cast<uint32_t>(outputs.size())
+		};
+		terms.notch = skill_notch_prepare(ch, SKILL_MIXPOISON, 6.25);
 		item_movement_reject reject = item_movement_reject::none;
 		if (!item_movement_transaction_submit_craft(
 			    ch, inputs.data(), inputs.size(), outputs.data(), outputs.size(),
-			    poison_data[i].vnum, alchemy_craft_completed, &context, sizeof(context),
-			    &reject))
+			    poison_data[i].vnum, nullptr, nullptr, 0, &reject, nullptr, nullptr, 0,
+			    chaos_pouch_usage_mode::generated, &terms))
 		{
 			for (P_obj output : outputs)
 				extract_obj(output);
@@ -1036,13 +1002,18 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 	if (!succeeded)
 	{
 		P_obj inputs[] = { item, jewel };
-		const alchemy_craft_context context = { SKILL_ENCRUST, 5, 0 };
+		const craft_recipe_continuation terms = {
+			.player_pid = static_cast<uint32_t>(GET_PID(ch)),
+			.discipline = craft_recipe_discipline::encrust_failure,
+			.recipe_vnum = static_cast<uint32_t>(jewel_vnum),
+			.pouch_mutation = {}
+		};
 		item_movement_reject reject = item_movement_reject::none;
 		if (!item_movement_transaction_submit_craft(
-			    ch, inputs, virtual_jewel ? 1 : 2, nullptr, 0, jewel_vnum,
-			    alchemy_craft_completed, &context, sizeof(context), &reject,
-			    retained_pouch, virtual_jewel ? &pouch_usage : nullptr,
-			    virtual_jewel ? 1 : 0))
+			    ch, inputs, virtual_jewel ? 1 : 2, nullptr, 0, jewel_vnum, nullptr,
+			    nullptr, 0, &reject, retained_pouch,
+			    virtual_jewel ? &pouch_usage : nullptr, virtual_jewel ? 1 : 0,
+			    chaos_pouch_usage_mode::generated, &terms))
 			send_to_char(
 				"The encrust service is busy; your item and jewel were preserved.\r\n",
 				ch);
@@ -1122,12 +1093,16 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 	if (IS_SET(new_item->extra2_flags, ITEM2_ENHANCED))
 		describe_encrusted_enhanced(new_item);
 	P_obj inputs[] = { item, jewel };
-	const alchemy_craft_context context = { SKILL_ENCRUST, 4, 1 };
+	const craft_recipe_continuation terms = { .player_pid = static_cast<uint32_t>(GET_PID(ch)),
+						  .discipline = craft_recipe_discipline::encrust,
+						  .recipe_vnum = static_cast<uint32_t>(jewel_vnum),
+						  .pouch_mutation = {},
+						  .output_count = 1 };
 	item_movement_reject reject = item_movement_reject::none;
 	if (!item_movement_transaction_submit_craft(
-		    ch, inputs, virtual_jewel ? 1 : 2, &new_item, 1, jewel_vnum,
-		    alchemy_craft_completed, &context, sizeof(context), &reject, retained_pouch,
-		    virtual_jewel ? &pouch_usage : nullptr, virtual_jewel ? 1 : 0))
+		    ch, inputs, virtual_jewel ? 1 : 2, &new_item, 1, jewel_vnum, nullptr, nullptr,
+		    0, &reject, retained_pouch, virtual_jewel ? &pouch_usage : nullptr,
+		    virtual_jewel ? 1 : 0, chaos_pouch_usage_mode::generated, &terms))
 	{
 		extract_obj(new_item);
 		send_to_char("The encrust service is busy; your item and jewel were preserved.\r\n",

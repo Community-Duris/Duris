@@ -100,9 +100,10 @@ read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
 read -r -a CXX_CMD <<< "${CXX:-g++}"
 "${CXX_CMD[@]}" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
     "${SQL_DISPATCH_SOURCES[@]}" \
-    -ffunction-sections -fdata-sections -Wl,--gc-sections -Isrc \
+    -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,--wrap=mysql_real_query,--wrap=mysql_errno -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/pa_coin_sql_harness.cpp \
     src/persistence/critical_command.c src/economy/currency_command.c src/world/epic_command.c \
     src/combat/combat_outcome_command.c \
+    src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
     "${MYSQL_LIBS[@]}" -lcrypto -lz -o "$TMPDIR/pa_coin_sql_harness"
 "$TMPDIR/pa_coin_sql_harness"
