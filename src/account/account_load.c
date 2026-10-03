@@ -1,4 +1,5 @@
 #include "account/account_load.h"
+#include "net/network_wakeup.h"
 #include "sql/sql_exclusion_guard.h"
 #include "sql/sql_pool.h"
 #include "sql/sql_thread_init.h"
@@ -440,6 +441,7 @@ struct account_worker
 				job->result.request_name = std::move(job->request.name);
 				job->result.outcome = account_load_outcome::unavailable;
 			}
+			network_wakeup_notify();
 			return;
 		}
 		std::unique_lock<std::mutex> lock(mutex);
@@ -484,6 +486,7 @@ struct account_worker
 			{
 				job->result = std::move(result);
 				job->done = true;
+				network_wakeup_notify();
 			}
 		}
 		lock.unlock();

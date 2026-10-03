@@ -299,6 +299,7 @@ void do_read_player(P_char ch, char *arg, int /*cmd*/)
 	/* insert in list */
 	vict->next = character_list;
 	character_list = vict;
+	register_character_runtime_id(vict);
 
 	/* saving info for teleport return command */
 	vict->specials.was_in_room = vict->in_room;

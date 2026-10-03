@@ -3,6 +3,8 @@
 #include "core/utils.h"
 #include "account/password_async.h"
 #include "net/command_latency.h"
+#include "net/network_wakeup.h"
+#include <poll.h>
 #include "net/comm.h"
 #include <openssl/crypto.h>
 #include <cassert>
@@ -312,5 +314,8 @@ int main(int argc, char **)
 	command_latency_report(&tracker, tracker.measured_us, "test", 1, 1, no_slow, nullptr);
 	password_async_cancel(d);
 	password_login_shutdown();
+	pollfd wakeup{ network_wakeup_fd(), POLLIN, 0 };
+	assert(poll(&wakeup, 1, 0) == 1); // Real password jobs notified the loop.
+	network_wakeup_drain();
 	puts("PASS: real bcrypt jobs, state/credential/disconnect/room/death cancellation; no COMMAND OP SLOW");
 }

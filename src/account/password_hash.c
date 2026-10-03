@@ -1,3 +1,4 @@
+#include "net/network_wakeup.h"
 #include "account/password_hash.h"
 
 #include <crypt.h>
@@ -192,6 +193,8 @@ struct login_password_worker
 			OPENSSL_cleanse(job->password, sizeof(job->password));
 			lock.lock();
 			job->done = true;
+			if (!job->cancelled)
+				network_wakeup_notify();
 			if (job->cancelled)
 				erase(job);
 		}

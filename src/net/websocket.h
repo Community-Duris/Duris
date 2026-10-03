@@ -95,6 +95,8 @@ void websocket_shutdown(void);
 /* connection handling */
 int websocket_accept(int listen_fd, struct descriptor_data *d);
 int websocket_process_input(struct descriptor_data *d);
+bool websocket_input_paused(struct descriptor_data *d);
+void websocket_dispatch_pending_input(struct descriptor_data *d);
 int websocket_has_pending(struct descriptor_data *d);
 
 /* HTTP health request or upgrade handshake; health responses return -2 and close. */

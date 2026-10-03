@@ -2049,6 +2049,7 @@ P_char load_dummy_char(char *name)
 	restoreItemsOnly(owner, -1);
 	owner->next = character_list;
 	character_list = owner;
+	register_character_runtime_id(owner);
 	updateArtis = TRUE;
 
 	return owner;

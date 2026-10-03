@@ -269,6 +269,7 @@ OBJS =  $(SHIP_OBJS) \
 				net/command_latency.o \
 				 net/comm.o \
 				 persistence/copyover.o \
+				 persistence/copyover_codec.o \
 				 core/common.o \
 				 world/condition.o \
 				 world/bloodstains.o \
