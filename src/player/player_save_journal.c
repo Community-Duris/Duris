@@ -1872,8 +1872,7 @@ bool recovery_generation_matches(const player_save_recovery_record &record)
 	if (!archive_recovery_frames(record.replacement.pid, &frames, &digest) ||
 	    digest != record.archive_digest || policy_pids.count(record.replacement.pid))
 		return false;
-	return std::all_of(frames.begin(), frames.end(),
-			   [&](const player_snapshot &frame)
+	return std::all_of(frames.begin(), frames.end(), [&](const player_snapshot &frame)
 			   { return frame.revision < record.replacement.revision; });
 }
 } // namespace
