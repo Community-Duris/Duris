@@ -146,6 +146,13 @@ def freeze_build(directory, environment):
     # The bootstrap script does not implement --version; invoking that option
     # can initialize a database. Bind its bytes instead.
     recovery_tools["mariadb-install-db_sha256"] = digest(Path(shutil.which("mariadb-install-db")))
+    mysql_server = shutil.which("mysqld", path=environment.get("PATH"))
+    if mysql_server:
+        resolved = Path(mysql_server).resolve()
+        recovery_tools["mysql_restore_server"] = {
+            "path": str(resolved), "sha256": digest(resolved),
+            "version": subprocess.check_output(
+                [str(resolved), "--no-defaults", "--version"], text=True).strip()}
     atomic_json(directory / "recovery-tools.json", recovery_tools)
     return {**{key: str(value) for key, value in binaries.items()}, "head": head,
             "binary_sha256": digest(binaries["sql_binary"]), "descriptor": str(descriptor)}
