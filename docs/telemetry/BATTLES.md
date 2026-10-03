@@ -4,10 +4,12 @@ Enabled, qualified telemetry now captures shared-battle facts at native hostile,
 effective-healing support, presence, context and lifecycle boundaries. Its bounded
 association engine, portable definition-1 packets and independent kind-10 writer
 preserve battle history and conservative uncertainty. This establishes live
-association capture. A bounded contribution accumulator and portable segment
-contract are qualified separately below; their native capture, durable linkage,
-expanded context/control/prevention/faction sources and atomic balance projections
-remain under implementation.
+association capture. The native contribution accumulator, portable segment
+contract and canonical kind-11 writer are qualified separately below. A bounded
+history reducer also verifies retained lineage, effective contribution context
+and measured lifecycle boundaries. Expanded context/control/prevention/faction
+sources, dated identity linkage and atomic balance projections remain under
+implementation.
 [Implementation status](IMPLEMENTATION_STATUS.md) retains the full accepted scope
 and the actual personal-local gameplay qualification requirement.
 
@@ -552,8 +554,94 @@ seams, and authenticated identity stays unknown. This proof starts no game
 server and does not replace the final real personal-server journey or measured
 gameplay/performance qualification.
 
-The next integration gate completes compact context, control/prevention and
-faction exposure sources, links actual shared contributions and publishes bounded
-atomic balance projections. Existing kinds 1–9, sealed migrations and report
+The next integration gate uses the qualified history reducer below in retained
+source and atomic publication transactions, completes compact context, control/
+prevention and faction exposure sources, and adds dated identity and typed outcome
+evidence. Existing kinds 1–9, sealed migrations and report
 definitions retain their meanings. The four full balance suites and actual
 personal-local gameplay/persistence/performance gate remain required by issue #258.
+
+## Bounded history qualification for publication
+
+`scripts/telemetry/battle_history.py` consumes one explicit environment/season
+window of canonical kind-10/11 values. It reuses the sealed family and packet
+validators. SQL arrival order can change; the immutable producer transport order
+and logical fact/segment identities cannot. Identical receipt retries count once.
+Conflicting transport values, a second receipt for one logical identity, packet
+transport reversal and source-quality regression refuse the reduction.
+
+Completeness includes the initial packet, contiguous revisions and fact sequences,
+all declared ordinals and the final cut. Missing initial, middle, terminal or
+whole-mutation evidence remains partial even when a later complete summary is
+present. The reducer reconstructs bounded actor/relationship state, verifies
+declared rosters, owner counts, conservative sides and modes where the source
+permits, and checks absolute cumulative effort against the observed clock cuts.
+Loss and capacity flags prevent unsupported replay verification. Source packet
+integrity, verified replay of an observed graph and full population coverage are
+different properties.
+
+A complete alias packet must bridge actors from its two retained components.
+An unrelated relationship cannot authorize a merge. Retired components retain
+their original keys and source coverage. Their measured contribution segments
+resolve once to the canonical battle; inherited absolute actor effort replaces
+the preceding observation. Alias rows supply lineage and do not add another copy
+of canonical amounts. Missing donor or alias evidence stays uncertain.
+
+Each contribution's first and last references resolve to complete cuts from its
+actual battle and producer. Verified linkage checks effective actor identity/kind,
+ownership, optional session/encounter, all captured dimensions, formal roster,
+configuration versions, mode, side and context quality. It also checks history
+between the references: matching endpoints cannot hide an intervening changed
+context. Context-change and leave segments need observed boundary evidence;
+battle-ended segments need the actual complete close with its exact observed and
+decision clocks. Missing lifecycle evidence remains unlinked. A measured prefix
+cannot extend beyond an alias retirement or into inactivity grace. Overlapping
+segments for one producer actor refuse reduction.
+
+Measured amounts remain separate from their linkage and coverage. An unavailable
+family has NULL aggregate metrics; an available family's sum describes the
+observed segments and does not prove complete coverage or a missing actor's zero.
+Actor effort outputs are the latest absolute cumulative values for a canonical
+battle actor. Their latest context is not an attribution of all historical effort
+to that class, faction, group or configuration. Historical exposure cells still
+need the publication integration. This reducer establishes neither an account/
+controller association nor a decisive battle outcome. Empty input does not imply
+zero live activity.
+
+The reviewed incident input uses independent schema 4. Family masks, matching
+producer/sequence bounds, occurrence windows and the reviewed time range retain
+relevant loss or unknown coverage. Unknown or reversed UTC labels retain measured
+monotonic amounts and cannot use occurrence time to exclude a possible incident.
+Reconstruction or a later packet does not manufacture missing source values.
+
+Hard limits are 16,384 inputs, 512 battle identities, 4,096 packets, 2,048 referenced
+snapshots and 64 actors per merged state. Explicit output-row, byte and deadline
+budgets fail before returning a result. The internal reservation accounts 8,192
+bytes per normalized input, 2,048 per retained actor/trace and 4,096 per output;
+the default is 32 MiB. A caller must separately reserve buffering SQL fetches and
+its complete invocation. The native fixture reserves 2,230,272 bytes internally;
+this is reservation accounting, not a measured Python heap or server budget.
+
+Twenty focused tests passed, including 6,468 emitted facts from 23 existing pure
+association journeys. Normal and ASan/UBSan native gameplay exports reduced 123
+facts in 38 complete packets and 28 contribution segments into five canonical
+battles with all 28 context/lifecycle links verified. Observed damage remains
+112 dealt/112 taken and the exact healing/casting partitions remain conserved.
+The actual private-writer SQL readback fixture invokes the same reducer on both
+disposable engines. Sealed metadata fingerprints and migration head 62 remain
+unchanged. These are native/SQL correctness proofs with gameplay object and
+connection-factory seams, not a running personal-server journey.
+
+```sh
+python3 tests/async/test_telemetry_battle_history.py
+python3 tests/async/test_telemetry_battle_contract.py
+python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
+```
+
+This is the qualified reducer for the next publication step. It writes no SQL,
+adds no migration and enables no report definition. The catalog remains 1/2/3.
+Retained source/cursor digests, atomic public stores, reserved dated identity,
+complete published loss/lineage coverage, remaining native evidence, the four
+balance suites and the real personal-local qualification remain required.

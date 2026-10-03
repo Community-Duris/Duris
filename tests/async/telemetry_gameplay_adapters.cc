@@ -2029,20 +2029,21 @@ void check_native_shared_battle_capture(bool use_native = false)
 	fake.contributions.insert(fake.contributions.end(),
 				  unavailable_opponent.contributions.begin(),
 				  unavailable_opponent.contributions.end());
-#ifdef TELEMETRY_TEST_NATIVE_BATTLE_SQL
 	const char *export_path = std::getenv("TELEMETRY_BATTLE_CAPTURE_EXPORT");
-	assert(export_path && use_native);
-	auto *export_file = std::fopen(export_path, "wb");
-	assert(export_file);
-	for (const auto &record : fake.battles)
+	if (export_path)
 	{
-		std::fprintf(
-			export_file,
-			"{\"boot_id\":%llu,\"process_id\":%llu,\"record_seq\":%llu,\"record_kind\":10,\"schema_version\":1,\"occurrence_utc_usec\":%lld",
-			static_cast<unsigned long long>(record.header.key.producer.boot_id),
-			static_cast<unsigned long long>(record.header.key.producer.process_id),
-			static_cast<unsigned long long>(record.header.key.record_seq),
-			static_cast<long long>(record.header.occurrence_utc_usec));
+		auto *export_file = std::fopen(export_path, "wb");
+		assert(export_file);
+		for (const auto &record : fake.battles)
+		{
+			std::fprintf(
+				export_file,
+				"{\"boot_id\":%llu,\"process_id\":%llu,\"record_seq\":%llu,\"record_kind\":10,\"schema_version\":1,\"occurrence_utc_usec\":%lld",
+				static_cast<unsigned long long>(record.header.key.producer.boot_id),
+				static_cast<unsigned long long>(
+					record.header.key.producer.process_id),
+				static_cast<unsigned long long>(record.header.key.record_seq),
+				static_cast<long long>(record.header.occurrence_utc_usec));
 #define TELEMETRY_BATTLE_FIELD(name, member, width, is_signed)                                  \
 	do                                                                                      \
 	{                                                                                       \
@@ -2056,17 +2057,18 @@ void check_native_shared_battle_capture(bool use_native = false)
 	} while (false);
 #include "telemetry/telemetry_battle_fields.inc"
 #undef TELEMETRY_BATTLE_FIELD
-		std::fputs("}\n", export_file);
-	}
-	for (const auto &record : fake.contributions)
-	{
-		std::fprintf(
-			export_file,
-			"{\"boot_id\":%llu,\"process_id\":%llu,\"record_seq\":%llu,\"record_kind\":11,\"schema_version\":1,\"occurrence_utc_usec\":%lld",
-			static_cast<unsigned long long>(record.header.key.producer.boot_id),
-			static_cast<unsigned long long>(record.header.key.producer.process_id),
-			static_cast<unsigned long long>(record.header.key.record_seq),
-			static_cast<long long>(record.header.occurrence_utc_usec));
+			std::fputs("}\n", export_file);
+		}
+		for (const auto &record : fake.contributions)
+		{
+			std::fprintf(
+				export_file,
+				"{\"boot_id\":%llu,\"process_id\":%llu,\"record_seq\":%llu,\"record_kind\":11,\"schema_version\":1,\"occurrence_utc_usec\":%lld",
+				static_cast<unsigned long long>(record.header.key.producer.boot_id),
+				static_cast<unsigned long long>(
+					record.header.key.producer.process_id),
+				static_cast<unsigned long long>(record.header.key.record_seq),
+				static_cast<long long>(record.header.occurrence_utc_usec));
 #define TELEMETRY_BC_FIELD(name, member, width, is_signed)                                \
 	do                                                                                \
 	{                                                                                 \
@@ -2081,10 +2083,10 @@ void check_native_shared_battle_capture(bool use_native = false)
 	} while (false);
 #include "telemetry/telemetry_battle_contribution_fields.inc"
 #undef TELEMETRY_BC_FIELD
-		std::fputs("}\n", export_file);
+			std::fputs("}\n", export_file);
+		}
+		assert(std::fclose(export_file) == 0);
 	}
-	assert(std::fclose(export_file) == 0);
-#endif
 	fixture_pet = fixture_pet_master = nullptr;
 	world = nullptr;
 	zone_table = nullptr;

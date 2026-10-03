@@ -22,6 +22,7 @@ work. A future production deployment is a separate operational decision.
 | Copyover ownership context and ownership-loss review | Implemented and locally qualified | Outer copyover 18/telemetry-v2 retains last observed account context without importing an old monotonic clock or using the token as current authority. Legacy framing, overflow/unknown context and actual reloaded-token/scope/deletion changes passed native and ASan/UBSan fixtures. Migration 0059 adds independent incident schema-v2 inputs for families 1–9 and reuses existing snapshots; both 59-step chains, CLI, capacity, replay, private roles, atomic snapshot rollback and exact fresh/restored fingerprints passed. Definition-3 integration is qualified below. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md) and [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Atomic identity effort and observed XP portfolio publication | Implemented and locally qualified | Migration 0060 adds exact bounded source retention tied to the cursor, a conserved publication header and two reports. Definition 3 consumes the reserved dated review and incident schema 2 in the same publication transaction. Both 60-step chains qualified the actual CLI, corrections, old generations, explicit unknown identity, source/publication rollback, real committed writes with lost acknowledgements, private roles, budget refusal, guarded reruns and exact fresh/restored fingerprints. Definitions 1/2 retain their earlier amounts. See [IDENTITY_PUBLICATION.md](IDENTITY_PUBLICATION.md). |
 | Durable shared-battle facts and loss review | Implemented and locally qualified | Migration 0061 maps all 70 canonical kind-10 fields with independent logical/transport replay, immutable configuration qualification and NULL family separation. Both 61-step chains qualified actual native packets, lost acknowledgements, header/scope/constraint refusals, exact quarantine evidence, guarded reruns, drift/restoration, private v3 review CLI and unchanged definitions 1/2/3. Outage v2 retains readable original v1 histories. Live capture and atomic battle publication remain separate requirements. See [BATTLES.md](BATTLES.md). |
+| Bounded shared-battle history and contribution linkage | Implemented and locally qualified | The pure reducer checks complete revision/fact history, actual cross-component alias bridges, conservative rosters/graphs, cumulative effort, exact effective contribution context and lifecycle cuts. Twenty regressions cover 6,468 pure source facts/23 journeys and native missing/conflicting/context/lifecycle/incident/budget cases. Native normal/ASan/UBSan and both actual SQL readbacks qualify 123 facts/38 packets/28 verified contribution links, five canonical battles and conserved 112/112 damage. It supplies the next atomic publisher and enables no report definition. See [BATTLES.md](BATTLES.md#bounded-history-qualification-for-publication). |
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Control remains unavailable in native contribution mask 27. Compact build/power/arena context, actual control/prevention/faction exposure, full published association/alias/loss coverage, typed outcomes, atomic balance publication and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
@@ -989,3 +990,45 @@ rested/assistance/milestone/switching/comparable portfolio, four-suite/statistic
 requirements retain their incomplete portions under #258. The report catalog
 remains definitions 1/2/3, and this connection publishes no automatic balance
 change. Technical completion requires no production or staging access.
+
+## Qualified bounded battle history and linkage
+
+The history reducer now checks the native facts as a bounded, ordered history,
+using the sealed kind-10/11 validators. Initial/whole/middle/terminal packet loss,
+gaps, conflicting receipts, source-quality regression, false alias bridges,
+effective-context changes and unproven lifecycle cuts cannot become a verified
+contribution link. Conservative graph replay verifies declared actor/owner counts
+and observed sides/modes and reconciles absolute actor effort. Aliases preserve
+their separate source identities and replace inherited absolute effort; their
+measured segments contribute once to the canonical total. Later complete packets
+cannot repair earlier missing history.
+
+The source fixture retains **123 association facts in 38 complete packets, 28
+contribution segments and five canonical battles**. Every contribution has a
+verified effective-context/lifecycle link. Normal and ASan/UBSan native exports
+and the actual private SQL writer/readback journeys passed. Both full 62-step
+MySQL 8.0.46/MariaDB 10.11.14 chains retain their exact sealed fingerprints,
+empty quarantine, absent-family NULLs and writer permission denials. Temporary
+databases/roles were removed and both engines stopped. Twenty history regressions
+also consume 6,468 facts from 23 existing pure association journeys. The twelve
+older cross-language packet contracts, maintained build and repository formatting
+passed.
+
+Unknown control metrics remain NULL. Reviewed schema-4 family/producer/sequence/
+time loss and unknown UTC remain separate from measured amounts. The native
+reducer fixture's 2,230,272-byte internal reservation is accounting for its
+bounded value work; it does not measure buffering SQL, the Python heap or a game
+server's performance. Actor outputs retain latest absolute cumulative effort,
+whose latest context cannot attribute its whole history to one configuration,
+class, faction or group. Copyover and future-pulse fixtures retain their prior
+limits and establish no actual personal-server journey.
+
+The next integration connects this reducer to an immutable retained source/cursor
+digest and the bounded atomic generation transaction, adds dated identity and
+independent incident snapshots, and publishes the required battle exposure/
+contribution projections. The reducer currently writes no SQL and the catalog
+remains 1/2/3. Remaining native context/control/prevention/faction and typed
+death/escape/objective evidence, all other identity/zone/progression/suite/#487
+requirements, and the one actual personal-local gameplay/persistence/performance
+gate remain open under all seven accepted completion items. No production or
+staging access is required.
