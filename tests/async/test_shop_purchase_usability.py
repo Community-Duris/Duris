@@ -103,7 +103,7 @@ bool has_innate(P_char, int) { return false; }
 int number(int, int) { return 0; }
 float get_epic_bonus(P_char, int) { return 0; }
 int writeShopKeeper(P_char, int) { return 0; }
-void ADD_MONEY(P_char ch, int amount) { if (IS_PC(ch)) ++refunds; else GET_COPPER(ch) += amount; }
+void ADD_MONEY(P_char ch, int amount, const char *) { if (IS_PC(ch)) ++refunds; else GET_COPPER(ch) += amount; }
 int SUB_MONEY(P_char ch, int amount, int) { GET_COPPER(ch) -= amount; return 0; }
 bool transact(P_char, P_obj, P_char, int) { ++submissions; return true; }
 P_obj accept_gem_for_debt(P_char, P_char, int) { return nullptr; }
