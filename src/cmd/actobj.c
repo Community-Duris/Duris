@@ -6713,7 +6713,7 @@ static void apply_eaten_item(P_char ch, P_obj temp, bool updateArtiList)
 				  (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
 			advance_level(ch);
 			extract_obj(temp);
-			persistence_schedule_character_save(ch, RENT_CRASH, 2, "level-mushroom");
+			persistence_schedule_character_save(ch, 1, 2, "level-mushroom");
 			return;
 		}
 	}

@@ -14,6 +14,7 @@ def main() -> None:
     context = text[text.index("struct food_consumption_context\n"):
                    text.index("static bool publish_food_consumption(")]
     functions = "\n".join(extract_function("actobj.c", signature) for signature in (
+        "static void apply_eaten_item(",
         "static bool publish_food_consumption(", "static bool submit_food_consumption(",
         "void do_eat(",
     ))
@@ -24,12 +25,24 @@ def main() -> None:
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <strings.h>
+#include <vector>
 
 constexpr int MAX_STRING_LENGTH = 1024, ITEM_FOOD = 19, AVATAR = 60;
-constexpr int RACE_ILLITHID = 1, RACE_LICH = 2, TAG_EATEN = 3, TO_CHAR = 4;
+constexpr int RACE_ILLITHID = 1, RACE_LICH = 2, TAG_EATEN = 3, TO_CHAR = 4, TO_ROOM = 5;
 constexpr int TRUE = 1, FALSE = 0;
+constexpr int NOWHERE = -1, REAL = 1, AFFTYPE_NOSHOW = 1;
+constexpr int APPLY_HIT_REG = 1, APPLY_MOVE_REG = 2, APPLY_STR = 3, APPLY_CON = 4;
+constexpr int APPLY_AGI = 5, APPLY_DEX = 6, APPLY_INT = 7, APPLY_WIS = 8;
+constexpr int APPLY_DAMROLL = 9, APPLY_HITROLL = 10;
 constexpr unsigned PLAYER_COMPONENT_STATUS = 1, PLAYER_COMPONENT_INVENTORY = 2;
-struct character { int pid = 17, level = 50, race = 0; bool npc = false, trusted = false; };
+struct character {
+    int pid = 17, level = 50, race = 0, in_room = 0;
+    bool npc = false, trusted = false; void *carrying = nullptr;
+    struct { int level = 50; } player;
+};
+struct affected_type { int type, flags, duration, location, modifier; };
+struct { int number = 22800; } world[1];
 using P_char = character *;
 struct object {
     uint64_t obj_uid = 42; int vnum = 15, type = ITEM_FOOD;
@@ -40,6 +53,7 @@ using P_obj = object *;
 #define GET_PID(ch) ((ch)->pid)
 #define GET_LEVEL(ch) ((ch)->level)
 #define GET_RACE(ch) ((ch)->race)
+#define GET_NAME(ch) "Fixture"
 #define IS_NPC(ch) ((ch)->npc)
 #define IS_TRUSTED(ch) ((ch)->trusted)
 #define IS_ARTIFACT(obj) false
@@ -59,6 +73,8 @@ using publication_fn = bool (*)(const critical_operation_id &, P_char, bool,
 P_obj live = nullptr;
 bool ownership_found = true, accept = true, durable = true, sated = false;
 int submitted = 0, applied = 0, rejected = 0, dirty = 0;
+int affects = 0, level_saves = 0;
+std::vector<int> mushroom_order;
 bool artifact_updated = false;
 item_ownership_runtime_entry ownership = {{item_owner_type::player, 17, 0}, item_custody_state::active};
 std::array<uint8_t, 32> captured = {};
@@ -70,6 +86,20 @@ P_obj get_obj_in_list_vis(P_char, char *, void *) { return live; }
 void send_to_char(const char *, P_char) {}
 template<class... Args> void send_to_char_f(Args...) {}
 template<class... Args> void act(Args...) {}
+template<class... Args> void statuslog(Args...) {}
+template<class T> T MAX(T a, T b) { return a > b ? a : b; }
+int hit_regen(P_char, int) { return 0; }
+void affect_to_char(P_char, affected_type *) { ++affects; }
+void advance_level(P_char actor) { ++actor->level; mushroom_order.push_back(1); }
+void extract_obj(P_obj food) {
+    assert(food == live); ++applied; live = nullptr; mushroom_order.push_back(2);
+}
+void persistence_schedule_character_save(P_char, int type, int delay, const char *) {
+    assert(!live && type == 1 && delay == 2); ++level_saves; mushroom_order.push_back(3);
+}
+void arti_clear_sql(P_char, const char *) { artifact_updated = true; }
+void char_light(P_char) {}
+void room_light(int, int) {}
 bool affected_by_spell(P_char, int) { return sated; }
 bool item_command_uses_durable_ownership(P_obj) { return durable; }
 bool item_owner_identity_equal(const item_owner_identity &a, const item_owner_identity &b) {
@@ -79,9 +109,6 @@ bool item_ownership_runtime_lookup(uint64_t uid, item_ownership_runtime_entry *o
     assert(uid == 42); *out = ownership; return ownership_found;
 }
 P_obj find_live_item_uid(uint64_t uid) { return live && live->obj_uid == uid ? live : nullptr; }
-void apply_eaten_item(P_char actor, P_obj food, bool update) {
-    assert(food == live && food->carrier == actor); ++applied; artifact_updated = update; live = nullptr;
-}
 void mark_player_dirty_components(int pid, unsigned mask) {
     assert(pid == 17 && mask == (PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_INVENTORY)); ++dirty;
 }
@@ -100,8 +127,6 @@ bool item_movement_transaction_submit(P_char actor, P_obj food, P_obj target,
     return accept;
 }
 '''
-    # The command only reads this live list in the eligibility check.
-    program = program.replace("bool npc = false, trusted = false;", "bool npc = false, trusted = false; void *carrying = nullptr;")
     program += context + functions + r'''
 int main() {
     character actor, other;
@@ -112,13 +137,14 @@ int main() {
         actor.npc = false; ownership_found = accept = durable = true; sated = false;
         ownership = {{item_owner_type::player, 17, 0}, item_custody_state::active};
         submitted = applied = rejected = dirty = 0; publication = nullptr; food.carrier = &actor;
+        affects = level_saves = 0; artifact_updated = false; mushroom_order.clear();
     };
     reset(); do_eat(&actor, argument, 0);
-    assert(submitted == 1 && applied == 0 && dirty == 0 && live == &food);
+    assert(submitted == 1 && applied == 0 && dirty == 0 && affects == 0 && live == &food);
     assert(publication({}, &actor, false, {}, 0, captured.data(), captured_size));
-    assert(applied == 0 && live == &food && dirty == 0);
+    assert(applied == 0 && live == &food && dirty == 0 && affects == 0);
     assert(publication({}, &actor, true, {}, 0, captured.data(), captured_size));
-    assert(applied == 1 && !live && dirty == 1);
+    assert(applied == 1 && !live && dirty == 1 && affects == 2);
     assert(publication({}, &actor, true, {}, 0, captured.data(), captured_size));
     assert(applied == 1 && dirty == 1);
     reset(); accept = false; do_eat(&actor, argument, 0);
@@ -148,6 +174,15 @@ int main() {
     reset(); assert(submit_food_consumption(&actor, &food, true));
     assert(publication({}, &actor, true, {}, 0, captured.data(), captured_size));
     assert(applied == 1 && artifact_updated);
+    reset(); actor.level = 45; food.value[5] = 1337; do_eat(&actor, argument, 0);
+    assert(submitted == 1 && applied == 0 && actor.level == 45 && level_saves == 0);
+    assert(publication({}, &actor, true, {}, 0, captured.data(), captured_size));
+    assert(actor.level == 46 && applied == 1 && level_saves == 1);
+    assert((mushroom_order == std::vector<int>{1, 2, 3}));
+    assert(publication({}, &actor, true, {}, 0, captured.data(), captured_size));
+    assert(actor.level == 46 && applied == 1 && level_saves == 1);
+    reset(); actor.level = 45; food.value[5] = 1337; accept = false; do_eat(&actor, argument, 0);
+    assert(actor.level == 45 && applied == 0 && level_saves == 0);
     std::puts("FOOD-NATIVE: admission, refusal, stale publication, committed effect and duplicate boundaries passed");
 }
 '''
