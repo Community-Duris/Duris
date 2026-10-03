@@ -1103,7 +1103,7 @@ int run_the_game(int port, int sslport)
 	locker_identify_shutdown();
 	if (critical_coordinator_stopped)
 		critical_outbox_shutdown();
-	if (!_pwipe)
+	if (critical_coordinator_stopped && !_pwipe)
 	{
 		locker_async_shutdown();
 		player_save_pipeline_shutdown();

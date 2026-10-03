@@ -8,6 +8,7 @@ provides the real socket client and server lifecycle, not mocked nanny handlers.
 
 from pathlib import Path
 import subprocess
+import re
 import tempfile
 import time
 
@@ -391,6 +392,30 @@ SCENARIOS = (
 )
 
 
+def creation_failure_report(server, error):
+    """Capture bounded synthetic evidence before IsolatedServer removes it."""
+    secrets = {OLD_PASSWORD, EMAIL}
+    secrets.update(value for key, value in server.environment.items()
+                   if re.search(r"PASSWORD|PASSWD|PWD|TOKEN|SECRET|KEY", key, re.I)
+                   and isinstance(value, str) and value)
+
+    def redact(text):
+        for value in sorted(secrets, key=len, reverse=True):
+            text = text.replace(value, "<redacted>")
+        return re.sub(r"\$2[aby]\$[0-9]{2}\$[A-Za-z0-9./]{53}", "<password hash>", text)
+
+    sections = [redact(str(error))[-6000:]]
+    for label, read, limit in (
+            ("isolated server output", server.server_output, 6000),
+            ("isolated runtime logs", lambda: server.runtime_logs(redact=redact), 12000)):
+        try:
+            text = redact(read())[-limit:]
+        except OSError as failure:
+            text = f"unavailable ({type(failure).__name__})"
+        sections.append(f"--- {label} ---\n{text}")
+    return "\n".join(sections)
+
+
 def run_journeys(binary):
     failures = []
     for name, scenario in SCENARIOS:
@@ -400,16 +425,19 @@ def run_journeys(binary):
         if scenario is sexless_chaos_menu:
             environment["CHAOS_MUD"] = "TRUE"
         with IsolatedServer(binary, environment) as server:
-            client = MudClient(server.plain_port)
+            client = None
             try:
+                client = MudClient(server.plain_port)
                 scenario(client, server)
                 server.shutdown()
                 print(f"PASS creation journey: {name}", flush=True)
-            except AssertionError as error:
-                failures.append(f"{name}: {error}")
-                print(f"FAIL creation journey: {name}: {error}", flush=True)
+            except (AssertionError, OSError, subprocess.TimeoutExpired) as error:
+                report = creation_failure_report(server, error)
+                failures.append(f"{name}: {report}")
+                print(f"FAIL creation journey: {name}: {report}", flush=True)
             finally:
-                client.close()
+                if client is not None:
+                    client.close()
     require(not failures, "Creation journey failures:\n" + "\n".join(failures))
 
 
