@@ -266,6 +266,6 @@ with tempfile.TemporaryDirectory(prefix="death-journal-pipeline-") as tmp:
         rel("player_save_pipeline.c"), rel("player_save_worker.c"),
         rel("player_revision_state.c"), rel("persistence_observability.c"),
         rel("player_load_pipeline.c"), rel("player_load_materialize.c"),
-        "-Wl,--gc-sections", *libraries, "-o", str(binary),
+        "-Wl,--gc-sections", *libraries, "-lcrypto", "-o", str(binary),
     ], cwd=ROOT, check=True)
     subprocess.run([str(binary), str(temporary / "journal")], check=True, timeout=45)

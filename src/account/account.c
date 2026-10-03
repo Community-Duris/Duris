@@ -3706,6 +3706,7 @@ void verify_delete_account(P_desc d, char *arg)
 		flush_pending_ship_saves();
 		if (drain_pending_ship_saves() && drain_guard.drain())
 		{
+			// Let the backend commit quest aliases and identities together.
 #ifndef __NO_MYSQL__
 			deleted = sql_delete_account(account_name.c_str());
 #else

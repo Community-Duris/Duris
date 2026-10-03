@@ -194,6 +194,10 @@ struct terminal_fence { bool death_pinned = false; };
 terminal_fence terminal;
 bool has_terminal = false;
 terminal_fence *find_terminal_fence_locked(int) { return has_terminal ? &terminal : nullptr; }
+struct literal_inventory_checkpoint { bool held = false; };
+literal_inventory_checkpoint literal;
+bool has_literal = false;
+literal_inventory_checkpoint *find_literal_inventory_locked(int) { return has_literal ? &literal : nullptr; }
 bool find_target_save_login_fence_locked(int) { return target_fence; }
 bool any_snapshot_is_retained_locked(int) { return retained; }
 bool player_save_worker_pid_pending(int) { ++metadata_calls; return true; }
@@ -218,6 +222,15 @@ int main() {
     metadata = player_save_pipeline_diagnostic_copy(9001);
     assert(metadata.available && !metadata.pid_admission_open && metadata.retained_save);
     has_terminal = false;
+    has_literal = true;
+    metadata = player_save_pipeline_diagnostic_copy(9001);
+    assert(metadata.available && metadata.pid_admission_open && metadata.retained_save);
+    literal.held = true;
+    metadata = player_save_pipeline_diagnostic_copy(9001);
+    assert(metadata.available && !metadata.pid_admission_open && metadata.retained_save);
+    has_literal = false;
+    metadata = player_save_pipeline_diagnostic_copy(9001);
+    assert(metadata.available && metadata.pid_admission_open && !metadata.retained_save);
     {
         std::lock_guard<std::mutex> held(pipeline_mutex);
         std::thread reader([] { assert(!player_save_pipeline_diagnostic_copy(9001).available); });

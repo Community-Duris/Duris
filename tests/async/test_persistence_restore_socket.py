@@ -114,6 +114,8 @@ class RestoreSocketBounds(unittest.TestCase):
             self.assertIn("--initialize-insecure", args)
             self.assertIn("--basedir=/opt/disposable-mysql", args)
             self.assertIn("--datadir=" + str(candidate / "mysql"), args)
+            self.assertIn("--innodb-use-native-aio=OFF", args)
+            self.assertIn("--mysqlx=OFF", args)
 
     def test_last_supported_byte_reaches_initialization(self):
         class InitializationReached(Exception):
@@ -127,6 +129,7 @@ class RestoreSocketBounds(unittest.TestCase):
                         self.fail("mock initialization should stop the probe")
             run.assert_called_once()
             self.assertEqual(run.call_args.args[0][0], "mariadb-install-db")
+            self.assertIn("--innodb-use-native-aio=OFF", run.call_args.args[0])
 
 
 if __name__ == "__main__":

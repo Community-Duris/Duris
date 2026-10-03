@@ -4,25 +4,18 @@ from _paths import rel
 import pathlib
 import subprocess
 import tempfile
+from native_build_artifacts import build_native
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
-with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-") as temporary:
+(ROOT / "bin/tests").mkdir(parents=True, exist_ok=True)
+with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-", dir=ROOT / "bin/tests") as temporary:
     temporary_path = pathlib.Path(temporary)
     binary = temporary_path / "flatfile_item_repository_test"
-    compile_result = subprocess.run(
+    binary = build_native(
+        binary,
         [
-            "g++",
-            "-std=c++20",
-            "-Wall",
-            "-Wextra",
-            "-Wpedantic",
-            "-Werror",
-            "-D__NO_MYSQL__",
-            "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
-            "-Isrc",
-            "-Isrc/no_mysql",
             "tests/async/flatfile_item_repository_harness.cpp",
             rel("flatfile_item_repository.c"),
             rel("flatfile_accounting_store.c"),
@@ -60,7 +53,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-") as t
             rel("collector_accounting.c"),
             rel("flatfile_store.c"),
             rel("player_snapshot_codec.c"),
-            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+            rel("item_transfer_command.c"),
+            rel("craft_pouch_mutation.c"),
+            rel("chaos_pouch_ledger.c"),
             rel("corpse_lifecycle_command.c"),
             rel("shop_trade_command.c"),
             rel("critical_command.c"),
@@ -71,18 +66,12 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-") as t
             rel("boon_reward_command.c"),
             rel("boon_shop_command.c"),
             rel("persistence_mode.c"),
-            "-lcrypto",
-            "-pthread",
-            "-o",
-            str(binary),
         ],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        ["-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+         "-D__NO_MYSQL__", "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST", "-Isrc", "-Isrc/no_mysql"],
+        ["-lcrypto", "-pthread"], name="flatfile-item-repository",
     )
-    if compile_result.returncode:
-        raise SystemExit(compile_result.stdout)
+    print("ITEM-NATIVE compiled", flush=True)
 
     state_root = temporary_path / "state"
     run_result = subprocess.run(

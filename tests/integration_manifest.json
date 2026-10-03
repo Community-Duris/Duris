@@ -1,0 +1,1958 @@
+{
+  "version": 1,
+  "engines": {
+    "mysql": "mysql:8.0.46@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+    "mariadb": "mariadb:10.11.19@sha256:7f22313fc130a377a44999965bcb0a08dd5b21e8502824c1b864f792f9bc66ab"
+  },
+  "rows": [
+    {
+      "id": "economic_accounting_schema_mysql",
+      "path": "tests/async/test_economic_accounting_schema_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "AccountingSchemaTest.test_disposable_guard_rejects_socket_before_client_creation",
+        "AccountingSchemaTest.test_new_schema_does_not_activate_or_seed_values",
+        "AccountingSchemaTest.test_complete_transaction_and_rollback",
+        "AccountingSchemaTest.test_source_uniqueness_and_matching_successful_operation",
+        "AccountingSchemaTest.test_rejected_operation_has_no_realized_plan_or_counts",
+        "AccountingSchemaTest.test_operation_caps_and_unknown_versions",
+        "AccountingSchemaTest.test_retired_native_identity_gets_new_lifetime",
+        "AccountingSchemaTest.test_posting_keys_bounds_and_missing_accounts",
+        "AccountingSchemaTest.test_item_reference_matches_original_uid_and_revision",
+        "AccountingSchemaTest.test_metadata_damage_is_detected"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_accounting_schema_mysql.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "economic_baseline_schema_mysql",
+      "path": "tests/async/test_economic_baseline_schema_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "BaselineSchemaTest.test_empty_initial_state_and_no_activation",
+        "BaselineSchemaTest.test_atomic_batch_and_rollback",
+        "BaselineSchemaTest.test_one_control_per_epoch_and_retained_parents",
+        "BaselineSchemaTest.test_control_revision_shape",
+        "BaselineSchemaTest.test_batch_requires_common_receipt_and_unique_revision",
+        "BaselineSchemaTest.test_complete_witness_bounds_and_version",
+        "BaselineSchemaTest.test_cross_batch_lifetime_duplicate_and_separate_item_namespace",
+        "BaselineSchemaTest.test_reservation_must_belong_to_batch_epoch",
+        "BaselineSchemaTest.test_concurrent_control_initialization_is_serialized",
+        "BaselineSchemaTest.test_exact_metadata_detects_type_index_and_check_damage"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_baseline_schema_mysql.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "economic_accounting_item_reference_mysql",
+      "path": "tests/async/test_economic_accounting_item_reference_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "ItemReferenceMysqlTest.test_real_statement_errors_and_reference_integrity"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_accounting_item_reference_mysql.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "item_provenance_mysql",
+      "path": "tests/async/test_item_provenance_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "ItemProvenanceMysqlTest.test_accounted_item_transaction_and_replay"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_item_provenance_mysql.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "player_save_item_reconcile_mysql",
+      "path": "tests/async/test_player_save_item_reconcile_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_player_save_item_reconcile_mysql.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "player_spell_effect_receipt_mysql",
+      "path": "tests/async/test_player_spell_effect_receipt_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_player_spell_effect_receipt_mysql.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "player_death_conflict_repository",
+      "path": "tests/async/test_player_death_conflict_repository.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "DeathConflictRepository.test_flatfile_is_explicitly_unsupported",
+        "DeathConflictRepository.test_mysql_compile_and_optional_disposable_runtime"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_player_death_conflict_repository.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "player_death_recovery_mysql",
+      "path": "tests/async/test_player_death_recovery_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "DeathRecoverySQL.test_real_stack_compile_and_optional_runtime"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_player_death_recovery_mysql.py"
+      ],
+      "required_markers": [
+        "PASS: LOAD-QUERY 32 generated",
+        "two-connection load/retention orderings"
+      ],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "quest_recovery_read_budget_mysql",
+      "path": "tests/async/test_quest_recovery_read_budget_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_quest_recovery_read_budget_mysql.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "player_death_recovery_delete_gate_mysql",
+      "path": "tests/async/test_player_death_recovery_delete_gate_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "DeleteGateSQL.test_production_guard_compiles_and_optional_real_sql"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_player_death_recovery_delete_gate_mysql.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "death_delete_gate_test_",
+      "migrated": false
+    },
+    {
+      "id": "player_death_recovery_delete_serialization_mysql",
+      "path": "tests/async/test_player_death_recovery_delete_serialization_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "DeleteSerializationSQL.test_actual_delete_lock_order"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_player_death_recovery_delete_serialization_mysql.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "death_delete_gate_test_",
+      "migrated": false
+    },
+    {
+      "id": "sql_pool_discard_mysql",
+      "path": "tests/async/test_sql_pool_discard_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "PoolDiscardSQL.test_actual_pool_with_real_sessions"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_sql_pool_discard_mysql.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "death_read_pool_test_",
+      "migrated": false
+    },
+    {
+      "id": "playtime_mysql_repository",
+      "path": "tests/async/test_playtime_mysql_repository.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_playtime_mysql_repository.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "playtime_test_",
+      "migrated": true
+    },
+    {
+      "id": "telemetry_schema_mysql",
+      "path": "tests/async/test_telemetry_schema_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "TelemetrySchemaMysqlTest.test_apply_replay_and_verified_shape",
+        "TelemetrySchemaMysqlTest.test_global_replay_and_session_identity_unique",
+        "TelemetrySchemaMysqlTest.test_unsigned_endpoints_signed_utc_and_nonunique_checkpoint_revision",
+        "TelemetrySchemaMysqlTest.test_verifier_rejects_unsigned_type_and_unique_index_damage"
+      ],
+      "arguments": [],
+      "environment": {
+        "TELEMETRY_SCHEMA_TEST": "1",
+        "schema_suffix": "_test"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_telemetry_schema_mysql.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "duris_telemetry_",
+      "migrated": false
+    },
+    {
+      "id": "telemetry_connection",
+      "path": "tests/async/test_telemetry_connection.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {
+        "TELEMETRY_REPOSITORY_DISPOSABLE": "1",
+        "schema_suffix": "_test"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_telemetry_connection.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "duris_telemetry_",
+      "migrated": false
+    },
+    {
+      "id": "locker_receipt_recovery",
+      "path": "tests/async/test_locker_receipt_recovery.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_locker_receipt_recovery.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "epic_stone_transaction",
+      "path": "tests/async/test_epic_stone_transaction.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "EpicStoneTransactionTests.test_codec_legacy_maximum_group_and_invalid_inputs",
+        "EpicStoneTransactionTests.test_mysql_atomic_awards_replay_and_failure_rollback"
+      ],
+      "arguments": [],
+      "environment": {
+        "EPIC_STONE_MYSQL_TEST": "1",
+        "EPIC_TEST_DB_NAME": "epic_stone_test_{token}"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_epic_stone_transaction.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "economic_sql_lifecycle_owner_contract",
+      "path": "tests/async/test_economic_sql_lifecycle_owner_contract.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {
+        "ECONOMIC_SQL_LIFECYCLE_DISPOSABLE_SERVER": "1"
+      },
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_economic_sql_lifecycle_owner_contract.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "staging_migration_fork_mysql",
+      "path": "tests/async/test_staging_migration_fork_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--disposable-loopback",
+        "{engine_label}",
+        "--report",
+        "{evidence}/migration-fork.json"
+      ],
+      "environment": {
+        "STAGING_FORK_DISPOSABLE_SERVER": "1"
+      },
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_staging_migration_fork_mysql.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "mysql_playtime_journey",
+      "path": "tests/async/test_mysql_playtime_journey.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--server",
+        "{sql_binary}"
+      ],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_mysql_playtime_journey.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "mysql_combat_journey",
+      "path": "tests/async/test_mysql_combat_journey.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--server",
+        "{sql_binary}",
+        "--require-unassisted-recovery",
+        "--evidence-dir",
+        "{evidence}/combat"
+      ],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_mysql_combat_journey.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "death_resurrection_mysql_journey",
+      "path": "tests/async/test_death_resurrection_mysql_journey.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--legacy-persistence"
+      ],
+      "environment": {
+        "DURIS_MATRIX_SQL_BINARY": "{sql_binary}"
+      },
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_death_resurrection_mysql_journey.py"
+      ],
+      "required_markers": [
+        "PASS inactive-accounting death/resurrection persistence",
+        "RELEASE ACCOUNTING COVERAGE BLOCKED:"
+      ]
+    },
+    {
+      "id": "pa_copyover_sql",
+      "path": "tests/async/test_pa_copyover_sql.py",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--descriptor",
+        "{descriptor}",
+        "--source-sha",
+        "{head}"
+      ],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_pa_copyover_sql.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "pa_copyover_account_authority",
+      "path": "tests/async/test_pa_copyover_account_authority.py",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--descriptor",
+        "{descriptor}",
+        "--source-sha",
+        "{head}"
+      ],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_pa_copyover_account_authority.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "pa_item_creation_sql",
+      "path": "tests/async/test_pa_item_creation_sql.py",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "{sql_binary}",
+        "--base-build",
+        "{descriptor}",
+        "--expected-head",
+        "{head}",
+        "--expected-binary-sha256",
+        "{binary_sha256}",
+        "--evidence",
+        "{evidence}/wind-blade.json"
+      ],
+      "environment": {
+        "DURIS_PARALLEL_DB_TEST_SLOT": "1"
+      },
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_pa_item_creation_sql.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "pa_coin_sql",
+      "path": "tests/async/test_pa_coin_sql.py",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "PaCoinSqlTest.test_legacy_coin_command_storage_matrix"
+      ],
+      "arguments": [],
+      "environment": {
+        "PA_WEB_RECOVERY_DISPOSABLE": "1"
+      },
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_pa_coin_sql.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "pa_item_flags_sql",
+      "path": "tests/async/test_pa_item_flags_sql.py",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "ItemFlagSqlJourney.test_same_uid_mutation_visibility_custody_and_reconnect"
+      ],
+      "arguments": [],
+      "environment": {
+        "PA_WEB_RECOVERY_DISPOSABLE": "1"
+      },
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_pa_item_flags_sql.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "pa_necromancy_sql",
+      "path": "tests/async/test_pa_necromancy_sql.py",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "NecromancyCorpseSqlJourneys.test_animate_and_resurrection_visible_contents_journeys",
+        "NecromancyCorpseSqlJourneys.test_resurrection_spell_eligibility_and_binding_guards_remain",
+        "NecromancyCorpseSqlJourneys.test_durable_mysql_corpse_contents_and_custody_journeys"
+      ],
+      "arguments": [],
+      "environment": {
+        "PA_WEB_RECOVERY_DISPOSABLE": "1"
+      },
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_pa_necromancy_sql.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "pa_web_recovery_sql",
+      "path": "tests/async/test_pa_web_recovery_sql.py",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "RetainedRecoveryWebDeletionSQL.test_live_websocket_and_disposable_sql_journey"
+      ],
+      "arguments": [],
+      "environment": {
+        "PA_WEB_RECOVERY_DISPOSABLE": "1"
+      },
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_pa_web_recovery_sql.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "pa_atm_publication_sql",
+      "path": "tests/async/test_pa_atm_publication_sql.py",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {
+        "PA_WEB_RECOVERY_DISPOSABLE": "1"
+      },
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_pa_atm_publication_sql.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "pa_runtime_sql",
+      "path": "tests/async/run_pa_runtime_sql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--binary",
+        "{sql_binary}",
+        "--base-build",
+        "{descriptor}",
+        "--expected-head",
+        "{head}",
+        "--expected-binary-sha256",
+        "{binary_sha256}"
+      ],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_pa_runtime_sql.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "issue331_player_journey_mysql",
+      "path": "tests/async/run_issue331_player_journey_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {
+        "ISSUE331_PLAN_DIR": "{evidence}/issue331",
+        "ISSUE331_ARTIFACT": "{sql_binary}"
+      },
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_issue331_player_journey.py"
+      ],
+      "required_markers": [
+        "ISSUE331_PLAYER_JOURNEY_OK"
+      ]
+    },
+    {
+      "id": "issue331_staff_recovery_mysql",
+      "path": "tests/async/run_issue331_staff_recovery_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {
+        "ISSUE331_PLAN_DIR": "{evidence}/issue331",
+        "ISSUE331_ARTIFACT": "{sql_binary}"
+      },
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_issue331_staff_recovery_journey.py"
+      ],
+      "required_markers": [
+        "ISSUE331_STAFF_RECOVERY_JOURNEY_OK"
+      ]
+    },
+    {
+      "id": "restitution-target-non-root",
+      "path": "tests/async/test_player_death_restitution_target.py",
+      "provider": "non-root",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "TargetTests.test_user_systemd_boundary_binds_owner_manager_unit_and_cgroup",
+        "TargetTests.test_user_systemd_boundary_refuses_owner_state_and_visibility_bypasses"
+      ],
+      "arguments": [
+        "TargetTests.test_user_systemd_boundary_binds_owner_manager_unit_and_cgroup",
+        "TargetTests.test_user_systemd_boundary_refuses_owner_state_and_visibility_bypasses"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_player_death_restitution_target.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "restitution-target-native-backup",
+      "path": "tests/async/test_player_death_restitution_target.py",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "TargetTests.test_real_maintenance_and_native_backup_round_trip"
+      ],
+      "arguments": [
+        "TargetTests.test_real_maintenance_and_native_backup_round_trip"
+      ],
+      "environment": {
+        "DURIS_TARGET_NATIVE_DB_IMAGE": "{image}"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_player_death_restitution_target.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "backup_pfiles",
+      "path": "tests/async/test_backup_pfiles.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "BackupWrapperTests.test_managed_database_dump_success_and_failure",
+        "BackupWrapperTests.test_cycle_refuses_boot_on_backup_failure"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_backup_pfiles.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "craft_progression_restore",
+      "path": "tests/async/test_craft_progression_restore.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_craft_progression_restore.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "flatfile_backup_manifest",
+      "path": "tests/async/test_flatfile_backup_manifest.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "FlatfileManifestTests.test_manifest_retains_accounting_indexes_and_segments",
+        "FlatfileManifestTests.test_manifest_covers_authority_and_pending_transaction",
+        "FlatfileManifestTests.test_authority_writer_overlap_does_not_publish",
+        "FlatfileManifestTests.test_writer_change_during_copy_refuses_mixed_generation"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_flatfile_backup_manifest.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "persistence_backup",
+      "path": "tests/async/test_persistence_backup.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "PolicyTests.test_approved_defaults",
+        "PolicyTests.test_recovery_policy_is_opt_in_and_retry_window_is_bounded",
+        "PolicyTests.test_invalid_policy_values",
+        "PolicyTests.test_overlap_in_both_directions_and_replica",
+        "PolicyTests.test_unsafe_paths_permissions_links_and_owner",
+        "PolicyTests.test_retention_bucket_edges_and_always_two",
+        "PolicyTests.test_each_retention_tier_includes_previous_bucket_and_excludes_boundary",
+        "GenerationTests.test_explicit_deployed_schema_survives_checkout_schema_change",
+        "GenerationTests.test_schema_mismatch_before_or_after_capture_preserves_generations",
+        "GenerationTests.test_fallback_mode_captures_database_authority",
+        "GenerationTests.test_rpo_measures_from_capture_start",
+        "GenerationTests.test_required_drill_receipt_is_current_and_qualified",
+        "GenerationTests.test_full_manifest_and_checksum_tamper_both_modes",
+        "GenerationTests.test_failures_preserve_live_and_last_two_generations",
+        "GenerationTests.test_fsync_verify_and_publication_failures_preserve_previous",
+        "GenerationTests.test_overlap_fails_promptly",
+        "GenerationTests.test_hard_capacity_does_not_publish_or_remove_prior",
+        "GenerationTests.test_generation_and_free_space_limits",
+        "GenerationTests.test_prune_interruption_preserves_newest_and_trash_for_inspection",
+        "GenerationTests.test_stale_or_incomplete_status",
+        "GenerationTests.test_actual_file_fsync_failure_preserves_previous_generations",
+        "GenerationTests.test_finalize_after_publication_failure_is_idempotent",
+        "GenerationTests.test_next_scheduled_call_resumes_only_verified_publications_then_captures_again",
+        "GenerationTests.test_scheduled_replication_pending_retries_then_allows_fresh_capture",
+        "GenerationTests.test_blocked_unfinalized_state_is_backed_off_without_trusting_later_corruption",
+        "GenerationTests.test_corrupt_published_generation_is_never_auto_resumed",
+        "GenerationTests.test_scheduled_rotation_remnant_is_actionable_and_unchanged_retry_is_bounded",
+        "GenerationTests.test_auto_resume_preserves_capacity_and_capture_age_gates",
+        "GenerationTests.test_malformed_completion_replica_is_a_protected_refusal",
+        "GenerationTests.test_scheduled_resume_keeps_job_lock_exclusive",
+        "GenerationTests.test_manual_finalize_refuses_staging_remnants_without_claiming_success",
+        "CapacityAndInputTests.test_restore_capacity_requires_dedicated_mount",
+        "CapacityAndInputTests.test_environment_is_literal_and_never_executes_shell",
+        "CapacityAndInputTests.test_stalled_stream_is_killed_and_reaped",
+        "CapacityAndInputTests.test_journals_are_complete_and_churn_blocks_publication",
+        "RestoreTests.test_tombstone_preflight_fails_closed",
+        "RestoreTests.test_restore_rejects_tombstones_before_candidate_or_service",
+        "RestoreTests.test_failed_service_never_qualifies_and_preserves_generation",
+        "RestoreTests.test_erasure_evidence_changed_during_restore_never_qualifies"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_persistence_backup.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "player_quarantine_restore",
+      "path": "tests/async/test_player_quarantine_restore.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_player_quarantine_restore.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "player_save_journal_quarantine",
+      "path": "tests/async/test_player_save_journal_quarantine.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_player_save_journal_quarantine.py"
+      ],
+      "required_markers": [
+        "CUSTODY-ADMISSION synthetic_capture_sha256=",
+        "[PASS] copied capture:"
+      ]
+    },
+    {
+      "id": "persistence_backup_integration",
+      "path": "tests/async/test_persistence_backup_integration.py",
+      "provider": "privileged-recovery",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "PersistenceRecoveryIntegration.test_isolated_service_boot_from_private_foreign_owned_checkout",
+        "PersistenceRecoveryIntegration.test_flatfile_real_pending_replay_account_player_domain_load_and_boot",
+        "PersistenceRecoveryIntegration.test_spell_receipt_state_qualification",
+        "PersistenceRecoveryIntegration.test_locker_receipt_qualification_rejects_corruption_and_unexpected_entries",
+        "PersistenceRecoveryIntegration.test_interrupted_bank_domain_and_legacy_transactions_restore_exactly_once",
+        "PersistenceRecoveryIntegration.test_first_player_snapshot_recovers_from_wal_without_persisted_baseline",
+        "PersistenceRecoveryIntegration.test_corrupt_wal_is_refused_and_unreplayable_player_is_quarantined",
+        "PersistenceRecoveryIntegration.test_valid_manifest_with_corrupt_lazy_catalog_never_qualifies",
+        "PersistenceRecoveryIntegration.test_mariadb_full_dump_schema_history_values_and_isolated_service_boot",
+        "PersistenceRecoveryIntegration.test_mysql_full_dump_schema_history_values_and_isolated_service_boot"
+      ],
+      "arguments": [],
+      "environment": {
+        "DURIS_RUN_BACKUP_INTEGRATION": "1",
+        "DURIS_RUN_MYSQL_BACKUP_INTEGRATION": "1"
+      },
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_persistence_backup_integration.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "pet_restart_journey",
+      "path": "tests/async/test_pet_restart_journey.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "{flat_binary}"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_pet_restart_journey.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "pet_restart_journey-hidden",
+      "path": "tests/async/test_pet_restart_journey.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "{flat_binary}",
+        "--hidden"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_pet_restart_journey.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "mob_gold_dial_runtime",
+      "path": "tests/async/test_mob_gold_dial_runtime.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--server",
+        "{flat_binary}"
+      ],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "test_mob_gold_dial_runtime.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "epic_save_guards",
+      "path": "tests/async/test_epic_save_guards.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "EpicSaveGuards.test_refused_refund_preserves_skills_and_never_attempts_save",
+        "EpicSaveGuards.test_committed_refund_checks_save_result_and_reports_failed_checkpoint"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_epic_save_guards.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "flatfile_accounting_bank",
+      "path": "tests/async/test_flatfile_accounting_bank.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_flatfile_accounting_bank.py"
+      ],
+      "required_markers": [
+        "PASS: CURRENCY-REPLAY generated"
+      ]
+    },
+    {
+      "id": "account_bound_reward_schema_mysql",
+      "path": "tests/async/run_account_bound_reward_schema_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_account_bound_reward_schema_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "corpse_persistence_schema_mysql",
+      "path": "tests/async/run_corpse_persistence_schema_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_corpse_persistence_schema_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "persistence_contract_mysql",
+      "path": "tests/async/run_persistence_contract_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_persistence_contract_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "lifecycle_archive_schema_mysql",
+      "path": "tests/async/run_lifecycle_archive_schema_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_lifecycle_archive_schema_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "personal_data_export_schema_mysql",
+      "path": "tests/async/run_personal_data_export_schema_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_personal_data_export_schema_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "account_erasure_schema_mysql",
+      "path": "tests/async/run_account_erasure_schema_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_account_erasure_schema_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "immutable_migration_ledger_mysql",
+      "path": "tests/async/run_immutable_migration_ledger_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_immutable_migration_ledger_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "collector_item_owner_schema_mysql",
+      "path": "tests/async/run_collector_item_owner_schema_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_collector_item_owner_schema_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "collector_catalog_schema_mysql",
+      "path": "tests/async/run_collector_catalog_schema_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_collector_catalog_schema_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "collector_repository_schema_mysql",
+      "path": "tests/async/run_collector_repository_schema_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_collector_repository_schema_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "corpse_lifecycle_repository_schema_mysql",
+      "path": "tests/async/run_corpse_lifecycle_repository_schema_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_corpse_lifecycle_repository_schema_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "lookup_dataset_mysql",
+      "path": "tests/async/run_lookup_dataset_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_lookup_dataset_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "runtime_compatibility_mysql",
+      "path": "tests/async/run_runtime_compatibility_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_runtime_compatibility_mysql.sh"
+      ],
+      "required_markers": [
+        "legacy server-reboot and kingdom-realm convergence, runtime full-schema, season fence, and history/table/engine/collation/index/column drift rejection ("
+      ]
+    },
+    {
+      "id": "legacy_archive_columns_mysql",
+      "path": "tests/async/run_legacy_archive_columns_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_legacy_archive_columns_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "legacy_material_order_mysql",
+      "path": "tests/async/run_legacy_material_order_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_legacy_material_order_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "legacy_locker_index_mysql",
+      "path": "tests/async/run_legacy_locker_index_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_legacy_locker_index_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "legacy_affect_index_mysql",
+      "path": "tests/async/run_legacy_affect_index_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_legacy_affect_index_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "legacy_character_index_mysql",
+      "path": "tests/async/run_legacy_character_index_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_legacy_character_index_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "legacy_migration_mysql",
+      "path": "tests/async/run_legacy_migration_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_legacy_migration_mysql.sh"
+      ],
+      "required_markers": [
+        "missing immutable adoption evidence: rejected without legacy DDL or state changes",
+        "legacy migration, replay, bootstrap equivalence, and runtime compatibility: ok"
+      ]
+    },
+    {
+      "id": "telemetry_repository_sql",
+      "path": "tests/async/run_telemetry_repository_sql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_telemetry_repository_sql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "pet_repository_mysql",
+      "path": "tests/async/run_pet_repository_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_pet_repository_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "currency_transaction_schema_mysql",
+      "path": "tests/async/run_currency_transaction_schema_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_currency_transaction_schema_mysql.sh"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "item_transfer_schema_mysql",
+      "path": "tests/async/run_item_transfer_schema_mysql.sh",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [
+        "run_item_transfer_schema_mysql.sh"
+      ],
+      "required_markers": [
+        "PASS: legacy grants, transfers and replay retain custody without implicit accounting"
+      ],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "epic_zone_seed_sql",
+      "path": "tests/async/run_epic_zone_seed_mysql.py",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--image",
+        "{image}"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [],
+      "required_markers": [
+        "late insertion failure rolls back earlier payout updates PASS"
+      ]
+    },
+    {
+      "id": "character_deletion_journey",
+      "path": "tests/async/run_mysql_deletion_journey.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--server",
+        "{sql_binary}"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [],
+      "required_markers": [
+        "successful retry deleted the synthetic character exactly once; account remained usable after restart",
+        "account-quest-cleanup: persistence refusal retained fenced identities across restart; retry erased credentials and aliases before safe name reuse",
+        "SQL whole-account alias erasure, rollback, repaired retry, cache write and cold restart passed"
+      ]
+    },
+    {
+      "id": "flatfile_item_custody",
+      "path": "tests/async/test_flatfile_item_repository.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_flatfile_item_repository.py"
+      ],
+      "required_markers": [
+        "PASS: CUSTODY-HISTORY 12"
+      ]
+    },
+    {
+      "id": "behavioral_faults_offline",
+      "path": "tests/qualify_behavioral_faults.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--family",
+        "offline",
+        "--evidence-dir",
+        "{evidence}/faults"
+      ],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [],
+      "required_markers": [
+        "PASS: behavioral faults and before/after executable controls: offline"
+      ]
+    },
+    {
+      "id": "behavioral_faults_sql",
+      "path": "tests/qualify_behavioral_faults.py",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--family",
+        "sql",
+        "--evidence-dir",
+        "{evidence}/faults",
+        "--image",
+        "{image}"
+      ],
+      "environment": {},
+      "timeout_seconds": 1800,
+      "covers": [],
+      "required_markers": [
+        "PASS: behavioral faults and before/after executable controls: sql"
+      ]
+    },
+    {
+      "id": "help_import_atomic",
+      "path": "tests/async/test_help_import_atomic.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "AtomicImport.test_rollback_and_consistent_publication"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_help_import_atomic.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "persistence_doctor",
+      "path": "tests/async/test_persistence_doctor.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "DoctorTest.test_native_sql_graph_and_unchanged_authority",
+        "DoctorTest.test_recovery_requires_original_proof",
+        "DoctorTest.test_history_loss_is_explicit",
+        "DoctorTest.test_large_cycle_and_duplicate_equipment",
+        "DoctorTest.test_graph_findings_and_valid_inline_coins",
+        "DoctorTest.test_one_consistent_read_without_writes_or_payload_prose",
+        "DoctorTest.test_explicit_port_and_redacted_sql_failure",
+        "DoctorTest.test_remote_capture_verifies_tls_for_mysql_and_mariadb",
+        "DoctorTest.test_remote_capture_refuses_missing_tls_ca_or_client_support",
+        "DoctorTest.test_owner_only_files_no_overwrite_and_cli"
+      ],
+      "arguments": [],
+      "environment": {
+        "PERSISTENCE_DIAGNOSTICS_MYSQL_TEST": "1"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_persistence_doctor.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "player_literal_checkpoint_mysql",
+      "path": "tests/async/test_player_literal_checkpoint_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--qualify"
+      ],
+      "environment": {},
+      "timeout_seconds": 1200,
+      "covers": [
+        "test_player_literal_checkpoint_mysql.py"
+      ],
+      "required_markers": [
+        "PASS: actual native literal capture/pipeline/journal/worker/repository/pool; journal-only refusal;",
+        "PASS: supplied SQL fixture guard; 15 negative cases;"
+      ],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "economic_sql_bank_real_pool",
+      "path": "tests/async/run_economic_sql_bank_transaction_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--real-pool"
+      ],
+      "environment": {},
+      "timeout_seconds": 1200,
+      "covers": [
+        "run_economic_sql_bank_transaction_mysql.py"
+      ],
+      "required_markers": [
+        "SQL actual pool bank: distinct lost-COMMIT replacement session, clean reborrow and zero-lease shutdown passed"
+      ],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "economic_sql_real_pool_coin",
+      "path": "tests/async/run_economic_sql_real_pool_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--family",
+        "coin"
+      ],
+      "environment": {},
+      "timeout_seconds": 1200,
+      "covers": [
+        "run_economic_sql_real_pool_mysql.py"
+      ],
+      "required_markers": [
+        "PASS: real SQL pool coin qualification completed"
+      ],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "economic_sql_real_pool_item",
+      "path": "tests/async/run_economic_sql_real_pool_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--family",
+        "item"
+      ],
+      "environment": {},
+      "timeout_seconds": 1200,
+      "covers": [
+        "run_economic_sql_real_pool_mysql.py"
+      ],
+      "required_markers": [
+        "PASS: real SQL pool item qualification completed"
+      ],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "economic_sql_real_pool_room",
+      "path": "tests/async/run_economic_sql_real_pool_mysql.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--family",
+        "room",
+        "--server",
+        "{room_sql_binary}",
+        "--server-sha256",
+        "{room_binary_sha256}"
+      ],
+      "environment": {},
+      "timeout_seconds": 1200,
+      "covers": [
+        "run_economic_sql_real_pool_mysql.py",
+        "run_sql_room_item_payload_recovery_journey.py"
+      ],
+      "required_markers": [
+        "PASS: real SQL pool room qualification completed",
+        "PASS: ACK then two complete native SQL cold boots; exact payload, UIDs, revisions and topology;"
+      ],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
+    },
+    {
+      "id": "death_recovery_visibility_sql",
+      "path": "tests/async/run_player_death_disposition_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_death_recovery_visibility_sql.py"
+      ],
+      "required_markers": [
+        "[PASS] protected SQL status, durable-only child, restart, pagination, pending verification, delivery loss and successful reconciliation"
+      ]
+    }
+  ]
+}

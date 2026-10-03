@@ -1272,7 +1272,8 @@ int main()
     assert(item_movement_transaction_health_copy().pending == 1);
     assert(item_movement_transaction_player_busy(&actor));
     assert(item_creation_grant_batches_pending());
-    assert(grant_messages.find("publication repair") != std::string::npos);
+    assert(grant_messages.find("Your items are safe but are still being delivered.") != std::string::npos);
+    assert(grant_messages.find("do not request them again") != std::string::npos);
     assert(grant_messages.find("Your Chaos Equipment has been prepared!!") == std::string::npos);
     grant_first.next = &grant_second;
     item_movement_transaction_player_ready(&actor);
@@ -1321,7 +1322,7 @@ int main()
            OBJ_CARRIED_BY(&recovered_grant_second, &actor));
     assert(!item_creation_grant_batches_pending() &&
            !item_movement_transaction_player_busy(&actor));
-    assert(grant_messages.find("publication repair") == std::string::npos);
+    assert(grant_messages.find("still being delivered") == std::string::npos);
     assert(grant_messages.find("Your Chaos Equipment has been prepared!!") != std::string::npos);
     recover_creation_batch = false;
     // The production extractor frees the displaced grant roots. The harness

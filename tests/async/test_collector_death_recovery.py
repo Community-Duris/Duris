@@ -32,6 +32,7 @@ harness = r'''
 constexpr int DEATH_EXTRACT_RETRY_INITIAL = 4;
 void persistence_report(persistence_severity, int, const char *, const char *, const char *, const char *, const char *, const char *, ...) {}
 void persistence_alert(int, const char *, const char *, const char *, const char *, const char *, const char *, ...) {}
+void death_recovery_report(P_char, persistence_severity, const char *, const char *, ...) {}
 bool items_busy = false, currency_busy = false, terminal_ok = true;
 int terminal_saves = 0, releases = 0, schedules = 0, item_submissions = 0;
 P_obj live_corpse = nullptr;
