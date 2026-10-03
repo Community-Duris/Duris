@@ -313,7 +313,8 @@ still name prior QA directories, so cached integrated binaries do not qualify
 new descriptor headers. Fresh strict production SQL/flatfile/pfile builds pass
 from empty object directories. Real inactive SQL deletion journeys pass on both
 engines; the existing flatfile character deletion journey also passes. The
-separate flatfile pre-fence repair is in recovery qualification. A native fault
+flatfile pre-fence admission repair now passes the real menu journey, sanitizer
+owner tests, both strict backend builds and all ten native recovery checks. A native fault
 probe establishes an additional committed-fence acknowledgement defect; it
 remains open. Current broad and full-feature qualification remain open. The unchanged frozen full-world retry passes inspector
 compilation but times out in its 600-second server-build stage before gameplay.

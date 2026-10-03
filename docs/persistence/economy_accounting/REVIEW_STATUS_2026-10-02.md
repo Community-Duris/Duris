@@ -1514,3 +1514,65 @@ Local ignored evidence SHA-256:
 Full R1-R8 requirements and current integrated broad, full-world and captured
 generation qualification remain open. coverage_complete=False; release BLOCKED.
 No timeout, safety gate, inactive game rule or declined spell-path was changed.
+
+## Flatfile permanent-fence admission repair
+
+The real inactive account-confirmation RED established that corrupt accounting
+metadata was refused only after native account storage installed its permanent
+deletion fence. The adapter now borrows the held authority transaction lock to
+admit deletion-fence saves before either account or membership after-image is
+prepared. Active or corrupt accounting refuses without changing either native
+authority or acknowledging a revision. Ordinary metadata saves remain allowed
+under active accounting. The existing account menu restores its previous flag
+after a pre-commit refusal. No inactive spell-path or activation policy changed.
+
+The actual adapter/repositories/accounting codecs pass ASan/UBSan cases for
+active/corrupt refusal, byte-identical authority, unchanged revision, ordinary
+metadata publication, reopened refusal, exact repair, paused retry and fresh
+fence/membership load. The membership harness links the actual gate and passes.
+The fresh flatfile server passes real confirmation refusal with unchanged
+account, character snapshot and quest alias; repair allows login/save and retry.
+Character deletion refusal, deletion once, alias erasure and cold restart pass.
+
+Strict SQL, flatfile and pfile builds pass after 1,412 copied dependency targets
+were rebased to this QA and every changed source timestamp forced fresh. The
+cache comes from the independently clean-built current formatter prefix.
+Native tree: 35a497a2fa1fcd3904fe298c3c49f5de241cab02.
+All 1,220 tracked native files match the staged candidate after CRLF/LF
+normalization. SQL binary SHA-256:
+d10a9a59b0e848f819e0610c09d9ef10b35f88b3d11d3f897c5ae979ff060b5a.
+Flatfile binary SHA-256:
+edd178f330044c1abb09d44b8a06732a1bd2e671c30638f88c68d45306f55bd1.
+QA: /opt/duris-accounting-remote-470-flat-fence-review/source.
+
+All ten native recovery checks pass (433.766 seconds): both SQL engines' full
+dump/schema/value import and isolated native service boot; flatfile pending
+replay and account/player/domain loads; first snapshot WAL recovery; interrupted
+bank/legacy replay once; corrupt WAL quarantine; foreign-owned private checkout
+boot; locker/spell receipt qualification and corrupt lazy-catalog refusal.
+Normal 14-fixture validation, matrix --check, 54 writer and standalone site
+contracts, deletion source contracts, new harness whole-file formatting and the
+full formatting-tooling contract pass. The first format dispatch lacked a QA
+Git index; the next exposed only NTFS-to-Linux executable-mode drift in an
+unchanged fixture. Whole-tree formatting also exposed one mixed-line-ending
+fixture copied from NTFS. A published-base index, content-only file-mode setup
+and CRLF/LF normalization of copied native test files resolve those QA setup
+failures; no source or formatter policy was relaxed.
+
+Local ignored evidence SHA-256:
+
+- tmp/flat-account-fence-admission-red-native.local.log: b7c5a34ef30c1a3976f5e4e1a996355b0a073bdce513a3a34df96464e88a875a
+- tmp/flat-account-fence-native-red-baseline.local.log: 75763353cce85bebc36b2a6395c870b536f6e328e9bc56221ee5aca208166bbd
+- tmp/remote-470-flat-fence-native.local.log: 684445ae6a1e0233c0b56f169b9912a59a084636b57cf35ee1ff1487420ae6bd
+- tmp/flat-account-fence-membership.local.log: 2d782cd0f6db3bf0e4d507ffe6a41c7f89e96487d721b6744623ea894786b698
+- tmp/remote-470-flat-fence-fresh-build.local.log: 80c8028598f93260940c218c76fa51643dbd881b4543600143f61c3cf8a67a70
+- tmp/remote-470-fence-source-pin.local.log: c6dec2aacd7ab3931d2819dd39a13030ecc93b517f6b49c63ceda15fb892af3f
+- tmp/remote-470-fence-journey.local.log: 8c854b3ad1417d59b836a42fd81eb1ae4637112ca12792be7df502e591f325f4
+- tmp/remote-470-fence-recovery.local.log: b8a8b57d36c488e710d292aea9459b4aab6b5889ca5d4f7cc5f3a16fdb683222
+- tmp/remote-470-fence-writer-checks.local.log: 2e44b021af96ec244774687487ef0ebdf0253315099b1ebab353a873798bae8c
+- tmp/remote-470-fence-source-contracts.local.log: 649de28fc9aaa64fbc7eea93b7831b90ae6487e142bd986216a5496a63855a66
+- tmp/remote-470-fence-format-normalized.local.log: c62105f14b75daeb36b3386bf4ba88e1a769ffcc66fe75b17fef4b4d0abab7e8
+
+The separate committed-fence acknowledgement RED remains open. These focused
+results do not complete full R1-R8, captured-generation, full-world or current
+broad qualification. coverage_complete=False; release BLOCKED.

@@ -1,6 +1,7 @@
 #include "flatfile/flatfile_account_adapter.h"
 
 #include "flatfile/flatfile_account_repository.h"
+#include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_identity_repository.h"
 #include "persistence/persistence_mode.h"
@@ -238,6 +239,11 @@ bool flatfile_account_state_save(P_acct account, std::string *error)
 		return false;
 	flatfile_authority_lock authority_lock;
 	if (!authority_lock.acquire(root, error))
+		return false;
+	// A permanent deletion fence must be admitted before either after-image.
+	// Borrow the transaction lock so admission spans native fence publication.
+	if (account->acct_blocked == ACCOUNT_BLOCK_DELETION &&
+	    flatfile_economic_legacy_domain_gate(root, authority_lock, error))
 		return false;
 	flatfile_account_lock account_lock;
 	if (!account_lock.acquire(root, error))
