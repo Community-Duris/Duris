@@ -5,6 +5,7 @@
 #include "flatfile/flatfile_item_accounting_reference.h"
 #include "economy/item_transfer_accounting.h"
 #include "item/craft_pouch_mutation.h"
+#include "item/craft_recipe_continuation.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "world/vnum.obj.h"
 
@@ -191,6 +192,30 @@ static critical_command accounted(critical_command command, uint32_t pid)
 	return command;
 }
 
+static critical_command alchemy(critical_command command, craft_recipe_discipline discipline,
+				uint32_t count)
+{
+	item_transfer_payload payload = {};
+	require(item_transfer_command_decode_payload(command, &payload),
+		"alchemy payload did not decode");
+	craft_recipe_continuation terms;
+	terms.player_pid = static_cast<uint32_t>(payload.from_owner.id);
+	terms.discipline = discipline;
+	terms.recipe_vnum = static_cast<uint32_t>(payload.reason_id);
+	terms.output_uid = payload.selected_item_uid;
+	terms.output_count = count;
+	if (payload.continuation.kind == item_transfer_continuation_kind::craft_pouch_usage)
+		terms.pouch_mutation = std::move(payload.continuation.data);
+	payload.continuation.kind = item_transfer_continuation_kind::craft_recipe;
+	require(craft_recipe_continuation_encode(terms, &payload.continuation.data),
+		"alchemy terms did not freeze");
+	require(item_transfer_command_build(&command, command.operation_id, payload,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"alchemy root did not build");
+	return command;
+}
+
 static player_item_snapshot reconcile_pouch(const fs::path &root, uint64_t *revision)
 {
 	const auto owned = load(root, 99, revision);
@@ -225,6 +250,7 @@ static void pouch_seed(const fs::path &root)
 			  { 7003, 7003, 0, owner, 1, 400000, item_custody_state::active },
 			  { 7004, 7004, 0, owner, 1, 400000, item_custody_state::active },
 			  { 7005, 7005, 0, owner, 1, 9000, item_custody_state::active },
+			  { 7006, 7006, 0, owner, 1, 9000, item_custody_state::active },
 		  });
 	auto pouch = snapshot(7002, VOBJ_CHAOS_CRAFT_POUCH, 0);
 	pouch.generated_key = 93;
@@ -275,6 +301,11 @@ static critical_command pouch_command(uint8_t discriminator, uint64_t revision,
 					    critical_source_site::command,
 					    critical_deadline_class::interactive),
 		"pouch compound command did not build");
+	if (mode == chaos_pouch_usage_mode::generated)
+		base = alchemy(std::move(base),
+			       outputs.empty() ? craft_recipe_discipline::encrust_failure :
+						 craft_recipe_discipline::encrust,
+			       static_cast<uint32_t>(outputs.size()));
 	return accounted(std::move(base), 99);
 }
 
@@ -313,6 +344,17 @@ static void retained_pouch_updates_are_atomic(const fs::path &root)
 	require(revision == 5 &&
 			generated.extra_descriptions.back().description == "0:0:2;210:1:0;",
 		"generated pouch counter did not commit with craft output");
+	const auto failed =
+		pouch_command(84, 5, 7006, 4, generated, chaos_pouch_usage_mode::generated);
+	require(flatfile_item_repository_apply(root.string(), failed).outcome ==
+				critical_apply_outcome::applied &&
+			flatfile_item_repository_apply(root.string(), failed).outcome ==
+				critical_apply_outcome::already_applied,
+		"zero-output alchemy/pouch publication did not commit and replay");
+	const auto broken = reconcile_pouch(root, &revision);
+	require(revision == 6 && broken.object_uid == before.object_uid &&
+			broken.extra_descriptions.back().description == "0:0:2;210:2:0;",
+		"failed Encrust lost the retained pouch or repeated its counter");
 	for (const char *fault : { "DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT",
 				   "DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_JOURNAL",
 				   "DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION" })
@@ -350,6 +392,11 @@ static void retained_pouch_updates_are_atomic(const fs::path &root)
 
 int main(int argc, char **argv)
 {
+	if (argc == 3 && std::string(argv[1]) == "--activate-fixture")
+	{
+		activate(argv[2]);
+		return 0;
+	}
 	require(argc == 2, "state root argument required");
 	const fs::path root = argv[1];
 	const item_owner_identity owner = { item_owner_type::player, 77, 0 };
@@ -407,10 +454,11 @@ int main(int argc, char **argv)
 		    { 5001, 5000, 5000, accounted_owner, 1, 501, item_custody_state::active } });
 	activate(accounted_root);
 	const auto accounted_success = accounted(
-		craft_command(5, 99, 1,
-			      { { 5000, 5000, 0, 1, 500, item_custody_state::active },
-				{ 5001, 5000, 5000, 1, 501, item_custody_state::active } },
-			      { snapshot(6000, 800, -1), snapshot(6001, 801, 0) }),
+		alchemy(craft_command(5, 99, 1,
+				      { { 5000, 5000, 0, 1, 500, item_custody_state::active },
+					{ 5001, 5000, 5000, 1, 501, item_custody_state::active } },
+				      { snapshot(6000, 800, -1), snapshot(6001, 801, 0) }),
+			craft_recipe_discipline::encrust, 1),
 		99);
 	applied = flatfile_item_repository_apply(accounted_root.string(), accounted_success);
 	require(applied.outcome == critical_apply_outcome::applied,
@@ -490,14 +538,17 @@ int main(int argc, char **argv)
 		}
 	}
 	const auto consumed_failure = accounted(
-		craft_command(6, 99, 2,
-			      { { 6000, 6000, 0, 1, 800, item_custody_state::active },
-				{ 6001, 6000, 6000, 1, 801, item_custody_state::active } },
-			      {}),
+		alchemy(craft_command(6, 99, 2,
+				      { { 6000, 6000, 0, 1, 800, item_custody_state::active },
+					{ 6001, 6000, 6000, 1, 801, item_custody_state::active } },
+				      {}),
+			craft_recipe_discipline::encrust_failure, 0),
 		99);
-	require(flatfile_item_repository_apply(accounted_root.string(), consumed_failure).outcome ==
-			critical_apply_outcome::applied,
-		"accounted intended failure did not commit");
+	const auto intended_failure =
+		flatfile_item_repository_apply(accounted_root.string(), consumed_failure);
+	require(intended_failure.outcome == critical_apply_outcome::applied,
+		"accounted intended failure did not commit: " +
+			std::to_string(intended_failure.error_code));
 	items = load(accounted_root, 99, &revision);
 	require(revision == 3 && items.empty(),
 		"accounted intended failure left live input custody");

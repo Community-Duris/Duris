@@ -23,6 +23,7 @@ struct craft_progression_hook_table
 	void (*saved)(uint32_t, bool, const player_craft_receipt_snapshot *, size_t) = nullptr;
 	bool (*recover)(uint32_t, const player_craft_receipt_snapshot *, size_t) = nullptr;
 	void (*acknowledged)(const critical_operation_id &) = nullptr;
+	void (*notify)(P_char, bool, const craft_recipe_continuation &) = nullptr;
 };
 
 void craft_progression_initialize(void);

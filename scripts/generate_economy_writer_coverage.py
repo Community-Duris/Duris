@@ -272,6 +272,10 @@ SCHEMA2_CRAFT_IDS = {
     "item.poison_mix", "item.encrust_transform", "item.encrust_failure_destroy",
     "class.drannak_pvp_store", "item.craft_submit", "chaos.pouch_collection",
 }
+SCHEMA2_ALCHEMY_QUALIFIED_IDS = {
+    "item.poison_mix", "item.encrust_transform", "item.encrust_failure_destroy",
+    "class.drannak_pvp_store",
+}
 SCHEMA2_ITEM_TRANSFER_IDS = SCHEMA2_CRAFT_IDS | {
     "item.command_movement", "item.bulk_movement", "item.movement_submit",
     "item.trusted_steal", "item.creation_completion",
@@ -775,6 +779,9 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
     if disposition == "non_writer_candidate":
         decision = "not_a_playable_economy_or_custody_writer"
         policy = NON_WRITERS[route_id]
+    elif route_id in SCHEMA2_ALCHEMY_QUALIFIED_IDS:
+        decision = "allow_qualified_native_alchemy"
+        policy = "Use the native schema-2 craft owner, exact input/output references, consumed-input source lifetime and durable alchemy publication receipt. Active flatfile, MySQL and MariaDB route journeys qualify retry, retained disconnect, copyover and cold recovery. This scoped proof does not authorize global activation or certify other crafts, NPC vial issuance or character initialization. Refuse unsupported metadata or stale custody before native mutation; never fall back to schema 1 under active authority."
     elif route_id in SCHEMA2_CRAFT_IDS:
         decision = "block_until_active_craft_journeys"
         policy = "Physical crafts, pouch collection and virtual Encrust use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Retained pouch counters share the native craft commit while preserving the original UID and custody. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release."
@@ -938,6 +945,9 @@ def build() -> dict:
             route["reachability_evidence"] = raw["reachability_evidence"]
         if raw.get("refusal_source_evidence"):
             route["refusal_source_evidence"] = raw["refusal_source_evidence"]
+        if route_id in SCHEMA2_ALCHEMY_QUALIFIED_IDS:
+            route["backend_qualification"] = raw["backends"]
+            route["recovery_evidence"] = raw["evidence"]
         if route_id in NON_WRITERS:
             route["exclusion_reason"] = NON_WRITERS[route_id]
         if route_id in PROJECTION_ROUTES:
