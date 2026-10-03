@@ -46022,7 +46022,7 @@
       "sites": [
         [
           "src/persistence/sql_room_item_payload.c",
-          588,
+          586,
           "sql_economy"
         ]
       ],
@@ -56660,7 +56660,7 @@
     },
     {
       "path": "src/persistence/sql_room_item_payload.c",
-      "line": 588,
+      "line": 586,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO sql_room_item_payload(item_uid,item_revision,payload_version,operation_id,season_epoch,payload) VALUES(\" +"
     },

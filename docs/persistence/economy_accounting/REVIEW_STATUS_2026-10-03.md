@@ -1,6 +1,6 @@
 # Experimental accounting review status - 2026-10-03
 
-The goal remains active. Full R1-R8 implementation and qualification are open;
+The requested scope remains full R1-R8 implementation and qualification;
 accounting activation and release are BLOCKED. Earlier source-specific results
 remain in [October 2 status](REVIEW_STATUS_2026-10-02.md). The
 [completion plan](FINISH_ACCOUNTING_PLAN.md) and
@@ -887,7 +887,7 @@ unstrung literal strings, so it cannot supply the exact stored room payload.
 Two opt-in adapters now freeze all four effective strings for one selected
 carried root and its complete descendants without changing live masks. Other
 inventory roots, equipment, pets, ordinary captures and formats retain their
-existing behavior. Missing/noninventory roots, duplicate/nonallocated-form UIDs,
+existing behavior. Missing/noninventory roots, duplicate/zero or reserved-sentinel UIDs,
 cycles and all native capture limits refuse atomically. This does not establish
 UID allocation authority; the eventual transfer still proves native custody.
 
@@ -906,3 +906,33 @@ Scoped checkpoint coalescing, actual SQL source proof, retained drop publication
 and replay remain unfinished. These APIs do not enable inactive accounting or
 establish full gameplay/persistence/recovery qualification. The frozen e58bb3296
 broad run remains pending and does not contain this subsequent capture change.
+
+## Exact physical properties required for SQL room source proof
+
+The actual native pool fixture reproduced a source-proof defect: setting the
+selected player's physical `item_properties` projection to NULL still allowed
+`sql_room_item_payload_prepare` to accept the captured dynamic-effect payload.
+The native snapshot writer emits canonical properties bytes; NULL cannot witness
+that write. Preparation now requires exact non-NULL binary equality and refuses
+this missing projection with ESTALE before the item operation mutates authority.
+The existing inactive command path and accounting admission gates are unchanged.
+
+Fresh disposable MariaDB and MySQL pass the actual production-pool component,
+including the new NULL refusal, exact source/provenance/season checks, both
+partial-operation rollback faults, real successful COMMIT reply loss and distinct
+replacement connection, exact-ID reconciliation, ACK, and two independent cold
+SQL reads. The original assertion failure is preserved separately. Both strict
+production SQL and flatfile builds pass; the native payload codec/capture test
+and 54 coverage contracts, 2,727 writer-site checks, 14 accounting contracts and
+generated-matrix check pass. Identical INSERT anchors moved from line 588 to 586;
+backend route qualification has not been upgraded.
+
+Evidence: `tmp/room-source-properties-final-summary.local.json`, SHA-256
+9f73753b37f5ad9d04af8ac6ab875d4a80f2fe907e5db364c008d84aada92e90;
+587 LF-normalized linked/compile-owner/header inputs match the source-isolated
+production candidate. Native pool binary:
+0d4cb81d35d71fdb949bf1d0f9bc3d45a9397d9a9a46d38eb45e238f4380f421.
+Production SQL: 41bd0dd301f1e594d58adb46d84b6093bef135b9d909fa501051328501e2f72c;
+flatfile: 5a84db2dc851c73e80bcd05345529521ed18e7537440df0bda3aedd47987ecee.
+This closes one physical source-refusal defect, not actual player-drop producer,
+held publication/replay, current-head broad regression or full R1-R8 completion.
