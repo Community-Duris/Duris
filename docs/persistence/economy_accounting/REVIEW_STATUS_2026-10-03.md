@@ -1898,3 +1898,18 @@ The failed attempt remains in the private evidence. Declaration
 01f3dc948577f78f29f4f434a28e1b71a3c89e09c0e9198957a369bbadc0379f
 pins the before/after fixture and failure/pass logs. This is a repaired regression
 owner, not current broad qualification or an accounting route completion.
+
+### Resident persistence diagnostic fixture repair
+
+The actual resident diagnostic now reads literal checkpoint metadata, but its
+extracted staff-command fixture omitted that type/array/lookup and failed to
+compile at find_literal_inventory_locked. The fixture now extracts the real
+checkpoint declarations and lookup alongside the real diagnostic, rather than
+substituting an admission answer. New held/unheld/other-PID controls pass with
+the existing terminal fence, try-lock, privilege/parser, bounded witness and JSON
+checks. Original compiler flags and15-second runtimes remain unchanged; metadata
+leaves remain controlled and no production function changes. Declaration
+`tmp/persistence-diagnostic-fixture-fix.local.json` SHA-256
+b114cecbb3baf0568fcb8de9ec0e1841f2a84113973d03d617aa5ec5418e5b65
+pins source and failed/passing evidence. This repairs an applicable regression
+owner only; it does not qualify actual SQL, gameplay or the current broad gate.
