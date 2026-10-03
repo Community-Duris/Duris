@@ -1064,7 +1064,11 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 				return valid;
 		}
 		out.bytes.reserve(snapshot.encoded_size_bound);
-		out.number<uint32_t>(snapshot.schema_version);
+		const bool ward_fields =
+			std::any_of(snapshot.affects.begin(), snapshot.affects.end(),
+				    [](const auto &af) { return af.ward_source_type != 0; });
+		out.number<uint32_t>(snapshot.schema_version +
+				     (ward_fields ? PLAYER_SNAPSHOT_WARD_WIRE_OFFSET : 0));
 		out.number<int32_t>(snapshot.pid);
 		out.number<player_revision_t>(snapshot.revision);
 		out.number<player_component_mask_t>(snapshot.components);
@@ -1114,6 +1118,17 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 				   out.number<uint16_t>(row.level);
 				   for (uint64_t bitvector : row.bitvectors)
 					   out.number<uint64_t>(bitvector);
+				   if (ward_fields)
+				   {
+					   out.number<uint64_t>(row.ward_source_uid);
+					   out.number<int32_t>(row.ward_full_duration);
+					   out.number<int64_t>(row.ward_capacity);
+					   out.number<int64_t>(row.ward_capacity_max);
+					   out.number<int32_t>(row.ward_refresh_remaining);
+					   out.number<uint8_t>(row.ward_source_type);
+					   out.number<uint8_t>(row.ward_source_worn);
+					   out.number<uint8_t>(row.ward_active);
+				   }
 				   out.string(row.wear_off_character);
 				   out.string(row.wear_off_room);
 			   });
@@ -1216,10 +1231,17 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		uint64_t encoded_bound = 0;
 		if (!in.number(snapshot.schema_version))
 			return in.result;
-		const uint32_t wire_version = snapshot.schema_version;
-		if (wire_version == 1 || wire_version == 3 || wire_version == 5)
+		const uint32_t raw_wire_version = snapshot.schema_version;
+		const bool ward_fields = raw_wire_version >= 20 && raw_wire_version <= 32;
+		const uint32_t wire_version =
+			ward_fields ? raw_wire_version - PLAYER_SNAPSHOT_WARD_WIRE_OFFSET :
+				      raw_wire_version;
+		snapshot.schema_version = wire_version;
+		if (wire_version == 1 || wire_version == 3 || wire_version == 5 ||
+		    wire_version == 7)
 			snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
-		if (wire_version == 2 || wire_version == 4 || wire_version == 6)
+		if (wire_version == 2 || wire_version == 4 || wire_version == 6 ||
+		    wire_version == 8)
 			snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
 		if (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
 		    snapshot.schema_version != PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION &&
@@ -1291,6 +1313,15 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 				       for (uint64_t &bitvector : row.bitvectors)
 					       if (!in.number(bitvector))
 						       return false;
+				       if (ward_fields && (!in.number(row.ward_source_uid) ||
+							   !in.number(row.ward_full_duration) ||
+							   !in.number(row.ward_capacity) ||
+							   !in.number(row.ward_capacity_max) ||
+							   !in.number(row.ward_refresh_remaining) ||
+							   !in.number(row.ward_source_type) ||
+							   !in.number(row.ward_source_worn) ||
+							   !in.number(row.ward_active)))
+					       return false;
 				       return in.string(row.wear_off_character) &&
 					      in.string(row.wear_off_room);
 			       }) ||
