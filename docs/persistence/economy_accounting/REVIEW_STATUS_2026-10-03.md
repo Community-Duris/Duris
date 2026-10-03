@@ -1408,3 +1408,150 @@ issue is a separate local commit; normal direct publication awaits the explicit
 local Git integration decision and combined-source qualification of incoming
 100bee62f. The next issue has an immutable before-state freeze for actual
 coordinator/journal admission failure and domain cleanup qualification.
+
+
+## Definite admission failure disposition (implementation and qualification in progress)
+
+Actual currency/coordinator/journal before-state qualification reproduces six
+native RED cases: coin and bank ENOSPC, partial append with successful rollback,
+and append fsync failure with successful rollback. After native delivery the
+real coordinator has removed the original fence and journal record, with zero
+worker execution and projection, while the domain owner remains pending and
+rejection callbacks remain zero. Four uncertain-admission and durable rejection
+ACK/checkpoint-repair controls pass. The strict ASan/UBSan before binary
+4fcfe55081834c357b6879588e74c115d8b321351efe42be8be786c47a38074b
+compiles in 110.370 seconds within the original 300-second budget. Before runtime
+`tmp/admission-currency-before-red-runtime.local.log` has SHA-256
+ab27ed8ffdc55f5f418f0e08ee4356c3225a21a1620dac5aea596ff11f83994c.
+Only the worker/domain-world effects are controlled; the actual coordinator,
+journal admission, pulse, retained ACK and private filesystem are used. No real
+SQL engine or player journey is claimed.
+
+The initial four-file implementation appends an in-process disposition with a
+safe execution default; only proven definite admission refusal marks never
+admitted. A bounded no-allocation validator requires terminal rejection, a real
+error, zero durable revision/start/stage/result size and all-zero result bytes.
+Commands, journal frames and stored receipts are unchanged. Valid never-admitted
+receipts bypass only the impossible publication ACK, preserving rejection/domain
+cleanup. Unknown or changed disposition stays held, without projection; entire
+incoming batches are validated before item retry or collector invalidation, and
+reconnect cannot clear the separate disposition latch. Same-batch contradictions
+cannot be repaired by a later duplicate. Craft staged output disposal remains
+required; never-admitted craft cannot publish or acknowledge progression.
+
+Read-only review finds no blocking defect in this initial patch; changed-line
+clang-format18 fixpoints and the seven root harness scheduling checks pass.
+The new native regression runs serially. Complete item/craft RED and both-mode
+final owner/recovery, existing owners, strict production and gameplay checks
+remain pending. This is uncommitted implementation, not a solved issue or any
+R1-R8/release promotion. The separate craft ACK retry completion/progression
+cleanup bug remains open.
+
+Item/craft actual before-state owner adds eight definite-failure RED cases
+(ENOSPC, partial append, fsync rollback and real quota for each), with four
+uncertainty exact-ID recovery and retained rejection ACKrepair controls passing.
+Before binary c03ef2c6b0f563235ba4f2c2c08202bd4b340e8b2d944d3c97bd0aa943def759
+compiles in 79.383/300 seconds. Runtime log
+`tmp/admission-item-before-red-closure-runtime.local.log` has SHA-256
+d81c8273d9cb91c10ccc96cc4f31b2ff8a129c99eeab5be4b8d13e5d327fe92f.
+The before craft failure disposes its staged output once but emits EBADMSG and
+remains pending. Its separate normal ACKretry control visibly calls completion
+twice; that control qualifies retention/checkpoint repair, not notification
+exactly-once. The latter remains the next independent issue.
+
+Final candidate checks use an immutable completed freeze. An initial native
+attempt raced that freeze copy and read the old header; it is preserved as a
+setup error with no artifact. Corrected source equality must finish before
+compilation. No green qualification is claimed yet. The authority plan also
+records the source-established legacy partial snapshot competing projection
+and startup/save-quarantine dependency before ordinary-drop recovery wiring.
+All four frozen final domain/coordinator owners now pass: currency SQL-header
+36/36, currency flatfile36/36, item/craft SQL-header34/34 and flatfile34/34,
+140 private-journal native scenarios total. Original strict ASan/UBSan compile
+budgets remain300 seconds. SQL currency binary
+54aa15149a7df455e11f8f6565eeaf159a99bd5a352b7b716d8619e75f38d329
+(72.077s); flat currency d32edccfb1cea93ff553d4865d75211b0c32e2ec8e8ebe0d5ad4b2867d84ec1e
+(63.567s); SQL item4b0148e211453775a6a22916d1135d40f56ac50b309d223e41603d85512f6503
+(81.680s); flat item34c31d02074d2512fc64fc949563679a5d9208043a1cc9c9475c2d5ce4d3b5af
+(92.240s). The actual coordinator/journal/pulse/fences/checkpoint ACK are linked;
+worker execution effects and world leaves are controlled. No SQL execution,
+active physical publication, gameplay or complete release qualification follows
+from this component result. Production freeze, existing native owners and actual
+inactive gameplay qualification remain pending. The54 writer contracts,
+2727 site checks, matrix reproducibility and14 accounting fixtures also pass;
+coverage remains false and release BLOCKED.
+
+The final native declaration is
+`tmp/critical-admission-owner-release-qualified-artifact.local.json`, SHA-256
+9d525646dca0a694855b4ef662df666ad02999ec00f8d6dd446cda2b62a72a09.
+Every native/header/fixture input matches current source. The initial broader
+freeze includes a derived Python cache subsequently refreshed by the supplied
+wrong-SHA guard; that cache discrepancy and initial manifest remain preserved.
+The separately named source-only manifest excludes bytecode. No full-tree
+immutability claim follows; source/test/binary inputs are unchanged.
+
+Production preparation initially refused the legacy shared pfile dependency
+name `core/files.pf.d`, which maps to `core/files.c`, before any production
+compilation. Corrected source mapping and completed equality verification identify
+117 SQL and118 flatfile sources affected by the common completion header. All
+1232 source inputs and five modified test inputs are frozen before existing
+owner tests or production builds. This setup refusal is separate from native
+qualification; budgets and production flags are unchanged.
+
+The ten existing maintained checks each pass, including both currency queue
+modes,106 currency retention scenarios, actual journal admission/capacity/fault/
+uncertainty owners, item publication, progression and native restore decoding.
+The coordinator identity/order check is a source contract, not a native runtime.
+The driver itself did not pass: primary changed that executing shell file while
+adding bytecode suppression, causing a repeated successful craft restore and
+subsequent parse failure before either final coin check. Driver failure remains
+in `tmp/admission-disposition-owner-driver-failure.local.log`; no production
+source defect is inferred. Remaining coin checks use a separate stable driver.
+Their initial launch found the older inherited QA tree lacked the new coin test,
+refusing before compilation. That original log is preserved separately; the
+maintained test was copied, its1128bd82e9e05ef451bc749ea35bd18a33ad79e1436c8b0e7f0d2e28ba351aef
+SHA-256 verified, and corrected checks use separately named `ready` logs with
+the unchanged compile/runtime deadlines. Executing drivers must remain unchanged.
+
+Both final strict production builds now pass -j2 with the original600-second
+budget after the complete shared-header rebuild: SQL162 seconds, binary
+SHA-256 d20b20c129b93a032c322294e885196be88780f0e85c167c0502567691dbe505;
+flatfile166 seconds, binary0db5f32ef9d2509dbc963cbd55a69e7fc05e839ed6f771e8e4434a37422a3de9.
+All1232 tracked source inputs agree after LF normalization, with raw native bytes
+pinned separately. These are production build results, not actual SQL execution
+or combined incoming-remote qualification. Actual inactive creation/save/restart/
+relog and three area coin-pickup commands are the remaining bounded gates before
+committing this issue. The separate craft notification/ACK cleanup regression
+is preparation only; read-only review requires real failed ACK counts, actual
+progression-map erasure, initial physical publication, retained reentrant owners,
+native actor retirement controls and complete source/artifact pins before RED.
+
+
+### Definite admission cleanup: bounded issue qualified locally
+
+Actual inactive creation/save/coldrestart/relog passes in 130.116 seconds with
+unchanged prompt waits. All three real area pickup commands pass after the
+inspector builds within its original 180-second budget: `get coins statue`,
+`get all.coins statue`, and `take all statue` each credit exactly ten platinum,
+retire room custody and refuse duplicate value. Both production binary hashes
+remain unchanged. These are inactive journeys, not active pile publication.
+
+Primary summary `tmp/admission-disposition-final-primary-summary.local.json`
+has SHA-256 7244cacb8e799376c761e9938729e9215b4b6f5d370ddb939fea6e4c0b57c575.
+The summary checks the 140-case declaration, all 1,232 current source inputs,
+two exact strict binaries and every existing-owner/gameplay evidence marker.
+Source contracts and native runtime evidence are labeled separately. Normal
+accounting contracts, 54 writer coverage tests and 2,727 writer site checks pass;
+868 routes / 2,817 occurrences / 2,758 unique sites / zero unmapped still means
+coverage=false and release BLOCKED. Failed before cases, copy/cache/dependency
+setup errors, interrupted driver and missing inherited fixture remain separate.
+
+This issue is ready for its separate local commit. Normal direct publication
+awaits the pending local Git merge decision after automatic approval review
+rejected that operation under the user's no-merge instruction. Incoming
+100bee62f is neither integrated nor qualified; no history workaround or divergent
+push occurred. Next is separate craft notification/progression cleanup after
+normal ACK retry. Ordinary-drop producer/native publication/replay/save/copyover,
+independent complete audit, route/backend/workload and all full R1-R8 gates stay
+open. Accounting remains inactive, SQL wallet-root item-endpoint exclusion and
+all safety gates remain, and the declined inactive spell-path change is untouched.

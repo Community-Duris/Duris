@@ -509,16 +509,19 @@ unsigned int journal_failure_error(critical_command_journal_result result)
 void retain_admission_failure_locked(operation_state &state, unsigned int error_code)
 {
 	state.phase = critical_operation_phase::admission_failed;
-	state.admission_failure_completion = { .operation_id = state.command.operation_id,
-					       .outcome = critical_apply_outcome::terminal_failure,
-					       .durable_revision = 0,
-					       .error_code = error_code,
-					       .attempt = state.attempt,
-					       .queued_at_usec = state.queued_at_usec,
-					       .started_at_usec = 0,
-					       .completed_at_usec = now_usec(),
-					       .result_size = 0,
-					       .result_payload = {} };
+	state.admission_failure_completion = {
+		.operation_id = state.command.operation_id,
+		.outcome = critical_apply_outcome::terminal_failure,
+		.durable_revision = 0,
+		.error_code = error_code,
+		.attempt = state.attempt,
+		.queued_at_usec = state.queued_at_usec,
+		.started_at_usec = 0,
+		.completed_at_usec = now_usec(),
+		.result_size = 0,
+		.result_payload = {},
+		.disposition = critical_completion_disposition::never_admitted
+	};
 	if (!state.admission_failure_queued)
 	{
 		state.admission_failure_queued = completion_delivery.try_enqueue(

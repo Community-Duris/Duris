@@ -6379,7 +6379,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          784
+          809
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_coin",
@@ -9300,7 +9300,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1144
+          1169
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_payment",
@@ -9364,7 +9364,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1054
+          1079
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_reward",
@@ -9922,7 +9922,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1105
+          1130
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_prepare_identify",
@@ -10295,7 +10295,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          930
+          955
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_prepared",
@@ -10487,7 +10487,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          599
+          624
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_publish_wallet",
@@ -10612,7 +10612,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1025
+          1050
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_wallet_value",
@@ -17101,8 +17101,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2884,
-          2896
+          2905,
+          2917
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17164,7 +17164,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1276
+          1279
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17226,7 +17226,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1176
+          1179
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17411,7 +17411,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1057
+          1060
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -18533,7 +18533,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          894
+          897
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -18595,7 +18595,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          901
+          904
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -19668,7 +19668,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3132
+          3153
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19730,7 +19730,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2944
+          2965
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20716,7 +20716,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2027
+          2048
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -21367,7 +21367,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1552
+          1555
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21429,7 +21429,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1108
+          1111
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21797,7 +21797,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          963
+          966
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -50847,7 +50847,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2541
+          2562
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -50913,7 +50913,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          694
+          697
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -50963,7 +50963,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          744
+          747
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",

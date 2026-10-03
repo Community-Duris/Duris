@@ -47,12 +47,27 @@ Coin publication/ACK retention has a locally qualified bounded safety repair:
 missing typed physical proof retains replay and refuses new schema-2 pile
 admission; physical success and the original receipt survive ACK retry and
 partial projection exceptions. The inactive composite path remains unchanged.
-The native publisher/reconstructor, gameplay/replay/save/copyover gates and a
-separate definite-admission-failure cleanup defect remain open. See the October
+The native publisher/reconstructor and gameplay/replay/save/copyover gates remain
+open. The qualified definite-admission repair is described below. See the October
 3 review status for before failures, intermediate evidence and final checks.
 Fourteen native cases per mode, both strict builds, 106 currency retention cases,
 both queue modes and actual inactive creation/restart/three pickup journeys pass.
 This is not full active accounting, native replay or current-remote qualification.
+
+Definite admission refusal now has an explicit in-process disposition. Only
+proven never-admitted commands bypass the impossible publication ACK; uncertainty,
+ordinary ACK failure, malformed receipts and contradictory dispositions stay held.
+The actual journal/coordinator and currency/item/craft owners pass 140 sanitizer
+scenarios across both backend modes. Existing admission/capacity/fault/recovery,
+106 currency retention, both queue, item publication, progression/restore and
+14 coin-retention cases per mode pass. Both strict production builds pass their
+original 600-second budgets, with all 1,232 source inputs verified. Actual inactive
+creation/save/coldrestart/relog and three area pickup commands pass unchanged
+budgets. Exact pins and preserved setup/driver failures are in the October 3
+review. This bounded cleanup issue is solved locally; publication still awaits
+local Git integration authorization and combined-source qualification. Separate
+craft ACK-retry completion/progression cleanup is next; ordinary-drop replay/save
+integration and every full R1-R8 gate remain open.
 
 Independent reconciliation now checks every native item's parent edge even when
 lineage history replaces its epoch-local history or its opening origin is
