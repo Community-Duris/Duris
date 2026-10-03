@@ -83,7 +83,7 @@ runtime_calls = [
     "GET_ASSOC(ch)->save_without_member(ch)",
     "sql_delete_locker(GET_PID(ch), 0)",
     "sql_delete_ship(GET_NAME(ch))",
-    "sql_delete_player(GET_PID(ch), false)",
+    "sql_delete_player(GET_PID(ch), false, &deletion_writer)",
     "sql_commit()",
     "GET_ASSOC(ch)->forget_deleted_member(ch)",
     "remove_char_from_list(ch->desc->account",

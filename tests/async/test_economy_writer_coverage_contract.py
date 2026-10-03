@@ -515,9 +515,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          {"auction.money_claim_compensation"})
         self.assertEqual(owners[("src/economy/auction_houses.c", 2967, "sql_economy")],
                          {"auction.money_claim_legacy"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 9561, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 9569, "sql_economy")],
                          {"recovery.saved_sql_delete"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10982, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10990, "sql_economy")],
                          {"recovery.saved_sql"})
         shop_path = "src/persistence/economic_sql_shop_trade_transaction.c"
         for line in (887, 907, 940):
@@ -847,9 +847,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new SQL item load sites")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/sql/sql_player.c", 10224, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10232, "item_publication")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 11364, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 11372, "item_publication")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",
@@ -1153,13 +1153,13 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new legacy file item calls")
         shared_finish = {("src/core/files.c", line, "item_lifecycle")
-                         for line in (1744, 1750)}
+                         for line in (1745, 1751)}
         self.assertTrue(all(len(owners[site]) == (2 if site in shared_finish else 1)
                             for site in current))
         for site in shared_finish:
             self.assertEqual(owners[site], {"player.flat_terminal_inventory_unload",
                                             "player.sql_terminal_inventory_unload"})
-        self.assertEqual(owners[("src/core/files.c", 3690, "item_publication")],
+        self.assertEqual(owners[("src/core/files.c", 3695, "item_publication")],
                          {"recovery.legacy_object_restore"})
         for route_id in ("player.object_save_template_probe",
                          "player.single_item_save_template_probe",

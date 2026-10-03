@@ -1577,6 +1577,10 @@ struct txt_q
 {
 	struct txt_block *head;
 	struct txt_block *tail;
+	size_t bytes; /* allocated text bytes, including each terminating NUL */
+	size_t entries;
+	bool overflowed;
+	bool overflow_reported;
 };
 
 /* modes of connectedness */
@@ -1729,6 +1733,10 @@ struct descriptor_data
 	char last_input[MAX_INPUT_LENGTH]; /* the last input         */
 	struct txt_q output; /* q of strings to send       */
 	struct txt_q input; /* q of unprocessed input     */
+	uint64_t oob_input_tick;
+	size_t oob_input_bytes;
+	size_t oob_input_entries;
+	bool oob_input_overflowed;
 	P_char character; /* linked to char             */
 	P_char original; /* original char              */
 	struct snoop_data snoop; /* to snoop people.           */
@@ -1741,6 +1749,7 @@ struct descriptor_data
 	P_acct account;
 	struct password_login_job *login_password_job;
 	struct password_request *password_request;
+	struct account_request *account_request;
 	bool login_password_websocket;
 	char *selected_char_name; /* temporary storage for character selection confirmation */
 	uint64_t player_load_request_id;

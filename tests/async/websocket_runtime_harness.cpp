@@ -43,7 +43,11 @@ int is_desc_valid(descriptor_data *)
 {
 	return 1;
 }
-void write_to_q(const char *, txt_q *, int) {}
+void queue_websocket_input(descriptor_data *, const char *) {}
+bool admit_session_oob(descriptor_data *, size_t)
+{
+	return true;
+}
 void ws_send_system(descriptor_data *, const char *, const char *) {}
 void gmcp_handle_input(descriptor_data *, const char *, size_t) {}
 void ws_handle_command(descriptor_data *, const char *, cJSON *) {}

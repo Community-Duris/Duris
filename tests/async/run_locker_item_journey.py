@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise nested SQL locker deposit, restart and withdrawal through gameplay.
+"""Exercise nested SQL locker custody and cold-reload recovery through gameplay.
 
 Requires a disposable loopback MySQL instance, a built server and generated
 areas/world.* files. The script creates and drops its own random schema.
@@ -62,6 +62,8 @@ def run(binary: Path) -> None:
                 (game / "journals" / kind).mkdir(parents=True, mode=0o700)
             env.update(PLAYER_SAVE_JOURNAL_DIR=str(game / "journals/players"),
                        CRITICAL_COMMAND_JOURNAL_DIR=str(game / "journals/critical"))
+            assert sql("SELECT COUNT(*) FROM economic_lineage_state "
+                       "WHERE active_epoch IS NOT NULL") == "0"
             output_path = game / "server.out"
             process = None
             client = None
@@ -108,6 +110,41 @@ def run(binary: Path) -> None:
                                "owner_id,':',owner_context_id,':',state) "
                                f"FROM item_current_owner WHERE item_uid={uid}") == \
                            f"{root}:{parent}:{owner_type}:{owner_id}:{context_id}:1"
+
+            def verify_revision(revision: int) -> None:
+                assert sql("SELECT COUNT(*) FROM item_current_owner WHERE "
+                           f"item_uid IN ({ROOT_UID},{CHILD_UID}) "
+                           f"AND item_revision={revision}") == "2"
+
+            def history(transfers: int) -> str:
+                rows = sql("SELECT HEX(operation_id),event_index,item_uid,root_item_uid,"
+                           "COALESCE(parent_item_uid,0),from_owner_type,from_owner_id,"
+                           "from_owner_context_id,to_owner_type,to_owner_id,"
+                           "to_owner_context_id,item_revision FROM item_ownership_ledger "
+                           f"WHERE item_uid IN ({ROOT_UID},{CHILD_UID}) "
+                           "ORDER BY item_revision,item_uid")
+                fields = [row.split("\t") for row in rows.splitlines()]
+                assert len(fields) == transfers * 2, rows
+                for transfer in range(transfers):
+                    root, child = fields[transfer * 2:transfer * 2 + 2]
+                    assert len(root[0]) == 32 and int(root[0], 16) > 0, rows
+                    assert root[0] == child[0] and root[1] != child[1], rows
+                    assert [int(root[2]), int(child[2])] == [ROOT_UID, CHILD_UID], rows
+                    assert [int(root[3]), int(child[3])] == [ROOT_UID, ROOT_UID], rows
+                    assert [int(root[4]), int(child[4])] == [0, ROOT_UID], rows
+                    assert root[5:11] == child[5:11], rows
+                    assert [int(root[11]), int(child[11])] == [6 + transfer] * 2, rows
+                    assert [int(root[5]), int(root[8])] == (
+                        [1, 5] if transfer == 0 else [5, 1]), rows
+                    assert sql("SELECT COUNT(*) FROM critical_operation_inbox WHERE "
+                               f"operation_id=UNHEX('{root[0]}') AND status=1 "
+                               "AND result_code=0 AND failure_stage=0 "
+                               "AND committed_at IS NOT NULL") == "1", rows
+                if transfers == 2:
+                    assert fields[0][0] != fields[2][0], rows
+                    assert fields[0][5:8] == fields[2][8:11], rows
+                    assert fields[0][8:11] == fields[2][5:8], rows
+                return rows
 
             def verify_native(table: str) -> None:
                 for uid in (ROOT_UID, CHILD_UID):
@@ -184,6 +221,8 @@ def run(binary: Path) -> None:
                 client.send("look")
                 client.expect(BANK_NAME, timeout=20)
                 verify(1, pid, 0, "player_items")
+                verify_revision(5)
+                assert history(0) == ""
                 client.pending.clear()
                 client.send("enter locker")
                 client.expect("escorts you to the locker", timeout=30)
@@ -194,6 +233,8 @@ def run(binary: Path) -> None:
                 locker_id, chest_id = map(int, owner.split(":"))
                 assert locker_id > 0 and chest_id > 0
                 verify_custody(5, locker_id, chest_id)
+                verify_revision(6)
+                deposited_history = history(1)
                 client.send("open door")
                 client.expect("Ok.", timeout=15)
                 client.send("north")
@@ -204,15 +245,21 @@ def run(binary: Path) -> None:
                 client = None
                 stop()
                 verify(5, locker_id, chest_id, "locker_items")
+                verify_revision(6)
+                assert history(1) == deposited_history
 
                 port_number = start()
                 client = journey.reconnect_character(port_number, expected_room=BANK_NAME)
                 client.send("enter locker")
                 client.expect("escorts you to the locker", timeout=30)
                 verify(5, locker_id, chest_id, "locker_items")
+                verify_revision(6)
+                assert history(1) == deposited_history
                 client.send("get backpack")
                 client.expect("You get", timeout=30)
                 verify_custody(1, pid, 0)
+                verify_revision(7)
+                withdrawn_history = history(2)
                 client.send("open door")
                 client.expect("Ok.", timeout=15)
                 client.send("north")
@@ -223,7 +270,27 @@ def run(binary: Path) -> None:
                 client = None
                 stop()
                 verify(1, pid, 0, "player_items")
-                print("SQL locker: nested deposit, restart, withdrawal and metadata passed",
+                verify_revision(7)
+                assert history(2) == withdrawn_history
+                port_number = start()
+                client = journey.reconnect_character(port_number, expected_room=BANK_NAME)
+                client.send("look in backpack")
+                client.expect("a locker note", timeout=20)
+                verify(1, pid, 0, "player_items")
+                verify_revision(7)
+                assert history(2) == withdrawn_history
+                client.send("save")
+                client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
+                client.close()
+                client = None
+                stop()
+                verify(1, pid, 0, "player_items")
+                verify_revision(7)
+                assert history(2) == withdrawn_history
+                assert sql("SELECT COUNT(*) FROM economic_lineage_state "
+                           "WHERE active_epoch IS NOT NULL") == "0"
+                print("SQL locker: original nested UIDs, exact revisions/receipts, "
+                      "deposit/reload, withdrawal/reload and metadata passed",
                       flush=True)
             except Exception:
                 print("server tail:", output_path.read_text(errors="replace")[-3500:],

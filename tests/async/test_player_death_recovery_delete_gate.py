@@ -56,15 +56,18 @@ retention_admission = retain_conflict.index("economic_sql_currency_writer_guard:
 retention_player_lock = retain_conflict.index("SELECT save_revision FROM player_data WHERE pid=")
 retention_insert = retain_conflict.index("INSERT INTO player_death_conflict_evidence")
 assert retention_admission < retention_player_lock < retention_insert
-assert "economic_sql_currency_writer_guard" not in guard
+assert "economic_sql_currency_writer_guard::acquire" not in guard
+assert "writer.is_valid_for(DB)" in guard
+assert remove_character.index("economic_sql_currency_writer_guard::acquire") < begin
 
 # The physical DELETE boundary independently fails closed for callers that do
 # not originate in delete_character_result(). The caller-owned outer transaction
 # retains all cleanup changes for rollback on refusal.
 assert "sql_player_deletion_guard" in SQL_PLAYER_DELETION_H
-assert "if (!sql_player_deletion_guard(pid))" in delete_player
+assert "if (!sql_player_deletion_guard(pid, *writer))" in delete_player
 assert "character_deletion_guard_pid != pid" in delete_player
-assert delete_player.index("if (!sql_player_deletion_guard(pid))") < delete_player.index('"DELETE FROM player_data')
+assert "!writer || !writer->is_valid_for(DB)" in delete_player
+assert delete_player.index("if (!sql_player_deletion_guard(pid, *writer))") < delete_player.index('"DELETE FROM player_data')
 assert "own_txn" in delete_player and "sql_rollback()" in delete_player
 
 print("PASS: account character deletion locks and checks retained evidence before cleanup")

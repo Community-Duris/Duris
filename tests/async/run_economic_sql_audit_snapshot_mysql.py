@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import economic_sql_audit_snapshot as exporter  # noqa: E402
 from economic_sql_audit_snapshot import capture  # noqa: E402
-from reconcile_economy_accounting import Reconciler  # noqa: E402
+from reconcile_economy_accounting import Reconciler, SnapshotError  # noqa: E402
 from test_economic_sql_audit_origins import EPOCH, LINEAGE, OPENING, OP, key, witness  # noqa: E402
 
 INSTALL = bytes.fromhex("77" * 16)
@@ -52,14 +52,14 @@ TABLES = (
     "CREATE TABLE economic_accounting_account_effect (operation_id BINARY(16),account_index INT,"
     "account_key BINARY(40),before_copper BIGINT,before_silver BIGINT,before_gold BIGINT,"
     "before_platinum BIGINT,after_copper BIGINT,after_silver BIGINT,after_gold BIGINT,"
-    "after_platinum BIGINT,before_revision BIGINT,after_revision BIGINT) ENGINE=InnoDB",
+    "after_platinum BIGINT,before_revision BIGINT UNSIGNED,after_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_coin_posting (operation_id BINARY(16),line_index INT,"
     "account_index INT,child_index INT,delta_copper BIGINT,delta_silver BIGINT,delta_gold BIGINT,"
     "delta_platinum BIGINT,copper_value BIGINT) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_child (operation_id BINARY(16),child_index INT,"
     "child_operation_id BINARY(16),parent_index INT) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_item_reference (operation_id BINARY(16),event_index INT,"
-    "child_index INT,item_uid BIGINT,before_revision BIGINT,after_revision BIGINT,"
+    "child_index INT,item_uid BIGINT,before_revision BIGINT UNSIGNED,after_revision BIGINT UNSIGNED,"
     "legacy_operation_id BINARY(16),legacy_event_index INT) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_source_claim (lineage BINARY(16),source_event BINARY(48),"
     "operation_id BINARY(16)) ENGINE=InnoDB",
@@ -74,20 +74,20 @@ TABLES = (
     "lineage BINARY(16),claim_mapping_id BIGINT,beneficiary_pid BIGINT,amount BIGINT,"
     "claim_operation_id BINARY(16)) ENGINE=InnoDB",
     "CREATE TABLE player_data (pid BIGINT,copper BIGINT,silver BIGINT,gold BIGINT,platinum BIGINT,"
-    "wallet_revision BIGINT) ENGINE=InnoDB",
+    "wallet_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE account_banks (id BIGINT,bank_copper BIGINT,bank_silver BIGINT,bank_gold BIGINT,"
-    "bank_platinum BIGINT,bank_revision BIGINT) ENGINE=InnoDB",
+    "bank_platinum BIGINT,bank_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE auctions (id BIGINT,status VARCHAR(16),cur_price BIGINT,"
     "auction_revision BIGINT,winning_bidder_pid BIGINT) ENGINE=InnoDB",
     "CREATE TABLE auction_money_pickups (pid BIGINT,money BIGINT,"
-    "claim_revision BIGINT) ENGINE=InnoDB",
-    "CREATE TABLE shopkeepers (id BIGINT,cash BIGINT,shop_revision BIGINT) ENGINE=InnoDB",
+    "claim_revision BIGINT UNSIGNED) ENGINE=InnoDB",
+    "CREATE TABLE shopkeepers (id BIGINT,cash BIGINT,shop_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE item_current_owner (item_uid BIGINT,root_item_uid BIGINT,parent_item_uid BIGINT,"
-    "owner_type INT,owner_id BIGINT,owner_context_id BIGINT,item_revision BIGINT,state INT,"
+    "owner_type INT,owner_id BIGINT,owner_context_id BIGINT,item_revision BIGINT UNSIGNED,state INT,"
     "vnum INT,coin_payload MEDIUMBLOB) ENGINE=InnoDB",
     "CREATE TABLE item_ownership_ledger (operation_id BINARY(16),event_index INT,item_uid BIGINT,"
     "root_item_uid BIGINT,parent_item_uid BIGINT,to_owner_type INT,to_owner_id BIGINT,"
-    "to_owner_context_id BIGINT,item_revision BIGINT,from_owner_revision BIGINT,"
+    "to_owner_context_id BIGINT,item_revision BIGINT UNSIGNED,from_owner_revision BIGINT,"
     "reason_type INT) ENGINE=InnoDB",
 )
 
@@ -446,6 +446,157 @@ try:
                                    "unmapped_native_wallet": 1,
                                    "unauthorized_mapping_creation": 1}
             assert report["exception_counts"] == expected_exceptions, report
+            # Aggregate owner revisions count changes to many UIDs. They may
+            # differ from this UID's revision without changing its history.
+            # Money and pile item revisions are unsigned independently of
+            # signed coin denominations. Retain that distinction at the SQL cut.
+            money_maximum = 2**64 - 1
+            money_blob = bytearray(blob)
+            wallet_revision_offset = 192 + 72
+            pile_revision_offset = 192 + 2 * 112 + 72
+            first_item_offset = 192 + struct.unpack_from("<I", money_blob, 184)[0] * 112
+            pile_item_revision_offset = first_item_offset + 88 + 48
+            assert struct.unpack_from("<Q", money_blob, wallet_revision_offset)[0] == 4
+            assert struct.unpack_from("<Q", money_blob, pile_revision_offset)[0] == 1
+            assert struct.unpack_from("<Q", money_blob, first_item_offset + 88)[0] == 82
+            struct.pack_into("<Q", money_blob, wallet_revision_offset, money_maximum - 1)
+            struct.pack_into("<Q", money_blob, pile_revision_offset, money_maximum)
+            struct.pack_into("<Q", money_blob, pile_item_revision_offset, money_maximum)
+            with setup.cursor() as writer:
+                writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
+                               "canonical_witness=%s WHERE operation_id=%s",
+                               (hashlib.sha256(money_blob).digest(), bytes(money_blob), OP))
+                writer.execute("UPDATE player_data SET wallet_revision=%s WHERE pid=7",
+                               (money_maximum,))
+                writer.execute("UPDATE item_current_owner SET item_revision=%s WHERE item_uid=82",
+                               (money_maximum,))
+                writer.execute("UPDATE economic_accounting_account_effect SET before_revision=%s,"
+                               "after_revision=%s WHERE operation_id=%s AND account_index=0",
+                               (money_maximum - 1, money_maximum, root))
+            money_snapshot = capture(audit, LINEAGE, EPOCH)
+            assert Reconciler().audit(money_snapshot)["exception_counts"] == expected_exceptions
+            pile = money_snapshot["native"]["coin_piles"][0]
+            assert pile["uid"] == 82 and pile["revision"] == money_maximum
+            with setup.cursor() as writer:
+                writer.execute("UPDATE player_data SET wallet_revision=%s WHERE pid=7",
+                               (money_maximum - 1,))
+            stale_high_money = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert stale_high_money["exception_counts"]["stale_native_balance"] == 1
+            with setup.cursor() as writer:
+                writer.execute("UPDATE player_data SET wallet_revision=5 WHERE pid=7")
+                writer.execute("UPDATE item_current_owner SET item_revision=1 WHERE item_uid=82")
+                writer.execute("UPDATE economic_accounting_account_effect SET before_revision=4,"
+                               "after_revision=5 WHERE operation_id=%s AND account_index=0", (root,))
+                writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
+                               "canonical_witness=%s WHERE operation_id=%s",
+                               (hashlib.sha256(blob).digest(), blob, OP))
+            assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("SQL money uint64 boundary: wallet/pile authority, stale-revision refusal "
+                  "and baseline recovery passed", flush=True)
+            # Representable denomination fields may still overflow checked
+            # copper totals. These are corrupt disposable evidence/native rows;
+            # neither the exporter nor reconciler may wrap or auto-repair them.
+            for table, column, predicate, params in (
+                    ("economic_accounting_account_effect", "before_platinum",
+                     "operation_id=%s AND account_index=0", (root,)),
+                    ("economic_accounting_account_effect", "after_platinum",
+                     "operation_id=%s AND account_index=0", (root,)),
+                    ("player_data", "platinum", "pid=%s", (7,))):
+                for amount in (2**63 - 1, -(2**63)):
+                    with setup.cursor() as writer:
+                        writer.execute(f"UPDATE {table} SET {column}=%s WHERE {predicate}",
+                                       (amount, *params))
+                    corrupted = capture(audit, LINEAGE, EPOCH)
+                    try:
+                        Reconciler().audit(corrupted)
+                    except SnapshotError as error:
+                        assert str(error) == "copper overflow", error
+                    else:
+                        raise AssertionError("out-of-range weighted money vector was accepted")
+                    with setup.cursor() as writer:
+                        writer.execute(f"UPDATE {table} SET {column}=0 WHERE {predicate}", params)
+                    assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("SQL checked copper: native/effect overflow refusal and exact "
+                  "unchanged snapshot repair passed", flush=True)
+            # The native schema uses uint64 revisions. Qualify a complete
+            # witnessed move at UINT64_MAX, separately from owner counters.
+            maximum_revision = 2**64 - 1
+            high_revision_root = bytes.fromhex("c7" * 16)
+            high_blob = bytearray(blob)
+            item_offset = 192 + struct.unpack_from("<I", high_blob, 184)[0] * 112
+            assert struct.unpack_from("<Q", high_blob, item_offset)[0] == 81
+            assert struct.unpack_from("<Q", high_blob, item_offset + 48)[0] == 2
+            struct.pack_into("<Q", high_blob, item_offset + 48, maximum_revision - 1)
+            with setup.cursor() as writer:
+                writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
+                               "canonical_witness=%s WHERE operation_id=%s",
+                               (hashlib.sha256(high_blob).digest(), bytes(high_blob), OP))
+                writer.execute("UPDATE item_current_owner SET item_revision=%s WHERE item_uid=81",
+                               (maximum_revision,))
+                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                               "(%s,%s,%s,NULL,32,1,0,NULL,0,0,0,1,NULL)",
+                               (high_revision_root, LINEAGE, EPOCH))
+                writer.execute("INSERT INTO critical_operation_inbox "
+                               "(operation_id,status,result_code) VALUES (%s,1,0)",
+                               (high_revision_root,))
+                writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
+                               "(%s,0,0,81,%s,%s,%s,0)",
+                               (high_revision_root, maximum_revision - 1,
+                                maximum_revision, high_revision_root))
+                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                               "(%s,0,81,81,NULL,1,7,0,%s,99,1)",
+                               (high_revision_root, maximum_revision))
+            high_snapshot = capture(audit, LINEAGE, EPOCH)
+            assert Reconciler().audit(high_snapshot)["exception_counts"] == expected_exceptions
+            high_event = next(row for row in high_snapshot["native"]["uid_history_events"]
+                              if row["uid"] == 81)
+            assert (high_event["before_revision"], high_event["revision"]) == (
+                maximum_revision - 1, maximum_revision)
+            with setup.cursor() as writer:
+                writer.execute("DELETE FROM economic_accounting_item_reference WHERE operation_id=%s",
+                               (high_revision_root,))
+            missing_high_reference = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert missing_high_reference["exception_counts"]["unreferenced_uid_event"] == 1
+            with setup.cursor() as writer:
+                writer.execute("DELETE FROM item_ownership_ledger WHERE operation_id=%s",
+                               (high_revision_root,))
+                writer.execute("DELETE FROM critical_operation_inbox WHERE operation_id=%s",
+                               (high_revision_root,))
+                writer.execute("DELETE FROM economic_accounting_operation WHERE operation_id=%s",
+                               (high_revision_root,))
+                writer.execute("UPDATE item_current_owner SET item_revision=2 WHERE item_uid=81")
+                writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
+                               "canonical_witness=%s WHERE operation_id=%s",
+                               (hashlib.sha256(blob).digest(), blob, OP))
+            assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("SQL UID uint64 boundary: witnessed exact move, missing-reference refusal "
+                  "and baseline recovery passed", flush=True)
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET from_owner_revision=99 "
+                               "WHERE item_uid=84")
+            owner_revision_snapshot = capture(audit, LINEAGE, EPOCH)
+            assert Reconciler().audit(owner_revision_snapshot)["exception_counts"] == \
+                expected_exceptions
+            assert owner_revision_snapshot["native"]["uid_history_events"][0]["before_revision"] == 0
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET from_owner_revision=0 "
+                               "WHERE item_uid=84")
+            # Impossible native revision zero must refuse the audit cut, then
+            # permit a fresh read after restoring only the fixture corruption.
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET item_revision=0 "
+                               "WHERE item_uid=84")
+            try:
+                capture(audit, LINEAGE, EPOCH)
+            except exporter.ExportError as error:
+                assert str(error) == "invalid native item ledger revision", error
+            else:
+                raise AssertionError("zero native item revision was accepted")
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET item_revision=1 "
+                               "WHERE item_uid=84")
+            assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
+                expected_exceptions
             # A consistent current/history pair can still refer to a missing
             # native parent. Lineage history must not bypass topology checks.
             with setup.cursor() as writer:
@@ -591,6 +742,9 @@ try:
                                (prior_unlinked_operation,))
                 writer.execute("INSERT INTO item_current_owner VALUES "
                                "(86,86,NULL,8,0,0,2,2,1,NULL)")
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET from_owner_revision=99 "
+                               "WHERE item_uid=86")
             historical_uid_snapshot = capture(audit, LINEAGE, EPOCH)
             assert historical_uid_snapshot["native"]["lineage_uid_reference_coverage"] == {
                 "rows": 2, "root_rows": 2}

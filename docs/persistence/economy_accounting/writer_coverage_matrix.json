@@ -48,7 +48,7 @@
     "current_occurrences": 2816,
     "current_unique_path_line_family_sites": 2757,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "b401a85219572eadae6cf1c91ae9488eb8bb419e",
+    "draft_source_commit": "4fffb07486c62cb8ea23fb4a39d3be46b9a3a521",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
     "draft_unique_sites": 2757,
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "b401a85219572eadae6cf1c91ae9488eb8bb419e",
+  "repository_head": "4fffb07486c62cb8ea23fb4a39d3be46b9a3a521",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -117,7 +117,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1907
+          1910
         ],
         "file": "src/account/account.c",
         "function": "cleanup_temp_char",
@@ -3677,7 +3677,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          711
+          714
         ],
         "file": "scripts/persistence_backup.py",
         "function": "backup",
@@ -3723,7 +3723,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          493
+          496
         ],
         "file": "scripts/persistence_backup.py",
         "function": "prune_unretained",
@@ -9625,8 +9625,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          470,
-          12416
+          472,
+          12424
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -9818,7 +9818,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1800
+          1816
         ],
         "file": "src/flatfile/flatfile_player_domain_repository.c",
         "function": "apply_currency_command",
@@ -24306,10 +24306,14 @@
         ]
       },
       "reason": "lifecycle_retirement",
+      "refusal_source_evidence": [
+        "src/core/files.c:delete_character_result acquires the native economic_sql_currency_writer_guard before sql_begin_transaction and retains it through commit/rollback; both deletion boundaries validate the exact lease.",
+        "tests/async/test_player_death_recovery_delete_gate_mysql.py; tests/async/test_player_death_recovery_delete_serialization_mysql.py; tests/async/test_account_character_delete_runtime.py (ASan/UBSan); tests/async/run_mysql_deletion_journey.py (inactive real server, both SQL engines)."
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2018
+          2019
         ],
         "file": "src/core/files.c",
         "function": "delete_character_result",
@@ -24458,10 +24462,14 @@
         ]
       },
       "reason": "lifecycle_retirement",
+      "refusal_source_evidence": [
+        "flatfile_economic_legacy_domain_gate runs under the deletion authority lock before preparing new removal operations; direct player/account domain removal repeats admission under that same lock.",
+        "tests/async/flatfile_character_delete_harness.cpp:accounting_deletion_refusals; tests/async/test_flatfile_character_delete.py (DURIS_TEST_SANITIZERS=1); tests/async/run_flatfile_deletion_journey.py (inactive real server)."
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          94
+          96
         ],
         "file": "src/flatfile/flatfile_account_delete.c",
         "function": "flatfile_account_delete",
@@ -24518,10 +24526,14 @@
         ]
       },
       "reason": "lifecycle_retirement",
+      "refusal_source_evidence": [
+        "flatfile_economic_legacy_domain_gate runs under the deletion authority lock before preparing new removal operations; direct player/account domain removal repeats admission under that same lock.",
+        "tests/async/flatfile_character_delete_harness.cpp:accounting_deletion_refusals; tests/async/test_flatfile_character_delete.py (DURIS_TEST_SANITIZERS=1); tests/async/run_flatfile_deletion_journey.py (inactive real server)."
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          89
+          91
         ],
         "file": "src/flatfile/flatfile_character_delete.c",
         "function": "flatfile_character_delete",
@@ -24684,11 +24696,16 @@
         ]
       },
       "reason": "lifecycle_retirement",
+      "refusal_source_evidence": [
+        "src/sql/sql_player.c:sql_delete_account acquires economic_sql_currency_writer_guard before BEGIN, account row locks and cleanup; tests/async/test_account_deletion_contract.py checks source ordering only.",
+        "src/account/account.c:verify_delete_account acquires economic_sql_currency_writer_guard before a new deletion fence, holds it through write_account, then releases before worker drains and backend admission.",
+        "tests/async/test_account_delete_admission_runtime.py (actual production confirmation body with injected authority failures, ASan/UBSan); tests/async/run_mysql_deletion_journey.py (both inactive real SQL engines, native missing-lifecycle-table refusal before new account fence)."
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          296,
-          5564
+          298,
+          5570
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_account",
@@ -24745,11 +24762,15 @@
         ]
       },
       "reason": "lifecycle_retirement",
+      "refusal_source_evidence": [
+        "src/sql/sql_player.c:sql_player_deletion_guard validates the exact held native lease before cached PID approval or the first consistent read; sql_delete_player validates outer owners at the physical delete boundary.",
+        "tests/async/test_player_death_recovery_delete_gate_mysql.py; tests/async/test_player_death_recovery_delete_serialization_mysql.py; tests/async/run_mysql_deletion_journey.py."
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          272,
-          1243
+          273,
+          1245
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_player",
@@ -26005,7 +26026,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          43
+          45
         ],
         "file": "src/account/pfile-stubs.c",
         "function": "read_object",
@@ -30291,7 +30312,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4132
+          4137
         ],
         "file": "src/core/files.c",
         "function": "confiscate_all",
@@ -30338,7 +30359,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4036
+          4041
         ],
         "file": "src/core/files.c",
         "function": "confiscate_item",
@@ -30396,7 +30417,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4036
+          4041
         ],
         "file": "src/core/files.c",
         "function": "confiscate_item",
@@ -30456,7 +30477,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1809
+          1888
         ],
         "file": "src/player/player_snapshot_repository.c",
         "function": "apply_death",
@@ -30517,7 +30538,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1755
+          1756
         ],
         "file": "src/core/files.c",
         "function": "writeCharacter",
@@ -30577,7 +30598,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1755
+          1756
         ],
         "file": "src/core/files.c",
         "function": "writeCharacter",
@@ -30637,7 +30658,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2208
+          2213
         ],
         "file": "src/core/files.c",
         "function": "restoreStatus",
@@ -30791,7 +30812,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          826
+          827
         ],
         "file": "src/core/files.c",
         "function": "writeObjectlist",
@@ -30838,7 +30859,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1203
+          1204
         ],
         "file": "src/core/files.c",
         "function": "write_one_object",
@@ -30898,7 +30919,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1203
+          1204
         ],
         "file": "src/core/files.c",
         "function": "write_one_object",
@@ -30958,8 +30979,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          466,
-          12281
+          468,
+          12289
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -31019,8 +31040,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          237,
-          4127
+          238,
+          4133
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_status",
@@ -31081,7 +31102,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1755
+          1756
         ],
         "file": "src/core/files.c",
         "function": "writeCharacter",
@@ -32501,7 +32522,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3275
+          3280
         ],
         "file": "src/core/files.c",
         "function": "restoreObjects",
@@ -32562,7 +32583,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4639
+          4644
         ],
         "file": "src/core/files.c",
         "function": "restorePetStatus",
@@ -32609,7 +32630,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4427
+          4432
         ],
         "file": "src/core/files.c",
         "function": "writePet",
@@ -32735,7 +32756,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4427
+          4432
         ],
         "file": "src/core/files.c",
         "function": "writePet",
@@ -32983,7 +33004,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4854
+          4859
         ],
         "file": "src/core/files.c",
         "function": "restoreSavedItems",
@@ -33046,8 +33067,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          419,
-          11081
+          421,
+          11089
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33108,8 +33129,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          415,
-          9551
+          417,
+          9559
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_saved_item",
@@ -33170,8 +33191,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          411,
-          9497
+          413,
+          9505
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_saved_item",
@@ -33234,7 +33255,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3724
+          3729
         ],
         "file": "src/core/files.c",
         "function": "read_one_object",
@@ -33297,8 +33318,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          384,
-          8411
+          386,
+          8419
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33345,8 +33366,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          384,
-          8411
+          386,
+          8419
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33393,7 +33414,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          913
+          915
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_format_item_diff_fields_and_free_proto",
@@ -33456,7 +33477,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6401
+          6409
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_locker_items_filtered",
@@ -33519,8 +33540,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          255,
-          4581
+          256,
+          4587
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -33583,8 +33604,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          554,
-          7262
+          556,
+          7270
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_private_chest_items",
@@ -33647,8 +33668,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          419,
-          11081
+          421,
+          11089
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33695,8 +33716,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          419,
-          11081
+          421,
+          11089
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33759,7 +33780,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9639
+          9647
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -33821,7 +33842,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9639
+          9647
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -33868,7 +33889,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9591
+          9599
         ],
         "file": "src/sql/sql_player.c",
         "function": "discard_shopkeeper_restore_stage",
@@ -33915,7 +33936,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7411
+          7419
         ],
         "file": "src/sql/sql_player.c",
         "function": "free_temp_char",
@@ -33961,7 +33982,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          33
+          34
         ],
         "file": "scripts/persistence_restore.py",
         "function": "tombstone_preflight",
@@ -34019,7 +34040,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          184
+          207
         ],
         "file": "scripts/persistence_restore.py",
         "function": "restore",
@@ -36211,8 +36232,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          444,
-          11858
+          446,
+          11866
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -36271,8 +36292,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          436,
-          11740
+          438,
+          11748
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -36332,8 +36353,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          432,
-          11486
+          434,
+          11494
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -45214,7 +45235,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4826
+          4973
         ],
         "file": "src/cmd/actinf.c",
         "function": "do_world",
@@ -50899,8 +50920,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          255,
-          4581
+          256,
+          4587
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
