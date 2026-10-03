@@ -30,12 +30,13 @@ NAME="duris-pa-coin-$$-${RANDOM}"
 PASSWORD="pa-coin-$$-${RANDOM}"
 IMAGE="${DURIS_TEST_DB_IMAGE:-mariadb:10.11}"
 TMPDIR="$(mktemp -d -t pa-coin-sql.XXXXXX)"
+SQL_FIXTURE_CONTAINER_ID=
 cleanup() {
     local status=$?
     if [[ -n "${NAME:-}" ]]; then
         docker logs "$NAME" 2>&1 | PASSWORD="$PASSWORD" python3 -c \
             'import os,sys; print(sys.stdin.read().replace(os.environ["PASSWORD"], "<fixture-password>"), end="")' || true
-        docker rm -fv "$NAME" >/dev/null 2>&1 || true
+        [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -fv "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true
         if docker container inspect "$NAME" >/dev/null 2>&1; then
             printf 'Disposable SQL container cleanup failed: %s\n' "$NAME" >&2
             status=1
@@ -55,8 +56,8 @@ if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PA
 export "$PASSWORD_ENV=$PASSWORD"
 source "$ROOT/tests/async/_sql_fixture_network.sh"
 sql_fixture_network
-docker run -d --name "$NAME" --cpus=2 --memory=2g \
-    "${SQL_FIXTURE_NETWORK[@]}" -e "$PASSWORD_ENV" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}" >/dev/null
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" --cpus=2 --memory=2g \
+    "${SQL_FIXTURE_NETWORK[@]}" -e "$PASSWORD_ENV" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}")
 unset "$PASSWORD_ENV"
 mapping="$(sql_fixture_mapping "$NAME")"
 published_port="${mapping##*:}"

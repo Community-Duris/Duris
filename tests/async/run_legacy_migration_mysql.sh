@@ -10,8 +10,9 @@ MIGRATED_DB="duris_legacy_migration_test"
 BOOTSTRAP_DB="duris_fresh_bootstrap_test"
 CONFIG=$(mktemp)
 
+SQL_FIXTURE_CONTAINER_ID=
 cleanup() {
-    docker rm -f "$NAME" >/dev/null 2>&1 || true
+    [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -f "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true
     rm -f "$CONFIG"
 }
 trap cleanup EXIT HUP INT TERM
@@ -24,8 +25,8 @@ else
 fi
 source "$ROOT/tests/async/_sql_fixture_network.sh"
 sql_fixture_network
-docker run -d --name "$NAME" "${SQL_FIXTURE_NETWORK[@]}" \
-    -e "$PASSWORD_ENV=$PASSWORD" "$DB_IMAGE" "${SQL_FIXTURE_SERVER[@]}" >/dev/null
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" "${SQL_FIXTURE_NETWORK[@]}" \
+    -e "$PASSWORD_ENV=$PASSWORD" "$DB_IMAGE" "${SQL_FIXTURE_SERVER[@]}")
 mapping=$(sql_fixture_mapping "$NAME")
 DB_PORT=${mapping##*:}
 
