@@ -1716,3 +1716,41 @@ Local ignored evidence SHA-256:
 - tmp/flat-account-alias-red.local.log: 126b24b5eb1ec5654d7d30f25ccb61a381ee77c4edc1ba008195c0ba4e06a7b4
 - tmp/flat-account-alias-boundaries.local.log: 952015e5e72cc9ebbc40fcd99a1d2cdd016d757df8597372f491009958909d6c
 - tmp/flat-alias-serialization-red.local.log: f822f32bb9eaa0a101088a79671d80637bee3e7211338559c2589d3a739fb488
+
+## Checked quest serialization milestone
+
+A native allocation walk reproduced a production serializer returning partial,
+nonempty personal quest state after ostringstream swallowed an allocation
+failure. The serializer now checks stream completion and refuses incomplete
+output. Existing persistence callers already reject empty documents. The new
+regression walks failures through the production serializer, verifies healthy
+state remains exact, and requires both injected failures and successful
+completion. This is separate from the uncommitted alias-erasure operation.
+
+Qualified native source: 85f0ae2edfdf3d2065a634e043d992eaf680d1fb; all 1,224
+tracked native files match /opt/duris-accounting-quest-serialization-review/source.
+Strict production SQL, flatfile and pfile builds pass. SQL SHA-256:
+18c9df494e507e41020ca8efe2916623f399085d18923f2f7d10bf8c1c62a469.
+Flatfile SHA-256:
+122601e93637587ab52d4bc7148057353419108c40b6912e0bb61cec7152109c.
+The native allocation regression and existing quest feature domain tests pass.
+The full formatter, 54 writer contracts, standalone site contracts, 14 fixtures
+and matrix check pass without census or qualification changes. No broader
+account-erasure or release gate is inferred from these bounded checks.
+
+Alias erasure still awaits fresh combined-source build, actual uncertain and
+durable publication journeys, ordinary deletion/restart and recovery checks.
+The observer fixture uses explicit account/character arguments to avoid its
+bound-default recreation error. The integrated 848-test run remains pinned to
+0be1cdf30 and is outside this serializer prefix. Full R1-R8, captured clone,
+full-world and measured workload gates remain open. coverage_complete=False;
+release BLOCKED. Inactive behavior, declined spell paths and production
+activation/data boundaries remain unchanged.
+
+Local ignored evidence SHA-256:
+
+- tmp/flat-alias-serialization-red.local.log: f822f32bb9eaa0a101088a79671d80637bee3e7211338559c2589d3a739fb488
+- tmp/quest-serialization-prefix-build.local.log: dd1c26496805b27738a98cc7724c09ed26ce14dea0174fcd11606c886ba829b7
+- tmp/quest-serialization-prefix-pin.local.log: 9fed84567f0a5457878c5e878a7b911125e95409b20a426e72c4ce19ba606e93
+- tmp/quest-serialization-prefix-native.local.log: 82cf41c32d1b4528d474a64a120d3c6517003e8e7f01e4ec8577a38373e29607
+- tmp/quest-serialization-prefix-writer.local.log: 66d234fb4ccd6b55e384a18b04ae902d81571afe872fef123b0b1214eb3d9996

@@ -325,7 +325,8 @@ restart remain open. Existing bank/shop/UID owner checks pass. Remote character-
 both real SQL deletion journeys and all ten native recovery cases. Shifted
 writer locations and hardcoded assertions are refreshed after exact identity
 checks; all 54 contracts pass without route upgrades. Whole-account quest-alias
-erasure and checked serialization remain separate unfinished work. A new integrated broad run is pinned to published 0be1cdf30, rather
+erasure remains unfinished. Checked quest serialization now rejects allocation-truncated
+state on its separately qualified native prefix; final alias journeys remain open. A new integrated broad run is pinned to published 0be1cdf30, rather
 than the uncommitted acknowledgement candidate. Current broad and full-feature
 qualification remain open. The unchanged frozen full-world retry passes inspector
 compilation but times out in its 600-second server-build stage before gameplay.
