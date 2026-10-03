@@ -89,9 +89,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 34 | Mini Zones | [Comprehensive source dossier](zone-stories/MINI_ZONES.md): all 21 blocks/seven exchanges/eleven addressed families, 300 rooms/125 mobs/124 objects/five shops, 548 resets/358 families, six literal assignments and bounded shared/foreign review | Revision one: three outcomes/four services, eighteen contacts/sixteen optional checks; exact maze/cutpurse, distinct sword and five-crystal guidance | Active source/recipient/episode and learned access/travel/effect evidence; guarded fee/charm/pet settlement; builder-selected missing-edge/identity/claim/prose repairs with clear fix/news reporting |
 | 35 | City of Torrhan | [Comprehensive source dossier](zone-stories/CITY_OF_TORRHAN.md): all 46 blocks/26 exchanges/eighteen addressed families, 289 rooms/152 mobs/125 objects/six shops, 447 resets/324 families; both literal and table/automatic bindings | Revision one: eight outcomes/fourteen services/four refusals, 23 contacts/28 optional checks; exact potion, ring, sword, crown and cloak cycle guidance | Active source/recipient episodes, competing materials, lineage/property presentation, access/choice and actual actor-state events; selected throne/stock/prose repairs require explicit fix/news reporting |
 | 36 | Golden Hall of the Crown | [Comprehensive source dossier](zone-stories/GOLDEN_HALL_OF_THE_CROWN.md): all 42 blocks/sixteen exchanges/seventeen addressed families, 300 rooms/91 mobs/106 objects/two shops, 534 resets/351 families, four literal assignments and automatic/shared bindings | Revision one: nine outcomes/seven services, 27 contacts/34 optional checks; exact note/key/totem/sword guidance, supplied finale and three independent rescues | Active source/recipient/returned-key lineage, three mixed fees, accepted access/travel/actor and pegasus events; builder-selected boulder/teacher/note/route/prose repairs require separate fix/news reporting |
-| 37–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 37 | Ashrumite Village | [Comprehensive source dossier](zone-stories/ASHRUMITE_VILLAGE.md): all 25 blocks/twelve exchanges/thirteen addressed families, 153 rooms/53 mobs/65 objects/twelve shops, 275 resets/181 families and fifteen literal/shared bindings | Revision two: twelve support services, sixteen contacts/21 optional checks; actual five-copy and same-name material guidance, complete intended/current repair matrix; no authored quest/daily units | All payments guarded; missing disc/two rewards/teacher equipment, stale eastern boundary and builder-selected crafting/price/guard/merchant/pet/prose work; source, paid-lore and full crafting lineage unqualified |
+| 38–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Ashrumite Village.
+The next area is The Hall of the Ancients (`hall`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -1705,3 +1706,62 @@ units and 2,223 projected rows; 36 of 220 roadmap areas are source-comprehensive
 with 184 remaining.** All 2,668 native definitions, revision-two fingerprint/
 registry and other fifty-seven maps are preserved. Continue with Ashrumite
 Village. Active, ready accounting remains mandatory.
+
+## Ashrumite Village completed source map — October 3, 2026
+
+Read all 25 native blocks: twelve Q and thirteen addressed M families with
+four speakers; none ambient. Reviewed 153 rooms/111 exact prose groups/34
+headers/36 metadata groups/177 exit families, 53 mobiles, 65 objects, twelve
+shops and 275 resets/181 source families. All chance fields are 100 and
+reserved fields zero. Fifteen literal assignments plus automatic/shared
+quest, teaching, shop, justice, pet, mining and wonder behavior are recorded
+in the [dossier](zone-stories/ASHRUMITE_VILLAGE.md). Four ordinary boundaries
+resolve and have foreign returns; the fifth points to an inactive old-world
+room. Missing prototypes include disc 4372, rewards 66066/66067 and unrelated
+thief-teacher inventory item 6089. A different active disc prototype is not a
+valid substitute or proof of its source. Class headers are not item grants.
+
+Revision two upgrades the existing basic map from eight requests/four excluded
+contracts to twelve explicit support services, sixteen contacts and 21 optional
+checks. The silverworker's raw-gem recipes, three matching gem cuts, two
+cut-gem-to-necklace exchanges, two unavailable jewelry rewards, six-material
+gold exchange, gold/disc-to-pyrite commission and paid forest rumor are all
+explained. The intended ore/bar/five-gem/disc/rainbow progression is documented
+separately. The zone projects no authored quest achievements or dailies;
+all paid native exchanges remain guarded under active accounting.
+
+Static extraction exposes exact terms, producers and missing references but
+does not choose intended balance, valid disc/source or campaign policy.
+Expand mixed-fee settlement, frozen-term rebinding/recovery, same-name variant
+presentation, accepted mining/ground/shop/random-source lineage, paid lore and
+optional all-stage crafting qualification. Current inventory and supplied
+items remain distinct from personal acquisition or earlier producer receipts.
+Five matching gems need five real copies; ordinary/magical necklaces and
+real gold/pyrite remain separate kinds despite identical visible names.
+
+Five guildguard prototypes are unplaced locally, four assigned gates dormant,
+while the cleric teacher has an active gate role. Bakery/shaman-store stock
+lacks local shop records. The bank's money-changer now redirects to the Royal
+Bank; wall-map/sign/price wording is incomplete or inconsistent. Pet claim
+restoration is commented out behind the existing accounting guard. A stable
+storage room has no exits by design; the historical wagon setup is disabled.
+These distinctions avoid claiming that all local commerce, entry or questing
+is broken. Builder-selected recipe/source/reward/price, stale boundary,
+equipment/role and pet/prose repairs remain explicit, fairly scoped proposals.
+**No native zone or quest repair ships in this checkpoint.** Report each
+implemented repair in a separate fix commit where practical and PR/news notes
+with concrete player trigger, before/after, validation and limitations.
+
+Native regression checks encounter visibility, exact same-name variants,
+five-copy readiness, optional history, eleven generic payment warnings and
+the authored paid-rumor guard, read purity
+and service-only receipt recovery without local/foreign achievement credit.
+Production regression checks all bindings/topics, source/key parents, absent
+prototypes, boundary/guild/store evidence and the reproducible index. These
+checks do not qualify actual paid crafting, live stock, mining, travel or pets.
+
+Current catalog: **58 journals, 1,713 achievement units, 1,498 potential daily
+units and 2,227 projected rows; 37 of 220 roadmap areas are source-comprehensive,
+with 183 remaining.** All 2,668 native definitions, revision-two fingerprint/
+registry and other fifty-seven maps remain unchanged. Continue with The Hall
+of the Ancients (`hall`). Active, ready accounting remains mandatory.

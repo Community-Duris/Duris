@@ -14,8 +14,8 @@ Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
 Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
 the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
 Ship Yards, Ultarium, the Surface Realm, Tharnadia, Mini Zones and the City
-of Torrhan and Golden Hall of the Crown now have complete source story maps;
-their active-world journeys remain unqualified. Savannah projects seventeen
+of Torrhan, Golden Hall of the Crown and Ashrumite Village now have complete
+source story maps; their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
 checks. The [Savannah dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md)
@@ -392,6 +392,26 @@ timer publication; the fresh-creation timer is not a universal recall cooldown.
 Builder-selected boulder, teaching-role, note/source, directional and wording
 repairs remain pending, with clear separate fix commits and PR/news reporting.
 No native repair ships in this checkpoint.
+
+Ashrumite Village's [comprehensive dossier](zone-stories/ASHRUMITE_VILLAGE.md)
+reviews every twelve-exchange/thirteen-addressed interaction, 153 rooms,
+53 mobiles, 65 objects, twelve shops and 275 resets/181 families. Revision
+two replaces its basic eight-request projection with twelve support services,
+sixteen contacts and 21 optional checks. All services remain payment-guarded;
+the zone has no authored quest achievement or daily units. Its intended silver,
+five-gem jewelry and disc enchantment chain is documented separately from
+current raw-gem, necklace, gold/pyrite and missing-reward contracts.
+
+Ashrumite adds an explicit intended-versus-current repair matrix, frozen-term
+receipt/rebinding qualification and same-name variant guidance. Static producer
+and access extraction can expose discrepancies but cannot choose a replacement
+disc, intended reward, balance or campaign policy. Qualify atomic mixed payments,
+live mining/ground/shop/random-effect sources, paid lore and optional full-stage
+lineage before fresh crafting. Three missing quest prototypes, a missing teacher
+inventory reset, stale east boundary, uneven guildguard/merchant roles and old
+pet restoration/prose remain pending repair findings. Ship actual repairs with
+separate fix commits where practical and concrete PR/news evidence. No native
+zone or quest repair ships in this checkpoint.
 
 ## Accounting requirement and delivery sequence
 
@@ -1104,7 +1124,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 184 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 183 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1125,6 +1145,16 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   Retain typed-food/coin-only and paid town guards; extend draw/custody and
   actor/NPC semantic settlement before healing/lesson/pet milestones. Resolve
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
+- [x] Complete Ashrumite's twelve-exchange/thirteen-addressed source dossier:
+  all 153 rooms/53 mobiles/65 objects/twelve shops, 275 resets/181 families
+  and fifteen literal/shared bindings. Revision two has twelve services,
+  sixteen contacts and 21 optional checks, with no quest/daily units.
+- [ ] Select Ashrumite's native recipe/source/reward/price repairs and rebind
+  deliberately while preserving frozen original receipts. Qualify mixed fees,
+  exact same-name/count materials, mining/ground/shop/random sources, paid lore
+  and optional full crafting lineage. Review missing prototypes/stale boundary,
+  guard/merchant roles and legacy pet restoration; publish every implemented
+  repair separately with trigger, before/after, validation and a news sentence.
 - [x] Complete Golden Hall's sixteen-exchange/seventeen-addressed source dossier:
   all 300 rooms/91 mobiles/106 objects/two shops, 534 resets/351 families,
   four literal assignments and automatic switch/teleport/teacher bindings.
@@ -1280,6 +1310,7 @@ contract classification; it does not claim complete objective coverage.
 | Mini Zones | 1 | Complete: three independent outcomes/four armor services across seven exchanges | [Source-comprehensive dossier](zone-stories/MINI_ZONES.md); eighteen contacts/all eleven addressed families, sixteen optional checks, actual maze/cutpurse route and distinct sword/crystal guidance | Three achievement/potential daily units; four mixed fees guarded; source, recipient, charm and pet qualification pending | Native exact-material/quantity/service/recovery fixtures; qualify source/access/effect/episode settlement and publish builder-selected boundary/identity/claim/prose repairs separately |
 | City of Torrhan | 1 | Complete: eight independent outcomes/fourteen support exchanges/four refusals across 26 native exchanges | [Source-comprehensive dossier](zone-stories/CITY_OF_TORRHAN.md); 23 contacts/eighteen addressed families, 28 optional checks and exact potion/sword/crown/cloak guidance | Eight achievement/potential daily units; live source/retirement, lineage, access/choice and actual royal transformation unqualified | Native supplied-route, exact-kind, service/refusal and recovery fixtures; qualify shared actor/lineage/property events and publish selected throne/stock/prose repairs distinctly |
 | Golden Hall of the Crown | 1 | Complete: nine outcomes/seven support services across all sixteen native exchanges | [Source-comprehensive dossier](zone-stories/GOLDEN_HALL_OF_THE_CROWN.md); 27 contacts/seventeen addressed families, 34 optional checks and exact note/key/totem/sword guidance | Nine achievements/seven potential dailies; both key-return rescues keep their daily exclusions; live sources, fees, access and pet events unqualified | Native supplied-proof, exact-kind, independent-rescue and recovery fixtures; qualify accepted actor/source/lineage/access/summon events and publish selected repairs clearly |
+| Ashrumite Village | 2 | Complete: twelve support services across every native exchange | [Source-comprehensive dossier](zone-stories/ASHRUMITE_VILLAGE.md); sixteen contacts/all thirteen addressed families, 21 optional checks and explicit intended/current crafting matrix | Zero authored achievements/dailies; all payments guarded, three quest prototypes missing; source, paid lore and actual craft lineage unqualified | Native exact same-name/five-copy, service-only recovery and missing-reference fixtures; select native repairs and qualify fees/source/output/access/pet events before a fresh journey |
 
 ## Twin Towers evidence and decisions
 

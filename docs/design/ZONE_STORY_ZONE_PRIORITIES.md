@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 36 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 37 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -60,7 +60,12 @@ Two key-return rescues retain zone achievement credit and daily exclusions.
 Exact three-proof and support-chain guidance preserves supplied routes. Native
 boulder/teaching/note/route/prose repairs remain proposed; mixed fees, source
 and key lineage, accepted access/actor and pegasus events remain unqualified.
-Active reset-generation qualification is a shared prerequisite for the pilots.
+Ashrumite's [completed dossier](zone-stories/ASHRUMITE_VILLAGE.md) upgrades its
+basic map to twelve services, sixteen contacts and 21 optional checks. The
+intended silver/jewelry/disc chain is separate from actual mismatched contracts;
+no authored achievements/dailies or native repairs ship. Atomic fees, live sources,
+exact variant lineage and builder-selected recipe/prototype/route/role/pet repairs
+remain explicit. Active reset-generation qualification is a shared prerequisite for the pilots.
 
 ## Reviewed first integrations
 
@@ -102,6 +107,7 @@ Active reset-generation qualification is a shared prerequisite for the pilots.
 | 34 | [Mini Zones](zone-stories/MINI_ZONES.md) (`minizones`) | Tip jar → dishwasher/cutpurse clue; black-wall maze → revenant's parchment → knight's blue-green strip; three distinct strips plus hidden golden hilt → Magik, or supplied pieces; four matching ghostly bases + five crystals + fee as services. Independent tree/inn/outpost exploration. | Source-comprehensive, revision one: three outcomes/four services, eighteen contacts/all eleven addressed families, sixteen optional checks. Actual maze and sword dispatch verified in source; first-source/gift/access/effect/episode/payment remain unqualified. Nine missing exits, dryad/navigator identity, claim restoration and prose repairs remain planned and must be reported clearly when implemented. |
 | 35 | [City of Torrhan](zone-stories/CITY_OF_TORRHAN.md) (`torrhan`) | Forest key/locked box → sailor's ring → Aineila; green scales → Marthona; contested owl feather → boy or halfling; full yellow potion → owl's seal/half-empty potion → king's crown, or supplied material; cloth → first cloak/eight-form support cycle; exact guard sword → Thurdorf → Oblivion to Torrok. | Source-comprehensive, revision one: eight outcomes/fourteen services/four refusals, 23 contacts/all eighteen addressed families, 28 optional checks. No native repairs shipped. Inert throne target, missing shop stock and prose corrections have separate fix/news plans; source/episode/lineage, royal actor state, access and choice remain unqualified. |
 | 36 | [Golden Hall of the Crown](zone-stories/GOLDEN_HALL_OF_THE_CROWN.md) (`gold_hal`) | Chalice/inn clues → bed → adventurer corpse/bloodstained note → optional royal briefing; silver-key rescues → hair pin; hides/fees → statue/gourd/totem → ring/buckler/rod/amulet → trainer's balanced sword; head/sword/pin → royal finale, or supplied proofs; separate kenku, captain/note and feather-headband routes. | Source-comprehensive, revision one: nine outcomes/seven services, 27 contacts/all seventeen addressed families, 34 optional checks; nine achievements/seven potential dailies. No native repairs shipped. Returned-key lineage, three guarded fees, actual access/actor/summon events and builder-selected boulder/teacher/note/route/prose work remain explicit. |
+| 37 | [Ashrumite Village](zone-stories/ASHRUMITE_VILLAGE.md) (`ashrumite`) | Intended ore → five bars → plain necklace → five cut gems → set necklace → disc → enchantment; current raw-gem, necklace, gold/pyrite and missing-disc/reward contracts described separately, with supplied alternatives and paid rumor. | Source-comprehensive, revision two: twelve support services, sixteen contacts/all thirteen addressed families, 21 optional checks; zero authored quest/daily units. All fees guarded. No native repairs shipped; explicit recipe/prototype/price/boundary/guard/merchant/pet plans and source/lineage qualification. |
 
 ## New authored journal batch
 
@@ -177,7 +183,6 @@ branches before naming or activating deeper stages. This queue is not daily elig
 
 | Order | Zone / source | Rough starting story to review | Evidence to inspect |
 | ---: | --- | --- | --- |
-| 37 | Ashrumite Village (`ashrumite`) | [Meet the giver → 1 × a necklace of silver set with gems; 1 × an amethyst; 1 × an exotic tigers-eye gem and the remaining ingredients → a small gold nugget](../../areas/qst/ashrumite.qst#L101) | 12 Q; 13 dialogue; 8 candidate link items |
 | 38 | The Hall of the Ancients (`hall`) | [Meet the giver → 2 × a necklace of tiny steel links; 2 × the bangle of the Dreamer; 2 × an adamantium rock and the remaining ingredients → Jadem's magical device of protection](../../areas/qst/hall.qst#L77) | 11 Q; 14 dialogue; 6 candidate link items |
 | 39 | Sarmiz'Duul (`sarmiz`) | [Meet the giver → 1 × a scroll covered with magical formulas; 1 × a demon's heart; 1 × a bag of magical dust and the remaining ingredients → a staff of power](../../areas/qst/sarmiz.qst#L328) | 8 Q; 12 dialogue; 6 candidate link items |
 | 40 | The Motte and Bailey of Duke Delwyn (`delwyn`) | [Meet the giver → 1 × a spool of fine white yarn → a spool of crimson yarn](../../areas/qst/delwyn.qst#L160) | 11 Q; 9 dialogue; 6 candidate link items |

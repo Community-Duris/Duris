@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 					"met NPC was missing");
 		}
 		require(catalog.story_mappings.size() == 58 &&
-				tracker.summary_for(7, 42).total == 1721,
+				tracker.summary_for(7, 42).total == 1713,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -208,7 +208,9 @@ int main(int argc, char **argv)
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
 										    666, 2) == 8 &&
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
-										    404, 2) == 9,
+										    404, 2) == 9 &&
+				zone_story_quest_catalog::eligible_definition_count(file_catalog,
+										    660, 2) == 0,
 			"complete Alatorin/Newhaven/Faerie/Verspin/Ship Yards/Ultarium/Surface sidecars failed the native file loader");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -3182,6 +3184,85 @@ int main(int argc, char **argv)
 				recovered_gold.progress_for_zone(7, 42, 5000).completed == 0 &&
 				recovered_gold.progress_for_zone(7, 42, 57).completed == 0,
 			"Golden Hall recovery merged independent stories or invented foreign credit");
+
+		const auto &ash_map = *std::find_if(catalog.story_mappings.begin(),
+						    catalog.story_mappings.end(),
+						    [](const auto &mapping)
+						    { return mapping.source_area == "ashrumite"; });
+		const auto &ash_five = story_for("ashrumite", "silversmith-five-raw-gems");
+		const auto &ash_necklace = story_for("ashrumite", "jeweler-current-necklace");
+		const auto &ash_mage = story_for("ashrumite", "mage-current-necklace-enchantment");
+		service supplied_ash(catalog);
+		require(supplied_ash.discover_zone(7, 42, 660, 66001, 100, "arrival") ==
+					result::applied &&
+				supplied_ash.render_journal(7, 42, 660, 10, 1, 101, false, false)
+						.find("] " + ash_five.title + "\r\n") ==
+					std::string::npos,
+			"Ashrumite discovery revealed an unseen crafting service");
+		for (const auto &contact : ash_map.contacts)
+			require(supplied_ash.meet_npc(7, 42, contact.mob_vnum, 66001, 101) ==
+					result::applied,
+				"Ashrumite fixture encounter failed");
+		const auto ash_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Ashrumite journal section missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		supplies.carried[66032] = 5;
+		supplies.carried[66033] = 4;
+		supplies.carried[66048] = 2;
+		supplies.carried[66051] = 1;
+		const auto ash_before_read = supplied_ash.serialize_state();
+		journal = supplied_ash.render_journal(7, 42, 660, 10, 1, 102, false, false,
+						      &supplies);
+		require(ash_section(ash_five).find("[Missing now] " + ash_five.steps[1].text) !=
+					std::string::npos &&
+				ash_section(ash_necklace)
+						.find("[Missing now] " +
+						      ash_necklace.steps[1].text) !=
+					std::string::npos &&
+				ash_section(ash_mage).find("[Missing now] " +
+							   ash_mage.steps[1].text) !=
+					std::string::npos,
+			"same-name gems, ordinary necklace or pyrite replaced exact Ashrumite materials");
+		supplies.carried[66033] = 5;
+		for (int item : { 66049, 66044, 66045, 66046, 66047, 66050 })
+			supplies.carried[item] = 1;
+		journal = supplied_ash.render_journal(7, 42, 660, 10, 1, 103, false, false,
+						      &supplies);
+		require(ash_section(ash_five).find("[Ready now] " + ash_five.steps[1].text) !=
+					std::string::npos &&
+				ash_section(ash_five).find("[Pending] " + ash_five.steps[0].text) !=
+					std::string::npos &&
+				ash_section(ash_mage).find("[Ready now] " +
+							   ash_mage.steps[1].text) !=
+					std::string::npos &&
+				ash_section(ash_mage).find("unavailable disc") != std::string::npos,
+			"Ashrumite supplied material manufactured producer history or hid the missing disc");
+		fee_warnings = 0;
+		for (size_t at = journal.find(unavailable); at != std::string::npos;
+		     at = journal.find(unavailable, at + unavailable.size()))
+			++fee_warnings;
+		require(fee_warnings == 11 &&
+				ash_section(story_for("ashrumite", "bartenders-paid-disc-rumor"))
+						.find("guarded under active accounting") !=
+					std::string::npos &&
+				supplied_ash.serialize_state() == ash_before_read &&
+				supplied_ash.progress_for_zone(7, 42, 660).completed == 0 &&
+				supplied_ash.progress_for_zone(7, 42, 660).total == 0,
+			"Ashrumite guidance bypassed a payment guard, mutated state or counted a service");
+		// Recovered historical receipts only: this fixture does not execute paid crafting.
+		for (const auto &entry : ash_map.stories)
+			record(supplied_ash, entry.contracts.front(), entry.id.c_str(), 660, 66060);
+		service recovered_ash(catalog);
+		require(recovered_ash.deserialize_state(supplied_ash.serialize_state(), &error) &&
+				recovered_ash.progress_for_zone(7, 42, 660).completed == 0 &&
+				recovered_ash.progress_for_zone(7, 42, 660).total == 0 &&
+				recovered_ash.progress_for_zone(7, 42, 40).completed == 0 &&
+				recovered_ash.progress_for_zone(7, 42, 252).completed == 0,
+			"Ashrumite recovered services earned local or foreign quest credit");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

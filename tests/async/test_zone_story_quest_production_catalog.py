@@ -1342,7 +1342,67 @@ for item,target in ((40503,40699),(40504,40698)):
 mobs={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/mob/gold_hal.mob").read_text(),re.M|re.S)}
 assert {v for v,b in mobs.items() if int(b.split("~")[4].split()[0]) & 32768} == {40482}
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal"):
+# Ashrumite: paid crafting is support, and matching names cannot substitute
+# for exact current contracts or make missing prototypes available.
+ash = inventory_module.area_evidence(ROOT, "ashrumite")
+ash_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "ashrumite")
+ash_stories = {s["id"]:s for s in ash_mapping["stories"]}
+assert (ash_mapping["schema_version"],ash_mapping["revision"],ash_mapping["coverage"]) == (3,2,"complete")
+assert len(ash_stories) == 12 and len(ash_mapping["contacts"]) == 16
+assert all(s["category"] == "service" for s in ash_stories.values()) and not ash_mapping["exclusions"]
+assert sum(t.get("optional",False) for s in ash_stories.values() for t in s["steps"]) == 21
+assert len(ash["requests"]) == 12 and len(ash["dialogue"]) == 13
+assert len(ash["mobs"]) == 53 and len(ash["items"]) == 65 and len(ash["reset_commands"]) == 275
+assert {tuple(sorted(b.items())) for s in ash_stories.values() for b in s["contracts"]} == {
+    tuple(sorted(r["block"]["binding"].items())) for r in ash["requests"]}
+assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in ash_stories.values())
+assert all(t.get("optional") for s in ash_stories.values() for t in s["steps"][:-1])
+ash_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 660]
+assert len(ash_units) == 12 and not any(u["achievement"] or u["daily_candidate"] for u in ash_units)
+five = ash_stories["silversmith-five-raw-gems"]
+assert (five["steps"][1]["item_vnums"],five["steps"][1]["count"]) == ([66033],5)
+assert five["steps"][0]["contracts"] == ash_stories["silversmith-current-refining"]["contracts"]
+necklace = ash_stories["jeweler-current-necklace"]
+assert [t["item_vnums"] for t in necklace["steps"] if t["kind"] == "carried_item"] == [[66049],[66044],[66045],[66046],[66047],[66048]]
+mage = ash_stories["mage-current-necklace-enchantment"]
+assert mage["contracts"] == [{"giver_vnum":66017,"completion_key":"give=C:25000,I:4372,I:66050;receive=I:66051;disappear=0"}]
+assert [t["item_vnums"] for t in mage["steps"] if t["kind"] == "carried_item"] == [[66050]]
+assert "unavailable disc" in mage["summary"] and "producing pyrite" in mage["summary"]
+assert not ash_stories["bartenders-paid-disc-rumor"]["steps"][:-1]
+assert {4372,6089,66066,66067}.isdisjoint(inventory_items) and 4022 in inventory_items
+assert ash["items"][66032]["name"] == ash["items"][66033]["name"] == "a raw gem"
+assert ash["items"][66048]["name"] == ash["items"][66049]["name"]
+assert ash["items"][66050]["name"] == ash["items"][66051]["name"]
+contacts = {c["mob_vnum"]:c for c in ash_mapping["contacts"]}
+for v,c in contacts.items(): assert c["keyword"] in ash["mobs"][v]["keywords"]
+for d in ash["dialogue"]:
+    assert set(d["body"][0].rstrip("~").split()) <= set(contacts[d["giver_vnum"]]["topics"])
+parent=room=None
+sources=collections.defaultdict(list)
+placed=set()
+for reset in ash["reset_commands"]:
+    c,v=reset["command"],reset["arguments"]
+    assert v[4:] == [100,0,0,0]
+    if c == "M": parent,room=v[1],v[3];placed.add(parent)
+    if c == "G" and v[1] in (66001,66002):sources[v[1]].append((parent,room,v[2]))
+    if c == "O" and v[1] in (66032,66033,66039,66040,66041):sources[v[1]].append((v[3],v[2]))
+assert sources[66001] == [(66039,66069,1)] and sources[66002] == [(66002,66040,1)]
+assert {v:sources[v] for v in (66032,66033,66039,66040,66041)} == {66032:[(66035,25)],66033:[(66034,25)],66039:[(66033,25)],66040:[(66032,25)],66041:[(66034,25)]}
+assert {66022,66023,66024,66025,66026}.isdisjoint(placed) and 66031 in placed
+assert any(r["command"] == "G" and r["arguments"][1] == 6089 for r in ash["reset_commands"])
+assert len(ash["special_assignments"]) == 15
+assert {(a["vnum"],a["function"]) for a in ash["special_assignments"] if a["function"] == "guild_guard"} == {
+    (66031,"guild_guard"),(66024,"guild_guard"),(66023,"guild_guard"),(66025,"guild_guard"),(66022,"guild_guard")}
+rooms={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/wld/ashrumite.wld").read_text(),re.M|re.S)}
+assert set(rooms) == set(range(66001,66154))
+edges={v:{int(d):(int(f),int(k),int(t)) for d,f,k,t in re.findall(r"\bD(\d+)\s+[^~]*~[^~]*~\s*(-?\d+)\s+(-?\d+)\s+(-?\d+)",b,re.S)} for v,b in rooms.items()}
+assert {(v,d,t) for v,ds in edges.items() for d,(f,k,t) in ds.items() if t>0 and t not in rooms} == {
+    (66140,2,550481),(66140,3,550080),(66087,1,701670),(66087,2,702069),(66149,1,224166)}
+assert not edges[66117] and edges[66069][1] == (3,66001,66074)
+shop=(ROOT/"areas/shp/ashrumite.shp").read_text()
+assert len(re.findall(r"^#\d+~",shop,re.M)) == 12 and "#66032~" not in shop and "#66019~" not in shop
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

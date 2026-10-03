@@ -54,6 +54,29 @@ Files take effect at bootstrap; no new live reload command is introduced.
 Missing files are optional. Present invalid, unreadable, or oversized files
 make zone story bootstrap fail closed; they are never silently ignored.
 
+## Current contracts and intended repairs
+
+Keep an intended progression separate from the actual offering/reward matrix.
+Ashrumite's [source dossier](../design/zone-stories/ASHRUMITE_VILLAGE.md)
+shows why: silverworking dialogue currently uses raw gems, necklace setting
+produces gold ore and magical enchantment produces pyrite with a missing disc.
+Static extraction can find these terms and producer/source links. It cannot
+choose corrected item identities, a replacement source, prices or campaign
+entitlement from matching names or prose. Exact quantities and same-name kinds
+must remain distinct in current checks; historical receipts do not create stock.
+
+Use `service` for support crafting and paid information. Explain unavailable
+or missing-reference contracts without adding nonexistent item checks, guessed
+personal-source milestones or achievements for each keyword. A repaired native
+contract needs deliberate rebinding, content-fingerprint review and recovery of
+frozen original terms. Increment the journal revision for changed projection.
+Keep active-accounting guards until payment/source/output qualification passes.
+
+Record proposed native repairs separately from implemented fixes. For an actual
+repair, use a clearly named separate fix commit where practical and PR/news
+notes naming zone/interaction, player trigger, before/after, proof and limits.
+A journal correction or planned recipe change is not a shipped native repair.
+
 ## Schema version 1
 
 Version 1 remains supported. Use version 2 or 3 for new starter and hometown

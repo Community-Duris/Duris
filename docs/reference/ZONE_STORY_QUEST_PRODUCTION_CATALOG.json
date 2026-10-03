@@ -72227,374 +72227,191 @@
     {
       "contacts": [
         {
-          "description": "This person offers local conversation. Try these topics to learn more.",
+          "description": "Magic shop. Ask necklace, platinum, disc, scrolls or potions. The advertised enchantment conflicts with its current materials and pyrite reward; its required disc is absent.",
           "keyword": "mage",
           "mob_vnum": 66017,
-          "name": "the mage shopkeeper",
+          "name": "Mage shopkeeper",
           "topics": [
             "necklace",
             "platinum",
-            "scrolls"
+            "disc",
+            "scrolls",
+            "potions"
           ]
         },
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
+          "description": "Jewelry store beside the mines. Ask gem, cutting, set, ring, earring, necklace or cost. Eight current support exchanges retain exact material distinctions and payment guards; several recipes require repair.",
           "keyword": "jeweler",
           "mob_vnum": 66021,
-          "name": "the jeweler",
+          "name": "Jeweler",
           "topics": [
             "gem",
+            "gems",
+            "cutting",
             "set",
+            "setting",
+            "jewelry",
             "ring",
             "necklace",
             "earring",
-            "cost"
+            "cost",
+            "money",
+            "price"
           ]
         },
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
+          "description": "Silverworking shop. Ask nugget, ore, silver, cost, necklace or jewelry. Current raw-gem contracts disagree with the silverworking dialogue. The sign also disagrees with both price responses.",
           "keyword": "silversmith",
           "mob_vnum": 66040,
-          "name": "the silversmith",
+          "name": "Silversmith",
           "topics": [
             "nugget",
+            "ore",
+            "silver",
             "cost",
-            "necklace"
+            "price",
+            "money",
+            "necklace",
+            "jewelry"
           ]
         },
         {
-          "description": "This person offers local conversation. Try these topics to learn more.",
+          "description": "Town tavern. Ask disc, disk or platinum. The ten-gold disc rumor is guarded and awards information only, without a disc or recovery milestone.",
           "keyword": "bartender",
           "mob_vnum": 66041,
-          "name": "the bartender",
+          "name": "Bartender",
           "topics": [
-            "disc"
+            "disc",
+            "disk",
+            "platinum"
           ]
+        },
+        {
+          "description": "Illusionist guild entrance. Teaching follows its own class and skill rules. Learning a lesson or entering the guild has no native quest completion here.",
+          "keyword": "illusionist",
+          "mob_vnum": 66009,
+          "name": "Illusionist guildmaster",
+          "topics": []
+        },
+        {
+          "description": "Warrior practice room. Ordinary teaching and nearby store inventory are support systems, without a local accepted training quest.",
+          "keyword": "warrior",
+          "mob_vnum": 66027,
+          "name": "Warrior guildmaster",
+          "topics": []
+        },
+        {
+          "description": "Thief practice room. Ordinary teaching is separate from jewelry services. One inventory reset references a missing foreign prototype; no personal theft objective is implemented.",
+          "keyword": "thief",
+          "mob_vnum": 66028,
+          "name": "Thief guildmaster",
+          "topics": []
+        },
+        {
+          "description": "Shaman practice room. Teaching is separate from accepted quests; the neighboring storekeeper lacks a local shop definition and needs a builder role decision.",
+          "keyword": "shaman",
+          "mob_vnum": 66029,
+          "name": "Shaman guildmaster",
+          "topics": []
+        },
+        {
+          "description": "Mage practice room. Learning and class access follow shared teaching rules. These have no local native quest receipt.",
+          "keyword": "mage",
+          "mob_vnum": 66030,
+          "name": "Mage guildmaster",
+          "topics": []
+        },
+        {
+          "description": "Cleric entrance. This teacher also has a class gate procedure at his current position. Guarding, instruction and quest completion are separate facts.",
+          "keyword": "cleric",
+          "mob_vnum": 66031,
+          "name": "Cleric guildmaster",
+          "topics": []
+        },
+        {
+          "description": "Bank. The assigned money-changing procedure now redirects list and exchange requests to the Royal Bank. Room prose about this local exchange is historical; no coin-conversion achievement is implemented.",
+          "keyword": "banker",
+          "mob_vnum": 66038,
+          "name": "Banker",
+          "topics": []
+        },
+        {
+          "description": "Guard headquarters. Shared town justice handles its own reporting and jail rules. It has no local accepted quest receipt; the wall map is still placeholder text.",
+          "keyword": "clerk",
+          "mob_vnum": 66046,
+          "name": "Justice clerk",
+          "topics": []
+        },
+        {
+          "description": "Guard headquarters and patrol declarations. Shared town justice is separate from quest completion. Jail access has no implemented prisoner rescue here.",
+          "keyword": "peacekeeper",
+          "mob_vnum": 66001,
+          "name": "Gnomish peacekeeper",
+          "topics": []
+        },
+        {
+          "description": "Village gate and watchtower declarations. One northern gate appearance carries the village gate key. A key, successful unlocking and physical travel are different facts; no gate achievement is implemented.",
+          "keyword": "gateguard",
+          "mob_vnum": 66002,
+          "name": "Gnome gateguard",
+          "topics": []
+        },
+        {
+          "description": "Mine patrol declarations. Shared cityguard behavior is separate from ore recovery, combat proof and quest completion. Current availability depends on the actual patrol episode.",
+          "keyword": "mineguard",
+          "mob_vnum": 66003,
+          "name": "Mineguard",
+          "topics": []
+        },
+        {
+          "description": "Guard headquarters. Carries the small jail key in a one-cap declaration. Actual custody and accepted unlocking are separate facts; no local prisoner rescue contract is implemented.",
+          "keyword": "jailkeeper",
+          "mob_vnum": 66039,
+          "name": "Jailkeeper",
+          "topics": []
         }
       ],
       "coverage": "complete",
-      "exclusions": [
-        {
-          "contracts": [
-            {
-              "completion_key": "give=C:1000;receive=;disappear=0",
-              "giver_vnum": 66041
-            }
-          ],
-          "reason": "Coin-only, informational, or skill exchanges; supporting services rather than item-delivery story achievements."
-        },
-        {
-          "contracts": [
-            {
-              "completion_key": "give=C:25000,I:4372,I:66050;receive=I:66051;disappear=0",
-              "giver_vnum": 66017
-            },
-            {
-              "completion_key": "give=C:100,I:66048,I:66064;receive=I:66066;disappear=0",
-              "giver_vnum": 66021
-            },
-            {
-              "completion_key": "give=C:100,I:66048,I:66065;receive=I:66067;disappear=0",
-              "giver_vnum": 66021
-            }
-          ],
-          "reason": "Native exchange references missing item prototypes in the active world sources; integration requires world data repair."
-        }
-      ],
-      "introduction": "Explore Ashrumite Village and meet its people to uncover local requests.",
+      "exclusions": [],
+      "introduction": "Explore a mining village and its silverworking, gem cutting, jewelry setting and magical-necklace leads. All twelve native exchanges are support services, with no quest or daily achievements. Several advertised recipes disagree with their current contracts. Active, ready accounting is required; paid exchanges remain guarded.",
       "orientation": [
-        "Start with look and exits to learn your surroundings.",
-        "Use help home to learn about hometowns and help quest for quest commands."
+        "Surface hills reach the village approach from the south and west; two southeastern mine exits connect to the Underdark. A further eastern branch points to an unavailable old-world destination. Check an actual open route before travel.",
+        "The intended crafting story runs from silver ore to five pure bars, a plain necklace, five cut gems, a set necklace and a rare platinum disc, then rainbow enchantment. Current recipes disagree with that sequence. This journal explains the actual exchanges and their blockers instead of promising the intended outcome.",
+        "Ten raw-gem kinds share a visible name and aliases. Silver ore and pure silver bars are separate kinds. Current material checks distinguish exact kinds and quantities; five interchangeable-looking gems need not satisfy a five-copy contract.",
+        "Ordinary and magical gem-set necklaces share a visible name. The magical kind holds rainbow charges and is currently created directly by the five-raw-gem service. A current receipt does not replace an unequipped necklace after it has been used or consumed.",
+        "Real gold ore and pyrite also share a visible name. Real gold and pyrite are separately declared in eastern ore shafts. Only real gold matches the current magic-shop contract, whose required disc is unavailable.",
+        "The disc rumor describes a ranger, forest and kobold suspicion. It does not establish an active foreign recovery route, item grant or personal-source achievement. A similarly described foreign disc has a different identity and cannot substitute in the current recipe.",
+        "Current carried-material checks are optional preparation aids. Supplied matching items fit without prior crafting, personal mining, a paid rumor or learned keywords. No check proves first recovery, and no service receipt earns a quest achievement.",
+        "All twelve paid native exchanges remain unavailable under active accounting. Carrying every visible material does not override the payment guard, missing disc or missing jewelry rewards. Recipe repairs and safe payment integration need qualification before a fresh journey.",
+        "Gem and ore declarations, merchant inventories and alternative foreign or random-effect sources are leads. Caps, actual stock, custody and accepted acquisition still matter. Ordinary skill mining is guarded while item accounting is active and is different from picking up predeclared ore.",
+        "Guild teaching, class gates, shops, room rental, town justice and guard keys are separate support systems. Four named guildguard prototypes have gate procedures but are not placed by local resets; the cleric teacher occupies his gate position. Access rules need a deliberate builder review.",
+        "The stable lists a cave-spider hireling in its adjacent storage room. Pet purchase, rental and claim operations are guarded under active accounting. The old claim path reports a return without restoring the pet and needs repair before it can support a quest step.",
+        "The dump is also guarded while accounting is active. Drunken chatter and janitor pickup are ambient behavior. Orc, giant, beast and mine danger descriptions contain no local accepted rescue, clearance or village-defense outcome."
       ],
-      "revision": 1,
-      "schema_version": 2,
+      "revision": 2,
+      "schema_version": 3,
       "source_area": "ashrumite",
       "stories": [
         {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=C:1000,I:66044,I:66045,I:66046,I:66047,I:66048,I:66049;receive=I:66050;disappear=0",
-              "giver_vnum": 66021
-            }
-          ],
-          "id": "request-66021-5df5a5ca069c",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
-              "item_vnums": [
-                66044
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x an amethyst"
-            },
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-2",
-              "item_vnums": [
-                66045
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x an exotic tigers-eye gem"
-            },
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-3",
-              "item_vnums": [
-                66046
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a lustrous diamond"
-            },
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-4",
-              "item_vnums": [
-                66047
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a necklace of fine silver"
-            },
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-5",
-              "item_vnums": [
-                66048
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a necklace of silver set with gems"
-            },
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-6",
-              "item_vnums": [
-                66049
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a necklace of silver set with gems"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=C:1000,I:66044,I:66045,I:66046,I:66047,I:66048,I:66049;receive=I:66050;disappear=0",
-                  "giver_vnum": 66021
-                }
-              ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the requested exchange"
-            }
-          ],
-          "summary": "Bring 1,000 copper, 1 x an amethyst, 1 x an exotic tigers-eye gem, 1 x a lustrous diamond, 1 x a necklace of fine silver, 1 x a necklace of silver set with gems, 1 x a necklace of silver set with gems. Reward: 1 x a small gold nugget.",
-          "title": "Deliver 1,000 copper, 1 x an amethyst, 1 x an exotic tigers-eye gem, 1 x a lustrous diamond, 1 x a necklace of fine silver, 1 x a necklace of silver set with gems, 1 x a necklace of silver set with gems"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=C:20,I:66039;receive=I:66044;disappear=0",
-              "giver_vnum": 66021
-            }
-          ],
-          "id": "request-66021-ca1d7c51d803",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
-              "item_vnums": [
-                66039
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a raw gem"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=C:20,I:66039;receive=I:66044;disappear=0",
-                  "giver_vnum": 66021
-                }
-              ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the requested exchange"
-            }
-          ],
-          "summary": "Bring 20 copper, 1 x a raw gem. Reward: 1 x an amethyst.",
-          "title": "Deliver 20 copper, 1 x a raw gem"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=C:20,I:66040;receive=I:66045;disappear=0",
-              "giver_vnum": 66021
-            }
-          ],
-          "id": "request-66021-f20d451a46e3",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
-              "item_vnums": [
-                66040
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a raw gem"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=C:20,I:66040;receive=I:66045;disappear=0",
-                  "giver_vnum": 66021
-                }
-              ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the requested exchange"
-            }
-          ],
-          "summary": "Bring 20 copper, 1 x a raw gem. Reward: 1 x an exotic tigers-eye gem.",
-          "title": "Deliver 20 copper, 1 x a raw gem"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=C:20,I:66041;receive=I:66046;disappear=0",
-              "giver_vnum": 66021
-            }
-          ],
-          "id": "request-66021-5f38e7379418",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
-              "item_vnums": [
-                66041
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a raw gem"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=C:20,I:66041;receive=I:66046;disappear=0",
-                  "giver_vnum": 66021
-                }
-              ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the requested exchange"
-            }
-          ],
-          "summary": "Bring 20 copper, 1 x a raw gem. Reward: 1 x a lustrous diamond.",
-          "title": "Deliver 20 copper, 1 x a raw gem"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=C:20,I:66042;receive=I:66047;disappear=0",
-              "giver_vnum": 66021
-            }
-          ],
-          "id": "request-66021-b36b8c42f70a",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
-              "item_vnums": [
-                66042
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a beautiful sapphire"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=C:20,I:66042;receive=I:66047;disappear=0",
-                  "giver_vnum": 66021
-                }
-              ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the requested exchange"
-            }
-          ],
-          "summary": "Bring 20 copper, 1 x a beautiful sapphire. Reward: 1 x a necklace of fine silver.",
-          "title": "Deliver 20 copper, 1 x a beautiful sapphire"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=C:20,I:66043;receive=I:66048;disappear=0",
-              "giver_vnum": 66021
-            }
-          ],
-          "id": "request-66021-a5db6645a824",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
-              "item_vnums": [
-                66043
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a brilliant emerald"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=C:20,I:66043;receive=I:66048;disappear=0",
-                  "giver_vnum": 66021
-                }
-              ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the requested exchange"
-            }
-          ],
-          "summary": "Bring 20 copper, 1 x a brilliant emerald. Reward: 1 x a necklace of silver set with gems.",
-          "title": "Deliver 20 copper, 1 x a brilliant emerald"
-        },
-        {
-          "category": "request",
+          "category": "service",
           "contracts": [
             {
               "completion_key": "give=C:10,I:66032;receive=I:66033;disappear=0",
               "giver_vnum": 66040
             }
           ],
-          "id": "request-66040-89ce148efe13",
+          "id": "silversmith-current-refining",
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
+              "hint": "This exact raw gem is declared on the ground in the southeastern end of the gem mines. Silver ore, a silver bar and other same-named raw gems do not substitute. Current custody does not prove personal mining.",
+              "id": "material-66032",
               "item_vnums": [
                 66032
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a raw gem"
+              "optional": true,
+              "text": "Carry the raw gem required by the refining exchange"
             },
             {
               "contracts": [
@@ -72603,34 +72420,48 @@
                   "giver_vnum": 66040
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
+              "hint": "Ask nugget, ore, silver, cost, price or money at the smith. The actual result remains a raw gem. The room sign says five silver, dialogue mentions an old twenty-five-silver sign, and the contract charges one silver. The recipe and sign need deliberate repair before promising refined silver.",
+              "id": "accepted-exchange",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete the accepted service exchange"
             }
           ],
-          "summary": "Bring 10 copper, 1 x a raw gem. Reward: 1 x a raw gem.",
-          "title": "Deliver 10 copper, 1 x a raw gem"
+          "summary": "Dialogue offers silver refining for one silver. The current exchange instead consumes one raw gem and 10 copper, returning a different raw gem with the same visible name. It is a support service, guarded while accounting is active; it earns no quest achievement.",
+          "title": "The current refining exchange"
         },
         {
-          "category": "request",
+          "category": "service",
           "contracts": [
             {
               "completion_key": "give=C:2500,I:66033,I:66033,I:66033,I:66033,I:66033;receive=I:66049;disappear=0",
               "giver_vnum": 66040
             }
           ],
-          "id": "request-66040-f70b6bdc0505",
+          "id": "silversmith-five-raw-gems",
           "steps": [
             {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10,I:66032;receive=I:66033;disappear=0",
+                  "giver_vnum": 66040
+                }
+              ],
+              "hint": "This optional receipt explains a current output source. Supplied exact material also fits. History does not replace current custody or bypass unavailable payments.",
+              "id": "producer-history",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: use the current refining exchange"
+            },
+            {
               "count": 5,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
+              "hint": "The exact kind is declared in the eastern gem-mining pocket and is also the output of the refining exchange. Five different raw gems, silver bars or an earlier receipt do not satisfy this count. Supplied matching copies fit.",
+              "id": "material-66033",
               "item_vnums": [
                 66033
               ],
               "kind": "carried_item",
-              "text": "Carry 5 x a raw gem"
+              "optional": true,
+              "text": "Carry five copies of the exact raw gem"
             },
             {
               "contracts": [
@@ -72639,14 +72470,476 @@
                   "giver_vnum": 66040
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
+              "hint": "Ask necklace or jewelry at the smith. Acceptance consumes five distinct copies of the same required kind and the fee. It produces the magical necklace directly; a plain silver necklace is not the current reward. Keep the active-accounting payment guard until the service is qualified.",
+              "id": "accepted-exchange",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete the accepted service exchange"
             }
           ],
-          "summary": "Bring 2,500 copper, 5 x a raw gem. Reward: 1 x a necklace of silver set with gems.",
-          "title": "Deliver 2,500 copper, 5 x a raw gem"
+          "summary": "Dialogue describes five pure silver bars and twenty-five gold. The current contract consumes five copies of one exact raw gem and 2,500 copper, producing a magical gem-set necklace with three rainbow charges. This guarded support recipe earns no quest or daily achievement.",
+          "title": "Five raw gems for a magical necklace"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:20,I:66039;receive=I:66044;disappear=0",
+              "giver_vnum": 66021
+            }
+          ],
+          "id": "jeweler-amethyst",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The central gem-mining pocket contains the required raw gem. Other same-named gems do not fit. Check actual stock and current unequipped custody; a source declaration is not an accepted acquisition.",
+              "id": "material-66039",
+              "item_vnums": [
+                66039
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact material for this exchange"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:20,I:66039;receive=I:66044;disappear=0",
+                  "giver_vnum": 66021
+                }
+              ],
+              "hint": "Ask gem, gems, cutting, cost, money or price. Acceptance consumes the exact material and two silver, then gives an amethyst. Cutting or obtaining a gem is separate from personally recovering it; no accepted source event is recorded by this checklist.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted service exchange"
+            }
+          ],
+          "summary": "The current exchange accepts a raw gem and 20 copper for an amethyst. This support service is guarded under active accounting and earns no quest achievement.",
+          "title": "The exchange for an amethyst"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:20,I:66040;receive=I:66045;disappear=0",
+              "giver_vnum": 66021
+            }
+          ],
+          "id": "jeweler-tigers-eye",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The western gem-mining pocket contains the required raw gem. Other same-named gems do not fit. Check actual stock and current unequipped custody; a source declaration is not an accepted acquisition.",
+              "id": "material-66040",
+              "item_vnums": [
+                66040
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact material for this exchange"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:20,I:66040;receive=I:66045;disappear=0",
+                  "giver_vnum": 66021
+                }
+              ],
+              "hint": "Ask gem, gems, cutting, cost, money or price. Acceptance consumes the exact material and two silver, then gives an exotic tigers-eye gem. Cutting or obtaining a gem is separate from personally recovering it; no accepted source event is recorded by this checklist.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted service exchange"
+            }
+          ],
+          "summary": "The current exchange accepts a raw gem and 20 copper for an exotic tigers-eye gem. This support service is guarded under active accounting and earns no quest achievement.",
+          "title": "The exchange for an exotic tigers-eye gem"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:20,I:66041;receive=I:66046;disappear=0",
+              "giver_vnum": 66021
+            }
+          ],
+          "id": "jeweler-diamond",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The eastern gem-mining pocket contains the required raw gem. Other same-named gems do not fit. Check actual stock and current unequipped custody; a source declaration is not an accepted acquisition.",
+              "id": "material-66041",
+              "item_vnums": [
+                66041
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact material for this exchange"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:20,I:66041;receive=I:66046;disappear=0",
+                  "giver_vnum": 66021
+                }
+              ],
+              "hint": "Ask gem, gems, cutting, cost, money or price. Acceptance consumes the exact material and two silver, then gives a lustrous diamond. Cutting or obtaining a gem is separate from personally recovering it; no accepted source event is recorded by this checklist.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted service exchange"
+            }
+          ],
+          "summary": "The current exchange accepts a raw gem and 20 copper for a lustrous diamond. This support service is guarded under active accounting and earns no quest achievement.",
+          "title": "The exchange for a lustrous diamond"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:20,I:66042;receive=I:66047;disappear=0",
+              "giver_vnum": 66021
+            }
+          ],
+          "id": "jeweler-sapphire-to-necklace",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The input is an already-cut beautiful sapphire, stocked by this jeweler. This current contract is not a sapphire-cutting recipe. Other same-named gems do not fit. Check actual stock and current unequipped custody; a source declaration is not an accepted acquisition.",
+              "id": "material-66042",
+              "item_vnums": [
+                66042
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact material for this exchange"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:20,I:66042;receive=I:66047;disappear=0",
+                  "giver_vnum": 66021
+                }
+              ],
+              "hint": "Ask gem, gems, cutting, cost, money or price. Acceptance consumes the exact material and two silver, then gives a plain silver necklace. Cutting or obtaining a gem is separate from personally recovering it; no accepted source event is recorded by this checklist.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted service exchange"
+            }
+          ],
+          "summary": "The current exchange accepts a beautiful sapphire and 20 copper for a plain silver necklace. This support service is guarded under active accounting and earns no quest achievement. Dialogue presents gem cutting, but the current output is a necklace. The material/reward pairing needs repair.",
+          "title": "The exchange for a plain silver necklace"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:20,I:66043;receive=I:66048;disappear=0",
+              "giver_vnum": 66021
+            }
+          ],
+          "id": "jeweler-emerald-to-necklace",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The input is an already-cut emerald, stocked by this jeweler. This current contract is not an emerald-cutting recipe. Other same-named gems do not fit. Check actual stock and current unequipped custody; a source declaration is not an accepted acquisition.",
+              "id": "material-66043",
+              "item_vnums": [
+                66043
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact material for this exchange"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:20,I:66043;receive=I:66048;disappear=0",
+                  "giver_vnum": 66021
+                }
+              ],
+              "hint": "Ask gem, gems, cutting, cost, money or price. Acceptance consumes the exact material and two silver, then gives an ordinary gem-set silver necklace. Cutting or obtaining a gem is separate from personally recovering it; no accepted source event is recorded by this checklist.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted service exchange"
+            }
+          ],
+          "summary": "The current exchange accepts a brilliant emerald and 20 copper for an ordinary gem-set silver necklace. This support service is guarded under active accounting and earns no quest achievement. Dialogue presents gem cutting, but the current output is a necklace. The material/reward pairing needs repair.",
+          "title": "The exchange for an ordinary gem-set silver necklace"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:100,I:66048,I:66065;receive=I:66067;disappear=0",
+              "giver_vnum": 66021
+            }
+          ],
+          "id": "jeweler-current-earring",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The smith carries and stocks this exact finished jewelry. Plain silver jewelry does not fit the current contract.",
+              "id": "material-66065",
+              "item_vnums": [
+                66065
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the already-set diamond-set earring"
+            },
+            {
+              "count": 1,
+              "hint": "The jeweler carries and stocks this ordinary necklace, also produced by the current emerald exchange. The magical necklace has the same visible name but is a different kind. A flawless diamond does not replace the current necklace input.",
+              "id": "material-66048",
+              "item_vnums": [
+                66048
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ordinary gem-set silver necklace"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:100,I:66048,I:66065;receive=I:66067;disappear=0",
+                  "giver_vnum": 66021
+                }
+              ],
+              "hint": "Ask earring or setting at the jeweler. The current payment is one gold, but the named reward prototype is unavailable. A builder must select the intended plain-jewelry and diamond recipe and a valid reward before enabling a fresh journey.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted service exchange"
+            }
+          ],
+          "summary": "Dialogue offers diamond setting for one gold. The current recipe requires an already-set earring, an ordinary gem-set necklace and 100 copper. Its reward is missing from the active world. This support service stays guarded and earns no quest achievement; it is not a usable jewelry progression yet.",
+          "title": "The current earring setting recipe"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:100,I:66048,I:66064;receive=I:66066;disappear=0",
+              "giver_vnum": 66021
+            }
+          ],
+          "id": "jeweler-current-ring",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The smith carries and stocks this exact finished jewelry. Plain silver jewelry does not fit the current contract.",
+              "id": "material-66064",
+              "item_vnums": [
+                66064
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the already-set gem-set silver ring"
+            },
+            {
+              "count": 1,
+              "hint": "The jeweler carries and stocks this ordinary necklace, also produced by the current emerald exchange. The magical necklace has the same visible name but is a different kind. A flawless diamond does not replace the current necklace input.",
+              "id": "material-66048",
+              "item_vnums": [
+                66048
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ordinary gem-set silver necklace"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:100,I:66048,I:66064;receive=I:66066;disappear=0",
+                  "giver_vnum": 66021
+                }
+              ],
+              "hint": "Ask ring or setting at the jeweler. The current payment is one gold, but the named reward prototype is unavailable. A builder must select the intended plain-jewelry and diamond recipe and a valid reward before enabling a fresh journey.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted service exchange"
+            }
+          ],
+          "summary": "Dialogue offers diamond setting for one gold. The current recipe requires an already-set ring, an ordinary gem-set necklace and 100 copper. Its reward is missing from the active world. This support service stays guarded and earns no quest achievement; it is not a usable jewelry progression yet.",
+          "title": "The current ring setting recipe"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:1000,I:66044,I:66045,I:66046,I:66047,I:66048,I:66049;receive=I:66050;disappear=0",
+              "giver_vnum": 66021
+            }
+          ],
+          "id": "jeweler-current-necklace",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:2500,I:66033,I:66033,I:66033,I:66033,I:66033;receive=I:66049;disappear=0",
+                  "giver_vnum": 66040
+                }
+              ],
+              "hint": "This optional receipt explains a current output source. Supplied exact material also fits. History does not replace current custody or bypass unavailable payments.",
+              "id": "producer-history",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: obtain the charged necklace from the smith"
+            },
+            {
+              "count": 1,
+              "hint": "The current five-raw-gem smith exchange produces this charged magical necklace. The ordinary necklace of the same visible name does not substitute. Supplied exact material fits without its producer history.",
+              "id": "material-66049",
+              "item_vnums": [
+                66049
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the magical gem-set silver necklace"
+            },
+            {
+              "count": 1,
+              "hint": "The jeweler carries and stocks this exact gem, also produced by the current amethyst-cutting exchange. Supplied exact material fits without its producer history.",
+              "id": "material-66044",
+              "item_vnums": [
+                66044
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry an amethyst"
+            },
+            {
+              "count": 1,
+              "hint": "The jeweler carries and stocks this exact gem, also produced by the current cutting exchange. An additional foreign declaration exists, without requiring foreign travel. Supplied exact material fits without its producer history.",
+              "id": "material-66045",
+              "item_vnums": [
+                66045
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry an exotic tigers-eye gem"
+            },
+            {
+              "count": 1,
+              "hint": "The jeweler carries and stocks this exact diamond, also produced by the current diamond-cutting exchange. Supplied exact material fits without its producer history.",
+              "id": "material-66046",
+              "item_vnums": [
+                66046
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a lustrous diamond"
+            },
+            {
+              "count": 1,
+              "hint": "The jeweler carries and stocks this exact plain necklace, also produced by the current sapphire exchange. It is one of the current six materials, not the charged base necklace. Supplied exact material fits without its producer history.",
+              "id": "material-66047",
+              "item_vnums": [
+                66047
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a plain silver necklace"
+            },
+            {
+              "count": 1,
+              "hint": "The jeweler carries and stocks this exact ordinary necklace, also produced by the current emerald exchange. It is a separate material from both the plain and magical necklaces. Supplied exact material fits without its producer history.",
+              "id": "material-66048",
+              "item_vnums": [
+                66048
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ordinary gem-set silver necklace"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:1000,I:66044,I:66045,I:66046,I:66047,I:66048,I:66049;receive=I:66050;disappear=0",
+                  "giver_vnum": 66021
+                }
+              ],
+              "hint": "Ask necklace, set, setting or jewelry. The actual output is gold ore, despite the acceptance prose describing a beautiful necklace. All six current materials must be present together, plus ten gold. History is optional, and this service earns no quest or daily achievement.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted service exchange"
+            }
+          ],
+          "summary": "Dialogue offers five different gem settings for ten gold. The current exchange instead consumes three different necklaces, an amethyst, a tiger's eye, a diamond and 1,000 copper, producing a real gold nugget. This guarded support contract needs repair before it can promise the described set necklace.",
+          "title": "The current six-material necklace exchange"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:25000,I:4372,I:66050;receive=I:66051;disappear=0",
+              "giver_vnum": 66017
+            }
+          ],
+          "id": "mage-current-necklace-enchantment",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:1000,I:66044,I:66045,I:66046,I:66047,I:66048,I:66049;receive=I:66050;disappear=0",
+                  "giver_vnum": 66021
+                }
+              ],
+              "hint": "This optional receipt explains a current output source. Supplied exact material also fits. History does not replace current custody or bypass unavailable payments.",
+              "id": "producer-history",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: obtain gold ore from the current necklace exchange"
+            },
+            {
+              "count": 1,
+              "hint": "Real gold ore is declared in two eastern ore shafts and is the current six-material exchange output. Pyrite has the same visible name but different aliases and does not fit. The required disc is absent from the active inventory; this gold check cannot establish complete recipe readiness.",
+              "id": "material-66050",
+              "item_vnums": [
+                66050
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the real gold nugget"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:25000,I:4372,I:66050;receive=I:66051;disappear=0",
+                  "giver_vnum": 66017
+                }
+              ],
+              "hint": "Ask necklace, platinum or disc at the magic shop. The required disc reference is missing. A similarly described disc exists elsewhere under a different identity and is not accepted by this contract. Select a valid disc/source and correct materials/reward before enabling the commission; the active-accounting fee guard remains.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted service exchange"
+            }
+          ],
+          "summary": "Dialogue promises a rainbow necklace for a gem-set necklace, rare platinum disc and twenty-five platinum. The current contract instead requires real gold ore, an unavailable disc reference and 25,000 copper, producing pyrite. It cannot presently support the advertised magical necklace journey. This support service earns no quest achievement.",
+          "title": "The current magical necklace commission"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:1000;receive=;disappear=0",
+              "giver_vnum": 66041
+            }
+          ],
+          "id": "bartenders-paid-disc-rumor",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:1000;receive=;disappear=0",
+                  "giver_vnum": 66041
+                }
+              ],
+              "hint": "Ask disc, disk or platinum. The native payment is 1,000 copper and rewards only this rumor, keeping the bartender present. The named forest story and actual disc source need a separate builder review; conversation and a paid receipt do not prove personal recovery.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted service exchange"
+            }
+          ],
+          "summary": "For ten gold, the bartender describes a ranger who lost a platinum disc in Tethir and suspected a kobold. This is a paid information service, guarded under active accounting, with no item reward or quest achievement. The rumor does not create a disc, start a recovery objective or prove that any lead has been followed.",
+          "title": "The paid platinum-disc rumor"
         }
       ]
     },
