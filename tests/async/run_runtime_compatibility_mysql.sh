@@ -35,8 +35,10 @@ PYTHON
 mapfile -t MIGRATION_FILES <<< "$migration_files"
 # Sealed verifiers can call siblings by relative path. Preserve their layout
 # instead of flattening the manifest into /tmp and breaking those dependencies.
-docker exec "$NAME" mkdir -p /tmp/migrations
-docker cp "$ROOT/migrations/." "$NAME:/tmp/migrations/" >/dev/null
+docker exec "$NAME" mkdir -p /tmp/migrations/immutable
+for file in bootstrap_multithread_safe.sql "${MIGRATION_FILES[@]}" runtime_compatibility_manifest.json verify_runtime_compatibility.sh; do
+    docker cp "$ROOT/migrations/$file" "$NAME:/tmp/migrations/$file" >/dev/null
+done
 
 # The pre-b029 launcher created server_reboots outside the migration system.
 # Prove that 0004 converts that exact shape, preserves every row, removes its
