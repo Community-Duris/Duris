@@ -3068,7 +3068,8 @@ struct time_info_data age(P_char);
 struct time_info_data mud_time_passed(time_t, time_t);
 struct time_info_data real_time_passed(time_t, time_t);
 struct time_info_data real_time_countdown(time_t, time_t, int);
-void ADD_MONEY(P_char, int);
+// Optional success text is copied into the currency continuation (at most 64 bytes, including NUL).
+void ADD_MONEY(P_char, int, const char *committed_message = nullptr);
 void CAP(char *);
 void DECAP(char *);
 void InitGrantFastLookup(void);
