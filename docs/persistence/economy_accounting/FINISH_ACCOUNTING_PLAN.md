@@ -405,3 +405,11 @@ The schedule-failure fixture initializes all queue-accounting fields and now
 passes strict warnings and sanitizers on the transport integration, retaining
 queued command/counters on refusal. This fixes test drift without modifying
 player-facing spell code. Current broad and real gameplay gates remain open.
+
+
+The interrupted-build cache repair passes real compiler cancellation/resumption
+and immutable-publication tests, then a 452.463-second strict production build
+and full-world save/item/process-restart journey at native ce7550d6. Keep that
+bounded proof separate from the incoming transport source 4180f745, captured
+staging clone and measured integrated workload qualification. Current-source
+broad and all full R1-R8 gates remain open; 600 seconds/-j2 are unchanged.

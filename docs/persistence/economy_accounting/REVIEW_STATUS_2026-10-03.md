@@ -302,3 +302,41 @@ six publication faults and decode/materialization rollback under sanitizers.
 These earlier component proofs are not relabeled after transport integration.
 - tmp/current-copyover-custody-baseline.local.log: 72e020ec616d579b33f5c2877bebd943003df63bdb74b2219dc9075587fd23eb
 - tmp/current-game-loop-phase-confirmed.local.log: 31448a14c3ec710f22d04214dbb62aff42727c0d5a86d159daaff162fede212b
+
+
+## Interrupted-build artifact reuse repair
+
+The verified-artifact helper no longer discards completed compilation work on
+an unchanged-input timeout. Private exact-key workspaces retain only confirmed
+complete object/dependency pairs; compiler output is staged and atomically
+published after success. Changed-input or unconfirmed dead-owner work is
+isolated/discarded. A watchdog pipe and inherited lock stop compiler descendants
+when the caller exits, including SIGKILL. Pending work never qualifies as a
+published artifact. Successful builds copy a fresh immutable executable and
+hashed log, preserving already running executable inodes.
+
+Existing artifact checks and eleven real GNU Make/installed-compiler tests pass
+same-key resumed compilation, partial output refusal, changed inputs, concurrent
+publication, timeout/caller TERM/SIGKILL cleanup, path/lock refusal, strict flags
+and running-artifact preservation. The unchanged default 600-second deadline,
+-j2 and strict warning gates remain. There is no internal retry loop, fake
+metadata or deadline waiver. Attempt logs are retained.
+
+The full native strict-production flatfile server builds in 452.463 seconds on
+source ce7550d67b3bb5bc7a8467a5a3e03eccf77d5ded, with helper candidate.
+Immutable artifact SHA-256:
+103b44d0dda3059fc20bbe1027daef2834750de7fdb0e822082b6fae23059865.
+The actual full-world player/floor-item save, authority readback and process-
+restart journey then passes. This is one native build and journey; it does not
+qualify all workload budgets, captured staging generations, the newer transport
+integration or full R1-R8. Frozen broad failures remain unchanged. Fresh transport
+source 4180f745 build and qualification are underway; initial cache-copy setup
+failed before compilation and the continuation preserves the same frozen source.
+
+Cache milestone LF-normalized source/evidence SHA-256:
+
+- tests/async/server_build_artifacts.py: f0b456929ab6b9a7b2f7c8f3caf52feed2849ca2579aae4059bcd815db942e7d
+- tests/async/server_build_compiler.py: 13764ca38d439f11a38eedf125dd4135123e4bbde1cf5389aeb6101b6965e51d
+- tests/async/test_server_build_artifacts.py: 8f4e46b7612f49f77c9b9d13088400cde985b78633b7d85f3c129008b13f45d8
+- tests/async/test_server_build_artifacts_resume.py: 0779635d56c0aa18ccb6298070c0e1ff991541e4f5917b7c62f243bdb0e09d7d
+- tmp/sql-account-erasure-cache-full-world.local.log: a8daa8840feec5bbb4d6c4376297be48f4d43b77f260510a419baeade7a177e0

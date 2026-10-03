@@ -2,6 +2,7 @@
 """Exercise artifact reuse, invalidation, isolation and failed publication."""
 
 import json
+import hashlib
 from contextlib import redirect_stdout
 import io
 import multiprocessing
@@ -106,6 +107,12 @@ with tempfile.TemporaryDirectory() as tmp, redirect_stdout(io.StringIO()):
         assert original != artifacts.input_key({"CXXFLAGS": "-O1"})
         header.unlink()
         assert original == artifacts.input_key({"CXXFLAGS": "-O1"})
+        wrapper = root / "private-compiler.py"
+        wrapper.write_bytes(artifacts.COMPILER_WRAPPER.read_bytes())
+        with patch.object(artifacts, "COMPILER_WRAPPER", wrapper):
+            assert original == artifacts.input_key({"CXXFLAGS": "-O1"})
+            wrapper.write_text("changed atomic object publisher")
+            assert original != artifacts.input_key({"CXXFLAGS": "-O1"})
         compiler.return_value = "compiler-v2"
         assert original != artifacts.input_key({"CXXFLAGS": "-O1"})
 
@@ -115,13 +122,16 @@ with tempfile.TemporaryDirectory() as tmp, redirect_stdout(io.StringIO()):
     cache = root / "bin/cache"
     build_root = root / "bin/private"
     calls = []
-    key = "source-toolchain-environment-v1"
+    def key_for(value):
+        return hashlib.sha256(value.encode()).hexdigest()
 
-    def compile_server(directory, environment):
+    key = key_for("source-toolchain-environment-v1")
+
+    def compile_server(directory, environment, *, lock_fd=None):
         calls.append(directory)
         binary = directory / "server/dms_new"
-        binary.parent.mkdir(parents=True)
-        (directory / "objects").mkdir()
+        binary.parent.mkdir(parents=True, exist_ok=True)
+        (directory / "objects").mkdir(exist_ok=True)
         binary.write_bytes(b"test executable " + str(len(calls)).encode())
         binary.chmod(0o755)
         return binary, "g++ -D__NO_MYSQL__", 0.0
@@ -135,7 +145,7 @@ with tempfile.TemporaryDirectory() as tmp, redirect_stdout(io.StringIO()):
         assert len(calls) == 1 and not first.stat().st_mode & 0o222
         assert not build_root.exists(), "reuse must not create runtime state"
 
-        key = "changed-source-or-flags"
+        key = key_for("changed-source-or-flags")
         second = artifacts.build_flatfile_server(build_root)
         assert second != first and first.is_file() and len(calls) == 2
 
@@ -155,7 +165,7 @@ with tempfile.TemporaryDirectory() as tmp, redirect_stdout(io.StringIO()):
         manifest.write_text(json.dumps(metadata))
         assert artifacts.verified_artifact(cache, key) is None
 
-        key = "concurrent-build"
+        key = key_for("concurrent-build")
         context = multiprocessing.get_context("fork")
         results = context.Queue()
 
@@ -178,7 +188,7 @@ with tempfile.TemporaryDirectory() as tmp, redirect_stdout(io.StringIO()):
         log.write_text("corrupt log")
         assert artifacts.verified_artifact(cache, key) is None
 
-        key = "failed-build"
+        key = key_for("failed-build")
         with patch.object(artifacts, "compile_server", side_effect=RuntimeError("failed")):
             try:
                 artifacts.build_flatfile_server(build_root)
@@ -188,7 +198,7 @@ with tempfile.TemporaryDirectory() as tmp, redirect_stdout(io.StringIO()):
                 raise AssertionError("failed build was accepted")
         assert not (cache / f"{key}.json").exists()
 
-        key = "changed-during-build"
+        key = key_for("changed-during-build")
         with patch.object(artifacts, "input_key", side_effect=[key, "new-input"]):
             try:
                 artifacts.build_flatfile_server(build_root)
