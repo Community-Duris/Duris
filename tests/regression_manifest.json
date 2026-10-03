@@ -8521,6 +8521,19 @@
         "recovery"
       ]
     },
+    "test_spell_ward_identity.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 1,
+      "memory_mb": 512,
+      "seconds": 8.327999999979511,
+      "timeout_seconds": 180,
+      "locks": [
+        "native-compiler"
+      ],
+      "purpose": "Actual single original ward classifier/table linked under SQL and flat PFILE flags; null/missing flag/supported/unsupported/unchanged input controls. GNU11 development preflight wall measurement; accepted GNU13 canonical check separate, no gameplay or release qualification."
+    },
     "test_character_link_lookup.py": {
       "profile": "native",
       "mode": "script",

@@ -239,6 +239,10 @@ The original directed character-link lookup is a separate production provider.
 Its read policy and public declaration are unchanged; affected native fixtures can
 link that provider directly. Gameplay and complete Source/32 MiB gates remain open.
 
+The original ward classifier and four-spell table have one shared provider for
+DMS and PFILE. Saved-item classification and mutable ward behavior are preserved.
+Complete accounting gameplay, backend and release gates remain open.
+
 ## Resource and verification discipline
 
 Start with one heavy cohort at a time. Inspect current compatible containers,

@@ -316,6 +316,7 @@ OBJS =  $(SHIP_OBJS) \
 				 combat/training_dummy.o \
 				 combat/attack_continuation.o \
 				 combat/spell_wards.o \
+				 combat/spell_ward_identity.o \
 				 combat/hit_calculations.o \
 				 combat/defense_resolution.o \
 				 combat/attack_cadence.o \
@@ -929,11 +930,11 @@ $(DMS_BINARY): $(DMS_OBJS) $(BACKEND_STAMP)
 pfile: $(PFILE_BINARY)
 
 $(PFILE_BINARY): $(PFILE_OBJS) $(SHARED_PFILE_OBJS) $(OBJDIR)/core/mm.o $(OBJDIR)/core/common.o \
-		$(OBJDIR)/core/memory.o
+		$(OBJDIR)/core/memory.o $(OBJDIR)/combat/spell_ward_identity.o
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(LDFLAGS) -g -o $@ \
 		$(PFILE_OBJS) $(SHARED_PFILE_OBJS) \
-		$(OBJDIR)/core/common.o $(OBJDIR)/core/mm.o $(OBJDIR)/core/memory.o $(LIBS)
+		$(OBJDIR)/core/common.o $(OBJDIR)/core/mm.o $(OBJDIR)/core/memory.o $(OBJDIR)/combat/spell_ward_identity.o $(LIBS)
 
 # Build any C object into OBJDIR, creating folders as needed.
 $(OBJDIR)/%.o: %.c

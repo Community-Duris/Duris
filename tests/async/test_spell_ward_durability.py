@@ -37,7 +37,7 @@ with tempfile.TemporaryDirectory(prefix="duris-wards-") as directory:
     subprocess.run([
         "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-Isrc",
         "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
-        "tests/async/spell_ward_durability_harness.cpp", "src/combat/spell_wards.c",
+        "tests/async/spell_ward_durability_harness.cpp", "src/combat/spell_wards.c", "src/combat/spell_ward_identity.c",
         "src/magic/spell_globes.c", "src/magic/spell_dispel_magic.c", str(spirit),
         "src/player/player_snapshot_codec.c", "-o", str(native),
     ], cwd=ROOT, check=True)

@@ -1,4 +1,5 @@
 #include "combat/spell_wards.h"
+#include "combat/spell_ward_identity_private.h"
 
 #include "combat/damage.h"
 #include "core/config.h"
@@ -26,14 +27,13 @@ namespace
 {
 constexpr int WARD_REFRESH_FRACTION = 2;
 
-enum ward_kind
-{
-	WARD_KIND_MINOR = 0,
-	WARD_KIND_SPIRIT,
-	WARD_KIND_GREATER_SPIRIT,
-	WARD_KIND_GLOBE,
-	WARD_KIND_COUNT
-};
+using spell_ward_identity::is_ward_spell;
+using spell_ward_identity::ward_spells;
+using spell_ward_identity::WARD_KIND_MINOR;
+using spell_ward_identity::WARD_KIND_SPIRIT;
+using spell_ward_identity::WARD_KIND_GREATER_SPIRIT;
+using spell_ward_identity::WARD_KIND_GLOBE;
+using spell_ward_identity::WARD_KIND_COUNT;
 
 struct ward_source
 {
@@ -41,22 +41,11 @@ struct ward_source
 	uint64_t uid;
 };
 
-const int ward_spells[WARD_KIND_COUNT] = { SPELL_MINOR_GLOBE, SPELL_SPIRIT_WARD,
-					   SPELL_GREATER_SPIRIT_WARD, SPELL_GLOBE };
-
 const unsigned int ward_flags[WARD_KIND_COUNT] = { SPLDAM_MINORGLOBE, SPLDAM_SPIRITWARD,
 						   SPLDAM_GRSPIRIT, SPLDAM_GLOBE };
 
 const char *ward_names[WARD_KIND_COUNT] = { "Minor Globe", "Spirit Ward", "Greater Spirit Ward",
 					    "Globe" };
-
-bool is_ward_spell(int spell)
-{
-	for (int i = 0; i < WARD_KIND_COUNT; ++i)
-		if (ward_spells[i] == spell)
-			return true;
-	return false;
-}
 
 int ward_kind_for_spell(int spell)
 {
@@ -497,11 +486,6 @@ void append_status(char *buffer, size_t buffer_size, size_t *used, const char *f
 	*used += std::min(static_cast<size_t>(written), buffer_size - *used - 1);
 }
 } // namespace
-
-bool spell_ward_is_managed(const struct affected_type *af)
-{
-	return af && IS_SET(af->flags, AFFTYPE_SPELL_WARD) && is_ward_spell(af->type);
-}
 
 bool spell_ward_is_equipment(const struct affected_type *af)
 {

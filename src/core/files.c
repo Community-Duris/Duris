@@ -31,9 +31,7 @@
 #include "item/item_ownership_runtime.h"
 #include "item/encumbrance_policy.h"
 #include "combat/justice.h"
-#ifndef _PFILE_
 #include "combat/spell_wards.h"
-#endif
 #include "core/mm.h"
 #include "classes/necromancy.h"
 #include "economy/account_bank_balances.h"
