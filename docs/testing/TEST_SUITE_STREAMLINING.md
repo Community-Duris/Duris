@@ -9,9 +9,10 @@ migration replay that reapplied old schema definitions after immutable adoption,
 food consumption that removed a live item while leaving its SQL custody active,
 and permanent account deletion that left retained quest-name aliases behind.
 The food defect made the next inventory save fail its ownership guard. Account
-deletion now requires durable quest erasure before destroying the character
-identities needed for retry. A persistence refusal preserves the irreversible
-fence and those identities; retry completes after recovery.
+deletion now commits quest erasure and character identities together through the
+native backend's journal or SQL transaction. A persistence refusal preserves the
+irreversible fence and those identities; retry completes after recovery. The
+account menu does not rewrite quest state before that atomic boundary.
 The operational persistence verifier now recognizes equivalent MySQL/MariaDB
 metadata while retaining rejection of signed UIDs and incorrect defaults. Its
 disposable tests include corruption, rejection, guarded repair and data preservation.
@@ -38,6 +39,7 @@ tombstone, one ownership-ledger entry and no reappearance after restart/replay.
 Active-accounting food acceptance and interrupted effect publication remain outside
 this qualification.
 
+The inventory now contains 885 Python entries: 861 automatic and 24 manual.
 The remaining 24 manual entries have explicit providers in the integration matrix. Automatic entries
 with optional SQL checks remain in core, and their skips remain visible.
 
@@ -297,11 +299,12 @@ commit and tree is verified before execution; unchanged source mtimes preserve
 incremental builds. Maintained world inputs are generated there. No configured
 account, checkout .env, shared game or production database is selected.
 
-The inventory declares 878 entries: 854 automatic and 24 manual, with 370 in fast.
+The inventory declares 885 entries: 861 automatic and 24 manual, with 372 in fast.
 The reviewed integration workload has 138 required rows: 61 per SQL engine and
-16 shared rows. The branch incorporates target changes through 3b5247aa9,
-including the native account-fence faults, network readiness, portable copyover,
-quest serialization allocation faults and executable Telnet fragmentation checks.
+16 shared rows. The branch incorporates one bounded target snapshot through
+a209af827, including persistent transport, resumable native compilation,
+transactional SQL quest erasure, native account-fence faults, network readiness,
+portable copyover, quest allocation faults and Telnet fragmentation checks.
 The retired select ceiling guard now protects connection admission before TLS;
 the native readiness owner uses a socket above FD_SETSIZE. Boot ordering protects
 recovery before the first connection phase, and latency uses the current monotonic
@@ -313,10 +316,13 @@ integration run at the final review commit.
 | Source cohort | Scope | Recorded outcome |
 | --- | --- | --- |
 | be73f72c69 | Complete core Python stage and maintained builds | All 849 automatic entries attempted in 4,903.46 s: 832 passed, six failed, 11 whole entries skipped. Maintained world, editor, SQL server and native stages passed. |
-| 18d69b437 | Explicit compatibility subset and full fast profile | All 32 selected entries passed without skips in 958.89 s; fast passed all 370 without skips in 56.52 s. Selection and clean-source records retain the exclusions. |
+| 18d69b437 | Explicit compatibility subset and full fast profile | All 32 selected entries passed without skips in 958.89 s; all 370 fast entries passed in 56.52 s, with four explicit partial integration skips. Selection and clean-source records retain the exclusions. |
 | d2b747fa6 | Explicit native account/storage/quest subset | All 12 entries passed without skips in 520.74 s; character deletion used ASan and UBSan and passed in 172.25 s. |
-| f88aa2a54 | Account cleanup and Telnet compatibility | All 370 fast entries passed without skips in 39.51 s; the three focused account/network owners passed in 308.38 s. Both maintained server backends, formatting, and ordinary/durable/uncertain flat-file deletion journeys also passed. |
-| 2f4c9e6b6 | Expanded required SQL account journey | All 370 fast entries passed without skips in 45.87 s. Both pinned engines passed the strengthened real account/character journey, including quest persistence refusal, restart, permanent erasure and safe name reuse. |
+| f88aa2a54 | Account cleanup and Telnet compatibility | All 370 fast entries passed in 39.51 s with four partial integration skips; the three focused account/network owners passed in 308.38 s. Both maintained server backends, formatting, and ordinary/durable/uncertain flat-file deletion journeys also passed. |
+| 2f4c9e6b6 | Expanded required SQL account journey | All 370 fast entries passed in 45.87 s with four partial integration skips. Both pinned engines passed the strengthened real account/character journey, including quest persistence refusal, restart, permanent erasure and safe name reuse. |
+| d9146e0b7 | Native alias journaling and character maintenance target integration | All 370 fast entries passed in 43.76 s with four partial integration skips. Nine affected entries passed without skips in 741.18 s, including deadline maintenance, ASan/UBSan character deletion and all three combat variants. Both maintained server backends, three flat-file deletion journeys and both SQL deletion rows passed. |
+| 61ef72381 | Bounded transport integration and native atomic account erasure | Maintained setup, formatting and both server backends passed. All 372 fast entries passed in 54.44 s with four partial integration skips; all 14 affected native/cache owners passed without skips in 166.96 s. All 16 transport witnesses passed in 721.61 s, three combat variants passed in 426.87 s, ordinary flat-file deletion passed and all eight selected SQL rows passed on both pinned engines. Two obsolete recovery fault injections failed and remain retained. |
+| ec1aa340c | Corrected native recovery fault injection | Durable and uncertain flat-file recovery passed in 65.95 s and 65.91 s. The only change from 61ef72381 is the deletion test; the production tree and all three frozen executable hashes remain identical. |
 | 5f4c2b7c8 | Complete MariaDB engine workload | All 61 required rows passed, with zero skips and no pending workload. |
 | cec2329ac | Complete MySQL engine workload | All 61 rows attempted: 60 passed and the earlier staff fixture failed, with zero skips or pending rows. Revised staff recovery passed on both engines in the later cohorts. |
 | be73f72c69 | Complete shared workload | 15 of 16 rows passed; the MySQL backup case exposed host AIO exhaustion. |
@@ -334,6 +340,13 @@ three census cases, production food/deadline fixtures and the new network owners
 Its combat driver passes all three variants in 894.42 s, including a fresh server
 build. Opaque native entry counts do not enumerate internal C++ assertions.
 
+The fast reports retain four partial skips inside two otherwise passing entries:
+the doctor's real SQL authority check, the restitution backup round trip and two
+non-root systemd ownership checks. They have no whole-entry skips or pending
+entries. The evidence index matches each skipped case to its passing required
+integration provider; it does not turn a partial skip into a fast-profile pass.
+Earlier wording that described these fast runs as having no skips was incorrect.
+
 The v30 fast attempt started before source import completed. It is retained as
 preliminary and excluded. The subsequent v31 run verifies the same clean commit
 and tree before and after execution. JSON/XML, selection records, actual
@@ -343,23 +356,48 @@ At d2b747fa6, both maintained server backends built and ordinary character
 deletion passed. The durable and uncertain account-fence crash/recovery journeys
 both failed because permanent account deletion retained the global quest-name
 alias after removing the player and account. The prior confirmation fixture
-captured an empty identity vector and missed this defect. Its replacement supplies
-two stable PIDs, refuses the second quest erasure, requires no destructive backend
+captured an empty identity vector and missed this defect. Its first replacement
+at f88aa2a54 supplies two stable PIDs, refuses the second quest erasure, requires no destructive backend
 call on refusal, preserves the non-cancellable fence, then verifies idempotent
 cleanup and exactly one completion on retry. It fails against the original
 production function and passes with the repair under ASan and UBSan.
 
-The repaired flat-file journeys additionally refuse real quest-state persistence,
-require unchanged account identities, snapshot and aliases, cold restart and retry,
+The target later added alias erasure to native flat-file journals and the SQL
+account deletion transaction. Pre-erasing aliases from the account menu would
+then bypass validation of persisted state and prevent a late native failure from
+rolling aliases back with player data. The final implementation removes that
+duplicate cleanup. Its strengthened production-function fixture rejects the
+previous 711bde72a owner with "account menu rewrote quest aliases outside the
+native erasure transaction". It retains two captured PIDs, irreversible fencing,
+refusal and retry assertions while requiring all erasure to stay inside the
+backend's atomic boundary. Native repository and real-server journeys qualify
+the backend behavior separately.
+
+The repaired flat-file journeys refuse unsafe metadata on the actual native
+quest-state file, require unchanged account identities, snapshot and aliases, cold restart and retry,
 and verify erasure after a further restart. The SQL owner refuses actual persistence
 by withholding only its synthetic schema's quest table. It checks the durable
 fence and retained identities, restarts, completes permanent deletion, then safely
 reuses the name with a distinct PID before running the original character-deletion
-rollback/retry checks. The matrix requires this new account-cleanup witness on
-both engines; the row count stays 138.
+rollback/retry checks. The matrix requires both the account-cleanup witness and
+the real native whole-account journey on both engines; the row count stays 138.
+The latter refuses corrupt or stale quest state and failed quest writes, injects
+a late player-deletion failure and requires byte-identical alias rollback, then
+verifies repaired retry and cold restart. Both native cache refresh journeys
+require a successful subsequent Observer alias publication, so disabling tracking
+cannot satisfy erasure checks.
+
+The v37 durable/uncertain attempts failed because they still changed the runtime
+publisher's lock, which native journal preparation does not use. Those failures
+remain preserved. The v38 correction changes the quest-state file's metadata,
+which the actual native reader must reject, and restores its original mode before
+recovery. Both journeys pass their retained-identity, unchanged-byte,
+non-cancellable fence, restart/retry, erasure and later-publication assertions.
+Git proves that only this test changed; the production subtree and frozen binary
+hashes match the completed v37 qualification.
 
 The evidence index accepts historical manifests only after checking that every
-requirement is identical except for that added SQL account-cleanup witness.
+requirement is identical except for the two added SQL account-cleanup witnesses.
 Earlier passing deletion rows cannot supply it: the strengthened owner must pass
 on both engines. Every selected positive row must have zero skips, all named cases,
 the required native witnesses, and matching hashed original/result logs. The index
@@ -368,7 +406,8 @@ finds passing evidence for all 138 required identities: 61 MySQL, 61 MariaDB and
 16 shared rows. Every required case and completion witness is present, with zero
 skips or pending coverage in the selected positive records. Each of the 33
 behavioral control/fault phases also has its own validated outcome and log hash.
-The six source cohorts remain explicit; this is not a single complete matrix run
+The selected positives span six explicit source cohorts, including the eight
+refreshed SQL rows at 61ef72381. This is not a single complete matrix run
 at the final review commit.
 
 A separate native probe starts two authenticated MySQL 8.0.46 daemons concurrently
@@ -379,8 +418,11 @@ executable hashes and versions. A transferred tools payload is not reported as
 the QA container's image.
 
 The writer classification comparison with the target differs only in this PR's
-explicit food-consumption route. The four account source anchors shifted by its
-new include are remapped with unchanged-excerpt proofs. The census remains 2,816
+explicit food-consumption route. After the bounded transport integration through
+a209af827, 232 moved observations are remapped with identical source-block or
+unique-excerpt proofs. Handler owner checks locate actual functions and operations
+instead of fixed source lines. All 52 writer cases and three census cases pass.
+The census remains 2,816
 occurrences and 2,757 mapped unique sites, with zero unmatched sites. Accounting
 release coverage remains blocked.
 
@@ -424,3 +466,8 @@ ignored artifacts under bin/streamline-review-evidence, with earlier benchmark
 material under bin/streamline. All exported bytes are SHA-256 verified before
 owned qualification containers are removed. The review branch remains a draft;
 no PR merge or auto-merge is performed.
+
+The target continued advancing after the bounded a209af827 integration. Final
+review uses the frozen source cohorts above; later SQL pool and commit-reply-loss
+changes require branch synchronization and focused qualification before an
+eventual merge. The PR remains open for review with that boundary explicit.

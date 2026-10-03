@@ -90,11 +90,19 @@ automatic entry. Every discovered file must have an explicit entry in
 files fail before execution. Manual prerequisites remain explicit. Use
 `make test-fast` for the short offline profile, or `TEST_PROFILE=native`, `journey`,
 `database`, or `recovery` with `make test-python` or `make test-list`.
-Database/recovery profiles reject required skips. `make test-integration` provisions
+Database/recovery profiles reject required skips. Passing fast entries can still
+contain optional integration skips; those cases supply no fast-profile coverage.
+The required matrix separately supplies the doctor's real SQL check, native
+restitution backup and non-root systemd ownership checks, and rejects their skips.
+
+`make test-integration` provisions
 the reviewed SQL and recovery workload in `tests/integration_manifest.json`,
 including required cases from mixed suites, manual arguments, privileged recovery,
 and non-root recovery. It uses pinned MySQL and MariaDB images, fresh schemas,
 frozen builds and private runtime state; missing cases and skipped checks fail.
+The SQL deletion owner requires both account fencing/retry and native atomic
+erasure: corrupt state and failed writes refuse, late failure rolls aliases back
+with player data, and repaired retry permits actual later alias publication.
 
 `TEST_JOBS=0` selects workers from the available CPU budget (cgroup-aware, capped
 at eight). The runner starts expensive tests early and schedules overlap using
