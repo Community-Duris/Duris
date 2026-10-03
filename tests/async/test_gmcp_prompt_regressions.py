@@ -27,7 +27,7 @@ def run_harness(name: str, source_text: str, *, cases=("",), sanitize=False) -> 
         if sanitize:
             flags += [
                 "-O1", "-g", "-fsanitize=address,undefined",
-                "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
+                "-fno-sanitize-recover=all", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
             ]
         subprocess.run(
             ["g++", *flags, f"-I{ROOT / 'src'}", str(source_path), "-o", str(binary_path)],
@@ -144,6 +144,7 @@ void setup()
     for (int i = 0; i < 12; ++i)
     {
         descriptors[i].gmcp_enabled = true;
+        descriptors[i].connected = CON_PLAYING;
         descriptors[i].next = i < 11 ? &descriptors[i + 1] : nullptr;
         if (i < 11)
         {
@@ -236,6 +237,28 @@ int main(int argc, char **argv)
         gmcp_flush_dirty_rooms();
         expect({});
     }
+    else if (!strcmp(argv[1], "session"))
+    {
+        // Deletion confirmation retains a loaded character's saved room but
+        // does not put that character into the live room population.
+        world[618].people = nullptr;
+        for (int state : {CON_ACCT_DELETE_CHAR, CON_MAIN_MENU, CON_RMOTD,
+                          CON_PLAYER_LOAD, CON_FLUSH, CON_EXIT})
+        {
+            descriptors[5].connected = state;
+            gmcp_mark_room_dirty(618);
+            gmcp_flush_dirty_rooms();
+            expect({});
+            mark_range(500);
+            gmcp_flush_dirty_rooms();
+            expect({0, 1, 2, 3, 4});
+        }
+        descriptors[5].connected = CON_PLAYING;
+        world[618].people = &characters[5];
+        mark_range(500);
+        gmcp_flush_dirty_rooms();
+        expect({0, 1, 2, 3, 4, 5});
+    }
     else if (!strcmp(argv[1], "world"))
     {
         gmcp_mark_room_dirty(619);
@@ -274,7 +297,7 @@ int main(int argc, char **argv)
 '''
     run_harness(
         "gmcp-rooms-", prelude + production + driver,
-        cases=("normal", "overflow", "invalid", "world", "movement"), sanitize=True,
+        cases=("normal", "overflow", "invalid", "session", "world", "movement"), sanitize=True,
     )
 
 

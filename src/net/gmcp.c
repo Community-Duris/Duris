@@ -381,7 +381,7 @@ void gmcp_flush_dirty_rooms(void)
 
 	if (dirty_rooms_overflow)
 	{
-		/* Refresh each connected player's current room once. The connection
+		/* Refresh each playing character's current room once. The connection
 		 * limit bounds overflow work without growing the queue or scanning
 		 * every world room. Unchanged rooms may receive an extra snapshot. */
 		dirty_room_count = 0;
@@ -389,7 +389,8 @@ void gmcp_flush_dirty_rooms(void)
 		for (struct descriptor_data *d = descriptor_list; d; d = d->next)
 		{
 			tch = d->character;
-			if (tch && !IS_NPC(tch) && tch->desc == d && GMCP_ENABLED(tch))
+			if (tch && STATE(d) == CON_PLAYING && !IS_NPC(tch) && tch->desc == d &&
+			    GMCP_ENABLED(tch))
 				gmcp_room_info(tch);
 		}
 		return;
