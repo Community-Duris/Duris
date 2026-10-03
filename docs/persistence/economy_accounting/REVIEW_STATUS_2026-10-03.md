@@ -204,3 +204,42 @@ Fresh native erasure evidence SHA-256:
 The inspector dependency comparison initially found the changed maintenance
 header; that refusal triggered the fresh build and repeat above. It is not a
 failed production erasure test.
+
+
+## SQL ship-coffer audit omission milestone
+
+The disposable native-SQL exporter regression reproduced missing ships.money
+while persisted coffers changed. The SELECT-only consistent cut now captures
+all ship IDs and exact nullable signed-INT copper values separately from mapped
+holdings. Ships join required InnoDB sources. Independent reconciliation validates
+identities/value bounds/uniqueness and recomputes coverage, reporting unsupported
+native authority and missing monetary revisions even for zero-valued rows;
+NULL remains unknown and negative value is reported invalid. No account key,
+revision, lineage or owner alias is inferred.
+
+Both actual MySQL and MariaDB SELECT-only probes pass positive/zero/NULL/negative
+capture, value change, missing/non-InnoDB source refusal and exact restoration,
+concurrent-writer read-view separation, CLI export/reconcile including detail
+limit zero, unchanged mapped holdings/economic evidence and exact pre/post reads.
+Five new independent coffer tests, 61 reconciler tests and ten exporter tests pass.
+The first extra CLI fixture reused an existing output path and correctly hit
+exclusive-create refusal; the repaired fixture uses a separate new file and both
+engines pass. This was a fixture failure, not an export overwrite policy change.
+
+Native source remains ce7550d67b3bb5bc7a8467a5a3e03eccf77d5ded, published in
+9f9d21132df1f30594454349c3d26c0225dd9eaf. This milestone changes diagnostic
+Python only; native build/gameplay/recovery proofs remain at their original
+source. Ship gameplay/enrollment, guild holdings, complete native authority/
+writer qualification, protected retention, full-world/captured clone and workload
+remain open. backend=sql_partial; complete=false; release BLOCKED.
+
+Ship milestone local source/evidence SHA-256:
+
+- scripts/economic_sql_audit_snapshot.py: 01bfb40618fe9eebaf3851c7bdc3cde6c00f7427cd48043ebef7bd009bb284c3
+- scripts/reconcile_economy_accounting.py: 5509777c3286f46499cf18480fc4de36ddea5284a3a885a3ec78e8e81d52e8dd
+- tests/async/run_economic_sql_audit_snapshot_mysql.py: 5a160e15a6659b003e44f2a05880ca8a4a4c749c3f217e9a5e4a47e7fe9084d0
+- tests/async/test_ship_coffer_audit.py: 24f6e5320244725da406dcaba2bb356c853542faae7d3fb51d1a3ec9bce620d1
+- tmp/audit-ship-coffer-red.local.log: e500904dab653c6c9bde3c6f54cc245aaff838429465dfe8b23ce160d292718f
+- tmp/audit-ship-coffer-green.local.log: 15321b41ca8e657492e907546d6d6ee19b2c2132a5a07b5d17cc21bf8fb29955
+- tmp/audit-ship-coffer-final.local.log: 4d8f7fcaeda84243829d62bac38c526961716ebefc4e2fa6c6af5eb46330e188
+- tmp/audit-ship-coffer-cli.local.log: 15321b41ca8e657492e907546d6d6ee19b2c2132a5a07b5d17cc21bf8fb29955

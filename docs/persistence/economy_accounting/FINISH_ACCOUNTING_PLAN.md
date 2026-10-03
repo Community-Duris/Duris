@@ -384,3 +384,15 @@ cache behavior and complete R1-R8 remain open. SQL ship-coffer audit omission an
 safe interrupted-build reuse are the next separate issues; captured backup
 qualification still needs the requested local generation path. No inactive
 spell-path behavior, activation authority or acceptance deadline was changed.
+
+
+### October 3 bounded ship-coffer audit capture
+
+The SQL independent cut now includes every persisted ships.money candidate and
+reports unresolved authority/revision instead of silently omitting it. Both
+engines' SELECT-only refusal, read-view, CLI and exact-restoration probes and
+independent validation tests pass. These raw candidates are not mapped native
+holdings and do not qualify ship gameplay, issuance, claims or enrollment.
+Guilds' persisted denominations remain omitted and are the next established
+native-audit gap; outcome_revision is not their monetary revision. Full R7,
+writer/source completeness and all applicable R1-R8 gates remain open.
