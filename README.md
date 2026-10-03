@@ -56,15 +56,21 @@ flowchart LR
     class Loop focal;
 ```
 
-The C-style sources under `src/` are compiled as C++20. Network I/O and mutable game
-state remain on one readiness/deadline loop using `poll()`, with commands and world
-phases retaining their 250 ms simulation boundaries. Immutable revisioned snapshots and
+The C-style sources under `src/` are compiled as C++20. By default, network I/O and
+mutable game state share one readiness/deadline loop using `poll()`, with commands
+and world phases retaining their 250 ms simulation boundaries. Immutable revisioned snapshots and
 non-coalescing operation-ID commands cross typed worker boundaries; the older item,
 scalar, and large-payload queues retain only bounded compatibility roles. MySQL or
 MariaDB is the durable authority for snapshots, ledgers, current rows, inbox/results,
 outbox state, migration history, and lifecycle evidence. Redis is optional and limited
 to reconstructible caches plus validated world-recovery generations. See the full
 [architecture guide](docs/reference/ARCHITECTURE.md) and [database guide](docs/reference/DATABASE.md).
+
+An opt-in `--persistent-transport` mode keeps client sockets and their TLS,
+Telnet/MCCP and WebSocket/compression state in a persistent parent while the
+single world process is replaced through authenticated durable copyover. See
+[Persistent transport](docs/network/PERSISTENT_TRANSPORT.md) for eligibility,
+launching, protocol bounds and recovery procedures.
 
 ## Quick start
 
@@ -312,6 +318,25 @@ dataset, skips full `areas/world.*` generation and full-world runtime systems,
 but keeps the player load/save and critical-command pipelines available so a
 configured test character can log in, play, and disconnect cleanly. Use
 `./scripts/start_mud.sh --minimal` for the corresponding background launcher.
+
+To keep eligible playing sessions connected through a planned world replacement,
+enable persistent transport when starting the server:
+
+```bash
+./scripts/cycle_mud.sh --dev --persistent-transport
+```
+
+The option also works with `--minimal` and through `start_mud.sh`. It starts one
+transport parent and one world child. After building `bin/server/dms_new`, use the
+existing in-game copyover command or send `SIGUSR1` to the transport parent;
+authenticated Telnet, TLS and WebSocket players retain their connection, protocol
+state and restored gameplay. Any live session still logging in, editing, paging
+or otherwise ineligible cancels the handoff and leaves the server running.
+
+This mode is opt-in and Linux-only. A frontend failure or an unplanned world
+failure requires clients to reconnect; networking or TLS library upgrades require
+a cold restart of both processes. See the [persistent transport operating guide](docs/network/PERSISTENT_TRANSPORT.md)
+for eligibility, watchdog behavior, limits and recovery steps.
 
 ## Troubleshooting
 

@@ -19,8 +19,8 @@ template = (ROOT / "tests/async/network_readiness_runtime_harness.cpp").read_tex
 transport_input = extract_function("net/comm.c", "int process_input(").replace(
     "int process_input(", "static int transport_process_input(", 1)
 connection = extract_function("net/comm.c", "static bool run_connection_phase(")
-boundary = connection[connection.index("for (P_desc point = ready ? descriptor_list"):
-                      connection.index("ctx.connections_us =")]
+boundary_start = connection.index("for (P_desc point = ready ? descriptor_list")
+boundary = connection[boundary_start:connection.index("ctx.connections_us =", boundary_start)]
 build_root = ROOT / "bin/tests"
 build_root.mkdir(parents=True, exist_ok=True)
 with tempfile.TemporaryDirectory(prefix="network-readiness-", dir=build_root) as directory:

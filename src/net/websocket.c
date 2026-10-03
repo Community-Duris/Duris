@@ -14,6 +14,7 @@
 #include "core/utils.h"
 #include "net/websocket.h"
 #include "net/network_readiness.h"
+#include "net/transport.h"
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <deque>
@@ -63,6 +64,8 @@ static int websocket_queue_message(struct descriptor_data *d, int opcode, const 
 				   size_t payload_len)
 {
 	if (opcode != WS_OPCODE_TEXT || !payload)
+		return 0;
+	if (transport_frontend_input(d, 2, payload, payload_len))
 		return 0;
 	try
 	{
@@ -330,7 +333,10 @@ static int websocket_send_all(int fd, const void *buf, size_t len)
 
 static int websocket_send_health_response(struct descriptor_data *d)
 {
-	const int persistence_ready = !persistence_mode_requires_mysql() || sql_pool_is_active();
+	const int persistence_ready = transport_frontend_active() ?
+					      transport_frontend_ready() :
+					      !persistence_mode_requires_mysql() ||
+						      sql_pool_is_active();
 	const char *status = persistence_ready ? "200 OK" : "503 Service Unavailable";
 	const char *body = persistence_ready ?
 				   "{\"status\":\"healthy\",\"persistence\":\"ready\"}\n" :
@@ -772,7 +778,9 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 				    inet_pton(AF_INET6, client_ip, &ipv6) == 1)
 				{
 					strlcpy(d->host, client_ip, sizeof(d->host));
-					resolve_descriptor_hostname_async(d->host, d->descriptor);
+					if (!transport_frontend_active())
+						resolve_descriptor_hostname_async(d->host,
+										  d->descriptor);
 				}
 			}
 		}
@@ -975,7 +983,8 @@ int websocket_complete_handshake(struct descriptor_data *d, const char *key)
 			continue;
 
 		/* only kick unauthenticated websocket connections from same ip */
-		if (k->websocket && k->ws_handshake_done && !k->account && /* not logged in yet */
+		if (k->websocket && k->ws_handshake_done && !k->account &&
+		    !k->transport_authenticated && /* not logged in yet */
 		    !websocket_is_authenticated_service(k) && k->connected != CON_PLAYING &&
 		    strcmp(k->host, d->host) == 0)
 		{
@@ -1106,6 +1115,15 @@ int websocket_flush_output(struct descriptor_data *d)
 /* build and send a frame */
 static int websocket_send_frame(struct descriptor_data *d, int opcode, const void *data, size_t len)
 {
+	if (d && d->transport_session && transport_world_active())
+	{
+		if (opcode == WS_OPCODE_PING || opcode == WS_OPCODE_PONG)
+			return 0; // The persistent frontend owns liveness control frames.
+		const unsigned kind = opcode == WS_OPCODE_TEXT	 ? 3 :
+				      opcode == WS_OPCODE_BINARY ? 4 :
+								   5;
+		return transport_world_output(d, kind, data, len);
+	}
 	unsigned char *frame;
 	size_t frame_len;
 	size_t offset = 0;
@@ -1727,6 +1745,9 @@ void websocket_free(struct descriptor_data *d)
 static void websocket_handle_message(struct descriptor_data *d, int opcode, char *payload,
 				     size_t payload_len)
 {
+	if (opcode == WS_OPCODE_TEXT && payload &&
+	    transport_frontend_input(d, 2, payload, payload_len))
+		return;
 	if (opcode == WS_OPCODE_TEXT && payload)
 	{
 		/* parse json and extract command/data */
@@ -1848,6 +1869,12 @@ void websocket_dispatch_pending_input(struct descriptor_data *d)
 		if (!is_desc_valid(d))
 			return;
 	}
+}
+
+/* Private IPC dispatch runs only in the world's connection phase. */
+void websocket_dispatch_message(P_desc d, char *payload, size_t len)
+{
+	websocket_handle_message(d, WS_OPCODE_TEXT, payload, len);
 }
 
 /* Process transport/protocol input only; stage application messages for a pulse. */

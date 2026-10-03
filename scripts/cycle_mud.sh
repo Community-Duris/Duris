@@ -31,6 +31,7 @@ DEV_MODE=0
 MINIMAL_MODE=0
 PRODUCTION_MODE=0
 CONFIG_CHECK_ONLY=0
+PERSISTENT_TRANSPORT=0
 while (( $# > 0 )); do
   case "$1" in
     --dev)
@@ -46,8 +47,12 @@ while (( $# > 0 )); do
     --check-config)
       CONFIG_CHECK_ONLY=1
       ;;
+    --persistent-transport)
+      PERSISTENT_TRANSPORT=1
+      ;;
     --help|-h)
-      echo "Usage: $0 [--dev] [--minimal] [--production] [--check-config]"
+      echo "Usage: $0 [--dev] [--minimal] [--production] [--check-config] [--persistent-transport]"
+      echo "  --persistent-transport  Keep client protocols in a persistent parent across world copyover."
       echo "  --production  Require ENVIRONMENT=production and use the production port role"
       echo "                (DURIS_PRODUCTION_PORT, default 7777)."
       echo "  --minimal  Use the tracked areas_mini dataset (implies --dev)."
@@ -56,7 +61,7 @@ while (( $# > 0 )); do
       ;;
     *)
       echo "Unknown option: $1" >&2
-      echo "Usage: $0 [--dev] [--minimal] [--production] [--check-config]" >&2
+      echo "Usage: $0 [--dev] [--minimal] [--production] [--check-config] [--persistent-transport]" >&2
       exit 2
       ;;
   esac
@@ -358,6 +363,9 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
 
   echo "Starting duris on port ${MUD_PORT}..."
   SERVER_ARGS=()
+  if (( PERSISTENT_TRANSPORT == 1 )); then
+    SERVER_ARGS+=(--persistent-transport)
+  fi
   if (( MINIMAL_MODE == 1 )); then
     SERVER_ARGS+=(--minimal)
   fi

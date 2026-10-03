@@ -35,6 +35,7 @@ def main():
     ))
     prelude = r'''
 #include "persistence/copyover_codec.h"
+#include "net/transport.h"
 #include "core/utils.h"
 #include <cassert>
 #include <cstdio>

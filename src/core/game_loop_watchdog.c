@@ -84,6 +84,23 @@ void game_loop_watchdog_completed()
 	publish('P');
 }
 
+void game_loop_watchdog_delegate(int child_pid)
+{
+	if (!on_world_thread() || child_pid <= 1)
+		return;
+	struct timespec now;
+	if (clock_gettime(CLOCK_MONOTONIC, &now) != 0)
+		return;
+	const uint64_t monotonic_us = static_cast<uint64_t>(now.tv_sec) * 1000000 +
+				      static_cast<uint64_t>(now.tv_nsec) / 1000;
+	char record[128];
+	const int length = snprintf(record, sizeof(record), "2 %ld %d %llu\n",
+				    static_cast<long>(getpid()), child_pid,
+				    static_cast<unsigned long long>(monotonic_us));
+	const ssize_t sent = send(progress_fd, record, length, MSG_DONTWAIT | MSG_NOSIGNAL);
+	(void)sent;
+}
+
 void game_loop_watchdog_lifecycle(char phase)
 {
 	if (on_world_thread())
