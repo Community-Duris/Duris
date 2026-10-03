@@ -1741,6 +1741,7 @@ struct descriptor_data
 	P_acct account;
 	struct password_login_job *login_password_job;
 	struct password_request *password_request;
+	struct account_request *account_request;
 	bool login_password_websocket;
 	char *selected_char_name; /* temporary storage for character selection confirmation */
 	uint64_t player_load_request_id;

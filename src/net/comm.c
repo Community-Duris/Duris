@@ -1,4 +1,5 @@
 #include "account/password_async.h"
+#include "account/account_async.h"
 /*
  **************************************************************************
  *  File: comm.c                                             Part of Duris
@@ -948,6 +949,11 @@ int run_the_game(int port, int sslport)
 	if (!player_load_pipeline_init())
 		logit(LOG_STATUS,
 		      "Player load pipeline unavailable; existing-character login will use synchronous fallback.");
+#ifndef __NO_MYSQL__
+	if (!account_load_worker_init())
+		logit(LOG_STATUS,
+		      "Account load worker unavailable; interactive login will report busy.");
+#endif
 	if (!quest_reward_obligation_pipeline_init())
 		logit(LOG_STATUS,
 		      "Quest reward acknowledgement worker unavailable; obligations remain pending.");
@@ -1064,6 +1070,9 @@ int run_the_game(int port, int sslport)
 	redis_cleanup();
 	quest_reward_obligation_pipeline_shutdown();
 	player_load_pipeline_shutdown();
+	for (P_desc descriptor = descriptor_list; descriptor; descriptor = descriptor->next)
+		account_async_cancel(descriptor);
+	account_load_worker_shutdown();
 	collector_maintenance_shutdown();
 	collector_listing_pipeline_shutdown();
 	collector_presence_shutdown();
@@ -1336,7 +1345,8 @@ struct game_loop_pulse_context
 
 static bool session_input_authentication_pending(P_desc descriptor)
 {
-	return password_async_pulse(descriptor) || account_login_password_pulse(descriptor);
+	return account_async_pulse(descriptor) || password_async_pulse(descriptor) ||
+	       account_login_password_pulse(descriptor);
 }
 
 static void repair_session_command_gate(P_char character)
@@ -3344,6 +3354,7 @@ void close_socket(struct descriptor_data *d)
 	if (d && d->player_load_request_id)
 		player_load_pipeline_cancel(d->player_load_request_id);
 	account_recovery_descriptor_closed(d);
+	account_async_cancel(d);
 	password_async_cancel(d);
 	password_login_release(d->login_password_job);
 	d->login_password_job = nullptr;
