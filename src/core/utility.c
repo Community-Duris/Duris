@@ -3064,7 +3064,7 @@ static void currency_adjustment_committed(P_char ch, bool committed,
 					  unsigned int error_code, const uint8_t *context,
 					  size_t context_size);
 
-void ADD_MONEY(P_char ch, int amount)
+void ADD_MONEY(P_char ch, int amount, const char *committed_message)
 {
 	int t = 0;
 
@@ -3076,12 +3076,18 @@ void ADD_MONEY(P_char ch, int amount)
 
 	if (amount == 0)
 		return;
+	const size_t message_size = committed_message ? strlen(committed_message) + 1 : 0;
+	if (message_size > CURRENCY_PENDING_CONTEXT_MAX_BYTES)
+	{
+		logit(LOG_WIZ, "ADD_MONEY: credit acknowledgement exceeds context capacity");
+		return;
+	}
 	if (IS_PC(ch) && GET_PID(ch) > 0)
 	{
 		if (!currency_transaction_submit_wallet_value(
 			    ch, amount, currency_reason_type::wallet_reward, 0,
 			    critical_source_site::command, critical_deadline_class::interactive,
-			    currency_adjustment_committed, nullptr, 0))
+			    currency_adjustment_committed, committed_message, message_size))
 		{
 			logit(LOG_WIZ, "ADD_MONEY: wallet transaction submission failed for pid %d",
 			      GET_PID(ch));
@@ -3092,6 +3098,8 @@ void ADD_MONEY(P_char ch, int amount)
 			else
 				send_to_char("Your coin credit is pending staff review.\r\n", ch);
 		}
+		else if (committed_message)
+			send_to_char("Your coin credit is pending confirmation.\r\n", ch);
 		return;
 	}
 
@@ -3122,6 +3130,8 @@ void ADD_MONEY(P_char ch, int amount)
 
 	/* Update web client */
 	gmcp_char_vitals(ch);
+	if (committed_message)
+		send_to_char(committed_message, ch);
 }
 
 /* TOWARDS BANK MONEY
@@ -3201,15 +3211,19 @@ void publish_account_bank_balances_revision(const char *account_name, int racewa
 
 static void currency_adjustment_committed(P_char ch, bool committed,
 					  const currency_command_result & /*result*/,
-					  unsigned int error_code, const uint8_t * /*context*/,
-					  size_t /*context_size*/)
+					  unsigned int error_code, const uint8_t *context,
+					  size_t context_size)
 {
+	if (committed && ch && context && context_size && context[context_size - 1] == 0)
+		send_to_char(reinterpret_cast<const char *>(context), ch);
 	if (!committed && ch)
 	{
 		logit(LOG_DEBUG, "Currency adjustment rejected for pid %d (error %u)", GET_PID(ch),
 		      error_code);
 		send_to_char(
-			"Your coin transaction could not be completed. Please contact staff if goods were delivered.\r\n",
+			context_size ?
+				"Your coin credit could not be completed. Please contact staff.\r\n" :
+				"Your coin transaction could not be completed. Please contact staff if goods were delivered.\r\n",
 			ch);
 	}
 }
