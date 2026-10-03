@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 
 from _paths import SRC
+from _sql_dispatch_sources import SQL_DISPATCH_SOURCES
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -95,8 +96,10 @@ class CorpseLifecycleRepositoryTest(unittest.TestCase):
         self.assertIn("CORPSE_LIFECYCLE_REPOSITORY_DB_IMAGE", runner)
         self.assertIn("bootstrap_multithread_safe.sql", runner)
         self.assertIn("corpse_lifecycle_repository_mysql_harness.cpp", runner)
-        self.assertIn("src/persistence/corpse_lifecycle_command.c", runner)
-        self.assertIn("src/persistence/corpse_lifecycle_repository.c", runner)
+        self.assertIn('SQL_DISPATCH_SOURCES_TEXT="$(python3 tests/async/_sql_dispatch_sources.py)"', runner)
+        self.assertIn('"${SQL_DISPATCH_SOURCES[@]}"', runner)
+        self.assertIn("persistence/corpse_lifecycle_command.c", SQL_DISPATCH_SOURCES)
+        self.assertIn("persistence/corpse_lifecycle_repository.c", SQL_DISPATCH_SOURCES)
         self.assertIn("-Wpedantic -Werror", runner)
         self.assertIn("run_corpse_lifecycle_repository_schema_mysql.sh", makefile)
 
@@ -105,6 +108,9 @@ class CorpseLifecycleRepositoryTest(unittest.TestCase):
         linked = []
         for path in runners:
             source = path.read_text()
+            if '"${SQL_DISPATCH_SOURCES[@]}"' in source:
+                self.assertIn('python3 tests/async/_sql_dispatch_sources.py', source, path.name)
+                source += "\n" + " ".join("src/" + item for item in SQL_DISPATCH_SOURCES)
             if "src/persistence/critical_command_repository.c" not in source:
                 continue
             linked.append(path.name)

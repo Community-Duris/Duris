@@ -52,7 +52,7 @@ ARTIFACT = Path(os.environ.get(
 ))
 
 PROXY_PORT = 13306
-RECOVERED_UIDS = (51000, 51001, 51002, 51003)
+RECOVERED_UIDS = (51000, 51001, 51002, 51003, 51005)
 ARTIFACT_VNUM = 67259
 OPERATION = "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf"
 
@@ -95,6 +95,8 @@ def write_mysql_wrapper(directory: Path) -> Path:
         "    if skip:\n"
         "        skip = False\n"
         "        continue\n"
+        "    if arg == '--no-defaults':\n"
+        "        continue\n"
         "    if arg in ('-h', '--host', '-P', '--port', '-u', '--user', '--protocol', '--connect-timeout', '--ssl-ca', '--ssl-cert', '--ssl-key', '--ssl-mode'):\n"
         "        skip = True\n"
         "        continue\n"
@@ -105,7 +107,7 @@ def write_mysql_wrapper(directory: Path) -> Path:
         "    if arg.startswith('-h') or arg.startswith('-P'):\n"
         "        continue\n"
         "    filtered.append(arg)\n"
-        "cmd = ['docker', 'exec', '-i', '-e', 'MYSQL_PWD=' + os.environ.get('MYSQL_PWD', ''), container, 'mysql', '--protocol=tcp', '--host=127.0.0.1', '--port=3306', '-uroot'] + filtered\n"
+        "cmd = ['docker', 'exec', '-i', '-e', 'MYSQL_PWD=' + os.environ.get('MYSQL_PWD', ''), container, 'mysql', '--no-defaults', '--protocol=tcp', '--host=127.0.0.1', '--port=3306', '-uroot'] + filtered\n"
         "raise SystemExit(subprocess.call(cmd))\n",
         encoding="utf-8",
     )
@@ -263,8 +265,16 @@ def start_db_proxy() -> None:
     while still reaching only the fresh database container; no host socket or
     shared service is used.
     """
+    # The default Docker bridge does not provide container-name DNS. Resolve
+    # the exact task-owned container rather than silently accepting a local
+    # connection whose upstream cannot be reached.
+    target = docker("inspect", "--format",
+                    '{{(index .NetworkSettings.Networks "bridge").IPAddress}}',
+                    DB_CONTAINER).stdout.strip()
+    if not target or not re.fullmatch(r"[0-9]+(?:\.[0-9]+){3}", target):
+        raise HarnessError("task-owned database has no bridge IPv4 address")
     code = f'''import socket, threading
-TARGET = {DB_CONTAINER!r}
+TARGET = {target!r}
 PORT = {PROXY_PORT}
 def relay(left, right):
     try:
@@ -605,10 +615,14 @@ def command(client, text: str, needles: Sequence[str], *, timeout: int = 30) -> 
 
 
 def gameplay(journey, wrapper: Path, character: str, pid: int, game_port: int) -> None:
-    client = journey.reconnect_character(game_port, expected_room="The Regression Arena")
+    client = journey.reconnect_character(
+        game_port, expected_room="The Regression Arena", account=journey.ACCOUNT, character=character,
+    )
     try:
         inventory = command(client, "inventory", ("recovered leather bag",), timeout=30)
-        if "recovered wooden mace" not in inventory or "unique pair of recovered gloves" not in inventory:
+        if any(item not in inventory for item in (
+            "recovered wooden mace", "unique pair of recovered gloves", "recovered spellbook",
+        )):
             raise HarnessError(f"inventory omitted a recovered top-level item: {inventory!r}")
         nested = command(client, "look in qabag", ("recovered banana",), timeout=30)
         if "recovered banana" not in nested:
@@ -620,6 +634,15 @@ def gameplay(journey, wrapper: Path, character: str, pid: int, game_port: int) -
                 ("You eat", "You munch", "You enjoy", "You consume", "delicious"), timeout=30)
         client.send("save")
         client.expect(f"Save complete for {character}.", timeout=30)
+        retired = sql_one(wrapper, f"""
+SELECT CONCAT(
+ (SELECT COUNT(*) FROM item_current_owner WHERE item_uid=51001 AND owner_type=8
+    AND owner_id=0 AND owner_context_id=0 AND state=2), '|',
+ (SELECT COUNT(*) FROM item_ownership_ledger WHERE item_uid=51001 AND reason_type=3), '|',
+ (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid=51001)
+)""")
+        if retired != "1|1|0":
+            raise HarnessError(f"eating did not durably retire the recovered UID: {retired}")
         client.send("quit")
         client.expect("Please select an option", timeout=30)
         client.send("0")
@@ -633,7 +656,9 @@ WHERE child.pid={pid} AND child.obj_uid=51002 AND child.container_id=bag.id
         if moved != "1":
             raise HarnessError("save did not persist inventory-to-container movement")
 
-        client = journey.reconnect_character(game_port, expected_room="The Regression Arena")
+        client = journey.reconnect_character(
+            game_port, expected_room="The Regression Arena", account=journey.ACCOUNT, character=character,
+        )
         command(client, "look in qabag", ("recovered wooden mace",), timeout=30)
         command(client, "get qamace qabag", ("You get", "Ok."), timeout=30)
         command(client, "remove sword", ("You stop using", "You remove", "Ok."), timeout=30)
@@ -655,7 +680,7 @@ WHERE child.pid={pid} AND child.obj_uid=51002 AND child.container_id=bag.id
 
         rows = sql(wrapper, f"""
 SELECT CONCAT(
- (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51000,51002,51003)), '|',
+ (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51000,51002,51003,51005)), '|',
  (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid=51001), '|',
  (SELECT COUNT(*) FROM player_items p JOIN player_items b ON b.pid=p.pid AND b.obj_uid=51000 WHERE p.pid={pid} AND p.obj_uid=51002 AND p.container_id=b.id), '|',
  (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid=51002 AND equip_slot>0), '|',
@@ -663,7 +688,7 @@ SELECT CONCAT(
  (SELECT COUNT(*) FROM player_death_restitution_delivery WHERE recipient_pid={pid} AND death_revision=77), '|',
  (SELECT COUNT(*) FROM artifact_domain_state WHERE vnum={ARTIFACT_VNUM} AND location={pid} AND loc_type=3)
 )""").strip()
-        if rows != "3|0|0|1|1|4|1":
+        if rows != "4|0|0|1|1|5|1":
             raise HarnessError(f"post-reconnect backend state mismatch: {rows}")
     finally:
         try:
@@ -677,10 +702,12 @@ def restart_and_replay(journey, wrapper: Path, character: str, pid: int,
     # The caller has already saved and disconnected.  Restart the actual game,
     # reconnect once, then stop it for an idempotent guarded replay.
     start_server()
-    client = journey.reconnect_character(GAME_PORT, expected_room="The Regression Arena")
+    client = journey.reconnect_character(
+        GAME_PORT, expected_room="The Regression Arena", account=journey.ACCOUNT, character=character,
+    )
     try:
         inventory = command(client, "inventory", ("recovered leather bag",), timeout=30)
-        if "recovered leather bag" not in inventory:
+        if "recovered leather bag" not in inventory or "recovered spellbook" not in inventory:
             raise HarnessError("restart login lost recovered inventory")
         equipment = command(client, "equipment", ("recovered wooden mace",), timeout=30)
         if "recovered wooden mace" not in equipment or "gloves" not in equipment:
@@ -705,10 +732,13 @@ def restart_and_replay(journey, wrapper: Path, character: str, pid: int,
     unchanged = sql_one(wrapper, f"""
 SELECT CONCAT(
  (SELECT COUNT(*) FROM player_death_restitution_delivery WHERE recipient_pid={pid} AND death_revision=77), '|',
- (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51000,51002,51003)), '|',
- (SELECT COUNT(*) FROM artifacts_mortal WHERE vnum={ARTIFACT_VNUM} AND location={pid} AND locType=3)
+ (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51000,51002,51003,51005)), '|',
+ (SELECT COUNT(*) FROM artifacts_mortal WHERE vnum={ARTIFACT_VNUM} AND location={pid} AND locType=3), '|',
+ (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51001,51006)), '|',
+ (SELECT COUNT(*) FROM item_current_owner WHERE item_uid=51001 AND owner_type=8 AND state=2), '|',
+ (SELECT COUNT(*) FROM item_ownership_ledger WHERE item_uid=51001 AND reason_type=3)
 )""")
-    if unchanged != "4|3|1":
+    if unchanged != "5|4|1|0|1|1":
         raise HarnessError(f"idempotent replay changed durable counts: {unchanged}")
 
 
@@ -756,7 +786,9 @@ def main() -> int:
         server_started = False
         start_server()
         server_started = True
-        baseline = journey.reconnect_character(GAME_PORT, expected_room="The Regression Arena")
+        baseline = journey.reconnect_character(
+            GAME_PORT, expected_room="The Regression Arena", account=account, character=character,
+        )
         baseline.send("save")
         baseline.expect(f"Save complete for {character}.", timeout=30)
         baseline.send("quit")
@@ -803,10 +835,15 @@ def main() -> int:
                                 "--actor", "issue331-player-journey", "--reason", "disposable-player-acceptance"], timeout=180, check=True)
         cli(wrapper, ["verify", "--plan", str(plan_path)], timeout=180, check=True)
         mark("guarded CLI offline apply/verify: executed")
-        delivery = sql_one(wrapper, f"SELECT COUNT(*) FROM player_death_restitution_delivery WHERE recipient_pid={pid} AND death_revision=77")
-        recovered = sql_one(wrapper, f"SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51000,51001,51002,51003)")
-        if delivery != "4" or recovered != "4":
-            raise HarnessError(f"backend recovery readback mismatch: delivery={delivery}, recovered={recovered}")
+        expected_uids = ",".join(str(uid) for uid in RECOVERED_UIDS)
+        delivery = sql_one(wrapper, f"SELECT GROUP_CONCAT(item_uid ORDER BY item_uid) FROM player_death_restitution_delivery WHERE recipient_pid={pid} AND death_revision=77")
+        recovered = sql_one(wrapper, f"SELECT GROUP_CONCAT(obj_uid ORDER BY obj_uid) FROM player_items WHERE pid={pid} AND obj_uid IN ({expected_uids})")
+        unresolved_coins = sql_one(wrapper, f"SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid=51006")
+        if delivery != expected_uids or recovered != expected_uids or unresolved_coins != "0":
+            raise HarnessError(
+                f"backend recovery readback mismatch: delivery={delivery}, recovered={recovered}, "
+                f"unresolved_coins={unresolved_coins}"
+            )
         mark("backend delivery/player_items/artifact authority readback: verified")
         start_server()
         server_started = True

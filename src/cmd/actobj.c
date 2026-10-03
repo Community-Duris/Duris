@@ -6692,6 +6692,202 @@ void do_drink(P_char ch, char *argument, int /*cmd*/)
 	act("It's empty already.", FALSE, ch, 0, 0, TO_CHAR);
 }
 
+static void apply_eaten_item(P_char ch, P_obj temp, bool updateArtiList)
+{
+	char Gbuf1[MAX_STRING_LENGTH];
+	/* special handling: value[5] specifies special functions for epic food */
+	int oaffect;
+	oaffect = (temp->value[5]);
+	if (oaffect > 0)
+	{
+		// What slacker did this instead of writing a real object proc that captures CMD_EAT?
+		if (oaffect == 1337) //+1 level mushroom
+		{
+			send_to_char(
+				"&+gAs you eat the &+GMushroom&+g, a &+Mmagical&+g essence surrounds you and you suddenly feel more &+Gexperienced!&n\r\n",
+				ch);
+			// GET_EXP(ch) = new_exp_table[GET_LEVEL(ch)];
+			statuslog(ch->player.level,
+				  "&+CLevel:&n (%s&n) just ate level mushroom at [%d]!",
+				  GET_NAME(ch),
+				  (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
+			advance_level(ch);
+			extract_obj(temp);
+			persistence_schedule_character_save(ch, 1, 2, "level-mushroom");
+			return;
+		}
+	}
+
+	act("$n eats $p.", TRUE, ch, temp, 0, TO_ROOM);
+	act("You eat the $q.", FALSE, ch, temp, 0, TO_CHAR);
+
+	if (temp->type == ITEM_FOOD)
+	{
+		/* New code to grant reg from food */
+		struct affected_type af;
+		if (!affected_by_spell(ch, TAG_EATEN))
+		{
+			bzero(&af, sizeof(af));
+			af.type = TAG_EATEN;
+			af.flags = AFFTYPE_NOSHOW;
+			af.duration = MAX(temp->value[0], 1);
+
+			int hit_reg;
+			int mov_reg;
+			if (temp->value[3] > 0) // TODO: apply poison
+			{
+				act("You feel &+gs&+Gi&+gc&+Gk&n.", FALSE, ch, 0, 0, TO_CHAR);
+				hit_reg = -temp->value[3] - hit_regen(ch, TRUE);
+				mov_reg = 0;
+			}
+			else
+			{
+				hit_reg = 15;
+				if (temp->value[1] != 0)
+					hit_reg = temp->value[1] * 15;
+				if (temp->value[2] != 0)
+					mov_reg = temp->value[2];
+				else
+					mov_reg = hit_reg;
+			}
+
+			af.location = APPLY_HIT_REG;
+			af.modifier = hit_reg;
+			affect_to_char(ch, &af);
+
+			if (mov_reg != 0)
+			{
+				af.location = APPLY_MOVE_REG;
+				af.modifier = mov_reg;
+				affect_to_char(ch, &af);
+			}
+
+			if ((af.modifier = temp->value[4]) != 0)
+			{
+				af.location = APPLY_STR;
+				affect_to_char(ch, &af);
+				af.location = APPLY_CON;
+				affect_to_char(ch, &af);
+			}
+
+			if ((af.modifier = temp->value[5]) != 0)
+			{
+				af.location = APPLY_AGI;
+				affect_to_char(ch, &af);
+				af.location = APPLY_DEX;
+				affect_to_char(ch, &af);
+			}
+
+			if ((af.modifier = temp->value[6]) != 0)
+			{
+				af.location = APPLY_INT;
+				affect_to_char(ch, &af);
+				af.location = APPLY_WIS;
+				affect_to_char(ch, &af);
+			}
+
+			if ((af.modifier = temp->value[7]) != 0)
+			{
+				af.location = APPLY_DAMROLL;
+				affect_to_char(ch, &af);
+				af.location = APPLY_HITROLL;
+				affect_to_char(ch, &af);
+			}
+		}
+		else
+		{
+			act("You feel sated already.", FALSE, ch, 0, 0, TO_CHAR);
+			// A committed retirement must still remove the food if satiety changed.
+		}
+
+		/* End new code to grant reg from eating */
+		/*
+		   if (gain_condition(ch, FULL, temp->value[0]))
+		   return;
+
+		   if (GET_COND(ch, FULL) > 20)
+		   act("You feel comfortably sated.", FALSE, ch, 0, 0, TO_CHAR);
+
+		   if (temp->value[3] && (GET_LEVEL(ch) < MINLVLIMMORTAL))
+		   {
+		     act("Oops, it tasted rather strange?!!?", FALSE, ch, 0, 0, TO_CHAR);
+		     act("$n coughs and utters some strange sounds.",
+		     FALSE, ch, 0, 0, TO_ROOM);
+		     poison_lifeleak(10, ch, 0, 0, ch, 0);
+		   }
+		 */
+	}
+
+	if (updateArtiList)
+	{
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "%d", OBJ_VNUM(temp));
+		arti_clear_sql(ch, Gbuf1);
+	}
+	extract_obj(temp);
+	// Added by DTS 5/18/95 to solve light bug
+	char_light(ch);
+	room_light(ch->in_room, REAL);
+}
+
+struct food_consumption_context
+{
+	uint64_t item_uid;
+	bool update_artifact;
+};
+
+static bool publish_food_consumption(const critical_operation_id & /*operation_id*/, P_char actor,
+				     bool committed, const item_transfer_result &, unsigned int,
+				     const uint8_t *encoded, size_t encoded_size)
+{
+	food_consumption_context context = {};
+	if (!actor || !encoded || encoded_size != sizeof(context))
+		return false;
+	memcpy(&context, encoded, sizeof(context));
+	if (!context.item_uid)
+		return false;
+	if (!committed)
+	{
+		send_to_char("That item could not be eaten. Please try again.\r\n", actor);
+		return true;
+	}
+	P_obj food = find_live_item_uid(context.item_uid);
+	// A reconnect may already have omitted the durably retired item.
+	if (!food)
+		return true;
+	if (!OBJ_CARRIED_BY(food, actor))
+		return false;
+	apply_eaten_item(actor, food, context.update_artifact);
+	mark_player_dirty_components(GET_PID(actor),
+				     PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_INVENTORY);
+	return true;
+}
+
+static bool submit_food_consumption(P_char actor, P_obj food, bool update_artifact)
+{
+	const item_owner_identity owner = { item_owner_type::player,
+					    static_cast<uint64_t>(GET_PID(actor)), 0 };
+	item_ownership_runtime_entry ownership = {};
+	if (!item_ownership_runtime_lookup(food->obj_uid, &ownership) ||
+	    ownership.state != item_custody_state::active ||
+	    !item_owner_identity_equal(ownership.owner, owner))
+	{
+		report_movement_reject(actor, item_movement_reject::owner_mismatch, "eat", food);
+		return false;
+	}
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	const food_consumption_context context = { food->obj_uid, update_artifact };
+	item_movement_reject reject = item_movement_reject::none;
+	if (!item_movement_transaction_submit(
+		    actor, food, NULL, owner, destruction, item_transfer_reason::destruction,
+		    OBJ_VNUM(food), NULL, &context, sizeof(context), NULL, &reject,
+		    publish_food_consumption, economic_source_kind::intentional_destruction))
+	{
+		report_movement_reject(actor, reject, "eat", food);
+		return false;
+	}
+	return true;
+}
+
 void do_eat(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj temp;
@@ -6779,147 +6975,17 @@ void do_eat(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	/* special handling: value[5] specifies special functions for epic food */
-	int oaffect;
-	oaffect = (temp->value[5]);
-	if (oaffect > 0)
+	if (temp->value[5] == 1337 && (GET_LEVEL(ch) > 45 || GET_RACE(ch) == RACE_LICH))
 	{
-		// What slacker did this instead of writing a real object proc that captures CMD_EAT?
-		if (oaffect == 1337) //+1 level mushroom
-		{
-			if ((GET_LEVEL(ch) > 45) || (GET_RACE(ch) == RACE_LICH))
-			{
-				send_to_char(
-					"&+GYou are much too powerful for the magic of this item&n.\r\n",
-					ch);
-				return;
-			}
-			send_to_char(
-				"&+gAs you eat the &+GMushroom&+g, a &+Mmagical&+g essence surrounds you and you suddenly feel more &+Gexperienced!&n\r\n",
-				ch);
-			// GET_EXP(ch) = new_exp_table[GET_LEVEL(ch)];
-			statuslog(ch->player.level,
-				  "&+CLevel:&n (%s&n) just ate level mushroom at [%d]!",
-				  GET_NAME(ch),
-				  (ch->in_room == NOWHERE) ? -1 : world[ch->in_room].number);
-			advance_level(ch);
-			if (!do_save_silent(ch, 1))
-				logit(LOG_DEBUG, "Failed to save %s after level mushroom.",
-				      GET_NAME(ch));
-			extract_obj(temp);
-			return;
-		}
+		send_to_char("&+GYou are much too powerful for the magic of this item&n.\r\n", ch);
+		return;
 	}
-
-	act("$n eats $p.", TRUE, ch, temp, 0, TO_ROOM);
-	act("You eat the $q.", FALSE, ch, temp, 0, TO_CHAR);
-
-	if (temp->type == ITEM_FOOD)
+	if (item_command_uses_durable_ownership(temp))
 	{
-		/* New code to grant reg from food */
-		struct affected_type af;
-		if (!affected_by_spell(ch, TAG_EATEN))
-		{
-			bzero(&af, sizeof(af));
-			af.type = TAG_EATEN;
-			af.flags = AFFTYPE_NOSHOW;
-			af.duration = MAX(temp->value[0], 1);
-
-			int hit_reg;
-			int mov_reg;
-			if (temp->value[3] > 0) // TODO: apply poison
-			{
-				act("You feel &+gs&+Gi&+gc&+Gk&n.", FALSE, ch, 0, 0, TO_CHAR);
-				hit_reg = -temp->value[3] - hit_regen(ch, TRUE);
-				mov_reg = 0;
-			}
-			else
-			{
-				hit_reg = 15;
-				if (temp->value[1] != 0)
-					hit_reg = temp->value[1] * 15;
-				if (temp->value[2] != 0)
-					mov_reg = temp->value[2];
-				else
-					mov_reg = hit_reg;
-			}
-
-			af.location = APPLY_HIT_REG;
-			af.modifier = hit_reg;
-			affect_to_char(ch, &af);
-
-			if (mov_reg != 0)
-			{
-				af.location = APPLY_MOVE_REG;
-				af.modifier = mov_reg;
-				affect_to_char(ch, &af);
-			}
-
-			if ((af.modifier = temp->value[4]) != 0)
-			{
-				af.location = APPLY_STR;
-				affect_to_char(ch, &af);
-				af.location = APPLY_CON;
-				affect_to_char(ch, &af);
-			}
-
-			if ((af.modifier = temp->value[5]) != 0)
-			{
-				af.location = APPLY_AGI;
-				affect_to_char(ch, &af);
-				af.location = APPLY_DEX;
-				affect_to_char(ch, &af);
-			}
-
-			if ((af.modifier = temp->value[6]) != 0)
-			{
-				af.location = APPLY_INT;
-				affect_to_char(ch, &af);
-				af.location = APPLY_WIS;
-				affect_to_char(ch, &af);
-			}
-
-			if ((af.modifier = temp->value[7]) != 0)
-			{
-				af.location = APPLY_DAMROLL;
-				affect_to_char(ch, &af);
-				af.location = APPLY_HITROLL;
-				affect_to_char(ch, &af);
-			}
-		}
-		else
-		{
-			act("You feel sated already.", FALSE, ch, 0, 0, TO_CHAR);
-			return;
-		}
-
-		/* End new code to grant reg from eating */
-		/*
-		   if (gain_condition(ch, FULL, temp->value[0]))
-		   return;
-
-		   if (GET_COND(ch, FULL) > 20)
-		   act("You feel comfortably sated.", FALSE, ch, 0, 0, TO_CHAR);
-
-		   if (temp->value[3] && (GET_LEVEL(ch) < MINLVLIMMORTAL))
-		   {
-		     act("Oops, it tasted rather strange?!!?", FALSE, ch, 0, 0, TO_CHAR);
-		     act("$n coughs and utters some strange sounds.",
-		     FALSE, ch, 0, 0, TO_ROOM);
-		     poison_lifeleak(10, ch, 0, 0, ch, 0);
-		   }
-		 */
+		(void)submit_food_consumption(ch, temp, updateArtiList);
+		return;
 	}
-
-	if (updateArtiList)
-	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "%d", OBJ_VNUM(temp));
-		arti_clear_sql(ch, Gbuf1);
-	}
-	extract_obj(temp);
-	// Added by DTS 5/18/95 to solve light bug
-	char_light(ch);
-	room_light(ch->in_room, REAL);
+	apply_eaten_item(ch, temp, updateArtiList);
 }
 
 void do_pour(P_char ch, char *argument, int /*cmd*/)

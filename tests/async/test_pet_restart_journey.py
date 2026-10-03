@@ -19,6 +19,7 @@ ROOT = journey.ROOT
 
 
 def run(binary, hidden=False):
+    journey.build_inspector()
     with tempfile.TemporaryDirectory(prefix="duris-pet-restart-") as temporary:
         root = Path(temporary)
         state, runtime = root / "state", root / "runtime"

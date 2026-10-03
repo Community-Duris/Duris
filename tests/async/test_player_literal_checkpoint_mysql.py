@@ -50,7 +50,7 @@ def target_is_disposable(environment: dict[str, str]) -> bool:
                 environment.get("ECONOMIC_ACCOUNTING_DISPOSABLE_SCHEMA") == "1" and
                 environment.get("DB_HOST") == "127.0.0.1" and
                 not environment.get("DB_SOCKET") and not environment.get("TEST_DB_SOCKET") and
-                re.fullmatch(r"economic_schema_test_li_[0-9a-f]{8}", schema) and
+                re.fullmatch(r"economic_schema_test_(?:li_[0-9a-f]{8}|[0-9a-f]{12})", schema) and
                 len("duris.player.death.restitution." + schema) <= 64 and
                 environment.get("DB_ALLOWED_TARGETS") == "127.0.0.1/" + schema and
                 port.isascii() and port.isdigit() and 1 <= int(port) <= 65535 and
@@ -143,15 +143,26 @@ def self_test() -> None:
                  DB_ALLOWED_TARGETS="127.0.0.1/economic_schema_test_li_0123abcd",
                  DB_USER="fixture", DB_PASSWD="synthetic-fixture-only")
     assert target_is_disposable(valid)
+    matrix_schema = "economic_schema_test_012345abcdef"
+    assert target_is_disposable(dict(valid, DB_NAME=matrix_schema,
+                                    DB_ALLOWED_TARGETS="127.0.0.1/" + matrix_schema))
     assert len("duris.player.death.restitution." + valid["DB_NAME"]) == 63
     negatives = (("TEST_DB_DISPOSABLE", "0"), ("ECONOMIC_ACCOUNTING_DISPOSABLE_SCHEMA", "0"),
                  ("DB_HOST", "192.0.2.1"), ("DB_PORT", "0"), ("DB_PORT", "65536"),
                  ("DB_NAME", "economic_schema_test_literal_0123abcd"),
                  ("DB_NAME", "economic_schema_test_li_0123abcd;DROP DATABASE other"),
                  ("DB_NAME", "economic_schema_test_li_0123abcg"), ("DB_ALLOWED_TARGETS", ""),
+                 ("DB_NAME", "economic_schema_test_012345abcde"),
+                 ("DB_NAME", "economic_schema_test_012345abcdef0"),
+                 ("DB_NAME", "economic_schema_test_012345abcdeF"),
                  ("DB_SOCKET", "/tmp/socket"), ("TEST_DB_SOCKET", "/tmp/socket"), ("DB_PASSWD", ""))
     for key, value in negatives:
-        assert not target_is_disposable(dict(valid, **{key: value})), key
+        changed = dict(valid, **{key: value})
+        if key == "DB_NAME":
+            # Isolate the namespace rule: a mismatched allowlist would reject
+            # every changed name even if the namespace check were removed.
+            changed["DB_ALLOWED_TARGETS"] = "127.0.0.1/" + value
+        assert not target_is_disposable(changed), key
     print(f"PASS: supplied SQL fixture guard; {len(negatives)} negative cases; no compile or service execution")
 
 
@@ -161,10 +172,22 @@ def main() -> None:
     mode.add_argument("--compile-only", type=Path, metavar="BINARY")
     mode.add_argument("--run-binary", type=Path, metavar="BINARY")
     mode.add_argument("--self-test", action="store_true")
+    mode.add_argument("--qualify", action="store_true",
+                      help="compile and run against the matrix's guarded disposable schema")
     parser.add_argument("--binary-sha256")
     args = parser.parse_args()
     if args.self_test:
         self_test()
+    elif args.qualify:
+        self_test()
+        if not target_is_disposable(os.environ):
+            parser.error("qualification requires the guarded disposable schema")
+        work = ROOT / "bin/tests/player-literal-checkpoint"
+        work.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="qualification-", dir=work) as temporary:
+            binary = Path(temporary) / "checkpoint"
+            compile_native(binary)
+            run_native(binary, sha256(binary))
     elif args.compile_only:
         compile_native(args.compile_only.resolve())
     else:

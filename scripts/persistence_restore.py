@@ -78,12 +78,17 @@ def private_database(candidate, engine="mariadb"):
         basedir = str(Path(server).parent.parent)
     datadir = candidate / "mysql"
     datadir.mkdir(mode=0o700)
+    # Qualification daemons must not reserve the host's shared kernel AIO pool.
+    # Both instances can coexist while the source dump is restored and verified.
+    private_io = ["--innodb-use-native-aio=OFF"]
     if engine == "mysql":
         backup.run([server, "--no-defaults", "--initialize-insecure", "--basedir=" + basedir,
-                    "--datadir=" + str(datadir), "--user=" + user], env=env)
+                    "--datadir=" + str(datadir), "--user=" + user, "--mysqlx=OFF",
+                    *private_io], env=env)
     else:
         backup.run(["mariadb-install-db", "--no-defaults", "--datadir=" + str(datadir),
-                    "--auth-root-authentication-method=normal", "--skip-test-db", "--user=" + user],
+                    "--auth-root-authentication-method=normal", "--skip-test-db", "--user=" + user,
+                    *private_io],
                    env=env)
     exports = candidate / "exports"
     exports.mkdir(mode=0o700)
@@ -91,9 +96,9 @@ def private_database(candidate, engine="mariadb"):
             "--socket=" + str(socket), "--pid-file=" + str(candidate / "mysql.pid"),
             "--skip-networking", "--skip-log-bin", "--event-scheduler=OFF",
             "--local-infile=0", "--secure-file-priv=" + str(exports),
-            "--tmpdir=" + env["TMPDIR"], "--user=" + user]
+            "--tmpdir=" + env["TMPDIR"], "--user=" + user, *private_io]
     if basedir is not None:
-        args.append("--basedir=" + basedir)
+        args.extend(["--basedir=" + basedir, "--mysqlx=OFF"])
     with (candidate / "database.log").open("wb") as log:
         process = subprocess.Popen(args, env=env, stdout=log, stderr=log)
         try:

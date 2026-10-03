@@ -6,13 +6,14 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 NAME="duris-accounting-schema-locker-index-$$-$RANDOM"
 PASSWORD="locker-index-$$-$RANDOM"
 IMAGE="${LOCKER_INDEX_DB_IMAGE:-mysql:8.0}"
-case "$IMAGE" in mysql:8.0|mariadb:10.11) ;; *) echo 'unsupported test image' >&2; exit 2;; esac
-cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
+[[ "$IMAGE" =~ ^(mysql:8\.0(\.[0-9]+)?|mariadb:10\.11(\.[0-9]+)?)(@sha256:[0-9a-f]{64})?$ ]] || { echo 'unsupported test image' >&2; exit 2; }
+SQL_FIXTURE_CONTAINER_ID=
+cleanup() { [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -f "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then ROOT_ENV=MARIADB_ROOT_PASSWORD; else ROOT_ENV=MYSQL_ROOT_PASSWORD; fi
-docker run -d --name "$NAME" -e "$ROOT_ENV=$PASSWORD" "$IMAGE" >/dev/null
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" -e "$ROOT_ENV=$PASSWORD" "$IMAGE" --innodb-use-native-aio=OFF)
 mysql_clone() {
-    docker exec -i "$NAME" sh -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD:-$MARIADB_ROOT_PASSWORD}" exec mysql -u root -N -B "$@"' sh "$@"
+    docker exec -i "$NAME" sh -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD:-$MARIADB_ROOT_PASSWORD}" exec mysql --protocol=tcp -h127.0.0.1 -u root -N -B "$@"' sh "$@"
 }
 ready=0
 for _ in $(seq 1 90); do
