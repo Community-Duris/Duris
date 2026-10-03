@@ -21,7 +21,13 @@ MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0045_quest_reward_obligation.sql"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0051_player_item_runtime_state.sql"
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_collector_item_owner.sh"
-DB_NAME="$DB_NAME" "$ROOT/migrations/verify_item_ownership_schema.sh"
+# The full accounting schema has later provenance columns. Its sealed runtime
+# contract supersedes the older isolated item-ledger column census.
+if [[ $("${MYSQL[@]}" "$DB_NAME" -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='mud_schema_history'") == 1 ]]; then
+    DB_NAME="$DB_NAME" bash "$ROOT/migrations/verify_runtime_compatibility.sh" --schema-only
+else
+    DB_NAME="$DB_NAME" "$ROOT/migrations/verify_item_ownership_schema.sh"
+fi
 export ITEM_TRANSFER_TEST_DB_NAME="$DB_NAME"
 mkdir -p "$ROOT/bin/tests"
 TEST_BINARY="$ROOT/bin/tests/item_transfer_mysql_harness"
@@ -35,7 +41,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     "${MYSQL_CFLAGS[@]}" tests/async/item_transfer_mysql_harness.cpp \
     tests/async/item_extra_descr_codec_sql_escape_stub.cpp \
     src/persistence/critical_command.c src/world/epic_command.c src/economy/currency_command.c \
-    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c \
+    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c src/persistence/sql_room_item_payload.c \
     src/item/economic_accounting_item_reference.c \
     src/sql/item_extra_descr_codec.c \
 	 src/economy/auction_command.c src/economy/auction_repository.c \

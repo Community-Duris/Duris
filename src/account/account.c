@@ -3082,7 +3082,7 @@ void account_player_load_complete(P_desc d, player_load_result result)
 		display_character_list(d);
 		return;
 	}
-	if (!player_save_pipeline_save_admitted(d->player_load_pid) &&
+	if (!player_save_pipeline_authoritative_hydration_admitted(d->player_load_pid) &&
 	    (result.outcome == player_load_outcome::applied ||
 	     result.outcome == player_load_outcome::degraded))
 	{

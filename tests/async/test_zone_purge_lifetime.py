@@ -10,6 +10,8 @@ import tempfile
 from _paths import ROOT, extract_function
 
 PREFIX = r'''
+#define DURIS_CHARACTER_IDENTITY_TEST_PANIC_STUB
+#include "character_identity_test_fixture.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
 #include "world/db.h"
@@ -21,6 +23,7 @@ PREFIX = r'''
 #include <vector>
 
 static room_data rooms[2] = {};
+P_char character_list = nullptr;
 P_room world = rooms;
 static zone_data zones[1] = {};
 zone_data *zone_table = zones;
@@ -53,6 +56,7 @@ static void remove_from_room(P_char ch) {
 void extract_char(P_char ch) {
     assert(++removed[ch->runtime_id] == 1);
     assert(IS_ALIVE(ch));
+    fixture_retire_character(ch);
     if (ch->followers || ch->following) die_follower(ch);
     remove_from_room(ch);
     for (auto current = world[0].people; current; current = current->next_in_room)
@@ -61,7 +65,11 @@ void extract_char(P_char ch) {
         remove_from_room(mover);
         mover->in_room = 1;
         world[1].people = mover;
+        const auto retired_identity = replacement->runtime_id;
+        fixture_retire_character(replacement);
         ++replacement->runtime_id; // Reused storage is a different character.
+        fixture_register_character(replacement);
+        assert(find_character_by_runtime_id(retired_identity) == nullptr);
     }
     SET_POS(ch, STAT_DEAD);
     ch->only.npc = nullptr;
@@ -82,6 +90,7 @@ static P_char make_character(uint64_t id, bool npc = true) {
     ch->in_room = 0;
     if (npc) ch->specials.act = ACT_ISNPC;
     SET_POS(ch, STAT_NORMAL + POS_STANDING);
+    fixture_register_character(ch);
     return ch;
 }
 '''
@@ -120,12 +129,13 @@ static void run_case(bool immediate, bool move) {
     printf("zone purge: immediate_free=%d moved_and_replaced=%d; recursive pet and tail removed once, PC/morph/ferry retained\n",
            immediate, move);
     for (auto ch = world[0].people, next = ch; ch; ch = next) {
-        next = ch->next_in_room; delete ch;
+        next = ch->next_in_room; fixture_retire_character(ch); delete ch;
     }
-    if (move) delete mover;
+    if (move) { fixture_retire_character(mover); delete mover; }
     for (auto ch : retained_allocations) delete ch;
 }
 int main() {
+    fixture_check_runtime_identity_retirement();
     for (bool immediate : {false, true})
         for (bool move : {false, true}) run_case(immediate, move);
 }
@@ -137,8 +147,8 @@ with tempfile.TemporaryDirectory(prefix='duris-zone-purge-') as temporary:
     body = extract_function('new_events.c', 'void zone_purge(int zone_number)')
     followers = extract_function('sparser.c', 'void die_follower(P_char ch)')
     source.write_text(PREFIX + followers + body + SUFFIX)
-    subprocess.run(['g++', '-std=c++20', '-g', '-Og', '-D__NO_MYSQL__',
-                    '-Isrc', '-Isrc/no_mysql', '-I/usr/include/libxml2',
+    subprocess.run(['g++', '-std=c++20', '-Wall', '-Wextra', '-Werror', '-g', '-Og', '-D__NO_MYSQL__',
+                    '-Isrc', '-Itests/async', '-Isrc/no_mysql', '-I/usr/include/libxml2', '-pthread',
                     '-fsanitize=address,undefined', '-fno-omit-frame-pointer',
-                    '-fno-pie', '-no-pie', str(source), '-o', str(binary)], cwd=ROOT, check=True)
+                    '-fno-pie', '-no-pie', str(source), 'src/account/character_identity.c', '-o', str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary)], check=True, timeout=30)

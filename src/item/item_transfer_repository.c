@@ -8,6 +8,7 @@
 #include "core/structs.h"
 #include "sql/item_extra_descr_codec.h"
 #include "persistence/critical_command_repository.h"
+#include "persistence/sql_room_item_payload.h"
 
 #include <algorithm>
 #include <array>
@@ -225,12 +226,18 @@ bool one_row(MYSQL *connection, const std::string &sql, std::vector<uint64_t> *v
 	return found;
 }
 
-bool retire_player_projection(MYSQL *connection, const item_transfer_payload &payload)
+bool retire_player_projection(MYSQL *connection, const item_transfer_payload &payload,
+			      bool exact_room_drop)
 {
-	if ((payload.reason != item_transfer_reason::destruction &&
-	     payload.reason != item_transfer_reason::quest_turnin) ||
-	    payload.from_owner.type != item_owner_type::player ||
-	    payload.to_owner.type != item_owner_type::destruction)
+	const bool destruction = (payload.reason == item_transfer_reason::destruction ||
+				  payload.reason == item_transfer_reason::quest_turnin) &&
+				 payload.to_owner.type == item_owner_type::destruction;
+	// Only the already-validated schema2 drop may retire its player projection:
+	// its complete original bytes now belong to the same transaction's sidecar.
+	const bool room_drop = exact_room_drop &&
+			       payload.reason == item_transfer_reason::player_drop &&
+			       payload.to_owner.type == item_owner_type::room;
+	if ((!destruction && !room_drop) || payload.from_owner.type != item_owner_type::player)
 		return true;
 	struct native_row
 	{
@@ -2405,6 +2412,19 @@ bool item_transfer_repository_execute_at_offset(
 		errno = EINVAL;
 		return false;
 	}
+	const bool exact_room_drop = admitted_accounting_item &&
+				     payload.reason == item_transfer_reason::player_drop;
+	sql_room_item_payload_batch room_payload;
+	// Season is the outer lifetime fence: take it before owner/custody locks,
+	// matching reset and cold-read ordering. Never widen legacy admission.
+	if (exact_room_drop &&
+	    (accounting_context || event_index_base ||
+	     !sql_room_item_payload_lock_season(connection, &room_payload.season_epoch)))
+	{
+		if (accounting_context || event_index_base)
+			errno = ENOTSUP;
+		return false;
+	}
 	uint64_t from_revision = 0, to_revision = 0;
 	const bool same_owner = item_owner_identity_equal(payload.from_owner, payload.to_owner);
 	if (same_owner)
@@ -2739,6 +2759,13 @@ bool item_transfer_repository_execute_at_offset(
 		*result_code = ERANGE;
 		return true;
 	}
+	if (exact_room_drop && (accounting_context || event_index_base ||
+				!sql_room_item_payload_prepare(connection, payload, &room_payload)))
+	{
+		if (accounting_context || event_index_base)
+			errno = ENOTSUP;
+		return false;
+	}
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		const uint64_t prior_revision = creation ? 0 : selected[index].item_revision;
@@ -2770,6 +2797,9 @@ bool item_transfer_repository_execute_at_offset(
 		// The root owner inserts the reference after its accounting operation.
 		// InnoDB requires that parent row before the reference's foreign key.
 	}
+	if (exact_room_drop &&
+	    !sql_room_item_payload_record(connection, command, payload, room_payload))
+		return false;
 	const bool locker_transfer = payload.reason == item_transfer_reason::locker_deposit ||
 				     payload.reason == item_transfer_reason::locker_withdraw;
 	if ((!locker_transfer || admitted_accounting_item) &&
@@ -2803,7 +2833,8 @@ bool item_transfer_repository_execute_at_offset(
 	}
 	if (!sync_restitution_runtime_payload(connection, payload))
 		return false;
-	if (admitted_accounting_item && !retire_player_projection(connection, payload))
+	if (admitted_accounting_item &&
+	    !retire_player_projection(connection, payload, exact_room_drop))
 		return false;
 	if (custody_delta)
 	{
