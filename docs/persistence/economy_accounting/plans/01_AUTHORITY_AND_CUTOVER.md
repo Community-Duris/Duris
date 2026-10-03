@@ -196,3 +196,13 @@ room verifier must be explicitly actor independent, and original-operation hold
 release belongs after successful publication ACK in both the normal and
 `ack_pending` branches, before pending-owner erasure. Notifications must not
 hold durable ACK waiting for an absent actor.
+
+
+Boot/copyover ordering is source verified: player-save initialization precedes
+synchronous critical replay, then game-loop/copyover materialization. Held
+runtime-zero scopes survive pulse cleanup. Register restored obligations without
+requiring save-journal replay completion, but only after pipeline initialization.
+The exceptional final teardown now retains dependent save/locker owners if
+critical shutdown refuses; native branch and normal boot/shutdown evidence are
+recorded in the October 3 review. These ordering findings are not implemented
+restored-obligation registration or copyover/replay qualification.
