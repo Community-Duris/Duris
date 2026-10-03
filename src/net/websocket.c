@@ -13,12 +13,15 @@
 #include "sql/sql_pool.h"
 #include "core/utils.h"
 #include "net/websocket.h"
+#include "net/network_readiness.h"
 #include <arpa/inet.h>
 #include <ctype.h>
+#include <deque>
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <new>
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
@@ -27,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -38,6 +42,41 @@
 extern struct descriptor_data *descriptor_list;
 
 static int ws_listen_fd = -1;
+
+/* Protocol parsing can run between pulses; application handlers cannot. Pause
+ * reads at 64 messages or 1 MiB queued. The final valid message can contribute
+ * at most WS_MAX_MESSAGE_SIZE additional bytes before backpressure applies. */
+struct websocket_pending_application
+{
+	std::deque<std::string> messages;
+	size_t bytes = 0;
+};
+
+bool websocket_input_paused(struct descriptor_data *d)
+{
+	const auto *pending = d->ws_pending_application;
+	return pending && (pending->messages.size() >= WS_MAX_FRAMES_PER_READ ||
+			   pending->bytes >= WS_MAX_BUFFERED_BYTES);
+}
+
+static int websocket_queue_message(struct descriptor_data *d, int opcode, const char *payload,
+				   size_t payload_len)
+{
+	if (opcode != WS_OPCODE_TEXT || !payload)
+		return 0;
+	try
+	{
+		if (!d->ws_pending_application)
+			d->ws_pending_application = new websocket_pending_application;
+		d->ws_pending_application->messages.emplace_back(payload, payload_len);
+		d->ws_pending_application->bytes += payload_len;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return -1;
+	}
+	return 0;
+}
 
 static int websocket_address_is_loopback(const char *address)
 {
@@ -123,9 +162,14 @@ static int websocket_peer_is_trusted_proxy(struct descriptor_data *d)
 		       memcmp(&((struct sockaddr_in *)&peer)->sin_addr, &trusted4,
 			      sizeof(trusted4)) == 0;
 	if (peer.ss_family == AF_INET6)
-		return inet_pton(AF_INET6, trusted_ip, &trusted6) == 1 &&
-		       memcmp(&((struct sockaddr_in6 *)&peer)->sin6_addr, &trusted6,
-			      sizeof(trusted6)) == 0;
+	{
+		const struct in6_addr *address = &((struct sockaddr_in6 *)&peer)->sin6_addr;
+		if (inet_pton(AF_INET6, trusted_ip, &trusted6) == 1)
+			return memcmp(address, &trusted6, sizeof(trusted6)) == 0;
+		return IN6_IS_ADDR_V4MAPPED(address) &&
+		       inet_pton(AF_INET, trusted_ip, &trusted4) == 1 &&
+		       memcmp(&address->s6_addr[12], &trusted4, sizeof(trusted4)) == 0;
+	}
 	return 0;
 }
 
@@ -555,6 +599,7 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 	int duplicate_invalid = 0;
 	int malformed_header = 0;
 	int first_line = 1;
+	int proxy_seen = 0;
 	int health_request = 0;
 	int origin_seen = 0;
 	int origin_ok = 1;
@@ -583,6 +628,36 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 	line = strtok_r(request, "\r\n", &saveptr);
 	while (line)
 	{
+		/* The trusted PROXY v1 line belongs to buffered input, not accept().
+		 * Fast accepts can precede even its first byte; strtok runs only after
+		 * the complete HTTP header is present, including a fragmented prefix. */
+		if (first_line && strncmp(line, "PROXY ", 6) == 0)
+		{
+			char proto[8], source[46], destination[46], trailing;
+			int src_port, dst_port;
+			struct in_addr source4, destination4;
+			struct in6_addr source6, destination6;
+			if (proxy_seen || line != request || !websocket_peer_is_trusted_proxy(d) ||
+			    strlen(line) >= 108 ||
+			    sscanf(line, "PROXY %7s %45s %45s %d %d %c", proto, source, destination,
+				   &src_port, &dst_port, &trailing) != 5 ||
+			    src_port < 1 || src_port > 65535 || dst_port < 1 || dst_port > 65535 ||
+			    !((strcmp(proto, "TCP4") == 0 &&
+			       inet_pton(AF_INET, source, &source4) == 1 &&
+			       inet_pton(AF_INET, destination, &destination4) == 1) ||
+			      (strcmp(proto, "TCP6") == 0 &&
+			       inet_pton(AF_INET6, source, &source6) == 1 &&
+			       inet_pton(AF_INET6, destination, &destination6) == 1)))
+			{
+				free(request);
+				return -1;
+			}
+			strlcpy(d->host, source, sizeof(d->host));
+			resolve_descriptor_hostname_async(d->host, d->descriptor);
+			proxy_seen = 1;
+			line = strtok_r(NULL, "\r\n", &saveptr);
+			continue;
+		}
 		if (first_line)
 		{
 			first_line = 0;
@@ -1581,6 +1656,9 @@ void websocket_free(struct descriptor_data *d)
 {
 	if (!d)
 		return;
+	d->ws_input_pending = 0;
+	delete d->ws_pending_application;
+	d->ws_pending_application = NULL;
 
 	if (d->ws_handshake_buffer)
 	{
@@ -1749,7 +1827,30 @@ static void websocket_handle_message(struct descriptor_data *d, int opcode, char
 	/* binary frames ignored for now */
 }
 
-/* process incoming websocket data, called from game loop */
+/* Only the connection phase calls application handlers. Pop before dispatch:
+ * login/reconnect/logout may close this or a later descriptor. */
+void websocket_dispatch_pending_input(struct descriptor_data *d)
+{
+	for (unsigned int count = 0; count < WS_MAX_FRAMES_PER_READ; ++count)
+	{
+		auto *pending = d->ws_pending_application;
+		if (!pending || pending->messages.empty())
+			return;
+		std::string message = std::move(pending->messages.front());
+		pending->messages.pop_front();
+		pending->bytes -= message.size();
+		if (pending->messages.empty())
+		{
+			delete pending;
+			d->ws_pending_application = NULL;
+		}
+		websocket_handle_message(d, WS_OPCODE_TEXT, message.data(), message.size());
+		if (!is_desc_valid(d))
+			return;
+	}
+}
+
+/* Process transport/protocol input only; stage application messages for a pulse. */
 int websocket_process_input(struct descriptor_data *d)
 {
 	char buf[WS_INPUT_BUFFER_SIZE];
@@ -1765,12 +1866,22 @@ int websocket_process_input(struct descriptor_data *d)
 
 	if (!d || d->descriptor < 0)
 		return -1;
+	if (websocket_input_paused(d))
+		return 0;
 
-	bytes_read = read(d->descriptor, buf, sizeof(buf));
+	/* Resume frames left by the parsing budget without requiring another packet.
+	 * An incomplete frame clears this hint below and waits for socket readiness. */
+	const bool buffered_only = d->ws_input_pending != 0;
+	d->ws_input_pending = 0;
+	if (!buffered_only && !d->network_input_remaining)
+		return 0;
+	bytes_read = buffered_only ?
+			     0 :
+			     read(d->descriptor, buf, MIN(sizeof(buf), d->network_input_remaining));
 
 	if (bytes_read < 0)
 	{
-		if (errno == EAGAIN
+		if (errno == EINTR || errno == EAGAIN
 #if EWOULDBLOCK != EAGAIN
 		    || errno == EWOULDBLOCK
 #endif
@@ -1781,11 +1892,12 @@ int websocket_process_input(struct descriptor_data *d)
 		return -1;
 	}
 
-	if (bytes_read == 0)
+	if (bytes_read == 0 && !buffered_only)
 	{
-		return -1;
+		return NETWORK_INPUT_EOF;
 	}
 	read_len = static_cast<size_t>(bytes_read);
+	d->network_input_remaining -= read_len;
 
 	if (d->character && d->character->only.pc)
 		d->character->only.pc->received_data += bytes_read;
@@ -1875,7 +1987,8 @@ int websocket_process_input(struct descriptor_data *d)
 	 * handles multiple frames arriving in a single read().
 	 */
 	offset = 0;
-	while (offset < d->ws_fragment_len && frames_processed < WS_MAX_FRAMES_PER_READ)
+	while (offset < d->ws_fragment_len && frames_processed < WS_MAX_FRAMES_PER_READ &&
+	       !websocket_input_paused(d))
 	{
 		consumed = websocket_parse_frame(d, d->ws_fragment_buffer + offset,
 						 d->ws_fragment_len - offset, &payload,
@@ -1971,12 +2084,15 @@ int websocket_process_input(struct descriptor_data *d)
 			if (fin)
 			{
 				/* final fragment - deliver complete message */
-				websocket_handle_message(d, d->ws_message_opcode,
-							 d->ws_message_buffer, d->ws_message_len);
+				const int queued = websocket_queue_message(d, d->ws_message_opcode,
+									   d->ws_message_buffer,
+									   d->ws_message_len);
 				free(d->ws_message_buffer);
 				d->ws_message_buffer = NULL;
 				d->ws_message_len = 0;
 				d->ws_message_opcode = 0;
+				if (queued < 0)
+					return websocket_input_error(d, WS_CLOSE_INTERNAL_ERROR);
 			}
 		}
 		else if (!fin)
@@ -2003,16 +2119,21 @@ int websocket_process_input(struct descriptor_data *d)
 		else
 		{
 			/* complete single-frame message */
-			websocket_handle_message(d, opcode, payload, payload_len);
+			const int queued = websocket_queue_message(d, opcode, payload, payload_len);
 			if (payload)
 			{
 				free(payload);
 				payload = NULL;
 			}
+			if (queued < 0)
+				return websocket_input_error(d, WS_CLOSE_INTERNAL_ERROR);
 		}
 	}
 
 	/* remove consumed data from buffer */
+	d->ws_input_pending =
+		(frames_processed == WS_MAX_FRAMES_PER_READ || websocket_input_paused(d)) &&
+		offset < d->ws_fragment_len;
 	if (offset > 0)
 	{
 		if (offset >= d->ws_fragment_len)

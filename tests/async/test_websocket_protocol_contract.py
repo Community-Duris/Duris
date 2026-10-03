@@ -155,16 +155,15 @@ def test_legacy_binary_output_cannot_bypass_websocket_framing():
 
 
 def test_proxy_metadata_requires_trusted_peer_and_validated_values():
-    assert "DURIS_TRUSTED_PROXY_IP" in COMM
-    assert "proxy_peer_is_trusted(desc)" in COMM
     assert "websocket_peer_is_trusted_proxy(d)" in SOURCE
     assert "DURIS_TRUSTED_PROXY_IP" in SOURCE
     assert "untrusted X-Forwarded-For changed descriptor host" in HARNESS
     assert "inet_pton(AF_INET" in COMM
     assert "inet_pton(AF_INET6" in COMM
-    assert "src_port < 1 || src_port > 65535" in COMM
-    assert 'strcmp(proto, "TCP4")' in COMM
-    assert 'strcmp(proto, "TCP6")' in COMM
+    assert "src_port < 1 || src_port > 65535" in SOURCE
+    assert 'strcmp(proto, "TCP4")' in SOURCE
+    assert 'strcmp(proto, "TCP6")' in SOURCE
+    assert "fragmented trusted PROXY" in HARNESS
 
 
 def test_authentication_fails_closed_without_configured_secret():

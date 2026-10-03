@@ -256,6 +256,32 @@ int main(int argc, char **argv)
 			fclose(file);
 		}
 	}
+	else if (action == "high-fds")
+	{
+		// poll() admits sockets above the old select() bitmap limit.
+		FILE *file = tmpfile();
+		assert(file);
+		copyover_header header = {};
+		header.num_descriptors = 1;
+		const int listeners[3] = { 4096, 4097, 4098 };
+		assert(copyover_codec_begin(file, header, listeners));
+		copyover_desc descriptor = {};
+		descriptor.fd = 4099;
+		strcpy(descriptor.player_name, "synthetic");
+		assert(copyover_codec_write(file, descriptor));
+		telemetry_copyover_entry telemetry = {};
+		telemetry.fd = descriptor.fd;
+		strcpy(telemetry.player_name, descriptor.player_name);
+		assert(copyover_codec_write(file, telemetry));
+		assert(copyover_codec_finish(file, &error));
+		copyover_decoded_state state;
+		assert(copyover_codec_read(file, &state, &error));
+		for (size_t i = 0; i < 3; ++i)
+			assert(state.listeners[i] == listeners[i]);
+		assert(state.descriptors.size() == 1 && state.descriptors[0].fd == descriptor.fd);
+		assert(state.telemetry.size() == 1 && state.telemetry[0].fd == descriptor.fd);
+		fclose(file);
+	}
 	else if (action == "children")
 	{
 		FILE *file = tmpfile();

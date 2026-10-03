@@ -17,7 +17,7 @@ functions = [extract_function("comm.c", signature) for signature in [
     "static void report_input_queue_overflow(", "void flush_queues(",
     "static void note_player_input_activity(", "static void process_line(P_desc t, char *in)\n{",
     "int process_input(", "void delete_doubledollar(", "int process_output(",
-    "static void run_output_phase(",
+    "static int drain_network_transport(", "static void run_output_phase(",
 ]]
 functions += [extract_function("mccp.c", "int parse_telnet_options("),
               extract_function("ws_handlers.c", "void ws_cmd_game(")]
