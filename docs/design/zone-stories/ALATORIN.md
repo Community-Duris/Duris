@@ -2,9 +2,10 @@
 
 Priority 26, source area `alatorin`, canonical zone 831. **This is an interim
 source review, not a comprehensive dossier or a deployed journal.** All native
-Q/M blocks and the shop file have been reviewed. The remaining rooms,
-prototypes, reset families, shared handlers and foreign supply paths must be
-reviewed before publishing the sidecar and marking this zone complete.
+Q/M blocks, all mobile prototypes and the shop file have been reviewed. The
+remaining rooms, object prototypes, reset families, shared handlers and foreign
+supply paths must be reviewed before publishing the sidecar and marking this
+zone complete.
 
 Player discovery, encounters, journals, achievements and new daily eligibility
 require active, ready economic accounting. Several prerequisites deliberately
@@ -32,12 +33,18 @@ pending; raw inventory counts are not reviewed family coverage.
 
 Completed additional reads at this checkpoint:
 
-- [Rooms](../../../areas/wld/alatorin.wld): 83100–83273 and 83776–83790,
-  including every description, field and exit in those ranges: 189 rooms.
-- [Mobiles](../../../areas/mob/alatorin.mob): 83100–83209 and 83414: 111
-  prototypes, including the separate Steelgrip smelter and depot merchant.
+- [Rooms](../../../areas/wld/alatorin.wld): 83100–83614, 83776–83790,
+  83944–83946, 84002–84005, 84013 and 84044–84055, including every description,
+  field and exit of the existing rooms in those ranges: 546 rooms. Room 83343
+  and rooms 84051–84053 are absent; mobile 83343 is a valid separate prototype.
+- [All 425 mobiles](../../../areas/mob/alatorin.mob): 83100–83524,
+  including every description and numeric field.
 - [Objects](../../../areas/obj/alatorin.obj): 83245–83250, 83457–83458,
-  83530–83533, 83605–83607, 83626–83630 and 83677–83698: 42 prototypes.
+  83530–83533, 83605–83607, 83626–83630 and 83677–83698; additionally all fifty
+  switch/teleport prototypes, 83104–83108, 83198, 83253–83258, 83279, 83307,
+  83338, 83371 and 83443: 107 distinct prototypes. Mechanisms comprise 22
+  switches and 28 teleporters. Their complete fields and extra descriptions
+  were read; this does not complete the other 495 object prototypes.
 - [All fifteen shops](../../../areas/shp/alatorin.shp), including stock,
   keepers, rooms, trading types, prices, schedules and restriction fields.
 - Both procedures and the completion helper in
@@ -50,6 +57,12 @@ Completed additional reads at this checkpoint:
 - Bounded `surfacekeeps` road connections, low-numbered blank paper in the
   loaded `limbo` file, and selected global stock declarations. This does not
   complete the source map of those foreign areas.
+- All 352 D reset commands, including their exact state and probability fields.
+  There are 1,821 reset families in the existing evidence grouping, with 352 D
+  families. The other 1,469 families still need a complete review; selected
+  O/G stock reads alone do not complete them. Shared switch dispatch, current
+  command IDs, door unlock and accepted key-destruction publication were also
+  reviewed for the access findings below.
 
 The five literal local assignments are miner's helmet 83457, quarterstaff
 83605, wondrous ring 83698, ship yard 83786 and doctor 83414. The computed
@@ -69,7 +82,7 @@ and district pagination remain planned capabilities.
 | 1. Inn kitchens and everyday provisions | Four cooks convert particular haunches into three portions plus XP. Stonebrew's clam, apple, garlic and green herb produce its royal dish; BrightAxe uses pike, mandrake root, garlic and orange; the guild soup uses root, garlic, faerie dust and boar meat; Hammerhelm uses garlic, dragon blood, banana and boar meat. | Separate preparations with exact ingredients and outputs. Fish, forage and supplied ingredients are different source routes. Fresh-sounding prose is insufficient for a personal/freshness objective. |
 | 2. The royal banquet | Each of four distinct prepared dishes pays the King's attendant for one culinary commendation token. Ten culinary tokens pay Modan for a medal of honor. The attendant also buys the ancient wedding band for 333,000 copper. | Explain a complete banquet route, while each actual dish receipt remains independent. A first dish is not proof that all four courses were served. The band also pays Taark and cannot fund both exchanges with one root. |
 | 3. Collecting and the workshop | Dweefniggle has 223 exchanges. Each of 209 salvaged kinds 400000–400208 pays one collecting fragment; nebula material 400209 adds 200,000 copper. Vellum recipe 400210 pays three fragments; ten fragments make one collecting token. Strange object 1250 instead pays a full token and treasure. | A supporting collecting service may share proven equivalent one-item alternatives. Keep different rewards and ten-fragment assembly separate. A second native recipe consumes ten **tinkerer's tokens 83458** for one fragment; its source is still under investigation. |
-| 4. Professional commendations and honor | Modan has seven exchanges: ten collecting, dragonslaying, mining, culinary, stealth or siege tokens each pay a medal, with family-specific extra gifts; ten medals pay 500,000 XP and key of honor 83338. Dweefniggle separately buys four medals for gnome currency 55033. | Name every physical token kind precisely. Explain competing uses and optional preparation history. Do not treat a collecting token, a tinker's token, a medal and gnome currency as interchangeable. The key's targets require the remaining room/object audit. |
+| 4. Professional commendations and honor | Modan has seven exchanges: ten collecting, dragonslaying, mining, culinary, stealth or siege tokens each pay a medal, with family-specific extra gifts; ten medals pay 500,000 XP and key of honor 83338. Dweefniggle separately buys four medals for gnome currency 55033. | Name every physical token kind precisely. Explain competing uses and optional preparation history. Do not treat a collecting token, a tinker's token, a medal and gnome currency as interchangeable. Explain the honour-key entrance and separate key of kings; further stock/access qualification remains pending. |
 | 5. Brewery, militia and guild rivalries | Dweefniggle accepts six brewer badges; Barlow accepts six tinker badges; Grendar accepts six barbed swords; Grem accepts six apprentice robes; Maggeynel accepts six hoods. Sturb accepts six silver axes and has twelve additional proof exchanges. Brudo requests Clund's head; Clund requests Brudo's sword. | Distinct requests and actual six-root counts. Several briefings say five. Native proof possession does not prove kills, enlistment or an exclusive side; journal metadata must not invent those conditions. |
 | 6. Miboli's ten arcanums | Blank paper plus two of the **same** named component make each arcanum type. Several sylvan, lithic and sanguine materials are alternatives for the same output. One of each of the ten arcanums pays an enchantment scroll and gnome currency. | Preserve each arcanum identity and the ten-kind assembly. A combined live count across alternative materials must not report a mixed pair as a valid recipe. |
 | 7. Attributes and wondrous power | Reciting enchantment scroll 55362 outside combat, through its `scroll` command match, replaces it with a random attribute scroll 55352–55360. Electrum ingot plus two **matching** attribute scrolls make one corresponding ring. All nine rings plus 500,000 copper make wondrous ring 83698. | Separate preparation services, nine attribute outputs and the finale. A fresh route needs at least eighteen random scroll outputs, but eighteen draws do not guarantee two of every kind. Supplied matching scrolls/rings remain valid. The paid finale is currently unavailable with active accounting. |
@@ -78,7 +91,7 @@ and district pagination remain planned capabilities.
 | 10. Libraries, gardens and private royal requests | Three specific books pay the librarian for **wisp of deadly mist 83267**, despite medal prose. Baron Helgrim separately consumes Jedd's book for a medal and treasure. The mystic gardener requires all four named flowers together. The ancient wedding band has two recipients; Noroth's head has Taark, Queen Bellethra and Mundorno alternatives with different outcomes. | Keep exact outputs and competing allocation explicit. There is no receipt-backed requirement that the player personally visited every flower source or completed every royal errand. Royal keys are different physical kinds with different targets. |
 | 11. Guild proofs and opposed outposts | Two rogue districts contain separately owned FrostSharn-heart, five-king-weapon, paired-heart, two-banner and map requests. Khoralator and Helgor each accept the other's head and retire. Ulster's independent proof requests, Ravi's two hearts, Locke's insignia, the prisoner key and the lion cub have their own outcomes. | Equal recipes or gifts at different recipients do not establish a shared story identity. Retiring proof recipients need runtime availability and attempt evidence. Narrated membership, healing and escape are separate from what the exchange actually implements. |
 | 12. Deramuth Port and competing supplies | Bimk buys psychomia plants for money and drug bags. Naltem accepts five different barrels together for a stealth token, or buys drug bags separately. Jenk makes elemental potions, elixirs and elemental might; his signet-ring mission retires him, potentially ending those services for that appearance. Lundeen's egg soups compete with Modo, Dezik and the glutton. The clerk buys two Jade shipping-crate kinds at different prices. | Name quantity, contents/disposition, source and competing consumer. Brino's eleven buybacks, crystal sales and glutton food exchanges are commerce/services whose grouping needs explicit semantics, rather than a fabricated campaign. Ship and doctor services remain separate from native Q receipts. |
-| 13. The First Mountain and divine gifts | Shard 83626 is declared as ground stock at Moradin's bust, room 84045. Two priests return a replacement shard without another reward; seven named gods each return a replacement shard and their own gifts, retiring after the exchange. The priest's sacred-key request has mithril and cash alternatives. Meshadan has token and cash tithe alternatives. | Track actual independent gift receipts and exact old/new shard lineage. A same-kind return does not preserve the old UID. Divine narration is not proof of every temple visit or a single finished pilgrimage. Key-access routes and recipient availability remain under review. |
+| 13. The First Mountain and divine gifts | Shard 83626 is declared as ground stock at Moradin's bust, room 84045. Two priests return a replacement shard without another reward; seven named gods each return a replacement shard and their own gifts, retiring after the exchange. The priest's sacred-key request has mithril and cash alternatives. Meshadan's token and cash tithe alternatives award a Shanat officer's key. | Track actual independent gift receipts and exact old/new shard lineage. A same-kind return does not preserve the old UID. Divine narration is not proof of every temple visit or a single finished pilgrimage. Key-access routes and recipient availability remain under review. |
 
 Other closures need explicit classification in the final map. Odeth's brew
 uses faerie dust, dragon blood, strange stone, gnome currency and nebula
@@ -91,6 +104,14 @@ retires him, but its entire bandaging sequence is narration and describes
 failure. It must not become a successful-healing objective. Several guide,
 peacekeeper, flask and potion claims have no matching local terminal contract;
 review source execution before declaring them unfinished.
+
+Meshadan's two tithe alternatives actually award **Shanat officer's key 83258**.
+The Legion wording describes the exchange; it does not record faction admission.
+The key also appears in Meshadan's G stock. Frahzel 83262 and Fizz are separate
+people: Frahzel's mobile description calls him Fizz's half-brother. Chungy's
+Frahzel-head contract versus Fizz dialogue therefore needs a deliberate content
+decision, rather than an alias substitution. Dumathoin 83520 is the eighth
+avatar, with no local Q/M blocks; retain seven actual shard-gift requests.
 
 ## Access and source findings
 
@@ -125,6 +146,63 @@ inventory omits it. Do not describe that as a missing prototype or replace it
 with another paper kind. Build inventory/prototype resolution from loaded data,
 while keeping administrative areas ineligible for player achievements.
 
+### Mechanisms, key routes and the First Mountain
+
+The [object properties](../../../areas/obj/alatorin.obj), exact D resets and
+[shared switch handler](../../../src/specs/specs.object.c) expose useful access
+relationships without interpreting NPC prose. The fifty local mechanism
+prototypes have all been reviewed. Resolve numeric triggers against the current
+[command IDs](../../../src/cmd/interp.h): 70 is `hit`, 99 `open`, 65 `grab`, 259
+`rub`, 270 `push`, 320 `touch` and 340 `pull`. Shrine 83618–83625 currently
+trigger on **`hit`**, whereas `kneel` is command 383. Preserve this source fact
+until builders choose whether to change the ritual command or its explanation.
+
+| Route | Exact source-backed action and result | Qualification |
+| --- | --- | --- |
+| Private royal treasury | Push armoire 83110 in 83285 to expose its east passage to 83297. Push button 83107 in that closet to unblock 83298's west passage to treasury 83296. Queen's key 83307 unlocks 83299's west door to 83298; huge golden key 83443 fits the treasury's three other doors. | Two mechanisms, key unlocks and arrivals are distinct. A ground switch can affect a remote room. |
+| Honour and the Hall of Kings | Modan's ten-medal exchange awards honour key 83338. Its target is 83502 north to 83554; the stair route crosses outer rooms 121444/121744 before continuing to the hall. Key of kings 83371 is declared at dais 83575 and fits 83945 north to 84013. | These are two different keys. Their value[1] is 100: a successful unlock attempts key destruction. Await the accepted key outcome before rendering it spent. |
+| The sacred stone | Priest 83255 accepts ten dwarven mithril ingots or money for key 83253. It fits trapped container 83254, with a 50 percent break value. Praying at golden altar 83217 instead teleports to 83404; entering tear 83218 returns to 83397. | Chest access and altar travel are separate from the key's exchange and narrated divine attunement. |
+| Mystic shadow and Ard'Gral | Enter portals 83120/83121 between 83310 and 83311. Direction-triggered teleporters 83122–83125 supplement the wrapping shadow field. Pull book 83195 at library 83307 to unblock its west passage to 83342, then enter rift 83141 toward 30453. Touch bauble 83138 to reach glass prison 83341, whose down exit returns to 83175. | Resolve exact object/command matches and live effects. This is an access route, not completion of Odeth's separate brew request. |
+| Legion and rogue approaches | Officer's key 83258 fits several military locks, while some officer doors reset merely closed despite keyed raw data. Rogue galleries have secret corridors, keyless locked doors and a separate outer entrance. | Apply D state to each exact edge; the existence of a key field alone does not impose a key prerequisite. |
+
+Eight shrine switches have confirmed reciprocal targets and blocked D states:
+
+| Switch / stock room | Passage opened by the current `hit` trigger |
+| --- | --- |
+| Gorm 83618 / 83477 | 84046 down to 83477 and its reciprocal up edge |
+| Vergadain 83619 / 83476 | 84047 down to 83476 and its reciprocal up edge |
+| Abbathor 83620 / 83482 | 84050 down to 83482 and its reciprocal up edge |
+| Sharindlar 83621 / 83480 | 84049 down to 83480 and its reciprocal up edge |
+| Berronar 83622 / 83473 | 83489 down to 83490 and its reciprocal up edge |
+| Clangeddin 83623 / 83474 | 83490 down to 83491 and its reciprocal up edge |
+| Dumathoin 83624 / 84044 | 83491 down to 84054 and its reciprocal up edge |
+| Moradin 83625 / 84045 | 84054 down to 84055 and its reciprocal up edge |
+
+The first four targets are extra avatar load rooms. The other switches open
+segments of the descent; Berronar/Clangeddin/Dumathoin/Moradin are declared in
+83490/83491/84054/84055 respectively. Opening an exit establishes a world effect,
+not an NPC encounter or a guaranteed arrival. Qualify current recipient
+episodes separately, particularly after a shard exchange retires its recipient.
+
+**Confirmed malformed mechanism:** rune-covered wall 83368 is a type-29 switch
+with `touch`, target room 0 and direction north. The loaded
+[`limbo` room 0](../../../areas/wld/limbo.wld) has no exits, so the shared handler
+reports the nonexistent-exit failure. The wall is G stock on golem 83454.
+Meanwhile, the purported kings gate at 83945 north has D state 10, meaning
+locked and blocked; an ordinary player cannot unlock a blocked exit even with
+key 83371. A key-only checklist would therefore give misleading guidance for
+that route. The intended switch target is a builder decision; confirm where
+the wall becomes interactable and validate the complete effect before repairing
+it. Existing shrine/outer-road approaches mean this finding does not establish
+that the entire mountain or all divine gifts are unreachable.
+
+The general switch handler also mutates the near edge before dereferencing an
+unchecked reverse edge. Extend the previously planned target-safe switch repair:
+validate both applicable edges before mutation, preserve intentional secret or
+one-way semantics, then publish the exact accepted effect. Include this malformed
+wall, ground versus carried switches, NPC-held placement, already-open targets
+and reset/replay cases. The repair must not invent a successful touch objective.
+
 ## Required universal capabilities and repair proposals
 
 | Finding | Required implementation and qualification |
@@ -135,6 +213,7 @@ while keeping administrative areas ineligible for player achievements.
 | ZSQ-ALA-RANDOM: scroll and power publication | Freeze one random attribute result and consume its exact source scroll only with a recoverable output grant. Gifted outputs need custody, not invented recitation history. Wondrous-ring power changes and helmet `paydirt` use are separate effects; a timer or utterance alone proves no successful power. Test failures, replay, restart, donation and changed equipment. |
 | ZSQ-ALA-DECAY: osquip preparation | The osquip death special creates item 120051 in its room, then initializes decay; the periodic consumer replaces expired remains with a generic corpse. Add accepted birth/expiry/replacement lineage and a precise episode clock before optional personal/fresh cooking objectives. Test donation, nested storage, expiry during delivery and reconnect. Retain native exact item acceptance. |
 | ZSQ-ALA-CITY: ownership and map visibility | Resolve interior/outer-city membership deliberately. Keep contract owner, current recipient room, visited area and authored district separate. Test movement across both directions, discovered/undiscovered neighboring areas, hidden room-number client behavior and duplicate receipt projection. |
+| ZSQ-ALA-ACCESS: actual commands and mechanism effects | Extract typed candidates from loaded object properties, current command IDs, exact D states, stock parents and reciprocal edges. Record accepted reveal/open separately from unlock, key destruction, confirmed travel and encounter. Add eight shrine targets, the remote treasury controls and malformed wall 83368 to target-safe switch qualification. Builders select the ritual command and intended wall target/placement; metadata alone cannot repair either. |
 | ZSQ-ALA-CONTENT: builder decisions | Decide the intended librarian gift, five-versus-six badges, attendant/banquet rewards, Xamora prose and Mundorno's overlapping paid breastplate recipes from actual outputs. Quantify supply paths before selecting a source repair for tinker's tokens or foreign proofs. Existing dialogue could be stale rather than gameplay broken; preserve rewards and balance until that decision. |
 | ZSQ-ALA-PILGRIMAGE / ALLOCATION | Specify all-stage pilgrimage/banquet/profession campaigns separately from independent terminals. Confirm exact competing item use, replacement shards, retiring Jenk/proof recipients and reset generations. A final gifted item can complete its request while leaving personal journey history unearned. |
 
@@ -146,8 +225,8 @@ deliveries do not implement the world transformations described in dialogue.
 
 ## Next audit checkpoint
 
-Finish the remaining 763 rooms, 314 mobile prototypes and 560 object
-prototypes; review all reset families and complete selected source paths;
+Finish the remaining 406 rooms and 495 object prototypes; complete the
+1,469 non-D reset-family review and selected source paths;
 resolve every gate, timed/random effect and quest-like orphan. Then classify
 all 495 contracts into faithful story/request/service/exclusion rows, author
 all usable contacts, publish the sidecar and reproducible index, and add

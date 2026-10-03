@@ -206,6 +206,22 @@ the sidecar relates them to Alvinar's story. A mapped condition can update from
 live equipment dynamically. Narrative relationships implemented in arbitrary
 C++ specials cannot reliably be discovered by parsing commands or dialogue.
 
+Generic object mechanisms expose additional candidates through their typed
+properties. Resolve `ITEM_SWITCH` and `ITEM_TELEPORT` values against the current
+command definitions, actual target room/direction, stock placement and D reset
+state. Validate applicable reverse edges and whether the actor can interact with
+the source. Raw room flags are adjusted at load and reset; a key field alone
+does not prove that a door is locked. Source-derived candidates still need an
+authored relationship to a particular story and its reveal policy.
+
+The [Alatorin draft](../design/zone-stories/ALATORIN.md) gives concrete examples:
+eight shrine switches listen to `hit` (70), rather than `kneel` (383); a remote
+button opens the royal treasury; a rune-wall switch targets a nonexistent exit
+in room 0. Explain or repair the actual mechanism before adding guidance. Keep
+current access, accepted mechanism use, key consumption, arrival and NPC encounter
+as separate facts. Schema 3 can explain these routes but cannot claim durable
+historical completion of those new event kinds.
+
 ## Later schema capabilities
 
 All three versions reject dialogue milestones, personal recovery, kills, arbitrary scripted events,

@@ -1082,10 +1082,11 @@ Priority 26 is in progress in the
 have been reviewed: 495 distinct contracts across 82 recipients and 466 M/MA
 blocks, including 296 nonambient addressed families. The conservative topic
 inventory retains 291; five apostrophe-bearing families still have usable
-aliases. All fifteen shops were reviewed, together with 189 of 952 rooms,
-111 of 425 mobiles, 42 of 602 objects, local assigned/computed services and
-bounded shared/foreign evidence. The 3,596 reset commands have not yet received
-the complete family review. The draft lists exact reviewed ranges and gaps.
+aliases. All fifteen shops and all 425 mobiles were reviewed, together with
+546 of 952 rooms and 107 of 602 objects, including every local switch/teleport
+prototype. All 352 D resets are reviewed. The other 1,469 of 1,821 reset
+families still need complete review, along with the remaining 406 rooms, 495
+objects and selected source/handler paths. The draft lists exact ranges and gaps.
 
 The proposed progression separates kitchens/royal dishes, collecting and
 professional commendations, army/brewery proofs, arcanums/random attribute
@@ -1093,6 +1094,16 @@ scrolls/nine rings, mining/master crafting, libraries/gardens, independently
 owned rogue/outpost requests, port supply and seven divine gifts. Ninety-three
 native offerings include coins. Smelting, mining and paid cleric service
 deliberately refuse active accounting; these remain explicit adapter work.
+
+The access continuation identifies eight shrine controls using actual command
+70 (`hit`), remote treasury mechanisms, consumable honour/kings keys and the
+physical officer's key awarded by Meshadan. The shrine effects open either
+avatar load-room edges or particular descent segments; opening is separate
+from arrival, NPC availability and receipt completion. Wall 83368 has a
+confirmed invalid room-0/north target, while the intended kings gate is locked
+and blocked. A targeted repair needs builder-selected destination/placement
+and validation before mutation, preserving alternate shrine/outer-road routes.
+Dumathoin is the eighth avatar with no local Q/M; seven gift requests remain.
 
 New plan detail covers exact any-of recipe readiness instead of summed mixed
 materials, bounded district/family presentation, NPC-held staged smelting and
@@ -1112,7 +1123,9 @@ mandatory. No active-world gameplay, accounting activation, migration,
 DB/server operation or merge is part of this checkpoint.
 
 Validation passed: the production-catalog coverage regression; exact native
-block/recipient/paid-offering and reviewed-range metrics; source digest and
-selected recipe shapes; whitespace; and 316 local links across the five changed
-documents. All 2,668 native definitions and all 48 maps remain unchanged.
+block/recipient/paid-offering and reviewed-range metrics; source digest,
+selected recipe shapes, current mechanism commands, shrine reciprocal/D edges,
+invalid wall target and key break values; whitespace; and local links across
+the five changed documents. All 2,668 native definitions and all 48 maps remain
+unchanged; 321 local links resolve.
 This addition changes documentation only; no C++ build was required.

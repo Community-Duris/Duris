@@ -330,6 +330,21 @@ publication awaits the remaining world/prototype/reset/source review.
   Complete the producer review of tinker's token 83458 before declaring it
   unavailable. Full banquet, profession and pilgrimage achievements need
   all-stage/attempt policy beyond independent receipts and supplied finales.
+- **Interactive access and current command IDs.** Alatorin's fifty mechanism
+  prototypes include eight shrine switches whose numeric trigger 70 means
+  `hit`, while `kneel` is 383. Extract typed candidates from actual loaded
+  properties, current command definitions, D states and stock parents. Preserve
+  remote-control and reciprocal-edge relationships. Track an accepted effect,
+  actual unlock/key destruction, arrival and recipient encounter separately;
+  one action cannot establish all four facts. Meshadan awards an officer's key,
+  with no actual faction admission. Builders choose the shrine ritual intent.
+- **Target-safe mechanism repair.** Wall 83368 targets room 0 north, which has
+  no exit; the kings gate is separately locked and blocked. Confirm intended
+  target and interactable stock placement before a data repair. Extend existing
+  switch qualification to validate applicable reciprocal edges before mutation,
+  preserving intentional secret/one-way behavior. An alternate shrine or outer
+  road route prevents treating this local defect as proof the whole mountain
+  is inaccessible. Never mark a failed touch as successful quest progress.
 
 Client updates should follow committed events and live inventory/equipment
 changes; reconnect sends a fresh projection. Unsupported facts must be marked
@@ -520,6 +535,11 @@ store failure, reconnect, replay, and cold restart.
   lock/secret/blocked flags, spoken magic-door keywords, item teleport command
   and destination, and source NPC/room/reset ownership. Source extraction is a
   lead list; builder approval defines the journal integration and reveal policy.
+- [ ] Resolve numeric object triggers against the current command table, then
+  validate stock location, target room/direction, reset state and applicable
+  reciprocal edge. Qualify Alatorin's eight shrine controls, remote treasury,
+  physical honour/officer/kings keys and malformed room-0 wall. Builder-selected
+  narrative dependencies remain explicit; generated candidates earn no credit.
 - [ ] Project current access separately from previous receipt history: supplied
   keys, already-open doors, equivalent routes and access provided by another
   actor must not demand replay of an unrelated recipe. A live key count alone
@@ -758,6 +778,9 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   its district journal and evidence index. The interim draft covers all native
   contracts/topics and fifteen shops, with 93 paid-offering and custom-service
   dependencies; it is not a completed twenty-sixth dossier.
+  All 425 mobiles, fifty mechanism prototypes and 352 D resets are now reviewed,
+  with 546 rooms/107 objects covered. Complete the remaining 406 rooms, 495
+  objects and 1,469 non-D families before comprehensive publication.
 - [ ] Add district/family authoring and shared presentation for large zones.
   Winterhaven's 219 rows fit existing story/objective limits but need a bounded
   512 KiB source-sidecar allowance for detailed guidance. Preserve receipt IDs;
