@@ -89,7 +89,7 @@ export CURRENCY_TEST_DB_NAME="$DB_NAME"
 mkdir -p "$ROOT/bin/tests"
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
 read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
-g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Wl,--gc-sections -Isrc \
+g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,--wrap=mysql_real_query,--wrap=mysql_errno -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/currency_transaction_mysql_harness.cpp \
     src/persistence/critical_command.c src/economy/currency_command.c src/world/epic_command.c \
     src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c src/economy/auction_command.c \
@@ -193,7 +193,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
     src/persistence/quest_reward_obligation_repository.c \
     src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
-    -Wl,--gc-sections -Wl,--wrap=mysql_real_query "${MYSQL_LIBS[@]}" -lcrypto -lz \
+    -Wl,--gc-sections -Wl,--wrap=mysql_real_query,--wrap=mysql_errno "${MYSQL_LIBS[@]}" -lcrypto -lz \
     -o "$ROOT/bin/tests/item_transfer_mysql_harness"
 # The accounted lifecycle fixture retains many bounded item payloads in one
 # test frame. The usual 8 MiB shell stack can overflow before its SQL checks.

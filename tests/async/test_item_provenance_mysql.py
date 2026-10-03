@@ -39,7 +39,7 @@ class ItemProvenanceMysqlTest(unittest.TestCase):
                 "-ffunction-sections", "-fdata-sections", "-Isrc", *cflags,
                 "tests/async/item_provenance_mysql_harness.cpp",
                 "tests/async/item_extra_descr_codec_sql_escape_stub.cpp", *sources,
-                "-Wl,--gc-sections", "-Wl,--wrap=mysql_real_query",
+                "-Wl,--gc-sections", "-Wl,--wrap=mysql_real_query,--wrap=mysql_errno",
                 *libs, "-lcrypto", "-lz", "-o", str(binary),
             ], cwd=ROOT, check=True, timeout=300)
             environment = dict(os.environ,
