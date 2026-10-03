@@ -160,7 +160,8 @@ int main(int argc, char **argv)
 		}
 		if (argc >= 2 && std::string(argv[1]) == "--craft-receipt")
 		{
-			snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION;
+			snapshot.schema_version =
+				PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION;
 			player_craft_receipt_snapshot craft = {};
 			craft.operation_id.bytes[0] = 89;
 			craft.discipline = 1;
