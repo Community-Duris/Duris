@@ -5922,32 +5922,32 @@
       "sites": [
         [
           "src/combat/fight.c",
-          2183,
+          2185,
           "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          2184,
+          2186,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          2197,
+          2199,
           "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          2198,
+          2200,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          2243,
+          2245,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          2254,
+          2256,
           "item_publication"
         ]
       ],
@@ -6146,12 +6146,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          4801,
+          4803,
           "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          4812,
+          4814,
           "item_publication"
         ]
       ],
@@ -6472,12 +6472,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          5219,
+          5221,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          5226,
+          5228,
           "item_publication"
         ]
       ],
@@ -9435,12 +9435,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          781,
+          783,
           "economic_submit"
         ],
         [
           "src/combat/fight.c",
-          786,
+          788,
           "economic_submit"
         ]
       ],
@@ -9523,12 +9523,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          1054,
+          1056,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          1055,
+          1057,
           "item_lifecycle"
         ]
       ],
@@ -9574,12 +9574,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          696,
+          698,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          697,
+          699,
           "item_publication"
         ]
       ],
@@ -9625,37 +9625,37 @@
       "sites": [
         [
           "src/combat/fight.c",
-          811,
+          813,
           "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          947,
+          949,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          951,
+          953,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          956,
+          958,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          969,
+          971,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          973,
+          975,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          977,
+          979,
           "item_lifecycle"
         ]
       ],
@@ -11705,12 +11705,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          1605,
+          1607,
           "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          1618,
+          1620,
           "item_lifecycle"
         ]
       ],
@@ -50068,151 +50068,151 @@
     },
     {
       "path": "src/combat/fight.c",
-      "line": 781,
+      "line": 783,
       "family": "economic_submit",
       "excerpt": "item_movement_transaction_submit("
     },
     {
       "path": "src/combat/fight.c",
-      "line": 786,
+      "line": 788,
       "family": "economic_submit",
       "excerpt": "item_movement_transaction_submit_batch("
     },
     {
       "path": "src/combat/fight.c",
-      "line": 811,
+      "line": 813,
       "family": "item_lifecycle",
       "excerpt": "corpse = read_object(2, VIRTUAL);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 977,
+      "line": 979,
       "family": "item_lifecycle",
       "excerpt": "extract_obj("
     },
     {
       "path": "src/combat/fight.c",
-      "line": 1055,
+      "line": 1057,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(corpse);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 1605,
+      "line": 1607,
       "family": "item_lifecycle",
       "excerpt": "wallet_pile = create_money(GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch),"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 1618,
+      "line": 1620,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(wallet_pile, FALSE);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2183,
+      "line": 2185,
       "family": "item_lifecycle",
       "excerpt": "P_obj dragon_scale = read_object(VOBJ_DRAGON_SCALE, VIRTUAL);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2197,
+      "line": 2199,
       "family": "item_lifecycle",
       "excerpt": "P_obj teobj = read_object(400230, VIRTUAL);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 4801,
+      "line": 4803,
       "family": "item_lifecycle",
       "excerpt": "P_obj portal = read_object(400220, VIRTUAL);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 696,
+      "line": 698,
       "family": "item_publication",
       "excerpt": "obj_from_char(item);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 697,
+      "line": 699,
       "family": "item_publication",
       "excerpt": "obj_to_obj(item, corpse);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 947,
+      "line": 949,
       "family": "item_publication",
       "excerpt": "obj_to_room(corpse, real_room(ch->specials.was_in_room));"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 951,
+      "line": 953,
       "family": "item_publication",
       "excerpt": "obj_to_room(corpse, real_room(CORPSE_STORAGE_II));"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 956,
+      "line": 958,
       "family": "item_publication",
       "excerpt": "obj_to_room(corpse, ch->in_room);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 969,
+      "line": 971,
       "family": "item_publication",
       "excerpt": "obj_from_obj(o);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 973,
+      "line": 975,
       "family": "item_publication",
       "excerpt": "obj_to_room(o, corpse->loc.room);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 1054,
+      "line": 1056,
       "family": "item_publication",
       "excerpt": "obj_from_room(corpse);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2184,
+      "line": 2186,
       "family": "item_publication",
       "excerpt": "obj_to_char(dragon_scale, ch);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2198,
+      "line": 2200,
       "family": "item_publication",
       "excerpt": "obj_to_char(teobj, ch);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2243,
+      "line": 2245,
       "family": "item_publication",
       "excerpt": "obj_to_char(tempobj, ch);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2254,
+      "line": 2256,
       "family": "item_publication",
       "excerpt": "obj_to_char(tempobj, ch);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 4812,
+      "line": 4814,
       "family": "item_publication",
       "excerpt": "obj_to_room(portal, real_room(400000));"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 5219,
+      "line": 5221,
       "family": "item_publication",
       "excerpt": "P_obj weap = pos < MAX_WEAR ? unequip_char(ch, pos) : NULL;"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 5226,
+      "line": 5228,
       "family": "item_publication",
       "excerpt": "obj_to_char(weap, ch);"
     },
