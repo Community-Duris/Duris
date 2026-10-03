@@ -288,7 +288,7 @@ quick-start listener is port 4000 and cannot select the production runtime role.
 
 Production deployments use the checked-in systemd service rather than the local
 user service. Its installer requires an explicit production configuration check,
-enables boot startup, and supervises every exit with an unlimited restart policy.
+enables boot startup, and provides completed-game-loop watchdog and exited-process recovery.
 See [Production systemd service](docs/operations/RUNBOOK.md#production-systemd-service)
 for installation and cutover instructions.
 
