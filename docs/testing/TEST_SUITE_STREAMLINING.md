@@ -396,6 +396,13 @@ non-cancellable fence, restart/retry, erasure and later-publication assertions.
 Git proves that only this test changed; the production subtree and frozen binary
 hashes match the completed v37 qualification.
 
+The final Windows observer run retained 52 passing writer cases and three census
+cases, but all 12 documentation cases failed while decoding UTF-8 Markdown using
+the default Windows code page. The earlier direct `-X utf8` invocation had hidden
+that portability defect. The documentation owner now declares UTF-8 on all
+repository text reads and passes under the default Windows interpreter. Its
+failed v39 report remains retained beside the final observed rerun.
+
 The evidence index accepts historical manifests only after checking that every
 requirement is identical except for the two added SQL account-cleanup witnesses.
 Earlier passing deletion rows cannot supply it: the strengthened owner must pass
