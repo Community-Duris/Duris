@@ -18,6 +18,7 @@ SUPPLEMENTAL_TABLES = {
     "economic_baseline_witness",
     "economic_sql_lifecycle_installation",
     "economic_sql_global_activation",
+    "sql_room_item_payload",
     RECEIPT_TABLE,
 }
 EXPECTED_COLUMNS = {
