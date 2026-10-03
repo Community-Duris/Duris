@@ -29,6 +29,11 @@ def section(text: str, start: str, end: str) -> str:
     return text[first : text.index(end, first)]
 
 
+def function(text: str, signature: str) -> str:
+    first = text.index(signature)
+    return text[first:text.index("\n}", first) + 2]
+
+
 HARNESS = r'''
 #include "player/player_revision_state.h"
 #include <cassert>
@@ -110,10 +115,9 @@ assert "player_snapshot_repository_apply_from_pool" in selector
 assert "sleep_for(std::chrono::milliseconds(100))" in dispatcher
 print("[PASS] bounded dispatcher journals before worker eligibility and retains append failures")
 
-checkpoint = section(
+checkpoint = function(
     PIPELINE,
     "static player_save_pipeline_result checkpoint_dirty_with_quest_xp(",
-    "player_save_pipeline_result player_save_pipeline_checkpoint_dirty",
 )
 checkpoint_entry = section(
     PIPELINE,
@@ -775,17 +779,27 @@ print("[PASS] held/stale literal scopes refuse before queueing; empty receipt ma
 
 # This API advertises a SQL database completion, not a flat-file worker ACK.
 # Compile actual public bodies under the flat backend with no capture, scope,
-# registry, or persistence implementations at all: reaching those dependencies
-# must fail compilation/linking instead of being waived by null-return stubs.
+# registry, or persistence implementations: reaching those dependencies must
+# fail compilation/linking. Only the normal save-admission boundary below is
+# modeled to verify the flat hydration API delegates its result for both states.
 flat_harness = r'''
 #define __NO_MYSQL__ 1
 #include "player/player_save_pipeline.h"
 #include <cassert>
 struct char_data {};
 struct obj_data {};
+static bool ordinary_admission = false;
+static int ordinary_admission_calls = 0;
+bool player_save_pipeline_save_admitted(int pid) {
+    assert(pid == 41);
+    ++ordinary_admission_calls;
+    return ordinary_admission;
+}
 ''' + extract_function("player_save_pipeline.c", "player_literal_inventory_state\nplayer_save_pipeline_literal_inventory_begin(") + "\n" + extract_function(
     "player_save_pipeline.c", "player_literal_inventory_state\nplayer_save_pipeline_literal_inventory_poll("
-) + "\n" + extract_function("player_save_pipeline.c", "bool player_save_pipeline_literal_inventory_hold(") + r'''
+) + "\n" + extract_function("player_save_pipeline.c", "bool player_save_pipeline_literal_inventory_hold(") + "\n" + extract_function(
+    "player_save_pipeline.c", "bool player_save_pipeline_restore_sql_drop_obligation("
+) + "\n" + extract_function("player_save_pipeline.c", "bool player_save_pipeline_authoritative_hydration_admitted(") + r'''
 int main() {
     char_data actor;
     obj_data root;
@@ -805,6 +819,12 @@ int main() {
     assert(!player_save_pipeline_literal_inventory_hold(token, operation));
     assert(!player_save_pipeline_literal_inventory_hold({}, {}));
     assert(token == original);
+    critical_command command{};
+    assert(!player_save_pipeline_restore_sql_drop_obligation(command));
+    assert(!player_save_pipeline_authoritative_hydration_admitted(41));
+    ordinary_admission = true;
+    assert(player_save_pipeline_authoritative_hydration_admitted(41));
+    assert(ordinary_admission_calls == 2);
 }
 '''
 with tempfile.TemporaryDirectory(prefix="duris-flat-literal-refusal-") as directory:
@@ -815,3 +835,4 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-literal-refusal-") as direct
                     "-Isrc", str(program), "-o", str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary)], check=True, timeout=10)
 print("[PASS] actual flat-backend literal begin/poll/hold refuse without capture, scope, or hold dependencies and preserve output token")
+print("[PASS] actual flat restored-SQL-drop registration refuses; hydration delegates both normal admission outcomes")

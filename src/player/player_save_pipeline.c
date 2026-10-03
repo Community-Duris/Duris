@@ -17,6 +17,8 @@
 #include "core/utils.h"
 #include "magic/spell_item_lifecycle.h"
 #include "item/item_movement_transaction.h"
+#include "economy/item_transfer_accounting.h"
+#include "persistence/sql_room_item_payload.h"
 #include "world/quest_reward_recovery.h"
 #include "player/craft_progression_hooks.h"
 
@@ -83,6 +85,7 @@ struct literal_inventory_checkpoint
 	player_revision_t acknowledged_revision = 0;
 	critical_operation_id operation_id = {};
 	bool held = false;
+	bool restored_sql_drop = false;
 };
 std::array<literal_inventory_checkpoint, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS>
 	literal_inventory_checkpoints = {};
@@ -99,6 +102,21 @@ literal_inventory_checkpoint *find_literal_inventory_locked(int pid)
 			return &checkpoint;
 	return nullptr;
 }
+
+#ifndef __NO_MYSQL__
+bool literal_inventory_capacity_locked(size_t incoming_bytes)
+{
+	if (incoming_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES)
+		return false;
+	for (const auto &checkpoint : literal_inventory_checkpoints)
+	{
+		if (checkpoint.payload.size() > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming_bytes)
+			return false;
+		incoming_bytes += checkpoint.payload.size();
+	}
+	return true;
+}
+#endif
 
 bool literal_inventory_blob(const player_snapshot &snapshot, uint64_t root_uid,
 			    std::vector<uint8_t> *blob)
@@ -1147,7 +1165,7 @@ player_save_pipeline_literal_inventory_begin(P_char actor, P_obj root, int room_
 				slot = &candidate;
 				break;
 			}
-		if (!slot)
+		if (!slot || !literal_inventory_capacity_locked(blob.size()))
 			return player_literal_inventory_state::refused;
 		token = { GET_PID(actor), actor->runtime_id, root->obj_uid,
 			  ++literal_inventory_generation };
@@ -1258,7 +1276,7 @@ bool player_save_pipeline_literal_inventory_release(const player_literal_invento
 {
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	auto *literal = find_literal_inventory_locked(token.pid);
-	if (!literal || literal->token != token || !literal->held ||
+	if (!literal || literal->token != token || !literal->held || literal->restored_sql_drop ||
 	    literal->operation_id.bytes != operation_id.bytes)
 		return false;
 	*literal = {};
@@ -1275,6 +1293,69 @@ bool player_save_pipeline_literal_inventory_cancel(const player_literal_inventor
 		return false;
 	*literal = {};
 	return true;
+}
+
+bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &command)
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	return false;
+#else
+	try
+	{
+		if (!command.publication_required || !critical_command_envelope_valid(command) ||
+		    !item_transfer_accounting_command_supported(command))
+			return false;
+		item_transfer_payload payload = {};
+		sql_room_item_payload_batch captured;
+		std::vector<uint8_t> frozen;
+		if (!item_transfer_command_decode_payload(command, &payload) ||
+		    !sql_room_item_payload_capture(payload, &captured) ||
+		    critical_command_encode(command, &frozen) != critical_command_codec_result::ok)
+			return false;
+		const int pid = static_cast<int>(payload.from_owner.id);
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || stop_requested)
+			return false;
+		literal_inventory_checkpoint *slot = nullptr;
+		for (auto &candidate : literal_inventory_checkpoints)
+		{
+			if (candidate.token.pid == pid ||
+			    (candidate.held &&
+			     candidate.operation_id.bytes == command.operation_id.bytes))
+				return candidate.restored_sql_drop && candidate.held &&
+				       candidate.token.pid == pid &&
+				       candidate.token.root_uid == payload.selected_item_uid &&
+				       candidate.operation_id.bytes == command.operation_id.bytes &&
+				       candidate.payload == frozen;
+			if (!candidate.token.pid && !slot)
+				slot = &candidate;
+		}
+		if (!slot || !literal_inventory_capacity_locked(frozen.size()))
+			return false;
+		slot->token.pid = pid;
+		slot->token.root_uid = payload.selected_item_uid;
+		slot->payload = std::move(frozen);
+		slot->operation_id = command.operation_id;
+		slot->held = true;
+		slot->restored_sql_drop = true;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+#endif
+}
+
+void player_save_pipeline_sql_drop_publication_acknowledged(
+	const critical_operation_id &operation_id) noexcept
+{
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	for (auto &checkpoint : literal_inventory_checkpoints)
+		if (checkpoint.token.pid && checkpoint.held &&
+		    checkpoint.operation_id.bytes == operation_id.bytes)
+			checkpoint = {};
 }
 
 player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int save_intent,
@@ -2103,6 +2184,25 @@ bool player_save_pipeline_save_admitted(int pid)
 	if (terminal_fence *fence = find_terminal_fence_locked(pid); fence && fence->death_pinned)
 		return false;
 	return true;
+}
+
+bool player_save_pipeline_authoritative_hydration_admitted(int pid)
+{
+#ifdef __NO_MYSQL__
+	return player_save_pipeline_save_admitted(pid);
+#else
+	if (pid <= 0 || player_save_journal_pid_quarantined(pid))
+		return false;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	if (find_target_save_login_fence_locked(pid))
+		return false;
+	if (auto *literal = find_literal_inventory_locked(pid);
+	    literal && literal->held && !literal->restored_sql_drop)
+		return false;
+	if (terminal_fence *fence = find_terminal_fence_locked(pid); fence && fence->death_pinned)
+		return false;
+	return true;
+#endif
 }
 
 /** Stop the pipeline and clear worker, revision, and health state for an isolated test. */
