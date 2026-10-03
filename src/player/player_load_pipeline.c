@@ -1,3 +1,4 @@
+#include "net/network_wakeup.h"
 #include "player/player_load_pipeline.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_save_journal.h"
@@ -190,6 +191,17 @@ void refresh_health_locked()
 
 void record_result_locked(const player_load_result &result)
 {
+	persistence_trace_event trace;
+	trace.stage = persistence_trace_stage::load_result;
+	trace.pid = result.pid;
+	trace.revision = result.snapshot.revision;
+	trace.components = result.degraded_components;
+	trace.request_id = result.request_id;
+	trace.outcome = static_cast<uint32_t>(result.outcome);
+	trace.error = result.error_code;
+	trace.incident = result.outcome == player_load_outcome::degraded ||
+			 result.outcome == player_load_outcome::component_failure;
+	persistence_trace_record(trace);
 	switch (result.outcome)
 	{
 	case player_load_outcome::applied:
@@ -312,6 +324,7 @@ void worker_main()
 			inflight_pid = 0;
 			record_result_locked(result);
 			completions.push_back(std::move(result));
+			network_wakeup_notify();
 			refresh_health_locked();
 			completion_available.notify_all();
 		}

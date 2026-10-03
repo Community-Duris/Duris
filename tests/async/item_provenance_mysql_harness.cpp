@@ -137,8 +137,24 @@ static void check_spell_component_batch_retirement(MYSQL *connection)
 							     epoch, 41,
 							     economic_source_kind::spell_creation);
 	const auto refused = critical_command_repository_apply(connection, duplicate_issue);
-	assert(refused.outcome == critical_apply_outcome::retryable_failure &&
-	       refused.error_code == 1062);
+	// The logical source was already committed. This new command is a
+	// terminal semantic refusal, not a retryable SQL duplicate-key fault.
+	assert(refused.outcome == critical_apply_outcome::terminal_failure &&
+	       refused.error_code == EEXIST);
+	const auto duplicate_retry = critical_command_repository_apply(connection, duplicate_issue);
+	assert(duplicate_retry.outcome == critical_apply_outcome::terminal_failure &&
+	       duplicate_retry.error_code == EEXIST);
+	assert(scalar(connection,
+		      ("SELECT COUNT(*) FROM economic_accounting_source_claim WHERE lineage=UNHEX('" +
+		       operation_hex(lineage) + "')")
+			      .c_str()) == 1);
+	for (const char *table :
+	     { "economic_accounting_operation", "economic_accounting_item_reference",
+	       "critical_operation_inbox", "critical_outbox" })
+		assert(scalar(connection, (std::string("SELECT COUNT(*) FROM ") + table +
+					   " WHERE operation_id=UNHEX('" +
+					   operation_hex(duplicate_issue.operation_id) + "')")
+						  .c_str()) == 0);
 	assert(scalar(connection, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
 				   std::to_string(duplicate_uid))
 					  .c_str()) == 0);

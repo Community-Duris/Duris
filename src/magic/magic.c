@@ -335,7 +335,7 @@ bool spell_component_retirement_restore_context(
 	    payload.continuation.kind !=
 		    item_transfer_continuation_kind::spell_component_retirement ||
 	    payload.reason != item_transfer_reason::destruction || !payload.multi_root ||
-	    !payload.item_count || payload.item_count > 8)
+	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS)
 		return false;
 	const std::vector<uint8_t> &data = payload.continuation.data;
 	const bool legacy = data.size() >= 4 && data.size() <= 4 + 48 && data[1] == 0 &&
@@ -354,7 +354,24 @@ bool spell_component_retirement_restore_context(
 		return false;
 	spell_component_retirement_context context = {};
 	context.effect = static_cast<item_spell_component_effect>(effect_id);
-	context.item_count = static_cast<uint8_t>(payload.item_count);
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const item_transfer_entry &item = payload.items[index];
+		if (!item.item_uid)
+			return false;
+		for (size_t prior = 0; prior < index; ++prior)
+			if (payload.items[prior].item_uid == item.item_uid)
+				return false;
+		if (!item.parent_item_uid)
+		{
+			if (item.root_item_uid != item.item_uid ||
+			    context.item_count >= context.item_uids.size())
+				return false;
+			context.item_uids[context.item_count++] = item.item_uid;
+		}
+	}
+	if (!context.item_count)
+		return false;
 	context.continuation_context_size = static_cast<uint32_t>(data.size() - context_offset);
 	if (context.continuation_context_size)
 		memcpy(context.continuation_context.data(), data.data() + context_offset,
@@ -362,6 +379,15 @@ bool spell_component_retirement_restore_context(
 	uint32_t owner_pid = context.effect == item_spell_component_effect::vines ?
 				     static_cast<uint32_t>(payload.from_owner.id) :
 				     0;
+	if (context.effect == item_spell_component_effect::vines)
+	{
+		spell_component_context_reader reader(context.continuation_context.data(),
+						      context.continuation_context_size);
+		int32_t level = 0, count = 0;
+		if (!reader.get_i32(&level) || !reader.get_i32(&count) || !reader.finished() ||
+		    count < 1 || count > 4 || count != context.item_count)
+			return false;
+	}
 	if (context.effect == item_spell_component_effect::faerie_sight)
 	{
 		spell_component_context_reader reader(context.continuation_context.data(),
@@ -373,23 +399,13 @@ bool spell_component_retirement_restore_context(
 		    !reader.get_i32(&level) || !reader.get_u8(&dust_count) ||
 		    !reader.get_u8(&self_target) || self_target > 1 || actor_pid <= 0 ||
 		    static_cast<uint64_t>(actor_pid) != payload.from_owner.id ||
-		    dust_count != payload.item_count ||
+		    dust_count != context.item_count ||
 		    (context.continuation_context_size == 22 && !reader.get_i32(&target_pid)) ||
 		    !reader.finished() || target_pid < 0 ||
 		    (self_target && target_pid && target_pid != actor_pid))
 			return false;
 		owner_pid = self_target ? static_cast<uint32_t>(actor_pid) :
 					  static_cast<uint32_t>(target_pid);
-	}
-	for (size_t index = 0; index < payload.item_count; ++index)
-	{
-		const uint64_t uid = payload.items[index].item_uid;
-		if (!uid)
-			return false;
-		for (size_t prior = 0; prior < index; ++prior)
-			if (context.item_uids[prior] == uid)
-				return false;
-		context.item_uids[index] = uid;
 	}
 	if (sizeof(context) > encoded_context->size())
 		return false;

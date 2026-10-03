@@ -16,7 +16,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="duris-borrowed-reads-") as temporary:
         binary = Path(temporary) / "reads"
         subprocess.run([
-            "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+            "g++", "-std=c++20", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
             "-O1", "-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
             "-fno-pie", "-no-pie", "-D__NO_MYSQL__",
             "-DDURIS_FLATFILE_TRANSACTION_FAULT_TEST",

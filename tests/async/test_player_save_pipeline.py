@@ -288,6 +288,7 @@ terminal_slice = (
     + PIPELINE[await_start:await_end]
 )
 terminal_preamble = r'''
+#include "persistence/persistence_diagnostics.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_snapshot.h"
 #include "player/player_snapshot_capture.h"
@@ -446,6 +447,7 @@ print("[PASS] ten terminal-intent trials cover prior ACK, pending save, timed-ou
 # Compile the real checkpoint and receipt merge with controlled admission/capture
 # failures. Revision state and codec remain real so component and wire checks run.
 receipt_harness = r'''
+#include "persistence/persistence_diagnostics.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
