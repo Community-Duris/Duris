@@ -197,13 +197,15 @@ def run(server, inspector, fence_fault=None):
                     assert snapshot.read_bytes() == original_snapshot
                     assert retained.read_bytes() == original_quest_state
                     assert not (state / "domains/.critical-authority-transaction").exists()
-                    # Refuse only quest-state persistence, after native fence
-                    # recovery has succeeded. Account identities must survive
-                    # so this irreversible request remains completable.
+                    # The deletion journal reads the state file under its
+                    # authority lock, not the runtime publisher's separate lock.
+                    # Unsafe state metadata must refuse native erasure without
+                    # changing its bytes or destroying the fenced identities.
                     fenced_accounts = account_images()
-                    quest_lock = state / "domains/.zone-story-quests.lock"
-                    assert quest_lock.is_file()
-                    quest_lock.chmod(0o601)
+                    assert retained.is_file()
+                    original_mode = retained.stat().st_mode & 0o777
+                    assert original_mode == 0o600
+                    retained.chmod(0o601)
                     try:
                         client.send(journey.ACCOUNT)
                         client.expect("Account deletion did not complete.", timeout=30)
@@ -216,7 +218,7 @@ def run(server, inspector, fence_fault=None):
                         client.expect("Deletion has already started and cannot be cancelled.", timeout=30)
                         client.expect("to retry completion:")
                     finally:
-                        quest_lock.chmod(0o600)
+                        retained.chmod(original_mode)
                     client.close()
                     client = None
                     stop()
@@ -313,7 +315,9 @@ def run(server, inspector, fence_fault=None):
                 # unrelated account/session captures into the regression output.
                 diagnostics = journey.runtime_logs(runtime) + output_path.read_text(errors="replace")
                 for line in diagnostics.splitlines():
-                    if "deleteCharacter()" in line:
+                    if any(marker in line for marker in ("deleteCharacter()", "deleteAccount()",
+                                                          "account deletion", "zone-story",
+                                                          "authority file metadata")):
                         print(line)
                 raise
             finally:
