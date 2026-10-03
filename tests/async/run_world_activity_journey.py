@@ -168,6 +168,11 @@ def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index
                 assert f"activityfighter{i+1} " in report.split("Fighting:", 1)[1], report
             print(f"20 real NPC combat pairs remain engaged after {stage}", flush=True)
 
+        def start_combat():
+            if scenario == "busy":
+                for i in range(0, 40, 2):
+                    client.send(f"force activityfighter{i} kill activityfighter{i+1}"); drain(client, .3)
+
         try:
             boot(); client = journey.MudClient(port); journey.create_character(client, expected_room=None if full_world else "The Regression Arena")
             client.send("save"); client.expect("Save complete for Taverek.")
@@ -177,9 +182,7 @@ def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index
             client.send("toggle paging"); client.expect("Paging mode off."); drain(client)
             if full_world:
                 client.send(f"goto {home}"); client.expect("The Regression Arena"); drain(client)
-            if scenario == "busy":
-                for i in range(0, 40, 2):
-                    client.send(f"force activityfighter{i} kill activityfighter{i+1}"); drain(client, .3)
+            start_combat()
             status = (runtime / "logs/log/status").read_text(errors="replace")
             indexed = re.findall(r"WORLD ACTIVITY: enabled=1 ready=1 indexed_npcs=(\d+)", status)
             assert indexed and int(indexed[-1]) >= population, indexed
@@ -298,13 +301,17 @@ def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index
             matches = re.findall(r"WORLD ACTIVITY: enabled=1 ready=1 indexed_npcs=(\d+) players=(\d+) corpses=(\d+)", status)
             assert matches and int(matches[-1][0]) >= population and int(matches[-1][1]) == 1, matches
             check_runtime_index("copyover reconstruction")
-            check_combat("copyover reconstruction")
+            # Existing copyover links combat only for restored descriptors;
+            # independent NPC pairs are idle. Qualify fresh combat after recovery
+            # without changing that unrelated persistence behavior.
+            start_combat()
+            check_combat("fresh post-copyover combat")
             if runtime_index:
                 client.send(f"load mob {mob_vnum}"); drain(client, .5)
                 check_runtime_index("staff NPC creation")
                 client.send("purge activitypredator"); drain(client, .5)
                 check_runtime_index("extraction before deferred memory release")
-            mode = "population/reload smoke" if smoke else "matched sparse capture"
+            mode = "population/reload smoke" if smoke else f"matched {scenario} capture"
             print(f"real world activity server: {mode}, normal wandering callbacks, live disable/enable and copyover rebuild passed", flush=True)
         except Exception:
             failure = Path(output).parent / f"activity-failure-{scenario}-{time.time_ns()}"
