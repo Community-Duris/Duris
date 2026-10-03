@@ -2672,7 +2672,7 @@ int main()
 		connection, getenv("DB_HOST"), getenv("DB_USER"), getenv("DB_PASSWD"),
 		getenv("ITEM_TRANSFER_TEST_DB_NAME"),
 		static_cast<unsigned int>(strtoul(getenv("DB_PORT"), nullptr, 10)), nullptr, 0));
-	#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
 	economic_sql_real_pool_lifecycle real_pool_lifecycle;
 #endif
 	if (getenv("PLAYER_QUARANTINE_RECOVERY_TEST"))

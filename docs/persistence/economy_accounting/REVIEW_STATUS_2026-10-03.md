@@ -772,3 +772,14 @@ missing/reordered invalidation and retirement still refuse. Primary verified
 the owner and frozen log in the same three-contract evidence above. This is
 source-contract evidence, not a new native combat/kingdom gameplay proof or
 passing broad rerun. No production source changed for these three repairs.
+
+## Native SQL fixture formatting gate repair
+
+The published real-pool currency and item fixtures failed the maintained
+clang-format gate at three whitespace-only hunks. Both owners now match
+clang-format 18. The native candidate QA check passes for all 1,494 tracked
+C/C++ files; its copied session queue fixture mode was restored to the
+published 100644 before the check. No production behavior changes.
+Evidence: `tmp/real-pool-harness-format-summary.local.json` SHA-256
+3594de85a8b8faea5e3c02fe774b727b3a71f9d18742ce0d55fddab8e28274e2. This formatting result does not replace native gameplay or
+accounting acceptance checks.

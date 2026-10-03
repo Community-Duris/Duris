@@ -335,9 +335,9 @@ void check_active_coin_item_accounting(uint32_t pid, const char *account,
 	command.publication_required = true;
 	assert(critical_command_envelope_valid(command));
 	economic_sql_commit_reply_loss_fixture::arm();
-	const critical_apply_result applied = exercise_sql_coordinator(
-		command, "coin-native-commit-reply", false,
-		critical_apply_outcome::already_applied);
+	const critical_apply_result applied =
+		exercise_sql_coordinator(command, "coin-native-commit-reply", false,
+					 critical_apply_outcome::already_applied);
 	economic_sql_commit_reply_loss_fixture::verify();
 	if (applied.outcome != critical_apply_outcome::already_applied || applied.error_code)
 		fprintf(stderr, "pooled typed coin transfer failed outcome=%u error=%u\n",
@@ -1670,7 +1670,7 @@ int main()
 	assert(connection);
 	const unsigned int port = port_value ? static_cast<unsigned int>(atoi(port_value)) : 3306;
 	assert(mysql_real_connect(connection, host, user, password, database, port, nullptr, 0));
-	#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
 	economic_sql_real_pool_lifecycle real_pool_lifecycle;
 #endif
 	const std::string account = "currency_harness_account";
