@@ -983,10 +983,35 @@ def auction_escrow_balance(status: str | None, price: int | None,
     return [price if has_winner else 0, 0, 0, 0]
 
 
+def read_ship_coffers(cursor) -> tuple[list[dict], dict]:
+    # Ships have persisted copper value but no qualified accounting lifetime or
+    # native revision. Never manufacture a mapping or export owner aliases.
+    rows = bounded(cursor, "SELECT id,money FROM ships ORDER BY id")
+    coffers = []
+    coverage = dict(rows=len(rows), positive_rows=0, zero_rows=0,
+                    unknown_rows=0, invalid_rows=0, missing_revision_rows=len(rows))
+    seen = set()
+    for row in rows:
+        identity, amount = row["id"], row["money"]
+        if (type(identity) is not int or not 1 <= identity < 2**31 or
+                identity in seen or
+                (amount is not None and
+                 (type(amount) is not int or not -(2**31) <= amount < 2**31))):
+            raise ExportError("invalid native ship coffer")
+        seen.add(identity)
+        coffers.append({"ship_id": identity, "copper": amount})
+        bucket = ("unknown_rows" if amount is None else "invalid_rows" if amount < 0
+                  else "zero_rows" if amount == 0 else "positive_rows")
+        coverage[bucket] += 1
+    return coffers, coverage
+
+
 def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     native = {"holdings": [], "items": [], "coin_piles": [],
               "coin_pile_mappings": [], "pending_claim_sources": []}
-    gaps = ["coin_pile_creation_origin_and_lifecycle_source_completeness",
+    native["ship_coffers"], native["ship_coffer_coverage"] = read_ship_coffers(cursor)
+    gaps = ["ship_coffer_lifetime_origin_revision_and_writer_qualification",
+            "coin_pile_creation_origin_and_lifecycle_source_completeness",
             "escrow_claim_treasury_lifecycle_and_origin_reconciliation",
             "pending_claim_consumer_completeness_and_legacy_coverage",
             "unattributed_ownership_history",
@@ -1330,9 +1355,9 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             "'economic_pending_claim_source','economic_sql_lifecycle_installation',"
             "'critical_operation_inbox','player_data',"
             "'account_banks','item_current_owner','item_ownership_ledger','auctions',"
-            "'auction_money_pickups','shopkeepers')")
+            "'auction_money_pickups','shopkeepers','ships')")
         engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-        if len(engines) != 16 or any(engine != "InnoDB" for engine in engines.values()):
+        if len(engines) != 17 or any(engine != "InnoDB" for engine in engines.values()):
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)
