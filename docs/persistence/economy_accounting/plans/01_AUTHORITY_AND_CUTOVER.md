@@ -403,7 +403,13 @@ SQL-header/flatfile mode pass, along with strict builds and unchanged inactive
 SQL/flatfile gameplay. It remains unused by normal pipeline selection and does
 not qualify restored-save integration. Its explicit resume returns false before
 the callback has parked; the owner must retain that wake for retry. The journal
-still treats the new outcome as terminal until selective replay is implemented.
+now has a separate bounded selective-replay prerequisite: a deferred PID retains
+every exact frame and loses both prior ordinary and exact operation proofs from
+that pass, while unrelated PIDs checkpoint. Its appended replay_deferred result
+keeps the existing global replay/load fence closed. Nineteen paired native cases
+pass per backend mode with a controlled apply callback; actual restored SQL
+ownership is not connected. Collection allocation failure is contained before
+callbacks, preserving the original journal.
 Its resume allocation guarantee does not repair existing allocation gaps in
 initial worker admission, retry scheduling or pending promotion; those remain
 separate qualification work.
@@ -417,6 +423,17 @@ Stage cancelable queue ownership and an empty job before moving input or changin
 revision/receipt state; fault-injected native tests must establish each failure
 and exact recovery. Separately, result-queue allocation in worker_main can throw
 after journal ACK. Ready-queue repairs cannot qualify completion-delivery safety.
+
+Separate source review identifies unresolved-replay proof retention: an earlier
+same-PID ordinary durable revision or exact death/receipt proof remains eligible
+when a later callback returns retryable/ambiguous. Withdraw both proof stores
+for the failed PID before checkpointing unaffected work. A callback bad_alloc
+must remain unresolved, with no proof, rather than create a corruption archive;
+execution or COMMIT may already have happened. Genuine runtime, custody and death
+failures retain their quarantine rules. Paired native tests are being prepared;
+this repair is not yet qualified. Ordinary SQL exception rollback and pool-lease
+cleanup are separate: current ordinary apply can escape with a transaction or
+lease still held, including allocation during ambiguous-commit readback.
 
 Publication ACK must retain the original operation until a complete affected-PID
 save census is clean, or every unresolved frame has a legitimate durable

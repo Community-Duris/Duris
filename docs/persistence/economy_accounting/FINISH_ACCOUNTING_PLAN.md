@@ -649,7 +649,19 @@ SQL-header and flatfile mode. Both strict builds and unchanged inactive SQL
 save/death/crash/copyover plus flatfile creation/save/reload journeys pass. Final
 declaration c1b7d3fc and October3 review retain exact pins and failed setup attempts.
 The new protocol uses a controlled repository callback; normal pipeline callbacks
-do not return deferral. Startup/registration, selective replay, checkpoint-owned
-permits, affected-PID hydration and original publication release remain pending.
+do not return deferral. Selective journal replay now has bounded paired native
+qualification:16 before-source semantic failures and three controls become19
+passes per backend mode. Held PIDs retain exact frames and lose earlier proofs;
+unrelated PIDs checkpoint, and replay_deferred retains the global load fence.
+Preapply collection allocation failure also refuses without losing frames. Both
+strict production builds and unchanged inactive SQL save/death/crash/copyover
+plus flatfile creation/save/coldrestart/relog journeys pass. Final declaration
+5b86b898 and October3 review pin source, artifact and owned-teardown evidence.
+Startup/registration, checkpoint-owned permits, affected-PID hydration, retained
+wakes, independent ACK/checkpoint fencing and original publication release remain
+pending. A per-pass marker does not establish a resident or cold-restart hold.
 Existing admission/retry/promotion/result-queue allocation gaps are separate work.
+Separate unresolved callback proof withdrawal and bad_alloc classification also
+remain unqualified; ordinary SQL transaction/pool-lease exception cleanup is
+distinct from the journal repair. See Plan1 and October3 review for exact scope.
 This does not authorize ordinary-drop wiring, active accounting or gate promotion.

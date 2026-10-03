@@ -1973,3 +1973,80 @@ full R1-R8 remain open. Inventory remains868 routes/2817 occurrences/2758 unique
 sites/zero unmapped, coverage_complete=false and release=BLOCKED. The refreshed
 remote is6841487786f1f17be3685c53a42ea4860c0909ae; publication still awaits local
 integration authorization under the retained no-merge restriction.
+
+### Selective journal deferral with exact-frame preservation
+
+Journal replay treated the worker's new deferred outcome as a terminal failure.
+It now appends replay_deferred result10 and retains every original frame for a
+held PID, skipping its later callbacks and removing both earlier ordinary
+revision proofs and exact death/quest/spell/craft proofs from that pass. Sorted
+PID traversal uses an allocation-free scalar marker; unrelated PIDs continue
+and checkpoint. A real checkpoint error takes precedence over deferral. The
+preapply collection also catches allocation failure before invoking any callback
+or checkpoint. Normal production callbacks still do not return deferred, and
+the existing result==ok global replay/load gate refuses result10.
+
+The identical final19-case sanitizer owner links actual journal/codec/observability
+with controlled repository application. Before source has16 semantic RED cases
+and three unchanged failure controls PASS. After source passes all19 cases in
+SQL-header and flatfile modes. Both contain60 injected scan/collection allocation
+failures, reopen/retry, then uninjected success. Before ordinals0-49 safely refuse
+and recover; ordinal50 escapes collection. Other cases cover prior durable99 and
+exact operation/death proofs, duplicate frame IDs, multiple held players, real
+concurrent append, mixed retry/ambiguity/terminal/runtime failures, real pre-rename
+fdatasync failure and post-rename directory-fsync repair with an unrelated exact
+quest ACK. Raw retained headers, timestamps, IDs, payload and CRC stay exact.
+
+Attempt1 omitted the RENT_DEATH-owning core/files.h include and failed fixture
+compilation; it is not semantic RED. Attempt2 compiled but its allocation oracle
+misread the existing scan failure's global safe refusal as PID corruption; that
+run did not reach the escaping collection allocation. Final attempt3 inspects
+actual PID/archive/policy diagnostics, preserves all bytes, and actually reopens
+before retry. Both earlier attempts remain pinned separately. Original owner
+budgets remain300-second compilation and120-second aggregate execution. Final
+before compile/runtime29.218/3.204 seconds; after SQL29.307/3.253; flat29.178/3.845.
+Supplied wrong-SHA/backend/source guards pass in both after modes.
+
+Component declaration `tmp/journal-deferral-qualified-artifact.local.json`,
+SHA-256005585718299b20e19fdf46770dde91340550edaa2b6e57514d1592a604d3f67,
+pins the unchanged19-case owner,520 production/header inputs plus two owners,
+binary/log/result metadata and all1232 production inputs. SQL-header binary
+88a4e5cd9365eab5efb79eab51f7d73179bedbb16ce17e8b90506c56cd4691f9;
+flatfiledc7cfda2d063ae288b4764632dd9c80ac8c3f49732b455085558fe954744f9a9.
+The component makes no SQL connection and does not establish database effects.
+
+Both strict production builds pass original600-second budgets with-j2 and all
+1232 native source identities unchanged. SQL completes in111 seconds including
+the original pfile-only object target, with50 observed changed-header consumers;
+flatfile96 seconds/49 consumers. SQL production binary
+e6f166b6800ed64eaf58d3182fb2ceac36a4d18526c6f6705b035a5b9fa4f4b9;
+flatfileb338612a985d6618dd1921371f11434293163432c4bdbceff7ea20839c2c172d.
+Existing worker, pipeline, journal, quarantine, phase01 recovery, diagnostic,
+54 writer,2 evidence and7 root-harness owners pass.14 accounting validations and
+30 accounting tests also pass on this frozen source, recorded by the tool output
+(session18916/chunk197518), without a separate captured log. Actual inactive SQL
+elapsed/quiet/repeated saves, link loss, quit/restart, death/reload, crash recovery
+and live copyover pass on fresh disposable MariaDB and MySQL instances, followed
+by the maintained actual reconciliation/allocation and spell-receipt owners.
+Both owned schema/server teardowns and port-rebind checks pass. Actual flatfile
+creation/save/coldrestart/relog passes in131.804 seconds. These journeys exercise
+normal inactive callbacks, not restored-save deferral with actual SQL effects.
+
+Final nonmutating clang-format18 fixpoints, generated matrix and whitespace
+checks pass. Immutable `tmp/journal-deferral-final-milestone.local.json`, SHA-256
+5b86b898e006a32b6c9df94c48c00a5ccee050ce18a527db7d1df27a1818a9dd,
+reverifies1232 native/current source pins, all component artifacts/case logs,
+both strict build binaries/logs, gameplay/teardown, maintained owners and the
+unchanged false/BLOCKED matrix. The captured-tool-only14/30 and format evidence
+are labeled separately. This bounded journal prerequisite is solved locally;
+normal GitHub publication still awaits local history integration authorization.
+
+This remains a journal-only prerequisite. It does not establish a resident hold
+or permission to hydrate a deferred player. The durable critical owner must
+restore its gate before cold replay; a later wake must be retained. Startup
+census, checkpoint-spanning permits/generation recheck, independent worker ACK
+and public checkpoint fences, stale-frame disposition and original-publication
+ACK reservation remain unwired. Separate callback bad_alloc classification and
+proof withdrawal on unresolved retry/ambiguity, general postcallback allocation,
+SQL transaction/pool-lease cleanup and worker queue allocation gaps remain open.
+No route, R1-R8 or release gate is promoted; coverage_complete=false/release=BLOCKED.

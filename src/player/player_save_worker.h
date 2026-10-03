@@ -209,7 +209,8 @@ bool player_save_worker_pid_pending(int pid);
 // on allocation failure. Call outside pipeline/journal locks; repeated wakeups
 // cannot queue duplicate execution. A wake before parking returns false: its
 // owner must retain the wake and retry, rather than consume a one-shot event.
-// The normal pipeline does not use this yet; journal replay does not defer.
+// The normal pipeline does not use this yet. Journal replay has its own deferred
+// result; this wake schedules only the retained worker request.
 bool player_save_worker_resume_deferred(int pid) noexcept;
 player_save_worker_health player_save_worker_health_copy(void);
 void player_save_worker_reset_for_tests(void);
