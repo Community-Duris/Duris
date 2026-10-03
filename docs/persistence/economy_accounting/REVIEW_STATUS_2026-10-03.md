@@ -466,3 +466,49 @@ Transport integration LF-normalized evidence SHA-256:
 - tmp/transport-4180-network-journey.local.log: 36115407587f0087540f001bdff7edee83ed8d0d83463c7448c25d48caca8732
 - tmp/transport-4180-network-measurements.local.json: 8bb1f335a04058c0df5949f2c64c66657689d4241ff470ae0e9d49b3e2f44378
 - tmp/transport-4180-recovery.local.log: efb878a1e87419c902e0c9cbc59cbef497ca3e33ff1be8f786595fc272d576e0
+
+
+## Native SQL runner dependency and API repair
+
+Exact strict compilation reproduced two maintained-test failures: the currency
+runner's item link omitted current native dependencies/query wrapping, and the
+legacy PA coin harness duplicated inherited pool discard and called an obsolete
+accounting API. After fixing those, the PA runner also failed its current link
+closure. The item and PA commands now use current accounting/coordinator/
+player-recovery/quest dependencies; the null connection checks the actual
+ENOTCONN error API. Existing guarded targets, cleanup, compiler warnings and
+backend flags remain; the item driver matches its maintained 64 MiB stack.
+
+The exact repaired commands compile with GCC 13/C++20 strict warnings:
+item 113.250 seconds, PA 84.244 seconds, both zero diagnostics. Both Bash syntax
+checks, seven typed-coin and ten currency contracts pass. All 1,229 native
+source files match source4180/current bytes; manifest/tree hashes are retained.
+Frozen binaries: item e50bef0ead8a0db43d8d1bfd067e79cb02a8e9d3d5334121bcafea724c633cbb;
+PA 22547f9ac2f850bd61a1258fbf6489dd0f0684cc9541b8e9c63ce168ac35992b.
+
+Primary native execution passes both complete item and legacy PA coin matrices
+on actual disposable MySQL and MariaDB, with separate fresh family schemas,
+the currency runner's current bootstrap/immutable migrations, coin-schema
+corruption/upgrade checks and native verifiers. Docker is unavailable here;
+services were freshly provisioned on loopback with private datadirs and
+terminated after each engine. This is exact-binary native component execution,
+not a Docker driver execution, player publication journey or production pool
+lifecycle proof. Runtime replay/rollback/custody/craft/quest/quarantine checks
+retain their bounded fixture scope. Production source and inactive behavior
+are unchanged. The separate coin/item actual lost-COMMIT reply and ordinary
+drop payload/publication requirements remain open; full R1-R8 stays blocked.
+
+Runner milestone LF-normalized source/evidence SHA-256:
+
+- tests/async/run_currency_transaction_schema_mysql.sh: f41a4d97f11555f924b41be4d1806ed20a84d2ddc14af124e6d8678b648604db
+- tests/async/run_pa_coin_sql.sh: e3c53dd7876d2c305581c42218857f11da5c0b6e8852bdde7cbdd90360c48350
+- tests/async/pa_coin_sql_harness.cpp: 4a1d57e224bcaebfcfe1b16df125693f92bb635090eef986d4a7592fb6178372
+- tmp/embedded-item-red.local.log: af772f33a8e9614e93fac1977833cdd1f159ae9afcd901cc91a6fe19c3c42ef1
+- tmp/embedded-item-green.local.log: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+- tmp/pa-coin-red.local.log: b56693b8b0d51fde43f4cdde9a50f24c2afa37f5e652a1376345d9630ed661b0
+- tmp/pa-coin-green.local.log: 8daf31e1f7a093997dccd4e9e109cc964bf14f085d51a7312672a3198b35bead
+- tmp/pa-coin-complete-green.local.log: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+- tmp/currency-contract-green.local.log: 8e58acf5241e640766d986b592bbcd84af60a37fd6e739d205a6a6dcba113201
+- tmp/typed-coin-contract-green.local.log: 83166b089fbcb82fac63f22522fa6ae99bb5e46368cd35d756277fd463dd6346
+- tmp/native-source-pin.local.json: 93030a45182074517c56c00b18edaadc1d8e7e178b23cc1b29856536f35bd129
+- tmp/currency-runner-native.local.log: e4b24c0c08a3d5264e64765d37185a6dd3407b6d9f4e1cbdebe41007d52ad0db

@@ -444,3 +444,11 @@ accounting workloads, captured staging generation, complete writers/native audit
 and R1-R8 remain open. Plan 1 now distinguishes existing typed coordinator
 components from missing actual coin/item lost-COMMIT reply and ordinary live
 publication recovery proof. See latest review status for source/log hashes.
+
+
+The maintained currency/item and legacy PA native SQL runner drift is repaired:
+real strict RED links preceded current-closure/API GREEN, then exact binaries
+pass complete native item and coin matrices on both engines with source4180.
+This restores executable component qualification, not actual lost-COMMIT reply,
+production pool, ordinary drop payload/publication or player route completion.
+Those R1/R4/R8 issues and the broad/captured/workload gates remain open.

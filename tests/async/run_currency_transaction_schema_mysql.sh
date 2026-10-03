@@ -151,11 +151,13 @@ PLAYER_LOAD_DISPOSABLE_SCHEMA=1 GAME_ACCOUNT_NAME=coin_matrix_account GAME_ACCOU
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_collector_item_owner.sh"
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_item_ownership_schema.sh"
 export ITEM_TRANSFER_TEST_DB_NAME="$DB_NAME"
-g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
+g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/item_transfer_mysql_harness.cpp \
+    tests/async/item_extra_descr_codec_sql_escape_stub.cpp \
     src/persistence/critical_command.c src/world/epic_command.c src/economy/currency_command.c \
     src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c \
     src/item/economic_accounting_item_reference.c \
+    src/sql/item_extra_descr_codec.c \
     src/economy/auction_command.c src/economy/auction_repository.c \
     src/combat/combat_outcome_command.c src/combat/combat_outcome_repository.c \
     src/guild/artifact_guild_command.c src/guild/artifact_guild_repository.c \
@@ -167,12 +169,21 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/economy/coin_transfer_command.c src/player/player_snapshot_codec.c \
     src/economy/collector_command.c src/economy/collector_codec.c \
     src/economy/collector_policy.c src/economy/collector_repository.c \
+    src/economy/collector_accounting.c \
+    src/economy/shop_trade_command.c src/economy/shop_trade_accounting.c \
     src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
     src/persistence/player_death_restitution_command.c \
     src/persistence/player_death_restitution_repository.c \
+    src/player/player_snapshot_repository.c src/player/player_load_repository.c \
+    src/player/player_death_recovery_query.c src/player/player_death_conflict_repository.c \
+    src/player/player_save_journal.c \
+    src/player/player_quarantine_recovery.c \
+    src/player/player_load_topology.c src/persistence/persistence_observability.c \
     src/persistence/economic_accounting_repository.c \
     src/persistence/economic_sql_bank_transaction.c \
     src/persistence/economic_sql_item_transfer_transaction.c \
+    src/persistence/economic_sql_collector_transaction.c \
+    src/persistence/economic_sql_shop_trade_transaction.c \
     src/economy/economic_currency_adapter.c \
     src/economy/item_transfer_accounting.c \
     src/economy/coin_transfer_accounting.c \
@@ -180,6 +191,14 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/economy/economic_accounting_plan.c \
     src/economy/economic_accounting_intent.c src/economy/economic_command_admission.c \
     src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
+    src/persistence/quest_reward_obligation_repository.c \
     src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
-    "${MYSQL_LIBS[@]}" -lcrypto -lz -o "$ROOT/bin/tests/item_transfer_mysql_harness"
+    -Wl,--gc-sections -Wl,--wrap=mysql_real_query "${MYSQL_LIBS[@]}" -lcrypto -lz \
+    -o "$ROOT/bin/tests/item_transfer_mysql_harness"
+# The accounted lifecycle fixture retains many bounded item payloads in one
+# test frame. The usual 8 MiB shell stack can overflow before its SQL checks.
+if ! ulimit -s 65536; then
+    echo 'item transfer SQL harness requires a 64 MiB stack' >&2
+    exit 1
+fi
 "$ROOT/bin/tests/item_transfer_mysql_harness"
