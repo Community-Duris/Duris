@@ -512,3 +512,46 @@ Runner milestone LF-normalized source/evidence SHA-256:
 - tmp/typed-coin-contract-green.local.log: 83166b089fbcb82fac63f22522fa6ae99bb5e46368cd35d756277fd463dd6346
 - tmp/native-source-pin.local.json: 93030a45182074517c56c00b18edaadc1d8e7e178b23cc1b29856536f35bd129
 - tmp/currency-runner-native.local.log: e4b24c0c08a3d5264e64765d37185a6dd3407b6d9f4e1cbdebe41007d52ad0db
+
+
+## Native coin/item successful COMMIT reply-loss qualification
+
+Source review established the missing proof: earlier coin/item coordinator
+fixtures returned synthetic ambiguity only after repository success. The new
+shared client wrapper lets the actual server COMMIT succeed, conceals its reply
+and exposes error 2013 only for the selected pooled connection. It requires
+exactly one hidden COMMIT and one replacement of that connection. The real
+repository reconciles on a fresh session; the coordinator receives already_applied
+without synthetic ambiguity/retry. Item's pre/post-COMMIT SIGKILL hooks remain.
+
+Frozen source is 4180f74573c8a4cfe669c057c36f9c36dfc6d7fa: 1,229 archived files,
+zero mismatches. Strict GCC 13/C++20 coin and item builds produce zero diagnostics.
+Exact native binaries pass complete coin/item matrices on fresh disposable
+MySQL and MariaDB services. Original UID/revisions, denominations, accounting
+root/child/reference counts, same-ID changed-envelope refusal, retained journal
+shutdown/init replay, identical result, held publication, one ACK/checkpoint and
+empty second restart are checked. Actual engine instances and native binaries
+were executed; Docker runners were not available. Binary SHA-256:
+
+- coin: 7bc625930ba85b46bcee32514604b394883f0b790e23ecd14eefa0d0de65e2a0
+- item: 9a7fc64d5d7426671db2af2b8b081ff8eee1263abe9a2a112f4f4be255c69460
+
+Ten currency and seven typed-coin contracts, sanitized flatfile accounting
+refusal, maintained Bash syntax and whitespace checks pass. The shared fixture also passes the actual maintained bank journey on both
+engines under AddressSanitizer/UndefinedBehaviorSanitizer, including its native
+COMMIT reply-loss and historical receipt/rejection/rollback matrix. The inherited
+PA runner passes its exact current strict link with both query/error wrappers. The native pool
+interfaces here open fresh connections and ACK through a fixture; production
+pool lifecycle/contention, actual network loss and ordinary live publication
+recovery remain open. SQL room-payload implementation is separate WIP. Full
+R1-R8, captured-clone, complete coverage and measured accounting workloads
+remain open; accounting stays inactive and release BLOCKED.
+
+Reply-loss qualification LF-normalized evidence SHA-256:
+
+- tmp/real-commit-reply-build.local.log: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+- tmp/real-commit-reply-native.local.log: fab71b2c9064d65d6b2d5713deff04006fd1cca80f5de829721bf09d3a4e90fe
+- tmp/real-commit-reply-bank.local.log: 0b00193f6d95e02dead1c3f1b3ed1f3681fc939beeaede93746061655d6f1ab4
+- tmp/real-commit-reply-pa-build-current.local.log: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+- tmp/real-commit-reply-contracts-final.local.log: 45ef35aa4a90167bad88d868d7066f34a772d91922604168093addd23056f402
+- tmp/real-commit-reply-source-pin.local.log: a823ec37b37a89b6249b2db89641522c450a6709cffbf2785a28659b0c3131c3

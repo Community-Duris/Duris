@@ -452,3 +452,19 @@ pass complete native item and coin matrices on both engines with source4180.
 This restores executable component qualification, not actual lost-COMMIT reply,
 production pool, ordinary drop payload/publication or player route completion.
 Those R1/R4/R8 issues and the broad/captured/workload gates remain open.
+
+
+### October 3 actual SQL coin/item COMMIT reply-loss components
+
+The previous coordinator cases synthesized ambiguity after repository success.
+Their replacements hide exactly one successful native COMMIT reply, report the
+lost-client error, require one broken connection replacement, then reconcile
+through a fresh real session. Both MySQL and MariaDB pass the complete native
+coin/item matrices with original operation/result, custody/value/evidence counts,
+changed-envelope refusal, journal replay and one publication ACK/checkpoint.
+Native source is pinned to 4180f745 (1,229 files, zero mismatches); no production
+or inactive behavior changed. These fixture pool interfaces and manual ACKs do
+not qualify production pool lifecycle, actual network disconnection, ordinary
+live drop/give/pile publication or full R1/R4/R8 completion. The exact SQL room
+payload prerequisite remains implementation WIP; broad/captured/workload gates
+remain open. See the latest review status for hashes and additional checks.
