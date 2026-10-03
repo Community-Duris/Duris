@@ -130,6 +130,8 @@ void bind_shopkeeper(P_char keeper, int shop_nr)
 		keeper->only.npc->shopkeeper_shop_id = shop_nr;
 }
 void logit(int, const char *, ...) {}
+// Alchemist initialization is independent of the shopkeeper population fixture.
+void npc_alchemist_world_spawn(P_char) {}
 int real_mobile(int vnum)
 {
 	return vnum >= 100 && vnum <= 102 ? vnum - 100 : -1;
