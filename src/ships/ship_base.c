@@ -86,6 +86,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/world_activity.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -1559,6 +1560,7 @@ void clear_ship_layout(P_ship ship)
 				SHIP_ROOM_EXIT(ship, j, dir) = -1;
 			}
 			world[rroom].funct = NULL;
+			world_activity_room_exits_changed(rroom);
 		}
 		SHIP_ROOM_NUM(ship, j) = -1;
 	}
@@ -1648,6 +1650,7 @@ bool set_ship_physical_layout(P_ship ship)
 
 				world[rroom].dir_option[dir]->to_room = to_room;
 				world[rroom].dir_option[dir]->exit_info = 0;
+				world_activity_room_exits_changed(rroom);
 			}
 			else
 			{
@@ -1655,6 +1658,7 @@ bool set_ship_physical_layout(P_ship ship)
 				{
 					FREE(world[rroom].dir_option[dir]);
 					world[rroom].dir_option[dir] = NULL;
+					world_activity_room_exits_changed(rroom);
 				}
 			}
 		}

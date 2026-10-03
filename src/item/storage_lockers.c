@@ -13,6 +13,7 @@
 //
 
 #include "core/prototypes.h"
+#include "world/world_activity.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -437,7 +438,10 @@ static bool locker_handle_leave(P_char ch, StorageLocker *pLocker, int room, int
 	if (IS_TOWN_RAIDED(ch))
 	{
 		if (world[ch->in_room].dir_option[0])
+		{
 			world[ch->in_room].dir_option[0]->to_room = troom;
+			world_activity_room_exits_changed(ch->in_room);
+		}
 		else
 			logit(LOG_WIZ, "locker_exit_room missing while saving %s in room %d",
 			      GET_NAME(ch), ch->in_room);
@@ -3057,6 +3061,7 @@ static int create_new_locker(P_char ch, P_char locker)
 			if (world[realNum].dir_option[dir])
 				world[realNum].dir_option[dir]->to_room = -1;
 		}
+		world_activity_room_exits_changed(realNum);
 	}
 	else
 	{
