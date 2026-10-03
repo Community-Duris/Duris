@@ -128,7 +128,7 @@ def main() -> None:
         db.run(f"UPDATE item_current_owner SET parent_item_uid={parent_uid},root_item_uid=52602 WHERE item_uid=52601")
         refuse("invalid_topology")
         db.run("UPDATE item_current_owner SET parent_item_uid=NULL,root_item_uid=52601 WHERE item_uid=52601")
-        db.run("DELETE FROM player_items WHERE obj_uid BETWEEN 52701 AND 52731")
+        db.run("DELETE FROM player_items WHERE obj_uid BETWEEN 52701 AND 52731 ORDER BY id DESC")
         db.run("DELETE FROM item_current_owner WHERE item_uid BETWEEN 52701 AND 52731")
         journal = Path(os.environ["CRITICAL_COMMAND_JOURNAL_DIR"]) / "critical-command.journal"
         journal.write_bytes(b"CCJ1pending")
