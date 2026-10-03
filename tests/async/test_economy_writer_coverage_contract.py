@@ -407,7 +407,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
             "player.flatfile_baseline_projection": ("src/core/files.c", {1873, 1874, 1875, 1876, 1878, 1879, 1880, 1881}),
             "player.legacy_flatfile_load": ("src/core/files.c", {2431, 2432, 2433, 2434}),
             "recovery.pet_cash_discard": ("src/core/files.c", {4696, 4697, 4698, 4699, 4701, 4702, 4703, 4704}),
-            "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", {1465, 1991}),
+            "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", {1519, 2053}),
         }
         current = {(row["path"], row["line"], row["family"])
                    for row in self.census}
@@ -795,9 +795,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new other-command item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/cmd/actoth.c", 1347, "item_publication")],
+        self.assertEqual(owners[("src/cmd/actoth.c", 1348, "item_publication")],
                          {"item.forage_food_creation"})
-        self.assertEqual(owners[("src/cmd/actoth.c", 3969, "item_publication")],
+        self.assertEqual(owners[("src/cmd/actoth.c", 3970, "item_publication")],
                          {"item.legacy_steal_fallback"})
         self.assertEqual(self.routes["item.forage_doodle_probe"]["disposition"],
                          "non_writer_candidate")
