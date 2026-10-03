@@ -86,7 +86,9 @@ def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index
             # Explicitly synthetic PC-flagged corpse population for load cost;
             # real death/loot/publication is qualified by the combat journey.
             path_obj = data / f"{stem}.obj"
-            corpse = f"#{mob_vnum+100}\nactivitycorpse corpse~\na player corpse fixture~\nA player corpse fixture lies here.\n~\n~\n24 2 3 30 7 0 73728 0 0 0 0\n0 1 0 0 0 0 0 0\n200 0 100\n"
+            # ITEM_TAKE permits repeated ordinary O resets in the same room;
+            # a fixed object with the same prototype would be loaded only once.
+            corpse = f"#{mob_vnum+100}\nactivitycorpse corpse~\na player corpse fixture~\nA player corpse fixture lies here.\n~\n~\n24 2 3 30 7 0 73728 1 0 0 0\n0 1 0 0 0 0 0 0\n200 0 100\n"
             append_records(path_obj, corpse)
             resets += f"O 0 {mob_vnum+100} 100 {spawn_room} 100 0 0 0\n" * 100
         if full_world:
@@ -168,17 +170,29 @@ def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index
                 assert f"activityfighter{i+1} " in report.split("Fighting:", 1)[1], report
             print(f"20 real NPC combat pairs remain engaged after {stage}", flush=True)
 
+        def start_combat():
+            if scenario == "busy":
+                for i in range(0, 40, 2):
+                    client.send(f"force activityfighter{i} kill activityfighter{i+1}"); drain(client, .3)
+
+        def check_population(stage):
+            client.send("stat mob activitypredator")
+            report = client.expect("# in game:") + drain(client, .5)
+            count = re.search(r"# in game:\s*(\d+)", report)
+            assert count and int(count[1]) == population, report
+            print(f"{population} workload NPC instances verified after {stage}", flush=True)
+
         try:
             boot(); client = journey.MudClient(port); journey.create_character(client, expected_room=None if full_world else "The Regression Arena")
             client.send("save"); client.expect("Save complete for Taverek.")
             client.send("quit"); client.expect("ACCOUNT MENU", timeout=30); stop()
             journey.make_overlord(state, "Taverek")
             boot(); client = journey.reconnect_character(port, expected_room="Pos: standing >" if full_world else "The Regression Arena"); drain(client)
+            client.send("toggle paging"); client.expect("Paging mode off."); drain(client)
             if full_world:
                 client.send(f"goto {home}"); client.expect("The Regression Arena"); drain(client)
-            if scenario == "busy":
-                for i in range(0, 40, 2):
-                    client.send(f"force activityfighter{i} kill activityfighter{i+1}"); drain(client, .3)
+            start_combat()
+            check_population("fixture setup")
             status = (runtime / "logs/log/status").read_text(errors="replace")
             indexed = re.findall(r"WORLD ACTIVITY: enabled=1 ready=1 indexed_npcs=(\d+)", status)
             assert indexed and int(indexed[-1]) >= population, indexed
@@ -208,6 +222,7 @@ def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index
                         client = journey.reconnect_character(port, expected_room="Pos: standing >"); drain(client)
                     continue
                 # Let the previous cadence and warm-up analytics window drain.
+                print(f"CAPTURE PHASE: scenario={scenario} enabled={enabled} warmup=80 measured={seconds}", flush=True)
                 deadline = time.monotonic() + 80
                 while time.monotonic() < deadline:
                     if client: drain(client, 1)
@@ -295,14 +310,19 @@ def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index
             status = (runtime / "logs/log/status").read_text(errors="replace")
             matches = re.findall(r"WORLD ACTIVITY: enabled=1 ready=1 indexed_npcs=(\d+) players=(\d+) corpses=(\d+)", status)
             assert matches and int(matches[-1][0]) >= population and int(matches[-1][1]) == 1, matches
+            check_population("copyover reconstruction")
             check_runtime_index("copyover reconstruction")
-            check_combat("copyover reconstruction")
+            # Existing copyover links combat only for restored descriptors;
+            # independent NPC pairs are idle. Qualify fresh combat after recovery
+            # without changing that unrelated persistence behavior.
+            start_combat()
+            check_combat("fresh post-copyover combat")
             if runtime_index:
                 client.send(f"load mob {mob_vnum}"); drain(client, .5)
                 check_runtime_index("staff NPC creation")
                 client.send("purge activitypredator"); drain(client, .5)
                 check_runtime_index("extraction before deferred memory release")
-            mode = "population/reload smoke" if smoke else "matched sparse capture"
+            mode = "population/reload smoke" if smoke else f"matched {scenario} capture"
             print(f"real world activity server: {mode}, normal wandering callbacks, live disable/enable and copyover rebuild passed", flush=True)
         except Exception:
             failure = Path(output).parent / f"activity-failure-{scenario}-{time.time_ns()}"
@@ -328,5 +348,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if not args.smoke and args.seconds < 160:
         parser.error("capture at least 160 seconds for a complete steady-state window")
+    journey.build_inspector()
     run(args.binary.resolve(), args.output, population=args.population, seconds=args.seconds,
         smoke=args.smoke, runtime_index=args.runtime_index, scenario=args.scenario, full_world=args.full_world)
