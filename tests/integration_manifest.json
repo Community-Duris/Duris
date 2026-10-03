@@ -1030,11 +1030,13 @@
         "PersistenceRecoveryIntegration.test_first_player_snapshot_recovers_from_wal_without_persisted_baseline",
         "PersistenceRecoveryIntegration.test_corrupt_wal_is_refused_and_unreplayable_player_is_quarantined",
         "PersistenceRecoveryIntegration.test_valid_manifest_with_corrupt_lazy_catalog_never_qualifies",
-        "PersistenceRecoveryIntegration.test_mariadb_full_dump_schema_history_values_and_isolated_service_boot"
+        "PersistenceRecoveryIntegration.test_mariadb_full_dump_schema_history_values_and_isolated_service_boot",
+        "PersistenceRecoveryIntegration.test_mysql_full_dump_schema_history_values_and_isolated_service_boot"
       ],
       "arguments": [],
       "environment": {
-        "DURIS_RUN_BACKUP_INTEGRATION": "1"
+        "DURIS_RUN_BACKUP_INTEGRATION": "1",
+        "DURIS_RUN_MYSQL_BACKUP_INTEGRATION": "1"
       },
       "timeout_seconds": 1800,
       "covers": [
@@ -1749,6 +1751,39 @@
         "test_help_import_atomic.py"
       ],
       "required_markers": []
+    },
+    {
+      "id": "persistence_doctor",
+      "path": "tests/async/test_persistence_doctor.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "DoctorTest.test_native_sql_graph_and_unchanged_authority",
+        "DoctorTest.test_recovery_requires_original_proof",
+        "DoctorTest.test_history_loss_is_explicit",
+        "DoctorTest.test_large_cycle_and_duplicate_equipment",
+        "DoctorTest.test_graph_findings_and_valid_inline_coins",
+        "DoctorTest.test_one_consistent_read_without_writes_or_payload_prose",
+        "DoctorTest.test_explicit_port_and_redacted_sql_failure",
+        "DoctorTest.test_remote_capture_verifies_tls_for_mysql_and_mariadb",
+        "DoctorTest.test_remote_capture_refuses_missing_tls_ca_or_client_support",
+        "DoctorTest.test_owner_only_files_no_overwrite_and_cli"
+      ],
+      "arguments": [],
+      "environment": {
+        "PERSISTENCE_DIAGNOSTICS_MYSQL_TEST": "1"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_persistence_doctor.py"
+      ],
+      "required_markers": [],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
     }
   ]
 }
