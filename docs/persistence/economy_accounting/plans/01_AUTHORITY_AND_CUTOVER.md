@@ -102,9 +102,29 @@ behavior and unsupported active refusals. Locker/bulk/pet/money/corpse/adoption
 and peer-give semantics remain separate routes. Source-established gaps are
 not yet an executed failing player journey.
 
-Coin callbacks also require separate review: current ACK ordering and replay's
-null callback do not prove pile publication survived restart. These are open
-R1/R2/R4/R8 requirements, not waived by the native SQL coordinator component fixtures.
+Coin retained publication has a concrete source-established retention defect:
+`currency_transaction.c::publish_coin` ACKs before the physical callback. A false
+callback reinserts the node, but the next ACK refuses the already-erased operation,
+so the physical callback cannot retry and its journal/fences are already gone.
+Restored item endpoints also have a null callback that currently defaults to
+successful publication. The existing restart owner test expects this unsafe
+ACK without materializing the room pile. These findings are not yet an executed
+new native failure reproduction. SQL wallet-root qualification still excludes
+item endpoints; preserve that safety boundary and all inactive schema-1 behavior.
+
+Repair physical verification/publication separately from post-ACK messages and
+bulk continuation. Keep explicit physical-ready/ACK-pending state and original
+operation busy/lifecycle ownership through durable ACK; ACK retries must not
+repeat physical effects. Failed or absent native proof retains the blocked entry,
+journal and fences even after hot retries stop. Wallet-only recovery remains a
+separate supported projection case. Restored piles need exact original UID,
+denominations, native object uniqueness, owner/root/parent and item/owner revision
+proof; transient placement known only through callback context remains held.
+Qualify physical failure then same-ID success, ACK failure after physical success,
+actorless/restarted missing proof, consume/update/create and conflict refusal,
+legitimate rejection, lifecycle retention and unchanged wallet-only/inactive
+behavior. These open R1/R2/R4/R8 requirements are not waived by the SQL component
+fixtures.
 
 
 ## October 3 replacement ownership repair
@@ -211,3 +231,19 @@ passes both SQL engines, including delayed save-journal replay and runtime-zero
 holds, and original-operation release needs no actor or allocation. These APIs
 are not yet called by the production replay/publication owners. Copyover and
 actual critical replay/ACK qualification remain open.
+
+
+## Retained ordinary-drop receipt proof
+
+Successful historical ordinary SQL-drop receipts now require the complete
+original canonical literal payload plus native ledger/reference agreement.
+Both engines qualify actual repository/pool corruption refusal, original
+coordinator fences and journal through retry exhaustion, exact repair/restart,
+stale REPEATABLE READ locking reads, and later native custody/season changes.
+The original 300-second native gate passes with the same tested executable;
+strict production backends and actual inactive creation/save/cold-relog pass.
+This is component qualification based on 3e828dc0e, not qualification of the
+incoming 5c3bc0957 or physical publication, replay-observer registration,
+ordinary-drop gameplay, copyover, or the full R1-R8 release gates. Those owners
+remain open. Preserve immutable historical proof and the current admission
+exclusions while completing them.

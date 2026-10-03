@@ -1206,3 +1206,90 @@ other writer families, flatfile parity and the final current-head integrated run
 remain open. Inventory stays 868 routes, 2,817 occurrences, 2,758 unique sites,
 zero unmapped; coverage_complete=false and release=BLOCKED. All R1-R8 acceptance
 gates remain required.
+
+
+## Successful ordinary-drop receipts require retained payload and native history
+
+Frozen published source `3e828dc0e` falsely accepts sixteen payload/native-ledger
+fault cases on both SQL engines. Each observation uses actual direct duplicate,
+independent cold-connection reconcile and production-pool duplicate paths;
+nineteen exact repairs per engine restore the original successful receipt.
+The three existing accounting-reference corruption controls correctly refuse.
+Before-evidence artifact `tmp/room-retained-receipt-red-observations.local.json`
+has SHA-256 2450b1fdc22dd5ece1f321f0e6751006b0a8b240c20bb73541a615044fcae3b2.
+
+Successful ordinary-drop retained verification now binds the immutable original
+operation's complete canonical literal payload and native ledger/reference rows
+to the command and decoded result. Metadata is locked and byte/count bounded
+before blobs are streamed; the blob pass uses the same current locking read,
+including under a stale REPEATABLE READ snapshot. The verifier preserves its
+transaction/session and reconnect prohibition, propagates SQL/allocation errors,
+and does not consult later custody or the current season. It neither reconstructs
+missing history nor changes legitimate rejected receipts. Missing/corrupt success
+proof remains retryable through existing repository error mapping, retaining
+original coordinator fences and durable journal work.
+
+Both fresh guarded MariaDB and MySQL matrices pass all nineteen fault refusals
+and exact repairs through the three real paths. Actual coordinator retry
+exhaustion retains the original operation, every key fence and zero publication
+ACK/checkpoints. Exact repair and restart of that same journal returns the
+original result; only the subsequent successful explicit component ACK permits a
+checkpoint. Persisted legitimate rejection remains unchanged without a room
+payload. The public helper passes a two-connection stale-snapshot repair check,
+and the original receipt remains valid after a real native UID transfer and
+season advance. Original full-payload source, rollback, actual COMMIT-reply loss,
+ACK and cold SQL connection assertions remain. Explicit fixture ACK is not a
+player's physical publication or production replay-observer proof.
+
+The immutable native candidate passes strict ASan/UBSan compilation under an
+explicitly supervised 600-second component budget in 300.416 seconds. The default
+runner budget remains 300 seconds. A separate single attempt with the original
+300-second limit passes in 287.557 seconds using the same 596 pinned inputs and
+flags, including the stale-read probe. Its executable is byte-identical to the
+both-engine-tested candidate below. The supervised evidence remains separately
+preserved rather than relabeled as the original-budget result. Fourteen native
+pre-SQL target-guard negatives pass for each before/candidate binary. Candidate
+binary: fc32b61b3fb65b270efed12ced60b98e3edac4ab303fe5dd0828c4a53e0510bb;
+before binary: c8d91fbfa975a8b61da3b8d1bb2470386dfc69b75721a9b99d7eb65c0abd7d9b.
+Supervised specialist declaration SHA-256:
+9e496d4ce6bdded4243a2bb4b2417c16a97a361a39b827a7dfb0f0b82108cf9a.
+
+Both corrected strict production backends pass with unchanged flags, -j2 and
+600-second per-build limits. Current flatfile actual inactive creation, kit,
+invitation/helper, hardcore, save, cold-restart and relog journeys pass in
+147.367 seconds with unchanged waits. ASan/UBSan bounded payload admission passes.
+The primary verifies 596 native raw inputs/current LF equality and all 1,232
+tracked src inputs against production (including redis_key_registry.def and two
+.gitignore inputs). Production SQL:
+ba781300e5c1c371e6652bc5408e019519d74af7ff5c69975a929e5bd1be062e;
+flatfile: cd36e10165fdcf96650f772c6e2e67a9465986d86b8c1dd2157b472e89660994.
+Primary supervised evidence `tmp/room-retained-receipt-supervised-primary-summary.local.json`
+has SHA-256 a1da3ddb4d8a21ac0d87506fe158fdcd38d332ee9bbf0a70b70e378f06a47403.
+The initial RED driver lacked archived migration/script support and stopped
+before services started; its log remains separate from supported dual-engine
+runs. An initial pure-test invocation omitted the linker wrapper's required
+TASK_LINKER_DIR, consuming its C++20 flag; the corrected unchanged invocation
+passes. The original setup output is retained in task tool evidence.
+
+One existing INSERT anchor shifts by one line after the new include; registry
+and reproducible matrix retain 868 routes/2,817 occurrences/2,758 unique sites
+and zero unmapped, without any route promotion. Coverage remains false and
+release BLOCKED. All R1-R8 gates, actual producer/replay/physical publication,
+copyover, complete current-head regression and measured workload remain open.
+The authority plan also records the independently reviewed coin ACK-before-
+physical-publication/null-replay/busy-retention defect as the next separate work.
+
+Final original-budget primary evidence
+`tmp/room-retained-receipt-final-primary-summary.local.json` has SHA-256
+3e8c5c070c3145d21319e4e9fcf09ea053be2f105f9e6b25acdfbe92730afc66.
+The final specialist declaration
+`tmp/sql-room-retained-final-qualified-declaration.local.json` has SHA-256
+b8ff1303c712deb9d6c9a8fc1f68c5fb055fa7ca4108ed0f3c8c8afebe2a235f.
+These source-specific results qualify the candidate based on published
+`3e828dc0e`; they do not qualify the newly fetched remote `5c3bc0957`.
+That remote adds Chaos committed-message and applied quest-XP feedback changes,
+including a common native header. Local history integration was rejected by
+automatic approval review because the user's retained instructions prohibit
+merging. The completed issue is committed locally; publication must preserve
+both histories and awaits a decision about local Git integration. No divergent
+push or alternate history rewrite has been attempted.

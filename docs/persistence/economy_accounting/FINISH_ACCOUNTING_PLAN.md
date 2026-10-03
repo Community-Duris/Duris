@@ -28,8 +28,20 @@ operation release is actor independent and allocation-free, but production
 critical replay/publication ACK callers remain unwired. Current strict inactive
 flatfile creation/save/restart/relog journeys pass; initial production build
 deadline failures and component fixture setup failures remain preserved. The
-October 3 review status pins this milestone and its limits. Complete ordinary-drop
-producer/replay/copyover, historical receipt proof and all R1-R8 gates remain open.
+October 3 review status pins this milestone and its limits.
+
+Successful historical ordinary-drop receipt verification now checks immutable
+full-literal payload and native ledger/reference proof. Both engines pass actual
+repository/pool corruption refusal, retained coordinator fences/journal through
+retry exhaustion, exact repair/restart and later native movement/season history.
+Strict production backends and current inactive creation journeys pass; the
+original 300-second native compile gate passes in 287.557 seconds with the
+same binary used for both-engine fault/recovery checks. These source-specific
+results exclude the newly fetched remote 5c3bc0957; local history integration
+is blocked by the retained no-merge instruction and automatic approval review.
+Complete ordinary-drop producer/replay/copyover and all R1-R8 gates remain open.
+The authority plan also records the concrete coin physical-publication/ACK
+ordering and null-replay retention defect for the next bounded repair.
 
 Independent reconciliation now checks every native item's parent edge even when
 lineage history replaces its epoch-local history or its opening origin is
