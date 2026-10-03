@@ -403,26 +403,21 @@ static void benchmark() {
     character_list = &characters[0];
     long long callback_us = 0, peak_callback_us = 0, peak_pulse_us = 0;
     long long callbacks = 0;
-    auto cpu_started = std::clock();
 #ifdef LEGACY_MAINTENANCE
-    for (int run = 0; run < 4*rounds; ++run) {
-        ne_event_tick = 20 + run*20; pulse = ne_event_tick % PULSES_IN_TICK;
-        after_events_call = false;
-        add_event(generic_char_event, 0, nullptr, nullptr, nullptr, 0, nullptr, 0);
-        auto begin = std::chrono::steady_clock::now();
-        ne_events(); nevent_analytics.pulses = 0;
-        auto us = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-begin).count();
-        callback_us += us; peak_callback_us = std::max(peak_callback_us, static_cast<long long>(us));
-        ++callbacks;
-    }
-    peak_pulse_us = peak_callback_us;
+    nevent_periodic_reset();
+    assert(nevent_periodic_register("generic-character-sweep", generic_char_event,
+        20 * WAIT_SEC, 5 * WAIT_SEC, nevent_periodic_policy::fixed_delay, true) ==
+        nevent_periodic_result::registered);
 #else
     character_maintenance_init();
-    // Measure a steady-state twenty-second window, after all phases have begun.
+#endif
+    // Both implementations warm through one complete body period, then start
+    // the same 200-second window with identical fuel and pending skill repairs.
     while (ne_event_tick < 160) { ne_events(); nevent_advance_tick(); }
     clear_metrics(); nevent_analytics_reset(ne_event_tick);
     for (int i = 0; i < 120; ++i) lamps[i].value[2] = 1000;
-    cpu_started = std::clock();
+    for (int i = 0; i < pc_count; ++i) pc_data[i].skills[FIRST_SKILL].learned = 80;
+    auto cpu_started = std::clock();
     for (int tick = 0; tick < 80*rounds; ++tick) {
         auto before = ne_event_sequence;
         auto begin = std::chrono::steady_clock::now();
@@ -433,7 +428,6 @@ static void benchmark() {
         nevent_analytics.pulses = 0; // Keep the measured window open across all rounds.
         nevent_advance_tick();
     }
-#endif
     auto process_cpu_us = static_cast<long long>((std::clock()-cpu_started) * (1000000.0 / CLOCKS_PER_SEC));
     if (!nevent_analytics.callbacks.empty())
         peak_callback_us = nevent_analytics.callbacks.begin()->second.max_us;
@@ -454,6 +448,12 @@ static void benchmark() {
 #endif
         nevent_analytics_enabled() ? "on" : "off", count, 20*rounds, list_visits, body_calls,
         phase_matches, callbacks, callback_us, process_cpu_us, peak_callback_us, peak_pulse_us);
+#ifdef LEGACY_MAINTENANCE
+    assert(callbacks == 4*rounds && list_visits == 4LL*rounds*count);
+    nevent_periodic_reset();
+#else
+    assert(callbacks == 4LL*rounds*npc_count + rounds*pc_count && list_visits == 0);
+#endif
     cancel_all_events(); character_list = nullptr; require_balanced(580);
 }
 int main(int argc, char **argv) {
@@ -475,6 +475,12 @@ maintenance = (SRC / "character_maintenance.c").read_text()
 if args.benchmark:
     base = base.replace("#define clock_gettime nevent_test_clock_gettime", "")
     base = base.replace("#undef clock_gettime", "")
+    # Include actual periodic admission, completion and rearming for the old
+    # sweep, rather than driving it manually on a different clock/dispatch path.
+    periodic_start = base.index("bool nevent_periodic_begin(")
+    periodic_end = base.index("struct panic_signal", periodic_start)
+    base = (base[:periodic_start] + '#include "world/nevent_periodic.c"\n\n' +
+            base[periodic_end:])
 
 output_root = ROOT / "bin/tests"
 output_root.mkdir(parents=True, exist_ok=True)
