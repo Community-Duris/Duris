@@ -268,7 +268,9 @@ def start_db_proxy() -> None:
     # The default Docker bridge does not provide container-name DNS. Resolve
     # the exact task-owned container rather than silently accepting a local
     # connection whose upstream cannot be reached.
-    target = docker("inspect", "--format", "{{.NetworkSettings.IPAddress}}", DB_CONTAINER).stdout.strip()
+    target = docker("inspect", "--format",
+                    '{{(index .NetworkSettings.Networks "bridge").IPAddress}}',
+                    DB_CONTAINER).stdout.strip()
     if not target or not re.fullmatch(r"[0-9]+(?:\.[0-9]+){3}", target):
         raise HarnessError("task-owned database has no bridge IPv4 address")
     code = f'''import socket, threading
