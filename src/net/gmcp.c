@@ -248,6 +248,8 @@ void gmcp_room_info(struct char_data *ch)
 		return;
 	if (!GMCP_ENABLED(ch))
 		return;
+	if (!world || ch->in_room < 0 || ch->in_room > top_of_world)
+		return;
 
 	room = &world[ch->in_room];
 	json = json_build_room_info(room, ch);
@@ -337,12 +339,13 @@ void gmcp_send_quest_map(struct char_data *ch, const char *map_buf)
 #define MAX_DIRTY_ROOMS 500
 static int dirty_rooms[MAX_DIRTY_ROOMS];
 static int dirty_room_count = 0;
+static bool dirty_rooms_overflow = false;
 
 void gmcp_mark_room_dirty(int room_number)
 {
 	int i;
 
-	if (room_number < 0)
+	if (!world || room_number < 0 || room_number > top_of_world || dirty_rooms_overflow)
 		return;
 
 	/* check if already marked */
@@ -357,6 +360,10 @@ void gmcp_mark_room_dirty(int room_number)
 	{
 		dirty_rooms[dirty_room_count++] = room_number;
 	}
+	else
+	{
+		dirty_rooms_overflow = true;
+	}
 }
 
 void gmcp_flush_dirty_rooms(void)
@@ -365,11 +372,35 @@ void gmcp_flush_dirty_rooms(void)
 	struct char_data *tch;
 	struct room_data *room;
 
+	if (!world)
+	{
+		dirty_room_count = 0;
+		dirty_rooms_overflow = false;
+		return;
+	}
+
+	if (dirty_rooms_overflow)
+	{
+		/* Refresh each playing character's current room once. The connection
+		 * limit bounds overflow work without growing the queue or scanning
+		 * every world room. Unchanged rooms may receive an extra snapshot. */
+		dirty_room_count = 0;
+		dirty_rooms_overflow = false;
+		for (struct descriptor_data *d = descriptor_list; d; d = d->next)
+		{
+			tch = d->character;
+			if (tch && STATE(d) == CON_PLAYING && !IS_NPC(tch) && tch->desc == d &&
+			    GMCP_ENABLED(tch))
+				gmcp_room_info(tch);
+		}
+		return;
+	}
+
 	for (i = 0; i < dirty_room_count; i++)
 	{
-		room = &world[dirty_rooms[i]];
-		if (!room)
+		if (dirty_rooms[i] < 0 || dirty_rooms[i] > top_of_world)
 			continue;
+		room = &world[dirty_rooms[i]];
 
 		/* send room.info to all players in this room */
 		for (tch = room->people; tch; tch = tch->next_in_room)
