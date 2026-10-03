@@ -396,3 +396,7 @@ holdings and do not qualify ship gameplay, issuance, claims or enrollment.
 Guilds' persisted denominations remain omitted and are the next established
 native-audit gap; outcome_revision is not their monetary revision. Full R7,
 writer/source completeness and all applicable R1-R8 gates remain open.
+
+The October 3 current launcher fixture now includes its real watchdog script
+and passes existing configuration/backup checks plus invalid-watchdog refusal.
+Its retained frozen-suite failure is not relabeled as a broad-suite pass.

@@ -243,3 +243,38 @@ Ship milestone local source/evidence SHA-256:
 - tmp/audit-ship-coffer-green.local.log: 15321b41ca8e657492e907546d6d6ee19b2c2132a5a07b5d17cc21bf8fb29955
 - tmp/audit-ship-coffer-final.local.log: 4d8f7fcaeda84243829d62bac38c526961716ebefc4e2fa6c6af5eb46330e188
 - tmp/audit-ship-coffer-cli.local.log: 15321b41ca8e657492e907546d6d6ee19b2c2132a5a07b5d17cc21bf8fb29955
+
+
+## Launcher fixture watchdog dependency repair
+
+The current launcher regression reproduced the frozen-suite failure: its
+isolated project omitted scripts/game_loop_watchdog.py even though cycle_mud.sh
+requires it for configuration validation. The fixture now copies the actual
+watchdog dependency and also proves NaN stall configuration refuses with status
+78. Existing port/configuration/secret/backup/database-independent checks pass.
+Production scripts and native source ce7550d6 are unchanged. This is focused
+fixture proof; the frozen broad failure remains retained and current-source
+broad/full-world/workload gates are open.
+
+- tmp/current-flatfile-launcher-baseline.local.log: 9fc0dfd0d8ecabcd4b6b671cf09680f18ef68000fba30f7e8e96ab75c22d4d5c
+- tmp/current-flatfile-launcher-green.local.log: 3ee7202c269659c76b32f0de39beaa5c53d1dbaae226eb258b5975da9a65bdda
+- tests/async/test_flatfile_launcher.py: 4c6bb06e6708df7e107095e8ead76b86bbb5c71355e7358d953cca4a505c3ec2
+
+
+## Incoming persistent-transport integration
+
+GitHub advanced to 4e6922b600ba56d4fe2ff77b4bcc9cbd495dd20c (PR 692)
+before the launcher milestone push. The unpublished launcher commit rebases
+normally; cache and spell-fixture WIP were preserved. The upstream launcher
+fixture now includes the same real watchdog dependency, so the duplicate copy
+was removed and this milestone contributes the invalid-setting regression.
+Integrated native source: 4180f74573c8a4cfe669c057c36f9c36dfc6d7fa.
+Prior native/gameplay/recovery evidence remains pinned to ce7550d6 and earlier
+sources. Fresh transport-inclusive builds, owner/copyover/gameplay/recovery,
+line anchors and current-source broad qualification remain pending. The running
+full-world cache candidate also remains at ce7550d6; no evidence is relabeled.
+
+The launcher fixture passes again on integrated native source 4180f745,
+including invalid-watchdog refusal, after the normal unpublished-commit rebase.
+- tmp/current-692-flatfile-launcher-green.local.log: 3ee7202c269659c76b32f0de39beaa5c53d1dbaae226eb258b5975da9a65bdda (LF-normalized)
+- tests/async/test_flatfile_launcher.py: d559d11eca23b804556f3a4107b37d638bd3464ec3818dfbcae1fd3ef474af9e (LF-normalized)
