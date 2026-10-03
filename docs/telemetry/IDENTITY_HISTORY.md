@@ -1,11 +1,11 @@
 # Reviewed identity history and observed effort
 
-The offline contract in `scripts/telemetry/identity_history.py` implements dated
+The identity contract in `scripts/telemetry/identity_history.py` implements dated
 reviewed account/controller associations and exact interval attribution for the
 accepted balance expansion. Native account lifetime/token preparation is implemented
-alongside that contract. Typed authenticated live capture is implemented;
-restricted association SQL registration, identity handoff and published report
-integration remain required.
+alongside that contract. Typed authenticated live capture, restricted SQL review
+registration and immutable generation identity reservations are implemented.
+Identity handoff and published effort/report integration remain required.
 This module does not query current account ownership or identify a person from a
 name, email, IP address or device. The authoritative delivery record is
 [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
@@ -36,14 +36,16 @@ it. Review time cannot supply a missing historical ownership boundary.
 Exact retries retain the same packet digest. A correction creates a new version
 and retains all previous association IDs; withdrawing a row is explicit, and an
 association ID cannot change its account token. Earlier validated versions remain
-unchanged. Future SQL registration must retain both versions and publish the
-chosen version with its report generation. It must not silently join historical
-reports to the current registry.
+unchanged. SQL registration retains both versions, and generation reservations
+pin an explicit chosen version and digest. The balance publisher must use that
+reservation when it publishes effort and reports. It must not silently join
+historical reports to the current registry.
 
 The validator checks the packet's types, scope, chronology and evidence shape.
 It does not authenticate a reviewer or establish that an arbitrary supplied token
-was issued by the server. The authenticated capture adapter and restricted review
-role must establish those authorities during integration.
+was issued by the server. Native capture establishes authenticated ownership;
+the restricted SQL registrar below establishes reviewer authority and issued
+token scope. A validated offline packet alone supplies neither authority.
 
 ## Ownership and clock boundaries
 
@@ -136,8 +138,9 @@ clock ambiguity, overlapping and sequential characters, independent presence,
 unknown-controller populations, configuration separation and bounds. These are
 offline executable semantics. Native lifetime/token allocation has its own SQL
 qualification below. Typed source capture and missing-identity gameplay adapters
-have focused native qualification below. Wire handoff and reviewed association/report
-publication require their remaining integration and real personal-server journeys.
+have focused native qualification below. SQL registration and generation reservations
+have their focused qualification below. Wire handoff and effort/report publication
+require their remaining integration and real personal-server journeys.
 
 ## Native account lifetime and scoped token preparation
 
@@ -211,9 +214,9 @@ TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_re
 TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --identity
 ```
 
-Durable preparation and typed authenticated capture are implemented. Controller
-proof/review registration, identity wire handoff, identity generation publication,
-character portfolios and their personal-local gameplay qualification remain required.
+Durable preparation, typed authenticated capture and restricted review registration
+are implemented. Identity wire handoff, effort/report publication, character
+portfolios and their personal-local gameplay qualification remain required.
 
 ## Authenticated ownership source observations
 
@@ -271,6 +274,126 @@ TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_reposi
 Definitions 1 and 2 validate and advance past ownership without projecting account
 or controller amounts. Reviewed incident publication version 1 retains its sealed
 families 1–8 contract. The identity report generation must integrate kind-9 source
-loss/incident coverage, reviewed controller registration and retained corrections,
+loss/incident coverage, the reserved reviewed version and retained corrections,
 identity handoff and exact effort/portfolio publication. Those requirements and
 the real personal-local gameplay gate remain in the accepted scope.
+
+## Authenticated reviewed association registration
+
+Migration `0058_telemetry_identity_review` adds a scoped reviewer authority table,
+an append-only reviewed registry and its dated associations, and immutable
+generation identity reservations. The migration does not provision reviewers or
+invent controller links. An owner approves a database principal and opaque reviewer
+token for an explicit environment/season. The registrar obtains `CURRENT_USER()`
+from the authenticated SQL connection and matches its binary principal and reviewer
+token against an enabled authority row. A shared row lock keeps that authority
+stable until the registration transaction completes. The packet cannot choose its
+authenticated principal. A copied reviewer token without the approved credential
+does not authorize registration.
+
+The maintained registrar performs these scope and reviewer checks. Its storage
+credential is trusted to use this entry point; MySQL table grants do not provide
+row-level isolation between seasons or independently apply the packet validator.
+Keep that credential private and provision it only for approved reviewers.
+
+Each newly registered version checks the server's UTC time against the supplied
+review time, validates its exact retained predecessor and digest, and verifies every
+account token against the native scoped issuance store. This includes withdrawn
+rows. The association table also has a scoped token foreign key. Registration
+does not read current account names, account ownership, lifetime bindings, IPs,
+emails or devices. Confirmed controller tokens represent the staff-reviewed
+association evidence; SQL authentication does not independently prove that every
+controller is a distinct human. Missing links remain unknown.
+
+The registry retains the authenticated SQL principal and server registration time
+as private authority evidence outside the canonical packet digest. Row count,
+canonical digest, enum/time boundaries, nonoverlap and retained association identity
+are revalidated before a version is retried or used. Corrections append a complete
+new version. They cannot remove an earlier association ID, change the account
+behind that ID, or overwrite a retained review. Exact old retries remain valid
+after a newer correction. Revoking a reviewer prevents new submissions, including
+retry submissions, while retained versions and reservations remain available.
+
+Header and association inserts share one bounded existing database transaction
+and advisory scope lock. At most 1,024 association rows are inserted in one bounded
+statement; packet size remains at most 1 MiB. An insert failure rolls back the
+header and all associations. A lost commit reply discards the ambiguous connection;
+retrying the same packet on a new connection reconciles the retained digest.
+
+Use distinct credentials with these minimum grants. Only an owner can provision or
+revoke authority rows. These are table/column permissions, not database-wide grants:
+
+| Role | Permissions |
+| --- | --- |
+| Review registrar | SELECT on `telemetry_identity_reviewer`; SELECT, INSERT on `telemetry_identity_registry` and `telemetry_identity_association`; SELECT only `environment_id`, `season_id`, `account_token` on `telemetry_account_token`. |
+| Balance rollup | SELECT on `telemetry_identity_registry` and `telemetry_identity_association`; SELECT, INSERT on `telemetry_generation_identity`. |
+| Report reader | SELECT on `telemetry_generation_identity`; its separately documented aggregate permissions. |
+| Native telemetry writer | Its existing raw writer permissions; no reviewed identity or private account stores. |
+
+The review credential has no UPDATE/DELETE permission on retained history or
+authority and cannot read the token's lifetime ID or its account-name mapping.
+The report credential cannot read reviewed associations, reviewer authority,
+raw telemetry or private token stores. Provision one SQL credential per approved
+reviewer when independent reviewer attribution is needed.
+
+Registration reads explicit `TELEMETRY_IDENTITY_REVIEW_DB_*` connection settings
+using the same restricted connector as the rollup worker. Passwords remain in the
+environment; command output includes only status, version, digest and count. Error
+output omits packets, tokens, principal names, SQL and connector diagnostics.
+
+```sh
+# Offline validation retains its preceding-file requirement.
+python3 scripts/telemetry/identity_history.py /private/identity-v2.json --previous /private/identity-v1.json
+# SQL registration loads and validates its predecessor from retained SQL history.
+python3 scripts/telemetry/identity_history.py /private/identity-v1.json --register
+python3 scripts/telemetry/identity_history.py /private/identity-v2.json --register
+```
+
+## Immutable generation identity reservations
+
+Before building a balance generation, the rollup reserves an explicit reviewed
+version and digest using `TELEMETRY_IDENTITY_ROLLUP_DB_*` credentials. The key is
+definition version, generation, environment and season. Identity reservations
+require definition 3 or later; definitions 1 and 2 keep their existing contracts.
+The CLI matches the packet digest against the actual registered version. An
+adapter can instead reserve explicit NULL identity when no reviewed version is
+available. That NULL reservation is also immutable; it cannot later acquire a
+mapping in the same generation. A new review requires a new generation.
+
+```sh
+python3 scripts/telemetry/identity_history.py /private/identity-v2.json --reserve-generation 1 --definition-version 3
+```
+
+`reserve_identity_generation()` pins the registered version, digest, review window,
+review time and association count. Its foreign key preserves the exact registered
+digest. Exact retries and lost commit replies reconcile the same reservation;
+changed identity under an existing generation key refuses. Later reviews and
+reviewer revocation leave earlier reservations intact. Report readers can obtain
+this metadata through bounded `read_generation_identity()` without seeing the
+association or reviewer evidence. No current/latest-registry join is required.
+
+A reservation reports `balance_report_published=false` and
+`complete_identity_coverage_implied=false`. It does not calculate or publish effort,
+count controllers, authorize causal claims, or establish source/incident completeness.
+The remaining balance generation must consume authenticated retained ownership
+facts, the reserved association version and kind-9 loss/incident coverage in its
+atomic published effort and portfolio reports. Identity wire handoff and the
+actual personal-local gameplay journeys remain required.
+
+The focused SQL qualification uses disposable MySQL 8.0.46 and MariaDB 10.11.14,
+including the complete immutable migration chain. It exercises absent, disabled,
+wrong-principal and wrong-token reviewers; unissued/wrong-season account tokens;
+future review dates; dated corrections and withdrawals; exact historical retries;
+unknown and conflicting reservations; corruption detection; rollback and lost
+commit replies; 1,024-row capacity and simultaneous retries; permission and SQL
+constraint negatives; guarded reruns and exact verifier drift. Real connection
+status proves that metadata reads release their transactions. Both engines also
+prove that restoring deliberate drift returns the exact fresh migrated schema
+fingerprint. These journeys and the command-line registration/reservation path
+passed against the final migration checksums. Run the qualification locally:
+
+```sh
+python3 tests/async/test_telemetry_identity_history.py
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --identity-review
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --identity-review
+```

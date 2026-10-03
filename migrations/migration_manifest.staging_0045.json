@@ -748,6 +748,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "6da0f3c861f1c8b49acfd982a314ed3a04267799a353942a061e8b1fa48327c5",
       "verify_checksum": "029ab78e7c3c54ceceb21f54f86a502393aa32e0008332e2574bd50381b1515c"
+    },
+    {
+      "id": "0058_telemetry_identity_review",
+      "sequence": 58,
+      "description": "Authenticate dated cross-account reviews and freeze generation identity versions",
+      "apply": "immutable/0058_telemetry_identity_review.sql",
+      "verify": "immutable/0058_telemetry_identity_review.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "c26852c2c100806fae5a857a446f4ab9edcb829e43154a13f0352f28f2a7a8f1",
+      "verify_checksum": "9b2aa9241bfa8d81e041e43370649088149e0ad447ef1de861035af1de02b4dc"
     }
   ]
 }

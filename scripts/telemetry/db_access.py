@@ -8,6 +8,7 @@ semantics remain dependency-free.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextlib import contextmanager
 import ipaddress
 import hashlib
 import os
@@ -18,9 +19,10 @@ import math
 from typing import Any, Callable, Mapping, Sequence
 
 try:
-    from . import incident, observation_semantics as observations
+    from . import incident, identity_history as identity, observation_semantics as observations
 except ImportError:
     import incident
+    import identity_history as identity
     import observation_semantics as observations
 
 try:  # Running as a package.
@@ -1523,6 +1525,141 @@ class PyMySQLRollupDatabase:
             lock_timeout_s=requested.lock_timeout_s,
         )
 
+    @contextmanager
+    def _identity_transaction(self, scope: tuple[int, int]):
+        """The review and generation reservation share one existing scope lock."""
+        bounds = self._publication_bounds(None)
+        acquired = False
+        self._active_page_deadline = self.clock() + float(bounds.max_runtime_s)
+        try:
+            self._ensure_connection()
+            self._prepare_transaction_budget(bounds)
+            self._acquire_advisory_lock(RollupTarget(1, 1, *scope), bounds.lock_timeout_s)
+            acquired = True
+            self._begin()
+            yield
+            self._commit()
+        except AmbiguousCommit:
+            # A new connection and an exact packet/key retry resolve a lost
+            # acknowledgement. Never continue on an ambiguous transaction socket.
+            self._drop_connection()
+            raise
+        except Exception:
+            self._rollback()
+            raise
+        finally:
+            if acquired:
+                self._release_advisory_lock()
+            self._clear_transaction_budget()
+            self._active_page_deadline = None
+
+    def _read_identity_registry(self, scope: tuple[int, int], version: int) -> identity.Registry | None:
+        metas, _, _ = self._execute("SELECT " + ",".join(identity.META_COLUMNS) +
+            " FROM telemetry_identity_registry FORCE INDEX(PRIMARY) WHERE environment_id=%s "
+            "AND season_id=%s AND registry_version=%s LIMIT 1", (*scope, version))
+        if not metas:
+            return None
+        rows, _, _ = self._execute("SELECT " + ",".join(identity.ASSOCIATION_COLUMNS) +
+            " FROM telemetry_identity_association FORCE INDEX(PRIMARY) WHERE environment_id=%s "
+            "AND season_id=%s AND registry_version=%s ORDER BY association_id LIMIT %s",
+            (*scope, version, identity.MAX_ASSOCIATIONS + 1))
+        registry = identity.registry_from_storage(metas[0], rows)
+        if (registry.environment_id, registry.season_id, registry.registry_version) != (*scope, version):
+            raise identity.IdentityError("stored_registry_scope_mismatch")
+        return registry
+
+    def register_identity_packet(self, packet: Mapping[str, Any]) -> Mapping[str, Any]:
+        """Append a packet authenticated by the SQL principal and issued tokens."""
+        current = identity.Registry.from_packet(packet)
+        scope = (current.environment_id, current.season_id)
+        with self._identity_transaction(scope):
+            principals, _, _ = self._execute("SELECT CURRENT_USER() AS principal, "
+                "CAST(UNIX_TIMESTAMP(UTC_TIMESTAMP(6))*1000000 AS SIGNED) AS registered_at")
+            principal = principals[0]["principal"]
+            authority, _, _ = self._execute("SELECT reviewer_token,enabled FROM telemetry_identity_reviewer "
+                "WHERE environment_id=%s AND season_id=%s AND database_principal=%s LIMIT 1 LOCK IN SHARE MODE",
+                (*scope, principal))
+            if (not authority or authority[0]["enabled"] != 1 or
+                identity._stored_digest(authority[0]["reviewer_token"], "reviewer_token") != current.reviewer_token):
+                raise identity.IdentityError("reviewer_not_authorized")
+            meta, rows = identity.storage_rows(current, principal, principals[0]["registered_at"])
+            exact = self._read_identity_registry(scope, current.registry_version)
+            if exact is not None:
+                identity.validate_successor(exact, current)
+                return {"status": "already_registered", "registry_version": current.registry_version,
+                        "packet_digest": current.packet_digest, "association_count": len(current.associations)}
+            latest, _, _ = self._execute("SELECT registry_version FROM telemetry_identity_registry "
+                "FORCE INDEX(PRIMARY) WHERE environment_id=%s AND season_id=%s "
+                "ORDER BY registry_version DESC LIMIT 1", scope)
+            previous = None if not latest else self._read_identity_registry(scope, latest[0]["registry_version"])
+            identity.validate_successor(previous, current)
+            tokens = sorted({row.account_token for row in current.associations})
+            if tokens:
+                issued, _, _ = self._execute("SELECT account_token FROM telemetry_account_token "
+                    "FORCE INDEX(PRIMARY) WHERE environment_id=%s AND season_id=%s AND account_token IN (" +
+                    ",".join(["%s"] * len(tokens)) + ") LIMIT %s", (*scope, *tokens, identity.MAX_ASSOCIATIONS + 1))
+                if {row["account_token"] for row in issued} != set(tokens):
+                    raise identity.IdentityError("account_token_not_issued_in_scope")
+            self._insert_review_rows("telemetry_identity_registry", identity.META_COLUMNS, (meta,))
+            full_rows = [dict(row, environment_id=scope[0], season_id=scope[1],
+                              registry_version=current.registry_version) for row in rows]
+            self._insert_review_rows("telemetry_identity_association",
+                ("environment_id", "season_id", "registry_version", *identity.ASSOCIATION_COLUMNS),
+                full_rows, max_rows=identity.MAX_ASSOCIATIONS)
+            return {"status": "registered", "registry_version": current.registry_version,
+                    "packet_digest": current.packet_digest, "association_count": len(rows)}
+
+    def reserve_identity_generation(self, scope: tuple[int, int, int, int], registry_version: int | None,
+                                    *, expected_digest: str | None = None) -> Mapping[str, Any]:
+        """Freeze identity metadata before building a new balance generation.
+
+        An explicit NULL reserves unknown identity. This does not publish a report
+        or infer that any supplied controller mapping covers the whole cohort.
+        """
+        identity.generation_scope(scope)
+        identity._integer(registry_version, "registry_version", nullable=True)
+        identity._digest(expected_digest, "expected_digest", nullable=True)
+        if registry_version is None and expected_digest is not None:
+            raise identity.IdentityError("unknown_registry_digest")
+        with self._identity_transaction(scope[2:]):
+            registry = None if registry_version is None else self._read_identity_registry(scope[2:], registry_version)
+            if registry_version is not None and registry is None:
+                raise identity.IdentityError("registry_not_registered")
+            if expected_digest is not None and expected_digest != registry.packet_digest:
+                raise identity.IdentityError("registry_version_conflict")
+            candidate = identity.generation_row(scope, registry)
+            existing, _, _ = self._execute("SELECT " + ",".join(identity.GENERATION_COLUMNS) +
+                " FROM telemetry_generation_identity WHERE " + SCOPE_WHERE + " LIMIT 1", scope)
+            if existing:
+                identity.public_generation(existing[0])
+                if any(existing[0][name] != candidate[name] for name in identity.GENERATION_COLUMNS):
+                    raise identity.IdentityError("generation_identity_conflict")
+                return identity.public_generation(existing[0])
+            self._insert_review_rows("telemetry_generation_identity", identity.GENERATION_COLUMNS, (candidate,))
+            return identity.public_generation(candidate)
+
+    def read_generation_identity(self, scope: tuple[int, int, int, int], *,
+                                 max_bytes: int = REPORT_BYTE_LIMIT_DEFAULT,
+                                 max_runtime_s: float = REPORT_RUNTIME_DEFAULT_S) -> Mapping[str, Any] | None:
+        identity.generation_scope(scope)
+        self._prepare_report_budget(max_runtime_s, max_bytes, reserve_sentinel=False)
+        try:
+            rows, _, _ = self._execute("SELECT " + ",".join(identity.GENERATION_COLUMNS) +
+                " FROM telemetry_generation_identity WHERE " + SCOPE_WHERE + " LIMIT 1", scope)
+            result = None if not rows else identity.public_generation(rows[0])
+            if result is not None and _report_rows_bytes((result,)) > max_bytes:
+                raise BoundsExceeded("generation identity exceeds report byte budget")
+            self._check_deadline()
+            return result
+        except BoundsExceeded:
+            self._drop_connection()
+            raise
+        finally:
+            # The connector uses autocommit=False. Even this single SELECT
+            # retains metadata locks unless its read transaction is released.
+            self._rollback()
+            self._clear_transaction_budget()
+
     def register_incident_packet(self, packet: Mapping[str, Any]) -> Mapping[str, Any]:
         """Append one complete reviewed scope inventory with SELECT/INSERT only.
 
@@ -1598,9 +1735,9 @@ class PyMySQLRollupDatabase:
                     (int(fact["environment_id"]), int(fact["season_id"])) != scope or
                     occurrence != row["verified_occurrence_utc_usec"]):
                     raise incident.IncidentError("postfix_fact_mismatch")
-            self._insert_incident_rows("telemetry_incident_registry", incident.META_COLUMNS, (meta,))
+            self._insert_review_rows("telemetry_incident_registry", incident.META_COLUMNS, (meta,))
             full_rows = [dict(row, environment_id=scope[0], season_id=scope[1], registry_version=version) for row in rows]
-            self._insert_incident_rows("telemetry_incident", ("environment_id", "season_id", "registry_version", *incident.INCIDENT_COLUMNS), full_rows)
+            self._insert_review_rows("telemetry_incident", ("environment_id", "season_id", "registry_version", *incident.INCIDENT_COLUMNS), full_rows)
             self._commit()
             return {"status": "registered", "registry_version": version, "incident_count": len(rows)}
         except Exception:
@@ -1612,13 +1749,14 @@ class PyMySQLRollupDatabase:
             self._clear_transaction_budget()
             self._active_page_deadline = None
 
-    def _insert_incident_rows(self, table: str, columns: Sequence[str], rows: Sequence[Mapping[str, Any]]) -> None:
+    def _insert_review_rows(self, table: str, columns: Sequence[str], rows: Sequence[Mapping[str, Any]], *,
+                            max_rows: int = incident.MAX_INCIDENTS) -> None:
         # All callers pass repository table/column constants. One bounded
-        # multi-value statement avoids a transaction statement per incident.
+        # multi-value statement avoids a transaction statement per reviewed row.
         if not rows:
             return
-        if len(rows) > incident.MAX_INCIDENTS:
-            raise incident.IncidentError("incident_capacity")
+        if len(rows) > max_rows:
+            raise BoundsExceeded("reviewed row capacity exceeded")
         value = "(" + ",".join(["%s"] * len(columns)) + ")"
         self._execute("INSERT INTO " + table + " (" + ",".join(columns) + ") VALUES " +
                       ",".join([value] * len(rows)),
@@ -1654,9 +1792,9 @@ class PyMySQLRollupDatabase:
             row["occurrence_relation"] = incident.occurrence_relation(
                 row, *incident.occurrence_window(state))
         summary = incident.publication_summary(target.scope_tuple, meta, rows)
-        self._insert_incident_rows("telemetry_rollup_incident_coverage", incident.PUBLICATION_COLUMNS, (summary,))
+        self._insert_review_rows("telemetry_rollup_incident_coverage", incident.PUBLICATION_COLUMNS, (summary,))
         projected = [dict(row, **dict(zip(("definition_version", "generation", "environment_id", "season_id"), target.scope_tuple))) for row in rows]
-        self._insert_incident_rows("telemetry_rollup_incident", ("definition_version", "generation", "environment_id", "season_id", *incident.INCIDENT_COLUMNS, "occurrence_relation"), projected)
+        self._insert_review_rows("telemetry_rollup_incident", ("definition_version", "generation", "environment_id", "season_id", *incident.INCIDENT_COLUMNS, "occurrence_relation"), projected)
 
     def _read_incident_coverage(self, target: RollupTarget, state: Mapping[str, Any] | None = None,
                               *, max_bytes: int = REPORT_BYTE_LIMIT_DEFAULT) -> Mapping[str, Any]:

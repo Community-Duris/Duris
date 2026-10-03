@@ -8733,6 +8733,129 @@
       "dependencies": [
         "database:telemetry_account_lifetime"
       ]
+    },
+    {
+      "id": "database:telemetry_identity_reviewer",
+      "kind": "database_table",
+      "locator": "telemetry_identity_reviewer",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_reviewed_account_controller_association_or_generation_identity",
+      "technical_purpose": "Restricted authenticated reviewed identity histories and immutable generation identity reservations; no automatic balance change",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:telemetry_identity_registry",
+      "kind": "database_table",
+      "locator": "telemetry_identity_registry",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_reviewed_account_controller_association_or_generation_identity",
+      "technical_purpose": "Restricted authenticated reviewed identity histories and immutable generation identity reservations; no automatic balance change",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_identity_reviewer"
+      ]
+    },
+    {
+      "id": "database:telemetry_identity_association",
+      "kind": "database_table",
+      "locator": "telemetry_identity_association",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_reviewed_account_controller_association_or_generation_identity",
+      "technical_purpose": "Restricted authenticated reviewed identity histories and immutable generation identity reservations; no automatic balance change",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_identity_registry",
+        "database:telemetry_account_token"
+      ]
+    },
+    {
+      "id": "database:telemetry_generation_identity",
+      "kind": "database_table",
+      "locator": "telemetry_generation_identity",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_reviewed_account_controller_association_or_generation_identity",
+      "technical_purpose": "Restricted authenticated reviewed identity histories and immutable generation identity reservations; no automatic balance change",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_identity_registry"
+      ]
     }
   ]
 }

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Dated reviewed identity and exact observed effort, without identity inference.
 
-This offline contract does not collect authenticated account tokens or publish
-SQL reports. Ownership inputs must come from the future authenticated capture
-adapter, not current account tables. The bounded pure seams implement dated
+Ownership inputs come from authenticated capture, not current account tables.
+Restricted SQL registration authenticates a provisioned database reviewer and
+issued account tokens; generation reservations freeze reviewed versions. The
+bounded pure seams implement dated
 review/correction, same-producer ownership cuts, and independent account and
 confirmed-controller effort. Names, email, IP and devices are not inputs.
 """
@@ -47,6 +48,17 @@ PACKET_KEYS = frozenset({"registry_schema_version", "environment_id", "season_id
     "reviewer_token", "review_evidence_digest", "associations"})
 ASSOCIATION_KEYS = frozenset({"association_id", "account_token", "controller_token",
     "valid_from_utc_usec", "valid_through_utc_usec", "status", "provenance", "evidence_digest"})
+STATUS_CODES = {"confirmed": 1, "unknown": 2, "withdrawn": 3}
+PROVENANCE_CODES = {"account_owner_confirmation": 1, "staff_review": 2, "historical_review": 3}
+META_COLUMNS = ("environment_id", "season_id", "registry_version", "previous_registry_version",
+    "previous_packet_digest", "reviewed_from_utc_usec", "reviewed_through_utc_usec",
+    "reviewed_at_utc_usec", "reviewer_token", "review_evidence_digest", "packet_digest",
+    "association_count", "database_principal", "registered_at_utc_usec")
+ASSOCIATION_COLUMNS = ("association_id", "account_token", "controller_token",
+    "valid_from_utc_usec", "valid_through_utc_usec", "status", "provenance", "evidence_digest")
+GENERATION_COLUMNS = ("definition_version", "generation", "environment_id", "season_id",
+    "registry_version", "registry_digest", "reviewed_from_utc_usec", "reviewed_through_utc_usec",
+    "reviewed_at_utc_usec", "association_count")
 
 
 class IdentityError(ValueError):
@@ -75,6 +87,14 @@ def _digest(value: Any, name: str, *, nullable: bool = False) -> str | None:
     if type(value) is not str or not re.fullmatch("[0-9a-f]{64}", value) or value == "0" * 64:
         raise IdentityError("invalid_" + name)
     return value
+
+
+def _stored_digest(value: Any, name: str, *, nullable: bool = False) -> str | None:
+    if nullable and value is None:
+        return None
+    if type(value) is not bytes or len(value) != 32:
+        raise IdentityError("invalid_stored_" + name)
+    return _digest(value.hex(), name)
 
 
 def _keys(value: Any, keys: frozenset[str]) -> Mapping[str, Any]:
@@ -244,6 +264,108 @@ def load_registry(path: Path) -> Registry:
         return Registry.from_packet(load_evidence_packet(path, max_bytes=MAX_PACKET_BYTES))
     except IncidentError as error:
         raise IdentityError(str(error)) from None
+
+
+def storage_rows(registry: Registry, principal: str, registered_at: int) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    if type(registry) is not Registry or type(principal) is not str or not 0 < len(principal) <= 384:
+        raise IdentityError("invalid_registration_authority")
+    _utc(registered_at, "registered_at")
+    if registered_at < registry.reviewed_at_utc_usec:
+        raise IdentityError("unreviewed_future_registration")
+    meta = {name: getattr(registry, name) for name in META_COLUMNS[:-4]}
+    for name in ("previous_packet_digest", "reviewer_token", "review_evidence_digest"):
+        meta[name] = None if meta[name] is None else bytes.fromhex(meta[name])
+    meta.update(packet_digest=bytes.fromhex(registry.packet_digest),
+                association_count=len(registry.associations), database_principal=principal,
+                registered_at_utc_usec=registered_at)
+    rows = []
+    for association in sorted(registry.associations, key=lambda row: row.association_id):
+        row = association.input_dict()
+        row.update(status=STATUS_CODES[association.status], provenance=PROVENANCE_CODES[association.provenance],
+                   evidence_digest=bytes.fromhex(association.evidence_digest))
+        rows.append(row)
+    return meta, rows
+
+
+def registry_from_storage(meta: Mapping[str, Any], rows: Sequence[Mapping[str, Any]]) -> Registry:
+    """Verify retained SQL bytes before using or retrying a reviewed version."""
+    try:
+        if len(rows) > MAX_ASSOCIATIONS or type(meta["association_count"]) is not int or len(rows) != meta["association_count"]:
+            raise IdentityError("stored_registry_incomplete")
+        if type(meta["database_principal"]) is not str or not 0 < len(meta["database_principal"]) <= 384:
+            raise IdentityError("invalid_registration_authority")
+        reverse_status = {value: key for key, value in STATUS_CODES.items()}
+        reverse_provenance = {value: key for key, value in PROVENANCE_CODES.items()}
+        packet = {name: meta[name] for name in PACKET_KEYS - {"registry_schema_version", "associations"}}
+        for name in ("previous_packet_digest", "reviewer_token", "review_evidence_digest"):
+            packet[name] = _stored_digest(packet[name], name, nullable=name == "previous_packet_digest")
+        associations = []
+        for source in rows:
+            row = {name: source[name] for name in ASSOCIATION_COLUMNS}
+            if type(row["status"]) is not int or type(row["provenance"]) is not int:
+                raise IdentityError("invalid_stored_association_enum")
+            row.update(status=reverse_status[row["status"]], provenance=reverse_provenance[row["provenance"]],
+                       evidence_digest=_stored_digest(row["evidence_digest"], "evidence_digest"))
+            associations.append(row)
+        packet.update(registry_schema_version=REGISTRY_SCHEMA_VERSION, associations=associations)
+        registry = Registry.from_packet(packet)
+        _utc(meta["registered_at_utc_usec"], "registered_at")
+        if meta["registered_at_utc_usec"] < registry.reviewed_at_utc_usec:
+            raise IdentityError("unreviewed_future_registration")
+        if _stored_digest(meta["packet_digest"], "packet_digest") != registry.packet_digest:
+            raise IdentityError("stored_registry_digest_mismatch")
+        return registry
+    except (KeyError, TypeError, ValueError, OverflowError) as error:
+        if isinstance(error, IdentityError):
+            raise
+        raise IdentityError("invalid_stored_registry") from None
+
+
+def generation_scope(scope: Any) -> tuple[int, int, int, int]:
+    _identity_tuple(scope, 4, "generation_scope")
+    if not 3 <= scope[0] < (1 << 32):
+        raise IdentityError("identity_requires_balance_definition")
+    return scope
+
+
+def generation_row(scope: tuple[int, int, int, int], registry: Registry | None) -> dict[str, Any]:
+    generation_scope(scope)
+    if registry is not None and (registry.environment_id, registry.season_id) != scope[2:]:
+        raise IdentityError("registry_scope_mismatch")
+    return dict(zip(GENERATION_COLUMNS, (*scope,
+        None if registry is None else registry.registry_version,
+        None if registry is None else bytes.fromhex(registry.packet_digest),
+        None if registry is None else registry.reviewed_from_utc_usec,
+        None if registry is None else registry.reviewed_through_utc_usec,
+        None if registry is None else registry.reviewed_at_utc_usec,
+        0 if registry is None else len(registry.associations)), strict=True))
+
+
+def public_generation(row: Mapping[str, Any]) -> dict[str, Any]:
+    try:
+        generation_scope(tuple(row[name] for name in GENERATION_COLUMNS[:4]))
+        version = _integer(row["registry_version"], "registry_version", nullable=True)
+        count = row["association_count"]
+        if type(count) is not int or not 0 <= count <= MAX_ASSOCIATIONS:
+            raise IdentityError("invalid_generation_identity")
+        digest = _stored_digest(row["registry_digest"], "registry_digest", nullable=True)
+        if version is None:
+            if digest is not None or count or any(row[name] is not None for name in GENERATION_COLUMNS[6:9]):
+                raise IdentityError("invalid_generation_identity")
+        else:
+            _digest(digest, "registry_digest")
+            for name in GENERATION_COLUMNS[6:9]:
+                _utc(row[name], name)
+            if not row["reviewed_from_utc_usec"] < row["reviewed_through_utc_usec"] <= row["reviewed_at_utc_usec"]:
+                raise IdentityError("invalid_generation_identity")
+        return {**{name: row[name] for name in GENERATION_COLUMNS if name != "registry_digest"},
+            "registry_digest": digest, "registry_schema_version": REGISTRY_SCHEMA_VERSION,
+            "status": "reserved_reviewed_version" if version is not None else "reserved_unknown_identity",
+            "balance_report_published": False, "complete_identity_coverage_implied": False}
+    except (KeyError, TypeError, ValueError, OverflowError) as error:
+        if isinstance(error, IdentityError):
+            raise
+        raise IdentityError("invalid_generation_identity") from None
 
 
 @dataclass(frozen=True, slots=True)
@@ -533,12 +655,33 @@ def union_effort(slices: Sequence[AttributedSlice], *, category: str = "active")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Validate one reviewed identity packet offline; no database writes.")
+    parser = argparse.ArgumentParser(description="Validate, register, or reserve one dated reviewed identity version.")
     parser.add_argument("packet", type=Path)
     parser.add_argument("--previous", type=Path, help="Exact retained preceding version; required after version 1.")
+    commands = parser.add_mutually_exclusive_group()
+    commands.add_argument("--register", action="store_true", help="Register through restricted TELEMETRY_IDENTITY_REVIEW_DB_* credentials.")
+    commands.add_argument("--reserve-generation", type=int, help="Pin this exact registered version using TELEMETRY_IDENTITY_ROLLUP_DB_* credentials.")
+    parser.add_argument("--definition-version", type=int, default=3, help="Balance definition for a generation reservation; must be at least 3.")
     args = parser.parse_args(argv)
     try:
         current = load_registry(args.packet)
+        if args.register or args.reserve_generation is not None:
+            if args.previous is not None:
+                raise IdentityError("storage_uses_retained_previous_version")
+            try:
+                from .db_access import ConnectionSettings, PyMySQLConnectionFactory, PyMySQLRollupDatabase
+            except ImportError:
+                from db_access import ConnectionSettings, PyMySQLConnectionFactory, PyMySQLRollupDatabase
+            prefix = "TELEMETRY_IDENTITY_REVIEW_DB_" if args.register else "TELEMETRY_IDENTITY_ROLLUP_DB_"
+            database = PyMySQLRollupDatabase(PyMySQLConnectionFactory(ConnectionSettings.from_env(prefix)))
+            try:
+                result = database.register_identity_packet(current.input_dict()) if args.register else database.reserve_identity_generation(
+                    (args.definition_version, args.reserve_generation, current.environment_id, current.season_id),
+                    current.registry_version, expected_digest=current.packet_digest)
+                print(json.dumps(dict(result), sort_keys=True))
+            finally:
+                database.close()
+            return 0
         previous = load_registry(args.previous) if args.previous is not None else None
         status = validate_successor(previous, current)
         print(json.dumps({"status": status, "registry_schema_version": REGISTRY_SCHEMA_VERSION,
@@ -550,6 +693,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         # Paths or source contents may contain private information. CLI errors
         # publish only a stable classification; detailed evidence stays local.
         print(json.dumps({"status": "refused", "reason": "identity_packet_invalid_or_unavailable"}))
+        return 1
+    except Exception:
+        print(json.dumps({"status": "refused", "reason": "identity_storage_or_authority_failure"}))
         return 1
 
 
