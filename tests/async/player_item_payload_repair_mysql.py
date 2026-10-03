@@ -111,6 +111,7 @@ def main() -> None:
             ("UPDATE item_current_owner SET vnum=99 WHERE item_uid=52601", "UPDATE item_current_owner SET vnum=52601 WHERE item_uid=52601", "identity_conflict"),
             ("UPDATE item_current_owner SET parent_item_uid=52603 WHERE item_uid=52602", "UPDATE item_current_owner SET parent_item_uid=NULL WHERE item_uid=52602", "invalid_topology"),
             ("UPDATE item_current_owner SET parent_item_uid=52603,root_item_uid=52602 WHERE item_uid=52601", "UPDATE item_current_owner SET parent_item_uid=NULL,root_item_uid=52601 WHERE item_uid=52601", "invalid_topology"),
+            ("UPDATE player_items SET item_type=5 WHERE obj_uid=52602", "UPDATE player_items SET item_type=15 WHERE obj_uid=52602", "invalid_topology"),
             ("INSERT INTO player_items(pid,vnum,obj_uid) VALUES(44,52601,52601)", "DELETE FROM player_items WHERE obj_uid=52601", "competing_instance"),
             ("INSERT INTO saved_items(item_key,vnum,obj_uid) VALUES('synthetic-competitor',52601,52601)", "DELETE FROM saved_items WHERE obj_uid=52601", "competing_instance"),
             ("UPDATE item_current_owner SET coin_payload=UNHEX('00') WHERE item_uid=52601", "UPDATE item_current_owner SET coin_payload=NULL WHERE item_uid=52601", "currency_refused"),
@@ -185,6 +186,29 @@ def main() -> None:
             assert ["DURIS_REPAIR|0|0"] in result, result[-3:]
             assert_no_write(expected_projection)
             db.run(undo)
+        # Native state can exceed a scalar SQL column even when the production
+        # codec accepts it. A permissive server must never commit clipped data.
+        overflow_timer = bytearray.fromhex(raw)
+        timer_at = overflow_timer.index(struct.pack("<qqqqqq", -1, 123, 456, 789, 1011, 1213))
+        overflow_timer[timer_at:timer_at + 8] = struct.pack("<q", 2**31)
+        overflow_name = bytearray.fromhex(raw)
+        old_name = b"synthetic generated item"
+        name_at = overflow_name.index(old_name) - 4
+        assert overflow_name[name_at:name_at + 4] == struct.pack("<I", len(old_name))
+        long_name = b"x" * 512 + b" "  # trailing-space clipping warns even in strict mode
+        overflow_name[name_at:name_at + 4 + len(old_name)] = struct.pack("<I", len(long_name)) + long_name
+        for lossy_frame in (overflow_timer, overflow_name):
+            lossy_plan = plan_for(source={"format": repair.EVIDENCE_FORMAT, "snapshots_hex": [lossy_frame.hex()]})
+            assert lossy_plan["applyable"], (lossy_plan["classification"], lossy_plan["note"])
+            wait_for_quiescence()
+            try:
+                result = db.run("SET SESSION sql_mode='';\n" +
+                               repair.build_sql(api, db, lossy_plan, "synthetic-operator", "lossy SQL conversion test"))
+            except api.ToolError:
+                pass  # Strict-mode errors also disconnect and roll back.
+            else:
+                assert ["DURIS_REPAIR|0|0"] in result, result[-3:]
+            assert_no_write()
         # SQL failure after projection insertion rolls the complete transaction back.
         db.run("CREATE TRIGGER fail_repair BEFORE INSERT ON player_item_runtime_state FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='synthetic interruption'")
         try:
@@ -198,16 +222,31 @@ def main() -> None:
         wait_for_quiescence()
         sql = repair.build_sql(api, db, plan, "synthetic-operator", "client interruption test")
         cutoff = sql.index("INSERT INTO player_item_runtime_state")
-        client = subprocess.Popen([*db.base, db.database], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=db.env)
-        client.stdin.write((sql[:cutoff] + "\nSELECT SLEEP(30);\n").encode())
-        client.stdin.flush()
-        time.sleep(0.3)
-        client.kill()
-        client.wait()
+        progress = folder / "interrupted-client-output"
+        with progress.open("wb") as output:
+            client = subprocess.Popen([*db.base, "--unbuffered", db.database], stdin=subprocess.PIPE,
+                                      stdout=output, stderr=subprocess.DEVNULL, env=db.env)
+            try:
+                client.stdin.write((sql[:cutoff] +
+                    "\nSELECT CONCAT('REPAIR_INSERTED|',@repair_ok,'|',@repair_projection,'|',@repair_receipt);\n").encode())
+                client.stdin.flush()
+                # Keep stdin open so the client waits with an uncommitted
+                # transaction. Its flushed marker proves both inserts happened.
+                deadline = time.monotonic() + 10
+                while "REPAIR_INSERTED|1|1|1" not in progress.read_text():
+                    if client.poll() is not None or time.monotonic() >= deadline:
+                        raise AssertionError("client did not reach the uncommitted repair inserts")
+                    time.sleep(0.05)
+            finally:
+                if client.poll() is None:
+                    client.kill()
+                client.wait(timeout=5)
+                client.stdin.close()
         # Killing the client disconnects its SQL socket; wait for rollback to finish.
         for _ in range(50):
             if db.scalar("SELECT COUNT(*) FROM information_schema.processlist WHERE ID<>CONNECTION_ID()") == "0": break
             time.sleep(0.1)
+        wait_for_quiescence()
         assert_no_write()
         before_authority = db.run("SELECT item_uid,item_revision,owner_id,root_item_uid,parent_item_uid FROM item_current_owner ORDER BY item_uid")
 
