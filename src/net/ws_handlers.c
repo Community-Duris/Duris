@@ -1606,7 +1606,7 @@ void ws_cmd_game(struct descriptor_data *d, cJSON *data)
 
 	if (cmd && *cmd)
 	{
-		write_to_q(cmd, &d->input, 0);
+		queue_websocket_input(d, cmd);
 	}
 }
 
@@ -4154,7 +4154,7 @@ void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 
 	/* Unknown messages remain raw game commands for authenticated players. */
 	if (d && d->connected == CON_PLAYING)
-		write_to_q(cmd, &d->input, 0);
+		queue_websocket_input(d, cmd);
 }
 
 /* initialize websocket handlers */
