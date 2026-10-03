@@ -1016,15 +1016,21 @@ def main() -> int:
             if matched != "chunk accepted":
                 raise JourneyFailure(f"staff chunk {index} was not accepted")
         staff_client.send("restitution commit")
+        admission_states = (
+            "admitted but durability is not confirmed", "queued for journal durability",
+            "journal-uncertain",
+        )
         matched, commit_output = expect_response(
             staff_client,
-            ("Restitution submission accepted", "journal-uncertain",
-             "recipient must be offline", "pending save", "fence is unavailable",
-             "coordinator is unavailable", "not a canonical"),
+            (*admission_states, "refused:"),
             timeout=30,
         )
-        if matched not in ("Restitution submission accepted", "journal-uncertain"):
+        if matched not in admission_states:
             raise JourneyFailure(f"actual staff submission rejected: {commit_output[-1500:]}")
+        if any(part not in commit_output for part in (
+            plan["restitution_id_hex"], "delivery=not complete", "recipient fence=held",
+        )):
+            raise JourneyFailure(f"staff admission omitted identity/delivery/fence state: {commit_output[-1500:]}")
         evidence.append(f"actual in-game staff submission: verified ({matched})")
 
         fence_transcript = attempt_fenced_login(journey, RECIPIENT_ACCOUNT, RECIPIENT_NAME)
