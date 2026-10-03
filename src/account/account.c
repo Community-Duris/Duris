@@ -1,4 +1,5 @@
 #include "account/password_async.h"
+#include "account/account_async.h"
 /*************************************************************
  * account.c
  *************************************************************/
@@ -886,8 +887,39 @@ void select_accountname(P_desc d, char *arg)
 		}
 	}
 
+	account_async_cancel(d);
+	d->account->acct_name = check_and_clear(d->account->acct_name);
 	d->account->acct_name = str_dup(tmp_name);
 
+#ifndef __NO_MYSQL__
+	if (!account_async_start(
+		    d,
+		    [](P_desc completed, account_load_outcome outcome)
+		    {
+			    if (outcome == account_load_outcome::loaded)
+				    send_account_password_prompt(completed);
+			    else if (outcome == account_load_outcome::not_found)
+			    {
+				    verify_account_name(completed, NULL);
+				    STATE(completed) = CON_VERIFY_NEW_ACCT_NAME;
+			    }
+			    else
+			    {
+				    SEND_TO_Q(
+					    "There is an error with your account, please notify an immortal!\r\n",
+					    completed);
+				    statuslog(56, "&+RALERT&n: interactive account load failed");
+				    completed->account = free_account(completed->account);
+				    STATE(completed) = CON_FLUSH;
+			    }
+		    }))
+	{
+		SEND_TO_Q("Login is busy; please reconnect in a moment.\r\n", d);
+		d->account = free_account(d->account);
+		STATE(d) = CON_FLUSH;
+	}
+	return;
+#else
 	if (account_exists("Accounts", tmp_name))
 	{
 		if (read_account(d->account) == -1)
@@ -908,6 +940,7 @@ void select_accountname(P_desc d, char *arg)
 	verify_account_name(d, NULL);
 	STATE(d) = CON_VERIFY_NEW_ACCT_NAME;
 	return;
+#endif
 }
 
 void get_account_password(P_desc d, char *arg)
