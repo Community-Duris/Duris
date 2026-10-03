@@ -18,6 +18,7 @@
 #include "core/structs.h"
 #include "core/utils.h"
 #include "net/ttype.h"
+#include "net/transport.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -206,7 +207,7 @@ void check_cp437(P_desc d)
 	 * - everyone else: utf8 (modern default)
 	 */
 
-	if (d->sslses)
+	if (d->sslses || transport_descriptor_tls(d))
 		d->cp437 = 0;
 	else if (d->mtts_flags)
 		d->cp437 = !(d->mtts_flags & MTTS_UTF8);
