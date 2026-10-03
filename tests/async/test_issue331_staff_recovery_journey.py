@@ -251,7 +251,9 @@ def login_player(journey, account: str, character: str):
     journey.PASSWORD = PASSWORD
     journey.CHARACTER = character
     journey.EMAIL = f"{account.lower()}@invalid.example"
-    return journey.reconnect_character(GAME_PORT, expected_room="The Regression Arena")
+    return journey.reconnect_character(
+        GAME_PORT, expected_room="The Regression Arena", account=account, character=character,
+    )
 
 
 def mirror_artifact_legacy_projection(wrapper: Path, artifact_vnum: int) -> None:
@@ -997,14 +999,13 @@ def main() -> int:
         enable_sql_trace(wrapper)
 
         staff_client = login_player(journey, STAFF_ACCOUNT, STAFF_NAME)
+        save_and_wait(staff_client, wrapper, STAFF_NAME, staff_pid)
+        if sql_one(wrapper, f"SELECT level FROM player_data WHERE pid={staff_pid}") != "61":
+            raise JourneyFailure("actual staff login/save did not preserve its configured level")
+        evidence.append("distinct staff login and SQL-acknowledged identity/level: verified")
         lock_name, lock_marker = acquire_recipient_lock(recipient_pid)
         wait_for_lock(wrapper, lock_name)
         lock_held = True
-        expect_response(
-            staff_client,
-            ("Regression Arena",),
-            timeout=2,
-        ) if False else None
         staff_client.send("restitution begin")
         matched, _ = expect_response(staff_client, ("staging started",), timeout=30)
         if matched != "staging started":
