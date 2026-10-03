@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 44 &&
-				tracker.summary_for(7, 42).total == 2265,
+		require(catalog.story_mappings.size() == 45 &&
+				tracker.summary_for(7, 42).total == 2262,
 			"native story projection disagreed with the complete source audit");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -1575,6 +1575,138 @@ int main(int argc, char **argv)
 					std::string::npos &&
 				prepared_raven.progress_for_zone(7, 42, 590).completed == 1,
 			"one historical proof replaced five current coins or completed a favor");
+		const auto &barovia_collection = story_for("barovia", "bildraths-nine-trinkets");
+		const auto &barovia_brooch = story_for("barovia", "ashlyns-lost-companions");
+		const auto &barovia_letter = story_for("barovia", "kolyans-forged-letter");
+		const auto &barovia_plan = story_for("barovia", "hossas-ambush-plan");
+		const auto &barovia_heart = story_for("barovia", "ephons-gate-key");
+		const auto &barovia_daughter = story_for("barovia", "gertruda-and-mad-mary");
+		const auto &barovia_clue = story_for("barovia", "parriwimples-collection-clue");
+		const auto &barovia_map =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "barovia"; });
+		service supplied_barovia(catalog);
+		require(supplied_barovia.discover_zone(7, 42, 910, 91000, 100, "arrival") ==
+				result::applied,
+			"Barovia discovery fixture failed");
+		journal = supplied_barovia.render_journal(7, 42, 910, 10, 1, 101, false, false);
+		require(journal.find("] " + barovia_collection.title) == std::string::npos,
+			"unseen Bildrath exposed his journal row");
+		for (const auto &contact : barovia_map.contacts)
+			require(supplied_barovia.meet_npc(7, 42, contact.mob_vnum, 91000, 102) ==
+					result::applied,
+				"Barovia encounter fixture failed");
+		const auto barovia_section = [&](const auto &story)
+		{
+			const auto at = journal.find("] " + story.title + "\r\n");
+			require(at != std::string::npos, "Barovia journal row missing");
+			const auto next = journal.find("\r\n  [", at);
+			return journal.substr(at, next == std::string::npos ? next : next - at);
+		};
+		// Synthetic service receipts qualify projection, not unavailable paid gameplay.
+		for (const auto &trade : barovia_map.stories)
+			if (trade.category == "service")
+				record(supplied_barovia, trade.contracts.front(), trade.id.c_str(),
+				       910, 91000);
+		require(supplied_barovia.progress_for_zone(7, 42, 910).completed == 0 &&
+				supplied_barovia.progress_for_zone(7, 42, 910).total == 6,
+			"Barovia guidance services added achievements");
+		supplies.carried.clear();
+		supplies.equipped.clear();
+		supplies.carried[91042] = 9;
+		journal = supplied_barovia.render_journal(7, 42, 910, 10, 1, 121, false, false,
+							  &supplies);
+		require(barovia_section(barovia_collection)
+					.find("Next: " + barovia_collection.steps[2].text) !=
+				std::string::npos,
+			"nine identical trinkets replaced the exact nine-kind collection");
+		supplies.carried.clear();
+		for (const auto item : { 91015, 91018, 91026, 91027, 91042, 91043, 91044, 91046 })
+			supplies.carried[item] = 1;
+		supplies.equipped[24] = 91045;
+		journal = supplied_barovia.render_journal(7, 42, 910, 10, 1, 122, false, false,
+							  &supplies);
+		require(barovia_section(barovia_collection)
+					.find("Next: " + barovia_collection.steps[2].text) !=
+				std::string::npos,
+			"equipped hair pin satisfied the directly carried offering");
+		supplies.carried[91045] = 1;
+		supplies.carried.erase(91027);
+		supplies.equipped[21] = 91027;
+		journal = supplied_barovia.render_journal(7, 42, 910, 10, 1, 123, false, false,
+							  &supplies);
+		require(barovia_section(barovia_collection)
+					.find("Next: " + barovia_collection.steps[9].text) !=
+				std::string::npos,
+			"equipped ring replaced the carried collection kind");
+		supplies.carried[91027] = 1;
+		supplies.carried.erase(91026);
+		journal = supplied_barovia.render_journal(7, 42, 910, 10, 1, 124, false, false,
+							  &supplies);
+		require(barovia_section(barovia_collection)
+					.find("Next: " + barovia_collection.steps[8].text) !=
+				std::string::npos,
+			"missing physical electrum coin was satisfied by other trinkets or paid history");
+		for (const auto item : { 91026, 91021, 91022, 91038, 91036, 58412 })
+			supplies.carried[item] = 1;
+		const auto before_barovia_read = supplied_barovia.serialize_state();
+		journal = supplied_barovia.render_journal(7, 42, 910, 10, 1, 125, false, false,
+							  &supplies);
+		for (const auto *story : { &barovia_collection, &barovia_brooch, &barovia_letter,
+					   &barovia_plan, &barovia_heart, &barovia_daughter })
+			require(barovia_section(*story).find("Next: " + story->steps.back().text) !=
+					std::string::npos,
+				"supplied Barovia final required optional source, key, note, kill or escort history");
+		require(supplied_barovia.serialize_state() == before_barovia_read,
+			"Barovia readiness awarded personal source or campaign history");
+		require(barovia_section(barovia_letter).find("200,000 copper") !=
+					std::string::npos &&
+				barovia_section(barovia_letter)
+						.find("Turn-in currently unavailable:") ==
+					std::string::npos &&
+				barovia_section(barovia_clue)
+						.find("unavailable under active accounting") !=
+					std::string::npos,
+			"supported letter cash reward was confused with unsupported clue fee");
+		record(supplied_barovia, barovia_plan.contracts.front(), "barovia-supplied-plan",
+		       910, 91119);
+		require(supplied_barovia.progress_for_zone(7, 42, 910).completed == 1,
+			"ambush-plan delivery required or completed the first note");
+		for (const auto *story : { &barovia_brooch, &barovia_heart, &barovia_daughter,
+					   &barovia_collection, &barovia_letter })
+			record(supplied_barovia, story->contracts.front(), story->id.c_str(), 910,
+			       91000);
+		service restored_barovia(catalog);
+		require(restored_barovia.deserialize_state(supplied_barovia.serialize_state(),
+							   &error) &&
+				restored_barovia.progress_for_zone(7, 42, 910).completed == 6 &&
+				restored_barovia.progress_for_zone(7, 42, 910).total == 6,
+			"Barovia receipt recovery changed independent finals or counted services");
+		service prepared_barovia(catalog);
+		require(prepared_barovia.discover_zone(7, 42, 910, 91000, 100, "arrival") ==
+					result::applied &&
+				prepared_barovia.meet_npc(7, 42, 91011, 91119, 101) ==
+					result::applied,
+			"Barovia preparation fixture failed");
+		record(prepared_barovia, barovia_letter.steps[0].contracts.front(),
+		       "barovia-ireena-note", 910, 91134);
+		supplies.carried.clear();
+		supplies.equipped.clear();
+		journal = prepared_barovia.render_journal(7, 42, 910, 10, 1, 126, false, false,
+							  &supplies);
+		require(barovia_section(barovia_letter)
+						.find("Next: " + barovia_letter.steps[1].text) !=
+					std::string::npos &&
+				prepared_barovia.progress_for_zone(7, 42, 910).completed == 0,
+			"Ireena history replaced a spent first note or awarded Ismark completion");
+		record(prepared_barovia, barovia_letter.contracts.front(), "barovia-first-letter",
+		       910, 91119);
+		journal = prepared_barovia.render_journal(7, 42, 910, 10, 1, 127, false, false,
+							  &supplies);
+		require(barovia_section(barovia_plan).find("Next: " + barovia_plan.steps[2].text) !=
+					std::string::npos &&
+				prepared_barovia.progress_for_zone(7, 42, 910).completed == 1,
+			"letter briefing replaced the absent ambush plan or completed its independent quest");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

@@ -46,9 +46,10 @@ neither every branch nor every historical prerequisite.
 | 19 | Defense of Longhollow | [Comprehensive source dossier](zone-stories/DEFENSE_OF_LONGHOLLOW.md): fifteen Q/63 M, 100 rooms, 77 mobiles, 74 objects, one shop, 213 resets/all 150 grouped families; zero literal assignments, one computed epic teacher and shared execution reviewed | Revision 1: four stories/five requests, five clothing services/one empty exclusion, forty-one contacts/all sixty addressed families and six optional producer receipts; exact source/access/quantity/reward guidance | Active reset supply; three cap/quantity conflicts; four mixed payments and epic teaching; fixed powers versus prose; absent rescue/healing/siege/title outcomes; confirmed source/gift and all-stage history |
 | 20 | The Black Pearl | [Comprehensive source dossier](zone-stories/THE_BLACK_PEARL.md): 31 Q/QA and fourteen M, 84 rooms, 63 mobs, 98 objects, 391 resets/all 187 families, no local shops/literal specials; disabled ship and foreign keys/procedures/topology reviewed | Revision 1: two stories/twelve requests, seventeen services, 26 contacts/all topics and 25 optional checks; complete exact fragment/courier/hilt/skin/gem guidance | All campaign NPCs and entrance-key spirits held; missing invitation/sewer/scepter/chests; no reciprocal entry/disabled mobile ship; paid gadget and active generation; owned campaign discovery/reveal, replacement lineage and fixed party reward terms |
 | 21 | The Ravenloft Catacombs | [Comprehensive source dossier](zone-stories/THE_RAVENLOFT_CATACOMBS.md): 37 Q/QA and 162 M/MA, 400 rooms, 98 mobs, 327 objects, two shops, 1,457 resets/all 665 families; computed shared roles and bounded foreign sources/routes reviewed | Revision 1: twelve stories/thirteen requests/eight services, one five-artifact family, 25 contacts/all 135 addressed blocks and fourteen optional checks; exact five-coin roles and three distinct skull finales | Active sources/shopping; exact repeated-container parent; key/switch/travel/source evidence; stateful cards; narrated resurrection/forms/key promises and selected mechanism repair |
-| 22–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 22 | The Realm of Barovia | [Comprehensive source dossier](zone-stories/THE_REALM_OF_BAROVIA.md): nine exchanges/78 M blocks, 168 rooms, 57 mobs, 66 objects, 405 resets/all 194 families; shared roles, foreign keys/Gertruda and legacy combat/session policy reviewed | Revision 1: five stories/one request/three services, 24 contacts/all 41 addressed blocks and ten optional checks; exact collection, independent letters, heart and daughter routes | Active sources/access; quest-person lineage; ordered group combat/attempt bridge; foreign brittle gates; selected brooch/letter/orb/barricade/reveal policies |
+| 23–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is the Realm of Barovia, followed by the Lost Temple of Tikitzopl.
+The next area is the Lost Temple of Tikitzopl, followed by the Jade Empire.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -879,3 +880,58 @@ Validation for the Ravenloft checkpoint:
   fingerprint and the other 43 sidecars remain unchanged. No active-world source
   qualification, accounting activation, migration, DB/server operation or merge
   was performed.
+
+## Realm of Barovia checkpoint
+
+Priority 22 is source-comprehensive with
+[its dossier](zone-stories/THE_REALM_OF_BAROVIA.md) and
+[reproducible index](../reference/zone-story-audits/barovia.md). Reviewed all 87
+native blocks, 168 rooms, 57 mobs, 66 objects and 405 resets/all 194 families;
+shared inn, door/key, falling, switch, teleport, trap, combat and giving roles;
+bounded foreign Gertruda/key producers and incoming routes; and the existing
+ordered Doru/Chernovog/Castle Strahd achievement, eligible group callers and login
+cleanup. No local shops, literal specials or data procedure bindings were found.
+
+Revision 1 maps all nine exchanges into five stories, one request and three
+services: six achievements/four potential dailies, 24 contacts and ten optional
+checks. Bildrath requires nine distinct directly carried items. Ismark's two
+notes remain independent; optional Ireena returns are meaningful services with
+replacement identities. Supplied heart, plan, brooch and daughter remain valid
+without invented personal sourcing or campaign history. Retiring Ephon/Mary and
+all three services earn no daily credit. Ismark's cash reward is supported;
+Parriwimple's wallet-only clue is still unavailable under active accounting.
+
+| Capability / repair | Evidence and qualification proposal |
+| --- | --- |
+| ZSQ-BAROVIA-LEGACY-CAMPAIGN / SESSION | Actual ordered combat tags use Doru 91031, Chernovog 58835 and Castle Strahd 58383; nearby eligible group members can receive progress, and login clears incomplete tags. Define an explicit campaign/attempt bridge with exact victim generation, frozen recipients and recoverable reward. Builder decides retained session policy versus durability; gifts and Catacomb skulls cannot infer kills. |
+| ZSQ-BAROVIA-OBJECT-RESCUE | Gertruda 58412 is a foreign treasure object, consumed by Mad Mary; no NPC escort/reunited pair exists. Add authored representation/source/transfer lineage and distinguish narrated rescue from actual movement. A real escort requires selected outcome and balance, not automatic reinterpretation. |
+| ZSQ-BAROVIA-PROSE / TERMS | Mathilda actually equips Ashlyn's brooch despite Thendrick thanks. First letter is in Kolyan's body and consumed for cash despite robe/return narration. Select bounded source/prose or replacement repairs without changing historical IDs/payouts inadvertently. |
+| ZSQ-BAROVIA-TRAP | The anti-magic orb's type-9 trap lacks primary trigger flags and supported damage dispatch. Builder chooses effect/trigger or a committed custom procedure; test actual activation, failure/replay and bounds. Existing falling and ambush stock stay separate. |
+| ZSQ-BAROVIA-BARRICADE / REVEAL | Several keyless barricades have asymmetric reset states; glen raw secret bits lack concealment resets. Define intended loaded door/breach/reveal policy, then qualify exact accepted unlock/switch and confirmed travel instead of inferring a gate from prose. |
+| ZSQ-BAROVIA-FOREIGN-GATES | Ephon's Barovia key and foreign outer-castle key have 100 break chances and multiple targets. Megosh is physically at the castle gate but owned by continued Barovia. Preserve exact key/receipt/owner identity; qualify fracture, alternative entry, confirmed arrival and owned journal links without false discovery. |
+| ZSQ-BAROVIA-NARRATIVE / LORE | Bible/Pelor journals, Sunsword, restored companions, liberated village and family welcome have no verified local durable terminal. Stage accepted topic/examination and explicit selected closure; preserve optional lore and supplied finals without per-keyword achievements. |
+
+The current catalog contains 45 journals, 2,262 achievement units, 1,905 potential
+daily units and 2,485 projected rows, preserving all 2,668 native identities.
+Twenty-two of 220 roadmap areas are source-comprehensive, with 198 pending.
+Continue with Lost Temple of Tikitzopl, then the Jade Empire. Actual active-world
+source, fee, key/travel, ordered combat and selected repairs remain unqualified.
+Accounting remains mandatory; the full roadmap goal remains in progress.
+
+Validation for the Barovia checkpoint:
+
+- Windows production-catalog/source regression and the native all-map schema/
+  journal regression passed for 45 maps. New cases cover nine distinct kinds,
+  equipped versus carried ring/pin, physical electrum coin, optional clue/key/
+  earlier-note history, supplied finals, service exclusion, supported cash versus
+  unavailable clue fee, unseen-giver visibility, read-only readiness and independent
+  saved receipt recovery. Source tests verify every local offering's actual parent
+  or carrier and all addressed topic aliases.
+- Runtime production and actual arrival/accounting-gate regressions passed.
+  The cached SQL server build, authoritative harness format/check and whitespace
+  passed; all 564 reviewed local document links resolve.
+- Review corrected Megosh's physical castle placement versus continued-Barovia
+  quest ownership and preserved canonical generated-catalog formatting. All 2,668
+  raw definitions, terms, registry, fingerprint/revision and the other 44 sidecars
+  are unchanged. No played active source/access/combat/fee journey, accounting
+  activation, migration, DB/server operation or merge was performed.

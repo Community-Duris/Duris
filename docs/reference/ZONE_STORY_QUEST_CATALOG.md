@@ -13,9 +13,9 @@ named stories without changing native receipt IDs. Twin Towers replaces 84
 contracts with 10 achievement units and 3 daily groups, excluding 40 returned
 offerings and displaying 24 supporting contracts as 12 non-achievement services.
 The global projection now has
-2,265 achievement units and 1,905 daily candidate units after adding starter/town
+2,262 achievement units and 1,905 daily candidate units after adding starter/town
 mappings and deeper journals, equipment/crafting services,
-intermediate outcomes, and explicit missing-item exclusions. There are 44
+intermediate outcomes, and explicit missing-item exclusions. There are 45
 area sidecars and 2,485 projected units including services and administrative
 content. Other areas
 retain native-contract fallback; these counts do not claim full semantic review.
@@ -81,7 +81,15 @@ supplied inputs. Eighteen repeatable groups remain potential daily candidates;
 mode-zero retiring contacts remain story-only and services earn no daily credit. Active shopping,
 repeated-container placement, stateful reading, source/travel/transform evidence
 and selected key/switch/prose repairs remain explicit qualification work.
-Twenty-one source-comprehensive areas remain distinct from played
+Barovia adds six independent achievements/four potential dailies and three
+services across nine exchanges, with 24 contacts/all 41 addressed blocks and ten
+optional checks. Nine distinct trinkets, two independent notes, brooch, heart and
+Gertruda retain exact native outcomes and supplied-material routes. The separate
+ordered Doru/Chernovog/Castle Strahd achievement uses legacy group credit and
+login attempt cleanup; delivered proof is not its combat evidence. Object rescue,
+foreign brittle gates, active sources and selected carrier/letter/orb/barricade
+repairs remain explicit qualification work.
+Twenty-two source-comprehensive areas remain distinct from played
 active-world qualification.
 All raw definitions, receipt identities, zone registry and source fingerprint
 remain unchanged. Comprehensive source dossiers for these areas are tracked in

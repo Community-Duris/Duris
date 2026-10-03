@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 44 authored journals, accounting-gated player surfaces, starter/town
+**Status: 45 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -9,8 +9,15 @@ The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
 Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
 Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
-Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl and Ravenloft Catacombs now have complete source story maps;
-their active-world journeys remain unqualified. Ravenloft projects all 37 native
+Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft Catacombs and the Realm of Barovia now have complete source story maps;
+their active-world journeys remain unqualified. Barovia projects nine exchanges into six
+achievements/four potential dailies and three services, with 24 contacts and ten
+optional checks. The [Barovia dossier](zone-stories/THE_REALM_OF_BAROVIA.md) adds
+ordered legacy combat/attempt integration, quest-person item representation, exact
+foreign gate ownership and builder decisions for carrier/letter prose, inert orb
+metadata and barricade/concealment policy. The existing Doru → Chernovog → Castle
+Strahd achievement has qualifying group credit and clears incomplete stages at
+login; delivered proof cannot establish that campaign. Ravenloft projects all 37 native
 exchanges into twelve stories, thirteen requests and eight services, with eighteen
 potential daily groups. Its 25 contacts and fourteen optional checks explain
 exact physical fortune coins, four role scrolls, competing proof recipients,
@@ -644,7 +651,16 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   services, 26 contacts and 25 optional checks. Record holding/missing sources,
   entrance/ship/key blockers, campaign ownership/discovery, fixed party rewards,
   empty descriptions/success text and fair placement/terms repair proposals.
-- [ ] Complete comprehensive source dossiers for the other 200 roadmap areas.
+- [x] Complete Ravenloft Catacombs source dossier: all 37 exchanges, 135 addressed
+  blocks, full fortune/proof/clockwork/ash/skull routes, exact repeated-container
+  placement and bounded foreign travel. Record active shopping, stateful reading,
+  independent forms/resurrection, brittle keys and selected switch/prose repairs.
+- [x] Complete Realm of Barovia source dossier: all nine exchanges/41 addressed
+  blocks, exact nine-trinket collection, independent notes, brooch/heart/daughter
+  routes, 24 contacts and ten optional checks. Record ordered group combat/session
+  policy, quest-person object lineage, foreign gates and selected carrier/letter/
+  orb/barricade/reveal repairs without inferred personal prerequisite history.
+- [ ] Complete comprehensive source dossiers for the other 198 roadmap areas.
 - [ ] Add district/family authoring and shared presentation for large zones.
   Winterhaven's 219 rows fit existing story/objective limits but need a bounded
   512 KiB source-sidecar allowance for detailed guidance. Preserve receipt IDs;
@@ -678,6 +694,8 @@ contract classification; it does not claim complete objective coverage.
 | The Clawed Caverns | 1 | Complete: one story, six services and thirteen excluded returns across twenty Q contracts | [Source-comprehensive dossier](zone-stories/THE_CLAWED_CAVERNS.md); ten contacts/all eight topics, optional spire/rainbow keys, exact final shards and full custom switch/death/transform/access routes | Active stock, custom container/key transformation and coin-only clue remain unqualified | Native projection/receipt checks; target-safe effects, recoverable nested death/transform/recipient retirement, confirmed travel and paid-clue settlement pending |
 | Defense of Longhollow | 1 | Complete: four stories, five requests, five clothing services and one empty exclusion across fifteen Q contracts | [Source-comprehensive dossier](zone-stories/DEFENSE_OF_LONGHOLLOW.md); forty-one contacts/all sixty topics, six optional producers, exact five heads, bracer, potion/poison outputs and source/access guidance | Active stock, three cap/quantity conflicts, four mixed fees and epic teaching remain unqualified | Native projection/receipt checks; committed source/lineage, paid services/teaching, confirmed powers and builder-approved rescue/healing/closure pending; cash reward path already supported |
 | The Black Pearl | 1 | Complete: two stories, twelve requests and seventeen services across 31 Q/QA; no exclusions | [Source-comprehensive dossier](zone-stories/THE_BLACK_PEARL.md); 26 contacts/all fourteen topics, 25 optional checks, three fragment replacements, exact nine-root sword and courier/skin/gem routes | All campaign contacts/entrance-key spirits held; missing source items/chests, no reciprocal wreck entry, disabled mobile entrance, coin-only gadget and active generation pending | Native projection/receipt checks; restore approved placements and owned campaign introduction, qualify source/access/lineage/party/reveal policies before active gameplay |
+| The Ravenloft Catacombs | 1 | Complete: twelve stories, thirteen requests and eight services across 37 exchanges | [Source-comprehensive dossier](zone-stories/THE_RAVENLOFT_CATACOMBS.md); 25 contacts/all 135 addressed blocks, fourteen optional checks, exact fortune roles and distinct ash/skull finales | Active generation/shopping, stateful paid reading, source/travel evidence and selected mechanism repairs pending | Native projection/receipt checks; committed container parent, accepted lore/session, confirmed unlock/travel and explicitly selected resurrection/faction outcomes pending |
+| The Realm of Barovia | 1 | Complete: five stories, one request and three services across nine exchanges | [Source-comprehensive dossier](zone-stories/THE_REALM_OF_BAROVIA.md); 24 contacts/all 41 addressed blocks, ten optional checks, exact nine-trinket collection and independent note/brooch/heart/daughter routes | Active stock/access, paid clue, legacy combat/attempt bridge, object rescue and selected carrier/letter/orb/barricade policies pending | Native projection/receipt checks; preserve supplied finals and foreign ownership, qualify exact source/transfer/travel and explicit campaign/closure outcomes |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions

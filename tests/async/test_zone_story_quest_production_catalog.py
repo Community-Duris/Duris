@@ -424,7 +424,46 @@ assert toy_sources == [59081]
 shop_source = (ROOT / "areas/shp/ravenloft2.shp").read_text()
 assert "#59081~" in shop_source and "#59097~" in shop_source
 assert "59252" not in shop_source
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2"):
+barovia = inventory_module.area_evidence(ROOT, "barovia")
+assert len(barovia["requests"]) == 9 and len(barovia["dialogue"]) == 41
+assert len(barovia["mobs"]) == 57 and len(barovia["items"]) == 66 and len(barovia["reset_commands"]) == 405
+assert barovia["zone"]["reset_mode"] == 0 and not barovia["special_assignments"]
+assert not (ROOT / "areas/shp/barovia.shp").exists()
+barovia_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "barovia")
+barovia_contacts = {c["mob_vnum"]: c for c in barovia_mapping["contacts"]}
+assert len(barovia_contacts) == 24
+for response in barovia["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(barovia_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in barovia_contacts.items():
+    assert contact["keyword"] in barovia["mobs"][vnum]["keywords"]
+barovia_stories = {s["id"]: s for s in barovia_mapping["stories"]}
+assert barovia_stories["bildraths-nine-trinkets"]["contracts"] == [{"giver_vnum": 91007, "completion_key": "give=I:91015,I:91018,I:91026,I:91027,I:91042,I:91043,I:91044,I:91045,I:91046;receive=I:91047;disappear=0"}]
+assert {t["item_vnums"][0] for t in barovia_stories["bildraths-nine-trinkets"]["steps"] if t["kind"] == "carried_item" and not t.get("optional")} == {91015, 91018, 91026, 91027, 91042, 91043, 91044, 91045, 91046}
+assert barovia_stories["kolyans-forged-letter"]["contracts"] == [{"giver_vnum": 91011, "completion_key": "give=I:91022;receive=C:200000;disappear=0"}]
+assert barovia_stories["hossas-ambush-plan"]["contracts"] == [{"giver_vnum": 91011, "completion_key": "give=I:91038;receive=I:91039;disappear=0"}]
+assert barovia_stories["parriwimples-collection-clue"]["category"] == "service"
+assert barovia_stories["parriwimples-collection-clue"]["contracts"] == [{"giver_vnum": 91018, "completion_key": "give=C:5000;receive=;disappear=0"}]
+assert all(barovia_stories[name]["category"] == "service" for name in ("ireenas-first-letter-guidance", "ireenas-ambush-plan-guidance"))
+assert sum(t.get("optional", False) for story in barovia_mapping["stories"] for t in story["steps"]) == 10
+assert sum(r["definition"]["daily_eligible"] for r in barovia["requests"]) == 4
+assert all(not r["definition"]["repeatable"] and not r["definition"]["daily_eligible"] for r in barovia["requests"] if r["block"]["disappear"])
+barovia_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 910]
+assert len(barovia_units) == 9 and sum(u["achievement"] for u in barovia_units) == 6 and sum(u["daily_candidate"] for u in barovia_units) == 4
+parent = None
+barovia_sources = {}
+for reset in barovia["reset_commands"]:
+    command, values = reset["command"], reset["arguments"]
+    if command in ("M", "F"):
+        parent = values[1]
+    if command in ("G", "E") and values[1] in {91021, 91036, 91038, 91042, 91044, 91045, 91046}:
+        barovia_sources[values[1]] = (command, parent, values[2])
+    if command == "P" and values[1] in {91018, 91022}:
+        barovia_sources[values[1]] = (command, values[3], values[2])
+    if command == "O" and values[1] in {91015, 91026, 91027, 91043}:
+        barovia_sources[values[1]] = (command, values[3], values[2])
+assert barovia_sources == {91015: ("O", 91116, 1), 91018: ("P", 91017, 1), 91021: ("E", 91033, 1), 91022: ("P", 91010, 1), 91026: ("O", 91151, 1), 91027: ("O", 91135, 1), 91036: ("G", 91031, 1), 91038: ("G", 91046, 1), 91042: ("G", 91024, 1), 91043: ("O", 91125, 1), 91044: ("G", 91035, 1), 91045: ("E", 91048, 1), 91046: ("G", 91026, 1)}
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
