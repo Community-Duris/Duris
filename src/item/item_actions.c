@@ -643,6 +643,21 @@ bool item_action_pending(uint64_t id)
 	return pending.contains(id);
 }
 
+bool item_actions_object_busy(uint64_t object_uid)
+{
+	if (!object_uid || !nevent_is_game_thread())
+		return true;
+	for (const auto &[id, entry] : pending)
+	{
+		if (!entry || !entry->selected || !entry->selected->adapter)
+			return true;
+		if (entry->identity.source_uid == object_uid ||
+		    entry->selected->adapter->references_object(object_uid))
+			return true;
+	}
+	return false;
+}
+
 bool item_actions_telemetry_enabled()
 {
 	return nevent_is_game_thread() && telemetry.enabled;

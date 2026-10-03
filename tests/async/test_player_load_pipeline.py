@@ -316,6 +316,10 @@ assert "STATE(d) = CON_PLAYER_LOAD" in ACCOUNT
 assert "player_load_materialize(player, loaded)" in ACCOUNT
 assert "d->rtype = loaded.snapshot.save_intent;" in ACCOUNT
 completion = ACCOUNT[ACCOUNT.index("void account_player_load_complete") :]
+hydration_gate = completion.index("player_save_pipeline_authoritative_hydration_admitted(d->player_load_pid)")
+assert hydration_gate < completion.index("ready_player_loads.emplace")
+assert "PLAYER_LOAD_DEGRADED_RECOVERY" in completion[hydration_gate:completion.index("ready_player_loads.emplace")]
+assert "player_save_pipeline_save_admitted(d->player_load_pid)" not in completion
 recheck = completion.index('account_confirm_char(d, writable_arg("Y"))')
 discard = completion.index("ready_player_loads.erase(completed_request_id)")
 assert recheck < discard
@@ -334,6 +338,12 @@ assert NANNY.rindex("d->player_load_mode == PLAYER_LOAD_MODE_NONE", 0, bank_load
 assert "restoreCharOnly(d->character" not in NANNY
 assert "d->player_load_mode = PLAYER_LOAD_MODE_LEGACY" in NANNY
 assert "nanny_player_load_complete" in NANNY
+nanny_completion = NANNY[NANNY.index("void nanny_player_load_complete") :]
+hydration_gate = nanny_completion.index("player_save_pipeline_authoritative_hydration_admitted(result.pid)")
+materialize = nanny_completion.index("player_load_materialize(loaded, result)")
+assert hydration_gate < materialize
+assert "PLAYER_LOAD_DEGRADED_RECOVERY" in nanny_completion[hydration_gate:materialize]
+assert "player_save_pipeline_save_admitted(result.pid)" not in nanny_completion
 assert "player_load_pipeline_execute_sync" in NANNY
 assert "player_death_restitution_runtime_login_admit" not in NANNY
 assert "d->rtype = result.snapshot.save_intent;" in NANNY

@@ -16,7 +16,7 @@ Flat-file custody and materialization commit the same exact craft outcome. Commi
 
 ## Explicit restrictions
 
-- Virtual Chaos-pouch Encrust refuses while pouch usage cannot join this receipt.
+- Virtual Chaos-pouch Encrust reuses the delivered native pouch mutation: its UID remains active and its usage counter delta joins the craft receipt, including failed attempts.
 - Trapped-item Encrust refuses because trap fields are absent from the existing snapshot codec. Both inputs remain intact.
 - These three writers select carried roots. The craft admission boundary refuses a selected nested input rather than admit different SQL/flat-file subtree semantics.
 - Restitution-delivery inputs refuse before mutation; a craft output blob cannot safely stand in for an input restitution snapshot.
@@ -72,4 +72,8 @@ NPC stock cleanup compatible without retaining unreachable player code.
 
 The replaced poison extraction helper is also retired: exact ingredient retirement now belongs solely to the durable craft receipt.
 
-Accounting-specific identity, migration and active refusal contracts are detailed in docs/alchemist-accounting-port-551-661.md.
+Current accounting identities and native route requirements are detailed in
+[alchemist-accounting-port-551-661.md](alchemist-accounting-port-551-661.md).
+The #551 continuation extension freezes poison notching and retains alchemy
+publication across player saves and restart; see the dated
+[active recovery evidence](persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md).
