@@ -1,5 +1,6 @@
 #include "persistence/critical_command_repository.h"
 #include "economic_sql_coordinator_fixture.h"
+#include "economic_sql_commit_reply_loss_fixture.h"
 #include "economy/currency_command.h"
 #include "economy/coin_transfer_command.h"
 #include "economy/coin_transfer_accounting.h"
@@ -22,9 +23,23 @@
 #include <string>
 #include <vector>
 
+extern "C" int __real_mysql_real_query(MYSQL *, const char *, unsigned long);
+extern "C" unsigned int __real_mysql_errno(MYSQL *);
+extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *query, unsigned long length)
+{
+	return economic_sql_commit_reply_loss_fixture::query_result(
+		connection, query, length, __real_mysql_real_query(connection, query, length));
+}
+extern "C" unsigned int __wrap_mysql_errno(MYSQL *connection)
+{
+	return economic_sql_commit_reply_loss_fixture::lost_reply(connection) ?
+		       2013 :
+		       __real_mysql_errno(connection);
+}
+
 namespace
 {
-MYSQL *open_pool_test_connection()
+MYSQL *open_pool_test_connection(unsigned long flags = 0)
 {
 	const char *host = std::getenv("DB_HOST");
 	const char *user = std::getenv("DB_USER");
@@ -37,7 +52,15 @@ MYSQL *open_pool_test_connection()
 	if (!pooled)
 		return nullptr;
 	const unsigned int port = port_value ? static_cast<unsigned int>(atoi(port_value)) : 3306;
-	if (!mysql_real_connect(pooled, host, user, password, database, port, nullptr, 0))
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+	const bool reconnect = false;
+	const unsigned int timeout = 3;
+	assert(mysql_options(pooled, MYSQL_OPT_RECONNECT, &reconnect) == 0);
+	assert(mysql_options(pooled, MYSQL_OPT_CONNECT_TIMEOUT, &timeout) == 0);
+	assert(mysql_options(pooled, MYSQL_OPT_READ_TIMEOUT, &timeout) == 0);
+	assert(mysql_options(pooled, MYSQL_OPT_WRITE_TIMEOUT, &timeout) == 0);
+#endif
+	if (!mysql_real_connect(pooled, host, user, password, database, port, nullptr, flags))
 	{
 		mysql_close(pooled);
 		return nullptr;
@@ -46,26 +69,36 @@ MYSQL *open_pool_test_connection()
 }
 } // namespace
 
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+#include "economic_sql_real_pool_fixture.h"
+#else
 extern "C" MYSQL *sql_pool_acquire(void)
 {
-	return open_pool_test_connection();
+	auto *pooled = open_pool_test_connection();
+	economic_sql_commit_reply_loss_fixture::acquired(pooled);
+	return pooled;
 }
 extern "C" void sql_pool_release(MYSQL *pooled)
 {
+	economic_sql_commit_reply_loss_fixture::closing(pooled, false);
 	if (pooled)
 		mysql_close(pooled);
 }
 extern "C" MYSQL *sql_pool_replace_connection(MYSQL *pooled)
 {
+	economic_sql_commit_reply_loss_fixture::closing(pooled, true);
 	if (pooled)
 		mysql_close(pooled);
 	return open_pool_test_connection();
 }
 extern "C" void sql_pool_discard_connection(MYSQL *pooled)
 {
+	economic_sql_commit_reply_loss_fixture::closing(pooled, false);
 	if (pooled)
 		mysql_close(pooled);
 }
+
+#endif
 
 namespace
 {
@@ -301,7 +334,11 @@ void check_active_coin_item_accounting(uint32_t pid, const char *account,
 	command.accepted_at_usec = 1;
 	command.publication_required = true;
 	assert(critical_command_envelope_valid(command));
-	const critical_apply_result applied = exercise_sql_coordinator(command, "coin", true);
+	economic_sql_commit_reply_loss_fixture::arm();
+	const critical_apply_result applied =
+		exercise_sql_coordinator(command, "coin-native-commit-reply", false,
+					 critical_apply_outcome::already_applied);
+	economic_sql_commit_reply_loss_fixture::verify();
 	if (applied.outcome != critical_apply_outcome::already_applied || applied.error_code)
 		fprintf(stderr, "pooled typed coin transfer failed outcome=%u error=%u\n",
 			static_cast<unsigned int>(applied.outcome), applied.error_code);
@@ -1633,6 +1670,9 @@ int main()
 	assert(connection);
 	const unsigned int port = port_value ? static_cast<unsigned int>(atoi(port_value)) : 3306;
 	assert(mysql_real_connect(connection, host, user, password, database, port, nullptr, 0));
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+	economic_sql_real_pool_lifecycle real_pool_lifecycle;
+#endif
 	const std::string account = "currency_harness_account";
 	execute("DELETE FROM currency_wallet_baseline WHERE pid IN (SELECT pid FROM player_data "
 		"WHERE name='CurrencyHarness')");

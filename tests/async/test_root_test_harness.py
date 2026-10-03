@@ -52,11 +52,13 @@ runner = importlib.util.module_from_spec(runner_spec)
 sys.modules[runner_spec.name] = runner
 runner_spec.loader.exec_module(runner)
 expected_resource_intensive = {
+    "test_persistent_transport_journey.py",
     "test_player_quarantine_restore.py",
     "test_static_quest_reward_journey.py",
     "test_account_recovery_journey.py",
     "test_creation_prompt_journey.py",
     "test_game_loop_session_journey.py",
+    "test_network_readiness_journey.py",
     "test_area_coin_pickup.py",
     "test_flatfile_auction_coin_put_journey.py",
     "test_flatfile_boot_preflight.py",
@@ -125,10 +127,19 @@ sample_tests = [
     Path("test_mysql_combat_journey.py"),
     Path("test_information_cache_journey.py"),
     Path("test_creation_prompt_journey.py"),
+    Path("test_persistent_transport_journey.py"),
+    Path("test_network_readiness_journey.py"),
 ]
 parallel_tests, resource_intensive_tests = runner.partition_tests(sample_tests)
 assert parallel_tests == [Path("test_fast.py")]
 assert resource_intensive_tests == sample_tests[1:]
+# Every explicitly expensive owner must stay serialized, in discovery order.
+all_resource_tests = [Path(name) for name in sorted(expected_resource_intensive)]
+parallel_tests, resource_intensive_tests = runner.partition_tests(
+    [Path("test_fast.py"), *all_resource_tests]
+)
+assert parallel_tests == [Path("test_fast.py")]
+assert resource_intensive_tests == all_resource_tests
 
 editor_makefile = (ROOT / "areas" / "de" / "src" / "Makefile").read_text()
 assert re.search(r"^CXX_STANDARD\s*=\s*-std=c\+\+20$", editor_makefile, re.MULTILINE)
