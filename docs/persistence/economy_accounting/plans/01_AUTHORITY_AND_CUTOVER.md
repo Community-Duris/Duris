@@ -32,10 +32,11 @@ SQL lifecycle runner for native database behavior.
 1. Trace coordinator admission, pooled apply, direct apply, and reconcile for
    each already-supported bank, coin, and item envelope. Current source already
    dispatches typed coin/item roots and has coordinator-journal component tests.
-   Their SQL pool boundaries use fresh fixture connections; coin/item ambiguity
-   is synthesized after a successful repository return. Qualify actual client
-   commit-reply loss, production pool lifecycle and live publication/restart
-   separately. Retain every unsupported-family refusal. Direct owner calls and
+   Their SQL pool boundaries use fresh fixture connections. The October 3
+   native coin/item cases now hide one successful COMMIT reply at the real
+   MySQL client call, require replacement-connection reconciliation and retain
+   exact journal/result/ACK assertions on both engines. Production pool
+   lifecycle and live publication/restart remain separate open qualification. Retain every unsupported-family refusal. Direct owner calls and
    test ACKs do not qualify the actual gameplay publication path.
 2. Centralize the same-root completion checks without replacing the existing
    domain repositories: native before/after effects, canonical intent/plan,
@@ -103,4 +104,4 @@ not yet an executed failing player journey.
 
 Coin callbacks also require separate review: current ACK ordering and replay's
 null callback do not prove pile publication survived restart. These are open
-R1/R2/R4/R8 requirements, not waived by the synthetic coordinator fixture.
+R1/R2/R4/R8 requirements, not waived by the native SQL coordinator component fixtures.

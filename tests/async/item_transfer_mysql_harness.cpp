@@ -32,9 +32,11 @@
 #include <thread>
 #include <unistd.h>
 #include <vector>
+#include "economic_sql_commit_reply_loss_fixture.h"
 
 static int recovery_kill_commit = 0;
 extern "C" int __real_mysql_real_query(MYSQL *, const char *, unsigned long);
+extern "C" unsigned int __real_mysql_errno(MYSQL *);
 extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *query, unsigned long size)
 {
 	const bool commit = size == 6 && !memcmp(query, "COMMIT", 6);
@@ -43,7 +45,14 @@ extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *query, uns
 	const int result = __real_mysql_real_query(connection, query, size);
 	if (commit && recovery_kill_commit == 2 && !result)
 		kill(getpid(), SIGKILL);
-	return result;
+	return economic_sql_commit_reply_loss_fixture::query_result(connection, query, size, result);
+}
+
+extern "C" unsigned int __wrap_mysql_errno(MYSQL *connection)
+{
+	return economic_sql_commit_reply_loss_fixture::lost_reply(connection) ?
+		       2013 :
+		       __real_mysql_errno(connection);
 }
 
 namespace
@@ -74,21 +83,26 @@ MYSQL *open_pool_test_connection()
 unsigned long next_obj_uid = 1;
 extern "C" MYSQL *sql_pool_acquire(void)
 {
-	return open_pool_test_connection();
+	auto *pooled = open_pool_test_connection();
+	economic_sql_commit_reply_loss_fixture::acquired(pooled);
+	return pooled;
 }
 extern "C" void sql_pool_release(MYSQL *pooled)
 {
+	economic_sql_commit_reply_loss_fixture::closing(pooled, false);
 	if (pooled)
 		mysql_close(pooled);
 }
 extern "C" MYSQL *sql_pool_replace_connection(MYSQL *pooled)
 {
+	economic_sql_commit_reply_loss_fixture::closing(pooled, true);
 	if (pooled)
 		mysql_close(pooled);
 	return open_pool_test_connection();
 }
 extern "C" void sql_pool_discard_connection(MYSQL *pooled)
 {
+	economic_sql_commit_reply_loss_fixture::closing(pooled, false);
 	if (pooled)
 		mysql_close(pooled);
 }
@@ -1111,7 +1125,11 @@ void check_sql_accounted_item_transfer(MYSQL *connection)
 	critical_command admitted =
 		accounted_item_transfer(operation(133), give, lineage, epoch, 41);
 	admitted.publication_required = true;
-	const critical_apply_result moved = exercise_sql_coordinator(admitted, "item", true);
+	economic_sql_commit_reply_loss_fixture::arm();
+	const critical_apply_result moved = exercise_sql_coordinator(
+		admitted, "item-native-commit-reply", false,
+		critical_apply_outcome::already_applied);
+	economic_sql_commit_reply_loss_fixture::verify();
 	if (moved.outcome != critical_apply_outcome::already_applied || moved.error_code)
 		fprintf(stderr, "accounted item transfer failed: outcome=%u error=%u\n",
 			static_cast<unsigned int>(moved.outcome), moved.error_code);
