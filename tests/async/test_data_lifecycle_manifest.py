@@ -46,6 +46,7 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0049_player_spell_effect_receipt.sql",
     ROOT / "migrations" / "immutable" / "0051_player_item_runtime_state.sql",
     ROOT / "migrations" / "immutable" / "0053_craft_progression.sql",
+    ROOT / "migrations" / "immutable" / "0055_sql_room_item_payload.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -107,10 +108,22 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 225)
+        self.assertEqual(report["database_tables"], 226)
         self.assertEqual(report["non_database_stores"], 50)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
+
+    def test_exact_room_payload_retains_recovery_and_season_provenance(self) -> None:
+        entry = self.entry("database:sql_room_item_payload")
+        self.assertEqual(entry["data_category"], "reconciliation_or_replay_record")
+        self.assertTrue(entry["protected_record"])
+        self.assertEqual(entry["season_action"], "retain")
+        self.assertEqual(entry["terminal_action"], "retain")
+        self.assertEqual(entry["exception"], "protected_recovery_replay_or_restore_horizon")
+        self.assertIn("payload", entry["export_rule"]["excluded_fields"])
+        self.assertIn("database:season_reset_state", entry["dependencies"])
+        self.assertIn("database:item_current_owner", entry["dependencies"])
+        self.assertIn("database:economic_accounting_item_reference", entry["dependencies"])
 
     def test_spell_receipts_are_protected_recovery_evidence(self) -> None:
         entry = self.entry("file:player-spell-receipts")
@@ -239,12 +252,13 @@ class LifecycleManifestTest(unittest.TestCase):
             "database:critical_operation_inbox", "database:critical_outbox",
             "database:critical_outbox_delivery_dedupe", "file:player_save_journal",
             "database:item_uid_allocator",
+            "database:sql_room_item_payload",
             "file:critical_command_journal", "file:persistence_fallback",
             "file:persistence_fallback_quarantine", "file:flatfile-authority-journal",
         }
         stores = {row["id"] for row in self.manifest["entries"]
                   if row["id"].startswith(("database:economic_", "file:economic-"))} | shared
-        self.assertEqual(len(stores), 34)
+        self.assertEqual(len(stores), 35)
         for entry_id in sorted(stores):
             for field, value in (("protected_record", False), ("season_action", "reset_delete"),
                                  ("terminal_action", "deactivate")):

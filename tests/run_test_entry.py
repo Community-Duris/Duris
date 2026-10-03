@@ -26,6 +26,8 @@ def execute(path: Path, mode: str, output: Path, minimum: int, arguments=()) -> 
     """Write only case identities/outcomes; retain the original script semantics."""
     functions, entry = declarations(path)
     records: list[dict] = []
+    fixture_outcomes: list[dict] = []
+    results: list[unittest.TestResult] = []
     collected: list[str] = []
     active: dict[tuple[int, int], dict] = {}
     called: set[str] = set()
@@ -33,7 +35,7 @@ def execute(path: Path, mode: str, output: Path, minimum: int, arguments=()) -> 
     complete = False
 
     def save() -> None:
-        output.write_text(json.dumps({"cases": records, "collected": collected,
+        output.write_text(json.dumps({"cases": records + fixture_outcomes, "collected": collected,
                                      "called": sorted(called), "complete": complete}), encoding="utf-8")
 
     def case_id(test) -> str:
@@ -53,7 +55,9 @@ def execute(path: Path, mode: str, output: Path, minimum: int, arguments=()) -> 
     def run(result_runner, suite):
         collected.extend(members(suite))
         save()
-        return original_run(result_runner, suite)
+        result = original_run(result_runner, suite)
+        results.append(result)
+        return result
 
     def start(result, test):
         row = {"id": case_id(test), "status": "running", "elapsed": 0.0}
@@ -85,6 +89,16 @@ def execute(path: Path, mode: str, output: Path, minimum: int, arguments=()) -> 
                 item["row"]["status"] = _status
                 if _status == "skipped":
                     item["row"]["reason"] = str(args[0])
+            else:
+                # Class/module fixtures and skipped subtests do not receive
+                # startTest/stopTest. Keep their outcomes without inventing
+                # additional executed top-level cases for the collection check.
+                row = {"id": case_id(test), "status": _status, "elapsed": 0.0,
+                       "evidence": "unittest fixture or subtest"}
+                if _status == "skipped":
+                    row["reason"] = str(args[0])
+                fixture_outcomes.append(row)
+            save()
             return _original(result, test, *args)
 
         setattr(unittest.TestResult, method, outcome)
@@ -123,6 +137,10 @@ def execute(path: Path, mode: str, output: Path, minimum: int, arguments=()) -> 
     finally:
         sys.setprofile(None)
 
+    if code == 0 and any(not result.wasSuccessful() for result in results):
+        print("case execution contract failed: an unsuccessful unittest result returned a successful entry",
+              file=sys.stderr)
+        code = 1
     if mode == "unittest":
         if code == 0 and (not records or len(records) < minimum or
                           Counter(row["id"] for row in records) != Counter(collected) or

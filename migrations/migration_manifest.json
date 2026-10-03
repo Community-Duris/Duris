@@ -708,6 +708,26 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1",
       "verify_checksum": "aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a"
+    },
+    {
+      "id": "0054_alchemy_publication",
+      "sequence": 54,
+      "description": "Retain poison Encrust and Harvester publication through player saves",
+      "apply": "immutable/0054_alchemy_publication.sql",
+      "verify": "immutable/0054_alchemy_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "da69352e3ac62cdece4bcce661caa2fa98ad0c8ba3a487e1eed8211fb2629692",
+      "verify_checksum": "2bac3a0afe31dcc4468f525297a708b30ec05dfaa2e5e94832e1205e506a9b31"
+    },
+    {
+      "id": "0055_sql_room_item_payload",
+      "sequence": 55,
+      "description": "Retain exact immutable payload and season provenance for admitted ordinary room drops",
+      "apply": "immutable/0055_sql_room_item_payload.sql",
+      "verify": "immutable/0055_sql_room_item_payload.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "47608d67ec12401d2de2f74174b7739cbce7d942153618f0dbc4b6287769b877",
+      "verify_checksum": "bf2a03adde513bd954ac07e552ceb0329d4c98a056a7e30d05868b96fa07ac67"
     }
   ]
 }

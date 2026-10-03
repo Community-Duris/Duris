@@ -464,7 +464,8 @@ bool valid_craft_receipts(const player_snapshot &snapshot)
 	{
 		const auto &receipt = snapshot.craft_receipts[index];
 		if (!nonzero_operation(receipt.operation_id) ||
-		    (receipt.discipline != 1 && receipt.discipline != 2) ||
+		    (receipt.discipline < 1 || receipt.discipline > 6) ||
+		    (receipt.discipline > 2 && receipt.experience) ||
 		    receipt.experience > INT32_MAX)
 			return false;
 		for (size_t prior = 0; prior < index; ++prior)

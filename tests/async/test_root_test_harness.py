@@ -54,6 +54,11 @@ sys.modules[runner_spec.name] = runner
 runner_spec.loader.exec_module(runner)
 specs = runner.inventory(runner.TEST_DIRECTORY, runner.MANIFEST)
 manual_names = {spec.path.name for spec in specs if spec.manual}
+
+# Preserve the target branch's bounded server-journey concurrency.
+server_journeys = ['test_account_recovery_journey.py', 'test_area_coin_pickup.py', 'test_creation_prompt_journey.py', 'test_flatfile_auction_coin_put_journey.py', 'test_flatfile_boot_preflight.py', 'test_flatfile_chaos_new_character_kit.py', 'test_flatfile_combat_journey.py', 'test_flatfile_first_session_currency.py', 'test_flatfile_full_world_boot.py', 'test_flatfile_newbie_regrant_journey.py', 'test_game_loop_session_journey.py', 'test_information_cache_journey.py', 'test_item_movement_prompt_runtime.py', 'test_mysql_combat_journey.py', 'test_network_readiness_journey.py', 'test_persistent_transport_journey.py', 'test_player_quarantine_restore.py', 'test_static_quest_reward_journey.py']
+by_name = {spec.path.name: spec for spec in specs}
+assert all("server-journey" in by_name[name].locks for name in server_journeys)
 discovered = {path.name for path in runner.discover_tests(None)}
 assert not (manual_names & discovered)
 assert {
@@ -468,6 +473,14 @@ class RunnerBehavior(unittest.TestCase):
             "omitted_function.py": "def test_real():\n raise AssertionError('must execute')\n",
             "ignored_unit_failure.py": "import unittest\nclass Checks(unittest.TestCase):\n"
                                        " def test_real(self): assert False\nunittest.main(exit=False)\n",
+            "ignored_class_cleanup.py": "import io, unittest\nclass Checks(unittest.TestCase):\n"
+                                        " def test_real(self): pass\n"
+                                        " @classmethod\n def tearDownClass(cls): raise RuntimeError('cleanup failed')\n"
+                                        "unittest.main(exit=False, testRunner=unittest.TextTestRunner(stream=io.StringIO()))\n",
+            "ignored_module_cleanup.py": "import io, unittest\nclass Checks(unittest.TestCase):\n"
+                                         " def test_real(self): pass\n"
+                                         "def tearDownModule(): raise RuntimeError('cleanup failed')\n"
+                                         "unittest.main(exit=False, testRunner=unittest.TextTestRunner(stream=io.StringIO()))\n",
             "early_script_exit.py": "import os\nos._exit(0)\n",
             "early_unit_exit.py": "import os, unittest\nclass Checks(unittest.TestCase):\n"
                                   " def test_real(self): os._exit(0)\nunittest.main()\n",
@@ -579,6 +592,27 @@ class RunnerBehavior(unittest.TestCase):
             result = runner.run_test(path, 2, spec=spec)
         self.assertEqual(result.status, "skipped")
         self.assertEqual(result.skipped_checks, 2)
+
+    def test_hidden_subtest_skip_remains_required_coverage_failure(self):
+        path = self.script("test_subtest.py", "import io, unittest\n"
+                           "class Checks(unittest.TestCase):\n"
+                           " def test_database(self):\n"
+                           "  with self.subTest(engine='mysql'): self.skipTest('owned fixture missing')\n"
+                           "  with self.subTest(engine='mariadb'): self.assertTrue(True)\n"
+                           "unittest.main(testRunner=unittest.TextTestRunner(stream=io.StringIO()))\n")
+        result = runner.run_test(path, 5, spec=runner.TestSpec(path, mode="unittest"))
+        self.assertEqual(result.returncode, 0, result.output)
+        self.assertEqual(result.skipped_checks, 1)
+        skipped = [row for row in result.cases if row["status"] == "skipped"]
+        self.assertEqual(skipped[0]["reason"], "owned fixture missing")
+        self.assertIn("engine='mysql'", skipped[0]["id"])
+        matrix = self.integration_module()
+        failures = matrix.outcome_contract(dict(required_cases=["Checks.test_database"],
+                                                required_markers=[]), result)
+        self.assertIn("required integration checks skipped", failures)
+        xml = self.root / "subtest.xml"
+        runner.write_junit(xml, [result])
+        self.assertEqual(runner.ET.parse(xml).getroot().attrib["skipped"], "1")
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ SQL_DISPATCH_SOURCES = (
     'item/craft_pouch_mutation.c',
     'combat/chaos_pouch_ledger.c',
     'item/item_transfer_repository.c',
+    'persistence/sql_room_item_payload.c',
     'economy/auction_command.c',
     'economy/auction_repository.c',
     'combat/combat_outcome_repository.c',
