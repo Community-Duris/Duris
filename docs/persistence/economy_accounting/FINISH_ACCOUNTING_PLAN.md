@@ -37,11 +37,22 @@ retry exhaustion, exact repair/restart and later native movement/season history.
 Strict production backends and current inactive creation journeys pass; the
 original 300-second native compile gate passes in 287.557 seconds with the
 same binary used for both-engine fault/recovery checks. These source-specific
-results exclude the newly fetched remote 5c3bc0957; local history integration
+results exclude incoming remote changes (latest 100bee62f); local history integration
 is blocked by the retained no-merge instruction and automatic approval review.
 Complete ordinary-drop producer/replay/copyover and all R1-R8 gates remain open.
-The authority plan also records the concrete coin physical-publication/ACK
-ordering and null-replay retention defect for the next bounded repair.
+The bounded coin physical-publication/ACK and null-replay retention repair below
+is qualified separately; production native reconstruction remains open.
+
+Coin publication/ACK retention has a locally qualified bounded safety repair:
+missing typed physical proof retains replay and refuses new schema-2 pile
+admission; physical success and the original receipt survive ACK retry and
+partial projection exceptions. The inactive composite path remains unchanged.
+The native publisher/reconstructor, gameplay/replay/save/copyover gates and a
+separate definite-admission-failure cleanup defect remain open. See the October
+3 review status for before failures, intermediate evidence and final checks.
+Fourteen native cases per mode, both strict builds, 106 currency retention cases,
+both queue modes and actual inactive creation/restart/three pickup journeys pass.
+This is not full active accounting, native replay or current-remote qualification.
 
 Independent reconciliation now checks every native item's parent edge even when
 lineage history replaces its epoch-local history or its opening origin is

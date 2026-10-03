@@ -1293,3 +1293,118 @@ automatic approval review because the user's retained instructions prohibit
 merging. The completed issue is committed locally; publication must preserve
 both histories and awaits a decision about local Git integration. No divergent
 push or alternate history rewrite has been attempted.
+
+
+## Coin publication and ACK retention safety repair (qualified locally)
+
+The frozen local 87de37985 owner reproduces five native component failures:
+physical failure consumes the ACK before publication, later physical success is
+never retried, missing restored publication capability ACKs without a native
+pile, absent-actor replay loses the owner, and exhaustion loses the coordinator
+obligation. Wallet-only replay remains a passing control. Successful simulated
+ACK is irreversible and erases the controlled coordinator operation, matching
+that production boundary; this is not a real database/journal/gameplay run.
+The strict original 300-second before compile passes in 116.196 seconds with
+binary a32b5def461250a0ae76f9720759589f3ba4dbf60703e22a84e3c7f7ea3dbbf4.
+
+The intermediate repair also reproduced two partial-projection failures: a
+shared-bank publisher throws after a wallet assignment, then a conflicting
+receipt can replace the original and continue publication. Its original-limit
+compile passes in 210.221 seconds; binary
+7af7a35a8f77515a6a72101c44bb3cadb0ae172160a1a8d1fca9ea5e4757f979.
+Original before, intermediate, setup-error and partial-failure artifacts remain
+separate. Final native component, strict production, existing-owner and actual inactive
+journey gates pass for this bounded repair.
+
+The bounded repair separates verified schema-2 physical publication from
+post-ACK notification. It retains the exact operation and receipt before the
+first possible projection mutation, validates all wallet vectors first, latches
+physical success through ACK retry, and retains blocked owners at exhaustion.
+Changed receipt bytes cannot replace already-started publication. New schema-2
+item-endpoint admission without an explicit verified publisher refuses before
+coordinator admission; replay without that capability remains held. No existing
+legacy physical helper is promoted as proof. Schema-1 composite callbacks and
+the SQL wallet-root item-endpoint exclusion are preserved.
+
+An initial copied-object strict SQL link failed because archived .d files
+referenced a previous source tree's absolute header paths. All 32 affected source
+objects per backend are explicitly rebuilt with unchanged production flags,
+-j2 and original 600-second limits; the initial failed link is retained. The
+root scheduling owner also initially lacked make in Windows; its unchanged
+native Linux invocation passes all seven harness checks. The new native owner
+is registered for serial resource-intensive regression execution.
+
+This repair is not a typed native reconstruction or gameplay qualification.
+Complete pile identity/topology/payload readback, staging both endpoints,
+actorless replay, background-save holds, dependent corpse/saved-item projection
+durability, copyover and active routes remain open. The existing physical helper
+accepts newer metadata or unloaded owners without sufficient native proof;
+never bind it directly as a verified publisher. A separate source-established
+admission-failure cleanup gap also remains: the coordinator removes definitely
+never-admitted operations before currency receives their terminal completion,
+so publication ACK cannot succeed. That needs an explicit trusted disposition;
+arbitrary ACK failure cannot authorize release. All R1-R8/full-current-head
+qualification and release gates remain open.
+
+
+Final frozen component source currency_transaction.c SHA-256
+e4ee695bae9476d1360843a529d7f4ccdf374a7d5879f4abc23143e8f764bf2b
+and header 4e8a0d709cbba08396555aabb1effa556eb21258dfccae9f36cab2615981bd7d
+pass 14 native scenarios / 101 assertions in each SQL and flatfile mode with
+strict warnings and ASan/UBSan. SQL first final compile timed out at the original
+300-second limit while other builds overlapped; the timing cause is not proven.
+One scheduled quiet attempt with identical source/flags/deadline passes in
+189.160 seconds, binary
+81e846e447d479bff8ac1d8ced2ed8421171137ff9cca90498e88796ca1789a8.
+Flatfile passes in 89.078 seconds, binary
+1a2153a1cb1c891edf3dd8c6f79259627dae58b29ea44fefbb18de9895bf8090.
+The timeout remains separate; supplied-binary wrong-SHA checks, AST, formatter
+and source equality checks pass. Declaration
+`tmp/coin-publication-ack-retention-qualified-artifact.local.json` has SHA-256
+a647b32f4d71766ff1ae757617b7de49317b3ea2a40c68d33e2c919a485db189.
+The coordinator/physical publication controls in this component are supplied;
+this is not actual journal, SQL execution or native pile reconstruction proof.
+
+Final strict -j2 production SQL and flatfile builds pass their original
+600-second limits after the documented 32-source header dependency rebuild.
+SQL binary SHA-256
+5b615f46d0adf6c9cb77c28581ccc576889585d56a48c1108f30e87f78844ae1;
+flatfile 64cd9c0784d063f92e2aaf50435302cd2f38376508ff706f01be0c5042ca9f22.
+All 1,232 tracked source inputs match their native snapshot after normalizing LF;
+raw native bytes are pinned separately, including the CRLF .gitignore inputs.
+Source readiness artifact SHA-256
+60826fb9c2cbb2128a099cf13b82106956e1cc05fa9b659d4bc43fef2aee83e4.
+The initial raw-vs-LF checker disagreement on src/.gitignore is preserved as a
+checker setup error, not a production source mismatch.
+
+Fresh remote inspection now finds experimental-accounting at
+100bee62f2b6111e5037984a970c2cddb62158ec, with additional death-recovery visibility
+and shop quantity changes. Those incoming changes, including common completion
+headers and coordinator code, are not integrated or qualified by these results.
+Local integration still awaits the requested decision after automatic approval
+review rejected merging under the user's no-merge instruction. No divergent
+push or history-rewrite workaround has been attempted.
+
+
+Final existing currency retention owner passes all 106 ASan/UBSan scenarios,
+and input-queue owner passes both SQL and flatfile variants, against the exact
+final production snapshot. Actual inactive creation/save/coldrestart/relog passes
+in 134.989 seconds with unchanged prompt waits. The actual area coin-pickup owner
+builds its inspector within the original 180-second deadline and passes
+`get coins statue`, `get all.coins statue` and `take all statue`: each credits
+exactly ten platinum, removes active room custody and refuses duplicate value.
+Both production binary hashes remain unchanged. These are actual inactive
+behavior checks; they do not establish active/native pile publication or replay.
+
+Primary final summary
+`tmp/coin-publication-retention-final-primary-summary.local.json` has SHA-256
+1ebdd173188249c11637b195591c23ecc03639e290c164b06008b4b871a37ed4.
+The reproducible matrix check, all 14 accounting fixtures and 54 writer coverage
+contract checks pass: 868 routes / 2,817 occurrences / 2,758 unique sites /
+zero unmapped; coverage remains false and release BLOCKED. Full-current-head
+broad regression, active native publication/reconstruction, replay/save/copyover,
+measured workload and every R1-R8 completion gate remain open. This solved safety
+issue is a separate local commit; normal direct publication awaits the explicit
+local Git integration decision and combined-source qualification of incoming
+100bee62f. The next issue has an immutable before-state freeze for actual
+coordinator/journal admission failure and domain cleanup qualification.

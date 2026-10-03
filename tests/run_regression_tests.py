@@ -33,6 +33,7 @@ RESOURCE_INTENSIVE_TEST_NAMES = frozenset(
         "test_game_loop_session_journey.py",
         "test_network_readiness_journey.py",
         "test_area_coin_pickup.py",
+        "test_coin_publication_ack_retention.py",
         "test_flatfile_auction_coin_put_journey.py",
         "test_flatfile_boot_preflight.py",
         "test_flatfile_chaos_new_character_kit.py",
