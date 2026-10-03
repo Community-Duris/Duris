@@ -8,6 +8,10 @@ delivered native craft root, exact custody
 references, retained publication, pouch mutation, and Craft/Forge progression
 receipt owner. It does not implement a second crafting system. #568 character
 initialization, #661 NPC vial sources, and #490 global activation remain separate.
+The final integration also incorporates `a461b989016cb40fff2e1573720c6c9288e6427b`,
+the delivered SQL replacement-lease repair in the player-save path.
+Both production builds, the native MySQL/MariaDB suites, SQL lease recovery,
+and both active SQL gameplay journeys passed again after that integration.
 
 ## Durable operation and publication
 

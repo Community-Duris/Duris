@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "2ec15b79e8771164c35c6d39595531505a69e0fd",
+  "source_commit": "56d5d9967685d0d6b5fe7e0db339fd42a2a97d1b",
   "census_complete": true,
   "writers": [
     {
@@ -62924,9 +62924,9 @@
       "reason": "Direct collection extraction was removed; shared craft publication now retires committed inputs after the retained pouch counter update."
     }
   ],
-  "source_tree": "984935f4e845f83a135cc654474aea78408acbf1",
+  "source_tree": "0d7a9be161b837a3b4f4483d7e8099d18a6b8df7",
   "scoped_qualification_551": {
-    "base_commit": "2ec15b79e8771164c35c6d39595531505a69e0fd",
+    "base_commit": "a461b989016cb40fff2e1573720c6c9288e6427b",
     "evidence": "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
   }
