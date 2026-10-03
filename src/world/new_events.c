@@ -31,6 +31,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/character_maintenance.h"
 #include "world/event_names.h"
 #include "kingdom/kingdom.h"
 #include "cmd/interp.h"
@@ -406,6 +407,12 @@ static void nevent_detach_character(P_nevent event)
 	{
 		ch->world_activity_mundane_event = NULL;
 		ch->world_activity_mundane_event_sequence = 0;
+	}
+	if (ch->character_maintenance_event == event &&
+	    ch->character_maintenance_event_sequence == event->sequence)
+	{
+		ch->character_maintenance_event = NULL;
+		ch->character_maintenance_event_sequence = 0;
 	}
 	if (event->prev_char_nev)
 	{
@@ -1947,6 +1954,7 @@ void ne_init_events(void)
 
 	ne_init_event_pool();
 	community_spellup_reset_for_boot();
+	character_maintenance_init();
 
 	logit(LOG_STATUS, "assigning room specials events.");
 	for (j = 0; j < top_of_world; j++)
@@ -2022,10 +2030,6 @@ void ne_init_events(void)
 		add_event(event_weather_change, 125 * WAIT_SEC + number(-9, 9), NULL, NULL, NULL, 0,
 			  &j, sizeof(j));
 	}
-
-	/* miscellaneous character looping */
-	nevent_register_periodic_job("generic-character-sweep", generic_char_event, 20 * WAIT_SEC,
-				     5 * WAIT_SEC, nevent_periodic_policy::fixed_delay, true);
 
 	// Kingdom upkeep: charge each realm, and walk the arrears ladder when it
 	// cannot pay. Always registered; kingdom_upkeep_event() returns at once

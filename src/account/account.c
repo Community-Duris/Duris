@@ -12,8 +12,8 @@
 #include "world/epic_transaction.h"
 #include "world/handler.h"
 #include "world/rested.h"
-#include "world/zone_touch_transaction.h"
 #include "world/zone_story_quest_runtime.h"
+#include "world/zone_touch_transaction.h"
 #include "cmd/interp.h"
 #include "economy/auction_transaction.h"
 #include "economy/boon_reward_transaction.h"
@@ -221,6 +221,15 @@ class account_deletion_drain_guard
 void remove_deleted_account_runtime(P_desc deleting_session,
 				    const std::vector<account_deletion_identity> &identities)
 {
+#ifndef _PFILE_
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		std::string error;
+		if (!zone_story_quest_runtime::refresh_after_erasure(&error))
+			logit(LOG_FILE,
+			      "account deletion: zone-story publication disabled after cache refresh failure");
+	}
+#endif
 	for (const auto &identity : identities)
 	{
 		item_ownership_runtime_forget_player_domain(identity.pid);

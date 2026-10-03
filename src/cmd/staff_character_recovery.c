@@ -1,6 +1,7 @@
 /* Staff restore and affect-cleanup commands. */
 
 #include "core/prototypes.h"
+#include "world/character_maintenance.h"
 #include "core/structs.h"
 #include "core/defines.h"
 #include "core/utility.h"
@@ -236,6 +237,7 @@ void do_restore(P_char ch, char *argument, int cmd)
 				GET_COND(victim, DRUNK) = 0;
 				if (GET_STAT(victim) < STAT_SLEEPING)
 					SET_POS(victim, GET_POS(victim) + STAT_NORMAL);
+				character_maintenance_changed(victim);
 
 				send_to_char(
 					"&+BA haze of magical energies fall from the heavens, engulfing all that you see.\n"
@@ -339,6 +341,7 @@ void do_restore(P_char ch, char *argument, int cmd)
 		}
 		if (GET_STAT(victim) < STAT_SLEEPING)
 			SET_POS(victim, GET_POS(victim) + STAT_NORMAL);
+		character_maintenance_changed(victim);
 
 		if (IS_PC(ch))
 		{
