@@ -878,3 +878,31 @@ Formatting and eight disposable-target refusal mutations also pass. This closes
 the bank actual-pool component gap; production factory configuration, mixed
 workload contention, actual player publication/replay and current-head broad
 qualification remain independent gates. Activation and release remain blocked.
+
+
+## Selected native full-literal capture owner
+
+Native ordinary snapshot capture preserves prototype-relative masks and omits
+unstrung literal strings, so it cannot supply the exact stored room payload.
+Two opt-in adapters now freeze all four effective strings for one selected
+carried root and its complete descendants without changing live masks. Other
+inventory roots, equipment, pets, ordinary captures and formats retain their
+existing behavior. Missing/noninventory roots, duplicate/nonallocated-form UIDs,
+cycles and all native capture limits refuse atomically. This does not establish
+UID allocation authority; the eventual transfer still proves native custody.
+
+The actual capture/codec/custody fixture first reproduced missing API linkage.
+It now passes strict ASan/UBSan, direct native-field assertions, byte identity,
+mask0/partial-string capture, nested topology, scope isolation, no-rent graph
+retention and unchanged failure outputs. Existing native capture/death/held-pet
+and item-codec regressions pass. Both maintained strict native server builds pass
+in a source-isolated published-base QA containing only this capture issue.
+Evidence: `tmp/literal-capture-native-summary.local.json`, SHA-256 aef2b981f08d957942ac170499c70048afd41858d6e3b3e136abd3ae36d24466.
+SQL binary SHA-256 33e5b1dfa57aeff4d9c5385a4bf3007a86f92c9160b9516a0a79577be6c2a771;
+flatfile binary SHA-256 6b43838647574d9bfbab526b9a523243bba470c8df001b25d149a654adc416a5.
+The initial final-run invocation used a nonexistent codec owner name; its original
+log is retained, and the correct maintained item-codec owner passes separately.
+Scoped checkpoint coalescing, actual SQL source proof, retained drop publication
+and replay remain unfinished. These APIs do not enable inactive accounting or
+establish full gameplay/persistence/recovery qualification. The frozen e58bb3296
+broad run remains pending and does not contain this subsequent capture change.
