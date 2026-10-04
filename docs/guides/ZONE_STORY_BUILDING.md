@@ -1362,3 +1362,36 @@ Skull31320 belongs to Qin's foreign five-kind quest; NODROP handling and native
 bundle consumption differ. Keep foreign ownership and supplied-route history
 explicit. No native repair ships with this map; preserve earlier Newhaven terms.
 Keep proposed builder decisions separate from actual fix commits and news.
+
+### Northern Lakes: courier stages, source identity and retiring recipients
+
+The [dossier](../design/zone-stories/NORTHERN_LAKES.md) and
+[journal](../../areas/story/nlakes.story.json) keep six accepted stories
+independent. Tamara packaging → Aerin delivery → Tamara return note is a useful
+chain, but exact supplied bottles/notes skip earlier personal history. An old
+receipt does not restore consumed supplies or grant another stage. The current
+any-contract semantics cannot express a parent requiring all three stages;
+use independent entries and explanatory links until parent display is designed.
+
+Two exact scales are different physical roots, not proven different sources.
+The green/old dragons share targeting aliases and scale kind. The green dragon
+also accepts a vial and leaves, so it is both supplier and retiring recipient.
+Record actor/source conflicts and peaceful/reset alternatives for qualification;
+do not invent personal kills, stricter provenance or duplicate materials.
+Quest golden vial75274 differs from ordinary potion75225. Maur's heart is a
+preloaded material despite blue-dragon/expedition lore; no accepted kill/rescue
+or experiment endpoint is established. Tein's qc_action is ambient, not a topic.
+
+Use actual code for travel prerequisites: boat movement does not suppress
+currents, arrival/command can both attempt sweeps, warnings precede movement,
+and F chances occur at command time. Accepted access, alternatives, current
+cause/result and surviving fall need real evidence. Native D acceptance means
+recipient retirement; prose alone cannot create recall/flight/cure events.
+Artek's visage continues to Aevenyl's foreign request, whose ownership and
+prior map remain unchanged. `_noquest_` does not forbid the explicit recipe.
+
+Separate shipped repair5a2b93d6d corrects only two pile-of-bones direction words
+and has a precise PR/news entry. Artek's empty bespoke response, Tamara source
+narration and inactive Melbh announcement naming remain pending builder intent
+or qualification. Keep those proposals distinct from fixed behavior. Active,
+ready accounting remains mandatory; frozen persistence/recovery stays separate.

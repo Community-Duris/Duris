@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 84 &&
+		require(catalog.story_mappings.size() == 85 &&
 				tracker.summary_for(7, 42).total == 1625,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -6645,6 +6645,143 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 313) &&
 					!recovered.has_discovered(7, 42, 352),
 				"Wharf cold recovery lost independent receipts or invented foreign discovery");
+		}
+
+		{
+			const auto &human = story_for("nlakes", "lost-humans-recall");
+			const auto &artek = story_for("nlakes", "arteks-dragon-and-demon-bundle");
+			const auto &dragon = story_for("nlakes", "green-dragons-vial");
+			const auto &package = story_for("nlakes", "tamara-package-heart");
+			const auto &delivery = story_for("nlakes", "aerin-receive-order");
+			const auto &returned = story_for("nlakes", "tamara-return-note");
+			service journey(catalog);
+			require(journey.render_journal(7, 42, 752, 10, 1, 99, false, false)
+							.find("Undiscovered:") !=
+						std::string::npos &&
+					journey.discover_zone(7, 42, 752, 75410, 100, "arrival") ==
+						result::applied,
+				"Northern Lakes discovery boundary failed");
+			require(journey.render_journal(7, 42, 752, 10, 1, 101, false, false)
+						.find(package.title) == std::string::npos,
+				"Northern Lakes discovery exposed an unseen recipient's story");
+			for (const auto &actor : { std::pair<int, int>{ 75239, 75278 },
+						   { 75254, 75391 },
+						   { 75255, 75393 },
+						   { 75260, 75409 },
+						   { 75261, 75264 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 102) ==
+						result::applied,
+					"Northern Lakes recipient encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Northern Lakes journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[75271] = 1;
+			supplies.carried[75215] = 1;
+			supplies.carried[75225] = 1;
+			supplies.carried[75268] = 1;
+			supplies.carried[55287] = 1;
+			supplies.equipped[18] = 75252;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 752, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(artek).find("[Missing now] " + artek.steps[0].text) !=
+						std::string::npos &&
+					section(dragon).find("[Missing now] " +
+							     dragon.steps[0].text) !=
+						std::string::npos &&
+					section(human).find("[Missing now] " +
+							    human.steps[0].text) !=
+						std::string::npos &&
+					section(package).find("[Ready now] " +
+							      package.steps[0].text) !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 752).completed == 0,
+				"Northern Lakes partial scales, ordinary vial, worn scroll, heart or foreign reward fabricated acceptance");
+			supplies.carried[75271] = 2;
+			supplies.carried[75274] = 1;
+			supplies.carried[75252] = 1;
+			supplies.carried[75281] = 1;
+			supplies.carried[75280] = 1;
+			journal = journey.render_journal(7, 42, 752, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(artek).find("[Ready now] " + artek.steps[0].text) !=
+						std::string::npos &&
+					section(dragon).find("[Ready now] " +
+							     dragon.steps[0].text) !=
+						std::string::npos &&
+					section(delivery).find("Next: " +
+							       delivery.steps.back().text) !=
+						std::string::npos &&
+					section(returned).find("Next: " +
+							       returned.steps.back().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Northern Lakes exact supplied items required route history or readiness wrote state");
+			service supplied(catalog);
+			require(supplied.deserialize_state(before, &error),
+				"Northern Lakes supplied journey restore failed");
+			record(supplied, returned.contracts.front(), "nlakes-supplied-note", 752,
+			       75409);
+			require(supplied.progress_for_zone(7, 42, 752).completed == 1 &&
+					supplied.evidence_for(package.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.evidence_for(delivery.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Northern Lakes supplied note required or invented earlier courier stages");
+			record(journey, package.contracts.front(), "nlakes-package", 752, 75409);
+			supplies.carried.erase(75281);
+			journal = journey.render_journal(7, 42, 752, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(delivery).find("[Missing now] " + delivery.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 752).completed == 1 &&
+					journey.evidence_for(delivery.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(returned.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Northern Lakes preparation receipt restored a spent bottle or completed the chain");
+			record(journey, delivery.contracts.front(), "nlakes-delivery", 752, 75264);
+			supplies.carried.erase(75280);
+			journal = journey.render_journal(7, 42, 752, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(returned).find("[Missing now] " + returned.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 752).completed == 2 &&
+					journey.evidence_for(returned.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Northern Lakes middle delivery restored a spent note or fabricated final reward");
+			auto wrong_owner =
+				completion(artek.contracts.front(), "nlakes-wrong-owner", 122);
+			wrong_owner.transaction.zone_number = 550;
+			wrong_owner.transaction.room_vnum = 75391;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Northern Lakes receipt accepted Winterhaven ownership");
+			record(journey, returned.contracts.front(), "nlakes-return", 752, 75409);
+			record(journey, artek.contracts.front(), "nlakes-artek", 752, 75391);
+			record(journey, dragon.contracts.front(), "nlakes-dragon", 752, 75393);
+			record(journey, human.contracts.front(), "nlakes-human", 752, 75278);
+			auto replay = completion(returned.contracts.front(), "nlakes-return", 120);
+			replay.transaction.zone_number = 752;
+			replay.transaction.room_vnum = 75409;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Northern Lakes receipt replay duplicated completion");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 752).completed == 6 &&
+					recovered.progress_for_zone(7, 42, 752).total == 6 &&
+					recovered.evidence_for(returned.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					!recovered.has_discovered(7, 42, 550),
+				"Northern Lakes cold recovery lost independent receipts or invented foreign discovery");
 		}
 
 		std::cout

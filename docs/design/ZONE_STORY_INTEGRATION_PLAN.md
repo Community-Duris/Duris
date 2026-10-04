@@ -2348,3 +2348,30 @@ focused on materials, quantities, active abilities and useful routes. Every
 later actual quest/zone repair needs a separate clear fix commit and prominent
 PR trigger/before-after/validation limits with an accurate player-news sentence.
 Pending proposals must never be described as shipped fixes.
+
+## Northern Lakes: independent courier stages and overlapping actor sources
+
+The [dossier](zone-stories/NORTHERN_LAKES.md) and
+[journal](../../areas/story/nlakes.story.json) map six independent accepted
+stories using the existing schema. Active, ready accounting remains mandatory
+for discovery, encounters, journals and new achievement/daily credit; frozen
+recovery stays separate. Exact supplied materials need no personal source,
+kill or producer history. No runtime adapter or schema change is added here.
+
+| Capability | Concrete source evidence | Implementation and acceptance |
+| --- | --- | --- |
+| Optional parent campaign with all-stage summary | Tamara Q101 packages heart, Aerin Q126 accepts bottle, Tamara Q110 accepts note; any-contract story semantics would close a grouped story at the first handoff | Keep three independent accepted stages now. Design parent/all-stage display after actual personal/supplied/mixed journeys; preserve optional producer history, skipped-stage noncredit and current consumed-material readiness. Never force final-note holders to repeat earlier stages |
+| Same-kind quantity versus distinct-source proof | Artek accepts two I75271 roots but speaks of one scale from each dragon; both source actors share green/dragon aliases | Qualify committed actor/item UID/origin/zone acquisition and source versus handoff. Builder decides any stricter distinct-source integration, retaining current supplied delivery compatibility; present same-kind quantity without inventing provenance |
+| Overlapping recipient/supplier and native retirement | Green dragon is an E-scale source and D1 vial recipient; human is another D1 recipient | Qualify source order, peaceful recovery, live NPC UID, committed consumption/reward/extraction, reset caps and interrupted/cold recovery. A cure/recall/flight objective needs an actual typed event, not narrative or arbitrary actor disappearance. Builder decides intended alternative without silent duplication or disappearance changes |
+| Accepted current/fall/access episodes and alternative effects | Seventeen water currents can attempt movement on arrival/command; warning precedes do_move; three F chances occur at command time; boats do not suppress currents | Qualify movement cause/result, blocked/recursive sweeps, fly/levitate/mount support, entry/return, fall admission/climb/survival, reset and interruption. Add typed objectives only after accepted movement evidence; earlier rewards or current custody cannot prove safe travel |
+| Exact quest identity and foreign campaign ownership | Quest TRASH vial differs from same-named potion; heart is preloaded on Maur; Artek's imported visage is consumed by Aevenyl in Winterhaven | Preserve exact kinds and current supplied routes. Qualify actual equipped-to-loose recovery and foreign acceptance/replay. Keep Winterhaven request unchanged; `_noquest_` only excludes random-world-quest selection, not explicit native recipes |
+| Player explanation versus intent repair | Artek Q response empty; Tamara blue-dragon/expedition lore has no accepted kill/rescue endpoint; Melbh opening naming data is inactive | Builder-confirm concise narrative/source changes after actual reward feedback and announcement qualification. No impossible-quest claim or silent recipe/balance change. Each implemented repair needs its own fix commit, prominent before/after/limits and precise news |
+
+The sole native change is isolated direction fix
+[5a2b93d6d](https://github.com/Community-Duris/Duris/commit/5a2b93d6d387e192ea501d6d6e5bbf71796e927b),
+with original-fails/repaired-passes source evidence. Other capability additions
+are plans, not new runtime features or shipped repairs. Universal dynamic
+inference can identify exact native contracts and declared producers; it cannot
+recover intended distinct-source, peaceful cure, experiment or rescue semantics
+from prose alone. Builder-authored sidecars retain that distinction and can be
+updated when actual custom behavior is integrated and qualified.

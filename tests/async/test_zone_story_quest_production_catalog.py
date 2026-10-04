@@ -3433,6 +3433,85 @@ policy=(ROOT/'src/item/item_command_policy.c').read_text(encoding='utf8')
 assert 'ITEM_NODROP' not in policy[policy.index('bool item_command_uses_durable_ownership'):policy.index('bool item_command_object_is_takeable')]
 
 
+# Northern Lakes: independent courier handoffs and exact source identities.
+nlakes=inventory_module.area_evidence(ROOT,'nlakes')
+nlakes_map=next(m for m in catalog['story_mappings'] if m['source_area']=='nlakes')
+assert (nlakes_map['schema_version'],nlakes_map['revision'],nlakes_map['coverage'])==(3,1,'complete')
+assert len(nlakes_map['stories'])==6 and len(nlakes_map['contacts'])==13 and not nlakes_map['exclusions']
+assert all(s['category']=='story' for s in nlakes_map['stories'])
+assert collections.Counter(t['kind'] for s in nlakes_map['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':7,'completion':2}
+raw=[b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/nlakes.qst']
+assert collections.Counter(b['kind'] for b in raw)=={'M':8,'Q':6} and len(nlakes['dialogue'])==7
+by_line={b['line']:b for b in raw if 'binding' in b}
+for line,giver,inputs,outputs,disappear in (
+    (17,75239,[('I',75252)],[('I',75263)],True),
+    (44,75254,[('I',75271),('I',75271),('I',75215)],[('C',250000),('I',55287)],False),
+    (64,75255,[('I',75274)],[('I',75273)],True),
+    (101,75260,[('I',75268)],[('I',75281)],False),
+    (110,75260,[('I',75280)],[('I',75279),('C',10000)],False),
+    (126,75261,[('I',75281)],[('I',75280)],False)):
+    b=by_line[line]
+    assert (b['giver_vnum'],b['give'],b['receive'],b['disappear'])==(giver,inputs,outputs,disappear)
+    d=next(r['definition'] for r in nlakes['requests'] if r['block']['line']==line)
+    assert d['source_area']=='nlakes' and d['zone_number']==752 and d['repeatable'] and d['daily_eligible']
+stories={s['id']:s for s in nlakes_map['stories']}
+assert {tuple(c.items()) for s in stories.values() for c in s['contracts']}=={tuple(b['binding'].items()) for b in by_line.values()}
+assert all(s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional') for s in stories.values())
+assert [(s['item_vnums'],s['count']) for s in stories['arteks-dragon-and-demon-bundle']['steps'][:-1]]==[([75271],2),([75215],1)]
+assert stories['green-dragons-vial']['steps'][0]['item_vnums']==[75274]
+assert stories['lost-humans-recall']['steps'][0]['item_vnums']==[75252]
+assert stories['tamara-package-heart']['steps'][0]['item_vnums']==[75268]
+for sid,earlier,material in [('aerin-receive-order',101,75281),('tamara-return-note',126,75280)]:
+    assert stories[sid]['steps'][0]['contracts']==[by_line[earlier]['binding']]
+    assert stories[sid]['steps'][0]['optional'] and stories[sid]['steps'][1]['item_vnums']==[material]
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==752]
+assert len(units)==sum(u['achievement'] for u in units)==sum(u['daily_candidate'] for u in units)==6
+contacts={c['mob_vnum']:c for c in nlakes_map['contacts']}
+for giver in (75239,75254,75255,75260,75261):
+    assert set(contacts[giver]['topics'])=={t for b in raw if b['kind']=='M' and b['giver_vnum']==giver for t in b['body'][0].rstrip('~').split()}
+assert sum(len(c['topics']) for c in contacts.values())==20 and not contacts[75259]['topics']
+assert all(c['keyword'] in nlakes['mobs'][v]['keywords'] for v,c in contacts.items())
+assert len(nlakes['mobs'])==63 and len(nlakes['items'])==82 and len(nlakes['reset_commands'])==414
+assert collections.Counter(r['command'] for r in nlakes['reset_commands'])=={'M':166,'E':115,'D':50,'P':31,'G':23,'F':5,'R':4,'O':20}
+assert len({(r['command'],tuple(r['arguments'])) for r in nlakes['reset_commands']})==309
+assert not nlakes['special_assignments']
+objects=dawndale_bodies('nlakes','obj');rooms=dawndale_bodies('nlakes','wld');mobiles=dawndale_bodies('nlakes','mob')
+assert set(rooms)==set(range(75200,75419)) and set(objects)==set(range(75200,75283))-{75266}
+assert all(b.split('~')[1].strip() for b in rooms.values())
+assert collections.Counter(int(b.split('~')[2].split()[2]) for b in rooms.values())=={7:83,0:61,2:38,1:23,3:13,6:1}
+assert all(not int(b.split('~')[2].split()[1])&(2048|524288|1024) for b in rooms.values())
+assert all(not int(b.split('~')[4].split()[0])&32768 for b in mobiles.values())
+assert int(rooms[75264].split('~')[2].split()[1])&131072 and int(rooms[75392].split('~')[2].split()[1])&8192
+for v,speed,direction in [(75234,45,2),(75235,45,2),(75236,45,2),(75237,45,2),(75309,29,1),(75310,29,5),(75311,29,1),(75312,35,5),(75313,30,1),(75331,30,2),(75332,30,5),(75333,30,2),(75334,30,5),(75335,30,3),(75336,30,5),(75337,30,3),(75338,15,3)]:
+    assert re.search(r'\bC\s+'+f'{speed} {direction}'+r'\b',rooms[v])
+for v,chance in [(75266,10),(75267,10),(75275,23)]:assert re.search(r'\bF\s+'+str(chance)+r'\b',rooms[v])
+for v,d,f,target in ((75202,0,5,75203),(75203,2,5,75202),(75211,5,5,75212),(75212,4,5,75211),(75248,5,5,75249),(75249,4,5,75248),(75274,0,5,75414),(75414,2,1,75274),(75403,1,5,75404),(75404,3,5,75403),(75264,0,0,75546),(75410,0,0,55297),(75418,4,0,537871),(75337,1,0,537889),(75363,1,0,539488)):
+    assert re.search(r'\bD'+str(d)+r'\s+[^~]*~[^~]*~\s+'+f'{f} 0 {target}'+r'\b',rooms[v],re.S)
+assert set(objects[75225].split('~')[0].split())==set(objects[75274].split('~')[0].split())
+assert objvalues(objects[75225])[0]==10 and objvalues(objects[75274])[0]==13
+assert all(objvalues(objects[v])[11:19]==[0]*8 for v in (75252,75268,75274,75280,75281))
+assert objvalues(objects[75252])[0]==8 and objvalues(objects[75280])[0]==8 and objvalues(objects[75281])[0]==13
+assert mobiles[75255].split('~')[0]==mobiles[75256].split('~')[0]
+reset={r['line']:r for r in nlakes['reset_commands']}
+for line,command,values in (
+    (294,'M',[0,75206,1,75213,100,0,0,0]),(295,'E',[1,75215,1,3,100,0,0,0]),
+    (306,'M',[0,75209,1,75216,100,0,0,0]),(308,'G',[1,75268,1,0,100,0,0,0]),
+    (419,'M',[0,75261,1,75264,100,0,0,0]),(437,'M',[0,75239,1,75278,100,0,0,0]),
+    (455,'M',[0,75249,1,75292,100,0,0,0]),(457,'E',[1,75252,1,18,100,0,0,0]),
+    (503,'M',[0,75244,1,75372,100,0,0,0]),(505,'E',[1,75274,1,18,100,0,0,0]),
+    (535,'M',[0,75254,1,75391,100,0,0,0]),(539,'M',[0,75255,1,75393,100,0,0,0]),
+    (540,'E',[1,75271,2,11,100,0,0,0]),(558,'M',[0,75260,1,75409,100,0,0,0]),
+    (561,'M',[0,75256,1,75411,100,0,0,0]),(562,'G',[1,75271,2,0,100,0,0,0])):
+    assert (reset[line]['command'],reset[line]['arguments'])==(command,values)
+foreign=[b for b in inventory_module.native_blocks(ROOT) if 'binding' in b and ('I',55287) in b['give'] and b['source']!='areas/qst/nlakes.qst']
+assert [(b['giver_vnum'],b['source'],b['line']) for b in foreign]==[(55132,'areas/qst/wh.qst',2333)]
+assert foreign[0]['give']==[('I',55287)] and foreign[0]['receive']==[('I',55040),('E',250000)]
+wh=next(m for m in catalog['story_mappings'] if m['source_area']=='wh')
+aevenyl=next(s for s in wh['stories'] if any(c['giver_vnum']==55132 for c in s['contracts']))
+assert aevenyl['contracts']==[foreign[0]['binding']] and aevenyl['category']=='request'
+assert '_noquest_' in dawndale_bodies('wh','obj')[55287].split('~')[0].split()
+assert all(objvalues(dawndale_bodies('heavens','obj')[v])[0]==22 for v in (429,431))
+
 # Northern Lakes: the two pile-of-bones clues match actual reciprocal exits.
 nlakes_rooms=dawndale_bodies('nlakes','wld')
 for direction,target,word,reverse in ((1,75223,'east',3),(3,75262,'west',1)):
@@ -3440,7 +3519,7 @@ for direction,target,word,reverse in ((1,75223,'east',3),(3,75262,'west',1)):
     assert clue and re.search(r'\b'+word+r'\b',clue[1]), 'Northern Lakes pile-of-bones exit clue is reversed'
     assert re.search(r'\bD'+str(reverse)+r'\s+[^~]*~[^~]*~\s+0 0 75263\b',nlakes_rooms[target],re.S)
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf"):
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

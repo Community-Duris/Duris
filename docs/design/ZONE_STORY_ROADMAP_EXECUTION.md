@@ -59,6 +59,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [d18758098](https://github.com/Community-Duris/Duris/commit/d18758098083b28463279c130a3e7ec24bb48b24): Brass Imix Avenue exit | Inspecting east at 139017 now says east, matching D1 to 139016 and reciprocal D3. Exactly one native word changes. | Player-facing: “Brass's eastern Imix Avenue exit now describes its actual direction.” Original color-normalized clue fails; repaired source/exact native bytes pass. Live LOOK/traversal remains unqualified. |
 | [3f1ecf2be](https://github.com/Community-Duris/Duris/commit/3f1ecf2be064a63321c0e0243b4168727cb079c2): Tower directions/passwords | South clues at 134011/134014 now say south; four locked magic keywords lose only trailing color resets, restoring plain Sargon/elemental passwords. | Player-facing: “The Tower of Darkness's south-facing shrine and stair clues now describe their actual directions. Its Sargon and elemental magic doors now accept the intended plain passwords.” Original source fails all six; actual C++ matching/reciprocal unlock passes, closed state retained. Live speech/LOOK/traversal remains unqualified. |
 | `0fff62e70` — Smoke vault key / Discontent targeting | Vault south return lock now uses rewarded key 139818; newly loaded Discontent accepts its own name while retaining old aliases. Actual production key/name regressions fail before and pass after; key settlement/live travel/existing-object migration remain unqualified. | **The Plane of Smoke's vault key now works from either side of the portcullis, and Discontent can be selected by its own name.** |
+| [5a2b93d6d](https://github.com/Community-Duris/Duris/commit/5a2b93d6d387e192ea501d6d6e5bbf71796e927b): Northern Lakes pile-of-bones clues | Cathedral clue now says east and pasture clue west at room75263, matching reciprocal D1/D3 routes. Exactly two native words change, in a separate fix commit with the focused regression. | **Northern Lakes' pile-of-bones exits now correctly point east to the cathedral and west to the pasture.** Both original clues fail; corrected source, reciprocal exits and exact native-byte scope pass. Live LOOK/traversal remains unqualified. |
 
 ## Progress
 
@@ -127,9 +128,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 61 | Mushroom Caverns | [Comprehensive dossier](zone-stories/MUSHROOM_CAVERNS.md): all sixteen raw blocks/132 rooms/eight local mobiles/nine objects/54 resets; imported actor/material sources, shared execution and modern identity comparison | Three outcomes/ten contacts/22 representable aliases/five optional checks; exact same-name halves, optional history and explicit source/accounting blockers | Missing goblet/unplaced actors/five absent dispersal destinations, money-proof admission and reward/get/drop, physical affiliation/renewal, literal topic tokens and route/scenery intent. No native repair ships |
 | 62 | Para-Elemental Plane of Smoke | [Comprehensive dossier](zone-stories/PARA_ELEMENTAL_PLANE_OF_SMOKE.md): all fourteen blocks/153 rooms/26 mobiles/36 objects/172 resets; foreign planar entrances, current-mobile supply and shared key/terrain/weapon/epic execution | Two stories/four services, twelve contacts/16 aliases/12 optional checks; exact two-kind bundles, optional routes, non-credit reversible jewelry | Shipped native fix 0fff62e70 corrects vault return key and Discontent alias. Negative-plane forge, permanent Power proc, key settlement, rare admitted supply/renewal and builder intent remain pending |
 | 63 | Fishermans Wharf | [Comprehensive dossier](zone-stories/FISHERMANS_WHARF.md): all thirteen blocks/70 rooms/23 mobiles/20 objects/119 resets, shop, ordinary Surface boundary, imported skull and shared fishing/breathing/key/fall execution | Five independent outcomes, thirteen contacts/44 aliases/10 optional checks; exact 8-root/four-copy bundles and optional bait/line history | No native repair. Fishing narration/XP precedes ownership grant; effect alternatives, source provenance, admitted supply, command-time fall/access and restricted foreign custody require qualification |
-| 64–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 64 | Northern Lakes and Settlements | [Comprehensive dossier](zone-stories/NORTHERN_LAKES.md): all fourteen blocks/219 rooms/63 mobiles/82 objects/414 resets, both shops, five foreign boundaries, imported visage/consumer and shared quest/reset/current/fall/boat execution | Six independent stories, thirteen contacts/20 aliases/9 optional checks; courier stage receipts stay optional with supplied exact materials | Separate fix 5a2b93d6d corrects two exit clues. Distinct-source scales, overlapping recipient/supplier, typed actor/current/fall episodes, campaign all-stage display and actual daily renewal need qualification |
+| 65–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Northern Lakes and Settlements (`nlakes`).
+The next area is Kobold Settlement (`kobold`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -3307,3 +3309,60 @@ Original queue: 63/220 complete, 157 pending; Northern Lakes and Settlements nex
 Active, ready accounting remains mandatory. No DB/account/server operation,
 migration, deployment or merge. Every later actual repair requires an isolated
 fix commit, prominent PR before/after and precise news with validation limits.
+
+## Northern Lakes completed source map — October 4, 2026
+
+The [dossier](zone-stories/NORTHERN_LAKES.md) covers all fourteen native blocks
+(eight M/six Q; seven addressed families/twenty aliases plus Tein ambient), 219
+rooms/138 prose groups/139 numeric exit families/264 text-keyword pairs, sixty-
+three mobiles, eighty-two objects, 414 resets/309 exact argument families/226
+parent-aware families and both shops. Full properties and memberships, all five
+ordinary foreign boundaries, imported stock/visage, global producer/consumer/
+713-teleport scans and shared quest/reset/boat/current/fall execution are reviewed.
+
+The [journal](../../areas/story/nlakes.story.json) maps six independent stories,
+thirteen contacts and nine optional checks (seven materials/two receipts).
+Heart → Tamara bottle → Aerin note → Tamara earring/copper explains three
+accepted stages. The human's scroll, dragon's quest vial and Artek's two-scale/
+amulet bundle remain independent. Exact supplied bottles/notes bypass personal
+history; historical acceptance never restores spent materials or grants skipped
+stages. The same-named ordinary vial is not the quest item. Native dialogue
+aliases, periodic boasts and narrated recall/cure/flight/experiment/rescue do
+not create unsupported outcomes.
+
+**Separate actual repair:** [5a2b93d6d](https://github.com/Community-Duris/Duris/commit/5a2b93d6d387e192ea501d6d6e5bbf71796e927b)
+corrects exactly two direction words at pile-of-bones75263. News: **Northern
+Lakes' pile-of-bones exits now correctly point east to the cathedral and west
+to the pasture.** Both original clues fail; corrected clues/reciprocal routes
+and exact native-byte checks pass. Live LOOK/traversal is unqualified. All prior
+native repair/news entries remain intact. No other native repair ships here.
+
+Plans expand for optional parent campaigns with explicit all-stage semantics,
+committed original-source versus handoff evidence, same-kind quantities versus
+one-from-each source, overlapping live actor/supplier roles, typed retirement/
+recall/flight and current/fall/access episodes. Helping the green dragon retires
+a scale source; killing it for the scale prevents using that instance as the
+vial recipient. Qualify actor identity, actual source recovery, cap/reset and
+peaceful alternatives before builder choices. Preserve supplied deliveries.
+Artek's empty Q response and blue-dragon/expedition narration versus Maur's
+preloaded heart are bounded intent leads, not proof of impossible quests.
+
+Melbh's opening-message naming mismatch is inactive: announcement dispatch is
+commented out. No live wording repair is claimed. Current warnings precede
+attempted movement, on arrival and command; boat custody does not prevent
+sweeps. Falls are command-time chances. Closed/secret doors lack declared key
+locks, and well return differs. Aevenyl's foreign visage request/earlier
+Winterhaven map stays unchanged; `_noquest_` does not disable explicit recipes.
+
+Focused source and actual C++ journal journeys protect quantities, item identity,
+optional supplied-route history, six independent outcomes, read-only readiness,
+owner rejection, replay and cold recovery. Full catalog/source/schema/all-map
+loader, accounting gates/daily projection, maintained build, changed/staged
+formatting, native/prior-map preservation and local/source links are checked.
+Actual offerings, original acquisition/handoff, peaceful source/recipient order,
+D1 extraction/reset, currents/falls/travel/survival, foreign completion and daily
+renewal remain unqualified. Catalog:85 maps/1625 achievements/1459 potential
+dailies/2207 rows; all2668 definitions/fingerprint/revision two/registry/prior84
+maps unchanged. Original queue:64/220 complete,156 pending; Kobold Settlement
+next. Active, ready accounting is mandatory; frozen recovery stays separate.
+No DB/account/server operation, migration, deployment or merge.
