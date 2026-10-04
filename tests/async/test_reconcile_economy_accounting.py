@@ -14,13 +14,30 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 from reconcile_economy_accounting import (MAX_INPUT_BYTES, MAX_ROWS, NATIVE_COVERAGE_EXCEPTIONS,
                                           ORPHAN_EVIDENCE_SOURCES,
-                                          Reconciler, SnapshotError, account_key, view)  # noqa: E402
+                                          Reconciler, SnapshotError, account_key,
+                                          decode_source_event, view)  # noqa: E402
 
 LINEAGE = "11" * 16
 EPOCH = "22" * 16
 OP = "33" * 16
-SOURCE = "44" * 48
 LEGACY = "55" * 16
+
+
+def source_identity(kind=16, identity="44", sequence=0, slot=0):
+    return (kind.to_bytes(2, "little") + b"\x01\x00" + bytes.fromhex(identity * 16) +
+            bytes.fromhex("45" * 16) + sequence.to_bytes(8, "little") +
+            slot.to_bytes(4, "little")).hex()
+
+
+SOURCE = source_identity()
+
+
+def malformed_sources():
+    raw = bytes.fromhex(SOURCE)
+    return [value.to_bytes(2, "little") + raw[2:] for value in (0, 24, 65535)] + [
+        raw[:2] + value.to_bytes(2, "little") + raw[4:] for value in (0, 2, 65535)] + [
+        raw[:4] + bytes(16) + raw[20:], raw[:20] + bytes(16) + raw[36:],
+        raw[:4] + bytes(32) + raw[36:]]
 
 
 def key(kind, identity, context=0):
@@ -154,6 +171,86 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(snapshot, before, "audit must leave its input untouched")
         self.assertEqual(sum(report["exception_counts"].values()), report["exception_count"])
         return set(report["exception_counts"])
+
+    def test_source_identity_version_kind_and_unsigned_bounds(self):
+        for kind in range(1, 24):
+            for sequence in (0, 2**64 - 1):
+                for slot in (0, 2**32 - 1):
+                    self.assertEqual(decode_source_event(source_identity(kind, "71", sequence, slot)),
+                                     (kind, "71" * 16, "45" * 16, sequence, slot))
+        malformed = [raw.hex() for raw in malformed_sources()]
+        malformed.extend((SOURCE[:-2], SOURCE + "00", "", source_identity(identity="aa").upper(), "gg" * 48,
+                          None, 0, b"x" * 48))
+        for value in malformed:
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(SnapshotError, "invalid source event"):
+                    decode_source_event(value)
+
+    def test_matching_malformed_source_rows_refuse_without_mutating_input(self):
+        for raw in malformed_sources():
+            snapshot = clean_snapshot()
+            snapshot["operations"][0]["source_event"] = raw.hex()
+            snapshot["source_claims"][0]["source_event"] = raw.hex()
+            codes = self.codes(snapshot)
+            self.assertIn("invalid_source_event", codes)
+            self.assertIn("invalid_source_claim", codes)
+            self.assertNotIn("missing_source_claim", codes)
+        rejected = clean_snapshot()
+        rejected["operations"][0]["outcome"] = "rejected"
+        rejected["operations"][0]["source_event"] = malformed_sources()[0].hex()
+        self.assertIn("invalid_source_event", self.codes(rejected))
+
+    def test_prior_epoch_claim_and_uid_roots_validate_source_grammar(self):
+        for raw in malformed_sources():
+            snapshot = clean_snapshot()
+            prior = {"lineage": LINEAGE, "source_event": raw.hex(),
+                     "operation_id": "77" * 16, "operation_lineage": LINEAGE,
+                     "operation_epoch": "88" * 16, "operation_reason": 3,
+                     "operation_source_event": raw.hex(), "operation_outcome": "committed",
+                     "operation_result_code": 0, "operation_inbox_receipt": {
+                         "status": 1, "result_code": 0, "failure_stage": 0,
+                         "committed_at_present": True}}
+            snapshot["source_claims"].append(prior)
+            self.assertIn("invalid_source_claim", self.codes(snapshot))
+            self.assertNotIn("orphan_source_claim", self.codes(snapshot))
+            native = {"lineage_uid_references": [], "lineage_uid_reference_roots": [{
+                "operation_id": "77" * 16, "epoch": "88" * 16, "reason": 3,
+                "source_event": raw.hex(), "outcome": "committed", "item_event_count": 0,
+                "reference_count": 0}], "lineage_uid_reference_coverage": {
+                    "rows": 0, "root_rows": 1}, "mapping_creations": []}
+            reader = Reconciler()
+            reader.audit_lineage_uid_references(LINEAGE, EPOCH, "disposable", native, {})
+            self.assertEqual(reader.counts, {"invalid_lineage_uid_reference_root": 1})
+            reader.audit_coin_pile_lifecycle_sources("disposable", native)
+            self.assertEqual(reader.counts["invalid_coin_pile_lifecycle_source"], 1)
+
+    def test_malformed_source_operator_view_is_bounded_and_retains_refusal(self):
+        snapshot = clean_snapshot()
+        snapshot["operations"][0]["source_event"] = malformed_sources()[0].hex()
+        snapshot["source_claims"][0]["source_event"] = snapshot["operations"][0]["source_event"]
+        snapshot["operations"][0]["personal_alias"] = "private-malformed-source"
+        before = copy.deepcopy(snapshot)
+        report = Reconciler().audit(snapshot)
+        for limit in (0, 1, 100):
+            result = view(snapshot, report, "operation", limit, operation_id=OP)
+            self.assertEqual(result["coverage"]["exception_count"], 2)
+            self.assertLessEqual(len(result["rows"]), limit)
+            self.assertNotIn("private-malformed-source", json.dumps(result))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "source.json"
+            payload = json.dumps(snapshot).encode()
+            path.write_bytes(payload)
+            for limit in (0, 1, 100):
+                result = subprocess.run([sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                         str(path), "--view", "operation", "--operation-id", OP,
+                                         "--limit", str(limit)], capture_output=True, text=True, timeout=30)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                output = json.loads(result.stdout)
+                self.assertEqual(output["coverage"]["exception_count"], 2)
+                self.assertLessEqual(len(output["rows"]), limit)
+                self.assertNotIn("private-malformed-source", result.stdout)
+                self.assertEqual(path.read_bytes(), payload)
+        self.assertEqual(snapshot, before)
 
     def test_native_account_kind_range_and_unsigned_stake_identity(self):
         for kind in range(1, 12):
@@ -692,18 +789,20 @@ class ReconciliationTests(unittest.TestCase):
         snapshot = clean_snapshot()
         snapshot["backend"] = "sql_partial"
         snapshot["complete"] = False
-        prior = {"lineage": LINEAGE, "source_event": "66" * 48,
+        prior_source = source_identity(identity="66")
+        prior = {"lineage": LINEAGE, "source_event": prior_source,
                  "operation_id": "77" * 16, "operation_lineage": LINEAGE,
                  "operation_epoch": "88" * 16,
-                 "operation_source_event": "66" * 48,
+                 "operation_source_event": prior_source,
                  "operation_outcome": "committed", "operation_result_code": 0,
                  "operation_inbox_receipt": {"status": 1, "result_code": 0,
                                               "failure_stage": 0,
                                               "committed_at_present": True}}
         snapshot["source_claims"].append(prior)
         baseline = copy.deepcopy(prior)
-        baseline.update(source_event="aa" * 48, operation_id="99" * 16,
-                        operation_source_event="aa" * 48, operation_reason=38)
+        baseline_source = source_identity(kind=10, identity="aa")
+        baseline.update(source_event=baseline_source, operation_id="99" * 16,
+                        operation_source_event=baseline_source, operation_reason=38)
         snapshot["source_claims"].append(baseline)
         snapshot["source_claim_coverage"] = {
             "source_operations": 2, "missing_claim_operations": 0,
@@ -715,9 +814,9 @@ class ReconciliationTests(unittest.TestCase):
         codes = self.codes(snapshot)
         self.assertIn("lineage_missing_source_claim", codes)
         self.assertIn("lineage_duplicate_source_event", codes)
-        prior["operation_source_event"] = "99" * 48
+        prior["operation_source_event"] = source_identity(identity="99")
         self.assertIn("orphan_source_claim", self.codes(snapshot))
-        prior["operation_source_event"] = "66" * 48
+        prior["operation_source_event"] = prior_source
         prior["operation_inbox_receipt"]["committed_at_present"] = False
         self.assertIn("orphan_source_claim", self.codes(snapshot))
         prior["operation_source_event"] = prior["source_event"]
@@ -861,7 +960,7 @@ class ReconciliationTests(unittest.TestCase):
     def test_retired_account_has_zero_terminal_balance_and_no_native_row(self):
         snapshot = clean_snapshot()
         second_id = "66" * 16
-        second_source = "77" * 48
+        second_source = source_identity(identity="77")
         second = copy.deepcopy(snapshot["operations"][0])
         second.update(operation_id=second_id, reason=41, source_event=second_source,
                       item_event_count=0, realized_price_copper=None)
@@ -1738,7 +1837,7 @@ def native_stake_sql():
     from test_persistence_backup_integration import sql
     read_evidence = exporter.read_evidence
     root = ROOT
-    work=root/'bin/tests/plan5-stake-sql'
+    work=root/'bin/tests/plan5-source-event-sql'
     work.mkdir(mode=0o700,parents=True,exist_ok=True)
     source=work/'probe.cpp'
     source.write_text('''#include "economy/economic_accounting_intent.h"
@@ -1748,6 +1847,11 @@ def native_stake_sql():
     void output(const std::vector<uint8_t> &bytes) {
         for (size_t i=0;i<4;++i) std::cout.put(static_cast<char>(bytes.size() >> (i*8)));
         std::cout.write(reinterpret_cast<const char *>(bytes.data()), bytes.size());
+    }
+    void source_case(std::vector<uint8_t> raw) {
+        economic_source_event decoded;
+        const bool valid=economic_source_event_decode(raw,&decoded)==economic_accounting_error::ok;
+        raw.insert(raw.begin(),uint8_t(valid)); output(raw);
     }
     int main() {
         economic_accounting_plan p;
@@ -1779,6 +1883,32 @@ def native_stake_sql():
             p.postings[0].delta={3,0,0,0}; p.postings[0].copper=3;
             p.postings[1].delta={-3,0,0,0}; p.postings[1].copper=-3;
         }
+        economic_source_event event;
+        event.source=id(0x71); event.generation=id(0x72);
+        std::array<uint8_t,ECONOMIC_SOURCE_EVENT_BYTES> encoded;
+        for (uint16_t kind=1;kind<=23;++kind) {
+            event.kind=static_cast<economic_source_kind>(kind);
+            for (uint64_t sequence : {uint64_t(0),UINT64_MAX}) {
+                for (uint32_t slot : {uint32_t(0),UINT32_MAX}) {
+                    event.sequence=sequence; event.slot=slot;
+                    assert(economic_source_event_encode(event,&encoded)==economic_accounting_error::ok);
+                    source_case({encoded.begin(),encoded.end()});
+                }
+            }
+        }
+        std::vector<uint8_t> base(encoded.begin(),encoded.end());
+        for (uint16_t kind : {uint16_t(0),uint16_t(24),uint16_t(UINT16_MAX)}) {
+            auto raw=base; raw[0]=uint8_t(kind); raw[1]=uint8_t(kind>>8); source_case(raw);
+        }
+        for (uint16_t version : {uint16_t(0),uint16_t(2),uint16_t(UINT16_MAX)}) {
+            auto raw=base; raw[2]=uint8_t(version); raw[3]=uint8_t(version>>8); source_case(raw);
+        }
+        for (size_t start : {size_t(4),size_t(20)}) {
+            auto raw=base; std::fill(raw.begin()+start,raw.begin()+start+16,0); source_case(raw);
+        }
+        auto both=base; std::fill(both.begin()+4,both.begin()+36,0); source_case(both);
+        auto short_raw=base; short_raw.pop_back(); source_case(short_raw);
+        auto long_raw=base; long_raw.push_back(0); source_case(long_raw); source_case({});
     }
     ''')
     sources=['src/economy/economic_accounting_plan.c','src/economy/economic_accounting_types.c',
@@ -1806,8 +1936,21 @@ def native_stake_sql():
     while offset<len(payload):
         size,=struct.unpack_from('<I',payload,offset); offset+=4
         blocks.append(payload[offset:offset+size]); offset+=size
-    assert len(blocks)==4 and offset==len(payload)
-    batches=list(zip(blocks[::2],blocks[1::2]))
+    assert len(blocks)==108 and offset==len(payload)
+    cases=blocks[4:]
+    assert sum(case[0] for case in cases)==92
+    for case in cases:
+        try:
+            decoded=decode_source_event(case[1:].hex())
+        except SnapshotError:
+            assert case[0]==0,case.hex()
+        else:
+            assert case[0]==1,case.hex()
+            raw=case[1:]
+            assert decoded==(int.from_bytes(raw[:2],'little'),raw[4:20].hex(),raw[20:36].hex(),
+                             int.from_bytes(raw[36:44],'little'),int.from_bytes(raw[44:48],'little'))
+    print('NATIVE_SOURCE_GRAMMAR modes=2 cases=104 accepted=92 refused=12 agreement=True',flush=True)
+    batches=list(zip(blocks[:4:2],blocks[1:4:2]))
     assert [b[1][:4] for b in batches]==[b'EAP1']*2
     for frozen,plan in batches:
         assert frozen[:4]==b'EAI1' and plan[152:184]==hashlib.sha256(b'DURIS-ECONOMIC-INTENT-V1\0'+frozen).digest()
@@ -1857,7 +2000,10 @@ def native_stake_sql():
                                               'economic_accounting_coin_posting','economic_accounting_source_claim'):
                                     cursor.execute('SELECT * FROM '+table+' ORDER BY 1,2'); result.append(cursor.fetchall())
                                 return result
+                        captures=0
                         def audit(terminal,expected=()):
+                            nonlocal captures
+                            captures+=1
                             before=rows(); oracle=stake_snapshot(terminal)
                             original=copy.deepcopy(oracle)
                             cursor=mock.Mock(wraps=reader.cursor()); connection=mock.Mock(wraps=reader)
@@ -1877,7 +2023,7 @@ def native_stake_sql():
                             report=Reconciler().audit(snapshot)
                             assert set(report['exception_counts'])==set(expected),report
                             assert snapshot==snapshot_before
-                            if not terminal:
+                            if not terminal and not expected:
                                 snapshot['complete']=False
                                 partial=Reconciler().audit(snapshot)
                                 for limit in (0,1,100):
@@ -1920,13 +2066,39 @@ def native_stake_sql():
                         with owner.cursor() as cursor:
                             cursor.execute('UPDATE economic_accounting_account_effect SET after_copper=0 WHERE operation_id=%s AND account_index=1',(op,))
                         audit(True)
+                        def replace_source(value):
+                            # Preserve the canonical source/root FK while the
+                            # fixture owner substitutes matching corrupt bytes.
+                            owner.begin()
+                            try:
+                                with owner.cursor() as cursor:
+                                    cursor.execute('DELETE FROM economic_accounting_source_claim WHERE operation_id=%s',(op,))
+                                    cursor.execute('UPDATE economic_accounting_operation SET source_event=%s WHERE operation_id=%s',
+                                                   (value,op))
+                                insert('economic_accounting_source_claim',dict(lineage=plan[8:24],source_event=value,
+                                       operation_id=op,outcome=1))
+                                owner.commit()
+                            except Exception:
+                                owner.rollback()
+                                raise
+                        # Both rows agree on each corrupt S48 value. Agreement
+                        # must not substitute for native identity validity.
+                        for case in cases:
+                            if case[0] or len(case)!=49:
+                                continue
+                            replace_source(case[1:])
+                            audit(True,('invalid_source_event','invalid_source_claim'))
+                        replace_source(plan[104:152])
+                        audit(True)
                         with owner.cursor() as cursor:
                             cursor.execute('SELECT active_epoch FROM economic_lineage_state'); assert cursor.fetchall()==[{'active_epoch':None}]
-                        print('PASS stake-read-only '+engine+' captures=4 rollback=4 SQL-tables=7 unchanged inactive',flush=True)
+                        assert captures==14,captures
+                        print('PASS stake-read-only '+engine+' captures=14 rollback=14 SQL-tables=7 unchanged inactive source-refusals=9',flush=True)
                     finally: reader.close()
                 finally: owner.close()
     print('STAKE_SQL_QUALIFIED '+json.dumps({'engines':2,'native_modes':2,'plans':2,'intents':2,
-          'read_only_captures':8,'fault_captures':2,'permission_denials':2,'full_mutation_or_gameplay':False},sort_keys=True),flush=True)
+          'read_only_captures':28,'fault_captures':20,'source_fault_captures':18,'native_source_cases':104,
+          'permission_denials':2,'full_mutation_or_gameplay':False},sort_keys=True),flush=True)
 
 
 @unittest.skipUnless(os.environ.get("DURIS_RUN_STAKE_SQL_INTEGRATION") == "1",

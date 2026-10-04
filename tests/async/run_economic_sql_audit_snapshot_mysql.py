@@ -21,6 +21,7 @@ import economic_sql_audit_snapshot as exporter  # noqa: E402
 from economic_sql_audit_snapshot import capture  # noqa: E402
 from reconcile_economy_accounting import Reconciler, SnapshotError, view  # noqa: E402
 from test_economic_sql_audit_origins import EPOCH, LINEAGE, OPENING, OP, key, witness  # noqa: E402
+from test_reconcile_economy_accounting import malformed_sources, source_identity  # noqa: E402
 
 INSTALL = bytes.fromhex("77" * 16)
 
@@ -115,20 +116,20 @@ def item_origin(uid, owner_type, state, owner_id, revision):
                        uid, 0, revision, bytes.fromhex("a5" * 32))
 
 root = bytes.fromhex("aa" * 16)
-source = bytes.fromhex("bb" * 48)
+source = bytes.fromhex(source_identity(identity="bb"))
 prior_root = bytes.fromhex("dd" * 16)
 prior_epoch = bytes.fromhex("ee" * 16)
-prior_source = bytes.fromhex("ff" * 48)
+prior_source = bytes.fromhex(source_identity(identity="ff"))
 consumed_source_root = bytes.fromhex("e1" * 16)
 consumer_root = bytes.fromhex("e2" * 16)
-consumed_source_event = bytes.fromhex("ab" * 48)
-consumer_source_event = bytes.fromhex("ac" * 48)
+consumed_source_event = bytes.fromhex(source_identity(identity="ab"))
+consumer_source_event = bytes.fromhex(source_identity(kind=13, identity="ac"))
 creation_root = bytes.fromhex("e3" * 16)
-creation_source_event = bytes.fromhex("ad" * 48)
+creation_source_event = bytes.fromhex(source_identity(kind=18, identity="ad"))
 new_wallet_root = bytes.fromhex("e4" * 16)
 other_mapping_lineage = bytes.fromhex("44" * 16)
 prior_item_root = bytes.fromhex("e5" * 16)
-prior_item_source = bytes.fromhex("b0" * 48)
+prior_item_source = bytes.fromhex(source_identity(kind=18, identity="b0"))
 prior_unlinked_operation = bytes.fromhex("b1" * 16)
 admin = pymysql.connect(**settings)
 try:
@@ -531,6 +532,51 @@ try:
                                    "unmapped_native_wallet": 1,
                                    "unauthorized_mapping_creation": 1}
             assert report["exception_counts"] == expected_exceptions, report
+            # Matching root/claim values can still be invalid native S48
+            # identities, including retained roots outside the selected epoch.
+            def source_rows():
+                with setup.cursor() as cursor:
+                    rows = []
+                    for statement in TABLES:
+                        table = statement.split()[2]
+                        cursor.execute("SELECT * FROM " + table)
+                        rows.append(sorted((repr(row) for row in cursor.fetchall())))
+                    return rows
+            captures = 0
+            for source_root, valid_source, additions in (
+                    (root, source, {"invalid_source_event": 1, "invalid_source_claim": 1}),
+                    (creation_root, creation_source_event, {"invalid_source_event": 1,
+                        "invalid_source_claim": 1, "invalid_lineage_uid_reference_root": 1}),
+                    (prior_root, prior_source, {"invalid_source_claim": 1})):
+                for invalid_source in malformed_sources():
+                    with setup.cursor() as writer:
+                        writer.execute("UPDATE economic_accounting_operation SET source_event=%s WHERE operation_id=%s",
+                                       (invalid_source, source_root))
+                        writer.execute("UPDATE economic_accounting_source_claim SET source_event=%s WHERE operation_id=%s",
+                                       (invalid_source, source_root))
+                    before = source_rows()
+                    connection = mock.Mock(wraps=audit)
+                    cursor = mock.Mock(wraps=audit.cursor())
+                    connection.cursor.return_value = cursor
+                    corrupt = capture(connection, LINEAGE, EPOCH)
+                    connection.rollback.assert_called_once_with()
+                    cursor.close.assert_called_once_with()
+                    assert all(call.args[0].upper().startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
+                               for call in cursor.execute.call_args_list)
+                    assert source_rows() == before
+                    original = json.dumps(corrupt, sort_keys=True)
+                    fault = Reconciler().audit(corrupt)
+                    assert fault["exception_counts"] == {**expected_exceptions, **additions}, fault
+                    assert json.dumps(corrupt, sort_keys=True) == original
+                    captures += 1
+                with setup.cursor() as writer:
+                    writer.execute("UPDATE economic_accounting_operation SET source_event=%s WHERE operation_id=%s",
+                                   (valid_source, source_root))
+                    writer.execute("UPDATE economic_accounting_source_claim SET source_event=%s WHERE operation_id=%s",
+                                   (valid_source, source_root))
+                assert capture(audit, LINEAGE, EPOCH) == snapshot
+            assert captures == 27
+            print("SQL source grammar: 27 corrupt cuts, selected money/UID and prior epoch; all tables unchanged, rollback/close passed", flush=True)
             # Root-scoped joins used to hide these real native-SQL corruptions.
             # A SELECT-only audit must expose every family without modifying it.
             orphan = bytes.fromhex("01" * 16)
@@ -777,7 +823,7 @@ try:
             # Re-creating a UID is invalid even if all revisions, references,
             # roots and the final native row agree across the lineage cut.
             duplicate_uid_root = bytes.fromhex("e6" * 16)
-            duplicate_uid_source = bytes.fromhex("b2" * 48)
+            duplicate_uid_source = bytes.fromhex(source_identity(kind=18, identity="b2"))
             with setup.cursor() as writer:
                 writer.execute("INSERT INTO economic_accounting_operation VALUES "
                                "(%s,%s,%s,NULL,33,1,0,%s,0,0,0,1,NULL)",
@@ -815,7 +861,7 @@ try:
             assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
                 expected_exceptions
             revived_uid_root = bytes.fromhex("e7" * 16)
-            revived_uid_source = bytes.fromhex("b3" * 48)
+            revived_uid_source = bytes.fromhex(source_identity(kind=18, identity="b3"))
             with setup.cursor() as writer:
                 writer.execute("INSERT INTO economic_accounting_operation VALUES "
                                "(%s,%s,%s,NULL,32,1,0,%s,0,0,0,1,NULL)",
