@@ -6,6 +6,7 @@
 #include "flatfile/flatfile_store.h"
 #include "economy/currency_command.h"
 #include "economy/economic_accounting_plan.h"
+#include "economy/economic_gameplay_authority.h"
 #include <algorithm>
 #include <cerrno>
 #include <climits>
@@ -551,16 +552,13 @@ retained_lifecycle decode_lifecycle_receipt(std::span<const uint8_t> encoded)
 	return value;
 }
 
-bool retry_retained_lifecycle(const std::string &root, const flatfile_authority_lock &lock,
-			      const flatfile_accounting_lifecycle_request &request,
-			      const economic_account_key &opening,
-			      const flatfile_economic_control &control,
-			      flatfile_accounting_lifecycle_receipt *receipt, std::string *error)
+bool read_retained_lifecycle(const std::string &root, const critical_operation_id &operation,
+			     retained_lifecycle *out, std::string *error)
 {
 	std::vector<uint8_t> encoded;
 	errno = 0;
 	const auto read = flatfile_read(root + "/economic-evidence",
-					lifecycle_receipt_name(request.operation_id),
+					lifecycle_receipt_name(operation),
 					lifecycle_receipt_maximum_bytes, &encoded, error);
 	if (read == flatfile_read_result::not_found)
 		return false;
@@ -568,16 +566,23 @@ bool retry_retained_lifecycle(const std::string &root, const flatfile_authority_
 					       read == flatfile_read_result::io_error ? EIO :
 											EILSEQ);
 	auto retained = decode_lifecycle_receipt(encoded);
-	need(same_request(retained.request, request) &&
-		     economic_account_key_equal(retained.opening, opening),
-	     EEXIST);
+	need(retained.request.operation_id.bytes == operation.bytes);
+	*out = std::move(retained);
+	return true;
+}
+
+void verify_retained_lifecycle(const std::string &root, const flatfile_authority_lock &lock,
+			       const retained_lifecycle &retained,
+			       const flatfile_economic_control &control, std::string *error)
+{
 	need(control.lineage.bytes == retained.request.lineage.bytes &&
 	     control.creating_operation.bytes == retained.lineage_creating_operation.bytes &&
 	     control.revision >= retained.selected_control_revision &&
 	     control.epoch_count >= retained.epoch.ordinal);
 	flatfile_economic_epoch current_epoch;
-	const auto epoch_error = flatfile_economic_epoch_read(root, lock, request.lineage,
-							      request.epoch, &current_epoch, error);
+	const auto epoch_error = flatfile_economic_epoch_read(root, lock, retained.request.lineage,
+							      retained.request.epoch,
+							      &current_epoch, error);
 	need(!epoch_error, epoch_error);
 	// Receipt v1 stays canonical. Origin is authenticated by the retained catalog,
 	// never inferred from the surviving sibling receipt or promoted from history.
@@ -605,6 +610,21 @@ bool retry_retained_lifecycle(const std::string &root, const flatfile_authority_
 	     baseline.durable_revision == retained.receipt.baseline_revision &&
 	     !baseline.result_code && baseline.failure_stage == critical_failure_stage::none &&
 	     baseline.result.empty());
+}
+
+bool retry_retained_lifecycle(const std::string &root, const flatfile_authority_lock &lock,
+			      const flatfile_accounting_lifecycle_request &request,
+			      const economic_account_key &opening,
+			      const flatfile_economic_control &control,
+			      flatfile_accounting_lifecycle_receipt *receipt, std::string *error)
+{
+	retained_lifecycle retained;
+	if (!read_retained_lifecycle(root, request.operation_id, &retained, error))
+		return false;
+	need(same_request(retained.request, request) &&
+		     economic_account_key_equal(retained.opening, opening),
+	     EEXIST);
+	verify_retained_lifecycle(root, lock, retained, control, error);
 	static_assert(std::is_nothrow_move_assignable_v<flatfile_accounting_lifecycle_receipt>);
 	if (receipt)
 		*receipt = std::move(retained.receipt);
@@ -1167,6 +1187,131 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 			// move remains; no later lookup or reconstruction can change success.
 			if (receipt)
 				*receipt = std::move(candidate_receipt);
+		},
+		error);
+}
+
+unsigned int flatfile_accounting_lifecycle_transaction::recover_runtime_locked(
+	const std::string &root, const flatfile_identity_lock &identity_lock,
+	const flatfile_authority_lock &lock, bool *active_out, std::string *error) noexcept
+{
+	return guarded(
+		[&]
+		{
+			need(active_out && !root.empty() && identity_lock.matches(root) &&
+				     lock.matches(root),
+			     EINVAL);
+			// Trusted startup owns the verified cut. An already installed projection is
+			// never replaced by this reader, including on any subsequent proof failure.
+			need(!economic_gameplay_authority::active(), EALREADY);
+			const auto recovered =
+				flatfile_player_domain_recover_locked(root, lock, error);
+			need(recovered == flatfile_player_domain_result::ok,
+			     recovered == flatfile_player_domain_result::io_error ? EIO : EILSEQ);
+			const auto gate = flatfile_economic_legacy_domain_gate(root, lock, nullptr);
+			if (!gate)
+			{
+				*active_out = false;
+				return;
+			}
+			// Only the existing gate's explicit selected-active refusal proceeds. Missing
+			// or corrupt evidence is not inferred activation or initialization authority.
+			need(gate == EAGAIN, gate);
+			flatfile_economic_control control;
+			auto code = flatfile_economic_control_read(root, lock, &control, error);
+			need(!code, code);
+			need(nonzero(control.active_epoch));
+			flatfile_economic_epoch epoch;
+			code = flatfile_economic_epoch_read(root, lock, control.lineage,
+							    control.active_epoch, &epoch, error);
+			need(!code, code);
+			// Only catalog v3 can provide this origin. v1/v2 stay unknown even if an
+			// unrelated lifecycle receipt happens to survive beside their book.
+			need(epoch.baseline_initialization ==
+				     flatfile_baseline_initialization::initialized &&
+			     epoch.initialization_origin ==
+				     flatfile_baseline_initialization_origin::lifecycle_owner &&
+			     nonzero(epoch.baseline_initializing_operation));
+			retained_lifecycle retained;
+			need(read_retained_lifecycle(root, epoch.baseline_initializing_operation,
+						     &retained, error));
+			need(retained.request.lineage.bytes == control.lineage.bytes &&
+			     retained.request.epoch.bytes == control.active_epoch.bytes &&
+			     economic_account_key_equal(retained.opening, epoch.baseline_opening));
+			// Consume the decoded original request, including its retained assertions;
+			// never fabricate current request flags, descriptors or opening holdings.
+			verify_retained_lifecycle(root, lock, retained, control, error);
+			const auto structure =
+				flatfile_accounting_baseline_storage::verify_structure_locked(
+					root, lock, control.lineage, control.active_epoch,
+					epoch.baseline_opening, error);
+			need(structure == flatfile_accounting_status::ok,
+			     structure == flatfile_accounting_status::capacity ? ENOMEM :
+			     structure == flatfile_accounting_status::io_error ? EIO :
+										 EILSEQ);
+			std::vector<flatfile_economic_mapping> mappings;
+			code = flatfile_accounting_authority_storage::read_all_mappings_locked(
+				root, lock, &mappings, error);
+			need(!code, code);
+			flatfile_accounting_lifecycle_native_sources sources;
+			code = capture_sources(root, identity_lock, lock, &sources, error);
+			need(!code, code);
+			std::map<uint32_t, const flatfile_accounting_lifecycle_wallet_source *>
+				wallets;
+			std::map<std::pair<std::string, uint8_t>,
+				 const flatfile_accounting_lifecycle_bank_source *>
+				banks;
+			for (const auto &wallet : sources.wallets)
+				need(wallets.emplace(wallet.pid, &wallet).second);
+			for (const auto &bank : sources.banks)
+				need(banks.emplace(std::make_pair(bank.name, bank.racewar), &bank)
+					     .second);
+			std::vector<economic_gameplay_wallet_mapping> wallet_projection;
+			std::vector<economic_gameplay_bank_mapping> bank_projection;
+			wallet_projection.reserve(wallets.size());
+			bank_projection.reserve(banks.size());
+			// Current aliases and lifetimes, including mappings created after the original
+			// baseline, come only from the complete current authority/native census.
+			// Original receipt names, balances and source digests are historical proof.
+			for (const auto &mapping : mappings)
+			{
+				if (nonzero(mapping.retiring_operation))
+					continue;
+				if (mapping.account.kind == economic_account_kind::wallet)
+				{
+					need(mapping.locator.native_id <= INT32_MAX &&
+					     mapping.account.context_id == 0);
+					const auto pid =
+						static_cast<uint32_t>(mapping.locator.native_id);
+					const auto at = wallets.find(pid);
+					need(at != wallets.end());
+					wallet_projection.push_back({ pid, mapping.account });
+					wallets.erase(at);
+				}
+				else
+				{
+					need(mapping.account.kind == economic_account_kind::bank &&
+					     mapping.account.context_id <= INT8_MAX);
+					const auto racewar =
+						static_cast<uint8_t>(mapping.account.context_id);
+					const auto at =
+						banks.find({ mapping.locator.name, racewar });
+					need(at != banks.end());
+					bank_projection.push_back(
+						{ mapping.locator.name, racewar, mapping.account });
+					banks.erase(at);
+				}
+			}
+			need(wallets.empty() && banks.empty());
+			const auto installed = economic_gameplay_authority::install(
+				control.lineage, control.active_epoch,
+				retained.receipt.baseline_operation_id, wallet_projection,
+				bank_projection);
+			need(installed == economic_accounting_error::ok,
+			     installed == economic_accounting_error::capacity ? ENOMEM : EILSEQ);
+			// Publication is the final potentially allocating operation; no later failure
+			// can leave a published projection paired with a reported unsuccessful boot.
+			*active_out = true;
 		},
 		error);
 }

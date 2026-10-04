@@ -32,6 +32,14 @@ class flatfile_accounting_baseline_storage
 #ifdef DURIS_FLATFILE_ACCOUNTING_TEST
 	friend class flatfile_accounting_test_access;
 #endif
+
+	// Validate the selected book and every reservation bucket, not only the
+	// buckets touched by the original witness. Borrow the same authority lock.
+	static flatfile_accounting_status
+	verify_structure_locked(const std::string &, const flatfile_authority_lock &,
+				const critical_operation_id &lineage,
+				const critical_operation_id &epoch,
+				const economic_account_key &opening, std::string *);
 	// Requires native catalog proof of never initialized and an empty epoch
 	// namespace. Stages all nineteen book/index/catalog/control after-images
 	// together. Exact initialized retry verifies retained identity and complete
