@@ -3025,3 +3025,26 @@ cases: exact bytes/duplicate identities, allocation failure, quarantine/policy
 flags, mixed valid/corrupt records, missing-file and concurrent-mutation behavior.
 No compiler, native, SQL, gameplay or recovery checks ran. No production caller
 uses this prerequisite yet; the full ownership protocol remains open.
+
+
+### Final integrated coin review corrections; unqualified
+
+Final-pin review found four bounded source gaps in6b6b7c10c. Corrections now bind
+committed wallet denominations and exact revision advances, plus every native pile
+result identity/revision field, to the original immutable command before any live
+projection. Postcallback paths preserve an already-blocked canonical receipt
+conflict. Every physical publication/ACK attempt rechecks PID/account/race and
+current body identity before and after callbacks. Partial pickup also requires
+canonical opening weight before rendering the after image. Source pins are
+currency_transaction.c94f5bfe23da10bbd25ea0d18ff1a9ba934300f31d91d63bdacc3c1341dcf0dbe
+and coin_physical_publication.c00fbca73cf3d4fc49f51c36e59423ec5224ef520539b0ac7d0ae077faa4d532b.
+Independent read-only review confirms the four corrections; no runtime checks ran.
+
+The command contains bank revision and zero bank delta, not an opening bank
+vector. This verifier checks bank range/revision and retains the authoritative
+immutable native result/reconciliation contract for its balances; it does not
+invent an independent bank proof from live projection. Generic currency linkage
+remains independent of the native world module. Inactive/schema1 and wallet-only
+behavior remain outside these physical-schema2 checks. Prepared regression cases,
+actual producer/recovery journeys, cold ownership and full Plan2 acceptance remain
+required; no issue/route is marked qualified or release-ready.

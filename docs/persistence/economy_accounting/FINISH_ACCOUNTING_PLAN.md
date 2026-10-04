@@ -58,7 +58,7 @@ observationf4281e805. The latter APIs remain opt-in: production restored-save
 registration, checkpoint-spanning permits, ACK fences, wake retention and actorless
 native hydration still require one complete ownership handoff. Coin final source
 review found receipt-before-projection, immutable endpoint retry identity,
-reentrant conflict retention and opening-weight gaps; corrections are in progress.
+reentrant conflict retention and opening-weight gaps; source corrections are now independently reviewed but unqualified.
 Current source is unqualified. No new compiler/native/SQL/gameplay/recovery tests
 or milestone push follows from this preparation checkpoint. Preserve original
 BEFORE sources, prepared owners and the major-plan test schedule. Current semantic
