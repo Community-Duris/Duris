@@ -21,7 +21,7 @@ if (os.environ.get("TEST_DB_DISPOSABLE") != "1" or os.environ.get("ENVIRONMENT")
         not os.environ.get("DB_SOCKET", "").startswith("/plan5-restore-baseline-")):
     raise SystemExit("fresh private baseline daemon/socket required")
 fixture = Path(os.environ["DURIS_PLAN5_BASELINE_FIXTURE"]).resolve()
-assert fixture.is_relative_to((ROOT / "bin/tests/plan5-baseline-root-binding").resolve())
+assert fixture.is_relative_to((ROOT / "bin/tests/plan5-baseline-projection-audit").resolve())
 settings = dict(unix_socket=os.environ["DB_SOCKET"], user=os.environ["DB_USER"],
                 password=os.environ["DB_PASSWD"], database="duris_restore", autocommit=True,
                 cursorclass=pymysql.cursors.DictCursor, read_timeout=30, write_timeout=30)
@@ -117,12 +117,13 @@ try:
         original = captured()
         try:
             execute(query, params)
-        except pymysql.IntegrityError as error:
-            assert error.args[0] == error_code, (label, error.args)
+        except pymysql.MySQLError as error:
+            assert error.args[0] in (error_code if isinstance(error_code, tuple) else (error_code,)), (label, error.args)
+            actual_code = error.args[0]
         else:
             raise AssertionError(label + ": canonical constraint admitted corruption")
         assert captured() == original
-        constraints.append({"label": label, "error_code": error_code})
+        constraints.append({"label": label, "error_code": actual_code})
         print("BASELINE_SQL_CONSTRAINT " + json.dumps(constraints[-1], sort_keys=True), flush=True)
 
     def fixture_changes(changes, broken_fk):
@@ -173,6 +174,99 @@ try:
     old_epoch = bytes.fromhex(native["epochs"][0])
     lineage = bytes.fromhex(native["lineage"])
     claims = {row["operation_id"]: row for row in intact["economic_accounting_source_claim"]}
+    posting = next(row for row in intact["economic_accounting_coin_posting"] if row["operation_id"] == selected)
+    cut("selected-posting-missing",
+        [("DELETE FROM economic_accounting_coin_posting WHERE operation_id=%s AND line_index=%s",
+          (selected, posting["line_index"]))],
+        [("INSERT INTO economic_accounting_coin_posting(" + ",".join(posting) + ") VALUES(" +
+          ",".join(["%s"] * len(posting)) + ")", tuple(posting.values()))],
+        refusal="EAB1 SQL projection mismatch")
+
+    def insert_row(table, row):
+        return ("INSERT INTO " + table + "(" + ",".join(row) + ") VALUES(" +
+                ",".join(["%s"] * len(row)) + ")", tuple(row.values()))
+
+    def projection_fault(operation):
+        return ({"findings": {"baseline_source_claim": 1}} if operation == old else
+                {"refusal": "EAB1 SQL projection mismatch"})
+
+    for operation, scope_name in ((selected, "selected"), (old, "retained")):
+        for table, index_field, family in (("economic_accounting_account_effect", "account_index", "effect"),
+                                           ("economic_accounting_coin_posting", "line_index", "posting"),
+                                           ("economic_baseline_reservation", "identity_id", "reservation")):
+            row = next(row for row in intact[table] if row["operation_id"] == operation and
+                       (row["identity_kind"] == 1 if family == "reservation" else row[index_field] == 0))
+            where = "operation_id=%s AND " + index_field + "=%s"
+            parameters = (operation, row[index_field])
+            if family == "reservation":
+                where += " AND identity_kind=%s AND lineage=%s AND epoch=%s"
+                parameters += (row["identity_kind"], row["lineage"], row["epoch"])
+            dependent = ([item for item in intact["economic_accounting_coin_posting"]
+                          if item["operation_id"] == operation and item["account_index"] == row["account_index"]]
+                         if family == "effect" else [])
+            if not (operation == selected and family == "posting"):
+                changes = [("DELETE FROM economic_accounting_coin_posting WHERE operation_id=%s AND line_index=%s",
+                            (operation, item["line_index"])) for item in dependent]
+                changes.append(("DELETE FROM " + table + " WHERE " + where, parameters))
+                repairs = [insert_row(table, row), *[insert_row("economic_accounting_coin_posting", item)
+                                                    for item in dependent]]
+                cut(scope_name + "-" + family + "-missing", changes, repairs, **projection_fault(operation))
+            extra = dict(row)
+            extra[index_field] += 100
+            if family == "effect":
+                extra["account_key"] = row["account_key"][:20] + (99).to_bytes(8, "little") + row["account_key"][28:]
+            if family == "posting":
+                extra["event_index"] = extra["line_index"]
+            extra_parameters = (operation, extra[index_field])
+            if family == "reservation":
+                extra_parameters += (row["identity_kind"], row["lineage"], row["epoch"])
+            cut(scope_name + "-" + family + "-extra", [insert_row(table, extra)],
+                [("DELETE FROM " + table + " WHERE " + where, extra_parameters)], **projection_fault(operation))
+            fields = ({field: row[field] + 1 for field in
+                       ("before_copper", "before_silver", "before_gold", "before_platinum", "after_copper",
+                        "after_silver", "after_gold", "after_platinum", "before_revision", "after_revision")}
+                      if family == "effect" else
+                      {field: row[field] + 1 for field in
+                       ("delta_copper", "delta_silver", "delta_gold", "delta_platinum", "copper_value",
+                        "account_index", "child_index")} if family == "posting" else
+                      {"identity_kind": 2, "identity_id": row["identity_id"] + 100})
+            if family == "effect":
+                fields["account_key"] = row["account_key"][:28] + (1).to_bytes(8, "little") + row["account_key"][36:]
+            for field_name, changed in fields.items():
+                # Reservation identity fields are also part of its primary key.
+                restore_parameters = (operation, changed if field_name == index_field else row[index_field])
+                if family == "reservation":
+                    restore_parameters += (changed if field_name == "identity_kind" else row["identity_kind"],
+                                           row["lineage"], row["epoch"])
+                query = "UPDATE " + table + " SET " + field_name + "=%s WHERE " + where
+                cut(scope_name + "-" + family + "-" + field_name,
+                    [(query, (changed, *parameters))], [(query, (row[field_name], *restore_parameters))],
+                    **projection_fault(operation))
+            if family == "posting":
+                query = "UPDATE " + table + " SET line_index=%s,event_index=%s WHERE operation_id=%s AND line_index=%s"
+                cut(scope_name + "-posting-dense-index",
+                    [(query, (100, 100, operation, row["line_index"]))],
+                    [(query, (row["line_index"], row["event_index"], operation, 100))], **projection_fault(operation))
+            if family == "reservation":
+                other = selected if operation == old else old
+                query = "UPDATE " + table + " SET operation_id=%s WHERE " + where
+                constrained(scope_name + "-reservation-foreign-book", query, (other, *parameters), 1452)
+                cut(scope_name + "-reservation-operation-rebound", [(query, (other, *parameters))],
+                    [(query, (operation, other, *parameters[1:]))], broken_fk=True,
+                    refusal="EAB1 SQL projection mismatch")
+                for field_name in ("lineage", "epoch"):
+                    foreign = dict(row)
+                    foreign[field_name], foreign["identity_id"] = bytes([88]) * 16, 99
+                    cut(scope_name + "-reservation-extra-foreign-" + field_name, [insert_row(table, foreign)],
+                        [("DELETE FROM " + table + " WHERE " + where,
+                          (operation, 99, row["identity_kind"], foreign["lineage"], foreign["epoch"]))],
+                        broken_fk=True, **projection_fault(operation))
+    constrained("posting-event-index-check",
+                "UPDATE economic_accounting_coin_posting SET event_index=99 WHERE operation_id=%s AND line_index=%s",
+                (selected, posting["line_index"]), (3819, 4025))
+    constrained("reservation-kind-check",
+                "UPDATE economic_baseline_reservation SET identity_kind=3 WHERE operation_id=%s",
+                (selected,), (3819, 4025))
     def root_fault(operation):
         return ({"findings": {"baseline_source_claim": 1}} if operation == old else
                 {"refusal": "EAB1 committed root mismatch"})

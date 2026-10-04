@@ -20,13 +20,16 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import economic_sql_audit_snapshot as exporter  # noqa: E402
 from economic_sql_audit_snapshot import capture  # noqa: E402
 from reconcile_economy_accounting import Reconciler, SnapshotError, view  # noqa: E402
-from test_economic_sql_audit_origins import EPOCH, LINEAGE, OPENING, OP, baseline_root, key, witness  # noqa: E402
+from test_economic_sql_audit_origins import (EPOCH, LINEAGE, OPENING, OP, baseline_projections,
+                                            baseline_root, key, witness)  # noqa: E402
 from test_reconcile_economy_accounting import malformed_sources, source_identity  # noqa: E402
 
 INSTALL = bytes.fromhex("77" * 16)
 ROOT_INSERT = ("INSERT INTO economic_accounting_operation(operation_id,lineage,epoch,original_operation_id,"
                "reason,outcome,result_code,source_event,account_count,posting_count,child_count,item_event_count,"
                "realized_price_copper) VALUES ")
+POSTING_INSERT = ("INSERT INTO economic_accounting_coin_posting(operation_id,line_index,account_index,child_index,"
+                  "delta_copper,delta_silver,delta_gold,delta_platinum,copper_value) VALUES ")
 
 
 def bind_synthetic_baseline(cursor, blob):
@@ -38,6 +41,12 @@ def bind_synthetic_baseline(cursor, blob):
     cursor.execute("UPDATE economic_accounting_operation SET " +
                    ",".join(field + "=%s" for field in fields) + " WHERE operation_id=%s",
                    (*[baseline[field] for field in fields], OP))
+    for table, rows in zip(("economic_accounting_account_effect", "economic_accounting_coin_posting",
+                            "economic_baseline_reservation"), baseline_projections(baseline)):
+        cursor.execute("DELETE FROM " + table + " WHERE operation_id=%s", (OP,))
+        for row in rows:
+            cursor.execute("INSERT INTO " + table + "(" + ",".join(row) + ") VALUES(" +
+                           ",".join(["%s"] * len(row)) + ")", tuple(row.values()))
 
 private_socket = (os.environ.get("DB_SOCKET", "").startswith("/plan5-restore-baseline-") and
                   os.environ.get("TEST_DB_DISPOSABLE") == "1" and os.environ.get("ENVIRONMENT") == "test")
@@ -67,6 +76,8 @@ TABLES = (
     "CREATE TABLE economic_baseline_witness (operation_id BINARY(16),lineage BINARY(16),"
     "epoch BINARY(16),book_revision BIGINT UNSIGNED,holding_count INT,item_count INT,"
     "witness_digest BINARY(32),canonical_witness MEDIUMBLOB,witness_version INT DEFAULT 1) ENGINE=InnoDB",
+    "CREATE TABLE economic_baseline_reservation (lineage BINARY(16),epoch BINARY(16),"
+    "identity_kind INT,identity_id BIGINT UNSIGNED,operation_id BINARY(16)) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_operation (operation_id BINARY(16),lineage BINARY(16),"
     "epoch BINARY(16),original_operation_id BINARY(16),reason INT,outcome INT,result_code INT,"
     "source_event BINARY(48),account_count INT,posting_count INT,child_count INT,"
@@ -85,7 +96,7 @@ TABLES = (
     "after_platinum BIGINT,before_revision BIGINT UNSIGNED,after_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_coin_posting (operation_id BINARY(16),line_index INT,"
     "account_index INT,child_index INT,delta_copper BIGINT,delta_silver BIGINT,delta_gold BIGINT,"
-    "delta_platinum BIGINT,copper_value BIGINT) ENGINE=InnoDB",
+    "delta_platinum BIGINT,copper_value BIGINT,event_index INT DEFAULT 0) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_child (operation_id BINARY(16),child_index INT,"
     "child_operation_id BINARY(16),parent_index INT) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_item_reference (operation_id BINARY(16),event_index INT,"
@@ -227,7 +238,7 @@ try:
                                "(%s,%s,%s,%s,0,0,0,%s,0,0,0,%s,%s)",
                                (root, index, account, before, after, before_revision, after_revision))
             for index, delta in ((0, -3), (1, 3)):
-                cursor.execute("INSERT INTO economic_accounting_coin_posting VALUES "
+                cursor.execute(POSTING_INSERT +
                                "(%s,%s,%s,0,%s,0,0,0,%s)",
                                (root, index, index, delta, delta))
             for index, account, before, after, before_revision, after_revision in (
@@ -238,7 +249,7 @@ try:
                                (new_wallet_root, index, account, before, after,
                                 before_revision, after_revision))
             for index, delta in ((0, -1), (1, 1)):
-                cursor.execute("INSERT INTO economic_accounting_coin_posting VALUES "
+                cursor.execute(POSTING_INSERT +
                                "(%s,%s,%s,0,%s,0,0,0,%s)",
                                (new_wallet_root, index, index, delta, delta))
             cursor.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
@@ -260,7 +271,7 @@ try:
                                "(%s,%s,%s,%s,0,0,0,%s,0,0,0,0,1)",
                                (prior_root, index, account, before, after))
             for index, delta in ((0, 250), (1, -250)):
-                cursor.execute("INSERT INTO economic_accounting_coin_posting VALUES "
+                cursor.execute(POSTING_INSERT +
                                "(%s,%s,%s,0,%s,0,0,0,%s)",
                                (prior_root, index, index, delta, delta))
             for operation_id, claim_before, claim_after, before_revision, after_revision, sink_after in (
@@ -275,7 +286,7 @@ try:
                                    (operation_id, index, account, before, after,
                                     before_rev, after_rev))
                 for index, delta in ((0, claim_after - claim_before), (1, sink_after)):
-                    cursor.execute("INSERT INTO economic_accounting_coin_posting VALUES "
+                    cursor.execute(POSTING_INSERT +
                                    "(%s,%s,%s,0,%s,0,0,0,%s)",
                                    (operation_id, index, index, delta, delta))
             cursor.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
@@ -657,7 +668,7 @@ try:
             with setup.cursor() as writer:
                 writer.execute("INSERT INTO economic_accounting_account_effect VALUES "
                                "(%s,0,%s,0,0,0,0,0,0,0,0,0,1)", (orphan, key(1, 7)))
-                writer.execute("INSERT INTO economic_accounting_coin_posting VALUES "
+                writer.execute(POSTING_INSERT +
                                "(%s,0,0,0,1,0,0,0,1)", (orphan,))
                 writer.execute("INSERT INTO economic_accounting_child VALUES (%s,0,%s,0)",
                                (orphan, bytes.fromhex("02" * 16)))
@@ -694,7 +705,7 @@ try:
             delayed = pymysql.connect(**(settings | {"database": schema, "autocommit": False}))
             try:
                 with delayed.cursor() as writer:
-                    writer.execute("INSERT INTO economic_accounting_coin_posting VALUES "
+                    writer.execute(POSTING_INSERT +
                                    "(%s,0,0,0,1,0,0,0,1)", (orphan,))
                 read_origins = exporter.read_origins_in_transaction
 
@@ -1383,7 +1394,7 @@ try:
             missing = Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"]
             assert "unbalanced_root" in missing and "evidence_count_mismatch" in missing
             with setup.cursor() as cursor:
-                cursor.execute("INSERT INTO economic_accounting_coin_posting VALUES "
+                cursor.execute(POSTING_INSERT +
                                "(%s,1,1,0,3,0,0,0,3)", (root,))
                 cursor.execute("UPDATE player_data SET copper=3 WHERE pid=7")
             stale = Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"]
