@@ -1894,6 +1894,9 @@ void bad_spell_check(P_char ch);
 
 void dump_mem_log(void);
 void *__malloc(size_t size, const char *tag, const char *file, int line);
+// Opt-in staging allocation; null on failure, compatible with __free/str_free.
+// tag/file must have static lifetime, as with __malloc's debug metadata.
+void *__try_malloc(size_t size, const char *tag, const char *file, int line) noexcept;
 void *__realloc(void *p, size_t size, const char *file, int line);
 void __free(void *p, const char *file, int line);
 // void *debug_calloc(size_t nobj, size_t size, char *file, int line);

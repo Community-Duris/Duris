@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <limits>
 
 #define MEMORY_LOG "logs/log/memory"
 
@@ -346,6 +347,42 @@ void *__malloc(size_t size, const char *tag, const char *file, int line)
 {
 #ifdef MEMCHK
 	return getmem(size, tag, file, line);
+#else
+	return malloc(size);
+#endif
+}
+
+void *__try_malloc(size_t size, const char *tag, const char *file, int line) noexcept
+{
+	if (!size || !tag || tag[0] != 'M' || !file)
+		return nullptr;
+#ifdef MEMCHK
+	if (size > std::numeric_limits<size_t>::max() - sizeof(ALLOCATION_HEADER))
+		return nullptr;
+#if MEMCHK > 1
+	// Prepare the unchanged deallocator's log prerequisite before accepting memory.
+	// A failed log open refuses staging rather than exiting during later cleanup.
+	if (!mem_log && !(mem_log = fopen(MEMORY_LOG, "w")))
+		return nullptr;
+#endif
+	auto *allocation =
+		static_cast<ALLOCATION_HEADER *>(malloc(sizeof(ALLOCATION_HEADER) + size));
+	if (!allocation)
+		return nullptr;
+	if (!muinit)
+		init_mem_used();
+	memset(allocation, 0, sizeof(ALLOCATION_HEADER) + size);
+	allocation->tag = tag;
+	allocation->size = size;
+	allocation->file = file;
+	allocation->line = line;
+	allocation->body = reinterpret_cast<char *>(allocation) + sizeof(ALLOCATION_HEADER);
+	increment_mem_used(allocation->tag, allocation->size);
+#if MEMCHK > 1
+	fprintf(mem_log, "%p: Staging allocation %zu bytes, file %s:%d\n", allocation->body, size,
+		file, line);
+#endif
+	return allocation->body;
 #else
 	return malloc(size);
 #endif
