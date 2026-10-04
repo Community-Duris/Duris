@@ -531,6 +531,74 @@ try:
                                    "unmapped_native_wallet": 1,
                                    "unauthorized_mapping_creation": 1}
             assert report["exception_counts"] == expected_exceptions, report
+            # Root-scoped joins used to hide these real native-SQL corruptions.
+            # A SELECT-only audit must expose every family without modifying it.
+            orphan = bytes.fromhex("01" * 16)
+            with setup.cursor() as writer:
+                writer.execute("INSERT INTO economic_accounting_account_effect VALUES "
+                               "(%s,0,%s,0,0,0,0,0,0,0,0,0,1)", (orphan, key(1, 7)))
+                writer.execute("INSERT INTO economic_accounting_coin_posting VALUES "
+                               "(%s,0,0,0,1,0,0,0,1)", (orphan,))
+                writer.execute("INSERT INTO economic_accounting_child VALUES (%s,0,%s,0)",
+                               (orphan, bytes.fromhex("02" * 16)))
+                writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
+                               "(%s,0,0,999,0,1,%s,0)", (orphan, orphan))
+
+            def orphan_readback():
+                with setup.cursor() as reader_cursor:
+                    result = {}
+                    for table, _, _ in exporter.ORPHAN_EVIDENCE_SOURCES.values():
+                        reader_cursor.execute(f"SELECT * FROM {table} WHERE operation_id=%s", (orphan,))
+                        result[table] = reader_cursor.fetchall()
+                    return result
+
+            before_orphans = orphan_readback()
+            orphan_cut = capture(audit, LINEAGE, EPOCH)
+            orphan_counts = Reconciler(0).audit(orphan_cut)["exception_counts"]
+            for _, _, code in exporter.ORPHAN_EVIDENCE_SOURCES.values():
+                assert orphan_counts[code] == 1, orphan_counts
+            assert orphan_cut["orphan_evidence_coverage"] == {
+                "scope": "database", "table_counts": dict.fromkeys(exporter.ORPHAN_EVIDENCE_SOURCES, 1)}
+            assert orphan_readback() == before_orphans
+            with setup.cursor() as writer:
+                for table, _, _ in exporter.ORPHAN_EVIDENCE_SOURCES.values():
+                    writer.execute(f"DELETE FROM {table} WHERE operation_id=%s", (orphan,))
+            assert capture(audit, LINEAGE, EPOCH) == snapshot
+
+            # A lower operation ID committing after the read view must appear
+            # in the next full cut. ID/timestamp cursors cannot certify this.
+            delayed = pymysql.connect(**(settings | {"database": schema, "autocommit": False}))
+            try:
+                with delayed.cursor() as writer:
+                    writer.execute("INSERT INTO economic_accounting_coin_posting VALUES "
+                                   "(%s,0,0,0,1,0,0,0,1)", (orphan,))
+                read_origins = exporter.read_origins_in_transaction
+
+                def commit_after_read_view(cursor, lineage, epoch):
+                    origins = read_origins(cursor, lineage, epoch)
+                    delayed.commit()
+                    return origins
+
+                with mock.patch.object(exporter, "read_origins_in_transaction",
+                                       side_effect=commit_after_read_view):
+                    assert capture(audit, LINEAGE, EPOCH) == snapshot
+                assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))[
+                    "exception_counts"]["orphan_coin_posting"] == 1
+            finally:
+                delayed.rollback()
+                delayed.close()
+                with setup.cursor() as writer:
+                    writer.execute("DELETE FROM economic_accounting_coin_posting WHERE operation_id=%s",
+                                   (orphan,))
+            # An interrupted scan publishes nothing and releases its read cut.
+            with mock.patch.object(exporter, "read_orphan_evidence", side_effect=RuntimeError("scan interrupted")):
+                try:
+                    capture(audit, LINEAGE, EPOCH)
+                    raise AssertionError("interrupted scan succeeded")
+                except RuntimeError as error:
+                    assert str(error) == "scan interrupted"
+            assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("SQL orphan evidence, late lower-ID commit and interrupted cut passed", flush=True)
             # Aggregate owner revisions count changes to many UIDs. They may
             # differ from this UID's revision without changing its history.
             # Money and pile item revisions are unsigned independently of
