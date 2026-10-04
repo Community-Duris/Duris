@@ -29,6 +29,17 @@ Missing original commands or genuine custody conflicts need separate evidence
 or separately authorized restitution. The diagnosis and a higher save revision
 provide neither a replacement item nor permission to reopen the player.
 
+## Historical case reconciliation
+
+The [2026-10-03 case reconciliation](economy_accounting/HISTORICAL_RECOVERY_664_2026-10-03.md)
+records 22 cases in a coherent captured generation and three additional cases
+observed later. All 25 remain held. Native grant proof was established for one
+61-item creation, but its independent policy/archive fence still refuses
+preparation. Successful inspection of the three newer runtime-terminal cases
+does not establish a coherent restore or original command proof. The protected
+register, source captures and exact refusal evidence remain private; #664 stays
+open for reviewed case dispositions and any eligible recovery rehearsal.
+
 ## Native owner sequence
 
 The public declarations are in `src/player/player_quarantine_recovery.h` and
@@ -140,6 +151,8 @@ qualification, not #490's integrated latency/storage workload qualification.
   components/UIDs/economic authority, real pre/post-COMMIT SIGKILL, conflicting
   evidence, repeat/resume, later ordinary save and missing proof refusal.
 
-Qualification uses synthetic isolated state. It does not establish that original
-commands exist for any historical live PID, or qualify death/receipt recovery,
-all gameplay accounting routes, full enforcement or production deployment.
+The automated suites above use synthetic isolated state. The linked historical
+reconciliation adds real retained-frame validation and a native original-grant
+verification/preparation refusal; it establishes no historical release. Neither
+set of evidence qualifies death/receipt recovery, all gameplay accounting routes,
+full enforcement or production deployment.
