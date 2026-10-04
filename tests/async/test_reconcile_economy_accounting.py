@@ -122,6 +122,54 @@ class ReconciliationTests(unittest.TestCase):
             self.assertNotIn("alias", json.dumps(data))
             self.assertLessEqual(len(data["rows"]), 3)
 
+    def test_provenance_includes_retained_and_unattributed_uid_history(self):
+        snapshot = clean_snapshot()
+        current = snapshot["ownership_events"][0]
+        current.update(before_revision=2, revision=3, personal_alias="private-current")
+        prior = {**current, "operation_id": "66" * 16, "before_revision": 1,
+                 "revision": 2, "operation_epoch": "77" * 16,
+                 "operation_outcome": "committed", "referenced": True,
+                 "personal_alias": "private-prior"}
+        retired = {**current, "operation_id": "88" * 16, "before_revision": 3,
+                   "revision": 4, "owner": [8, 0, 0], "state": "tombstone",
+                   "action": "destroy", "personal_alias": "private-retirement"}
+        snapshot["native"]["uid_history_events"] = [copy.deepcopy(current), prior]
+        snapshot["native"]["unattributed_uid_events"] = [retired]
+        snapshot["complete"] = False
+        before = copy.deepcopy(snapshot)
+        for limit in (0, 1, 100):
+            with self.subTest(limit=limit):
+                result = view(snapshot, {}, "provenance", limit, uid=81)
+                self.assertEqual(result["count"], 3)
+                self.assertEqual(result["truncated"], limit < 3)
+                self.assertEqual([row["revision"] for row in result["rows"]],
+                                 [2, 3, 4][:limit])
+                self.assertEqual(result["coverage"], {
+                    "lineage": LINEAGE, "selected_epoch": EPOCH, "complete": False,
+                    "quiescent": True, "lineage_history_available": True,
+                    "unattributed_history_available": True})
+                self.assertNotIn("private-", json.dumps(result))
+                self.assertNotIn("alias", json.dumps(result))
+                self.assertEqual(snapshot, before)
+        # Conflicting projections must stay visible, even at the same event key.
+        snapshot["native"]["uid_history_events"][0]["owner"] = [1, 99, 0]
+        conflicts = view(snapshot, {}, "provenance", 100, uid=81)
+        self.assertEqual(conflicts["count"], 4)
+        self.assertEqual([row["owner"] for row in conflicts["rows"]
+                          if row["revision"] == 3], [[1, 7, 0], [1, 99, 0]])
+        self.assertEqual(view(snapshot, {}, "provenance", 100, uid=82)["count"], 0)
+
+    def test_provenance_discloses_epoch_only_coverage_and_refuses_invalid_uid(self):
+        snapshot = clean_snapshot()
+        result = view(snapshot, {}, "provenance", 100, uid=81)
+        self.assertEqual(result["count"], 1)
+        self.assertFalse(result["coverage"]["lineage_history_available"])
+        self.assertFalse(result["coverage"]["unattributed_history_available"])
+        for uid in (None, True, 0, -1, 2**64):
+            with self.subTest(uid=uid):
+                with self.assertRaisesRegex(SnapshotError, "provenance requires"):
+                    view(snapshot, {}, "provenance", 1, uid=uid)
+
     def test_database_wide_orphan_evidence_is_specific_and_read_only(self):
         snapshot = clean_snapshot()
         # A missing root cannot supply a trustworthy selected lineage/epoch.
