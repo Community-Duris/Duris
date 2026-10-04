@@ -29,6 +29,7 @@ class inert_item_stage
 	const obj_data *get() const noexcept { return object_; }
 
     private:
+	friend class ordinary_drop_enrollment_owner;
 	void reset() noexcept;
 	P_obj object_ = nullptr;
 	mm_ds *pool_ = nullptr;
@@ -36,6 +37,11 @@ class inert_item_stage
 								const player_item_snapshot &,
 								inert_item_stage &) noexcept;
 };
+
+// Pure bounded eligibility, with no allocation, pool access or output mutation.
+// This is a classification only; it grants no native enrollment capability.
+inert_item_stage_result inert_item_stage_eligibility(const object_template &prototype,
+						     const player_item_snapshot &literal) noexcept;
 
 // Accept an already prepared prototype and complete four-string SQL literal.
 // No parser/template loading, normal instantiation, UID issuance or publication.

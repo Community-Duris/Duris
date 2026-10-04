@@ -524,6 +524,18 @@ bool item_ownership_runtime_lookup(uint64_t item_uid, item_ownership_runtime_ent
 	return true;
 }
 
+bool item_ownership_runtime_peek_owner_revision(const item_owner_identity &owner,
+						uint64_t *revision) noexcept
+{
+	if (!revision || !item_owner_identity_valid(owner))
+		return false;
+	const auto found = owner_revisions.find(owner);
+	if (found == owner_revisions.end())
+		return false;
+	*revision = found->second;
+	return true;
+}
+
 bool item_ownership_runtime_owner_revision(const item_owner_identity &owner, uint64_t *revision)
 {
 	if (!revision)

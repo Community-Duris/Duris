@@ -46492,6 +46492,96 @@
       "sites": [],
       "evidence": [],
       "reachability_evidence": "Prepared new module has no in-tree production caller. Final enrollment/publication is not implemented. Semantic classification is pending current-source census/site reanchoring."
+    },
+    {
+      "id": "recovery.sql_ordinary_drop_receipt_observation",
+      "path": "src/persistence/critical_command_repository.c",
+      "symbol": "critical_command_repository_verify_ordinary_drop_in_transaction",
+      "reason": "item_move",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Reads exact committed inbox, historical economic root/payload and outbox inside caller-owned native locks; no native mutation, missing-command apply or transaction/ACK ownership.",
+      "authority_boundary": "Read-only observation, never a native mutation or ACK capability. Production publication, clean save census and ACK reservation remain separate owners.",
+      "current_support": "Source-only recovery prerequisite; native/backend/gameplay/recovery qualification unverified. New graph observation supports SQL only; flatfile refuses.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Opt-in graph owner consumes shared observation seams; no production dispatcher/ACK integration. Current-source semantic census and executable route reanchoring remain pending."
+    },
+    {
+      "id": "recovery.runtime_owner_revision_observation",
+      "path": "src/item/item_ownership_runtime.c",
+      "symbol": "item_ownership_runtime_peek_owner_revision",
+      "reason": "item_move",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Reads only an existing serialized owner-cache revision without inserting or hydrating missing metadata; no native custody or economic effect.",
+      "authority_boundary": "Read-only observation, never a native mutation or ACK capability. Production publication, clean save census and ACK reservation remain separate owners.",
+      "current_support": "Backend-neutral serialized cache read only; source-reviewed but native qualification unverified. No native authority, allocation, hydration or production ACK integration.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Opt-in graph owner consumes shared observation seams; no production dispatcher/ACK integration. Current-source semantic census and executable route reanchoring remain pending."
+    },
+    {
+      "id": "recovery.ordinary_drop_graph_observation",
+      "path": "src/item/ordinary_drop_recovery.c",
+      "symbol": "ordinary_drop_recovery_observe_existing",
+      "reason": "item_move",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Observes exact original SQL-drop receipt and current epoch/season/custody/literal graph together with complete physical/runtime placement; no construction, repair, enrollment, issuance/destruction or publication ACK.",
+      "authority_boundary": "Read-only observation, never a native mutation or ACK capability. Production publication, clean save census and ACK reservation remain separate owners.",
+      "current_support": "Source-only recovery prerequisite; native/backend/gameplay/recovery qualification unverified. New graph observation supports SQL only; flatfile refuses.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Opt-in graph owner consumes shared observation seams; no production dispatcher/ACK integration. Current-source semantic census and executable route reanchoring remain pending."
     }
   ],
   "census": [
@@ -63451,12 +63541,15 @@
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
   },
   "pending_source_integration": {
-    "candidate_commit": "b36e9690ffab46575b76f9ceb7734d93490fadb5",
-    "status": "Source rows prepared, including inert unpublished allocation/cleanup; historical census/source anchors and generated matrix remain unchanged pending full major-plan integration.",
+    "candidate_commit": "488414dc1b3e41689ecba444aadef6fd8657d689",
+    "status": "Source rows prepared for inert private allocation/cleanup and pure recovery observations; historical census/source anchors and generated matrix remain unchanged pending full major-plan integration.",
     "qualified": false,
     "prepared_nonwriter_routes": [
       "recovery.inert_literal_staging",
-      "recovery.inert_literal_cleanup"
+      "recovery.inert_literal_cleanup",
+      "recovery.sql_ordinary_drop_receipt_observation",
+      "recovery.runtime_owner_revision_observation",
+      "recovery.ordinary_drop_graph_observation"
     ]
   }
 }
