@@ -561,3 +561,73 @@ Native evidence covers existing wallet/bank/keeper baselines, exact replay,
 rollback, serialized legacy writers, runtime gates and cutover faults. No stub
 qualifies the unused private ACK path. Prepared startup and checked-release owners
 still need corrected-expectation reruns; Plan 1 remains incomplete.
+
+### Plan 1 qualification: real-pool coin fixture lifetime
+
+The original coin fixture checked pooled session cleanliness only after its legacy
+direct-session crash case deliberately killed a native transaction. The existing
+borrowed writer guard could not confirm cleanup on that dead session and correctly
+latched SQL admission closed; pool reborrow therefore refused despite a free slot.
+The fixture now explicitly finishes its real-pool lifecycle before that legacy
+matrix. Every original pooled lease/reborrow/autocommit/shutdown assertion and every
+legacy direct fault remain; no exclusion flag, production guard or pool behavior
+changed. Failure-only numeric diagnostics retain the original strict assertion.
+
+The corrected strict ASan/UBSan executable passes all original coin cases on
+MariaDB 10.11.14 (6 seconds) and MySQL 8.0.46 (9 seconds), each within 120 seconds.
+Binary SHA256 e129a9f061a5398fb40c879d778b42ba255a590838b533595bad8696461b9b69;
+both native logs e2e4b4f3ee7fbec6dea0248c3225439afdab6e32cde456014ffeddeb6d7136a6.
+Evidence roots /opt/duris-plan1-qualification-20261004/p1-mariadb-2a4385a1.joztid
+and p1-mysql-b21dae2b.bMpFLQ (coin/result.json). Both verify exact owned identity,
+schema absence, process shutdown and reusable ports. V6 all1245 production inputs
+match V4; tmp/plan1-real-pool-compile-20261004-v6.local.json binds consumed inputs.
+Existing failed V5 results remain preserved. This closes real-pool coin component
+qualification, not Plan2 restored physical-pile integration or full Plan1 acceptance.
+
+### Plan 1 qualification: checked native release owner
+
+All22 prepared checked-release cases pass on both native engines in3 seconds each,
+within the original120-second aggregate limit. The sole failed wrong-thread guard
+fixture had expected idle guard cleanup to reopen coordinator admission. Existing
+lease cleanup deliberately leaves admission closed until explicit resume, as the
+maintained idle-capability oracle already requires. The corrected private owner
+retains wrong-thread zero-SQL, exact origin cleanup retry, retained admission and
+transaction rollback's existing automatic-resume assertions. No production change.
+
+Evidence roots /opt/duris-plan1-qualification-20261004/p1r-mariadb-98e8269a.yL51pn
+and p1r-mysql-95d07855.EBkLm6 (release/result.json), original cases/order and all
+inputs verified unchanged. Binary6dea57735872abf5af5dc3e0ac4527b7725ae8f9c1229d2c804cec935f11ed30;
+metadata0f9ab2a108a26c0abd71e1fcc144495e41cb939d200b8e7d685ca9f3de7b289c.
+Runtime reports b62050e5f5b324033c201c2de6cac0b0ab160f2cfc45db18669b9205f50d36ba
+(MariaDB) and b1bad0d9f8ef47ee1c95ecfcca632db73dd71bc4e24f10fd9b3bd9e8e9f57770
+(MySQL). Both owned identities, schema removal, server shutdown and port rebind
+are verified. Startup owner remains failed on stale post-start registration and
+ID-only release assumptions; its private next candidate is recompiling, with all
+previous failed candidates preserved. This result does not qualify the unrelated
+startup owner, active ordinary-drop route, Plans2-4 or full release.
+
+### Plan 1 qualification: staged startup and restored-hold owner
+
+All14 original prepared startup/held-save cases now pass on MariaDB10.11.14
+(2 seconds) and MySQL8.0.46 (6 seconds), within the original120-second aggregate
+limit. The private owner expected unavailable instead of the existing invalid
+closed request; it then attempted restore registration after execution started
+and treated an ID-only API call as authority to release a restored hold. Those
+expectations now follow the existing source: no pre-start mutation, registration
+closes after start, original holds survive, unrelated replay progresses and
+matching IDs alone cannot authorize release. Every original case remains; no
+production API, guard, result code or publication rule changed.
+
+Evidence roots /opt/duris-plan1-qualification-20261004/p1r-mariadb-dcd598e1.Zud0kM
+and p1r-mysql-e2f51a8a.KkbIro (pipeline/result.json) verify all14 names/order,
+unchanged source/owner/binary inputs and owned cleanup. Binary SHA256:
+1121ffae363f6492dad515784e309154217c2436b091c43c1a43eb6c6a2066a7.
+Metadata6a767ff72de4c3a000e8713a3ca5b4ce36560831e4400f60b3bc6e273fb8ea79;
+original runnerd18e0958fc02332ed11a8360a5a6af136bfe9b4b6f7ea78f0154e33fc2465976.
+Runtime reports2e57109b1604292912e0cf46bfd9ca8cd6a676d1e5698ca79d8db7df106a1afa
+and1e08b9f558e9055aa9c45cb266c8db17395a0f2e2c7d6d33f91233b9ed195c1e.
+Original failures and private corrected inputs remain under prepared-v1 through-v4.
+These tests exercise actual pipeline/worker/journal/repository/pool with controlled
+world and receipt leaves; they do not prove actual guarded gameplay ACK or cold
+native graph reconstruction. Those remain assigned acceptance, together with the
+already-prepared18 recovery-session cases on the current production source.
