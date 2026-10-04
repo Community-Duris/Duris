@@ -190,6 +190,14 @@ int initialize_mysql()
 	return -1;
 }
 void shutdown_mysql(void) {}
+bool sql_retire_main_save_connection(MYSQL *) noexcept
+{
+	return false;
+}
+bool sql_finish_owned_player_save(MYSQL *, unsigned long) noexcept
+{
+	return false;
+}
 void do_sql(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
 int sql_save_player_core(P_char /*ch*/)
 {
@@ -1593,6 +1601,19 @@ void shutdown_mysql(void)
 		mysql_close(DB);
 		DB = NULL;
 	}
+}
+
+bool sql_retire_main_save_connection(MYSQL *original) noexcept
+{
+	if (!original || DB != original || getpid() != sql_main_process_id ||
+	    !nevent_is_game_thread())
+		return false;
+	// Keep the dedicated lifecycle owner intact. Its guard and every future
+	// factory/query see exclusion loss; never free a handle still available as DB.
+	duris_sql_exclusion_guard_state_ref().lost = true;
+	DB = nullptr;
+	mysql_close(original);
+	return true;
 }
 
 /* Handle a query, log possible errors and return results (if available) */

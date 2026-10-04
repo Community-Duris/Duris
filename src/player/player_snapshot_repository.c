@@ -2482,6 +2482,19 @@ player_save_apply_result read_durable_revision(MYSQL *connection, const player_s
 
 bool player_snapshot_repository_write_pets(MYSQL *connection, const player_snapshot &snapshot)
 {
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		execution.emplace(snapshot.pid);
+		if (!*execution)
+		{
+			errno = execution->result() ==
+						player_save_execution_guard::admission::held ?
+					EAGAIN :
+					ENOMEM;
+			return false;
+		}
+	}
 	return connection && snapshot.pid > 0 && apply_pets(connection, snapshot).ok;
 }
 

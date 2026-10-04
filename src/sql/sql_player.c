@@ -29,6 +29,10 @@
 #include "sql/sql_spellbook.h"
 #include "player/player_playtime.h"
 #include "player/player_save_journal.h"
+#include "player/player_save_replay_ownership.h"
+#ifndef __NO_MYSQL__
+#include "player/player_sql_transaction_cleanup.h"
+#endif
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_items.h"
 #include "sql/item_extra_descr_codec.h"
@@ -39,6 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <openssl/sha.h>
+#include <optional>
 #include <sys/time.h>
 #include <time.h>
 #include <algorithm>
@@ -837,6 +842,43 @@ static void sql_clear_account_character_cache_sync(void)
 	pending_account_cache_sync = false;
 }
 
+bool sql_finish_owned_player_save(MYSQL *original, unsigned long session) noexcept
+{
+	if (!player_save_execution_guard::current_ownership_epoch() || !nevent_is_game_thread() ||
+	    !original || DB != original || !session)
+	{
+		// Do not inspect an original handle after another owner disposed it.
+		player_save_execution_guard::poison_integrity();
+		return false;
+	}
+	bool idle = false;
+	try
+	{
+		if (mysql_thread_id(original) == session)
+		{
+			// Literal rollback remains permitted after runtime exclusion loss.
+			// Local in_transaction may already be false after a failed legacy
+			// rollback; it cannot substitute for this original-session proof.
+			const int rc = mysql_real_query(original, "ROLLBACK", 8);
+			idle = rc == 0 && DB == original && mysql_thread_id(original) == session &&
+			       player_sql_idle_error(original) == 0;
+		}
+	}
+	catch (...)
+	{
+	}
+	if (!idle && !sql_retire_main_save_connection(original))
+	{
+		player_save_execution_guard::poison_integrity();
+		return false;
+	}
+	// Only a confirmed rollback or actual session disposal retires local state.
+	in_transaction = false;
+	character_deletion_guard_pid = 0;
+	sql_clear_account_character_cache_sync();
+	return idle;
+}
+
 // Helper: safely append a formatted string to a batch buffer.
 //
 // Replaces the dangerous pattern:
@@ -1320,6 +1362,19 @@ bool sql_save_player(P_char ch, int type, int room)
 	{
 		logit(LOG_DEBUG, "sql_save_player: db not initialized");
 		return false;
+	}
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		// The writeCharacter owner covers earlier mutations and later restore.
+		// PID-zero creation and parent-owned transactions need their own owner;
+		// never let this local borrow stand in for either lifetime.
+		if (!nevent_is_game_thread() || GET_PID(ch) <= 0 || sql_in_transaction() ||
+		    player_sql_idle_error(DB))
+			return false;
+		execution.emplace(GET_PID(ch));
+		if (!*execution)
+			return false;
 	}
 
 	// Start own transaction if not already in one (allows parent to wrap)
@@ -3844,6 +3899,17 @@ static bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum)
 	if (!ch || !IS_PC(ch) || !DB ||
 	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 		return false;
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		// A nested component borrows the already-owned full save. No enabled
+		// standalone pet transaction is admitted before its owner is wired.
+		if (!nevent_is_game_thread() || GET_PID(ch) <= 0 || !sql_in_transaction())
+			return false;
+		execution.emplace(GET_PID(ch));
+		if (!*execution)
+			return false;
+	}
 	// New-character baseline saves run before enter_game places the character in
 	// the world. writeCharacter has already resolved a durable birthplace/home
 	// vnum for that save, so use it when no live room is available. Without this
