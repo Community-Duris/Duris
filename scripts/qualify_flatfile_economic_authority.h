@@ -143,17 +143,88 @@ inline bytes file_bytes(const std::filesystem::path &directory, const std::strin
 	return encoded;
 }
 inline bytes frame(const std::filesystem::path &directory, const std::string &name,
-		   const char *magic, size_t limit = maximum_bytes, const digest &expected = {})
+		   const char *magic, size_t limit = maximum_bytes, const digest &expected = {},
+		   uint32_t *catalog_version = nullptr)
 {
 	auto encoded = file_bytes(directory, name, limit, expected);
 	reader in{ encoded };
 	auto prefix = in.take(8);
-	need(memcmp(prefix.data(), magic, 8) == 0 && in.number(4) == 1 &&
+	auto version = in.number(4);
+	need(memcmp(prefix.data(), magic, 8) == 0 &&
+	     (version == 1 ||
+	      (catalog_version && memcmp(magic, "DURECE1", 8) == 0 && version == 2)) &&
 	     in.number(4) == encoded.size() - 48);
 	auto body_digest = in.fixed<32>();
 	auto body = in.take(encoded.size() - 48);
 	need(body_digest == hash(body));
+	if (catalog_version)
+		*catalog_version = version;
 	return { body.begin(), body.end() };
+}
+enum class baseline_initialization : uint8_t
+{
+	legacy_unknown = 0,
+	never_initialized = 1,
+	initialized = 2
+};
+struct epoch_marker
+{
+	identity epoch = {}, initializing_operation = {};
+	baseline_initialization initialization = baseline_initialization::legacy_unknown;
+	std::array<uint8_t, 40> opening = {};
+};
+struct epoch_catalog
+{
+	identity lineage = {}, last_epoch = {};
+	std::vector<epoch_marker> entries;
+};
+// One independent bounded decoder serves authority cross-links and baseline
+// discovery. No storage/recovery codec participates in this read-only gate.
+inline epoch_catalog catalog(const std::filesystem::path &directory, const digest &expected)
+{
+	uint32_t version = 0;
+	auto body = frame(directory, "epochs.eae", "DURECE1", maximum_bytes, expected, &version);
+	reader in{ body };
+	epoch_catalog result;
+	result.lineage = in.fixed<16>();
+	auto count = in.number(4);
+	need(nonzero(result.lineage) && count <= 4096 && in.number(4) == 0);
+	std::set<identity> seen;
+	for (size_t i = 0; i < count; ++i)
+	{
+		epoch_marker entry;
+		entry.epoch = in.fixed<16>();
+		need(nonzero(entry.epoch) && seen.insert(entry.epoch).second &&
+		     in.number(8) == i + 1 && in.fixed<16>() == result.last_epoch &&
+		     in.number(2) != 0 && in.number(6) == 0 && nonzero(in.take(32)) &&
+		     nonzero(in.take(16)));
+		if (version == 2)
+		{
+			auto state = in.number(1);
+			need(state <= 2 && in.number(7) == 0);
+			entry.initialization = static_cast<baseline_initialization>(state);
+			entry.initializing_operation = in.fixed<16>();
+			entry.opening = in.fixed<40>();
+			if (entry.initialization == baseline_initialization::initialized)
+			{
+				reader key{ entry.opening };
+				need(nonzero(entry.initializing_operation) &&
+				     key.fixed<16>() == result.lineage && key.number(2) == 1 &&
+				     key.number(2) == 9 && key.number(8) != 0);
+				(void)key.number(
+					8); // Preserve the exact opening context, including zero.
+				need(key.number(4) == 0);
+				key.done();
+			}
+			else
+				need(!nonzero(entry.initializing_operation) &&
+				     !nonzero(entry.opening));
+		}
+		result.last_epoch = entry.epoch;
+		result.entries.push_back(entry);
+	}
+	in.done();
+	return result;
 }
 struct mapping
 {
@@ -236,21 +307,9 @@ class checker
 	}
 	void epochs() const
 	{
-		auto body = frame("epochs.eae", "DURECE1", epochs_digest);
-		reader in{ body };
-		need(in.fixed<16>() == lineage && in.number(4) == epoch_count && in.number(4) == 0);
-		identity previous = {};
-		std::set<identity> seen;
-		for (size_t i = 0; i < epoch_count; ++i)
-		{
-			auto id = in.fixed<16>();
-			need(nonzero(id) && seen.insert(id).second && in.number(8) == i + 1 &&
-			     in.fixed<16>() == previous && in.number(2) != 0 && in.number(6) == 0 &&
-			     nonzero(in.take(32)) && nonzero(in.take(16)));
-			previous = id;
-		}
-		in.done();
-		need(previous == last_epoch);
+		auto decoded = catalog(directory, epochs_digest);
+		need(decoded.lineage == lineage && decoded.entries.size() == epoch_count &&
+		     decoded.last_epoch == last_epoch);
 	}
 	std::vector<mapping> mappings(size_t bucket) const
 	{

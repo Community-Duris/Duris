@@ -36,17 +36,24 @@ def change(files, name, offset, data, bind=None):
         files["authority.eal"] = rehash(control)
 
 
-def build_fixture(destination):
-    return build_native(
-        destination,
-        ["tests/async/flatfile_restore_authority_fixture.cpp",
-         "src/flatfile/flatfile_accounting_authority.c",
-         "src/flatfile/flatfile_accounting_baseline.c", "src/economy/economic_baseline_adapter.c",
-         "src/economy/economic_baseline_codec.c", "src/economy/economic_baseline_command.c", *SOURCES[1:]],
-        ["-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-O1", "-g",
-         "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
-         "-DDURIS_FLATFILE_ACCOUNTING_TEST", "-Isrc", "-pthread"],
-        ["-lcrypto", "-pthread"], compiler="g++", name="restore-authority-fixture")
+def build_fixture(destination, native_source=ROOT):
+    sources = ["src/flatfile/flatfile_accounting_authority.c",
+               "src/flatfile/flatfile_accounting_baseline.c", "src/economy/economic_baseline_adapter.c",
+               "src/economy/economic_baseline_codec.c", "src/economy/economic_baseline_command.c",
+               *SOURCES[1:]]
+    flags = ["-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-O1", "-g",
+             "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
+             "-DDURIS_FLATFILE_ACCOUNTING_TEST", "-I" + str(native_source / "src"), "-pthread"]
+    fixture = "tests/async/flatfile_restore_authority_fixture.cpp"
+    if native_source.resolve() != ROOT.resolve():
+        # Isolated native prerequisites are explicit inputs, never mixed with
+        # checkout headers or cached objects fingerprinted for the checkout.
+        subprocess.run(["g++", *flags, fixture,
+                        *(str(native_source / name) for name in sources),
+                        "-lcrypto", "-pthread", "-o", str(destination)], cwd=ROOT, check=True)
+        return destination
+    return build_native(destination, [fixture, *sources], flags, ["-lcrypto", "-pthread"],
+                        compiler="g++", name="restore-authority-fixture")
 
 
 def main():
@@ -104,13 +111,25 @@ int main(int argc, char **argv) {
                 assert not independent.stdout
                 assert independent.stderr == ("" if valid else "native_restore_qualification_failed\n")
                 assert retained() == before, label + ": independent reader changed evidence"
+                operator = subprocess.run([str(binary), "--economic-evidence-audit", str(state)],
+                                          capture_output=True, text=True, timeout=30)
+                assert (operator.returncode == 0) == valid, (label, operator.stderr)
+                provenance_complete = False
+                if valid:
+                    provenance_complete = json.loads(operator.stdout)["baseline_provenance_complete"]
+                    assert not operator.stderr
+                else:
+                    assert not operator.stdout
+                    assert operator.stderr == "native_restore_qualification_failed\n"
+                assert retained() == before, label + ": operator audit changed evidence"
                 # Both manager preflight and post-replay qualification use this same gate.
+                qualified = valid and provenance_complete
                 for arguments in (["--state-preflight", str(state)], [str(state)]):
                     result = subprocess.run([str(binary), *arguments], capture_output=True,
                                             text=True, timeout=30, check=False)
-                    assert (result.returncode == 0) == valid, (label, result.returncode,
+                    assert (result.returncode == 0) == qualified, (label, result.returncode,
                                                               result.stdout, result.stderr)
-                    if valid:
+                    if qualified:
                         assert json.loads(result.stdout) == {
                             "accounts": 0, "identities": 0, "players_loaded": 0, "snapshots": 0}
                     else:
@@ -119,7 +138,8 @@ int main(int argc, char **argv) {
                     assert retained() == before, label + ": retained authority changed"
                 successes += valid
                 refusals += not valid
-                print(("PASS " if valid else "REFUSED ") + label, flush=True)
+                print(("PASS " if qualified else "READABLE_UNQUALIFIED " if valid else "REFUSED ")
+                      + label, flush=True)
 
             check("legacy authority absent", True)
             evidence.mkdir(mode=0o700, exist_ok=True)
@@ -170,8 +190,9 @@ int main(int argc, char **argv) {
             case("catalog lineage", lambda f: change(f, "epochs.eae", 48, b"\x63", 152))
             case("catalog count", lambda f: change(f, "epochs.eae", 64, b"\x01", 152))
             case("catalog ordinal", lambda f: change(f, "epochs.eae", 88, b"\x02", 152))
-            case("catalog predecessor", lambda f: change(f, "epochs.eae", 192, b"\x63", 152))
-            case("catalog duplicate epoch", lambda f: change(f, "epochs.eae", 168, f["epochs.eae"][72:88], 152))
+            stride = 96 if struct.unpack_from("<I", clean["epochs.eae"], 8)[0] == 1 else 160
+            case("catalog predecessor", lambda f: change(f, "epochs.eae", 72 + stride + 24, b"\x63", 152))
+            case("catalog duplicate epoch", lambda f: change(f, "epochs.eae", 72 + stride, f["epochs.eae"][72:88], 152))
             case("catalog reserved", lambda f: change(f, "epochs.eae", 114, b"\x01", 152))
             case("catalog zero transition digest", lambda f: change(f, "epochs.eae", 120, b"\x00" * 32, 152))
             mapping = "mapping-02.eam" # Native bank allocated lifetime 2.
@@ -692,7 +713,7 @@ int main(int argc, char **argv) {
             restore(sources)
             check("native cross-epoch source claims remain qualified", True)
         print(json.dumps({"positive_stores": successes, "refused_corruptions": refusals,
-                          "native_invocations_per_case": 2, "economic_bytes_unchanged": True,
+                          "native_invocations_per_case": 3, "economic_bytes_unchanged": True,
                           "qualifier_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
                           "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
                           "sanitized_reader_sha256": hashlib.sha256(audit.read_bytes()).hexdigest()}))

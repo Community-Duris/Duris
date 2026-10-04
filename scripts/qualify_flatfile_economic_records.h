@@ -6,6 +6,11 @@
 
 namespace restore_economic_records
 {
+struct initialization_provenance
+{
+	size_t legacy_unknown_epochs = 0, never_initialized_epochs = 0, initialized_epochs = 0;
+	bool complete() const { return legacy_unknown_epochs == 0; }
+};
 using namespace restore_economic_authority;
 constexpr size_t index_limit = 80 + 4096 * 64, segment_limit = 8 * 1024 * 1024;
 constexpr size_t command_limit = 512 * 1024, plan_limit = 4 * 1024 * 1024;
@@ -266,30 +271,34 @@ class checker
 		, baselines(path)
 	{
 	}
-	void run()
+	initialization_provenance run()
 	{
+		initialization_provenance provenance;
 		// Pure metadata validation, distinct from candidate journal recovery.
 		restore_economic_authority::checker(root).run();
 		if (!std::filesystem::exists(directory) || std::filesystem::is_empty(directory))
-			return;
+			return provenance;
 		auto control = frame(directory, "authority.eal", "DURECA1");
 		need(control.size() == 16552);
 		std::copy_n(control.begin(), 16, lineage.begin());
-		auto catalog = frame(directory, "epochs.eae", "DURECE1");
-		reader in{ catalog };
-		need(in.fixed<16>() == lineage);
-		auto count = in.number(4);
-		need(count <= 4096 && in.number(4) == 0);
-		for (size_t i = 0; i < count; ++i)
+		digest catalog_digest;
+		std::copy_n(control.begin() + 104, 32, catalog_digest.begin());
+		auto catalog = restore_economic_authority::catalog(directory, catalog_digest);
+		need(catalog.lineage == lineage);
+		for (const auto &entry : catalog.entries)
 		{
-			epochs.insert(in.fixed<16>());
-			(void)in.take(80);
+			epochs.insert(entry.epoch);
+			if (entry.initialization == baseline_initialization::legacy_unknown)
+				++provenance.legacy_unknown_epochs;
+			else if (entry.initialization == baseline_initialization::never_initialized)
+				++provenance.never_initialized_epochs;
+			else
+				++provenance.initialized_epochs;
 		}
-		in.done();
 		for (size_t index = 0; index < 256; ++index)
 			if (control[16520 + index / 8] & (1u << (index % 8)))
 				bucket(index);
-		baselines.finish(lineage, epochs);
+		baselines.finish(lineage, catalog.entries);
 		// At most 256 * 4096 keys (32 MiB of digests), bounded by the native
 		// index format. Keep no unbounded map of roots or retained record bytes.
 		std::sort(claimed_events.begin(), claimed_events.end());
@@ -320,6 +329,7 @@ class checker
 			}
 		}
 		need(observed_claims == claimed_events.size());
+		return provenance;
 	}
 };
 } // namespace restore_economic_records

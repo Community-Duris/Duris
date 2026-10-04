@@ -243,9 +243,17 @@ class checker
 		need(roots++ < buckets * bucket_capacity);
 		books[epoch].push_back({ operation, revision, checksum });
 	}
-	void finish(const identity &lineage, const std::set<identity> &epochs)
+	void finish(const identity &lineage, const std::vector<epoch_marker> &catalog)
 	{
-		// Include initialized empty books, which have no successful receipt yet.
+		std::map<identity, epoch_marker> markers;
+		for (const auto &entry : catalog)
+		{
+			markers.emplace(entry.epoch, entry);
+			if (entry.initialization == baseline_initialization::initialized)
+				books.try_emplace(entry.epoch);
+		}
+		// Legacy files remain structurally readable; unknown initialization is
+		// reported by the caller and cannot earn complete-book-loss qualification.
 		for (const auto &file : std::filesystem::directory_iterator(directory))
 		{
 			auto name = file.path().filename().string();
@@ -255,11 +263,13 @@ class checker
 			     name[41] == '-' && name[74] == '-');
 			need(unhex(name.substr(9, 32)) == lineage);
 			auto epoch = unhex(name.substr(42, 32));
-			need(epochs.contains(epoch));
+			need(markers.contains(epoch));
 			books.try_emplace(epoch);
 		}
 		for (auto &[epoch, retained] : books)
 		{
+			const auto &marker = markers.at(epoch);
+			need(marker.initialization != baseline_initialization::never_initialized);
 			auto base = prefix(lineage, epoch);
 			auto head = frame(directory, base + "head.ebc", "DUREBC1", 656);
 			reader in{ head };
@@ -269,6 +279,9 @@ class checker
 			auto revision = in.number(8);
 			auto terminal = in.fixed<16>();
 			need(nonzero(terminal) && revision == retained.size());
+			if (marker.initialization == baseline_initialization::initialized)
+				need(same(opening, marker.opening) &&
+				     (revision != 0 || terminal == marker.initializing_operation));
 			std::array<digest, 16> checksums;
 			for (auto &checksum : checksums)
 			{
@@ -276,8 +289,7 @@ class checker
 				need(nonzero(checksum));
 			}
 			in.done();
-			std::sort(retained.begin(), retained.end(),
-				  [](const auto &a, const auto &b)
+			std::sort(retained.begin(), retained.end(), [](const auto &a, const auto &b)
 				  { return a.revision < b.revision; });
 			std::array<std::vector<reservation>, 16> reservations;
 			for (size_t i = 0; i < retained.size(); ++i)
@@ -322,8 +334,7 @@ class checker
 				}
 				rows.done();
 			}
-			std::sort(retained.begin(), retained.end(),
-				  [](const auto &a, const auto &b)
+			std::sort(retained.begin(), retained.end(), [](const auto &a, const auto &b)
 				  { return a.operation < b.operation; });
 		}
 		// Namespace closure uses bounded root descriptors, not a second map of

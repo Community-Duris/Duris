@@ -203,6 +203,20 @@ int main(int argc, char **argv)
 {
 	try
 	{
+		if (argc == 3 && std::string(argv[1]) == "--economic-evidence-audit")
+		{
+			require(std::filesystem::path(argv[2]).is_absolute());
+			struct stat root_info = {};
+			require(lstat(argv[2], &root_info) == 0 && S_ISDIR(root_info.st_mode));
+			auto result = restore_economic_records::checker(argv[2]).run();
+			std::cout << "{\"legacy_unknown_epochs\":" << result.legacy_unknown_epochs
+				  << ",\"never_initialized_epochs\":"
+				  << result.never_initialized_epochs
+				  << ",\"initialized_epochs\":" << result.initialized_epochs
+				  << ",\"baseline_provenance_complete\":"
+				  << (result.complete() ? "true" : "false") << "}\n";
+			return 0;
+		}
 		if (argc == 3 && (std::string(argv[1]) == "--journals-preflight" ||
 				  std::string(argv[1]) == "--journals-drained"))
 		{
@@ -226,7 +240,7 @@ int main(int argc, char **argv)
 			flatfile_player_domain_result::ok);
 		// Recovery is complete on this copied candidate. Audit retained authority
 		// without invoking the storage readers, which also perform recovery.
-		restore_economic_records::checker(root).run();
+		require(restore_economic_records::checker(root).run().complete());
 		// Mini-world boot does not materialize every persistent world domain.
 		// Exercise their native decoders before any qualification receipt.
 		require(flatfile_corpse_repository_validate(root, &error));
