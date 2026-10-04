@@ -1612,3 +1612,43 @@ actual supply and reset qualification before daily availability. Every new
 discovery/encounter/journal/achievement/daily update requires active and ready
 accounting. Keep broader banquet/shroud/construction/rescue campaigns in builder
 plans until their native endings and event evidence exist.
+
+
+## Cloister pattern: supporting refusal, supplied shortcuts and access hints
+
+Use [Cloister's journal](../../areas/story/cloister.story.json) and
+[source dossier](../design/zone-stories/FATHER_TELS_HOLY_CLOISTER.md) when a native
+exchange completes mechanically while refusing the player's narrated goal.
+Tel consumes and replaces a recommendation note but never admits a student.
+Classify that exact binding as a supporting service with no achievement/daily
+unit. Receiving the same kind does not mean the original item identity survived.
+Keep formal admission or training in builder plans until an accepted endpoint
+exists. The disciple's separate experience/clue outcome remains a story.
+
+Current note/ring checks and earlier Mahr/priest receipts are optional. Players
+may receive supplies from someone else; do not impose a personal source kill,
+prior producer or self-unlock that native acceptance does not require. Receiving
+a key differs from retrieving a ring, and an earlier receipt cannot replace a
+spent, worn or nested current ingredient. Name exact robes/head/tome/poison
+materials and actions without exposing maintainer IDs in player instructions.
+
+Audit type-based automatic bindings as well as literal assignment tables.
+Cloister's no-show switches use SAY Khildarak and PUSH statue/boulder/tapestry;
+PULL and ASK are different commands. A secret exit still needs successful local
+SEARCH after BLOCKED clears, and the other side may need its own reveal. Describe
+unlock, open, reveal/GET and travel as separate actions. An acid-trap attempt can
+hurt the player and consume a charge while rejecting pickup, so it earns no
+first-recovery evidence. Keyword guidance alone earns no learned-topic or quest
+achievement.
+
+Keep local and foreign egg consumers independently owned. Source caps, rare
+placements, retiring givers and actual reset renewal limit availability even
+when seven pure-item outcomes are potential daily candidates. Require active,
+ready accounting for new tracking; keep frozen recovery separate. Builder-owned
+ALL/ANY campaigns need accepted endpoints and supplied branches before richer
+progress cards can present them as completed stages.
+
+The Mahr letter→tablet caption repair is isolated in fix commit 208a56840 with
+original-fails/repaired-passes proof and a news-ready sentence. Other admission,
+source-clue, deadline and orphan findings remain proposals. Every actual native
+repair must stay clearly identifiable in its own fix commit and PR/news ledger.

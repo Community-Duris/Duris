@@ -63,6 +63,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [02788c573](https://github.com/Community-Duris/Duris/commit/02788c5738a11963647ceb9b4b344463f4f57704): Kobold temple guardians | Jkyl uses altar1481/pit1484, golems tomb1482, demon pit1484/ledge1483 and the actual room list. Seven native lines and the focused executable regression are isolated in the fix commit. | **Kobold Settlement's temple guardians now defend their actual altar, tomb and sacrificial pit, restoring the high priest's imp summoning and the pit demon's ledge attacks.** Original altar regression fails; repaired actual procedures, server build and formatting pass. Played combat/difficulty/movement remain unqualified. |
 | [e456b3403](https://github.com/Community-Duris/Duris/commit/e456b3403): Centaur quest/travel clues | Tamilea now points to Banitoor's eastern cave; grotto west exit, both forest approaches, forest east intersection and dead-end entrance now match actual directions. Exactly six native text lines, focused regression in a separate fix commit. | **Centaur Villages' quest and travel clues now point in the correct directions, including Tamilea's route to Banitoor's cave.** All six original clues fail; corrected source/destinations/reciprocal routes pass. Played ASK/LOOK/traversal remains unqualified. |
 | [ac8e2de48](https://github.com/Community-Duris/Duris/commit/ac8e2de48f3aba3915d95abb7ee1d0fefd580f14): Opal Phoenix sand hand-in | Newly instantiated student sand70823 clears only SECRET, allowing ordinary mortal inventory display and named selection for Alazia. All other prototype bytes/native contracts are preserved; hidden chest/key/intestines retain their search paths. Separate fix commit with actual production-function regression. | **Opal Phoenix’s student sand reward is now visible and can be selected for Alazia’s delivery quest.** Original flags fail; corrected aliases and both lookup modes pass under ASan/UBSan, with negative hidden/blind/wrong/ordinal controls. Full played offering and existing saved-item remediation remain unqualified. |
+| [208a56840](https://github.com/Community-Duris/Duris/commit/208a56840acb100fc20dbec4b0af9a80a6cd0914): Cloister Mahr acceptance caption | Brother Mahr accepts adamantite tablet 67100 for recommendation 67101; the acceptance caption now says tablet instead of letter. Exactly one native word changes, in a separate fix commit with its focused regression. Requirements, rewards, departure and all other native bytes remain intact. | **Brother Mahr now correctly identifies the intruder's tablet when accepting it, making the Cloister's recommendation quest clearer.** Original wording fails; corrected caption/contract and exact-byte scope pass. Played turn-in/settlement remains unqualified. |
 
 ## Progress
 
@@ -139,9 +140,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 69 | Myrabolus | [Comprehensive dossier](zone-stories/MYRABOLUS.md): all17 blocks/188 rooms/78 mobiles/62 objects/316 resets,257 exact/272 parent families; two shops, literal/computed/imported handlers and bounded foreign closure | Thirteen stories/three support entries,21 contacts/4 aliases/24 optional checks; exact returned-note/new-half, same-name study/parts, four treasure allocations, awake Alexis and supplied shortcuts | No native repair. Missing treasury kind, Roland/load-room/set/wording intent, shared denied crew-payment ordering and admitted fee/source/access/reward/recipient/renewal episodes remain plans |
 | 70 | The Depths of Duris | [Comprehensive dossier](zone-stories/THE_DEPTHS_OF_DURIS.md): all103 blocks/2645 rooms/75 mobiles/60 objects/611 resets,406 exact/530 parent families; ten shops, custom death/decay/CARVE and bounded foreign closure | Nine outcomes/three services,17 contacts/109 aliases/15 optional checks; four brew alternatives, same-name feather kinds, ten loose roots and supplied seer shortcuts | No native repair. Six absent destinations, wall/stair intent, blue/pink wording and unplaced residents remain proposals; accepted source/part mutation/publication/expiry/payment/reward/retirement/renewal qualification remains open |
 | 71 | IceCrag Castle | [Comprehensive dossier](zone-stories/ICECRAG_CASTLE.md): all67 blocks/243 rooms/66 mobs/138 objects/620 resets,374 exact/460 parent families; twenty local assignments, full speech gates/command portals/custom encounters/foreign closure | Eight stories/two services/one incomplete exclusion,25 contacts/129 aliases/16 optional checks; exact 3-page/2+2-bottle/two-heart bundles and optional shoes history | No native repair. Missing Masha ingredient/dungeon, wine cap, duplicate kinds and dormant/global behavior remain proposals; accepted access/source/control/transform/fee/settlement/renewal qualification remains open |
-| 72–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 72 | Father Tel's Holy Cloister | [Comprehensive dossier](zone-stories/FATHER_TELS_HOLY_CLOISTER.md): all 36 blocks, 71 rooms, 24 mobiles, 31 objects and 113 resets; four automatically bound switches, complete shared and foreign source closure | Seven stories/one supporting rejection; 16 contacts/28 aliases/11 optional checks. Exact robes/tablet/head/tome/note/egg and paired ring/poison, supplied shortcuts and actual access actions | Separate Mahr tablet-caption fix 208a56840. Formal admission, lore/source mismatch, ten-minute mission and orphan intent remain proposals; accepted source/trap/control/search/key/XP/settlement/renewal qualification remains open |
+| 73–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Father Tel's Holy Cloister (`cloister`).
+The next area is Turolopolis (`willem`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -150,6 +152,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-CLOISTER-REFUSAL / SWITCH / TRAP / CAMPAIGN | Tel's recommendation exchange is an unconditional refusal with same-kind replacement; auto-bound no-show switches use SAY/PUSH, and secret exits need subsequent local SEARCH. Egg trap can consume a charge and hurt the player without accepted pickup. Supplied note/ring bypass earlier producers; three competing egg requests retain separate owners. | Seven stories/one rejection ship. Add accepted UID/source/custody, precise switch/search/door/trap generations, indexed replacement/XP settlement and builder-owned ALL/ANY campaigns. Mahr's one-word caption fix/news ships separately; formal admission, source clues, deadline and orphan intent remain proposals. |
 | ZSQ-ICECRAG-CONTENT / SOURCE / ACCESS / ACTOR | Cuisine requires missing6551 and mismatched pelt/parchment; exact book/onion/page kinds, 2+2 bottles versus cap-one elven source; speech unlock/open/arrival, GET interruption, NPC rescue and global wolf/death replacement. | Eight stories/two services/one excluded incomplete recipe ship. Builder selects native recipe/source/route repairs; add accepted UID/source/custody, door/control/actor generation and transfer/publication/lifecycle, atomic fee and indexed reward/retirement/reset qualification. No native repair ships here; proposed news remains distinct. |
 | ZSQ-RIFT-BATCH / ROLE / ACTOR / BRANCH | Feather cloak needs 15 roots beyond 14 maximum; seven mixed-fee crafts are guarded. Source instances/color counts, secret reveal, token/head disagreement, unspawned dragon alternative and wandering foreign ranger. Two procedural hosts have their own assignment/count/payout authority. |12 outcomes/12 services/3 exclusions ship with 30 optional checks. Extend complete-batch bounds and atomic craft payments; accept source/reveal/dialogue/role/travel/actor and scoped AND/faction/procedural events. Native five-direction fix/news separate; plot/dragon/historical boundary decisions pending. |
 | ZSQ-DESOLATE-PAYMENT / TREE / PHASE / TRIAL | Rod + wheel + five platinum is guarded; monkey container holds a separately required chain. Timed random exit changes north route and zone flags. Secret switches clear one side; trial controls lack ordered/defeat terminal; foreign referral returns original letter. | Nine outcomes/two services and optional histories ship. Add atomic wallet/item/reward/recovery, destructive descendant preview, content predicates, accepted targeted controls/arrival, phase generation/episode and scoped trial/foreign AND campaigns. Native south/west direction repair ships separately with news; three absent stock refs and other intent remain pending. |
@@ -3846,3 +3849,70 @@ All 2668 definitions, fingerprint, revision two, registry and native world/code
 remain unchanged. The original queue is **71/220 source-comprehensive, 149 pending**;
 Father Tel's Holy Cloister is next. The full goal remains active. No accounting
 activation, DB/server operation, migration, deployment or merge occurred.
+
+
+## Priority 72 checkpoint: Father Tel's Holy Cloister
+
+The [comprehensive dossier](zone-stories/FATHER_TELS_HOLY_CLOISTER.md) closes all
+36 native blocks, 71 rooms (33 prose groups, six headers, six extra descriptions,
+157 exits), 24 mobiles, 31 objects and 113 resets (97 exact/99 parent-aware).
+Nineteen addressed topic families retain 28 aliases. All four automatically
+bound switches, native actor assignment, shared lookup/search/movement/key/trap/
+offering/reward/retirement paths and bounded foreign source closure were reviewed:
+three foreign item prototypes, four reset groups, four mobile and five room bodies,
+two competing foreign egg requests, all 713 portals and both valid approaches.
+
+The journal classifies all eight offerings as seven stories and one supporting
+rejection exchange; 16 contacts and 11 optional checks cover nine current materials
+and two producer receipts. Tel's note refusal earns no achievement/daily unit and
+does not admit a student or return the original item identity. Mahr's note can
+instead yield the disciple's experience/clue. The local egg → bone key → podium
+ring + poison → rib bone → helmet case route remains optional guidance between
+independent offerings. Supplied notes/rings need no invented producer history;
+history cannot restore spent materials. Robes differ from Mande's head, and the
+General's loaded head differs from ordinary carved parts. Jade and Winterhaven
+compete for the same egg without taking ownership of local completion.
+
+SAY Khildarak and PUSH statue/boulder/tapestry are exact switch commands, despite
+no literal assignments. Switches clear BLOCKED; secret passages then require
+local SEARCH. Door unlock/open, key destruction, container reveal/GET and arrival
+are separate operations. The egg's GET/PUT acid trap can consume its charge while
+rejecting pickup; damage or attempted acquisition is not first custody. World
+cap-one stock, a rare foreign ring and retiring recipients need renewed supply
+and generation proof before daily availability. All seven stories are potential
+item-only daily candidates, rather than a claim of qualified live renewal.
+
+**Expansion:** semantic refusal and same-kind replacement lineage; accepted
+automatic switch/search/door/trap state and exact source-versus-handoff custody;
+builder-owned ALL/ANY campaign branches, supplied shortcuts and competing roots;
+per-index item/nominal-versus-actual group XP settlement, recipient retirement
+and source/reset renewal. Formal admission, meditation training and the tablet's
+ten-minute poison mission have no accepted native terminal. Builder decisions
+remain necessary; no per-keyword achievement or invented ending is added.
+
+**Actual native repair, separate fix commit:**
+[208a56840](https://github.com/Community-Duris/Duris/commit/208a56840acb100fc20dbec4b0af9a80a6cd0914)
+changes Mahr's acceptance caption from letter to tablet. The exact requirement,
+reward and departure remain intact. Original caption fails the focused check;
+corrected caption/contract and one-word byte scope pass. Played turn-in is still
+unqualified. **News:** “Brother Mahr now correctly identifies the intruder's
+tablet when accepting it, making the Cloister's recommendation quest clearer.”
+The source-clue disagreements, unfinished admission/deadline and orphan/stale
+key-field questions have balanced proposals; they are not shipped repairs.
+
+**Validation:** source/prototype/binding fixture and all 93 Python/C++ schema,
+file-loader and projection journeys cover service exclusion, exact current
+materials, worn/wrong proof, supplied notes/rings, spent optional history,
+foreign owner rejection, seven outcomes, exact-event replay and cold recovery.
+Full production catalog/audit/inventory regression, maintained build, changed/
+staged formatting, whitespace, links and preservation checks are required before
+publication. Synthetic receipts do not qualify played speech/control/search/GET/
+trap/key/combat/offer/XP/reward/retirement/reset/persistence or daily renewal.
+Active, ready accounting remains mandatory; frozen obligations recover separately.
+
+Current catalog: 93 maps/1602 achievement units/1453 potential dailies/2203 rows.
+All 2668 native definitions, fingerprint, revision two, registry and prior 92
+journals remain intact. The one-word caption correction is the sole native
+change. Original queue: **72/220 source-comprehensive, 148 pending**; Turolopolis
+is next. The full goal remains active. No accounting activation, database/server
+operation, migration, deployment or merge occurred.

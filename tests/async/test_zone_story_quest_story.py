@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1453
-assert report['mapped_area_count'] == 92 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 93 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -45,6 +45,22 @@ assert sum(s['category'] == 'service' for s in icecrag['stories']) == 2
 assert sum(len(c['topics']) for c in icecrag['contacts']) == 129
 assert sum(t.get('optional', False) for s in icecrag['stories'] for t in s['steps']) == 16
 assert all(t.get('optional') for s in icecrag['stories'] for t in s['steps'][:-1])
+
+cloister = next(m for m in catalog['story_mappings'] if m['source_area'] == 'cloister')
+assert (cloister['schema_version'], cloister['revision'], cloister['coverage']) == (3, 1, 'complete')
+assert len(cloister['stories']) == 8 and len(cloister['contacts']) == 16 and not cloister['exclusions']
+assert report['eligible_by_zone']['671'] == 7
+cloister_units = [u for u in module.story_units(catalog) if u['zone_number'] == 671]
+assert len(cloister_units) == 8 and sum(u['daily_candidate'] for u in cloister_units) == 7
+assert sum(s['category'] == 'service' for s in cloister['stories']) == 1
+assert sum(len(c['topics']) for c in cloister['contacts']) == 28
+assert sum(t.get('optional', False) for s in cloister['stories'] for t in s['steps']) == 11
+assert all(t.get('optional') for s in cloister['stories'] for t in s['steps'][:-1])
+cloister_stories = {s['id']: s for s in cloister['stories']}
+assert cloister_stories['tel-rejected-recommendation']['category'] == 'service'
+assert cloister_stories['disciple-recommendation']['steps'][0]['contracts'] == cloister_stories['mahr-intruder-tablet']['contracts']
+assert cloister_stories['advisor-ring-and-poison']['steps'][0]['contracts'] == cloister_stories['priest-troggahns-egg']['contracts']
+assert [t['item_vnums'] for t in cloister_stories['advisor-ring-and-poison']['steps'][1:-1]] == [[67113], [67103]]
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

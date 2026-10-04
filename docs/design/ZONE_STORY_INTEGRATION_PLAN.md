@@ -2551,3 +2551,37 @@ proposals never masquerade as fixed gameplay. Active, ready accounting gates new
 progress; frozen obligations retain independent recovery. Source/projection
 checks remain distinct from played acquisition/access/combat/fee/settlement/
 retirement/persistence/renewal qualification. Queue: 71/220 source-comprehensive, 149 pending; Cloister next.
+
+
+## Cloister: refusal semantics, automatic switches and failed acquisition
+
+[Cloister's complete source map](zone-stories/FATHER_TELS_HOLY_CLOISTER.md) closes
+priority 72 using existing schema 3, revision 1: seven stories, one supporting
+rejection, 16 contacts, 28 aliases and 11 optional checks. No new runtime API,
+event schema or native campaign predicate is introduced. Static extraction finds
+the exact recipes and switch values; authored maps still decide meaningful story
+grouping and distinguish refusal, lore and access from actual completion.
+
+| Capability | Concrete requirement | Implementation and qualification plan |
+| --- | --- | --- |
+| Semantic refusal and replacement | Tel consumes a recommendation and returns a newly created note of the same kind, while rejecting admission | Supporting service with zero achievement/daily credit. Preserve original UID, destruction, replacement index/entitlement and actual actor/group. Qualify partial/busy/rejected/replayed and cold publication. A successful native exchange is not proof of narrative success or original-item restitution |
+| Automatic binding and exact control | Four no-show type-29 switches bind during object creation, outside literal assignment inventory; SAY and PUSH differ from ASK/PULL | Discover shared type-based procedures. Freeze selected object/actor/room/reset/command and before/after BLOCKED bits. Distinguish handled command from new mutation and another player's shared state |
+| Secret search, door and custody | Boulder/tapestry leave SECRET after removing BLOCKED; return-side reveal is independent. Keys unlock before separately admitted break/destruction | Accepted reveal, precise side/lock/open state, key UID and survival, container ancestry and actual GET/arrival. Qualify busy/rejected key extraction, already-open/shared access and reset episodes. Do not infer locked-door use from a key field on a secret-only exit |
+| Failed acquisition and trap state | Troggahn's GET/PUT acid trap has one charge at level 100; it can damage the player and reject pickup before custody | Separate attempt, charge consumption, trap effect, survival and accepted transfer. Level is not success probability. First-source recovery needs committed UID/source/custody evidence; damage, a spoken keyword or a failed GET supplies no recovery milestone |
+| Optional producers and competing roots | Note→disciple and egg→key→ring+poison→rib bone→case permit supplied entry points; Jade and Winterhaven also consume the egg | Existing optional receipts/current-material checks retain legal shortcuts. Builder-selected ALL/ANY families need scoped actor/attempt/ownership and exact root allocation, consumption and foreign receipt policy. History cannot restore a spent note/ring, and local stock caps constrain availability |
+| Indexed outputs, XP and renewal | Refusal replacement, experience-only disciple, D1 recipients, cap-one materials and 20-percent foreign ring source | Freeze each output index and nominal versus actual credited group XP entitlement. Qualify publication/save, partial/replay/cold settlement, recipient removal/reset and admitted renewed source supply before enabling live daily availability |
+| Builder intent and repair news | No formal student/meditation/ten-minute assassination endpoint; ring/Kirrb lore differs from active placement; one orphan room | Choose clearer lore or explicit native accepted predicates, rather than deriving prerequisites from dialogue. Mahr's one-word caption repair ships in separate fix commit 208a56840 with failing/passing proof and news text; all broader native changes remain balanced proposals |
+
+The text journal explains named actions, exact materials, Ready/Missing state and
+optional history today. A future richer view should preserve those same facts:
+show independent delivery cards, supporting refusals, access guidance and optional
+branches, then expose campaign progress only after accepted predicates exist.
+Source acquisition, supplied possession, learned topics and successful turn-in
+are separate facts; each keyword does not imply an achievement.
+
+All new discovery, encounter, journal, achievement and daily credit requires
+active, ready accounting. Frozen obligations retain their independent recovery
+path. Source completeness and synthetic projection journeys do not qualify live
+trap/access/offer/XP/reward/retirement/reset/persistence/renewal. Queue: 72/220
+source-comprehensive, 148 pending; Turolopolis next. No accounting activation,
+database/server operation, migration, deployment or merge is part of this work.
