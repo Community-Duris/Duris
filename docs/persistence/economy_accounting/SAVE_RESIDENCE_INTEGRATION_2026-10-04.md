@@ -836,3 +836,47 @@ procedure. It does not complete Plan2 physical coin producers, other item/domain
 writers, Plan5 combined release qualification or production activation ownership.
 The synthetic three-route manifest proves only its isolated route. Registry
 coverage remains false and release blocked; no R1–R8 gate is waived or added.
+
+### October4 coin/collector source integration; qualification pending
+
+The reviewed31-file integration connects typed physical coin recovery and SQL
+collector purchase preparation, immutable original domain state, save holds,
+genuine coordinator completions, native publication and reserved ACK. Exact
+coin/collector retained proofs coexist in the common repository; no dispatcher
+or legacy guard was lost in composition. Flat coin borrowed-lock retained/current
+proof and cold room literals, covered flat save revisions and direct execution
+permits are connected. Central flat coin admission remains closed, and active
+flat bootstrap is still missing; these sources cannot establish flat delivery.
+
+Collector accounted purchases now persist and verify the existing item runtime
+payload and properties in the original transaction. Original-only cold registration
+precedes replay execution. Actorless publication proves full same-PID body and
+UID absence, reconciles only nonphysical caches, and confirms SQL cleanup before
+guarded ACK; incomplete materialization stays held. Schema1/inactive branches and
+the declined spell path are preserved by source review. Ordinary loader zero-key
+transformation remains existing behavior, not a newly promised physical guarantee.
+
+Independent source/interface review and diff hygiene pass. New compiler, native,
+gameplay, fault/recovery and backend checks remain deferred to the original
+major-plan readiness batches, as requested. Plan1's8586ba589 milestone retains
+its frozen input proof; later shared inputs must be qualified in those batches.
+Remaining writer/item/domain routes, flat bootstrap, executable registry coverage,
+combined Plan5 and activation-owner/release evidence remain required. No R1–R8
+gate, native limit, source policy, production activation or optional framework
+changes. The lifecycle-origin proposal is separate, reviewed but not integrated.
+
+Private source input receipt is
+tmp/accounting-native-slices-integration-20261004.local.json. It records31 exact
+file pins from base db682ade5, reviewed composition and qualification limits.
+The public source is reviewable; this receipt is not gameplay acceptance.
+
+Changed-line clang18 formatting covers all30 C/C++ source/header owners, with
+fixedpoint and unchanged lexical tokens against the reviewed composition. Three
+byte identities changed; the source receipt and registry candidate pins were
+refreshed. The maintained matrix is regenerated, with coverage false and release
+blocked. The 2,836 occurrences include 465 unmapped coordinates after binding
+the 12 new scoped occurrences to three source-reviewed recovery routes. All
+three remain unqualified on every backend. The global net increase is 18;
+coordinate changes are not counts of newly discovered writers, and inventory
+is not executable qualification. Historical rebinding and all original route
+acceptance remain open.

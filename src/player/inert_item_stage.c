@@ -109,8 +109,9 @@ void inert_item_stage::reset() noexcept
 	pool_ = nullptr;
 }
 
-inert_item_stage_result inert_item_stage_eligibility(const object_template &prototype,
-						     const player_item_snapshot &literal) noexcept
+static inert_item_stage_result literal_stage_eligibility(const object_template &prototype,
+							 const player_item_snapshot &literal,
+							 bool money) noexcept
 {
 	const int number = prototype.R_num;
 	if (!obj_index || number < 0 || number > top_of_objt || literal.vnum <= 0 ||
@@ -122,7 +123,8 @@ inert_item_stage_result inert_item_stage_eligibility(const object_template &prot
 	    !std::in_range<long>(literal.generated_key) || literal.type < ITEM_LOWEST ||
 	    literal.type > ITEM_LAST ||
 	    literal.string_mask != (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3) ||
-	    literal.equipment_slot != 0 || literal.extra_descriptions.size() > max_descriptions)
+	    literal.equipment_slot != (money ? -1 : 0) ||
+	    literal.extra_descriptions.size() > max_descriptions)
 		return inert_item_stage_result::invalid;
 	size_t bytes = 0;
 	if (!text(literal.name, &bytes) || !text(literal.short_description, &bytes) ||
@@ -150,8 +152,9 @@ inert_item_stage_result inert_item_stage_eligibility(const object_template &prot
 			return inert_item_stage_result::invalid;
 
 	constexpr uint32_t dynamic_flags = ITEM_PROCLIB | ITEM_ARTIFACT | ITEM_TRANSIENT;
-	if (obj_index[number].func.obj || unsupported_type(prototype.type) ||
-	    unsupported_type(literal.type) ||
+	if (obj_index[number].func.obj ||
+	    (money ? (prototype.type != ITEM_MONEY || literal.type != ITEM_MONEY) :
+		     (unsupported_type(prototype.type) || unsupported_type(literal.type))) ||
 	    ((prototype.extra_flags | literal.extra_flags) & dynamic_flags) ||
 	    contains_ascii(prototype.name, "random_exit") ||
 	    contains_ascii(literal.name, "random_exit") || prototype.trap_eff ||
@@ -166,10 +169,17 @@ inert_item_stage_result inert_item_stage_eligibility(const object_template &prot
 		if (description.spellbook || !description.spell_ids.empty() ||
 		    contains_ascii(description.keyword, "_proclib_"))
 			return inert_item_stage_result::unsupported;
-	for (auto timer : literal.timers)
-		if (timer != 0)
-			return inert_item_stage_result::unsupported;
+	if (!money)
+		for (auto timer : literal.timers)
+			if (timer != 0)
+				return inert_item_stage_result::unsupported;
 	return inert_item_stage_result::ok;
+}
+
+inert_item_stage_result inert_item_stage_eligibility(const object_template &prototype,
+						     const player_item_snapshot &literal) noexcept
+{
+	return literal_stage_eligibility(prototype, literal, false);
 }
 
 inert_item_stage_result prepare_inert_item_stage(const object_template &prototype,
@@ -179,6 +189,46 @@ inert_item_stage_result prepare_inert_item_stage(const object_template &prototyp
 	const auto eligibility = inert_item_stage_eligibility(prototype, literal);
 	if (eligibility != inert_item_stage_result::ok)
 		return eligibility;
+	return inert_item_stage::allocate_literal(prototype, literal, output);
+}
+
+inert_item_stage_result
+prepare_inert_money_stage(const player_item_snapshot &literal, uint64_t original_uid,
+			  const std::array<int32_t, 4> &verified_denominations,
+			  inert_item_stage &output) noexcept
+{
+	if (!original_uid || original_uid != literal.object_uid || literal.type != ITEM_MONEY ||
+	    literal.parent_index != PLAYER_SNAPSHOT_NO_PARENT || literal.equipment_slot != -1 ||
+	    literal.extra_descriptions.size() != 1)
+		return inert_item_stage_result::invalid;
+	bool nonempty = false;
+	for (size_t index = 0; index < verified_denominations.size(); ++index)
+	{
+		if (verified_denominations[index] < 0 ||
+		    literal.values[index] != verified_denominations[index])
+			return inert_item_stage_result::invalid;
+		nonempty = nonempty || verified_denominations[index] != 0;
+	}
+	if (!nonempty)
+		return inert_item_stage_result::invalid;
+	if (!recovery_object_templates_ready())
+		return inert_item_stage_result::allocation_unavailable;
+	const object_template *prototype = find_recovery_object_template(literal.vnum);
+	if (!prototype)
+		return inert_item_stage_result::unsupported;
+	const auto eligibility = literal_stage_eligibility(*prototype, literal, true);
+	if (eligibility != inert_item_stage_result::ok)
+		return eligibility;
+	// The persisted literal already contains the exact rendered descriptions and
+	// native weight. Copy it unchanged; never rerender, reinterpret its unstrung
+	// fields or replace the original denominations with prototype starting cash.
+	return inert_item_stage::allocate_literal(*prototype, literal, output);
+}
+
+inert_item_stage_result inert_item_stage::allocate_literal(const object_template &prototype,
+							   const player_item_snapshot &literal,
+							   inert_item_stage &output) noexcept
+{
 	const int number = prototype.R_num;
 	if (!dead_obj_pool || dead_obj_pool->size != sizeof(obj_data) ||
 	    dead_obj_pool->next_off != offsetof(obj_data, next))

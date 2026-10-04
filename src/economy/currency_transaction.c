@@ -2,6 +2,7 @@
 #include "economy/currency_publication.h"
 #include "economy/economic_gameplay_authority.h"
 #include "economy/account_bank_balances.h"
+#include "player/player_save_pipeline.h"
 
 #include "net/gmcp.h"
 #include "core/prototypes.h"
@@ -78,6 +79,12 @@ struct pending_currency
 	bool receipt_received = false;
 	bool disposition_blocked = false;
 	bool disposition_blocked_this_batch = false;
+	// Replay owns the entire immutable parent, including typed intent, admission
+	// identity, endpoint commands and publication bit; decoded endpoints alone
+	// cannot supply the retained/native proof required for cold publication.
+	std::optional<critical_command> restored_coin_command = std::nullopt;
+	bool restored_room_coin = false;
+	bool restored_coin_receipt_sealed = false;
 };
 
 std::unordered_map<std::string, pending_currency> pending;
@@ -155,6 +162,170 @@ bool coin_has_physical_endpoint(const coin_transfer_payload &payload)
 {
 	return payload.source.change.type == critical_command_type::item_transfer ||
 	       payload.destination.change.type == critical_command_type::item_transfer;
+}
+
+bool restored_room_coin_shape(const coin_transfer_payload &payload,
+			      const item_transfer_payload &pile)
+{
+	const bool drop = payload.source.change.type == critical_command_type::account_bank &&
+			  payload.destination.change.type == critical_command_type::item_transfer;
+	const bool pickup = payload.source.change.type == critical_command_type::item_transfer &&
+			    payload.destination.change.type == critical_command_type::account_bank;
+	if (!drop && !pickup)
+		return false;
+	if (pile.multi_root || pile.item_count != 1 || !pile.selected_item_uid ||
+	    pile.items[0].item_uid != pile.selected_item_uid ||
+	    pile.items[0].root_item_uid != pile.selected_item_uid ||
+	    pile.items[0].parent_item_uid || pile.target_parent_item_uid ||
+	    pile.target_root_item_uid != pile.selected_item_uid ||
+	    pile.expected_target_parent_revision || pile.corpse.present || pile.collector.present ||
+	    pile.continuation.kind != item_transfer_continuation_kind::none ||
+	    !pile.continuation.data.empty())
+		return false;
+	const auto room = [](const item_owner_identity &owner)
+	{
+		return owner.type == item_owner_type::room && owner.id && owner.id <= INT32_MAX &&
+		       !owner.context_id;
+	};
+	if (drop)
+		return pile.reason == item_transfer_reason::creation &&
+		       pile.from_owner.type == item_owner_type::system && !pile.from_owner.id &&
+		       !pile.from_owner.context_id && room(pile.to_owner);
+	return room(pile.from_owner) &&
+	       ((pile.reason == item_transfer_reason::player_put &&
+		 item_owner_identity_equal(pile.from_owner, pile.to_owner)) ||
+		(pile.reason == item_transfer_reason::destruction &&
+		 pile.to_owner.type == item_owner_type::destruction && !pile.to_owner.id &&
+		 !pile.to_owner.context_id));
+}
+
+bool same_restored_coin_command(const critical_command &left, const critical_command &right)
+{
+	// critical_command_equal serializes and allocates. The synchronous receipt
+	// fence must compare every original field without allocating or normalizing.
+	return left.schema_version == right.schema_version &&
+	       critical_operation_id_equal(left.operation_id, right.operation_id) &&
+	       left.type == right.type && left.payload_version == right.payload_version &&
+	       left.source_site == right.source_site &&
+	       left.deadline_class == right.deadline_class &&
+	       left.accepted_at_usec == right.accepted_at_usec &&
+	       left.publication_required == right.publication_required &&
+	       left.payload == right.payload && left.accounting_intent == right.accounting_intent &&
+	       left.keys.size() == right.keys.size() &&
+	       std::equal(left.keys.begin(), left.keys.end(), right.keys.begin(),
+			  critical_entity_key_equal) &&
+	       left.expected_revisions.size() == right.expected_revisions.size() &&
+	       std::equal(left.expected_revisions.begin(), left.expected_revisions.end(),
+			  right.expected_revisions.begin(),
+			  [](const critical_expected_revision &a,
+			     const critical_expected_revision &b) {
+				  return a.revision == b.revision &&
+					 critical_entity_key_equal(a.key, b.key);
+			  });
+}
+
+bool same_restored_coin_receipt(const critical_completion &left, const critical_completion &right)
+{
+	const auto committed = [](critical_apply_outcome outcome)
+	{
+		return outcome == critical_apply_outcome::applied ||
+		       outcome == critical_apply_outcome::already_applied;
+	};
+	return critical_operation_id_equal(left.operation_id, right.operation_id) &&
+	       left.disposition == right.disposition &&
+	       (committed(left.outcome) ? committed(right.outcome) :
+					  left.outcome == right.outcome) &&
+	       left.durable_revision == right.durable_revision &&
+	       left.error_code == right.error_code && left.failure_stage == right.failure_stage &&
+	       left.result_size == right.result_size && left.result_payload == right.result_payload;
+}
+
+bool coin_physical_result_matches(const coin_transfer_payload &payload,
+				  const coin_transfer_result &result);
+
+bool restored_coin_definitive_receipt(const pending_currency &entry,
+				      const critical_completion &completion)
+{
+	if (!entry.restored_coin_command || !entry.coin ||
+	    !critical_operation_id_equal(entry.restored_coin_command->operation_id,
+					 completion.operation_id) ||
+	    completion.disposition != critical_completion_disposition::execution ||
+	    !critical_completion_disposition_valid(completion) ||
+	    !critical_failure_stage_valid(completion.failure_stage) ||
+	    completion.result_size > completion.result_payload.size() ||
+	    std::any_of(completion.result_payload.begin() + completion.result_size,
+			completion.result_payload.end(), [](uint8_t byte) { return byte != 0; }))
+		return false;
+	if (completion.outcome == critical_apply_outcome::applied ||
+	    completion.outcome == critical_apply_outcome::already_applied)
+	{
+		coin_transfer_result result = {};
+		std::array<uint8_t, COIN_TRANSFER_RESULT_BYTES> canonical = {};
+		if (completion.error_code ||
+		    completion.failure_stage != critical_failure_stage::none ||
+		    !coin_transfer_command_decode_result(*entry.coin,
+							 completion.result_payload.data(),
+							 completion.result_size, &result) ||
+		    !coin_physical_result_matches(*entry.coin, result) ||
+		    !coin_transfer_command_encode_result(*entry.coin, result, &canonical) ||
+		    !std::equal(canonical.begin(), canonical.end(),
+				completion.result_payload.begin()))
+			return false;
+		uint64_t revision = 0;
+		const coin_transfer_endpoint *endpoints[] = { &entry.coin->source,
+							      &entry.coin->destination };
+		for (size_t index = 0; index < 2; ++index)
+			if (endpoints[index]->change.type == critical_command_type::account_bank)
+				revision =
+					std::max({ revision, result.wallets[index].wallet_revision,
+						   result.wallets[index].bank_revision });
+			else
+				revision =
+					std::max({ revision, result.piles[index].max_item_revision
+#ifndef __NO_MYSQL__
+						   ,
+						   result.piles[index].from_owner_revision,
+						   result.piles[index].to_owner_revision
+#endif
+					});
+		// Native retained/current proof remains mandatory in the primary owner.
+		return completion.durable_revision == revision;
+	}
+	if (completion.outcome != critical_apply_outcome::terminal_failure ||
+	    !completion.error_code)
+		return false;
+	const bool stale_expected =
+		completion.error_code == ESTALE &&
+		coin_transfer_command_stale_result_expected(*entry.coin, completion.failure_stage);
+	if (!stale_expected)
+#ifdef __NO_MYSQL__
+		// Flat retained rejection revisions cover full opening native vectors.
+		// Only exact verify_retained_locked comparison grants publication authority.
+		return !completion.result_size;
+#else
+		return !completion.result_size && !completion.durable_revision;
+#endif
+	coin_transfer_stale_result stale = {};
+	coin_transfer_result result = {};
+	std::array<uint8_t, COIN_TRANSFER_STALE_RESULT_BYTES> canonical = {};
+	if (!coin_transfer_command_decode_stale_result(*entry.coin, completion.failure_stage,
+						       completion.result_payload.data(),
+						       completion.result_size, &stale))
+		return false;
+	result.wallets[stale.endpoint_index] = stale.current;
+	const uint64_t revision = std::max(stale.wallet_stale ? stale.current.wallet_revision : 0,
+					   stale.bank_stale ? stale.current.bank_revision : 0);
+	return
+#ifndef __NO_MYSQL__
+		completion.durable_revision == revision &&
+#else
+		// Compact bytes omit the unflagged opening vector; the original flat
+		// receipt retains its full opening revision. Prove equality under lock.
+		completion.durable_revision >= revision &&
+#endif
+		coin_transfer_command_encode_stale_result(*entry.coin, result,
+							  completion.failure_stage, &canonical) &&
+		std::equal(canonical.begin(), canonical.end(), completion.result_payload.begin());
 }
 
 // Decode checks the result's wire shape. Bind every physical transfer result
@@ -423,6 +594,47 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 	if (!committed && completed.result_size && !stale_authority)
 		return retain_unresolved_publication(entry, "unexpected_coin_terminal_result",
 						     true);
+	if (entry.restored_coin_command && coin_has_physical_endpoint(*entry.coin))
+	{
+		// Cold replay must not project stale command balances before native
+		// current authority and the original save reservation are established.
+		if (!entry.restored_room_coin)
+			return retain_unresolved_publication(entry, "unsupported_restored_coin",
+							     false);
+		if (!entry.restored_coin_receipt_sealed || entry.disposition_blocked)
+			return retain_unresolved_publication(
+				entry, "unsealed_restored_coin_receipt", false);
+		entry.coin_publication_started = true;
+		const critical_completion sealed = entry.completed;
+		bool acknowledged = false;
+		try
+		{
+			acknowledged = coin_physical_publication_restore_and_acknowledge(
+				*entry.restored_coin_command, sealed);
+		}
+		catch (...)
+		{
+			// Native/session/hold cleanup belongs to the primary owner. No
+			// throwing attempt can authorize retirement or an ID-only ACK here.
+		}
+		if (!currency_transaction_restored_coin_receipt_current(
+			    *entry.restored_coin_command, sealed))
+			return false;
+		if (!acknowledged)
+		{
+			entry.publication_state = currency_publication_state::retrying_callback;
+			return false;
+		}
+		// The primary owner already completed guarded ACK and consumed its
+		// exact save hold. Never repeat a separate ID-only coordinator ACK.
+		guard.release();
+		auto node = pending.extract(original_key);
+		if (committed)
+			++health.committed;
+		else
+			++health.rejected;
+		return true;
+	}
 	try
 	{
 		if (stale_authority && !entry.coin_wallets_published)
@@ -713,6 +925,32 @@ bool publish(std::unordered_map<std::string, pending_currency>::iterator found, 
 bool stage_publication_receipt(pending_currency &entry, const critical_completion &completion,
 			       bool retry_same_blocked_receipt)
 {
+	if (entry.restored_coin_command && entry.coin && coin_has_physical_endpoint(*entry.coin))
+	{
+		if (entry.restored_coin_receipt_sealed)
+		{
+			if (!same_restored_coin_receipt(entry.completed, completion))
+			{
+				entry.disposition_blocked = true;
+				return retain_unresolved_publication(
+					entry, "changed_restored_coin_receipt", true);
+			}
+			// Keep the first definitive original receipt. Delivery attempts,
+			// timestamps and applied/already_applied do not replace its body.
+			entry.disposition_blocked = false;
+			entry.publication_state = currency_publication_state::ready;
+			return true;
+		}
+		if (restored_coin_definitive_receipt(entry, completion))
+		{
+			entry.completed = completion;
+			entry.receipt_received = true;
+			entry.restored_coin_receipt_sealed = true;
+			entry.disposition_blocked = false;
+			entry.publication_state = currency_publication_state::ready;
+			return true;
+		}
+	}
 	if (!critical_completion_disposition_valid(completion) ||
 	    (entry.receipt_received && entry.completed.disposition != completion.disposition))
 	{
@@ -1467,6 +1705,7 @@ bool currency_transaction_restore_replayed_command(const critical_command &comma
 		    pending.size() >= CURRENCY_PENDING_MAX)
 			return false;
 		uint32_t actor_pid = 0;
+		bool restored_room_coin = false;
 		std::array<char, CURRENCY_ACCOUNT_NAME_MAX_BYTES + 1> account_name = {};
 		uint8_t racewar = 0;
 		for (const auto *endpoint : { &coin.source, &coin.destination })
@@ -1494,6 +1733,7 @@ bool currency_transaction_restore_replayed_command(const critical_command &comma
 				    pile.item_count != 1 ||
 				    pile.selected_item_uid != pile.items[0].item_uid)
 					return false;
+				restored_room_coin = restored_room_coin_shape(coin, pile);
 				continue;
 			}
 			return false;
@@ -1517,7 +1757,15 @@ bool currency_transaction_restore_replayed_command(const critical_command &comma
 			const std::string key = operation_key(command.operation_id);
 			if (pending.find(key) != pending.end())
 				return false;
+			entry.restored_coin_command = command;
+			entry.restored_room_coin = restored_room_coin;
 			pending.emplace(key, std::move(entry));
+			if (restored_room_coin &&
+			    !player_save_pipeline_restore_sql_coin_obligation(command))
+			{
+				pending.erase(key);
+				return false;
+			}
 		}
 		catch (const std::bad_alloc &)
 		{
@@ -1558,6 +1806,28 @@ bool currency_transaction_restore_replayed_command(const critical_command &comma
 	}
 	update_retained_health();
 	return true;
+}
+
+bool currency_transaction_restored_coin_receipt_current(
+	const critical_command &original_command,
+	const critical_completion &sealed_completion) noexcept
+{
+	// Bounded scan avoids operation_key's string allocation at the ACK boundary.
+	for (const auto &[key, entry] : pending)
+	{
+		(void)key;
+		if (entry.restored_coin_command &&
+		    critical_operation_id_equal(entry.restored_coin_command->operation_id,
+						original_command.operation_id))
+			return entry.restored_room_coin && entry.restored_coin_receipt_sealed &&
+			       entry.coin_publication_in_progress && !entry.disposition_blocked &&
+			       !entry.disposition_blocked_this_batch &&
+			       !currency_publication_state_is_blocked(entry.publication_state) &&
+			       same_restored_coin_command(*entry.restored_coin_command,
+							  original_command) &&
+			       same_restored_coin_receipt(entry.completed, sealed_completion);
+	}
+	return false;
 }
 
 void currency_transaction_player_ready(P_char character)

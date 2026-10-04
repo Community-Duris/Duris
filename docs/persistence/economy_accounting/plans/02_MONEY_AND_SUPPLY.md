@@ -122,3 +122,14 @@ remains independent of the native world module. Inactive/schema1 and wallet-only
 behavior remain outside these physical-schema2 checks. Prepared regression cases,
 actual producer/recovery journeys, cold ownership and full Plan2 acceptance remain
 required; no issue/route is marked qualified or release-ready.
+
+### October4 physical coin/shared owner source milestone; unqualified
+
+Typed SQL and flat physical coin recovery now connects the existing complete
+retained original/completion proof, locked current native wallet/bank/pile/room
+literals, inert projection and reserved save/publication owner. Covered flat
+ordinary-save revision reads and direct execution permits use existing authority.
+Central flat coin admission stays closed until native active bootstrap and this
+plan's original qualification pass. Other money writers and source policies
+remain required. See the consolidated integration report for source inputs;
+new native/gameplay/restart checks wait for this major plan's readiness batch.

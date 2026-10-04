@@ -2,6 +2,7 @@
 #include "economy/economic_currency_adapter.h"
 #include "economy/coin_transfer_accounting.h"
 #include "economy/item_transfer_accounting.h"
+#include "economy/collector_accounting.h"
 
 #include <new>
 
@@ -91,6 +92,15 @@ bool economic_command_admission_supported(const critical_command &command) noexc
 		else if (command.type == critical_command_type::item_transfer)
 		{
 			return item_transfer_accounting_command_supported(command);
+		}
+		else if (command.type == critical_command_type::collector)
+		{
+			collector_command_payload payload;
+			collector::record listing;
+			economic_account_key wallet, bank;
+			return collector_purchase_accounting_decode(command, &intent, &payload,
+								    &listing, &wallet,
+								    &bank) == error::ok;
 		}
 		else
 			return false;

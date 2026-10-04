@@ -329,7 +329,11 @@ static bool critical_gameplay_restore_replayed_command(const critical_command &c
 	return player_death_restitution_runtime_restore_replayed_command(command, context) &&
 	       currency_transaction_restore_replayed_command(command) &&
 	       spell_item_lifecycle_restore_replayed_command(command) &&
-	       item_movement_transaction_restore_replayed_command(command);
+	       item_movement_transaction_restore_replayed_command(command) &&
+	       (command.type != critical_command_type::collector ||
+		command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		!command.publication_required ||
+		collector_service_restore_replayed_purchase(command));
 }
 
 #ifndef __NO_MYSQL__
@@ -999,19 +1003,21 @@ int run_the_game(int port, int sslport)
 	if (!mini_mode)
 		locker_async_init();
 	const char *journal_directory = getenv("PLAYER_SAVE_JOURNAL_DIR");
+	const bool owned_accounting_boot = economic_gameplay_authority::active();
 	const bool player_saves_ready =
 #ifdef __NO_MYSQL__
-		player_save_pipeline_init(journal_directory,
-					  player_quarantine_recovery_revalidate_selected);
+		owned_accounting_boot ?
+			player_save_pipeline_prepare(
+				journal_directory, player_quarantine_recovery_revalidate_selected) :
+			player_save_pipeline_init(journal_directory,
+						  player_quarantine_recovery_revalidate_selected);
 #else
 		player_save_pipeline_prepare(journal_directory,
 					     player_quarantine_recovery_revalidate_selected);
 #endif
-#ifndef __NO_MYSQL__
-	// Runtime SQL boot has already recovered the selected durable authority.
+	// The selected active native authority must already be recovered at boot.
 	// Preparation/revalidation must finish at epoch zero; critical replay then
 	// installs its original holds before any ordinary save execution starts.
-	const bool owned_accounting_boot = economic_gameplay_authority::active();
 	if (owned_accounting_boot)
 	{
 		uint64_t ownership_epoch = 0;
@@ -1023,7 +1029,6 @@ int run_the_game(int port, int sslport)
 			_exit(1);
 		}
 	}
-#endif
 	if (!player_saves_ready)
 	{
 		logit(LOG_STATUS,
@@ -1052,7 +1057,6 @@ int run_the_game(int port, int sslport)
 						  critical_extension_validator);
 	if (!critical_commands_ready)
 	{
-#ifndef __NO_MYSQL__
 		if (owned_accounting_boot)
 		{
 			// Replay may already retain original holds. Never discard them or
@@ -1061,7 +1065,6 @@ int run_the_game(int port, int sslport)
 				"Active accounting critical recovery unavailable; aborting boot.\n");
 			_exit(1);
 		}
-#endif
 		if (critical_command_coordinator_shutdown())
 		{
 			player_death_restitution_runtime_abort_all();
@@ -1075,11 +1078,14 @@ int run_the_game(int port, int sslport)
 		persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
 				  "start_failed", "check critical schema and journal");
 	}
-#ifndef __NO_MYSQL__
 	// Critical replay installs original save holds before any save replay/worker
 	// can execute. Failed critical initialization keeps preparation closed and
 	// retains its original slots for shutdown/restart, rather than running past it.
-	if (player_saves_ready && critical_commands_ready && !player_save_pipeline_start())
+	if (
+#ifdef __NO_MYSQL__
+		owned_accounting_boot &&
+#endif
+		player_saves_ready && critical_commands_ready && !player_save_pipeline_start())
 	{
 		if (owned_accounting_boot)
 		{
@@ -1092,7 +1098,6 @@ int run_the_game(int port, int sslport)
 		persistence_alert(AVATAR, "player_save", "pipeline", "none", "none", "start_failed",
 				  "check prepared save recovery");
 	}
-#endif
 	if (!collector_catalog_cache_refresh())
 		logit(LOG_STATUS,
 		      "Collector catalog refresh unavailable; collector gameplay fails closed.");
