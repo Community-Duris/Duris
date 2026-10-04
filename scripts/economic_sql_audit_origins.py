@@ -76,11 +76,13 @@ def decode_witness(row: dict, lineage: bytes, epoch: bytes, opening: bytes) -> t
     offset = HEADER_BYTES
     for _ in range(holding_count):
         key = blob[offset:offset + 40].hex()
-        key_lineage, kind, lifetime, _ = account_key(key)
+        decoded_key = account_key(key)
+        key_lineage, kind, lifetime, _ = decoded_key
         if (key_lineage != lineage.hex() or kind not in range(1, 7) or
-                (previous_key is not None and key <= previous_key) or lifetime in lifetimes):
+                (previous_key is not None and decoded_key <= previous_key) or lifetime in lifetimes):
             raise OriginError("invalid or duplicate EAB1 holding")
-        previous_key = key
+        # Native canonical order compares numeric fields, not their LE bytes.
+        previous_key = decoded_key
         lifetimes.add(lifetime)
         balance = list(struct.unpack_from("<4q", blob, offset + 40))
         if any(amount < 0 for amount in balance):

@@ -19,11 +19,22 @@ import sys
 MAX_INPUT_BYTES = 32 * 1024 * 1024
 MAX_ROWS = 100_000
 MAX_OUTPUT_ROWS = 100
-ORDINARY_KINDS = {1, 2, 3, 4, 5, 6}
+MAPPED_KINDS = {1, 2, 3, 4, 5, 6}
+ORDINARY_KINDS = MAPPED_KINDS | {11}
 UNITS = (1, 10, 100, 1000)
 HEX_ID = re.compile(r"[0-9a-f]{32}\Z")
 HEX_SOURCE_EVENT = re.compile(r"[0-9a-f]{96}\Z")
 HEX_KEY = re.compile(r"[0-9a-f]{80}\Z")
+# Independent policy interpretation; exhaustive native metadata comparisons
+# protect this table without importing the mutation implementation at runtime.
+SOURCE_KINDS_BY_REASON = {
+    3: (16,), 5: (1,), 6: (2,), 7: (3, 7), 8: (3,), 9: (4,), 10: (5,),
+    11: (17,), 12: (17,), 13: (17,), 14: (17,), 15: (17,), 16: (17,),
+    17: (8,), 18: (6,), 19: (6,), 21: (12, 18), 22: (12, 18),
+    24: (17, 18), 26: (13,), 27: (13,), 28: (13,), 29: (13,), 30: (13,),
+    31: (13, 17), 36: (14,), 38: (10,), 41: (16,), 42: (16,),
+    43: (18,), 44: (19,), 45: (6,), 46: (6,),
+}
 TABLES = (
     "operations", "effects", "postings", "children", "item_references",
     "ownership_events", "source_claims", "account_origins", "item_origins", "receipts",
@@ -82,9 +93,30 @@ def account_key(value: object) -> tuple[str, int, int, int]:
     kind = int.from_bytes(raw[18:20], "little")
     identity = int.from_bytes(raw[20:28], "little")
     context = int.from_bytes(raw[28:36], "little")
-    if raw[16:18] != b"\x01\x00" or raw[36:] != bytes(4) or not 1 <= kind <= 10 or not identity:
+    if raw[16:18] != b"\x01\x00" or raw[36:] != bytes(4) or not 1 <= kind <= 11 or not identity:
         raise SnapshotError("invalid account key")
     return raw[:16].hex(), kind, identity, context
+
+
+def decode_source_event(value: object) -> tuple[int, str, str, int, int]:
+    """Decode the native S48 identity without invoking a mutation codec."""
+    if not isinstance(value, str) or not HEX_SOURCE_EVENT.fullmatch(value):
+        raise SnapshotError("invalid source event")
+    raw = bytes.fromhex(value)
+    kind = int.from_bytes(raw[:2], "little")
+    if (raw[2:4] != b"\x01\x00" or not 1 <= kind <= 23 or
+            not any(raw[4:20]) or not any(raw[20:36])):
+        raise SnapshotError("invalid source event")
+    return (kind, raw[4:20].hex(), raw[20:36].hex(),
+            int.from_bytes(raw[36:44], "little"), int.from_bytes(raw[44:48], "little"))
+
+
+def source_kind_allowed(reason: object, kind: object) -> bool:
+    # The current native contract permits every valid kind for other known
+    # reasons. Unknown reasons never inherit that permissive default.
+    return (type(reason) is int and 1 <= reason <= 46 and
+            type(kind) is int and 1 <= kind <= 23 and
+            kind in SOURCE_KINDS_BY_REASON.get(reason, range(1, 24)))
 
 
 def unsigned_revision(value: object) -> bool:
@@ -474,7 +506,7 @@ class Reconciler:
                     self.emit("invalid_realized_price", operation_id=op_id)
                 elif op.get("outcome") != "committed":
                     self.emit("rejected_realized_price", operation_id=op_id)
-            policy = self.reasons.get(op.get("reason"))
+            policy = self.reasons.get(op.get("reason")) if type(op.get("reason")) is int else None
             if policy is None:
                 self.emit("unknown_policy_reason", operation_id=op_id)
             elif price is not None and not policy.get("realized_price_required", False):
@@ -502,13 +534,31 @@ class Reconciler:
             source = op.get("source_event")
             if policy and policy.get("source_event_required") and source is None and op.get("outcome") == "committed":
                 self.emit("missing_source_event", operation_id=op_id)
-            if source is not None and op.get("outcome") == "committed":
-                if not isinstance(source, str) or not re.fullmatch(r"[0-9a-f]{96}", source):
+            if source is not None:
+                try:
+                    kind = decode_source_event(source)[0]
+                except SnapshotError:
                     self.emit("invalid_source_event", operation_id=op_id)
+                else:
+                    if policy and not source_kind_allowed(op.get("reason"), kind):
+                        self.emit("unauthorized_source_kind", operation_id=op_id)
+            if source is not None and op.get("outcome") == "committed":
                 claim = claims.get((lineage, source))
                 if not claim or claim.get("operation_id") != op_id:
                     self.emit("missing_source_claim", operation_id=op_id)
-            if policy and policy.get("original_operation_required") and (op.get("original_operation_id"),) not in operations:
+            original = op.get("original_operation_id")
+            original_valid = True
+            if original is not None:
+                try:
+                    require_id(original, "original operation ID")
+                except SnapshotError:
+                    original_valid = False
+                else:
+                    original_valid = original != op_id
+                if not original_valid:
+                    self.emit("invalid_original_operation", operation_id=op_id)
+            if (original_valid and policy and policy.get("original_operation_required") and
+                    (original,) not in operations):
                 self.emit("missing_original_operation", operation_id=op_id)
             child_indexes = {row.get("child_index") for row in by_op["children"][op_id]}
             for row in by_op["children"][op_id]:
@@ -532,12 +582,23 @@ class Reconciler:
             if link not in linked_children:
                 self.emit("unlinked_child", operation_id=link[0], child_index=link[1])
         for claim in claims.values():
+            kind = None
+            try:
+                kind = decode_source_event(claim.get("source_event"))[0]
+            except SnapshotError:
+                self.emit("invalid_source_claim", operation_id=claim.get("operation_id"))
             op = operations.get((claim.get("operation_id"),))
             if (op is not None and claim.get("operation_reason") is not None and
-                    claim.get("operation_reason") != op.get("reason")):
+                    (type(claim.get("operation_reason")) is not int or
+                     claim.get("operation_reason") != op.get("reason"))):
                 self.emit("source_claim_reason_mismatch",
                           operation_id=claim.get("operation_id"))
-            if claim.get("operation_reason") == 38:
+            reason = op.get("reason") if op is not None else claim.get("operation_reason")
+            if type(reason) is not int or reason not in self.reasons:
+                self.emit("unknown_source_claim_policy", operation_id=claim.get("operation_id"))
+            elif kind is not None and not source_kind_allowed(reason, kind):
+                self.emit("unauthorized_source_claim", operation_id=claim.get("operation_id"))
+            if reason == 38:
                 self.emit("baseline_source_claim", operation_id=claim.get("operation_id"),
                           source_event=claim.get("source_event"))
                 continue
@@ -802,6 +863,14 @@ class Reconciler:
                 len(set(baseline_operation_ids)) != len(baseline_operation_ids)):
             raise SnapshotError("invalid baseline operation identity coverage")
         baseline_operation_ids = set(baseline_operation_ids)
+        # Compare selected creators with their own evidence without rescanning
+        # every effect for every root. Keep references; normalize only effects
+        # actually consumed by a selected creator below.
+        effects_by_operation = defaultdict(dict)
+        if effects is not None:
+            for key, effect in effects.items():
+                if isinstance(key, tuple) and len(key) == 2:
+                    effects_by_operation[key[0]][key[1]] = effect
         roots_by_id = {}
         for root in roots:
             operation_id = require_id(root.get("operation_id"), "mapping creator operation ID")
@@ -868,11 +937,10 @@ class Reconciler:
                         effect.get("account_index"): effect for effect in root_effects
                     }
                     evidence_effects = {
-                        key[1]: {field: value.get(field) for field in (
+                        index: {field: value.get(field) for field in (
                             "account_index", "account_key", "before", "after",
                             "before_revision", "after_revision")}
-                        for key, value in effects.items()
-                        if isinstance(key, tuple) and len(key) == 2 and key[0] == operation_id
+                        for index, value in effects_by_operation.get(operation_id, {}).items()
                     }
                     if (len(root_effects_by_index) != len(root_effects) or
                             root_effects_by_index != evidence_effects):
@@ -889,7 +957,7 @@ class Reconciler:
             creator_id = mapping.get("creating_operation_id")
             if (type(mapping_id) is not int or not 0 < mapping_id < 2**64 or
                     mapping_id in seen_mapping_ids or type(kind) is not int or
-                    kind not in ORDINARY_KINDS or type(context) is not int or
+                    kind not in MAPPED_KINDS or type(context) is not int or
                     not 0 <= context < 2**64 or
                     type(native_id) is not int or not 0 < native_id < 2**64 or
                     (active_native_id is not None and
@@ -1237,7 +1305,7 @@ class Reconciler:
             if (type(mapping_id) is not int or not 0 < mapping_id < 2**64 or
                     type(native_id) is not int or not 0 < native_id < 2**64 or
                     active_native_id is not None or identity != mapping_id or
-                    kind not in ORDINARY_KINDS or key_lineage != lineage or
+                    kind not in MAPPED_KINDS or key_lineage != lineage or
                     (operation_lineage is not None and
                      (not isinstance(operation_lineage, str) or
                       not HEX_ID.fullmatch(operation_lineage))) or
@@ -1313,7 +1381,8 @@ class Reconciler:
             raise SnapshotError("mapping retirement coverage mismatch")
         for (key,), origin in origins.items():
             operation_id = origin.get("retired_by")
-            if operation_id and (operation_id, key) not in current_epoch_retirements:
+            if (operation_id and account_key(key)[1] in MAPPED_KINDS and
+                    (operation_id, key) not in current_epoch_retirements):
                 if (operation_id,) in operations:
                     self.emit("missing_retired_mapping_evidence", operation_id=operation_id,
                               account_key=key)
@@ -1360,6 +1429,14 @@ class Reconciler:
                       not HEX_SOURCE_EVENT.fullmatch(source_event))) or
                     (backend == "sql_partial" and "source_event" not in root)):
                 raise SnapshotError("invalid lineage UID reference root")
+            if source_event is not None:
+                try:
+                    kind = decode_source_event(source_event)[0]
+                except SnapshotError:
+                    self.emit("invalid_lineage_uid_reference_root", operation_id=operation_id)
+                else:
+                    if not source_kind_allowed(reason, kind):
+                        self.emit("unauthorized_lineage_uid_source", operation_id=operation_id)
             if backend == "sql_partial" and (
                     not isinstance(inbox_receipt, dict) or
                     set(inbox_receipt) != {"status", "result_code", "failure_stage",
@@ -1779,7 +1856,9 @@ class Reconciler:
                 if created or retired:
                     self.emit("missing_coin_pile_lifecycle_source", operation_id=operation_id)
                 continue
-            if not isinstance(source_event, str) or not HEX_SOURCE_EVENT.fullmatch(source_event):
+            try:
+                decode_source_event(source_event)
+            except SnapshotError:
                 self.emit("invalid_coin_pile_lifecycle_source", operation_id=operation_id)
                 continue
             raw = bytes.fromhex(source_event)
@@ -2042,6 +2121,12 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
             raise SnapshotError("account filter requires holdings view")
     if name == "exceptions":
         return report
+    coverage = {
+        "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
+        "complete": snapshot.get("complete") is True,
+        "quiescent": snapshot.get("quiescent") is True,
+        "exception_count": report.get("exception_count"),
+    }
     if name == "holdings":
         rows = [{"account_key": row["account_key"], "kind": account_key(row["account_key"])[1],
                  "balance": vector(row["balance"]), "revision": row["revision"]}
@@ -2051,10 +2136,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
             raise SnapshotError("invalid native holding revision")
         if holding_key is not None:
             return {**bounded_rows(rows, limit), "coverage": {
-                "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
-                "complete": snapshot.get("complete") is True,
-                "quiescent": snapshot.get("quiescent") is True,
-                "exception_count": report.get("exception_count"),
+                **coverage,
                 "scope": "captured_native_holdings", "account_key": holding_key}}
     elif name == "provenance":
         if type(uid) is not int or not 0 < uid < 2**64:
@@ -2080,9 +2162,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
         rows = sorted(unique.values(),
                       key=lambda row: (row["revision"], row["operation_id"], row["event_index"]))
         return {**bounded_rows(rows, limit), "coverage": {
-            "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
-            "complete": snapshot.get("complete") is True,
-            "quiescent": snapshot.get("quiescent") is True,
+            **coverage,
             "lineage_history_available": isinstance(snapshot["native"].get("uid_history_events"), list),
             "unattributed_history_available": isinstance(
                 snapshot["native"].get("unattributed_uid_events"), list)}}
@@ -2139,10 +2219,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
             (row[field] for field in ("line_index", "event_index", "account_index", "child_index", "row_index")
              if field in row), 0), json.dumps(row, sort_keys=True)))
         return {**bounded_rows(rows, limit), "record_counts": record_counts, "coverage": {
-            "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
-            "complete": snapshot.get("complete") is True,
-            "quiescent": snapshot.get("quiescent") is True,
-            "exception_count": report.get("exception_count"), "root_scope": "selected_epoch",
+            **coverage, "root_scope": "selected_epoch",
             "operation_id": operation_id}}
     elif name == "supply":
         totals: dict[tuple, int] = defaultdict(int)
@@ -2157,13 +2234,25 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
         rows = [{"account_kind": kind, "reason": reason, "net_copper": total}
                 for (kind, reason), total in sorted(totals.items())]
     elif name == "prices":
-        rows = [{"operation_id": row["operation_id"], "reason": row.get("reason"),
+        history = snapshot["native"].get("lineage_realized_prices")
+        price_coverage = snapshot["native"].get("realized_price_coverage")
+        history_available = isinstance(history, list) and isinstance(price_coverage, dict)
+        rows = [{"operation_id": row["operation_id"], "epoch": row["epoch"],
+                 "reason": row["reason"],
                  "price_copper": row["realized_price_copper"]}
-                for row in snapshot["operations"]
+                for row in snapshot["operations"] + (history if history_available else [])
                 if isinstance(row.get("operation_id"), str) and HEX_ID.fullmatch(row["operation_id"])
+                and isinstance(row.get("epoch"), str) and HEX_ID.fullmatch(row["epoch"])
                 and row.get("outcome") == "committed"
                 and type(row.get("reason")) is int and type(row.get("realized_price_copper")) is int
                 and 0 <= row["realized_price_copper"] < 2**63]
+        # Selected-epoch roots overlap captured lineage prices. Preserve
+        # conflicting projections instead of choosing either price as truth.
+        unique = {(row["epoch"], row["operation_id"], row["reason"], row["price_copper"]): row
+                  for row in rows}
+        rows = [unique[key] for key in sorted(unique)]
+        coverage.update(lineage_history_available=history_available,
+                        realized_price_coverage=dict(price_coverage) if history_available else None)
     elif name == "routes":
         matrix = json.loads((Path(__file__).resolve().parents[1] /
                              "docs/persistence/economy_accounting/writer_coverage_matrix.json").read_text())
@@ -2172,7 +2261,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                 for row in matrix["routes"]]
     else:
         raise SnapshotError("unknown view")
-    return bounded_rows(rows, limit)
+    return {**bounded_rows(rows, limit), "coverage": coverage}
 
 
 def main() -> int:
