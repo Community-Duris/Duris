@@ -76,27 +76,29 @@ def qualify_native_history(rows):
     return result
 
 
-def qualify_native_control_history(rows):
+def qualify_native_control_history(rows, *, expanded=False):
     """Actual helper/runtime capture and its independent canonical SQL readback."""
     scope = next((row["battle_environment_id"], row["battle_season_id"])
                  for row in rows if row["record_kind"] == 10)
     result = history.build_history(rows, scope)
+    applications = 17 if expanded else 8
+    attacker, target, rejected = (8971, 8972, 8973) if expanded else (8961, 8962, 8963)
     canonical = [row for row in result.battles if row["canonical"]]
     assert len(canonical) == 1 and canonical[0]["available_metric_mask"] == 31
-    assert canonical[0]["control_applications"] == canonical[0]["control_received"] == 8
+    assert canonical[0]["control_applications"] == canonical[0]["control_received"] == applications
     assert result.summary["verified_contribution_links"] == result.summary["contribution_count"] > 0
     assert result.summary["partial_contribution_links"] == 0
     assert all(row["packet_history_complete"] and row["outcome"] is None and
         not row["complete_metric_coverage_implied"] for row in result.battles)
-    assert all(row["battle_actor_id"] != 8963 for row in result.actors)
+    assert all(row["battle_actor_id"] != rejected for row in result.actors)
     segments = result.contributions
-    assert sum(row["bc_control_applications"] for row in segments) == 8
-    assert sum(row["bc_control_received"] for row in segments) == 8
-    assert any(row["bc_actor_kind"] == 2 and row["bc_actor_owner_subject_id"] == 8961 and
+    assert sum(row["bc_control_applications"] for row in segments) == applications
+    assert sum(row["bc_control_received"] for row in segments) == applications
+    assert any(row["bc_actor_kind"] == 2 and row["bc_actor_owner_subject_id"] == attacker and
         row["bc_control_applications"] == 1 for row in segments)
-    assert any(row["bc_actor_kind"] == 3 and row["bc_control_applications"] ==
-        row["bc_control_received"] == 1 for row in segments)
-    assert any(row["bc_actor_id"] == 8962 and row["bc_modifier_flags"] & 128 and
+    assert any(row["bc_actor_kind"] == 3 and row["bc_control_received"] == 1 and
+        row["bc_control_applications"] == (0 if expanded else 1) for row in segments)
+    assert any(row["bc_actor_id"] == target and row["bc_modifier_flags"] & 128 and
         row["bc_control_applications"] == 1 for row in segments)
     return result
 
@@ -143,6 +145,11 @@ class BattleHistoryTests(unittest.TestCase):
             env=dict(os.environ, TELEMETRY_BATTLE_CAPTURE_EXPORT=str(controls)),
             text=True, capture_output=True, check=True, timeout=30)
         cls.control_rows = [json.loads(line) for line in controls.read_text(encoding="utf-8").splitlines()]
+        expanded_controls = cls.path / "expanded-controls.jsonl"
+        subprocess.run([str(executable), "--native-expanded-control-capture"], cwd=ROOT,
+            env=dict(os.environ, TELEMETRY_BATTLE_CAPTURE_EXPORT=str(expanded_controls)),
+            text=True, capture_output=True, check=True, timeout=30)
+        cls.expanded_control_rows = [json.loads(line) for line in expanded_controls.read_text(encoding="utf-8").splitlines()]
         build_points, build_battles = cls.path / "build-points.jsonl", cls.path / "build-battles.jsonl"
         subprocess.run([str(executable), "--native-build-capture"], cwd=ROOT,
             env=dict(os.environ, TELEMETRY_BUILD_CAPTURE_EXPORT=str(build_points), TELEMETRY_BATTLE_CAPTURE_EXPORT=str(build_battles)),
@@ -445,6 +452,18 @@ class BattleHistoryTests(unittest.TestCase):
         metrics = [publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 3]
         self.assertEqual(sum(row["bc_control_applications"] for row in metrics), 8)
         self.assertEqual(sum(row["bc_control_received"] for row in metrics), 8)
+        self.assertTrue(all(row["account_token"] is None and row["controller_token"] is None and
+            not row["complete_metric_coverage_implied"] for row in metrics))
+
+    def test_expanded_native_control_survives_history_and_publication(self):
+        result = qualify_native_control_history(self.expanded_control_rows, expanded=True)
+        window = self._publication_window(self.expanded_control_rows)
+        scope = tuple(window.header[name] for name in source.SCOPE)
+        output = publication.build_publication(window, None, incident.public_coverage(None, [], registry_schema_version=4))
+        self.assertEqual(output.header["verified_contribution_links"], result.summary["contribution_count"])
+        metrics = [publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 3]
+        self.assertEqual(sum(row["bc_control_applications"] for row in metrics), 17)
+        self.assertEqual(sum(row["bc_control_received"] for row in metrics), 17)
         self.assertTrue(all(row["account_token"] is None and row["controller_token"] is None and
             not row["complete_metric_coverage_implied"] for row in metrics))
 

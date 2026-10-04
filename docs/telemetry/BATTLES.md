@@ -1395,12 +1395,68 @@ kind-12 loss and corrected-review generations, raw/catalog independence, bounded
 reads, schema drift and restored fingerprints on both supported engines.
 Dated positive/negative fixtures declare their controlled clocks separately.
 
-**Next executable expectation:** complete the remaining native
-control/prevention/faction and typed death/escape/objective producers and their
-battle reports, then qualify actual personal-local gameplay/readback/performance.
+**Next executable expectation:** complete typed control attempts, resistance,
+immunity and overlap-safe duration, the remaining native prevention/faction and
+typed death/escape/objective producers and battle reports, then qualify actual
+personal-local gameplay/readback/performance.
 Distinct PvE attempts/objectives/recovery/reward links, rested/assistance,
 milestones and switching/portfolio projections, all four balance suites and
 statistical exports, and #487 canonical economic compatibility remain required
 under #258. All seven final acceptance requirements retain unfinished portions.
 Production and staging access are unnecessary for those implementation and
 qualification steps.
+
+## Expanded accepted status-control capture
+
+Six additional maintained spell routes now supply accepted application counts
+through the existing native kind-11 accumulator. Each callback follows the actual
+effect mutation. The original rejection gates, saving calls, durations, messages,
+retaliation and teardown order retain their behavior.
+
+| Producer | Accepted boundary | Existing gates retained |
+| --- | --- | --- |
+| `spell_major_paralysis` | Major paralysis affect insertion | Caster death, resistance, NPC paralysis immunity, movement freedom and saving throw; trusted-source and negative-level bypasses retain their behavior. |
+| `spell_minor_paralysis` | Minor paralysis affect insertion | Resistance, NPC paralysis immunity, movement freedom and saving throw. |
+| `spell_slow` | Slow affect insertion | Caster death, already active, monk class, resistance and saving throw. |
+| `spell_sleep` | Sleep affect join, including an accepted refresh | Caster death, resistance, positive-level equipment protection, saving/level/race conditions and the existing negative-level bypass. Fighting/position changes precede this mutation in the maintained spell. |
+| `spell_silence` | Each of the four accepted duration branches | Live actors, computed percentage, trusted target, greater NPC/elite, already active and resistance. The configured duration is not an elapsed-duration observation. |
+| `spell_entangle` | Temporary paralysis affect or direct `AFF_BOUND` mutation | Reviewed outdoor/vegetation predicate, live/non-trusted target, existing entangle/minor paralysis, movement freedom, saving throw and NPC paralysis immunity. Both actual branches supply exactly one application. |
+
+Accepted refreshes count as application operations; they create no additional
+disabled-time denominator. The counters aggregate the reviewed routes with the
+existing `blind`/`Stun` observations. They do not retain an individual effect
+family, attempt, resistance, immunity, removal or duration. No family success
+rate, overlapping disabled time or complete producer coverage can be inferred
+from these totals. Comparisons still require declared build/content/configuration
+and producer coverage. The availability mask remains 31 and earlier unavailable
+control remains NULL; no wire field, schema or earlier publication is changed.
+
+The existing native observer preserves self isolation, conservative PC/pet/NPC
+lifetimes and exact association references. Segment modifier flags are unions:
+one self application can share a segment with later externally received effects.
+`SELF` therefore does not apportion that segment's application/received totals.
+
+The expanded executable fixture calls the actual six spell bodies and the
+maintained class/affect query helpers. Game-service seams isolate resistance,
+saving, affect insertion, retaliation and teardown. It covers rejection and
+bypass gates, all silence durations, sleep refresh, both entangle branches,
+unrelated self effects and retained self/pet/NPC context. The measured journey
+conserves **17 applications / 17 received** through native capture, exact SQL
+readback, private source retention and atomic publication. The earlier **8/8**
+`blind`/`Stun` journey remains separate and unchanged.
+
+Normal and fresh ASan/UBSan gameplay fixtures, **66** history/publication tests,
+changed-line formatting and the maintained server build pass. Both disposable
+MariaDB 10.11.14 and MySQL 8.0.46 full-66-step journeys qualify all exact source
+values, bounded reports, unknown identity, publication retry and unchanged older
+generations. The existing native battle and definition-6 build-point proofs
+remain qualified. These seams still require actual personal-server effect,
+save/readback and performance qualification.
+
+The maintained commands remain
+`python3 tests/async/test_telemetry_gameplay_adapters.py`, its `--sanitize` variant,
+`python3 tests/async/test_telemetry_battle_history.py` and the explicitly configured
+disposable `python3 tests/async/test_telemetry_battle_runtime_sql.py --sql-fixture`.
+Typed control attempts/results and overlap-safe duration, remaining reviewed
+effect/prevention producers, faction exposure, typed outcomes and all seven final
+acceptance requirements retain unfinished portions under #258.

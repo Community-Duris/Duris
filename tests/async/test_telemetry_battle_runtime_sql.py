@@ -304,9 +304,10 @@ def qualify_native_build_publication(query, environment, command, name, origin):
             query("DROP USER IF EXISTS %s@'%%'", (user,))
 
 
-def qualify_native_control_publication(query, rollup, reporter, executable, run_environment, export):
+def qualify_native_control_publication(query, rollup, reporter, executable, run_environment, export, *, expanded=False):
     origin = query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"]
-    subprocess.run([str(executable), "--native-control-sql"], cwd=ROOT,
+    applications = 17 if expanded else 8
+    subprocess.run([str(executable), "--native-expanded-control-sql" if expanded else "--native-control-sql"], cwd=ROOT,
         env=dict(run_environment, TELEMETRY_BATTLE_CAPTURE_EXPORT=str(export)), check=True, timeout=30)
     emitted = [json.loads(line) for line in export.read_text(encoding="utf-8").splitlines()]
     stored = query("SELECT " + ",".join(RAW_COLUMNS) +
@@ -315,9 +316,11 @@ def qualify_native_control_publication(query, rollup, reporter, executable, run_
     assert len(emitted) == len(stored) > 0
     for observed, row in zip(emitted, stored, strict=True):
         assert all(row[column] == value for column, value in observed.items()), "accepted control source/SQL drift"
-    result = qualify_native_control_history(stored)
+    result = qualify_native_control_history(stored, expanded=expanded)
     first = next(row for row in stored if row["record_kind"] == 10)
     generation = query("SELECT MAX(generation) AS n FROM telemetry_rollup_state WHERE definition_version=5")[0]["n"] + 1
+    previous_rows = query("SELECT * FROM telemetry_rollup_battle_row WHERE definition_version=5 AND generation<%s "
+        "ORDER BY generation,environment_id,season_id,row_kind,row_key", (generation,))
     target = RollupTarget(5, generation, first["battle_environment_id"], first["battle_season_id"])
     through = query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"]
     rollup.reserve_identity_generation(target.scope_tuple, None)
@@ -325,28 +328,36 @@ def qualify_native_control_publication(query, rollup, reporter, executable, run_
         through_ingest_id=through, bounds=RollupBounds(page_size=3, max_runtime_s=30)).complete
     retained = rollup.read_battle_source(target)
     assert retained.header["contribution_count"] == result.summary["contribution_count"]
-    assert sum(row["bc_control_applications"] for row in retained.facts if row["record_kind"] == 11) == 8
-    assert sum(row["bc_control_received"] for row in retained.facts if row["record_kind"] == 11) == 8
+    assert sum(row["bc_control_applications"] for row in retained.facts if row["record_kind"] == 11) == applications
+    assert sum(row["bc_control_received"] for row in retained.facts if row["record_kind"] == 11) == applications
     assert rollup.publish_generation(target)["status"] == "published"
     report = reporter.read_report(target, "battle_contributions")
     assert not report.truncated
-    assert sum(row["bc_control_applications"] for row in report.rows) == 8
-    assert sum(row["bc_control_received"] for row in report.rows) == 8
+    assert sum(row["bc_control_applications"] for row in report.rows) == applications
+    assert sum(row["bc_control_received"] for row in report.rows) == applications
     assert all(row["account_token"] is None and row["controller_token"] is None and
         not row["complete_metric_coverage_implied"] for row in report.rows)
     assert report.coverage.battle_coverage["verified_contribution_links"] == len(report.rows)
     assert report.coverage.battle_coverage["partial_contribution_links"] == 0
     summary = reporter.read_report(target, "battle_observations")
-    assert len(summary.rows) == 1 and summary.rows[0]["control_applications"] == summary.rows[0]["control_received"] == 8
+    assert len(summary.rows) == 1 and summary.rows[0]["control_applications"] == summary.rows[0]["control_received"] == applications
     assert summary.rows[0]["outcome"] is None and not summary.rows[0]["complete_metric_coverage_implied"]
     assert rollup.publish_generation(target)["status"] == "published"
     assert reporter.read_report(target, "battle_contributions") == report
-    return dict(native_control_producer=True, native_control_source_helpers=["blind", "Stun"],
+    assert query("SELECT * FROM telemetry_rollup_battle_row WHERE definition_version=5 AND generation<%s "
+        "ORDER BY generation,environment_id,season_id,row_kind,row_key", (generation,)) == previous_rows
+    qualified = dict(native_control_producer=True, native_control_source_helpers=["blind", "Stun"],
         native_control_sql_exact=True, native_control_atomic_publication=True,
+        native_control_old_generations_immutable=True,
         native_control_rejection_gates=True, native_control_self_isolation=True,
         native_control_records=len(stored), native_control_contributions=len(report.rows),
-        native_control_applications=8, native_control_received=8,
+        native_control_applications=applications, native_control_received=applications,
         native_control_complete_coverage_implied=False, native_control_running_server=False)
+    if expanded:
+        qualified = {name.replace("native_control_", "native_expanded_control_", 1): value for name, value in qualified.items()}
+        qualified["native_expanded_control_source_helpers"] = ["spell_" + name for name in
+            ("major_paralysis", "minor_paralysis", "slow", "sleep", "silence", "entangle")]
+    return qualified
 
 
 def qualify_persisted_source(query, environment, command, name, history, executable, run_environment, control_export):
@@ -874,8 +885,10 @@ def qualify_persisted_source(query, environment, command, name, history, executa
         assert reporter.read_report(target, "battle_contributions").rows == original_reports["battle_contributions"].rows
 
         controls = qualify_native_control_publication(query, rollup, reporter, executable, run_environment, control_export)
+        expanded_controls = qualify_native_control_publication(query, rollup, reporter, executable, run_environment,
+            control_export.with_name("expanded-controls.jsonl"), expanded=True)
         assert runtime_fingerprint(environment) == fingerprint
-        return dict(controls, history_persisted_source_checkpoint=True, battle_source_identity_reservation=True,
+        return dict(controls, **expanded_controls, history_persisted_source_checkpoint=True, battle_source_identity_reservation=True,
             battle_source_cursor_atomicity=True, battle_source_lost_acknowledgements=True,
             battle_source_exact_values=True, battle_source_ownership_arrival=True, battle_source_private_roles=True,
             battle_source_bounded_reads=True, battle_source_cli_preparation=True,

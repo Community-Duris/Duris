@@ -9,6 +9,7 @@
 #include "world/graph.h"
 #include "combat/damage.h"
 #include "magic/spells.h"
+#include "telemetry/telemetry_runtime.h"
 #include <string.h>
 #include <strings.h>
 
@@ -92,6 +93,8 @@ void spell_major_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 		af.bitvector2 = AFF2_MAJOR_PARALYSIS;
 
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
 
 		act("$n &+Mceases to move.. still and lifeless.", FALSE, victim, 0, 0, TO_ROOM);
 		send_to_char("&+LYour body becomes like stone as the paralyzation takes effect.\n",
@@ -141,6 +144,8 @@ void spell_minor_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 		af.bitvector2 = AFF2_MINOR_PARALYSIS;
 
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
 
 		act("$n &+Wturns pale as some magical force occupies $s body, causing all motion to halt.",
 		    FALSE, victim, 0, 0, TO_ROOM);
@@ -196,6 +201,8 @@ void spell_slow(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 		af.bitvector2 = AFF2_SLOW;
 
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
 
 		act("&+m$n begins to sllooowwww down.", TRUE, victim, 0, 0, TO_ROOM);
 		send_to_char("&+mYou feel yourself slowing down.\n", victim);
@@ -278,6 +285,8 @@ void spell_sleep(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type
 			SET_POS(victim, GET_POS(victim) + STAT_SLEEPING);
 		}
 		affect_join(victim, &af, FALSE, FALSE);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
 		/*
 		 * stop all non-vicious/agg attackers
 		 */
@@ -752,6 +761,8 @@ void spell_silence(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] in
 		af.flags = AFFTYPE_SHORT;
 		af.bitvector2 = AFF2_SILENCED;
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
 	}
 	else if (percent > 70)
 	{
@@ -763,6 +774,8 @@ void spell_silence(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] in
 		af.flags = AFFTYPE_SHORT;
 		af.bitvector2 = AFF2_SILENCED;
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
 	}
 	else if (percent > 40)
 	{
@@ -774,6 +787,8 @@ void spell_silence(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] in
 		af.duration = 5 * WAIT_SEC;
 		af.bitvector2 = AFF2_SILENCED;
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
 	}
 	else if (percent > 5)
 	{
@@ -785,6 +800,8 @@ void spell_silence(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] in
 		af.duration = 3 * WAIT_SEC;
 		af.bitvector2 = AFF2_SILENCED;
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
 	}
 }
 void spell_feeblemind(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
@@ -1573,6 +1590,8 @@ void spell_entangle(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 				"&+GThe vegetation closes tightly, completely entangling you!\n",
 				victim);
 			SET_BIT(victim->specials.affected_by, AFF_BOUND);
+			telemetry_runtime_game_combat_control(ch, victim, 1U,
+							      TELEMETRY_COMBAT_MODIFIER_NONE);
 		}
 		else
 		{
@@ -1591,6 +1610,8 @@ void spell_entangle(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 			act("&+gVegetation &+Gbursts&+g from the ground, impeding $n.&N", TRUE,
 			    victim, 0, 0, TO_ROOM);
 			affect_to_char(victim, &af);
+			telemetry_runtime_game_combat_control(ch, victim, 1U,
+							      TELEMETRY_COMBAT_MODIFIER_NONE);
 		}
 	}
 }

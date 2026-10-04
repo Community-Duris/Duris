@@ -28,7 +28,8 @@ work. A future production deployment is a separate operational decision.
 | Atomic battle observation publication | Implemented and locally qualified | Migration 0064 publishes source coverage, canonical/original battles, latest actors, disjoint contributions, dated exposure and every original association with reserved identity and independent schema-4 loss coverage in one transaction. Fifty-six focused regressions and both full-64-step native-writer SQL journeys qualify exact native values, ownership/review/day cuts, explicit unknowns, rollback, lost acknowledgements, immutable older generations, snapshot tamper refusal, bounds, restricted CLI/report roles and guarded drift/restoration. Definition 5 exposes five observation reports; definitions 1/2/3 retain their meanings. Complete balance suites and remaining native/personal-server evidence remain required. See [BATTLES.md](BATTLES.md#atomic-battle-observation-publication). |
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Accepted blindness and stun applications | Implemented and locally qualified | Actual `blind`/`Stun` success boundaries feed the existing bounded kind-11 accumulator after effect mutation and before teardown. New segments declare producer mask 31; older unavailable control remains NULL. Normal/ASan/UBSan, 58 history/publication regressions and both full-64-step native-writer SQL journeys preserve eight applications/eight received through eight verified published segments. Source-service seams, partial producer coverage and unobserved duration/resistance remain explicit. See [BATTLES.md](BATTLES.md#accepted-blindness-and-stun-control-capture). |
-| Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/accepted-control/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Definition 5 publishes these observations with exact association/alias/source and independent loss coverage. Accepted control currently covers `blind`/`Stun`; other effect producers, typed attempts/resistance/duration, prevention and faction exposure remain required. Complete build/power/arena comparisons, typed outcomes, the full balance suites and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
+| Expanded accepted status-control applications | Implemented and locally qualified | Actual major/minor paralysis, slow, sleep, silence and entangle success boundaries feed the existing kind-11 accumulator after mutation. The separate fresh journey preserves 17 accepted applications/17 received, 28 native source rows and eight published segments; the original blindness/Stun journey remains eight/eight. Normal/ASan/UBSan, 66 history/publication regressions and both full-66-step native-writer SQL journeys qualify the added producers and unchanged earlier publications. Counts include accepted refreshes; segment modifier flags are unions and cannot apportion self/external totals. Typed attempts, resistance, immunity, duration and complete producer coverage remain required. See [BATTLES.md](BATTLES.md#expanded-accepted-status-control-capture). |
+| Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/accepted-control/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Definition 5 publishes these observations with exact association/alias/source and independent loss coverage. Accepted control covers `blind`/`Stun`, major/minor paralysis, slow, sleep, silence and entangle; remaining effect producers, typed attempts/resistance/immunity/duration, prevention and faction exposure remain required. Complete build/power/arena comparisons, typed outcomes, the full balance suites and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
@@ -1561,12 +1562,41 @@ increment. These executable gameplay objects and service seams still do not
 establish personal-server authentication/save/readback or measured performance.
 All seven final accepted requirements retain unfinished portions.
 
-**Next executable expectation:** complete the remaining native
-control/prevention/faction and typed death/escape/objective producers and their
-battle reports, then qualify actual personal-local gameplay/readback/performance.
+**Next executable expectation:** complete typed control attempts, resistance,
+immunity and overlap-safe duration, the remaining native prevention/faction and
+typed death/escape/objective producers and battle reports, then qualify actual
+personal-local gameplay/readback/performance.
 Distinct PvE attempts/objectives/recovery/reward linkage, rested/assistance and
 milestone/switching/portfolio additions, the four complete suites/statistical
 exports and #487 canonical economic compatibility remain required under #258.
 Production/staging access is unnecessary. See
 [BATTLES.md](BATTLES.md#retained-build-point-publication) for exact semantics,
 limits, permissions and maintained local commands.
+
+## Expanded accepted status-control capture
+
+The maintained major/minor paralysis, slow, sleep, silence and entangle spells
+now capture an application only after their actual accepted mutation. All four
+silence duration branches and both temporary-paralysis/direct-binding entangle
+branches are covered. Existing immunity, resistance, saving, movement freedom,
+location, already-active and special bypass behavior remains exact. Sleep
+refreshes are accepted application operations, not additional disabled time.
+
+The existing kind-11 accumulator, retained source and atomic battle publisher
+conserve **17 applications / 17 received** from this fresh native journey. The
+original `blind`/`Stun` **8/8** journey remains independent. Normal and fresh
+ASan/UBSan gameplay fixtures, **66 history/publication tests**, formatting and the
+maintained server build pass. Both complete local MariaDB 10.11.14/MySQL 8.0.46
+chains qualify exact native source/SQL values, private-role retention, published
+reports, retries, unknown identity and unchanged older generations. The sealed
+schema head remains **66 / 260 tables** with its prior fingerprints; wire fields,
+availability masks and earlier published meanings are unchanged. Existing exact
+native battle and definition-6 build-point publication proofs pass.
+
+The accepted counts aggregate reviewed producers. Effect-family attempts,
+resistance/immunity, removal and effective duration remain unavailable. Modifier
+flags are segment unions and cannot apportion self versus other applications.
+These fixtures use game-service seams; actual personal-server effect, save,
+readback and performance journeys remain required. All seven final requirements
+retain unfinished portions. See [BATTLES.md](BATTLES.md#expanded-accepted-status-control-capture)
+for the exact source catalog, semantics and maintained local commands.

@@ -61,9 +61,13 @@ std::vector<affected_type> fixture_control_effects;
 std::vector<bool> fixture_control_saves;
 std::size_t fixture_control_save_index = 0U;
 bool fixture_control_eyeless = false, fixture_control_named_immune = false;
+bool fixture_control_resistance = false, fixture_control_freedom = false;
+unsigned fixture_control_mutations = 0U, fixture_control_stops = 0U;
+const char *fixture_control_route = "blind/Stun";
+unsigned fixture_control_call = 0U;
 int fixture_control_random = 0;
 
-// Game-service seams for the extracted, unchanged blind/Stun helper bodies.
+// Game-service seams for the maintained blind/Stun and status-control spell bodies.
 // Affect mutation is isolated here; the running-server journey remains required.
 affected_type *affect_to_char(P_char character, affected_type *effect)
 {
@@ -71,8 +75,40 @@ affected_type *affect_to_char(P_char character, affected_type *effect)
 	character->specials.affected_by |= effect->bitvector;
 	character->specials.affected_by2 |= effect->bitvector2;
 	fixture_control_effects.push_back(*effect);
+	++fixture_control_mutations;
 	return &fixture_control_effects.back();
 }
+void affect_join(P_char character, affected_type *effect, int average_duration,
+		 int average_modifier)
+{
+	assert(!average_duration && !average_modifier && effect->type == SPELL_SLEEP);
+	(void)affect_to_char(character, effect);
+}
+bool resists_spell(P_char, P_char)
+{
+	return fixture_control_resistance;
+}
+bool check_freedom_of_movement(P_char, bool)
+{
+	return fixture_control_freedom;
+}
+bool saves_spell(P_char, int type)
+{
+	assert((type == SAVING_PARA || type == SAVING_SPELL) &&
+	       fixture_control_save_index < fixture_control_saves.size());
+	return fixture_control_saves[fixture_control_save_index++];
+}
+void appear(P_char, bool) {}
+bool ac_can_see(P_char, P_char, bool)
+{
+	return true;
+}
+void remember(P_char, P_char) {}
+void MobStartFight(P_char character, P_char target)
+{
+	GET_OPPONENT(character) = target;
+}
+void StopMercifulAttackers(P_char) {}
 bool has_innate(P_char, int innate)
 {
 	assert(innate == INNATE_EYELESS);
@@ -83,9 +119,17 @@ bool isname(const char *name, const char *)
 	assert(std::strcmp(name, "_noblind_") == 0);
 	return fixture_control_named_immune;
 }
-bool NewSaves(P_char, int type, int)
+bool NewSaves(P_char victim, int type, int)
 {
-	assert(type == SAVING_FEAR && fixture_control_save_index < fixture_control_saves.size());
+	if (fixture_control_save_index >= fixture_control_saves.size())
+		std::fprintf(
+			stderr,
+			"Saving-throw fixture exhausted: route=%s call=%u type=%d race=%d level=%d index=%zu size=%zu\n",
+			fixture_control_route, fixture_control_call, type, GET_RACE(victim),
+			GET_LEVEL(victim), fixture_control_save_index,
+			fixture_control_saves.size());
+	assert((type == SAVING_FEAR || type == SAVING_PARA) &&
+	       fixture_control_save_index < fixture_control_saves.size());
 	return fixture_control_saves[fixture_control_save_index++];
 }
 int number(int first, int last)
@@ -97,7 +141,8 @@ void send_to_char(const char *, P_char) {}
 void act(const char *, int, P_char, P_obj, void *, int) {}
 void stop_fighting(P_char character)
 {
-	assert(IS_AFFECTED2(character, AFF2_STUNNED));
+	assert(IS_STUNNED(character) || IS_FIGHTING(character));
+	++fixture_control_stops;
 	GET_OPPONENT(character) = nullptr;
 	telemetry_runtime_game_combat_context(character);
 }
@@ -2718,6 +2763,335 @@ fake_repository check_native_control_capture(bool use_native = false, bool expor
 	return fake;
 }
 
+fake_repository check_native_expanded_control_capture(bool use_native = false,
+						      bool export_capture = false)
+{
+	fake_repository fake{};
+	fake.use_native = use_native;
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	telemetry_test_start_runtime(enabled_options());
+	room_data rooms[1]{};
+	zone_data zones[1]{};
+	zones[0].number = 1908;
+	rooms[0].sector_type = SECT_FIELD;
+	const auto previous_world = world;
+	const auto previous_zones = zone_table;
+	const int previous_top_world = top_of_world, previous_top_zone = top_of_zone_table;
+	world = rooms;
+	zone_table = zones;
+	top_of_world = top_of_zone_table = 0;
+	char_data attacker{}, target{}, rejected{}, npc{}, pet{};
+	pc_only_data attacker_data{}, target_data{}, rejected_data{};
+	npc_only_data npc_data{}, pet_data{};
+	attacker.only.pc = &attacker_data;
+	target.only.pc = &target_data;
+	rejected.only.pc = &rejected_data;
+	attacker_data.pid = 8971;
+	target_data.pid = 8972;
+	rejected_data.pid = 8973;
+	npc.only.npc = &npc_data;
+	pet.only.npc = &pet_data;
+	npc_data.R_num = pet_data.R_num = -1;
+	for (auto *actor : { &npc, &pet })
+	{
+		actor->specials.act = ACT_ISNPC;
+		actor->runtime_id = allocate_character_runtime_id();
+	}
+	for (auto *actor : { &attacker, &target, &rejected, &npc, &pet })
+	{
+		actor->in_room = 0;
+		actor->player.level = 40;
+		actor->player.m_class = CLASS_WARRIOR;
+		actor->player.race = RACE_HUMAN;
+		actor->player.racewar = 5;
+		actor->specials.position = STAT_NORMAL;
+	}
+	fixture_control_effects.clear();
+	fixture_control_mutations = fixture_control_stops = 0U;
+	fixture_control_call = 0U;
+	fixture_control_resistance = fixture_control_freedom = false;
+	fixture_control_random = 0;
+	auto save = [](bool succeeds)
+	{
+		fixture_control_saves = { succeeds };
+		fixture_control_save_index = 0U;
+	};
+	auto clear = [](P_char actor)
+	{
+		actor->specials.affected_by = actor->specials.affected_by2 = 0U;
+		actor->specials.position = STAT_NORMAL;
+		GET_OPPONENT(actor) = nullptr;
+	};
+	auto major = [&](P_char actor, int level = 40)
+	{
+		fixture_control_route = "major";
+		++fixture_control_call;
+		spell_major_paralysis(level, &attacker, nullptr, 0, actor, nullptr);
+	};
+	auto minor = [&](P_char actor, P_char source = nullptr)
+	{
+		fixture_control_route = "minor";
+		++fixture_control_call;
+		spell_minor_paralysis(40, source ? source : &attacker, nullptr, 0, actor, nullptr);
+	};
+	auto slow = [&](P_char actor)
+	{
+		fixture_control_route = "slow";
+		++fixture_control_call;
+		spell_slow(40, &attacker, nullptr, 0, actor, nullptr);
+	};
+	auto sleep = [&](P_char actor, int level = 40, P_char source = nullptr)
+	{
+		fixture_control_route = "sleep";
+		++fixture_control_call;
+		spell_sleep(level, source ? source : &attacker, nullptr, 0, actor, nullptr);
+	};
+	auto silence = [&](P_char actor)
+	{
+		fixture_control_route = "silence";
+		++fixture_control_call;
+		spell_silence(40, &attacker, nullptr, 0, actor, nullptr);
+	};
+	auto entangle = [&](P_char actor)
+	{
+		fixture_control_route = "entangle";
+		++fixture_control_call;
+		spell_entangle(40, &attacker, nullptr, 0, actor, nullptr);
+	};
+	// Use an actor that never contributes later to prove rejections cannot admit
+	// hostile/shared presence. Existing game-service retaliation is isolated.
+	fixture_control_resistance = true;
+	major(&rejected);
+	minor(&rejected);
+	slow(&rejected);
+	sleep(&rejected);
+	fixture_control_resistance = false;
+	fixture_control_freedom = true;
+	major(&rejected);
+	minor(&rejected);
+	entangle(&rejected);
+	fixture_control_freedom = false;
+	save(true);
+	major(&rejected);
+	save(true);
+	minor(&rejected);
+	save(true);
+	slow(&rejected);
+	save(true);
+	sleep(&rejected);
+	save(true);
+	entangle(&rejected);
+	rejected.specials.affected_by2 = AFF2_SLOW;
+	slow(&rejected);
+	rejected.specials.affected_by2 = 0U;
+	rejected.player.m_class = CLASS_MONK;
+	slow(&rejected);
+	rejected.player.m_class = CLASS_WARRIOR;
+	for (int race : { RACE_DEMON, RACE_SKELETON, RACE_F_ELEMENTAL })
+	{
+		rejected.player.race = race;
+		save(false);
+		sleep(&rejected);
+	}
+	rejected.player.race = RACE_HUMAN;
+	rejected.player.level = 56;
+	save(false);
+	sleep(&rejected);
+	rejected.player.level = 40;
+	obj_data no_sleep{};
+	no_sleep.extra_flags = ITEM_NOSLEEP;
+	rejected.equipment[MAX_WEAR - 1] = &no_sleep;
+	sleep(&rejected);
+	rejected.equipment[MAX_WEAR - 1] = nullptr;
+	npc.specials.act |= ACT_IMMUNE_TO_PARA;
+	major(&npc);
+	minor(&npc);
+	save(false);
+	entangle(&npc);
+	npc.specials.act &= ~ACT_IMMUNE_TO_PARA;
+	rooms[0].room_flags = ROOM_INDOORS;
+	entangle(&rejected);
+	rooms[0].room_flags = 0U;
+	rooms[0].sector_type = SECT_INSIDE;
+	entangle(&rejected);
+	rooms[0].sector_type = SECT_FIELD;
+	rejected.specials.position = STAT_DEAD;
+	entangle(&rejected);
+	silence(&rejected);
+	rejected.specials.position = STAT_NORMAL;
+	rejected.player.level = MAXLVLMORTAL + 1;
+	entangle(&rejected);
+	rejected.player.level = 40;
+	rejected.specials.affected_by2 = AFF2_MINOR_PARALYSIS;
+	entangle(&rejected);
+	rejected.specials.affected_by2 = 0U;
+	affected_type existing_entangle{};
+	existing_entangle.type = SPELL_ENTANGLE;
+	rejected.affected = &existing_entangle;
+	entangle(&rejected);
+	rejected.affected = nullptr;
+	// A zero silence percentage, active silence, immunity and resistance reject.
+	silence(&rejected);
+	rejected.specials.apply_saving_throw[SAVING_SPELL] = 50;
+	rejected.specials.affected_by2 = AFF2_SILENCED;
+	silence(&rejected);
+	rejected.specials.affected_by2 = 0U;
+	rejected.specials.act = ACT_ELITE;
+	silence(&rejected);
+	rejected.specials.act = 0U;
+	npc.specials.apply_saving_throw[SAVING_SPELL] = 50;
+	npc.player.race = RACE_DEMON;
+	silence(&npc);
+	npc.player.race = RACE_HUMAN;
+	fixture_control_resistance = true;
+	silence(&rejected);
+	fixture_control_resistance = false;
+	attacker.specials.position = STAT_DEAD;
+	major(&rejected);
+	slow(&rejected);
+	sleep(&rejected);
+	silence(&rejected);
+	attacker.specials.position = STAT_NORMAL;
+	assert(fixture_control_effects.empty() && fixture_control_mutations == 0U);
+	// Accepted self sleep outside shared participation remains outside a battle.
+	save(false);
+	sleep(&rejected, 40, &rejected);
+	assert(fixture_control_mutations == 1U);
+	// Each actual accepted mutation supplies one application and one received
+	// count. Refreshes are accepted applications, never extra disabled duration.
+	save(false);
+	target.specials.fighting = &attacker;
+	major(&target);
+	assert(!IS_FIGHTING(&target) && IS_AFFECTED2(&target, AFF2_MAJOR_PARALYSIS));
+	clear(&target);
+	save(false);
+	minor(&target);
+	assert(IS_AFFECTED2(&target, AFF2_MINOR_PARALYSIS));
+	clear(&target);
+	save(false);
+	slow(&target);
+	assert(IS_AFFECTED2(&target, AFF2_SLOW));
+	clear(&target);
+	save(false);
+	target.specials.fighting = &attacker;
+	sleep(&target);
+	assert(!IS_FIGHTING(&target) && IS_AFFECTED(&target, AFF_SLEEP));
+	save(false);
+	sleep(&target); // Existing sleep refresh is exactly one accepted application.
+	clear(&target);
+	for (int saving_modifier : { 50, 40, 25, 10 })
+	{
+		target.specials.apply_saving_throw[SAVING_SPELL] = saving_modifier;
+		silence(&target);
+		assert(IS_AFFECTED2(&target, AFF2_SILENCED));
+		assert(fixture_control_effects.back().duration == (saving_modifier == 50 ? 10 :
+								   saving_modifier == 40 ? 8 :
+								   saving_modifier == 25 ? 5 :
+											   3) *
+									  WAIT_SEC);
+		clear(&target);
+	}
+	save(false);
+	target.specials.fighting = &attacker;
+	entangle(&target);
+	assert(!IS_FIGHTING(&target) && IS_AFFECTED2(&target, AFF2_MINOR_PARALYSIS));
+	clear(&target);
+	rooms[0].sector_type = SECT_FOREST;
+	fixture_control_random = 1;
+	save(false);
+	entangle(&target);
+	assert(IS_AFFECTED(&target, AFF_BOUND));
+	clear(&target);
+	rooms[0].sector_type = SECT_FIELD;
+	fixture_control_random = 0;
+	major(&target, -40); // Negative level retains the actual saving-throw bypass.
+	clear(&target);
+	attacker.player.level = MAXLVLMORTAL + 1;
+	fixture_control_resistance = fixture_control_freedom = true;
+	major(&target); // Trusted source preserves its existing immunity bypass.
+	attacker.player.level = 40;
+	fixture_control_resistance = fixture_control_freedom = false;
+	clear(&target);
+	save(false);
+	minor(&target, &target); // Existing battle: one actor, SELF modifier.
+	clear(&target);
+	sleep(&target, -40); // Negative-level sleep bypasses save/race/level gates.
+	save(false);
+	slow(&npc);
+	fixture_pet = &pet;
+	fixture_pet_master = &attacker;
+	clear(&target);
+	save(false);
+	minor(&target, &pet);
+	assert(fixture_control_mutations == 17U && fixture_control_stops == 3U);
+	assert(telemetry_runtime_encounter_close_all(telemetry_encounter_outcome::copyover)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	std::uint64_t applications = 0U, received = 0U;
+	unsigned starts = 0U, self = 0U, pet_segments = 0U, npc_segments = 0U;
+	for (const auto &record : fake.battles)
+	{
+		assert(record.payload.battle.actor.actor.actor_id != 8973U);
+		starts += record.payload.battle.kind == telemetry_battle_fact_kind::start;
+	}
+	for (const auto &record : fake.contributions)
+	{
+		const auto &row = record.payload.battle_contribution;
+		const auto &actor = row.context.actor.actor;
+		assert(actor.actor_id != 8973U &&
+		       row.context.available_metrics == TELEMETRY_BC_METRICS);
+		assert(!(row.quality_flags &
+			 (TELEMETRY_QUALITY_QUEUE_DROP | TELEMETRY_QUALITY_CLOCK_DISCONTINUITY)));
+		applications += row.counters.control_applications;
+		received += row.counters.control_received;
+		if (row.modifier_flags & TELEMETRY_COMBAT_MODIFIER_SELF)
+		{
+			// Modifier flags are a segment union. Later received applications
+			// can share the segment; SELF does not apportion those counters.
+			assert(actor.actor_id == 8972U && row.counters.control_applications == 1U &&
+			       row.counters.control_received >= 1U);
+			++self;
+		}
+		if (actor.kind == telemetry_combat_actor_kind::pet)
+		{
+			assert(actor.owner_subject_id == 8971U &&
+			       row.counters.control_applications == 1U);
+			++pet_segments;
+		}
+		if (actor.kind == telemetry_combat_actor_kind::npc && row.counters.control_received)
+		{
+			assert(actor.actor_id ==
+				       (TELEMETRY_BATTLE_NPC_GENERATION_TAG | npc.runtime_id) &&
+			       row.counters.control_received == 1U);
+			++npc_segments;
+		}
+	}
+	assert(starts == 1U && applications == 17U && received == applications && self == 1U &&
+	       pet_segments == 1U && npc_segments == 1U);
+	if (export_capture)
+		export_native_battle_capture(fake);
+	fixture_pet = fixture_pet_master = nullptr;
+	fixture_control_resistance = fixture_control_freedom = false;
+	world = previous_world;
+	zone_table = previous_zones;
+	top_of_world = previous_top_world;
+	top_of_zone_table = previous_top_zone;
+	std::puts(
+		"PASS: accepted paralysis/slow/sleep/silence/entangle bodies, actual rejection and bypass gates, refresh/self/pet/NPC isolation and conserved 17/17 control");
+	return fake;
+}
+
 void export_native_build_capture(const fake_repository &fake)
 {
 	const char *path = std::getenv("TELEMETRY_BUILD_CAPTURE_EXPORT");
@@ -3225,12 +3599,23 @@ int main(int argc, char **argv)
 		check_native_control_capture(false, true);
 		return 0;
 	}
+	if (argc == 2 && std::strcmp(argv[1], "--native-expanded-control-capture") == 0)
+	{
+		check_native_expanded_control_capture(false, true);
+		return 0;
+	}
 	if (argc == 2 && std::strcmp(argv[1], "--native-build-capture") == 0)
 	{
 		check_native_build_capture(false, true);
 		return 0;
 	}
 #ifdef TELEMETRY_TEST_NATIVE_BATTLE_SQL
+	if (argc == 2 && std::strcmp(argv[1], "--native-expanded-control-sql") == 0)
+	{
+		check_native_expanded_control_capture(true, true);
+		std::puts("expanded accepted control spells through SQL writer passed");
+		return 0;
+	}
 	if (argc == 2 && std::strcmp(argv[1], "--native-build-sql") == 0)
 	{
 		check_native_build_capture(true, true);
@@ -3260,6 +3645,7 @@ int main(int argc, char **argv)
 	check_native_battle_context();
 	check_native_shared_battle_capture();
 	check_native_control_capture();
+	check_native_expanded_control_capture();
 	check_group_generation_and_combat_entry();
 	check_authenticated_ownership_path();
 	check_deferred_startup_presence();
