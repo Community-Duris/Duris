@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import economic_sql_audit_snapshot as exporter
 import migration_runner as migrations
-from reconcile_economy_accounting import Reconciler
+from reconcile_economy_accounting import Reconciler, view
 from economic_sql_audit_origins import OriginError
 
 if (os.environ.get("TEST_DB_DISPOSABLE") != "1" or os.environ.get("ENVIRONMENT") != "test" or
@@ -21,7 +21,7 @@ if (os.environ.get("TEST_DB_DISPOSABLE") != "1" or os.environ.get("ENVIRONMENT")
         not os.environ.get("DB_SOCKET", "").startswith("/plan5-restore-baseline-")):
     raise SystemExit("fresh private baseline daemon/socket required")
 fixture = Path(os.environ["DURIS_PLAN5_BASELINE_FIXTURE"]).resolve()
-assert fixture.is_relative_to((ROOT / "bin/tests/plan5-baseline-projection-audit").resolve())
+assert fixture.is_relative_to((ROOT / "bin/tests/plan5-baseline-reservation-orphans").resolve())
 settings = dict(unix_socket=os.environ["DB_SOCKET"], user=os.environ["DB_USER"],
                 password=os.environ["DB_PASSWD"], database="duris_restore", autocommit=True,
                 cursorclass=pymysql.cursors.DictCursor, read_timeout=30, write_timeout=30)
@@ -32,6 +32,7 @@ TABLES = ("economic_accounting_operation", "economic_accounting_account_effect",
           "economic_baseline_control", "economic_baseline_witness", "economic_baseline_reservation",
           "critical_operation_inbox", "economic_epoch", "economic_lineage_state",
           "player_data", "account_banks", "item_current_owner", "item_ownership_ledger", "currency_ledger")
+TABLES += ("economic_accounting_child", "economic_accounting_item_reference", "critical_outbox")
 
 
 def execute(query, params=()):
@@ -65,7 +66,9 @@ try:
         executor.release_lock()
     with owner.cursor() as cursor:
         cursor.execute("SELECT VERSION() AS version")
-        print("native baseline engine=" + cursor.fetchone()["version"] + " migration_head=0056_spell_ward_durability", flush=True)
+        engine_version = cursor.fetchone()["version"]
+        engine_name = "mariadb" if "MariaDB" in engine_version else "mysql"
+        print("native baseline engine=" + engine_version + " migration_head=0056_spell_ward_durability", flush=True)
     initial = captured()
     encoded = subprocess.check_output([str(fixture)], env=dict(os.environ), timeout=120)
     native = json.loads(encoded)
@@ -138,17 +141,21 @@ try:
             if broken_fk:
                 execute("SET SESSION FOREIGN_KEY_CHECKS=1")
 
-    def cut(label, changes, repairs, findings=None, refusal=None, broken_fk=False):
+    def cut(label, changes, repairs, findings=None, refusal=None, broken_fk=False, probe=None):
         original = captured()
         try:
             fixture_changes(changes, broken_fk)
             damaged = captured()
             try:
-                _, observed = audit()
+                damaged_snapshot, observed = audit()
             except OriginError as error:
                 assert refusal is not None and refusal in str(error), (label, str(error), refusal)
             else:
                 assert refusal is None and observed == base_counts | findings, (label, observed, findings)
+                if probe is not None:
+                    original_snapshot = json.dumps(damaged_snapshot, sort_keys=True)
+                    probe(damaged_snapshot)
+                    assert json.dumps(damaged_snapshot, sort_keys=True) == original_snapshot
             assert captured() == damaged, label + ": reader changed authority"
         finally:
             fixture_changes(repairs, broken_fk)
@@ -174,6 +181,68 @@ try:
     old_epoch = bytes.fromhex(native["epochs"][0])
     lineage = bytes.fromhex(native["lineage"])
     claims = {row["operation_id"]: row for row in intact["economic_accounting_source_claim"]}
+    reservation_orphan = bytes([89]) * 16
+    orphan_insert = ("INSERT INTO economic_baseline_reservation(lineage,epoch,identity_kind,identity_id,operation_id) "
+                     "VALUES(%s,%s,%s,%s,%s)")
+    orphan_values = (bytes([99]) * 16, bytes([77]) * 16, 1, 2**64 - 1, reservation_orphan)
+    constrained("orphan-reservation-composite-foreign-key", orphan_insert, orphan_values, 1452)
+
+    def orphan_operator_probe(snapshot):
+        report = Reconciler().audit(snapshot)
+        expected = [{"record": "orphan_evidence", "table": "baseline_reservations",
+                     "operation_id": reservation_orphan.hex(), "row_index": row[2], "identity_kind": row[2],
+                     "identity_id": row[3], "claimed_lineage": row[0].hex(), "claimed_epoch": row[1].hex()}
+                    for row in orphan_rows]
+        expected.sort(key=lambda row: (row["row_index"], json.dumps(row, sort_keys=True)))
+        path = fixture.parent / (engine_name + "-reservation-orphan-snapshot.json")
+        payload = json.dumps(snapshot, sort_keys=True).encode()
+        path.write_bytes(payload)
+        for limit in (0, 1, 100):
+            output = view(snapshot, report, "operation", limit, operation_id=reservation_orphan.hex())
+            assert output["count"] == len(expected)
+            assert output["record_counts"]["orphan_evidence"] == len(expected)
+            assert all(value == 0 for key, value in output["record_counts"].items() if key != "orphan_evidence")
+            assert output["rows"] == expected[:limit]
+            assert output["truncated"] == (len(expected) > limit)
+            assert output["coverage"]["exception_count"] == 5 + len(expected)
+            assert output["coverage"]["complete"] is False
+            result = subprocess.run([sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                str(path), "--view", "operation", "--operation-id", reservation_orphan.hex(),
+                "--limit", str(limit)], capture_output=True, timeout=30)
+            assert result.returncode == 1 and result.stderr == b"", (limit, result.stderr)
+            assert json.loads(result.stdout) == output
+            assert path.read_bytes() == payload
+            (fixture.parent / (engine_name + "-reservation-operation-limit" + str(limit) + ".json")).write_bytes(result.stdout)
+        print("RESERVATION_ORPHAN_OPERATOR_QUALIFIED " + json.dumps({"engine": engine_name,
+              "rows": len(expected), "limits": [0, 1, 100], "cli_exit": 1,
+              "snapshot_unchanged": True, "authority_unchanged": True}, sort_keys=True), flush=True)
+
+    orphan_cases = [("unknown-book-and-operation", orphan_values),
+                    ("known-lineage-unknown-epoch-and-operation", (lineage, bytes([77]) * 16, 2, 2**63, reservation_orphan)),
+                    ("unknown-lineage-known-epoch-and-operation", (bytes([99]) * 16, old_epoch, 1, 1, reservation_orphan)),
+                    ("known-book-unknown-operation", (lineage, old_epoch, 2, 2**64 - 1, reservation_orphan)),
+                    ("receipt-without-witness", (bytes([99]) * 16, bytes([77]) * 16, 2, 1,
+                                                intact["economic_baseline_control"][0]["creating_operation_id"]))]
+    orphan_delete = ("DELETE FROM economic_baseline_reservation WHERE lineage=%s AND epoch=%s "
+                     "AND identity_kind=%s AND identity_id=%s")
+    for label, values in orphan_cases:
+        cut("reservation-" + label, [(orphan_insert, values)], [(orphan_delete, values[:4])],
+            {"orphan_baseline_reservation": 1} | ({"baseline_source_claim": 1}
+                if label == "known-book-unknown-operation" else {}), broken_fk=True)
+    # One missing operation can have several distinct reservation identities.
+    # Preserve both kinds, unsigned IDs, and distinct claimed books in the view.
+    orphan_rows = [orphan_values,
+                   (bytes([99]) * 16, bytes([77]) * 16, 2, 2**64 - 1, reservation_orphan),
+                   (bytes([99]) * 16, bytes([78]) * 16, 1, 2**64 - 1, reservation_orphan),
+                   (bytes([100]) * 16, bytes([77]) * 16, 1, 2**63, reservation_orphan)]
+    cut("reservation-multiple-natural-keys", [(orphan_insert, values) for values in orphan_rows],
+        [(orphan_delete, values[:4]) for values in orphan_rows], {"orphan_baseline_reservation": 4},
+        broken_fk=True, probe=orphan_operator_probe)
+    cut("selected-baseline-extra-child",
+        [("INSERT INTO economic_accounting_child(operation_id,child_index,child_operation_id,domain_id,"
+          "discriminator,parent_index,relationship) VALUES(%s,1,%s,1,1,0,1)", (selected, bytes([98]) * 16))],
+        [("DELETE FROM economic_accounting_child WHERE operation_id=%s AND child_index=1", (selected,))],
+        refusal="EAB1 SQL zero-effect mismatch")
     posting = next(row for row in intact["economic_accounting_coin_posting"] if row["operation_id"] == selected)
     cut("selected-posting-missing",
         [("DELETE FROM economic_accounting_coin_posting WHERE operation_id=%s AND line_index=%s",
@@ -185,6 +254,65 @@ try:
     def insert_row(table, row):
         return ("INSERT INTO " + table + "(" + ",".join(row) + ") VALUES(" +
                 ",".join(["%s"] * len(row)) + ")", tuple(row.values()))
+
+    def zero_effect_fault(operation):
+        return ({"findings": {"baseline_source_claim": 1}} if operation == old else
+                {"refusal": "EAB1 SQL zero-effect mismatch"})
+
+    def ownership_event(operation, legacy=None):
+        witness = next(row for row in intact["economic_baseline_witness"] if row["operation_id"] == operation)
+        blob = witness["canonical_witness"]
+        offset = 192 + witness["holding_count"] * 112
+        uid = int.from_bytes(blob[offset:offset + 8], "little")
+        revision = int.from_bytes(blob[offset + 48:offset + 56], "little")
+        return dict(operation_id=operation if legacy is None else legacy, event_index=0,
+                    item_uid=uid, root_item_uid=uid, parent_item_uid=None,
+                    from_owner_type=1, from_owner_id=7, from_owner_context_id=0,
+                    to_owner_type=1, to_owner_id=7, to_owner_context_id=0,
+                    item_revision=revision + 1, from_owner_revision=revision,
+                    to_owner_revision=revision + 1, reason_type=1, source_site=1)
+
+    creator = intact["economic_baseline_control"][0]["creating_operation_id"]
+    for operation, other, scope_name in ((selected, old, "selected"), (old, selected, "retained")):
+        if operation == old:
+            cut("retained-baseline-extra-child",
+                [("INSERT INTO economic_accounting_child(operation_id,child_index,child_operation_id,domain_id,"
+                  "discriminator,parent_index,relationship) VALUES(%s,1,%s,1,1,0,1)", (operation, bytes([98]) * 16))],
+                [("DELETE FROM economic_accounting_child WHERE operation_id=%s AND child_index=1", (operation,))],
+                **zero_effect_fault(operation))
+        # Both roots are genuine native baselines; using either as the other's
+        # child violates the zero-effect invariant in the selected book too.
+        cut(scope_name + "-baseline-used-as-child",
+            [("INSERT INTO economic_accounting_child(operation_id,child_index,child_operation_id,domain_id,"
+              "discriminator,parent_index,relationship) VALUES(%s,1,%s,1,1,0,1)", (other, operation))],
+            [("DELETE FROM economic_accounting_child WHERE operation_id=%s AND child_index=1", (other,))],
+            refusal="EAB1 SQL zero-effect mismatch")
+        currency = dict(operation_id=operation, pid=7, bank_id=99, wallet_revision=1, bank_revision=1,
+                        reason_type=1, source_site=1)
+        currency.update({side + "_" + coin: 0 for side in
+                         ("wallet_delta", "bank_delta", "wallet_after", "bank_after")
+                         for coin in ("copper", "silver", "gold", "platinum")})
+        cut(scope_name + "-baseline-extra-currency-ledger", [insert_row("currency_ledger", currency)],
+            [("DELETE FROM currency_ledger WHERE operation_id=%s", (operation,))], **zero_effect_fault(operation))
+        event = ownership_event(operation)
+        cut(scope_name + "-baseline-extra-ownership-ledger", [insert_row("item_ownership_ledger", event)],
+            [("DELETE FROM item_ownership_ledger WHERE operation_id=%s", (operation,))], **zero_effect_fault(operation))
+        legacy = ownership_event(operation, creator)
+        reference = dict(operation_id=operation, line_index=0, event_index=0, child_index=0,
+                         item_uid=legacy["item_uid"], before_revision=legacy["item_revision"] - 1,
+                         after_revision=legacy["item_revision"], legacy_operation_id=creator, legacy_event_index=0)
+        cut(scope_name + "-baseline-extra-item-reference",
+            [insert_row("item_ownership_ledger", legacy), insert_row("economic_accounting_item_reference", reference)],
+            [("DELETE FROM economic_accounting_item_reference WHERE operation_id=%s", (operation,)),
+             ("DELETE FROM item_ownership_ledger WHERE operation_id=%s AND event_index=0", (creator,))],
+            **({"findings": {"baseline_source_claim": 1, "unattributed_ownership_event": 1,
+                             "unattributed_ownership_uid": 1}} if operation == old else zero_effect_fault(operation)))
+        for status in range(4):
+            outbox = dict(operation_id=operation, event_index=0, destination=1, event_type=1,
+                          payload_version=1, payload=b"private-zero-effect-fixture", status=status)
+            cut(scope_name + "-baseline-extra-outbox-status-" + str(status), [insert_row("critical_outbox", outbox)],
+                [("DELETE FROM critical_outbox WHERE operation_id=%s AND event_index=0", (operation,))],
+                **zero_effect_fault(operation))
 
     def projection_fault(operation):
         return ({"findings": {"baseline_source_claim": 1}} if operation == old else
@@ -260,7 +388,8 @@ try:
                     cut(scope_name + "-reservation-extra-foreign-" + field_name, [insert_row(table, foreign)],
                         [("DELETE FROM " + table + " WHERE " + where,
                           (operation, 99, row["identity_kind"], foreign["lineage"], foreign["epoch"]))],
-                        broken_fk=True, **projection_fault(operation))
+                        broken_fk=True, **({"findings": {"baseline_source_claim": 1, "orphan_baseline_reservation": 1}}
+                                           if operation == old else projection_fault(operation)))
     constrained("posting-event-index-check",
                 "UPDATE economic_accounting_coin_posting SET event_index=99 WHERE operation_id=%s AND line_index=%s",
                 (selected, posting["line_index"]), (3819, 4025))

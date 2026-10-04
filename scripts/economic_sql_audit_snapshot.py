@@ -180,15 +180,26 @@ def read_orphan_evidence(cursor) -> tuple[list[dict], dict]:
     result = []
     counts = {}
     for name, (table, index, _) in ORPHAN_EVIDENCE_SOURCES.items():
+        extra, join, order = "", "", f"e.operation_id,e.{index}"
+        if name == "baseline_reservations":
+            extra = ",e.identity_id,e.lineage AS claimed_lineage,e.epoch AS claimed_epoch"
+            join = ("LEFT JOIN economic_baseline_witness o ON o.operation_id=e.operation_id "
+                    "AND o.lineage=e.lineage AND o.epoch=e.epoch ")
+            order += ",e.lineage,e.epoch,e.identity_id"
+        else:
+            join = "LEFT JOIN economic_accounting_operation o ON o.operation_id=e.operation_id "
         rows = bounded(cursor,
-            f"SELECT e.operation_id,e.{index} AS row_index FROM {table} e "
-            "LEFT JOIN economic_accounting_operation o ON o.operation_id=e.operation_id "
-            f"WHERE o.operation_id IS NULL ORDER BY e.operation_id,e.{index}")
+            f"SELECT e.operation_id,e.{index} AS row_index{extra} FROM {table} e " + join +
+            f"WHERE o.operation_id IS NULL ORDER BY {order}")
         if len(result) + len(rows) > MAX_ROWS:
             raise ExportError("SQL orphan evidence collection exceeds row limit")
         counts[name] = len(rows)
-        result.extend({"table": name, "operation_id": hex_id(row["operation_id"]),
-                       "row_index": row["row_index"]} for row in rows)
+        for row in rows:
+            entry = {"table": name, "operation_id": hex_id(row["operation_id"]), "row_index": row["row_index"]}
+            if name == "baseline_reservations":
+                entry.update(identity_id=row["identity_id"], claimed_lineage=hex_id(row["claimed_lineage"]),
+                             claimed_epoch=hex_id(row["claimed_epoch"]))
+            result.append(entry)
     return result, {"scope": "database", "table_counts": counts}
 
 
