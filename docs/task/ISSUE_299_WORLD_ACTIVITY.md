@@ -180,7 +180,7 @@ Qualification uses the provisioned local Linux build/test containers:
   outside the existing `total_tick` timing boundary and remain in process CPU.
 - The authoritative `./scripts/format.sh --rev HEAD --check` passes in a native
   Linux formatting checkout containing the PR's touched C/C++ files and their
-  `experimental-accounting` base (`3dbb8bc83`). Both changed lines and complete
+  `experimental-accounting` base (`1cf5c08b6`). Both changed lines and complete
   touched files are checked. `git diff --check` in the managed worktree passes.
 
 The focused production-policy commands are:
@@ -237,6 +237,14 @@ The final matrix uses source `e9763017f` integrated with
 `experimental-accounting` at `3dbb8bc83`, GCC 13.3 and the maintained development
 profile. The flatfile binary's SHA-256 is
 `2921ecc8cd4198961a829a4a1a04aacb3c5078c4b06015a34b28b0900391ef24`.
+The target's later payload-repair update (`1cf5c08b6`, PR #705) is integrated
+after the matrix; activity policy, scheduler and loop instrumentation are
+unchanged by that update. Both maintained backends build again, all 21 focused
+restitution CLI tests pass, and formatting is checked against that new target.
+A full-world recovery smoke run on the integrated binary also passes: both
+persisted modes survive pre-phase copyover, the 1,000-NPC workload survives final
+reconstruction, and native index/scheduler checks pass at boot, each copyover,
+staff NPC creation and extraction.
 Every scenario runs sequentially on this same binary with the feature disabled,
 then enabled, in a fresh disposable full-world fixture. Each phase has an
 80-second warm-up and at least 160 measured seconds. World data, ordinary NPC
