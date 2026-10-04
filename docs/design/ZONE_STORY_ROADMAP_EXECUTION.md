@@ -62,6 +62,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [5a2b93d6d](https://github.com/Community-Duris/Duris/commit/5a2b93d6d387e192ea501d6d6e5bbf71796e927b): Northern Lakes pile-of-bones clues | Cathedral clue now says east and pasture clue west at room75263, matching reciprocal D1/D3 routes. Exactly two native words change, in a separate fix commit with the focused regression. | **Northern Lakes' pile-of-bones exits now correctly point east to the cathedral and west to the pasture.** Both original clues fail; corrected source, reciprocal exits and exact native-byte scope pass. Live LOOK/traversal remains unqualified. |
 | [02788c573](https://github.com/Community-Duris/Duris/commit/02788c5738a11963647ceb9b4b344463f4f57704): Kobold temple guardians | Jkyl uses altar1481/pit1484, golems tomb1482, demon pit1484/ledge1483 and the actual room list. Seven native lines and the focused executable regression are isolated in the fix commit. | **Kobold Settlement's temple guardians now defend their actual altar, tomb and sacrificial pit, restoring the high priest's imp summoning and the pit demon's ledge attacks.** Original altar regression fails; repaired actual procedures, server build and formatting pass. Played combat/difficulty/movement remain unqualified. |
 | [e456b3403](https://github.com/Community-Duris/Duris/commit/e456b3403): Centaur quest/travel clues | Tamilea now points to Banitoor's eastern cave; grotto west exit, both forest approaches, forest east intersection and dead-end entrance now match actual directions. Exactly six native text lines, focused regression in a separate fix commit. | **Centaur Villages' quest and travel clues now point in the correct directions, including Tamilea's route to Banitoor's cave.** All six original clues fail; corrected source/destinations/reciprocal routes pass. Played ASK/LOOK/traversal remains unqualified. |
+| [ac8e2de48](https://github.com/Community-Duris/Duris/commit/ac8e2de48f3aba3915d95abb7ee1d0fefd580f14): Opal Phoenix sand hand-in | Newly instantiated student sand70823 clears only SECRET, allowing ordinary mortal inventory display and named selection for Alazia. All other prototype bytes/native contracts are preserved; hidden chest/key/intestines retain their search paths. Separate fix commit with actual production-function regression. | **Opal Phoenix’s student sand reward is now visible and can be selected for Alazia’s delivery quest.** Original flags fail; corrected aliases and both lookup modes pass under ASan/UBSan, with negative hidden/blind/wrong/ordinal controls. Full played offering and existing saved-item remediation remain unqualified. |
 
 ## Progress
 
@@ -134,9 +135,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 65 | Kobold Settlement | [Comprehensive dossier](zone-stories/KOBOLD_SETTLEMENT.md): all seventeen blocks/147 rooms/58 mobiles/66 objects/303 resets/three shops; ten forge rows, guardian/death/switch/epic/inn/shared paths and foreign closure | One guarded story/three services; sixteen contacts/16 aliases/7 optional checks; supplied materials and historical support receipts remain independent | Separate guardian fix 02788c573 restores actual rooms and ledge targeting. Atomic fees/overlapping recipe order, admitted supply, custom death/access/forced travel and legacy forge/rod/inn intent remain pending |
 | 66 | Troll Caves | [Comprehensive dossier](zone-stories/TROLL_CAVES.md): all ten blocks/82 rooms/28 mobiles/37 objects/193 resets, 142 exact/152 parent families, computed smith/teacher/switch/teleport and foreign stock | One story/four services; eight contacts/9 aliases/8 optional checks; exact same-name kinds, supplied materials and producer history independent | No native repair. Atomic fees, wand mismatch, secret control returns, PUNCH sign/foreign copy, guarded forge and accepted source/travel/fall/survival/renewal qualification remain plans |
 | 67 | Centaur Villages | [Comprehensive dossier](zone-stories/CENTAUR_VILLAGES.md): all eleven blocks/100 rooms/29 mobiles/31 objects/199 resets,117 exact/125 parent families; dynamic switches/teachers, actual hidden-name lookup/current/fall/offer/retirement and foreign closure | Four stories/three services; eight contacts/8 aliases/16 optional checks; two distinct roots of one half kind, optional supplied and reset sources, independent current/history | Separate six-direction clue fix e456b3403. Active source/selection/movement/two-root/two-output settlement, Hateeu retirement/reappearance and renewal remain unqualified; new semantic access/knowledge/effect episodes require accepted proof |
-| 68–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 68 | Enclave of the Opal Phoenix | [Comprehensive dossier](zone-stories/OPAL_PHOENIX.md): all6 blocks/76 rooms/18 mobiles/24 objects/84 resets/76 exact and parent families; actual hidden selection/search/key, indexed item/XP/D1, shop/teacher/inn and bounded foreign closure | Three outcomes, nine contacts/8 aliases/4 optional checks; supplied optional student route, independent forest reagent and exact hidden-source distinctions | Separate sand70823 visibility fix ac8e2de48. Live source/handoff/search/key/GET, items+XP, recipient/stock removal/reappearance, service/rent and renewal remain unqualified; richer accepted episodes are planned |
+| 69–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Enclave of the Opal Phoenix (`opalphoenix`).
+The next area is Myrabolus (`mira`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -3582,3 +3584,73 @@ prior87 maps stay unchanged. Original queue67/220 complete,153 pending;
 Enclave of the Opal Phoenix next. Active, ready accounting remains mandatory;
 frozen recovery stays separate. No DB/account/server operation, migration,
 deployment or merge.
+
+## Opal Phoenix completed source map — October 4, 2026
+
+The [dossier](zone-stories/OPAL_PHOENIX.md) reviews all6 blocks(2Q/1QA/3M),76
+rooms/45 prose groups/6 headers/6 metadata families/101 numeric exit families/
+4 text-keyword pairs,18 mobiles,24 objects and84 resets(M50/G13/D12/E4/O3/P2),
+all76 exact/76 parent-aware families. All raw properties/memberships, shop,
+computed epic/inn bindings, actual offering/recovery/item+XP/retirement,
+visibility/selection/SEARCH/GET/key/door/service/rent and bounded global
+dependencies/713 teleport prototypes/full ordinary Surface boundary close the
+source map. Registry70353–70876 also causes the generated evidence index to
+list23 foreign pirate assignments; those are not physical local specials.
+
+The [journal](../../areas/story/opalphoenix.story.json) maps all3 outcomes,
+9 contacts/8 aliases and4 optional checks(3 current materials/1 earlier receipt).
+Student quill→sand+nominal20kXP; Alazia sand→tome+quill+nominal40kXP; independent
+oldwoman bear remains→cloak. Frozen actor/party XP caps differ, so nominal sums
+do not promise actual gain. Supplied exact items skip personal kills/source/
+earlier history; spent materials remain missing. Two D1 recipients leave,
+including Alazia’s remaining shop stock. A retained receipt does not prove
+each indexed reward, current custody, removal, reappearance or daily renewal.
+
+**Actual native repair: separate [ac8e2de48](https://github.com/Community-Duris/Duris/commit/ac8e2de48f3aba3915d95abb7ee1d0fefd580f14).**
+Sand70823 was SECRET even after direct reward creation into player inventory;
+actual visibility rejects it before the own-inventory shortcut and native
+named offering selection has no SECRET exception. SEARCH has no ordinary
+path to this secret carried OTHER root. Only SECRET is cleared20480→16384,
+preserving NORESET and all other prototype/native contract/source bytes.
+Production visibility/isname/ordinal/list functions compiled under ASan/UBSan
+fail the original and pass the corrected awake-mortal fixture in both lookup
+modes with negative controls. **News: Opal Phoenix’s student sand reward is now
+visible and can be selected for Alazia’s delivery quest.** This repairs future
+instantiations, without rewriting already-saved instances or qualifying a
+played full hand-in. Keep existing-instance remediation as a separate approved
+operational plan; native repair/news must stay distinct from the journal.
+
+Intestines/key/chest retain legitimate hidden-source SEARCH paths. One roaming
+bear kind/reset supplies intestines; same-name bear variants are not equivalent.
+Mask chest70816 starts closed/locked with exact70821 key; SEARCH room/source
+corpse, loose/HOLD key, UNLOCK,100% ordinary key break, OPEN and GET are distinct
+facts. UNLOCK clears the lock before committed destruction; a busy break may
+retain the key after opening access. No mask-delivery terminal is invented.
+Six reciprocal doors are closed but unlocked. Rope fragility, sign factions,
+exam, prayer and planned spell/ogre victory are narrative, without extra local
+accepted outcomes. Asymmetric hallways are not presumed broken.
+
+Alazia’s native Q dispatcher is independent of accounting-blocked commerce.
+Azalea’s epic table binds Nature’s Sanctity at full boot despite no raw
+ACT_TEACHER flag; teaching remains unavailable with accounting active. Actual
+inn flags bind70851/70852/70869 to native rent; ordinary admission and terminal
+DB save apply, rather than a universal accounting service disablement.
+Qualification of trade/teaching before enablement and rent/save/retry remain
+separate. Later optional spelling and builder effect decisions are proposals.
+
+Plans add accepted source/handoff/current UID and same-name runtime identity,
+reveal/selected alias, consumable access-cost versus world-state, frozen
+indexed item+XP, merchant stock/recipient retirement/reset and service/rent
+episodes. Existing optional journal/history checks do not implement those
+richer semantics. No new event/API/schema/payment path ships here.
+
+Focused source/native-selection regressions, actual C++all89-map schema/file
+loader/projection journeys, maintained build, changed/staged format, whitespace,
+native/catalog/prior-map/local-link preservation are checked at publication.
+Source/projection proof does not qualify actual SEARCH/key/GET/source/handoff,
+offerings/items+XP, recipient/stock removal/reappearance, service/rent,
+persistence or daily renewal. Catalog89 maps/1615 achievements/1459 potential
+dailies/2207 rows; all2668 definitions/fingerprint/revision two/registry and
+prior88 maps unchanged. Original queue68/220 complete152 pending; Myrabolus
+next. Accounting active and ready remains mandatory; frozen recovery separate.
+No DB/account/server operation, migration, deployment or merge.

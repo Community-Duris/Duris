@@ -82511,6 +82511,230 @@
     {
       "contacts": [
         {
+          "description": "The anxious student starts in the classroom, room 70845, beside two other identically named students. Ask hi, hello, lost or something. Only this student accepts the eagle feather quill and gives fine sand for Alazia. His departure is separate from your receipt and current reward custody.",
+          "keyword": "student",
+          "mob_vnum": 70802,
+          "name": "a student",
+          "topics": [
+            "hi",
+            "hello",
+            "lost",
+            "something"
+          ]
+        },
+        {
+          "description": "Alazia starts at the adventurer supply shop, room 70876. Ask hi, hello or sand to hear about the errand. The shop\u2019s west door starts closed but unlocked. Her quest remains distinct from shop trading, which is unavailable while accounting is active. Her accepted sand offering declares a tome, quill and experience, then removes her from the room.",
+          "keyword": "alazia",
+          "mob_vnum": 70801,
+          "name": "Alazia",
+          "topics": [
+            "hi",
+            "hello",
+            "sand"
+          ]
+        },
+        {
+          "description": "The old woman starts in her hut, room 70870. Ask elves for her reagent story. Exact bear intestines produce the grass cloak. Her hut has a real healing property; the native offering has no separate accepted spell, elf alliance or ogre-defeat result.",
+          "keyword": "woman",
+          "mob_vnum": 70815,
+          "name": "an old woman",
+          "topics": [
+            "elves"
+          ]
+        },
+        {
+          "description": "This black bear starts at forest room 70865 with the hidden intestine item; another of the same kind starts at 70874 without a separate item reset. Both can wander. A different black-bear kind starts at 70868 without the reagent source. An exact supplied item also works, so returning it does not prove which bear was killed or who first acquired it.",
+          "keyword": "bear",
+          "mob_vnum": 70816,
+          "name": "a black bear",
+          "topics": []
+        },
+        {
+          "description": "This separately defined black bear starts at room 70868. It shares the black-bear name but has no declared intestine reset. Names alone cannot establish the exact source of the old woman\u2019s reagent.",
+          "keyword": "bear",
+          "mob_vnum": 70818,
+          "name": "a black bear",
+          "topics": []
+        },
+        {
+          "description": "Azalea starts in the high druid\u2019s chamber, room 70852, behind ordinary closed vines. She carries a hidden birchwood talisman that fits the locked chest at 70851. Search the source corpse to reveal the key before retrieving it. The exact key is consumed on a normal successful unlock. Her separately bound Nature\u2019s Sanctity teaching service is unavailable with accounting active; it is not another native quest outcome.",
+          "keyword": "azalea",
+          "mob_vnum": 70806,
+          "name": "Azalea",
+          "topics": []
+        },
+        {
+          "description": "Lahoneth starts in the archmage\u2019s private chamber, room 70846, behind an ordinary closed door. The students\u2019 exam and his robes are story and equipment context. No reviewed local native exchange records an exam, archmage lesson or promotion.",
+          "keyword": "lahoneth",
+          "mob_vnum": 70805,
+          "name": "Lahoneth",
+          "topics": []
+        },
+        {
+          "description": "Breandan starts in the high ranger\u2019s private quarters, room 70860, behind an ordinary closed door. His boots and ranger role are local equipment and narrative context, without another native accepted quest.",
+          "keyword": "breandan",
+          "mob_vnum": 70808,
+          "name": "Breandan",
+          "topics": []
+        },
+        {
+          "description": "Ionathe starts in room 70857, wearing opal prayer beads. The monk\u2019s room and meditation beads have ordinary closed exits. Meditation, martial instruction and prayer prose do not add reviewed local native quest outcomes.",
+          "keyword": "ionathe",
+          "mob_vnum": 70811,
+          "name": "Ionathe",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Help an anxious student recover his quill, deliver his fine sand to Alazia, or gather the old woman\u2019s forest reagent. Follow the native errands with optional source and access guidance; supplied exact items can skip earlier personal story history.",
+      "orientation": [
+        "Active, ready accounting is required for discovery, visible encounters, journals and new achievement/daily credit. Discovering the Enclave has its own achievement. The three native quests remain three independent outcomes. Actual acquisition, offerings, item and experience settlement, recipient reappearance and daily renewal still require gameplay qualification.",
+        "The usual errand runs from the classroom quill to the student\u2019s sand, then to Alazia\u2019s tome and replacement quill. The old woman\u2019s bear-remains exchange is independent. Supplied exact items may enter either errand without earlier personal production or kills. Conversation topics explain these stories; each keyword does not create a separate quest achievement.",
+        "Enter from Surface coastal room 528831 west into the old-growth forest at 70875. The eastern return leads back to the same Surface room. The large sign and enclave loyalty prose do not encode a separate faction test. The forest, rope bridges and living-oak halls are real places; fragile bridge wording does not declare a local fall or current mechanism.",
+        "The quill starts inside the cherry wood desk at classroom 70845. The desk is closeable but initially open. Three students share the same visible name; only one accepts the quill. Use the encountered recipient\u2019s request to identify the giver. Offering a worn quill or one still in the desk does not satisfy loose carried custody.",
+        "The large container of fine sand is a single carried item despite its name. It has no separate OPEN or nested-content step. The student\u2019s reward now uses ordinary visibility so it can be selected for Alazia\u2019s hand-in. Its Sea of Silvanos origin is lore, not a requirement to collect another kind of beach sand. An earlier student receipt does not replenish a spent sand item.",
+        "Alazia\u2019s shop is east of hallway 70861. OPEN its ordinary door when closed. ASK and the native sand exchange dispatch separately from shop trading. BUY, SELL, PERUSE, REPAIR and FORGE remain unavailable while accounting is active; a stock listing is not an accepted purchase or another quest result.",
+        "The old woman starts in hut 70870. One roaming black bear\u2019s reset at 70865 supplies hidden intestines, capped at one live copy; another same-kind bear at 70874 has no separate intestine reset, and the distinct bear at 70868 is not this source. SEARCH the source corpse to reveal hidden remains, then GET the exact item into loose inventory. Searching, a kill and current possession are separate facts from the accepted offering.",
+        "The optional leafy mask is ordinary loot, without a native mask-delivery outcome. SEARCH the room at 70851 to reveal its hidden chest. The chest starts closed and locked; the hidden birchwood talisman on Azalea at 70852 is the exact key. SEARCH its source corpse, retrieve the key, then UNLOCK and OPEN the chest before getting the mask. The key normally breaks on a successful unlock, so an old key or mask receipt cannot promise current access.",
+        "The classroom and shop story does not require the mask, key, epic teaching or a paid shop transaction. Azalea\u2019s Nature\u2019s Sanctity service is separately bound at full boot and unavailable with accounting active. Classroom exams, ranger and monk titles, meditation, the old woman\u2019s planned spell and victory against ogres remain narrative context unless builders add accepted effects.",
+        "Six pairs of local exits start closed but unlocked: the archmage\u2019s door, druid\u2019s vines, monk\u2019s door, meditation door/beads, ranger\u2019s door and shop door. Ordinary OPEN is the access step; no local type-switch, blocked gate or positive exit-key requirement is declared. The locked chest is a separate object requirement, not one of those doors.",
+        "The acolyte room 70851, druid chamber 70852 and forest path 70869 carry actual inn properties. The hut 70870 has a healing property. An inn flag identifies a native rent endpoint, without promising admission or persistence; normal player, combat and save conditions still apply. These properties do not create additional quest achievements.",
+        "The student and Alazia leave after accepted completion. Offering credit, each indexed reward, capped experience, actual recipient removal, later reset appearance and fresh daily materials need separate verification. Alazia returns the same quill kind used by the student, but that does not preserve the original quill\u2019s identity or prove immediate repetition. A retained completion never refills an item that is no longer carried."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "opalphoenix",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:70812;receive=E:20000,I:70823;disappear=1",
+              "giver_vnum": 70802
+            }
+          ],
+          "id": "lost-quill",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Look inside the cherry wood desk in the classroom. The desk starts open. Alazia\u2019s sand exchange is another declared quill source. If you have been using the quill, remove it from equipment before offering it. Carry the exact item loose before offering it. Equipped or container-held items are not loose inputs. A supplied item is valid; possession alone does not prove its original source or who recovered it.",
+              "id": "material-70812",
+              "item_vnums": [
+                70812
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry an eagle feather quill"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:70812;receive=E:20000,I:70823;disappear=1",
+                  "giver_vnum": 70802
+                }
+              ],
+              "hint": "Only an accepted exact offering records this outcome. Questions and possession do not complete it. Earlier personal production, a personal kill or a particular recovery route are not native requirements. Daily candidacy does not prove fresh materials, a fresh recipient or settled rewards.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete The student: recover the lost quill"
+            }
+          ],
+          "summary": "Return an eagle feather quill to the anxious student for fine sand and a declared experience reward. The classroom desk contains the quill; Alazia also returns this kind as a reward. Three students share the classroom and name, but only one has this request. The student leaves after completion. Helping him does not record exam success.",
+          "title": "The student: recover the lost quill"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:70823;receive=E:40000,I:70811,I:70812;disappear=1",
+              "giver_vnum": 70801
+            }
+          ],
+          "id": "sand-delivery",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:70812;receive=E:20000,I:70823;disappear=1",
+                  "giver_vnum": 70802
+                }
+              ],
+              "hint": "The student\u2019s accepted quill offering produces this sand. Supplied exact sand skips that personal history. An earlier receipt does not restore sand that has been consumed or handed away.",
+              "id": "earlier-student-errand",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: help the student"
+            },
+            {
+              "count": 1,
+              "hint": "The student gives this exact sand in return for the quill. Its coastal origin is part of the story; the native offering does not require you to collect beach sand personally. This is a single item, not a container with separate sand contents. Carry the exact item loose before offering it. Equipped or container-held items are not loose inputs. A supplied item is valid; possession alone does not prove its original source or who recovered it.",
+              "id": "material-70823",
+              "item_vnums": [
+                70823
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the large container of fine sand"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:70823;receive=E:40000,I:70811,I:70812;disappear=1",
+                  "giver_vnum": 70801
+                }
+              ],
+              "hint": "Only an accepted exact offering records this outcome. Questions and possession do not complete it. Earlier personal production, a personal kill or a particular recovery route are not native requirements. Daily candidacy does not prove fresh materials, a fresh recipient or settled rewards.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Alazia: deliver the student\u2019s sand"
+            }
+          ],
+          "summary": "Bring Alazia the large container of fine sand for a midnight blue tome, an eagle feather quill and a declared experience reward. Helping the student explains the usual route, but supplied exact sand also works. The reward is one carried item despite its container name; you do not need to open it. Alazia leaves after the exchange.",
+          "title": "Alazia: deliver the student\u2019s sand"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:70819;receive=I:70820;disappear=0",
+              "giver_vnum": 70815
+            }
+          ],
+          "id": "forest-reagents",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "One black bear starts near the old-growth forest carrying these hidden remains. The bears can wander, and other bears with the same name do not all have this item. Search the source corpse to reveal hidden remains before retrieving them. The old woman\u2019s hut is in the forest; her elves topic explains the request. Carry the exact item loose before offering it. Equipped or container-held items are not loose inputs. A supplied item is valid; possession alone does not prove its original source or who recovered it.",
+              "id": "material-70819",
+              "item_vnums": [
+                70819
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the intestines of a bear"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:70819;receive=I:70820;disappear=0",
+                  "giver_vnum": 70815
+                }
+              ],
+              "hint": "Only an accepted exact offering records this outcome. Questions and possession do not complete it. Earlier personal production, a personal kill or a particular recovery route are not native requirements. Daily candidacy does not prove fresh materials, a fresh recipient or settled rewards.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete The old woman: bring bear remains"
+            }
+          ],
+          "summary": "Bring the exact intestines of a bear to the old woman for a cloak woven of fine grasses. Her account of elves, ogres and a planned spell explains her motive. The exchange does not prove that a spell was cast or an invasion defeated. Supplied exact remains satisfy the recipe without a personal kill.",
+          "title": "The old woman: bring bear remains"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Outside the shield. Carries the sharp shard key for the northern shield door; holding it does not prove entry.",
           "keyword": "golem",
           "mob_vnum": 71201,

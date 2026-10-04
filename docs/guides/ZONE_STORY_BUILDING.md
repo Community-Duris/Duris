@@ -1478,3 +1478,31 @@ evidence, while level guidance, grief, cure and title prose remain narrative.
 Six misleading direction clues were repaired separately in e456b3403 with
 original-fails/corrected-passes topology checks and a prominent news sentence.
 Keep actual native fixes distinct from journals and pending builder plans.
+
+## Opal Phoenix: source reveal differs from a hidden carried reward
+
+The [complete example](../design/zone-stories/OPAL_PHOENIX.md) maps three
+independent outcomes, nine contacts/eight aliases and four optional checks.
+Quill→sand→quill is a production cycle, without mandatory personal history;
+supplied exact inputs work and spent items stay missing. The sand’s container
+name does not make it an actual container. Same-named students/bears may have
+different contracts and sources, so use actual kinds and runtime identities.
+
+SECRET display/name rejection differs from the shared NOSHOW lookup exception.
+The sand reward lacked an ordinary SEARCH path in inventory; separate fix
+ac8e2de48 clears only its SECRET flag with production-function original-fails/
+corrected-passes proof and a prominent news sentence. Hidden chest/key/remains
+retain source SEARCH paths. Do not globally clear hidden flags from quest inputs.
+
+An exact key’s100% break value is an intentional cost, not automatically a bug.
+World unlock can precede committed key destruction; successful access and key
+spend need separate evidence. Optional mask GET has no native delivery endpoint.
+Likewise capped/party XP, each output, D1 removal of recipient/remaining stock,
+fresh reset and renewal are distinct from one accepted completion receipt.
+
+Audit computed table/flag bindings as well as literal assignments: Azalea’s
+teaching and real inn rooms exist despite absent raw teacher/innkeeper markers.
+Trading/epic teaching stay unavailable with active accounting; ordinary rent
+has independent admission/save rules. Spell/faction/exam/bridge prose does not
+invent an accepted effect. Keep source repairs/news separate from journals,
+future spelling/effect choices and saved-instance operational remediation.

@@ -2445,3 +2445,25 @@ frozen obligations remain recoverable independently.
 Source map67 is comprehensive; actual source/offer/reward/travel/recipient/
 renewal qualification and153 later roadmap entries remain. This journal
 adds no runtime API, event/schema, payment adapter or new reward effect.
+
+## Opal Phoenix: hidden reward selection, cyclic items and frozen experience
+
+The [complete dossier](zone-stories/OPAL_PHOENIX.md) and
+[journal](../../areas/story/opalphoenix.story.json) reuse schema-three exact
+outcomes and optional current/history checks. Active, ready accounting remains
+required; frozen obligations retain their own recovery path.
+
+| Capability | Concrete requirement | Acceptance / implementation plan |
+| --- | --- | --- |
+| Visibility, named selection and source reveal | Sand reward was SECRET in carried inventory; hidden chest/key/intestines have SEARCH routes | Separate proven ac8e2de48 prototype repair from global semantics. Qualify actual awake mortal visibility, alias/ordinal selection, successful source reveal, UID/custody and accepted offering; preserve legitimate hidden flags |
+| Same-name source/recipient and cyclic production | Three students but one giver; different bear variants; quill→sand→quill; supplied shortcuts | Track actual NPC/kind/reset/acquisition episode and source-versus-handoff reason. Current materials and optional producer receipt never enforce absent native kill/history or restore spent inputs |
+| Frozen item and XP settlement | Two D1 recipes contain nominal XP plus indexed items; actor and party caps differ | Capture admitted levels/credited PIDs/runtime reward indices; qualify each item/XP entitlement/publication/save, partial/busy/rejected/replayed/cold recovery and current custody. Keep one accepted outcome per contract |
+| Merchant recipient retirement and fresh supply | Alazia also owns eleven shop stock roots | Qualify accepted input destruction, each reward, stock cleanup, actual removal, absent-giver recovery and configured singleton reset. Daily candidacy does not promise a fresh recipient or stock-derived reward |
+| Consumable access cost versus world mutation | Hidden exact key has100% break; UNLOCK clears bit before key-destruction acknowledgement | Record reveal/custody/selected key, lock/open pre/post bits and destruction result independently. Cover busy failure, another actor opening, interruption and actual mask GET; keep the optional loot route outside native completion |
+| Computed services / inn properties | Epic table binds Azalea despite absent raw teacher flag; shop/teaching disabled; three room flags bind inn | Audit actual boot/table/flag binding, native Q dispatch and service guards. Qualify each service before enabling it; independently qualify rent admission/DB terminal save/retry. Static properties add no achievements |
+| Registry/physical source scope and fair repair review | Broad Opal registry captures foreign pirate assignments; spelling/lore/shortcuts need judgment | Preserve catalog owner while tooling identifies physical locals and bounded foreign dependencies. Separate actual repair/news from future wording, existing saved-item remediation and deliberate narrative decisions |
+
+The original queue is68/220 source-comprehensive,152 pending. Actual semantic
+episodes and gameplay qualification remain implementation work; this checkpoint
+adds no runtime event/API/schema/economic service. Saved secret-sand remediation
+requires an independently reviewed owner-approved operational change.

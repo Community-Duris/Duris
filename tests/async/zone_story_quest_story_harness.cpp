@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 88 &&
+		require(catalog.story_mappings.size() == 89 &&
 				tracker.summary_for(7, 42).total == 1615,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -6645,6 +6645,112 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 313) &&
 					!recovered.has_discovered(7, 42, 352),
 				"Wharf cold recovery lost independent receipts or invented foreign discovery");
+		}
+
+		{
+			const auto &quill = story_for("opalphoenix", "lost-quill");
+			const auto &sand = story_for("opalphoenix", "sand-delivery");
+			const auto &reagents = story_for("opalphoenix", "forest-reagents");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 708, 70875, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 708, 10, 1, 101, false, false)
+							.find(sand.title) == std::string::npos,
+				"Opal discovery exposed an unseen giver's delivery");
+			for (const auto &actor : { std::pair<int, int>{ 70802, 70845 },
+						   { 70801, 70876 },
+						   { 70815, 70870 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 102) ==
+						result::applied,
+					"Opal actual giver encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Opal journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.equipped[18] = 70812;
+			supplies.carried[70810] = 1;
+			supplies.carried[70821] = 1;
+			supplies.carried[70822] = 1;
+			supplies.carried[70811] = 1;
+			supplies.carried[70820] = 1;
+			supplies.carried[75225] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 708, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(quill).find("[Missing now] " + quill.steps[0].text) !=
+						std::string::npos &&
+					section(sand).find("[Missing now] " + sand.steps[1].text) !=
+						std::string::npos &&
+					section(reagents).find("[Missing now] " +
+							       reagents.steps[0].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 708).completed == 0 &&
+					journey.progress_for_zone(7, 42, 708).total == 3 &&
+					journey.serialize_state() == before,
+				"Opal worn quill, named container, key/mask, rewards or foreign material fabricated readiness/credit");
+			supplies.carried[70812] = 1;
+			supplies.carried[70823] = 1;
+			supplies.carried[70819] = 1;
+			journal = journey.render_journal(7, 42, 708, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(quill).find("Next: " + quill.steps.back().text) !=
+						std::string::npos &&
+					section(sand).find("Next: " + sand.steps.back().text) !=
+						std::string::npos &&
+					section(reagents).find("Next: " +
+							       reagents.steps.back().text) !=
+						std::string::npos &&
+					section(sand).find("Turn-in currently unavailable") ==
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Opal supplied exact items required personal history, disabled item-only terms or wrote state");
+			service supplied(catalog);
+			record(supplied, sand.contracts.front(), "opal-supplied-sand", 708, 70876);
+			require(supplied.progress_for_zone(7, 42, 708).completed == 1 &&
+					supplied.evidence_for(quill.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.evidence_for(reagents.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Opal supplied delivery invented student/source/forest history or counted its outputs multiple times");
+			record(journey, quill.contracts.front(), "opal-lost-quill", 708, 70845);
+			supplies.carried.erase(70812);
+			supplies.carried.erase(70823);
+			journal = journey.render_journal(7, 42, 708, 10, 1, 121, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 708).completed == 1 &&
+					section(sand).find("[Missing now] " + sand.steps[1].text) !=
+						std::string::npos &&
+					journey.evidence_for(sand.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Opal earlier quill receipt restored spent sand or automatically completed the delivery");
+			auto wrong_owner =
+				completion(sand.contracts.front(), "opal-wrong-owner", 122);
+			wrong_owner.transaction.zone_number = 933;
+			wrong_owner.transaction.room_vnum = 70876;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Opal delivery accepted a foreign zone owner from broad registry scope");
+			record(journey, sand.contracts.front(), "opal-sand-delivery", 708, 70876);
+			record(journey, reagents.contracts.front(), "opal-reagents", 708, 70870);
+			auto replay = completion(sand.contracts.front(), "opal-sand-delivery", 120);
+			replay.transaction.zone_number = 708;
+			replay.transaction.room_vnum = 70876;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Opal multi-output delivery replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 708).completed == 3 &&
+					recovered.progress_for_zone(7, 42, 708).total == 3 &&
+					recovered.evidence_for(sand.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					!recovered.has_discovered(7, 42, 933) &&
+					!recovered.has_discovered(7, 42, 5000),
+				"Opal cold recovery lost independent receipts or invented foreign discovery/extra output credit");
 		}
 
 		{

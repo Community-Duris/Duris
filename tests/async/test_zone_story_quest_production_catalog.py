@@ -3691,7 +3691,75 @@ guidance=' '.join(mapping['orientation']+[s['summary'] for s in mapping['stories
 for phrase in ('accounting','two separate','same kind','PUSH','eastern edge','current','fall','disappears','supplied'):
     assert phrase in guidance,phrase
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone"):
+# Opal Phoenix: supplied errands, actual hidden-source selection and indexed rewards.
+opal=inventory_module.area_evidence(ROOT,'opalphoenix')
+mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='opalphoenix')
+assert (mapping['schema_version'],mapping['revision'],mapping['coverage'])==(3,1,'complete')
+assert len(mapping['stories'])==3 and len(mapping['contacts'])==9 and not mapping['exclusions']
+assert collections.Counter(s['category'] for s in mapping['stories'])=={'story':3}
+assert collections.Counter(t['kind'] for s in mapping['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':3,'completion':1}
+raw=[b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/opalphoenix.qst']
+assert collections.Counter(b['kind'] for b in raw)=={'M':3,'Q':2,'QA':1} and len(opal['dialogue'])==3
+by_line={b['line']:b for b in raw if 'binding' in b}
+for line,giver,inputs,outputs in ((14,70801,[('I',70823)],[('I',70811),('I',70812),('E',40000)]),(34,70802,[('I',70812)],[('I',70823),('E',20000)]),(62,70815,[('I',70819)],[('I',70820)])):
+    b=by_line[line]
+    assert (b['giver_vnum'],b['give'],b['receive'],b['disappear'])==(giver,inputs,outputs,line!=62)
+    d=next(r['definition'] for r in opal['requests'] if r['block']['line']==line)
+    assert d['zone_number']==708 and d['source_area']=='opalphoenix' and d['daily_eligible'] and not d['daily_exclusion']
+stories={s['id']:s for s in mapping['stories']}
+assert {tuple(c.items()) for s in stories.values() for c in s['contracts']}=={tuple(b['binding'].items()) for b in by_line.values()}
+assert all(s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional') for s in stories.values())
+assert stories['sand-delivery']['steps'][0]['contracts']==[by_line[34]['binding']] and stories['sand-delivery']['steps'][0]['optional']
+assert [(s['id'],t['item_vnums'],t['count']) for s in mapping['stories'] for t in s['steps'] if t['kind']=='carried_item']==[('lost-quill',[70812],1),('sand-delivery',[70823],1),('forest-reagents',[70819],1)]
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==708]
+assert len(units)==3 and sum(u['achievement'] for u in units)==sum(u['daily_candidate'] for u in units)==3
+contacts={c['mob_vnum']:c for c in mapping['contacts']}
+assert contacts[70801]['topics']==['hi','hello','sand'] and contacts[70802]['topics']==['hi','hello','lost','something'] and contacts[70815]['topics']==['elves']
+assert sum(len(c['topics']) for c in contacts.values())==8
+rooms=dawndale_bodies('opalphoenix','wld');objects=dawndale_bodies('opalphoenix','obj');mobiles=dawndale_bodies('opalphoenix','mob')
+assert (len(rooms),len(mobiles),len(objects),len(opal['reset_commands']))==(76,18,24,84)
+assert (opal['zone']['first_vnum'],opal['zone']['last_vnum'],opal['zone']['reset_mode'])==(70353,70876,2)
+assert collections.Counter(r['command'] for r in opal['reset_commands'])=={'M':50,'G':13,'D':12,'E':4,'O':3,'P':2}
+assert len({(r['command'],tuple(r['arguments'])) for r in opal['reset_commands']})==76
+families=set();parent=None
+for r in opal['reset_commands']:
+    c,a=r['command'],r['arguments'];target=parent if c in 'GE' else a[3] if c=='P' else None
+    families.add((c,tuple(a),target))
+    if c=='M':parent=(a[1],a[3])
+assert len(families)==76
+assert objvalues(objects[70823])[:11]==[12,15,3,0,5,0,16384,16385,32768,0,0]  # Future rewards visible, NORESET preserved.
+assert objvalues(objects[70810])[0]==15 and objvalues(objects[70810])[6]==0 and objvalues(objects[70810])[11:15]==[80,1,0,80]
+assert objvalues(objects[70812])[0]==21 and objvalues(objects[70812])[6]==0 and objvalues(objects[70812])[7]&1
+assert objvalues(objects[70816])[0]==15 and objvalues(objects[70816])[6]&4096 and objvalues(objects[70816])[11:15]==[30,13,70821,40]
+assert objvalues(objects[70821])[0]==18 and objvalues(objects[70821])[6]==8409088 and objvalues(objects[70821])[12]==100
+assert objvalues(objects[70819])[0]==12 and objvalues(objects[70819])[6]==4096
+assert objvalues(objects[70822])[6]==16384 and objvalues(objects[70824])[0]==13
+resets={r['line']:r for r in opal['reset_commands']}
+for line,c,args in ((57,'O',[0,70810,1,70845,100,0,0,0]),(58,'P',[1,70812,1,70810,100,0,0,0]),(59,'O',[0,70816,1,70851,100,0,0,0]),(60,'P',[1,70822,1,70816,100,0,0,0]),(86,'M',[0,70802,1,70845,100,0,0,0]),(95,'M',[0,70806,1,70852,100,0,0,0]),(96,'E',[1,70818,1,18,100,0,0,0]),(97,'G',[1,70821,1,0,100,0,0,0]),(111,'M',[0,70816,2,70865,100,0,0,0]),(112,'G',[1,70819,1,0,100,0,0,0]),(114,'M',[0,70818,1,70868,100,0,0,0]),(115,'M',[0,70815,1,70870,100,0,0,0]),(117,'M',[0,70816,2,70874,100,0,0,0]),(118,'M',[0,70801,1,70876,100,0,0,0])):
+    assert (resets[line]['command'],resets[line]['arguments'])==(c,args)
+for v,d,target in ((70846,3,70847),(70847,1,70846),(70849,3,70852),(70852,1,70849),(70854,2,70857),(70857,0,70854),(70855,2,70856),(70856,0,70855),(70860,0,70861),(70861,2,70860),(70861,1,70876),(70876,3,70861)):
+    assert re.search(r'\bD'+str(d)+r'\s+[^~]*~[^~]*~\s+1 0 '+str(target)+r'\b',rooms[v],re.S)
+assert all(r['arguments'][3]==1 for r in opal['reset_commands'] if r['command']=='D')
+assert not any(re.search(r'^[FC]\s*\n',b,re.M) for b in rooms.values())
+assert not any(objvalues(b)[0] in (25,29) for b in objects.values())
+for v in (70851,70852,70869):
+    assert int(rooms[v].split('~')[2].split()[1])&524288
+assert int(rooms[70870].split('~')[2].split()[1])&131072
+assert re.search(r'\bD1\s+[^~]*~[^~]*~\s+0 0 528831\b',rooms[70875],re.S)
+surface=dawndale_bodies('surface','wld')
+assert re.search(r'\bD3\s+[^~]*~[^~]*~\s+0 0 70875\b',surface[528831],re.S)
+shop=(ROOT/'areas/shp/opalphoenix.shp').read_text(encoding='utf8')
+assert set(map(int,re.search(r'^N\s*\n((?:\d+\s*\n)+?)0\s*\n',shop,re.M)[1].split()))==set(range(70801,70810))|{70811,70817}
+assert 'refuse_unported_shop_mutation' in (ROOT/'src/economy/shop.c').read_text(encoding='utf8')
+assert '{ 70806, SKILL_NATURES_SANCTITY, 0, 100, 0, 0, 0 }' in (ROOT/'src/classes/epic_skills.c').read_text(encoding='utf8')
+assignments=opal['special_assignments']
+assert len(assignments)==23 and all(70801>row['vnum'] or row['vnum']>70876 for row in assignments)
+guidance=' '.join(mapping['orientation']+[s['summary'] for s in mapping['stories']])
+for phrase in ('accounting','quill','single carried item','SEARCH','breaks','closed but unlocked','inn','experience','leaves','Supplied'):
+    assert phrase in guidance,phrase
+
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone", "opalphoenix"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
