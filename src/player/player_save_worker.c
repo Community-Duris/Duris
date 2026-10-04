@@ -595,7 +595,9 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 	const queued_snapshot *newest = slot.pending ? slot.pending.get() : slot.active.get();
 	if (!newest || snapshot.revision <= newest->snapshot.revision)
 		return player_save_submit_result::stale;
-	if ((snapshot.components & newest->snapshot.components) != newest->snapshot.components)
+	const auto required_components = slot.pending ? newest->snapshot.components :
+							newest->claimed_components;
+	if ((snapshot.components & required_components) != required_components)
 		return player_save_submit_result::revision_state_mismatch;
 
 	const bool replace_undispatched = !slot.dispatched && !slot.deferred_original &&
@@ -619,8 +621,10 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 			if (!player_revision_snapshot_copy(snapshot.pid, &revision) ||
 			    revision.current_revision != snapshot.revision ||
 			    revision.queued_revision != snapshot.revision ||
-			    revision.queued_components != snapshot.components ||
-			    revision.unacknowledged_components != snapshot.components)
+			    !revision.queued_components ||
+			    (snapshot.components & revision.queued_components) !=
+				    revision.queued_components ||
+			    revision.unacknowledged_components != revision.queued_components)
 				return player_save_submit_result::revision_state_mismatch;
 			ready_staged = !ready_set.contains(snapshot.pid);
 			queue_ready_locked(snapshot.pid);
@@ -628,13 +632,13 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 							   slot.active->snapshot.revision,
 							   slot.active->claimed_components) ||
 			    !player_revision_begin_inflight(snapshot.pid, snapshot.revision,
-							    snapshot.components))
+							    revision.queued_components))
 			{
 				if (ready_staged)
 					cancel_ready_locked(snapshot.pid);
 				return player_save_submit_result::revision_state_mismatch;
 			}
-			pending->claimed_components = snapshot.components;
+			pending->claimed_components = revision.queued_components;
 		}
 		pending->snapshot = std::move(snapshot);
 		pending->queued_at_usec = now_usec();
@@ -717,9 +721,10 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 			continue;
 
 		pid_slot &slot = found->second;
-		// The worker result identifies the full sealed request. Public completion
-		// and revision ACK/failure expose only the mask this job actually claimed.
-		completion.components = slot.active->claimed_components;
+		// Public completion identifies the persisted capture, including the full
+		// death/literal mask consumed by the pipeline. Revision bookkeeping uses
+		// only the obligation this job actually claimed.
+		const auto claimed_components = slot.active->claimed_components;
 		const uint64_t ack_at = now_usec();
 		account_completion_locked(completion, ack_at);
 		bool finished = false;
@@ -729,7 +734,7 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 		case player_save_apply_outcome::applied:
 		case player_save_apply_outcome::already_applied:
 			if (player_revision_acknowledge(completion.pid, completion.revision,
-							completion.components))
+							claimed_components))
 			{
 				saturating_increment(health.applied);
 				exact_acknowledged = true;
@@ -738,7 +743,7 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 				trace.pid = completion.pid;
 				trace.revision = completion.revision;
 				trace.durable_revision = completion.durable_revision;
-				trace.components = completion.components;
+				trace.components = claimed_components;
 				persistence_trace_record(trace);
 				finished = true;
 			}
@@ -746,7 +751,7 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 			{
 				saturating_increment(health.terminal_failures);
 				player_revision_fail_inflight(completion.pid, completion.revision,
-							      completion.components);
+							      claimed_components);
 				finished = true;
 			}
 			break;
@@ -764,14 +769,14 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 			{
 				saturating_increment(health.retries_exhausted);
 				player_revision_fail_inflight(completion.pid, completion.revision,
-							      completion.components);
+							      claimed_components);
 				finished = true;
 			}
 			break;
 		case player_save_apply_outcome::stale_revision:
 			saturating_increment(health.stale);
 			player_revision_fail_inflight(completion.pid, completion.revision,
-						      completion.components);
+						      claimed_components);
 			finished = true;
 			break;
 		case player_save_apply_outcome::terminal_failure:
@@ -779,7 +784,7 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 			if (completion.error_code == PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH)
 				saturating_increment(health.custody_payload_mismatches);
 			player_revision_fail_inflight(completion.pid, completion.revision,
-						      completion.components);
+						      claimed_components);
 			finished = true;
 			break;
 		case player_save_apply_outcome::deferred:
