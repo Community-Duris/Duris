@@ -63631,8 +63631,8 @@
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
   },
   "pending_source_integration": {
-    "candidate_commit": "258f27b95ec5d46a5d0082ec2f2b6dee803235bd",
-    "status": "Source integration through258f27b95 connects save residence, reserved fresh journal replay and enabled caller-scope gates around SQL participants and independent death-conflict/quarantine owners. Ownership remains disabled; actual caller residence, other native writers, serialized lifecycle, complete census, clean critical ACK, production startup/revisit and major-plan qualification remain pending. Historical census/source anchors and prior rows are preserved; no current coverage or qualification claim.",
+    "candidate_commit": "4e5faf66a977d78f6b81c0af19235ac40d43c205",
+    "status": "Source integration through6d42ad788 connects positive-PID synchronous save residence/native cleanup, phased SQL startup and actor-independent restored ordinary-drop publication with private guarded ACK, fresh affected-PID journal/control census and release-driven reserved revisit. Ownership remains disabled. PID-zero/caller-owned transactions, other native writers and serialized shutdown, legitimate overlapping-save/rejected-outcome disposition, complete ordinary graph/live-producer coverage, authentic baseline/cutover/pause and major-plan qualification remain pending. Plan5 native baseline claim audit17b824618 is integrated in ad504f5c0 and its native cases registered in4e5faf66a; qualification applies only to peer inputs. Historical census/source anchors and prior rows are preserved; no current coverage or qualification claim.",
     "qualified": false,
     "prepared_nonwriter_routes": [
       "recovery.inert_literal_staging",
@@ -63654,7 +63654,17 @@
       "src/player/player_snapshot_repository.c",
       "src/player/player_death_conflict_repository.c",
       "src/player/player_quarantine_recovery.c",
-      "src/player/player_quarantine_recovery.h"
+      "src/player/player_quarantine_recovery.h",
+      "src/core/files.c",
+      "src/sql/sql_player.c",
+      "src/sql/sql.c",
+      "src/sql/sql.h",
+      "src/player/player_save_pipeline.h",
+      "src/player/player_save_execution_guard.h",
+      "src/persistence/critical_command_coordinator.c",
+      "src/persistence/critical_command_coordinator.h",
+      "src/item/item_movement_transaction.c",
+      "src/net/comm.c"
     ]
   }
 }
