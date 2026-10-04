@@ -1844,3 +1844,36 @@ source proof and a prominent news sentence. Skill rolls and trap handling still
 apply. Copied captions and threatened ghost/assassin campaigns remain pending
 builder decisions. Active, ready accounting is required for new tracking;
 frozen recovery and source-versus-played qualification remain separate.
+
+
+## Ceothia example: one choice, independent rewards and real effects
+
+The [dossier](../design/zone-stories/CEOTHIA.md) and
+[sidecar](../../areas/story/ceothia.story.json) use six cards for nine recipes.
+Put all four retiring guild bargains on one ANY card; retain every native
+binding and receipt while counting the shared outcome once. Badge, horn and
+thread rewards from Lenbrea are independent; earlier history and key checks
+are optional guidance. A narrated surviving-guild or repaired-timeline campaign
+needs explicit admitted stage/finale predicates before completion credit.
+
+Check real types, flags and parent context. Four leader badges differ from the
+common reward. Two TAKEable OTHER crates are nested in a fixed wagon. Its
+compatibility HARDPICK bit2 does not mean PICKPROOF bit16: ordinary PICK/KNOCK
+are possible. The tiny iron key may break; Lenbrea’s two access keys break on
+successful unlocking. Past and Future Ceothia’s portals and sources keep their
+own zone ownership; supplied proof bypasses personal travel.
+
+Pool62 has an actual DRINK agility handler, while the skill-beacon table is
+dormant here. Target selection, cooldown admission and a positive committed stat
+delta are separate from a key receipt or command text. The existing pool target
+ambiguity needs its own repair, regression and news. Captain’s legacy scroll
+recipe is separate from guarded epic PRACTICE; missing fresh tablet supply and
+unbound scroll learning need builder decisions. qc_action timers are ambient,
+not addressed ASK topics or command IDs. LIST/HIRE and ordinary shops/inns remain
+support services without automatic story credit.
+
+All new discovery/encounter/journal/achievement/daily credit requires active,
+ready accounting. Source review and synthetic receipts do not qualify actual
+source/trap/door/travel/effect/learning/crew/offer/settlement or daily renewal.
+No native repair ships with this journal checkpoint. Future implemented repairs
+need a separate named fix commit and prominent PR news; proposals stay labeled.

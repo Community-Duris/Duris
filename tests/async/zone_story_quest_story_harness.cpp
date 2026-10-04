@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 97 &&
-				tracker.summary_for(7, 42).total == 1594,
+		require(catalog.story_mappings.size() == 98 &&
+				tracker.summary_for(7, 42).total == 1591,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7549,6 +7549,151 @@ int main(int argc, char **argv)
 					recovered.has_discovered(7, 42, 5000) &&
 					!recovered.has_discovered(7, 42, 530),
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
+		}
+
+		{
+			const auto &guild = story_for("ceothia", "choose-surviving-thief-guild");
+			const auto &badge = story_for("ceothia", "lenbrea-ceothian-badge");
+			const auto &horn = story_for("ceothia", "lenbrea-flickering-dragon-horn");
+			const auto &thread = story_for("ceothia", "lenbrea-thread-of-time");
+			const auto &crates = story_for("ceothia", "merchant-two-oaken-crates");
+			const auto &captain =
+				story_for("ceothia", "captain-legacy-dexterity-scroll");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 808, 80800, 100, "arrival") ==
+					result::applied,
+				"Ceothia discovery failed");
+			require(journey.render_journal(7, 42, 808, 10, 1, 101, false, false)
+						.find(horn.title) == std::string::npos,
+				"Ceothia exposed unmet Lord");
+			for (const auto &actor :
+			     { std::pair{ 80801, 80935 }, std::pair{ 80802, 80923 },
+			       std::pair{ 80803, 80980 }, std::pair{ 80807, 80998 },
+			       std::pair{ 80808, 81001 }, std::pair{ 80875, 81088 },
+			       std::pair{ 80907, 81056 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 102) ==
+						result::applied,
+					"Ceothia encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Ceothia section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[80805] = 3;
+			supplies.carried[80826] = 1;
+			supplies.equipped[1] = 80806;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 808, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(guild).find("[Ready now] " + guild.steps[0].text) !=
+					std::string::npos,
+				"Ceothia exact moonstone badge missing");
+			for (size_t i : { 1U, 2U, 3U })
+				require(section(guild).find("[Missing now] " +
+							    guild.steps[i].text) !=
+						std::string::npos,
+					"Ceothia duplicate or worn badge replaced distinct proof");
+			require(section(crates).find("[Missing now] " + crates.steps[1].text) !=
+					std::string::npos,
+				"Ceothia one crate satisfied two-copy delivery");
+			for (int kind :
+			     { 80806, 80810, 80811, 80813, 81410, 81423, 32490, 26614, 402 })
+				supplies.carried[kind] = 1;
+			supplies.carried[80826] = 2;
+			journal = journey.render_journal(7, 42, 808, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto *entry :
+			     { &guild, &badge, &horn, &thread, &crates, &captain })
+				for (const auto &step : entry->steps)
+					if (step.kind == "carried_item" &&
+					    step.item_vnums.front() != 80815 &&
+					    step.item_vnums.front() != 80827)
+						require(section(*entry).find("[Ready now] " +
+									     step.text) !=
+								std::string::npos,
+							"Ceothia supplied proof required personal kills, access or timeline");
+			require(section(horn).find("[Missing now] " + horn.steps[1].text) !=
+						std::string::npos &&
+					section(crates).find("[Missing now] " +
+							     crates.steps[0].text) !=
+						std::string::npos,
+				"Ceothia supplied materials fabricated keys");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 808).completed == 0,
+				"Ceothia readiness granted historical outcome");
+			// Synthetic accepted receipts qualify projection, not personal source,
+			// doors/travel/pool/learning/settlement/NPC retirement or renewal.
+			record(journey, horn.contracts.front(), "ceothia-supplied-horn", 808,
+			       80980);
+			record(journey, thread.contracts.front(), "ceothia-supplied-thread", 808,
+			       80980);
+			require(journey.progress_for_zone(7, 42, 808).completed == 2 &&
+					journey.evidence_for(badge.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Ceothia independent future proofs fabricated earlier history");
+			record(journey, guild.contracts.front(), "ceothia-guild-moonstone", 808,
+			       80935);
+			require(journey.progress_for_zone(7, 42, 808).completed == 3,
+				"Ceothia first guild branch did not count exactly once");
+			for (size_t i = 1; i < guild.contracts.size(); ++i)
+			{
+				const auto id = std::string("ceothia-guild-alternative-") +
+						std::to_string(i);
+				record(journey, guild.contracts[i], id.c_str(), 808, 80935);
+			}
+			require(journey.progress_for_zone(7, 42, 808).completed == 3,
+				"Ceothia four alternatives became four required outcomes");
+			record(journey, badge.contracts.front(), "ceothia-lenbrea-badge", 808,
+			       80980);
+			supplies.carried.erase(80813);
+			supplies.carried.erase(81410);
+			journal = journey.render_journal(7, 42, 808, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(badge).find("[Missing now] " + badge.steps[1].text) !=
+						std::string::npos &&
+					section(horn).find("[Missing now] " + horn.steps[1].text) !=
+						std::string::npos &&
+					section(horn).find("[Missing now] " + horn.steps[2].text) !=
+						std::string::npos,
+				"Ceothia earlier receipts restored spent badge, key or horn");
+			record(journey, crates.contracts.front(), "ceothia-two-crates", 808, 81088);
+			record(journey, captain.contracts.front(), "ceothia-legacy-scroll", 808,
+			       81056);
+			supplies.carried.erase(80826);
+			supplies.carried.erase(402);
+			journal = journey.render_journal(7, 42, 808, 10, 1, 122, false, false,
+							 &supplies);
+			require(section(crates).find("[Missing now] " + crates.steps[1].text) !=
+						std::string::npos &&
+					section(captain).find("[Missing now] " +
+							      captain.steps[2].text) !=
+						std::string::npos,
+				"Ceothia receipts recreated crate or tablet");
+			auto replay =
+				completion(guild.contracts.front(), "ceothia-guild-moonstone", 120);
+			replay.transaction.zone_number = 808;
+			replay.transaction.room_vnum = 80935;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Ceothia guild receipt replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 808).completed == 6 &&
+					recovered.progress_for_zone(7, 42, 808).total == 6 &&
+					!recovered.has_discovered(7, 42, 811) &&
+					!recovered.has_discovered(7, 42, 814),
+				"Ceothia cold recovery lost grouped outcomes or invented timeline travel");
+			for (const auto &id : guild.contracts)
+				require(recovered.evidence_for(id, 2).successful_attempts == 1,
+					"Ceothia grouped card lost a branch receipt");
+			for (const auto *entry : { &badge, &horn, &thread, &crates, &captain })
+				require(recovered.evidence_for(entry->contracts.front(), 2)
+							.successful_attempts == 1,
+					"Ceothia cold recovery lost independent receipt");
 		}
 
 		{

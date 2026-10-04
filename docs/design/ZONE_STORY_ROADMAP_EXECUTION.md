@@ -150,9 +150,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 76 | Tundra | [Comprehensive dossier](zone-stories/TUNDRA.md): all20 blocks/175 rooms/26 mobiles/32 objects/246 resets/one shop and bounded foreign/shared closure | New schema3/revision1: six stories/one paid armor service;16 contacts/16 aliases/14 optional checks. Four different books → snowy boots → Eleadora; three seafood kinds → fishbone key; independent gland/shell rewards and head retirement | No native repair. Branch/trap availability, inactive/signposted routes, land-coded docks, absent fish shop, paid guards, partial foreign supply, actual switch/key/source and campaign/renewal remain plans |
 | 77 | The Fields Between | [Comprehensive dossier](zone-stories/FIELDS_BETWEEN.md): all17 blocks/153 rooms/68 mobiles/33 objects/286 resets and bounded foreign/shared closure | New schema3/revision1: seven stories;22 contacts/81 aliases/17 optional checks. Timmy alloy → letter → roaming mother; shared mithril, manuscript/bananas, orders/gift, five distinct heads and portable-rift offering | Actual pickup repair is separate fix05eeca928 with news below. Roaming/ownership, source lineage, portal consumption, narration versus campaign and unresolved prose remain plans |
 | 78 | The Town of Moregeeth | [Comprehensive dossier](zone-stories/THE_TOWN_OF_MOREGEETH.md): all20 blocks/353 rooms/109 mobiles/96 objects/549 resets/ten shops and bounded foreign/shared closure | Schema3/revision2 preserves seven IDs: five stories/two paid services;21 contacts/22 aliases/15 optional checks. Pouch → key → four planar components; exact head, killer’s sword and trapped letter | Actual desk-keyhole repair is separate fix7b916b887 with news. Actor availability/retirement, access/portal commands, container/trap lineage, fees and narrative campaigns remain qualification plans |
-| 79–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 79 | Ceothia | [Comprehensive dossier](zone-stories/CEOTHIA.md): all21 blocks/295 rooms/110 mobiles/33 objects/510 resets/one shop and bounded timeline/shared closure | Six cards bind nine recipes: one four-way guild choice, three independent Lenbrea rewards, paired crates and legacy scroll;17 contacts/22 aliases/17 optional checks | No native repair ships. Actor availability, source/gift custody, keys/container/travel/effects and campaign prerequisites remain plans; pool targeting and legacy tablet/learning are explicit repair proposals |
+| 80–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Ceothia (`ceothia`).
+The next area is Braddistock Mansion (`brad`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -161,6 +162,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-CEOTHIA-CHOICE / TIMELINE / TARGETED-EFFECT / LEGACY-TRAINING | Four retiring guild alternatives, three independent Lenbrea rewards, breaking keys, two nested crates, foreign timeline proofs, imported agility pool and legacy tablet/scroll differ from modern epic purchases. | Six source-guided cards ship. Qualify source/recipient reset episodes, actual access/travel/targeted effects and shared-material ownership; define all-stage campaign and restore/retire legacy training only with builder intent. Pool target ambiguity is a pending shared repair, not shipped news. |
 | ZSQ-MOREGEETH-AVAILABILITY / KEY / PORTAL / CONTAINER / FEE | Moreg carries another recipient’s sword; Gimbatul leaves after crown; pouch grants a real access key; four planar routes use different commands; letter is inside a locked trapped desk; paid crafts require all item roots and fees. | Five source-guided outcomes and two zero-achievement services ship. One-field keyhole fix7b916b887 is actual repair; qualify source/current custody, skill/trap/portal actions, NPC retirement, wallet settlement and reset. Campaign/prose additions remain builder decisions. |
 | ZSQ-FIELDS-BETWEEN-SHARED-SUPPLY / PORTAL / OWNERSHIP / CAMPAIGN | Two consumers share scarce alloy; floor portal is consumed; mother crosses into Scorched Valley; foreign seekers retain foreign ownership; narration promises unconfirmed escape, transformation and reunion. | Seven outcomes ship as source guidance/projection. Isolated pickup fix05eeca928 is actual repair; qualify admitted sources, transfer, ENTER/offer, actor roaming/retirement, ownership, settlement and renewal. Builder decides other prose/controller intent. |
 | ZSQ-TUNDRA-AVAILABILITY / FISHING / ROUTES / MIRROR / ALL-INPUTS | Eleadora head retires giver; actors can wander into loading traps. Dock is land and fishmonger lacks a shop; signposted/legacy routes are unusable. Four books and three seafood kinds need ALL; Bom supplies only two seafood kinds. Mirror automatically binds PUSH with asymmetric reset state. | Six stories/one service ship as guidance/projection. Builder chooses availability/shop/route intent before isolated native fixes. Qualify actual catch/source, partial foreign supply, shared switch/keys, paid order, actor retirement and daily renewal. No native Tundra repair ships. |
@@ -4253,3 +4255,48 @@ source-comprehensive,142 pending; Ceothia next**. Full goal remains active.
 Active, ready accounting is mandatory; frozen recovery remains separate.
 No accounting activation, DB/server operation, migration, deployment or merge
 occurred. Synthetic receipts do not qualify played transactions or persistence.
+
+
+## Priority 79 checkpoint: Ceothia
+
+The [comprehensive dossier](zone-stories/CEOTHIA.md) closes all21 blocks
+(M12/Q8/QA1),295 complete rooms/107 prose families/seven headers/619 exits/
+three exit-text families/no extras,110 mobiles/88 full prose families,33 objects,
+510 resets/299 exact/386 parent-aware families and the one actual shop. Full
+local/shared implementations, imported agility pool62, computed epic teaching,
+all713 active portal prototypes,17 foreign recipe bodies/nine foreign reset
+groups and nine boundary edges/four complete foreign neighbors were reviewed.
+Bounded Past/Future portal/key/source closure retains foreign zone ownership;
+it does not mark either foreign zone comprehensive.
+
+Schema3/revision1 binds nine native recipes in six cards: any one of four guild
+bargains, three independent Lenbrea rewards, two-copy crate delivery and the
+captain's legacy scroll. Seventeen contacts retain22 addressed aliases. Seventeen
+optional checks mean14 current material/access conditions and three earlier
+receipts. Supplied exact proof does not require personal kills, guild history,
+door access or timeline travel. Leader retirement and replenishment, breaking
+keys, secret/pickproof doors, fixed wagon/two child roots, actual portal movement,
+foreign ownership and precise pool effects remain qualification work.
+
+**No native zone or quest repair ships.** Wagon guidance correctly allows PICK/
+KNOCK: bit2 is compatibility-only HARDPICK, while PICKPROOF bit16 is absent.
+The pool's argument-blind DRINK handler is a pending shared target-resolution
+repair. Legacy tablet supply and bound scroll learning were not identified;
+builder intent must decide restoration or retirement, separate from guarded
+modern epic teaching. Copied venue/door clues, unbound inn/shop descriptions,
+rare-load title versus reset and narrated guild/timeline campaign remain fair
+review proposals. Future repairs require isolated named fix commits and news;
+the earlier shipped repair ledger is preserved verbatim.
+
+Required validation: focused source/schema/grouped-choice C++ projections, full
+production regression, all98 Python/C++ journal loading/projection journeys,
+maintained build, formatting, whitespace/source links, original220 queue,
+all97 prior journals/all2668 native definitions/fingerprint/revision/registry
+and exact prior PR/news preservation. Catalog:98 journals/1591 achievement
+units/1446 potential dailies/2200 rows; the three-unit decrease groups guild
+alternatives without changing native recipes. **79/220 source-comprehensive,
+141 pending; Braddistock Mansion (`brad`) next.** Full goal remains active.
+Active, ready accounting is mandatory; frozen recovery is separate. Synthetic
+receipts do not qualify played source/access/travel/pool/learning/crew/offer/
+settlement/actor lifecycle/database persistence/daily renewal. No accounting
+activation, DB/server operation, migration, deployment or merge occurred.

@@ -2755,3 +2755,37 @@ materials ready now, fee readiness and actual world state remain distinct.
 Active, ready accounting is required; frozen recovery is separate. Synthetic
 projection tests do not qualify played source/trap/travel/fees/actor lifecycle,
 reward settlement, database persistence or daily renewal.
+
+
+## Ceothia: alternative guild outcomes and precise timeline effects
+
+The [complete dossier](zone-stories/CEOTHIA.md) and schema3 sidecar bind all
+nine native recipes in six cards. One guild card accepts any of four bargains
+and retains all branch receipts; Lenbrea’s badge, horn and thread rewards stay
+independent. Optional earlier receipts and loose material/access checks explain
+progression without forcing personal kills, door history or time travel.
+
+| Requirement | Source evidence | Implementation / qualification plan |
+| --- | --- | --- |
+| Alternative versus all-stage campaign | Four guild recipes share a badge and retire their respective givers; lore asks for one surviving guild | Keep ANY branch completion and native IDs. Add admitted actor/reset episode and explicit campaign endpoints only with builder intent; qualify branch concurrency, receipts, replay, replenishment and supplied proof. |
+| Actual key and travel facts | Breaking bluestone/glowing keys, secret/pickproof doors, present → past → future → present portal chain | Freeze selected key/root, door identity, successful action and movement. Separate current key, old reward, open public passage and personal traversal; qualify rejection, rollback, reciprocal state and cold recovery. |
+| Container source and repeated exact roots | Two crates inside a fixed closed/locked wagon; one bored guard carries a breaking key | Preserve parent/child lineage and two loose roots. Qualify key/PICK/KNOCK routes, OPEN/GET, partial input, capacity, gift/source provenance and atomic all-root reward settlement. |
+| Targeted beneficial effects | Imported agility pool62 requires level51, shared two-day TAG_POOL and bounded random stat change; DRINK argument is ignored | Before granting credit, add target resolution and committed before/after delta. Cover unrelated/empty targets, multiple pools, pets, denial, capped/negative change, cooldown retry, persistence and recovery. Target-resolution repair must be a separate named fix with news. |
+| Legacy training versus current purchases | Captain’s exact heart/orb/tablet recipe gives type13 scroll404; no identified fresh tablet or bound learning; epic PRACTICE explicitly rejects active accounting | Builder decides restore/retire legacy support and audits shared scroll teachers. Actual epic/currency/learning settlement stays guarded until qualified; a scroll receipt alone is not learning. |
+| Foreign stock and ownership | Future horn/thread, trapped Bel heart, equipped Dark orb, shared consumers and foreign/procedural potion sources | Record admitted producer/reset/root/custody and canonical receiving contract; distinguish player gift from first source acquisition, equipment removal, trap handling, consumption and procedural grants. |
+| Separate support services | Golden Cat crew LIST/HIRE mutates wallet and ship; only one shop and five explicit inns are bound | Qualify coordinated wallet/ship settlement or retain guard. Review narrated venues before adding rent/stock bindings; support commands do not create story credit. |
+
+Player cards should show the four guild alternatives/gifts as one choice, three
+separate Lenbrea outcomes with the optional key/travel route, two-copy crate
+readiness and the captain’s legacy availability caveat. Historical outcome,
+materials ready now, actual access, source provenance and positive effect each
+need their own ANSI/GMCP state. Narrative timeline restoration and surviving-guild
+campaign completion remain unimplemented until semantic event/recovery work.
+
+No native repair ships with this map. Pool targeting, legacy tablet/learning,
+copied venue/door clues and intended inn/shop support are concrete proposals,
+not news-ready fixes. Future fixes need separate commit, trigger, before/after,
+proof, qualification limits and prominent news. Active, ready accounting remains
+mandatory for new tracking; frozen recovery is separate. Source/projection
+proof does not qualify played source/access/effects/teaching/crew/settlement,
+database persistence or daily renewal.

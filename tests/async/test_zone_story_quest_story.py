@@ -15,8 +15,8 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1449
-assert report['mapped_area_count'] == 97 and report['eligible_by_zone']['162'] == 4
+assert report["daily_unit_count"] == 1446
+assert report['mapped_area_count'] == 98 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -133,6 +133,17 @@ assert report['eligible_by_zone']['700']==5 and sum(len(c['topics']) for c in go
 assert sum(t.get('optional',False) for s in goblinht['stories'] for t in s['steps'])==15
 assert goblinht['stories'][3]['steps'][0]['contracts']==goblinht['stories'][4]['contracts']
 assert goblinht['stories'][6]['steps'][0]['count']==5
+
+ceothia=next(m for m in catalog['story_mappings'] if m['source_area']=='ceothia')
+assert (ceothia['schema_version'],ceothia['revision'],ceothia['coverage'])==(3,1,'complete')
+assert len(ceothia['stories'])==6 and len(ceothia['contacts'])==17 and not ceothia['exclusions']
+assert report['eligible_by_zone']['808']==6 and all(s['category']=='story' for s in ceothia['stories'])
+assert sum(len(c['topics']) for c in ceothia['contacts'])==22
+assert sum(t.get('optional',False) for s in ceothia['stories'] for t in s['steps'])==17
+assert len(ceothia['stories'][0]['contracts'])==4 and len({c['giver_vnum'] for c in ceothia['stories'][0]['contracts']})==4
+assert ceothia['stories'][1]['steps'][0]['contracts']==ceothia['stories'][0]['contracts']
+assert ceothia['stories'][4]['steps'][1]['count']==2
+assert all(t.get('optional') for s in ceothia['stories'] for t in s['steps'][:-1])
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'
