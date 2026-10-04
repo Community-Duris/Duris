@@ -185,6 +185,12 @@ extern "C" MYSQL *sql_pool_replace_connection(MYSQL *connection)
 	close_pooled(connection);
 	return connect_fixture();
 }
+extern "C" bool sql_pool_retire_owned_connection(MYSQL *)
+{
+	// The default fixture has no native slot registry; it cannot consume a lease.
+	// DURIS_ECONOMIC_SQL_REAL_POOL_TEST uses the actual checked pool implementation.
+	return false;
+}
 #endif
 
 namespace

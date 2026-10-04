@@ -763,3 +763,13 @@ base65e4f1590872eaf6514663568b7b36bbdb1b73a8. Deferred qualification must cover
 prepared admission and shutdown, duplicate start, worker/hook/dispatcher failure,
 retry retaining exact holds, legacy inactive initialization and the full overlapping
 save/critical recovery journey. No compiler/native/SQL/gameplay tests ran.
+
+
+Six maintained fixture link boundaries now declare checked pool retirement
+explicitly unavailable: critical repository stubs, direct death-conflict owner,
+default item/currency/bank fresh-session doubles and standalone cutover owner.
+They return false without closing any handle. Real-pool modes retain the actual
+production implementation; all original assertions, retry sequences and deadlines
+are unchanged. Source-only closure preparation is unqualified. These doubles
+cannot prove successful retirement or actual repository receipt preservation.
+The separately frozen private V2 baseline remains unchanged.
