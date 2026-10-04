@@ -57,6 +57,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [f8090481d](https://github.com/Community-Duris/Duris/commit/f8090481df837bb4e1a675c901488f13090657d1): Tribal Forest exit clues | Inspecting west at 42204 and 42231 now says west; inspecting south at 42261 now says south. Exactly three description words change, preserving reciprocal routes and all other native bytes. | Player-facing: “Tribal Forest's two western forest exits and the southern village exit now describe their actual directions.” All three original clues fail the focused regression; repaired source/exact-byte scope pass. Live LOOK/traversal remains unqualified. |
 | [b07b560cc](https://github.com/Community-Duris/Duris/commit/b07b560ccf2d3b7bbcb61227cfa5423dd6fa6924): Ironstar exit clues | Inspecting west at 138903 now says west; inspecting south at 138957 now says south. Exactly two native description words change, preserving reciprocal routes and all other native bytes. | Player-facing: “Ironstar's western valley exit and southern Fairlocke exit now describe their actual directions.” Both original color-normalized clues fail the focused regression; repaired source/exact-byte scope pass. Live LOOK/traversal remains unqualified. |
 | [d18758098](https://github.com/Community-Duris/Duris/commit/d18758098083b28463279c130a3e7ec24bb48b24): Brass Imix Avenue exit | Inspecting east at 139017 now says east, matching D1 to 139016 and reciprocal D3. Exactly one native word changes. | Player-facing: “Brass's eastern Imix Avenue exit now describes its actual direction.” Original color-normalized clue fails; repaired source/exact native bytes pass. Live LOOK/traversal remains unqualified. |
+| [3f1ecf2be](https://github.com/Community-Duris/Duris/commit/3f1ecf2be064a63321c0e0243b4168727cb079c2): Tower directions/passwords | South clues at 134011/134014 now say south; four locked magic keywords lose only trailing color resets, restoring plain Sargon/elemental passwords. | Player-facing: “The Tower of Darkness's south-facing shrine and stair clues now describe their actual directions. Its Sargon and elemental magic doors now accept the intended plain passwords.” Original source fails all six; actual C++ matching/reciprocal unlock passes, closed state retained. Live speech/LOOK/traversal remains unqualified. |
 
 ## Progress
 
@@ -121,9 +122,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 57 | Tribal Forest | [Comprehensive dossier](zone-stories/TRIBAL_FOREST.md): all 25 blocks/175 rooms/67 mobs/103 objects/377 resets; shop/orb/shared execution and source ownership | Nine outcomes/one refusal exclusion; seventeen contacts/21 optional checks; exact grain/clothing/crystal/parts/egg progression | Admitted staged supply, recovery/transfer/replacement, reused key/control/travel/HP/actor events; trap/text/grove/shop-audit intent pending. Separate three-word native direction fix/news ships |
 | 58 | The Ancient Halls of Ironstar | [Comprehensive dossier](zone-stories/THE_ANCIENT_HALLS_OF_IRONSTAR.md): all 22 blocks/100 rooms/34 mobs/66 objects/198 resets; native/shared source and effective access | Four stories/three services; fifteen contacts/fourteen optional checks; exact rings/crown/paid key/three locks and independent equipment routes | Guarded atomic fees, reset door state, source/transfer/allocation and retiring supply; river/prose/lore/epic concerns pending. Separate two-word native direction fix/news ships |
 | 59 | Plane of Fire, Brass | [Comprehensive dossier](zone-stories/PLANE_OF_FIRE_BRASS.md): all 20 blocks/357 rooms/147 mobs/170 objects/18 shops/779 resets; native/shared source and effective access | Four stories/one service/two exclusions; 25 contacts/18 optional checks; collectible coins, quantity-two vials, competing heads and guarded bracer | Actor/barrier/access episodes, duplicate reward/proof allocation, rare wandering/perception and atomic fees; builder-selected djinn/ambient/prose/topology proposals. Separate one-word native exit fix/news ships |
-| 60–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 60 | The Tower of Darkness | [Comprehensive dossier](zone-stories/TOWER_OF_DARKNESS.md): all 32 blocks/142 rooms/170 mobs/146 objects/one shop/580 resets; full exit text/passwords and shared execution | Six stories/seven owned bindings; 27 contacts/12 optional checks; guarded alternative, five-sword bundle, three-key puzzle and five physically local foreign-owned requests | Physical affiliation/discovery separate from owner, per-branch fee support, accepted access/source/campaign events and builder-selected rescue/holding/entry/text proposals. Separate native direction/password fix/news ships |
+| 61–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Tower of Darkness (`lortower`).
+The next area is the Mushroom Caverns (`mushroom_caverns`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -3025,3 +3027,64 @@ daily from the empty djinn. Native definitions/fingerprint/revision two/registry
 and prior 79 maps remain. Original queue: 59/220 complete, 161 pending; The
 Tower of Darkness (`lortower`) next. Active, ready accounting remains
 mandatory. No DB/account/server operation, migration, deployment or merge.
+
+## Tower of Darkness completed source map — October 4, 2026
+
+The [comprehensive dossier](zone-stories/TOWER_OF_DARKNESS.md) reviews all
+32 native blocks (20 M/12 Q), 142 rooms, 170 mobiles, 146 objects, one valid
+shop and 580 resets/482 families, all exit text/passwords, exact sources,
+bounded global consumers/entry and relevant shared execution. Seven Q/eleven M
+are Tower-owned; five Q/nine M are physically local but Braddistock-owned.
+The [journal](../../areas/story/lortower.story.json) covers the seven owned
+contracts as six stories, with 27 contacts/twelve optional checks. The two
+giant key alternatives form one OR outcome; the cash branch stays guarded.
+Amelia’s release/locket and Dorthan’s five-sword/locket bundle remain independent
+accepted receipts. Three planar keys yield one stasis key. Questions, reading,
+source, first recovery, keys, portal use and surviving arrival earn no invented
+credit; supplied exact offerings do not require personal earlier history.
+
+The physical campaign also includes Azlion’s staff/redemption sword, Joseph’s
+fate, five Star Stone pieces/Star Key, and Isabia’s bone key/ring/Danthas delivery.
+Current catalog/runtime giver ranges credit these to Braddistock and forbid
+borrowing bindings into Tower. Tower discovery/encounters do not discover that
+owner. Plan explicit physical affiliation/referral and cross-zone campaign
+references independently of immutable receipt ownership, with discovery policy,
+versioned upgrade and historical compatibility tests. No owner migration ships.
+
+Magic speech clears lock/secret state but retains closed doors; illusion-maze
+objects override direction exits; the elemental “portal of darkness” is a trapped
+container. Fixed portal, fall and prison routes need actual success/survival
+attribution. Five distinct Star pieces and five same-kind swords require exact
+root allocation. Isabia/Katalia D0 do not implement departure; Azlion’s rift and
+Darrin’s sacrifice are narration. Earlion’s past/present/future are distinct
+actors, not proved transformations. Danthas can roam from holding/distribution
+rooms; outward-only Troll Hills entry and no foreign fixed portal need builder
+qualification. Source declarations are not guaranteed admitted renewable supply.
+
+**Actual native repair:** separate [fix 3f1ecf2be](https://github.com/Community-Duris/Duris/commit/3f1ecf2be064a63321c0e0243b4168727cb079c2)
+corrects two south-exit direction words and removes four trailing color resets
+from locked magic-password keywords. Plain sargon/thothrontithos previously failed
+exact matching; intended passwords now unlock the selected/reciprocal doors.
+Original source fails all six cases; repaired source passes actual maintained
+C++ password/door functions, wrong-word rejection and closed-state preservation.
+Live speech/LOOK/traversal remains unqualified. News: “The Tower of Darkness's south-facing shrine and stair clues now describe their actual directions. Its Sargon and elemental magic doors now accept the intended plain passwords.”
+All prior repair/news records remain. Hammer Testing proc messages, copied text,
+rescue/rift intent, holding/entry topology and receipt-owner decisions are balanced
+pending proposals, separate from this shipped repair and journal additions.
+
+Offering support must be displayed independently of daily eligibility: the
+D1/reset-zero cash recipe is classified Story-only before its unsupported coin
+reason, and the grouped supported note route hides an all-unavailable warning.
+The journal explicitly explains the cash guard; plan per-branch support and
+recoverable atomic fees without bypassing active-accounting admission.
+
+Source and actual C++ journal journeys cover exact owners/quantities, optional
+history versus supplied input, per-branch guidance, readonly readiness, shared
+one-outcome alternatives, replay and cold recovery. Live generation, hidden
+recovery/traps, source/handoff, roaming/perception, passwords/access/portals/falls,
+combat, retirement/renewal and played persistence remain pending. Catalog:
+81 maps/1629 achievements/1463 potential dailies/2207 rows; 2668 native
+identities/fingerprint/revision two/registry and prior 80 maps remain. Original
+queue: 60/220 complete, 160 pending; Mushroom Caverns next. Active, ready
+accounting remains mandatory. No DB/account/server operation, migration,
+deployment or merge.

@@ -2313,7 +2313,7 @@ assert sum(d["daily_eligible"] for d in definitions.values())==9
 assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
 assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
-assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1630
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1629
 sources=collections.defaultdict(list);parent=None;room=None
 for reset in crakkaro["reset_commands"]:
     c,v=reset["command"],reset["arguments"]
@@ -3084,7 +3084,85 @@ assert 'qc_unblock 139000 north' in (ROOT/'areas/qst/plane_fire_one.qst').read_t
 assert re.search(r'\bD2\s+[^~]*~[^~]*~\s*0 0 25455\b',rooms[139000],re.S)
 
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass"):
+# Tower: grouped alternatives, exact quantities and physical/credit-owner boundaries.
+lortower=inventory_module.area_evidence(ROOT,'lortower')
+lortower_map=next(m for m in catalog['story_mappings'] if m['source_area']=='lortower')
+assert (lortower_map['schema_version'],lortower_map['revision'],lortower_map['coverage'])==(3,1,'complete')
+assert len(lortower_map['stories'])==6 and not lortower_map['exclusions'] and len(lortower_map['contacts'])==27
+assert all(s['category']=='story' for s in lortower_map['stories'])
+assert collections.Counter(t['kind'] for s in lortower_map['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':10,'completion':2}
+raw=[b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/lortower.qst']
+assert collections.Counter(b['kind'] for b in raw)=={'M':20,'Q':12}
+blocks={b['line']:b for b in raw if b['kind']=='Q'}
+for line,giver,inputs,outputs,retire in (
+    (12,134010,[('I',134039)],[('E',500000)],0),
+    (33,134026,[('I',134035)],[('I',134034),('E',70000)],0),
+    (61,134029,[('C',100000)],[('I',134019)],1),
+    (71,134029,[('I',134034)],[('I',134019)],0),
+    (119,134053,[('I',134004)]*5+[('I',134030)],[('I',134028)],0),
+    (143,134054,[('I',134026)],[('I',134030)],1),
+    (155,134074,[('I',134111),('I',134112),('I',134113)],[('I',134117)],0),
+    (201,134146,[('I',134105)],[('I',134106)],1),
+    (218,134150,[('I',134006)],[('E',100000)],0),
+    (266,134162,[('I',v) for v in range(134131,134136)],[('I',134125)],1),
+    (292,134167,[('I',134144)],[('I',134145)],0),
+    (304,134169,[('I',134048)],[('I',134144)],0)):
+    b=blocks[line]
+    assert b['giver_vnum']==giver and b['give']==inputs and b['receive']==outputs
+    assert b['binding']['completion_key'].endswith('disappear='+str(retire))
+owned={r['block']['line'] for r in lortower['requests']}
+assert owned=={12,33,61,71,119,143,155}
+assert {tuple(c.items()) for s in lortower_map['stories'] for c in s['contracts']}=={tuple(blocks[n]['binding'].items()) for n in owned}
+for giver in (134146,134150,134162,134167,134169):
+    defs=[d for d in catalog['definitions'] if d['giver_vnum']==giver]
+    assert len(defs)==1 and defs[0]['source_area']=='brad' and defs[0]['zone_number']==1350
+stories={s['id']:s for s in lortower_map['stories']}
+assert stories['captain-key']['contracts']==[blocks[71]['binding'],blocks[61]['binding']]
+assert 'currently unavailable' in stories['captain-key']['summary']
+assert stories['dorthan-dubneth-shield']['steps'][0]['contracts']==[blocks[143]['binding']]
+assert stories['captain-key']['steps'][0]['contracts']==[blocks[33]['binding']]
+assert [(t['item_vnums'],t['count']) for t in stories['dorthan-dubneth-shield']['steps'] if t['kind']=='carried_item']==[([134030],1),([134004],5)]
+assert [t['item_vnums'] for t in stories['three-keys-stasis']['steps'][:-1]]==[[134111],[134112],[134113]]
+assert all(s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional') for s in stories.values())
+defs={r['block']['line']:r['definition'] for r in lortower['requests']}
+assert {n for n,d in defs.items() if d['daily_eligible']}=={12,33,71,119,155}
+assert defs[61]['daily_exclusion']==defs[143]['daily_exclusion']=='Story-only quest'
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==1340]
+assert len(units)==6 and sum(u['achievement'] for u in units)==6 and sum(u['daily_candidate'] for u in units)==5
+contacts={c['mob_vnum']:c for c in lortower_map['contacts']}
+for v,c in contacts.items():
+    assert set(c['topics'])=={t for b in raw if b['kind']=='M' and b['giver_vnum']==v for t in b['body'][0].rstrip('~').split()}
+assert len(lortower['mobs'])==170 and len(lortower['items'])==146 and len(lortower['reset_commands'])==580
+assert not lortower['special_assignments']
+assert collections.Counter(r['command'] for r in lortower['reset_commands'])=={'M':176,'E':116,'D':114,'O':74,'F':50,'G':32,'P':18}
+objects=dawndale_bodies('lortower','obj');rooms=dawndale_bodies('lortower','wld');mobs=dawndale_bodies('lortower','mob')
+assert set(rooms)==set(range(134000,134142))
+assert not any(int(b.split('~')[4].split()[0])&32768 for b in mobs.values())
+assert objvalues(objects[134083])[0]==15 and objvalues(objects[134083])[12:14]==[5,0]
+assert objvalues(objects[134117])[0]==12 and objvalues(objects[134144])[0]==13
+assert objvalues(objects[134050])[16:19]==[378,50,25] and 'Testing to see' in objects[134050]
+commands=lortower['reset_commands'];sources=collections.defaultdict(list);owner=None;where=None
+for r in commands:
+    c,v=r['command'],r['arguments']
+    if c in 'MF':owner,where=v[1],v[3]
+    if c in 'GE':sources[v[1]].append((c,owner,where,v[2],v[3],v[4]))
+for item,mob,room in ((134006,134004,134010),(134026,134055,134028),(134035,134066,134063),
+    (134048,134081,134039),(134111,134104,134072),(134113,134141,134116),
+    (134131,134040,134018),(134132,134062,134029),(134133,134081,134039),
+    (134134,134091,134046),(134135,134133,134122)):
+    assert sources[item]==[('G',mob,room,1,0,100)]
+assert sources[134105]==[('E',134148,134114,1,18,100)]
+assert [r['arguments'][2:5] for r in commands if r['command']=='P' and r['arguments'][1]==134039]==[[1,134037,100]]
+assert [r['arguments'][2:5] for r in commands if r['command']=='P' and r['arguments'][1]==134112]==[[1,134083,100]]
+assert [r['arguments'][2:5] for r in commands if r['command']=='P' and r['arguments'][1]==134050]==[[1,134047,30]]
+for giver,room in ((134146,134112),(134150,134127),(134162,134138),(134167,134140),(134169,134042)):
+    assert [r['arguments'][3] for r in commands if r['command']=='M' and r['arguments'][1]==giver]==[room]
+assert not re.search(r'\bD\d+',rooms[134120]) and re.search(r'\bD5\s+[^~]*~[^~]*~\s+0 0 134141\b',rooms[134140],re.S)
+assert re.search(r'\bD1\s+[^~]*~[^~]*~\s+0 0 1883\b',rooms[134000],re.S)
+for v,d,word in ((134034,0,'sargon'),(134040,1,'sargon'),(134041,3,'sargon'),(134073,4,'thothrontithos')):
+    assert re.search(r'\bD'+str(d)+r'\s+[^~]*~[^~]*\b'+word+r'~\s+3 -2 \d+',rooms[v],re.S)
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

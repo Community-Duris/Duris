@@ -121040,6 +121040,587 @@
     {
       "contacts": [
         {
+          "description": "Katalia starts at kitchen 134016. The steel-key exchange gives experience and a darkfather clue; D0 supplies no retirement, escort or persistent rescue state.",
+          "keyword": "katalia",
+          "mob_vnum": 134010,
+          "name": "Katalia",
+          "topics": [
+            "slave"
+          ]
+        },
+        {
+          "description": "The sergeant starts in 134015 with the equipped entrance key and accepts a Bloodstone letter for a separate small note and experience.",
+          "keyword": "orc",
+          "mob_vnum": 134026,
+          "name": "an orc sergeant",
+          "topics": [
+            "traveler",
+            "emissary",
+            "bloodstone"
+          ]
+        },
+        {
+          "description": "Two elite stone giants are declared at 134022. Note and guarded cash routes yield the same captain key. Cash retires the selected instance, not both actors or a shared barrier.",
+          "keyword": "stone",
+          "mob_vnum": 134029,
+          "name": "an elite stone giant",
+          "topics": [
+            "money",
+            "mercenary",
+            "token",
+            "message",
+            "letter",
+            "traveler"
+          ]
+        },
+        {
+          "description": "Dorthan starts in village smithy 134065. He describes his daughter\u2019s plight and accepts five exact swords plus her locket for a shield. Item proof does not force personal rescue history.",
+          "keyword": "dorthan",
+          "mob_vnum": 134053,
+          "name": "Dorthan, the smith",
+          "topics": [
+            "daughter",
+            "picture",
+            "urian",
+            "black",
+            "tower",
+            "iron",
+            "sword",
+            "shield"
+          ]
+        },
+        {
+          "description": "Amelia starts in shrine 134028 alongside the priest. Her small-black-key exchange yields a locket and retires her instance; homecoming and reunion are not recorded.",
+          "keyword": "amelia",
+          "mob_vnum": 134054,
+          "name": "Amelia",
+          "topics": [
+            "key"
+          ]
+        },
+        {
+          "description": "The statue of Earlion starts at 134049 and accepts three different route keys for the stasis key. It is not the living Earlion in 134046.",
+          "keyword": "statue",
+          "mob_vnum": 134074,
+          "name": "a statue of an old man",
+          "topics": []
+        },
+        {
+          "description": "Janyon starts in 134117 and says the master and Earlion hold old door keys. Asking aliases records no learned-topic objective.",
+          "keyword": "janyon",
+          "mob_vnum": 134125,
+          "name": "Janyon, the old servant",
+          "topics": [
+            "key",
+            "keys",
+            "door",
+            "doors"
+          ]
+        },
+        {
+          "description": "Azlion starts imprisoned in the circle at 134112. His staff exchange gives Redemption of Light and retires him. It currently belongs to the Braddistock journal by giver range; the narrated rift is not an actual new portal.",
+          "keyword": "azlion",
+          "mob_vnum": 134146,
+          "name": "Azlion the planetar",
+          "topics": [
+            "urian",
+            "shadowborn",
+            "shadow",
+            "ritual",
+            "sargon",
+            "darkness",
+            "master",
+            "lord",
+            "evil",
+            "power",
+            "circle",
+            "freedom",
+            "favour"
+          ]
+        },
+        {
+          "description": "Jenifer starts at farmhouse 134127. Joseph\u2019s exact head yields experience. This physically local request currently credits Braddistock, and accepts supplied proof without your own kill.",
+          "keyword": "jenifer",
+          "mob_vnum": 134150,
+          "name": "Jenifer",
+          "topics": []
+        },
+        {
+          "description": "Father Darrin starts in church 134138. Five different Star Stone pieces yield the Star Key and retire him. His request currently credits Braddistock; sacrifice narration does not establish Sargon\u2019s defeat.",
+          "keyword": "father",
+          "mob_vnum": 134162,
+          "name": "Father Darrin",
+          "topics": [
+            "urian",
+            "shadowborn",
+            "master",
+            "tower",
+            "black",
+            "shadow",
+            "sargon",
+            "god",
+            "negative",
+            "evil",
+            "key",
+            "stone",
+            "keystone",
+            "star"
+          ]
+        },
+        {
+          "description": "Danthas is declared in loading room 134140, with outward routes toward distribution room 134141 and dead-end holding 134120. Qualify actual roaming and visible encounter. His ring-for-leggings request currently credits Braddistock.",
+          "keyword": "danthas",
+          "mob_vnum": 134167,
+          "name": "Danthas, the elven scout",
+          "topics": [
+            "noble",
+            "isabia",
+            "elf"
+          ]
+        },
+        {
+          "description": "Isabia starts in prison 134042. The bone-key exchange yields her ring but D0 does not retire her despite departure narration. Her request currently credits Braddistock; supply and prison access remain separate.",
+          "keyword": "isabia",
+          "mob_vnum": 134169,
+          "name": "Isabia, the elven noble",
+          "topics": [
+            "key",
+            "prison"
+          ]
+        },
+        {
+          "description": "The ogre starts in tower foyer 134010 carrying Joseph\u2019s exact head. Its _spec1_ tag selects a class specialization; it is not a custom Joseph-rescue handler.",
+          "keyword": "ogre",
+          "mob_vnum": 134004,
+          "name": "an ogre mercenary",
+          "topics": []
+        },
+        {
+          "description": "The priest starts in 134028 carrying Amelia\u2019s small black key, which also opens the trapped desk. The key is a different kind from the captain\u2019s or prison key.",
+          "keyword": "priest",
+          "mob_vnum": 134055,
+          "name": "a consecrated priest of Sargon",
+          "topics": []
+        },
+        {
+          "description": "The cloaked traveller starts on the road at 134063 carrying the Bloodstone letter. His non-sentinel movement requires live source/perception qualification.",
+          "keyword": "traveller",
+          "mob_vnum": 134066,
+          "name": "a cloaked traveller",
+          "topics": []
+        },
+        {
+          "description": "The Cardinal of Sargon starts in chamber 134039 carrying the bone key and one Star Stone piece. The bone key is spent by Isabia\u2019s request and also used by a locked chest; key use and delivery need separate allocation.",
+          "keyword": "cardinal",
+          "mob_vnum": 134081,
+          "name": "Cardinal Faethron",
+          "topics": []
+        },
+        {
+          "description": "Verinor starts in the palace of bones at 134072 carrying the key of Death. Combat, original recovery and accepted statue delivery are separate facts.",
+          "keyword": "verinor",
+          "mob_vnum": 134104,
+          "name": "DeadLord Verinor",
+          "topics": []
+        },
+        {
+          "description": "Gailon Darkhoast starts at ritual room 134116 carrying the key of Creation and equipped with the charred access key. Ritual imagery adds no timed campaign endpoint.",
+          "keyword": "gailon",
+          "mob_vnum": 134141,
+          "name": "Gailon Darkhoast",
+          "topics": []
+        },
+        {
+          "description": "Kinslor starts in the captain\u2019s personal room 134018 carrying the first Star Stone piece. Receiving this piece is distinct from personally defeating him.",
+          "keyword": "kinslor",
+          "mob_vnum": 134040,
+          "name": "Kinslor Elfslayer",
+          "topics": []
+        },
+        {
+          "description": "Mordren starts in private chamber 134029 carrying a second Star Stone piece. This actor differs from ordinary priests and guards.",
+          "keyword": "lord",
+          "mob_vnum": 134062,
+          "name": "Lord Mordren Ap'Dethyin",
+          "topics": []
+        },
+        {
+          "description": "Earlion that Is starts in 134046 carrying a Star Stone piece and the audience key. Earlion that Was and Will Be are distinct reset followers, not verified sequential transformations.",
+          "keyword": "man",
+          "mob_vnum": 134091,
+          "name": "Earlion that is",
+          "topics": []
+        },
+        {
+          "description": "Urian starts in audience chamber 134122 carrying the fifth Star Stone piece and treasury key. His defeat is not a native campaign completion receipt.",
+          "keyword": "urian",
+          "mob_vnum": 134133,
+          "name": "Urian Shadowborn",
+          "topics": []
+        },
+        {
+          "description": "Earlion that Was follows the present Earlion from 134046. Time-fracture narration does not establish a separate recorded transformation stage.",
+          "keyword": "earlion",
+          "mob_vnum": 134090,
+          "name": "Earlion that was",
+          "topics": []
+        },
+        {
+          "description": "Earlion that Will Be follows the present Earlion from 134046. Defeating all three is separate from the statue\u2019s accepted three-key exchange.",
+          "keyword": "earlion",
+          "mob_vnum": 134092,
+          "name": "Earlion, the ultraloth",
+          "topics": []
+        },
+        {
+          "description": "The dark-hearted black guard starts at 134033 carrying key 134027 for the Master\u2019s-area door. The reverse door has a different reset state; do not invent a universal historical access requirement.",
+          "keyword": "dark",
+          "mob_vnum": 134052,
+          "name": "a dark hearted warrior",
+          "topics": []
+        },
+        {
+          "description": "Sargon is declared in interdimensional prison 134133. The Star Key\u2019s door/keystone use, exile rift and return route need actual access and surviving-arrival qualification; no accepted native defeat endpoint is declared.",
+          "keyword": "sargon",
+          "mob_vnum": 134160,
+          "name": "Sargon, Demi-God of Shadows",
+          "topics": []
+        },
+        {
+          "description": "The excited conjurer starts in 134114 with Azlion\u2019s cold-iron staff equipped in slot 18. Carry the exact staff loose for Azlion\u2019s separately owned exchange; obtaining it does not record releasing the circle.",
+          "keyword": "excited",
+          "mob_vnum": 134148,
+          "name": "an excited conjurer",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the Tower of Darkness and Dubneth: the Bloodstone messenger and captain\u2019s key, Katalia\u2019s bindings, Amelia\u2019s locket and Dorthan\u2019s shield, the three planar keys of stasis, and the physically connected Star Stone and prisoner stories currently credited to Braddistock.",
+      "orientation": [
+        "Active, ready accounting is mandatory for discovery, visible encounters, journals and new achievement/daily credit. Discovering the Tower of Darkness has its own achievement. Questions, reading, kills, current possession and attempted travel do not complete native exchanges.",
+        "The Tower source also includes Dubneth village, the farmhouse and church, planar side routes, loading rooms and Sargon\u2019s prison. Follow exact source and destination identities; lore names alone do not define quest terminals.",
+        "Five physically local requests \u2014 Azlion, Jenifer, Father Darrin, Danthas and Isabia \u2014 currently belong to Braddistock by giver-number range. Their accepted recipes remain in that owning journal. Tower encounters do not discover Braddistock; the broader physical campaign is guidance until explicit cross-zone affiliation and discovery support is designed.",
+        "Acquire the entrance key from the sergeant for the forward oak gate. The Bloodstone letter yields a small note; the note or guarded 100-platinum bribe yields the captain key. Earlier receipts are optional route help, and key issuance is not unlocking, opening or passage.",
+        "Recover the hidden board\u2019s steel key for Katalia, and use the priest\u2019s different small black key for Amelia. Amelia\u2019s locket and five exact swords yield Dorthan\u2019s shield. Supplies received from another player remain valid without personal rescue/source history.",
+        "Speak the exact magic words at the actual locked exits: sargon for the cleric routes, darkfather for the upper-level diagonal door, and thothrontithos for the elemental route. Successful speech clears lock/secret state, while opening and surviving arrival remain separate. Asking a quest topic is a different interaction.",
+        "The illusion maze has actual direction-triggered teleport objects that can override ordinary room exits. Select the active room object and command, rather than trusting labels alone. The central portal reaches Janyon\u2019s hall. The portal of darkness containing an elemental key is a container, not a teleporter.",
+        "Verinor\u2019s Death key, the elemental container\u2019s key and Gailon\u2019s Creation key yield the statue\u2019s stasis key. Bone, conquest and demon murals use distinct real teleporter destinations. Actual route use, traps, hidden recovery, current shared doors and perception require qualification.",
+        "Father Darrin\u2019s five Star Stone pieces are declared on Kinslor, Mordren, the Cardinal, Earlion that Is and Urian. Their exchange yields the Star Key in the Braddistock journal. The Star Key fits the hill keystone and prison door; neither receipt proves surviving Sargon or ending the campaign.",
+        "The Cardinal\u2019s bone key also opens a chest with a thirty-percent hammer child. Isabia consumes that key and yields a ring; Danthas consumes the ring for leggings. Access keys and delivered proof need distinct physical allocation. Isabia\u2019s D0 departure remains narrative only.",
+        "Danthas and other mobile actors can start in loading/holding rooms. Some routes enter a room with no outward exit; actual roaming, population, admitted generation and perception need qualification before reliable daily supply. Reset mode zero keeps disappearing recipients story-only.",
+        "The bounded active-world scan finds an outward route to Troll Hills 1883 but no ordinary incoming exit or foreign fixed ITEM_TELEPORT into this room range. This is an access concern to qualify with builders and other travel mechanisms before proposing a topology change.",
+        "Fenrral\u2019s one village tavern shop sells food and drinks; this is not rental or a story outcome. Hammer proc placeholders, copied item/shop descriptions, holding-room placement and narrated-but-unimplemented departures remain separate pending proposals. No unsupported event credit or fee bypass is introduced."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "lortower",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:134039;receive=E:500000;disappear=0",
+              "giver_vnum": 134010
+            }
+          ],
+          "id": "katalia-bindings",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The sergeant in 134015 has the entrance oak key equipped in slot 18. Its kind opens the forward tower entrance; alternate routes and current door state remain separate. Carry the exact kind loose. Supplied matching material fits; possession does not prove personal combat, first recovery, source, unlocking or arrival.",
+              "id": "material-134108",
+              "item_vnums": [
+                134108
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a strong iron gate key"
+            },
+            {
+              "count": 1,
+              "hint": "The steel key is P-declared inside the hidden key board 134037 at 134043. The board also contains a different prison key. Search, container access and recovery need actual qualification. Carry the exact kind loose. Supplied matching material fits; possession does not prove personal combat, first recovery, source, unlocking or arrival.",
+              "id": "material-134039",
+              "item_vnums": [
+                134039
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a small steel key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:134039;receive=E:500000;disappear=0",
+                  "giver_vnum": 134010
+                }
+              ],
+              "hint": "Offer the exact native bundle to the actual recipient. This receipt records one accepted exchange only. Preparation is optional; questions, reading, kills, travel and inventory checks award no completion. The giant\u2019s cash alternative remains guarded under active accounting.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted Katalia\u2019s binding key exchange"
+            }
+          ],
+          "summary": "Katalia, declared in the kitchen at 134016, accepts the steel key for 500000 experience and reveals darkfather. Her response describes freeing her but D0 does not remove or escort her. The password opens a separate magic-lock route only when actually spoken and accepted.",
+          "title": "Katalia\u2019s binding key"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:134035;receive=E:70000,I:134034;disappear=0",
+              "giver_vnum": 134026
+            }
+          ],
+          "id": "bloodstone-message",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The cloaked traveller 134066 starts at 134063 and carries the Bloodstone letter. Actual wandering and perception matter. This letter is different from the small note 134034 produced by the sergeant. Carry the exact kind loose. Supplied matching material fits; possession does not prove personal combat, first recovery, source, unlocking or arrival.",
+              "id": "material-134035",
+              "item_vnums": [
+                134035
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a letter from Bloodstone"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:134035;receive=E:70000,I:134034;disappear=0",
+                  "giver_vnum": 134026
+                }
+              ],
+              "hint": "Offer the exact native bundle to the actual recipient. This receipt records one accepted exchange only. Preparation is optional; questions, reading, kills, travel and inventory checks award no completion. The giant\u2019s cash alternative remains guarded under active accounting.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted The Bloodstone messenger exchange"
+            }
+          ],
+          "summary": "A cloaked traveller, declared on the road at 134063, carries the Bloodstone letter. Give that exact letter to the sergeant at 134015 for a small note and 70000 experience. The giant accepts the note separately; neither receipt proves an emissary\u2019s identity or entering the captain\u2019s quarters.",
+          "title": "The Bloodstone messenger"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:134034;receive=I:134019;disappear=0",
+              "giver_vnum": 134029
+            },
+            {
+              "completion_key": "give=C:100000;receive=I:134019;disappear=1",
+              "giver_vnum": 134029
+            }
+          ],
+          "id": "captain-key",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:134035;receive=E:70000,I:134034;disappear=0",
+                  "giver_vnum": 134026
+                }
+              ],
+              "hint": "The sergeant can produce the small note from the Bloodstone letter. This is route guidance, not a required earlier receipt. A supplied exact offering remains valid.",
+              "id": "earlier-exchange-33",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier exchange"
+            },
+            {
+              "count": 1,
+              "hint": "The sergeant\u2019s accepted Bloodstone exchange produces this note. Give the note route\u2019s exact kind; the original letter and wallet funds do not substitute. No prior sergeant receipt is required for a supplied note. Carry the exact kind loose. Supplied matching material fits; possession does not prove personal combat, first recovery, source, unlocking or arrival.",
+              "id": "material-134034",
+              "item_vnums": [
+                134034
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a hastily written note"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:134034;receive=I:134019;disappear=0",
+                  "giver_vnum": 134029
+                },
+                {
+                  "completion_key": "give=C:100000;receive=I:134019;disappear=1",
+                  "giver_vnum": 134029
+                }
+              ],
+              "hint": "Offer the exact native bundle to the actual recipient. This receipt records one accepted exchange only. Preparation is optional; questions, reading, kills, travel and inventory checks award no completion. The giant\u2019s cash alternative remains guarded under active accounting.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted A key to the captain\u2019s quarters exchange"
+            }
+          ],
+          "summary": "The two declared elite stone giants at 134022 share one recipient kind. A small note produces key 134019; alternatively the native recipe asks 100 platinum (100000 copper), produces the same key and retires that recipient instance. The cash alternative is currently unavailable under active accounting. Either accepted route records one key story, while unlocking, opening and passage remain separate.",
+          "title": "A key to the captain\u2019s quarters"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:134026;receive=I:134030;disappear=1",
+              "giver_vnum": 134054
+            }
+          ],
+          "id": "amelia-locket",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The priest 134055 at 134028 carries this small black key. It also opens the priest\u2019s trapped desk 134031 at 134027. Other black, bone, entrance and prison keys are different exact kinds. Carry the exact kind loose. Supplied matching material fits; possession does not prove personal combat, first recovery, source, unlocking or arrival.",
+              "id": "material-134026",
+              "item_vnums": [
+                134026
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a small black key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:134026;receive=I:134030;disappear=1",
+                  "giver_vnum": 134054
+                }
+              ],
+              "hint": "Offer the exact native bundle to the actual recipient. This receipt records one accepted exchange only. Preparation is optional; questions, reading, kills, travel and inventory checks award no completion. The giant\u2019s cash alternative remains guarded under active accounting.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted Amelia\u2019s release and locket exchange"
+            }
+          ],
+          "summary": "Amelia and the priest are declared together at shrine 134028. Amelia accepts the small black key, gives her mother\u2019s gold locket and retires through D1. Taking the locket to Dorthan is another exchange. This receipt does not prove an escort home or a reunion.",
+          "title": "Amelia\u2019s release and locket"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:134004,I:134004,I:134004,I:134004,I:134004,I:134030;receive=I:134028;disappear=0",
+              "giver_vnum": 134053
+            }
+          ],
+          "id": "dorthan-dubneth-shield",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:134026;receive=I:134030;disappear=1",
+                  "giver_vnum": 134054
+                }
+              ],
+              "hint": "Amelia\u2019s accepted small-black-key exchange yields the locket and retires her recipient instance. This is route guidance, not a required earlier receipt. A supplied exact offering remains valid.",
+              "id": "earlier-exchange-143",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier exchange"
+            },
+            {
+              "count": 1,
+              "hint": "Only Amelia\u2019s native exchange produces this gold locket in the bounded active-source scan. Receiving a matching locket from another player remains valid. Carry the exact kind loose. Supplied matching material fits; possession does not prove personal combat, first recovery, source, unlocking or arrival.",
+              "id": "material-134030",
+              "item_vnums": [
+                134030
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a gold locket"
+            },
+            {
+              "count": 5,
+              "hint": "Many tower guards declare this exact black-iron two-handed sword as equipment or inventory. Collect five loose copies; equipped swords, a different black-iron weapon or one already-spent sword cannot satisfy the bundle. Carry the exact kind loose. Supplied matching material fits; possession does not prove personal combat, first recovery, source, unlocking or arrival.",
+              "id": "material-134004",
+              "item_vnums": [
+                134004
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 5 \u00d7 a black iron two-handed sword"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:134004,I:134004,I:134004,I:134004,I:134004,I:134030;receive=I:134028;disappear=0",
+                  "giver_vnum": 134053
+                }
+              ],
+              "hint": "Offer the exact native bundle to the actual recipient. This receipt records one accepted exchange only. Preparation is optional; questions, reading, kills, travel and inventory checks award no completion. The giant\u2019s cash alternative remains guarded under active accounting.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted Dorthan\u2019s shield of Dubneth exchange"
+            }
+          ],
+          "summary": "Dorthan at the village smithy 134065 wants five black-iron two-handed swords and Amelia\u2019s gold locket for one black-iron shield. The locket is narrative proof of safety; current acceptance needs the exact item and does not require your own rescue receipt. Five swords are five separate physical roots in one complete bundle, not five quests.",
+          "title": "Dorthan\u2019s shield of Dubneth"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:134111,I:134112,I:134113;receive=I:134117;disappear=0",
+              "giver_vnum": 134074
+            }
+          ],
+          "id": "three-keys-stasis",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Verinor 134104 at the bone-palace chamber 134072 carries the key of Death. Enter the bone picture/portal route using actual ITEM_TELEPORT behavior; named bone keys elsewhere cannot replace it. Carry the exact kind loose. Supplied matching material fits; possession does not prove personal combat, first recovery, source, unlocking or arrival.",
+              "id": "material-134111",
+              "item_vnums": [
+                134111
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a key of death magic"
+            },
+            {
+              "count": 1,
+              "hint": "This key is P-declared inside object 134083, the portal of darkness at 134096. That object is a trapped ITEM_CONTAINER, not an enterable teleporter. Resolve access and recover its exact child; its name alone does not imply travel. Carry the exact kind loose. Supplied matching material fits; possession does not prove personal combat, first recovery, source, unlocking or arrival.",
+              "id": "material-134112",
+              "item_vnums": [
+                134112
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a key of elemental magic"
+            },
+            {
+              "count": 1,
+              "hint": "Gailon Darkhoast 134141 at 134116 carries the key of Creation. His equipped charred key is a different kind for the southern door at 134110. The connected west approach through 134109 provides another route. Carry the exact kind loose. Supplied matching material fits; possession does not prove personal combat, first recovery, source, unlocking or arrival.",
+              "id": "material-134113",
+              "item_vnums": [
+                134113
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a key of creation magic"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:134111,I:134112,I:134113;receive=I:134117;disappear=0",
+                  "giver_vnum": 134074
+                }
+              ],
+              "hint": "Offer the exact native bundle to the actual recipient. This receipt records one accepted exchange only. Preparation is optional; questions, reading, kills, travel and inventory checks award no completion. The giant\u2019s cash alternative remains guarded under active accounting.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted The three keys of stasis exchange"
+            }
+          ],
+          "summary": "The statue of Earlion at 134049 accepts the keys of Death, Elemental Magic and Creation together for key 134117 to the stasis chamber. They come from three separate routes. Issuing this key does not record visiting the chamber, defeating past/present/future Earlion, or completing Father Darrin\u2019s five-piece Star Stone campaign.",
+          "title": "The three keys of stasis"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Check this person's requests below and examine them for clues.",
           "keyword": "huge",
           "mob_vnum": 134146,

@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 80 authored journals.
+2668 distinct Q contracts; 81 authored journals.
 
 Regenerate with:
 
@@ -133,7 +133,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Lizardman Swamps of Clavikord (`lizard`) | 2 | 2 | 0 | Fallback | [1 × the severed head of Sslith → a bracelet of lights](../../areas/qst/lizard.qst#L14) | — |
 | Defense of Longhollow (`long`) | 15 | 59 | 6 | Yes | [1 × the bloody head of a knight; 1 × the bloody head of the necromancer; 1 × the bloody head of the chieftan; other required items → a bracer bearing the Longhollow symbol, an exquisite moonstone](../../areas/qst/long.qst#L333) | — |
 | The Ancient Halls of Ironstar (`lornecro`) | 7 | 15 | 2 | Yes | [1 × the mold of a small mithril parrying dagger; 1 × a scroll of demonhide; 1 × a broken demonic weapon called 'The Fury of Demons' → a blazing dagger called 'The Fury of Demons'](../../areas/qst/lornecro.qst#L124) | — |
-| The Tower of Darkness (`lortower`) | 7 | 11 | 2 | Fallback | [5 × a black iron two-handed sword; 1 × a gold locket → a black iron shield of Dubneth](../../areas/qst/lortower.qst#L119) | — |
+| The Tower of Darkness (`lortower`) | 7 | 11 | 2 | Yes | [5 × a black iron two-handed sword; 1 × a gold locket → a black iron shield of Dubneth](../../areas/qst/lortower.qst#L119) | — |
 | Lylr-Meop (`lylr`) | 1 | 1 | 0 | Fallback | [1 × an ogre's scalp → a pair of drow skin boots](../../areas/qst/lylr.qst#L11) | inn, money_changer, world_quest |
 | The Para-Elemental Plane of Magma (`magma`) | 1 | 2 | 0 | Fallback | [1 × the smoldering heart of an ancient magma drake → a wand of writhing magma, Palenian's pipe of neverending flavors](../../areas/qst/magma.qst#L34) | ship_shop_proc |
 | Malch'Hor Ganl the Goblin City (`malch`) | 3 | 3 | 0 | Fallback | [3 × a dark shadowy circle → native reward/response](../../areas/qst/malch.qst#L24) | — |

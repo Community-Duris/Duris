@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 80 &&
-				tracker.summary_for(7, 42).total == 1630,
+		require(catalog.story_mappings.size() == 81 &&
+				tracker.summary_for(7, 42).total == 1629,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -6138,6 +6138,144 @@ int main(int argc, char **argv)
 			for (const auto &[id, reason] : map.exclusions)
 				require(recovered.evidence_for(id, 2).successful_attempts == 1,
 					"Brass cold recovery lost excluded native settlement evidence");
+		}
+
+		{
+			const auto &map = *std::find_if(catalog.story_mappings.begin(),
+							catalog.story_mappings.end(),
+							[](const auto &m)
+							{ return m.source_area == "lortower"; });
+			const auto &captain = story_for("lortower", "captain-key");
+			const auto &shield = story_for("lortower", "dorthan-dubneth-shield");
+			const auto &amelia = story_for("lortower", "amelia-locket");
+			const auto &messenger = story_for("lortower", "bloodstone-message");
+			const auto &stasis = story_for("lortower", "three-keys-stasis");
+			const auto azlion =
+				std::find_if(catalog.definitions.begin(), catalog.definitions.end(),
+					     [](const auto &d) { return d.giver_vnum == 134146; });
+			require(azlion != catalog.definitions.end() &&
+					azlion->zone_number == 1350 &&
+					azlion->source_area == "brad",
+				"Tower physical quest silently changed credit owner");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1340, 134000, 100, "arrival") ==
+					result::applied,
+				"Tower discovery failed");
+			for (const auto &contact : map.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 134000, 102) ==
+						result::applied,
+					"Tower model encounter failed");
+			require(!journey.has_discovered(7, 42, 1350) &&
+					journey.render_journal(7, 42, 1350, 10, 1, 103, false,
+							       false)
+							.find("Undiscovered:") != std::string::npos,
+				"Tower physical encounter discovered Braddistock");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Tower journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[134004] = 4;
+			supplies.carried[134030] = 1;
+			supplies.carried[134035] = 1;
+			supplies.equipped[18] = 134034;
+			supplies.carried[134112] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 1340, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(shield).find("[Missing now] " + shield.steps[2].text) !=
+						std::string::npos &&
+					section(shield).find("[Ready now] " +
+							     shield.steps[1].text) !=
+						std::string::npos &&
+					section(captain).find("[Missing now] " +
+							      captain.steps[1].text) !=
+						std::string::npos &&
+					section(captain).find("currently unavailable") !=
+						std::string::npos &&
+					section(stasis).find("[Ready now] " +
+							     stasis.steps[1].text) !=
+						std::string::npos &&
+					section(stasis).find("[Missing now] " +
+							     stasis.steps[0].text) !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 1340).completed == 0,
+				"Tower quantity, worn note, guarded cash or reading invented readiness/credit");
+			supplies.carried[134004] = 5;
+			supplies.carried[134034] = 1;
+			journal = journey.render_journal(7, 42, 1340, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(shield).find("[Ready now] " + shield.steps[2].text) !=
+						std::string::npos &&
+					section(shield).find("Next: " + shield.steps.back().text) !=
+						std::string::npos &&
+					section(captain).find("Next: " +
+							      captain.steps.back().text) !=
+						std::string::npos,
+				"Tower supplied materials required optional earlier receipts");
+			service supplied(catalog);
+			record(supplied, shield.contracts.front(), "tower-supplied-shield", 1340,
+			       134065);
+			require(supplied.progress_for_zone(7, 42, 1340).completed == 1 &&
+					supplied.evidence_for(amelia.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Tower supplied locket fabricated Amelia rescue");
+			record(journey, captain.contracts.front(), "tower-note-key", 1340, 134022);
+			record(journey, captain.contracts.back(), "tower-historical-cash-key", 1340,
+			       134022);
+			require(journey.progress_for_zone(7, 42, 1340).completed == 1 &&
+					journey.evidence_for(messenger.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Tower alternative key receipts doubled story credit or invented letter history");
+			auto wrong_owner =
+				completion(azlion->definition_id, "tower-wrong-owner", 120);
+			wrong_owner.transaction.zone_number = 1340;
+			wrong_owner.transaction.room_vnum = 134112;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Tower accepted reassigned foreign-owned receipt");
+			record(journey, azlion->definition_id, "tower-physical-azlion", 1350,
+			       134112);
+			require(journey.progress_for_zone(7, 42, 1340).completed == 1 &&
+					journey.progress_for_zone(7, 42, 1350).completed == 1 &&
+					!journey.has_discovered(7, 42, 1350),
+				"Tower foreign receipt changed owner or discovery");
+			record(journey, shield.contracts.front(), "tower-shield", 1340, 134065);
+			supplies.carried.erase(134004);
+			supplies.carried.erase(134030);
+			journal = journey.render_journal(7, 42, 1340, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(shield).find("[Missing now] " + shield.steps[2].text) !=
+						std::string::npos &&
+					journey.evidence_for(shield.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Tower historical receipt replenished spent physical swords");
+			for (const auto &story : map.stories)
+				if (story.id != captain.id && story.id != shield.id)
+					record(journey, story.contracts.front(), story.id.c_str(),
+					       1340, 134000);
+			auto replay = completion(shield.contracts.front(), "tower-shield", 120);
+			replay.transaction.zone_number = 1340;
+			replay.transaction.room_vnum = 134065;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Tower bundle receipt replay was not idempotent");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 1340).completed == 6 &&
+					recovered.progress_for_zone(7, 42, 1340).total == 6 &&
+					recovered.progress_for_zone(7, 42, 1350).completed == 1 &&
+					recovered.evidence_for(captain.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(captain.contracts.back(), 2)
+							.successful_attempts == 1 &&
+					!recovered.has_discovered(7, 42, 1350),
+				"Tower cold recovery lost alternatives, exact owners or discovery boundaries");
 		}
 
 		std::cout

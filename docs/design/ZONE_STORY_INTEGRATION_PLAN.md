@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 80 authored journals, accounting-gated player surfaces, starter/town
+**Status: 81 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -2162,3 +2162,73 @@ mandatory. No DB/account/server operation, migration, deployment or merge.
 | Rare/hidden/holding-room supply | Spy M10/D1, outward-only rare room with pyrohydra M60 and roaming dragons; item generation guard | Qualify admitted initial/forced placement, actual allowed wandering/perception, encounter/retirement episodes and repeatable replenishment before daily assignment |
 | Fee service and unfinished branches | Bracer needs two scale kinds/C7500000; smaller recipe refuses; empty unplaced djinn; incomplete qc_action | Keep fee guard pending atomic allocation/debit/reward recovery. Builder defines meaningful rescue/second task/ambient interval before separate native fixes and actual procedure fixtures |
 | Real routes and attributed lore | Front/rear/one-way reset locks, distinct same-name keys, key breakage, heat and external note claims | Effective door/shared state and key-use/open/arrival events, actual survival predicates, source/version attribution and destination-zone verification without fabricated completion |
+
+## Tower of Darkness completed source map — October 4, 2026
+
+The [comprehensive dossier](zone-stories/TOWER_OF_DARKNESS.md) reviews all
+32 native blocks (20 M/12 Q), 142 rooms, 170 mobiles, 146 objects, one valid
+shop and 580 resets/482 families, all exit text/passwords, exact sources,
+bounded global consumers/entry and relevant shared execution. Seven Q/eleven M
+are Tower-owned; five Q/nine M are physically local but Braddistock-owned.
+The [journal](../../areas/story/lortower.story.json) covers the seven owned
+contracts as six stories, with 27 contacts/twelve optional checks. The two
+giant key alternatives form one OR outcome; the cash branch stays guarded.
+Amelia’s release/locket and Dorthan’s five-sword/locket bundle remain independent
+accepted receipts. Three planar keys yield one stasis key. Questions, reading,
+source, first recovery, keys, portal use and surviving arrival earn no invented
+credit; supplied exact offerings do not require personal earlier history.
+
+The physical campaign also includes Azlion’s staff/redemption sword, Joseph’s
+fate, five Star Stone pieces/Star Key, and Isabia’s bone key/ring/Danthas delivery.
+Current catalog/runtime giver ranges credit these to Braddistock and forbid
+borrowing bindings into Tower. Tower discovery/encounters do not discover that
+owner. Plan explicit physical affiliation/referral and cross-zone campaign
+references independently of immutable receipt ownership, with discovery policy,
+versioned upgrade and historical compatibility tests. No owner migration ships.
+
+Magic speech clears lock/secret state but retains closed doors; illusion-maze
+objects override direction exits; the elemental “portal of darkness” is a trapped
+container. Fixed portal, fall and prison routes need actual success/survival
+attribution. Five distinct Star pieces and five same-kind swords require exact
+root allocation. Isabia/Katalia D0 do not implement departure; Azlion’s rift and
+Darrin’s sacrifice are narration. Earlion’s past/present/future are distinct
+actors, not proved transformations. Danthas can roam from holding/distribution
+rooms; outward-only Troll Hills entry and no foreign fixed portal need builder
+qualification. Source declarations are not guaranteed admitted renewable supply.
+
+**Actual native repair:** separate [fix 3f1ecf2be](https://github.com/Community-Duris/Duris/commit/3f1ecf2be064a63321c0e0243b4168727cb079c2)
+corrects two south-exit direction words and removes four trailing color resets
+from locked magic-password keywords. Plain sargon/thothrontithos previously failed
+exact matching; intended passwords now unlock the selected/reciprocal doors.
+Original source fails all six cases; repaired source passes actual maintained
+C++ password/door functions, wrong-word rejection and closed-state preservation.
+Live speech/LOOK/traversal remains unqualified. News: “The Tower of Darkness's south-facing shrine and stair clues now describe their actual directions. Its Sargon and elemental magic doors now accept the intended plain passwords.”
+All prior repair/news records remain. Hammer Testing proc messages, copied text,
+rescue/rift intent, holding/entry topology and receipt-owner decisions are balanced
+pending proposals, separate from this shipped repair and journal additions.
+
+Offering support must be displayed independently of daily eligibility: the
+D1/reset-zero cash recipe is classified Story-only before its unsupported coin
+reason, and the grouped supported note route hides an all-unavailable warning.
+The journal explicitly explains the cash guard; plan per-branch support and
+recoverable atomic fees without bypassing active-accounting admission.
+
+Source and actual C++ journal journeys cover exact owners/quantities, optional
+history versus supplied input, per-branch guidance, readonly readiness, shared
+one-outcome alternatives, replay and cold recovery. Live generation, hidden
+recovery/traps, source/handoff, roaming/perception, passwords/access/portals/falls,
+combat, retirement/renewal and played persistence remain pending. Catalog:
+81 maps/1629 achievements/1463 potential dailies/2207 rows; 2668 native
+identities/fingerprint/revision two/registry and prior 80 maps remain. Original
+queue: 60/220 complete, 160 pending; Mushroom Caverns next. Active, ready
+accounting remains mandatory. No DB/account/server operation, migration,
+deployment or merge.
+
+| Tower capability | Verified requirement | Planned implementation and acceptance |
+| --- | --- | --- |
+| Physical affiliation versus credit owner | Five Tower-file/room requests belong to Braddistock by giver range; static/runtime agree | Immutable native receipt owner plus explicit physical affiliation/referral/campaign refs, owner/physical discovery policy and versioned history-compatible upgrades; no automatic source-file ownership |
+| Offering support independent of daily eligibility | Disappearing/reset-zero pure-coin route says Story-only; supported note route shares the key outcome | Per-recipe/branch support and availability separate from repeatability/daily classification; retain guard until recoverable atomic fee/debit/reward/retirement qualification |
+| Accepted speech, key use and actual travel | Final exact magic word, reciprocal lock/secret clear, closed state, direction teleport overrides, container named portal and F100 fall | Accepted target/actor/source/episode events, successful key/unlock/open/arrival and survival; failed attempts, labels and stale/shared gate state earn no credit |
+| Quantity, provenance and competing proof | Five same-kind swords, five different Star pieces, exact supplied locket/note/ring, bone key used then offered | Unique root allocation and first-source/handoff lineage, conditional producer/history requirements, optional earlier receipts, spent proof, replay and cold recovery |
+| Builder-selected narrative endpoints | Katalia/Isabia D0; Azlion’s narrated rift, Darrin’s sacrifice, Sargon defeat/return, three separate Earlions | Define actual departure/escort/rift/campaign and personal/shared/group attribution with renewable episodes before adapters or separate native fixes |
+| Holding/entry and weapon text | Danthas can enter dead-end holding; no ordinary incoming/fixed foreign portal found; hammer Testing proc messages | Qualify admitted spawn/roaming/perception and supported travel; confirm staging/topology intent. Select proc messages and executed item-action path, then isolated repair/news evidence |

@@ -1210,3 +1210,36 @@ Actual fix d18758098 changes one Imix Avenue exit-description word and has
 original-fail/repaired-pass, reciprocal-route and exact-byte evidence. Its
 news sentence is prominent in the PR/register; any future native fix should
 be reported separately from journal additions and these proposals.
+
+### Tower of Darkness: physical campaigns and immutable quest owners
+
+The [dossier](../design/zone-stories/TOWER_OF_DARKNESS.md) and
+[journal](../../areas/story/lortower.story.json) map seven owned contracts as
+six stories. The giant’s note and guarded cash alternatives share one accepted
+key outcome; report support per branch independently of daily eligibility.
+The pure-coin D1/reset-zero branch remains guarded even though its daily reason
+says Story-only. A supplied note does not need the sergeant’s earlier receipt.
+
+Amelia’s locket and five exact sword roots form one Dorthan bundle. Optional
+rescue history explains the story; native acceptance only requires exact items.
+Three planar keys yield one stasis key. Neither receipt proves personal source,
+first recovery, kills, password speech, container search, key use, opening,
+portal/fall survival or arrival. A portal-named object can be a trapped container,
+and maze teleport objects can override ordinary directional exits.
+
+Five physically local Tower requests currently belong to Braddistock by giver
+range. Preserve those native receipts and the existing owning journal. Plan
+explicit physical affiliation/referral/campaign references and discovery policy
+separately; do not silently migrate owners based on filenames or birth rooms.
+A future builder-selected owner correction needs versioned history compatibility,
+static/runtime parity, focused regression and a separate repair/news record.
+
+Azlion’s rift, Darrin’s sacrifice, Katalia/Isabia’s D0 departures, Sargon’s defeat
+and three Earlion actors need specific actual endpoints and attribution before
+new objectives. Holding-room roaming, entry topology and supply need qualification.
+Hammer Testing proc messages and copied descriptions remain pending proposals.
+
+Actual fix 3f1ecf2be corrects two direction words and four magic-keyword color
+suffixes. Its regression runs production exact matching/reciprocal unlock and
+retains closed state. Keep its prominent news entry separate from guidance and
+future capability/native proposals; live speech/LOOK/traversal is unqualified.
