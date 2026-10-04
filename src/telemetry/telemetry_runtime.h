@@ -378,6 +378,7 @@ telemetry_capture_result telemetry_runtime_game_combat_engage(struct char_data *
 							      struct char_data *target);
 struct group_list;
 struct telemetry_battle_actor_context;
+struct telemetry_battle_build_context;
 /* Accepted formal-group mutation, called once before roster/context callbacks.
  * Advance runtime metadata and cut existing observed battle actor contexts. */
 void telemetry_runtime_game_group_changed(struct group_list *) noexcept;
@@ -386,6 +387,12 @@ void telemetry_runtime_game_group_changed(struct group_list *) noexcept;
  * not start a battle or allocate an authenticated session. */
 bool telemetry_runtime_game_battle_actor(const struct char_data *,
 					 telemetry_battle_actor_context *) noexcept;
+/* Game-thread bounded value snapshot for future battle context capture. Call at
+ * reviewed entry/change boundaries, never once per hit. Missing families remain
+ * unavailable, and refusal clears the result. Does not emit a record, create a
+ * session/battle, establish buff ownership or infer an arena match/outcome. */
+bool telemetry_runtime_game_battle_build_context(const struct char_data *,
+						 telemetry_battle_build_context *) noexcept;
 /* Proves actual same-room, same formal-roster presence. The association engine
  * separately requires the source to be an already active battle participant. */
 bool telemetry_runtime_game_battle_group_presence(const struct char_data *,

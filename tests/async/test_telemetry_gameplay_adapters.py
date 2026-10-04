@@ -3,7 +3,10 @@
 
 from pathlib import Path
 import argparse
+import hashlib
+import json
 import shlex
+import struct
 import subprocess
 import tempfile
 
@@ -73,12 +76,58 @@ def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bo
     subprocess.run(command, cwd=ROOT, check=True, timeout=120)
 
 
+def verify_native_build_context(executable: Path) -> None:
+    completed = subprocess.run(
+        [str(executable), "--native-build-context"], cwd=ROOT, check=False,
+        text=True, capture_output=True, timeout=30,
+    )
+    print(completed.stdout, end="")
+    print(completed.stderr, end="")
+    completed.check_returncode()
+    exported = [line.removeprefix("BUILD_CONTEXT_JSON ") for line in completed.stdout.splitlines()
+                if line.startswith("BUILD_CONTEXT_JSON ")]
+    assert len(exported) == 1
+    context = json.loads(exported[0])
+    assert context["snapshot_bytes"] <= 448 and context["crypto_heap_calls"] == 0
+    assert context["content_version"] == 11
+
+    # Independent network-order reference for the reviewed fixed features.
+    # The three fixture items occupy slots 0, 1 and the final maintained slot.
+    objects = {
+        0: (5, 4, 97, -7, (0, 2, 6, 0, 0, 0, 0, 0), (0x1234, 0, 0, 0, 0),
+            ((17, -5), (18, 7), (19, 11), (13, 13)), 0),
+        1: (37, 0, 0, 0, (0, 0, 0, 25, 0, 0, 0, 0), (0, 0x55, 0, 0, 0),
+            ((12, -2), (0, 0), (0, 0), (0, 0)), 1),
+        42: (9, 0, 0, 0, (0,) * 8, (0, 0, 0, 0, 0x10000000),
+             ((18, -3), (0, 0), (0, 0), (0, 0)), 0),
+    }
+    equipment = bytearray(struct.pack(">HIH", 1, 11, 43))
+    for slot in range(43):
+        equipment.extend(struct.pack(">BB", slot, int(slot in objects)))
+        if slot not in objects:
+            continue
+        item_type, material, condition, craftsmanship, values, flags, affects, dynamic = objects[slot]
+        equipment.extend(struct.pack(">BBhh", item_type, material, condition, craftsmanship))
+        equipment.extend(struct.pack(">8i", *values))
+        equipment.extend(struct.pack(">5Q", *flags))
+        equipment.extend(struct.pack(">5I", 0, 0, 0, 0, 0))
+        for location, modifier in affects:
+            equipment.extend(struct.pack(">Bb", location, modifier))
+        equipment.extend(struct.pack(">B", dynamic))
+    assert context["equipment_digest"] == hashlib.sha256(equipment).hexdigest()
+    epics = struct.pack(">HIHH", 1, 11, 1000, 1308)
+    epics += struct.pack(">HBHB", 1230, 50, 1253, 0)
+    assert context["epic_digest"] == hashlib.sha256(epics).hexdigest()
+    print("native equipment and learned-epic SHA-256 canonical references passed")
+
+
 def main(*, sanitize: bool = False) -> None:
     artifacts = ROOT / "bin/tests"
     artifacts.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="telemetry-gameplay-", dir=artifacts) as directory:
         executable = Path(directory) / "telemetry-gameplay-adapters"
         compile_gameplay(executable, sanitize=sanitize)
+        verify_native_build_context(executable)
         completed = subprocess.run(
             [str(executable)], cwd=ROOT, check=False, text=True, capture_output=True, timeout=30
         )

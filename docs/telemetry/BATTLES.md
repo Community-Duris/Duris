@@ -994,3 +994,103 @@ This fixture does not replace the required actual personal-server effect,
 persistence and performance journey. Complete reviewed control/prevention,
 compact build/power/arena context, faction exposure, typed outcomes and the full
 balance suites remain unfinished under #258.
+
+## Native combat build snapshot reader
+
+`telemetry_runtime_game_battle_build_context` reads a bounded, value-only native
+snapshot described by `telemetry_battle_build_context.h`, version **1**. Its
+current C++ layout is **440 bytes**, with a compile-time **448-byte** ceiling.
+This is a reader contract, not an admitted telemetry record or a published
+comparison. The existing kind-10/11 fields, level-derived power band, wire
+contracts, definition-5 reports and sealed migrations retain their meanings.
+
+The snapshot preserves exact level, raw primary and secondary class masks, the
+game's single specialization, race/faction, the live actor key and the already
+admitted configuration/build/content versions. NPC/pet keys retain the existing
+fresh runtime lifetime and do not borrow a player's build. It creates no battle
+or authenticated session and emits no record.
+
+Base and effective values have separate arrays. Their explicit mappings are:
+
+| Values | Order and interpretation |
+| --- | --- |
+| Stats | Str, Dex, Agi, Con, Pow, Int, Wis, Cha, Kar, Luk; loaded base versus current effective values |
+| Resources | Hit, mana, vitality, ward; base, current maximum and actual current values, including signed/zero values |
+| Combat values | Armor, hitroll, damroll; raw base and current fields, excluding inferred strength damage or composite ratings |
+| Saving modifiers | Para, rod, fear, breath, spell; actual signed `apply_saving_throw` modifiers, not resistance probabilities |
+| Flag banks | Native banks 1 through 5, widened without truncation; effective flags, fixed equipment declarations and the observed affect-list prefix remain separate |
+
+Base fields are the game's stored/unmodified inputs. Effective-minus-base is
+not attributed to equipment: race/class calculations, trained progression,
+equipment, temporary effects and nonlinear rules can all contribute. Race,
+class and version context remain available for later reviewed comparisons.
+
+Equipment scanning has a fixed **43-slot** bound. It records occupied slots and
+weapon/ranged-weapon/shield/armor/other counts, raw fixed modifiers for hit, mana,
+armor, hitroll and damroll, declared flag banks, and the number of items with a
+dynamic affect list. The selected fixed-feature SHA-256 digest encodes, in
+network byte order: snapshot version (`u16`), content version (`u32`), slot count
+(`u16`); then each slot number/presence (`u8` each). Present slots append type and
+material (`u8`), condition and craftsmanship (`i16`), eight values (`i32`), five
+flag banks (`u64`), wear/extra/extra2/anti/anti2 flags (`u32`), four fixed
+location/modifier pairs (`u8`/`i8`), and dynamic-list presence (`u8`). Bounds
+checks refuse an encoding overflow. Duplicate item pointers make the equipment
+family unavailable and clear its values; other valid families survive.
+
+These declarations do not prove actual equipment eligibility/application or
+complete mechanical equivalence. Dynamic affects, prototype procs and their
+outcomes remain unclassified. Item names, runtime/database IDs, prototype array
+indices, prices and account/player data do not enter the digest. A renamed or
+transferred item with the same selected features has the same fingerprint;
+condition, slot or selected feature changes alter it.
+
+The epic fingerprint covers the compiled `IS_EPIC_SKILL` catalog and stored
+learned ranks for PCs. It encodes version (`u16`), content version (`u32`), first
+and last skill IDs (`u16` each), then each catalog skill ID/rank (`u16`/`u8`) in
+ascending order, including unlearned catalog entries. Catalog/learned counts are
+separate. Wealth, unspent epic points, bonus-policy choices, ordinary skills and
+epic spells outside this skill catalog do not define this fingerprint. Missing
+or uninitialized catalogs, negative learned values and NPC builds remain
+unavailable, with cleared epic values; they are not an observed empty build.
+
+At most **64 unique affect nodes** are visited. The reader retains a known prefix
+and marks cap/cycle truncation; it distinguishes `AFFTYPE_NOAPPLY` metadata from
+listed applied declarations. Counts identify listed hitroll/damroll, armor and
+hit/mana modifiers, regardless of whether they help or harm. This is not an
+external-buff classifier or control-duration measurement. `complete` describes
+only traversal of the current list. Caster/support origin remains explicitly
+unknown, and the generic `context` pointer is never interpreted as an owner.
+
+Arena room flags and the fixed **3-by-20** roster are independent observations.
+A room flag cannot establish enrollment. A unique current roster pointer has a
+team, player flags, enabled status, type and stage; an open/disabled roster does
+not establish an active match. Duplicate pointers or invalid stage/type leave
+roster membership uncertain. The arena roster stores no actor lifetime or match
+generation, so this reader cannot prove a match identity, victory or historical
+participant continuity. Missing room/roster sources remain unavailable.
+
+The focused commands are:
+
+```sh
+python3 tests/async/test_telemetry_gameplay_adapters.py
+python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize
+python3 tests/async/test_telemetry_runtime_integration.py
+```
+
+The gameplay fixture checks exact values, all 43 occupied slots, the full
+309-skill range, selected-feature changes versus unrelated identity/wealth
+changes, signed inputs, empty/malformed catalogs, NPC reuse/pet identity,
+64/65-node and cyclic lists, metadata-only affects, arena membership ambiguity,
+configuration version changes and refusal clearing. Independent Python encoders
+verify both SHA-256 fingerprints. OpenSSL allocation callbacks verify zero
+crypto heap calls during native reads; digest computation uses stack-owned SHA
+state. The runtime fixture also executes the absent native catalog/arena-symbol
+case. This does not qualify a complete server performance or persistence journey.
+
+**Remaining expectation:** connect these values to reviewed entry/change
+boundaries with cached snapshots, rate limits and explicit unknown coverage;
+add a separately versioned record/SQL/outage/replay contract and retained
+publication; qualify actual personal-local source/readback/performance journeys.
+The current reader is not called from per-hit hooks. Durable matching dimensions,
+reviewed equipment/support classification, complete resistance/prevention,
+effective-property coverage and arena outcomes remain unfinished under #258.

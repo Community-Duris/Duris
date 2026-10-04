@@ -2,6 +2,8 @@
 #include "telemetry/telemetry_activity.h"
 #include "telemetry/telemetry_battle.h"
 #include "telemetry/telemetry_battle_contribution.h"
+#include "telemetry/telemetry_battle_build_context.h"
+#include "combat/arena.h"
 #include "core/structs.h"
 #include "core/utils.h"
 #include "telemetry/telemetry_config_private.h"
@@ -14,11 +16,13 @@
 #include "telemetry/telemetry_transport.h"
 #include "telemetry/telemetry_transport_private.h"
 #include "core/defines.h"
+#include "magic/spells.h"
 #include "sql/sql_telemetry_account_identity.h"
 
 extern P_char get_linked_char(P_char ch, ush_int type);
 
 #include <openssl/rand.h>
+#include <openssl/sha.h>
 
 #include <algorithm>
 #include <atomic>
@@ -39,6 +43,10 @@ extern P_room world;
 extern struct zone_data *zone_table;
 extern int top_of_zone_table;
 extern int top_of_world;
+/* Standalone runtime harnesses may omit the game catalogs. Production supplies
+ * strong definitions; absence is an unavailable snapshot family. */
+extern Skill skills[MAX_AFFECT_TYPES + 1] __attribute__((weak));
+extern struct arena_data arena __attribute__((weak));
 /* The standalone runtime harnesses do not link properties.c.  Production has
  * the strong game implementation; an absent weak symbol makes bootstrap fail
  * closed instead of manufacturing an effective value. */
@@ -3050,6 +3058,233 @@ bool game_battle_actor(const struct char_data *character,
 	return true;
 }
 
+template <std::size_t Size> void build_append_be(std::uint8_t (&output)[Size], std::size_t &offset,
+						 std::uint64_t value, std::size_t width) noexcept
+{
+	if (offset > Size || width > Size - offset)
+	{
+		offset = Size + 1U;
+		return;
+	}
+	for (std::size_t index = width; index != 0U; --index)
+		output[offset++] = static_cast<std::uint8_t>(value >> ((index - 1U) * 8U));
+}
+
+/* The low-level SHA context stays on the stack. EVP/one-shot provider lookup
+ * allocates; it cannot be used in this game-thread value reader. */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+bool build_digest(const std::uint8_t *bytes, std::size_t length,
+		  std::uint8_t digest[SHA256_DIGEST_LENGTH]) noexcept
+{
+	SHA256_CTX state{};
+	return SHA256_Init(&state) == 1 && SHA256_Update(&state, bytes, length) == 1 &&
+	       SHA256_Final(digest, &state) == 1;
+}
+#pragma GCC diagnostic pop
+
+void build_flag_banks(std::uint64_t *output, unsigned long first, unsigned long second,
+		      unsigned long third, unsigned long fourth, unsigned long fifth) noexcept
+{
+	output[0] = first;
+	output[1] = second;
+	output[2] = third;
+	output[3] = fourth;
+	output[4] = fifth;
+}
+
+bool game_build_equipment(const char_data *character, std::uint32_t content_version,
+			  telemetry_battle_equipment_context *output) noexcept
+{
+	static_assert(MAX_WEAR <= std::numeric_limits<std::uint8_t>::max());
+	/* 109 bytes per occupied slot for the current fixed arrays, plus a small
+	 * domain prefix. Refuse compile-time growth rather than overflowing. */
+	constexpr std::size_t slot_bytes =
+		2U + 6U + NUMB_OBJ_VALS * 4U + 5U * 8U + 5U * 4U + MAX_OBJ_AFFECT * 2U + 1U;
+	std::uint8_t canonical[8U + (MAX_WEAR)*slot_bytes]{};
+	std::size_t offset = 0U;
+	build_append_be(canonical, offset, TELEMETRY_BATTLE_BUILD_CONTEXT_VERSION, 2U);
+	build_append_be(canonical, offset, content_version, 4U);
+	build_append_be(canonical, offset, MAX_WEAR, 2U);
+	const int modifier_locations[5] = { APPLY_HIT, APPLY_MANA, APPLY_AC, APPLY_HITROLL,
+					    APPLY_DAMROLL };
+	for (std::size_t slot = 0U; slot < MAX_WEAR; ++slot)
+	{
+		const auto *object = character->equipment[slot];
+		build_append_be(canonical, offset, slot, 1U);
+		build_append_be(canonical, offset, object != nullptr, 1U);
+		if (object == nullptr)
+			continue;
+		for (std::size_t earlier = 0U; earlier < slot; ++earlier)
+			if (character->equipment[earlier] == object)
+				return false;
+		++output->occupied_slots;
+		switch (object->type)
+		{
+		case ITEM_WEAPON:
+			++output->melee_weapons;
+			break;
+		case ITEM_FIREWEAPON:
+			++output->ranged_weapons;
+			break;
+		case ITEM_SHIELD:
+			++output->shields;
+			break;
+		case ITEM_ARMOR:
+			++output->armor;
+			break;
+		default:
+			++output->other_items;
+			break;
+		}
+		build_append_be(canonical, offset, static_cast<std::uint8_t>(object->type), 1U);
+		build_append_be(canonical, offset, static_cast<std::uint8_t>(object->material), 1U);
+		build_append_be(canonical, offset, object->condition, 2U);
+		build_append_be(canonical, offset, object->craftsmanship, 2U);
+		for (auto value : object->value)
+			build_append_be(canonical, offset, value, 4U);
+		std::uint64_t banks[TELEMETRY_BATTLE_BUILD_FLAG_BANKS]{};
+		build_flag_banks(banks, object->bitvector, object->bitvector2, object->bitvector3,
+				 object->bitvector4, object->bitvector5);
+		for (std::size_t index = 0U; index < TELEMETRY_BATTLE_BUILD_FLAG_BANKS; ++index)
+		{
+			output->flags[index] |= banks[index];
+			build_append_be(canonical, offset, banks[index], 8U);
+		}
+		for (auto flags : { object->wear_flags, object->extra_flags, object->extra2_flags,
+				    object->anti_flags, object->anti2_flags })
+			build_append_be(canonical, offset, flags, 4U);
+		for (const auto &affect : object->affected)
+		{
+			build_append_be(canonical, offset,
+					static_cast<std::uint8_t>(affect.location), 1U);
+			build_append_be(canonical, offset,
+					static_cast<std::uint8_t>(affect.modifier), 1U);
+			for (std::size_t index = 0U; index < 5U; ++index)
+				if (affect.location == modifier_locations[index])
+					output->direct_modifiers[index] += affect.modifier;
+		}
+		const bool dynamic = object->affects != nullptr;
+		output->items_with_dynamic_affects += dynamic;
+		build_append_be(canonical, offset, dynamic, 1U);
+	}
+	return offset <= sizeof(canonical) &&
+	       build_digest(canonical, offset, output->fixed_feature_digest);
+}
+
+bool game_build_epics(const char_data *character, std::uint32_t content_version,
+		      telemetry_battle_epic_context *output) noexcept
+{
+	static_assert(FIRST_SKILL >= 0 && LAST_SKILL < MAX_SKILLS);
+	if (!IS_PC(character) || skills == nullptr)
+		return false;
+	std::uint8_t canonical[10U + (LAST_SKILL - FIRST_SKILL + 1U) * 3U]{};
+	std::size_t offset = 0U;
+	build_append_be(canonical, offset, TELEMETRY_BATTLE_BUILD_CONTEXT_VERSION, 2U);
+	build_append_be(canonical, offset, content_version, 4U);
+	build_append_be(canonical, offset, FIRST_SKILL, 2U);
+	build_append_be(canonical, offset, LAST_SKILL, 2U);
+	for (int id = FIRST_SKILL; id <= LAST_SKILL; ++id)
+	{
+		if (!IS_EPIC_SKILL(id))
+			continue;
+		const int learned = character->only.pc->skills[id].learned;
+		if (learned < 0 || skills[id].name == nullptr)
+			return false;
+		++output->catalog_skills;
+		output->learned_skills += learned > 0;
+		build_append_be(canonical, offset, id, 2U);
+		build_append_be(canonical, offset, learned, 1U);
+	}
+	return output->catalog_skills != 0U && offset <= sizeof(canonical) &&
+	       build_digest(canonical, offset, output->learned_build_digest);
+}
+
+void game_build_listed_affects(const char_data *character,
+			       telemetry_battle_build_context *output) noexcept
+{
+	const affected_type *visited[TELEMETRY_BATTLE_BUILD_MAX_AFFECTS]{};
+	const auto *effect = character->affected;
+	auto &listed = output->listed_affects;
+	while (effect != nullptr && listed.observed_nodes < TELEMETRY_BATTLE_BUILD_MAX_AFFECTS)
+	{
+		for (std::size_t index = 0U; index < listed.observed_nodes; ++index)
+			if (visited[index] == effect)
+			{
+				output->quality |= TELEMETRY_BUILD_AFFECTS_CYCLIC;
+				return;
+			}
+		visited[listed.observed_nodes++] = effect;
+		if (effect->flags & AFFTYPE_NOAPPLY)
+			++listed.unapplied_nodes;
+		else
+		{
+			std::uint64_t banks[TELEMETRY_BATTLE_BUILD_FLAG_BANKS]{};
+			build_flag_banks(banks, effect->bitvector, effect->bitvector2,
+					 effect->bitvector3, effect->bitvector4,
+					 effect->bitvector5);
+			for (std::size_t index = 0U; index < TELEMETRY_BATTLE_BUILD_FLAG_BANKS;
+			     ++index)
+				listed.flags[index] |= banks[index];
+			listed.offensive_modifier_nodes += effect->location == APPLY_HITROLL ||
+							   effect->location == APPLY_DAMROLL;
+			listed.armor_modifier_nodes += effect->location == APPLY_AC;
+			listed.resource_modifier_nodes += effect->location == APPLY_HIT ||
+							  effect->location == APPLY_MANA;
+		}
+		effect = effect->next;
+	}
+	listed.complete = effect == nullptr;
+	if (effect != nullptr)
+		output->quality |= TELEMETRY_BUILD_AFFECTS_TRUNCATED;
+}
+
+void game_build_arena(const char_data *character, telemetry_battle_build_context *output) noexcept
+{
+	const int room = character->in_room;
+	if (world != nullptr && room >= 0 && room <= top_of_world)
+	{
+		output->available |= TELEMETRY_BUILD_ARENA_ROOM;
+		output->arena.room_is_arena = (world[room].room_flags & ROOM_ARENA) != 0U;
+	}
+	else
+		output->quality |= TELEMETRY_BUILD_ROOM_UNAVAILABLE;
+	if (&arena == nullptr)
+	{
+		output->quality |= TELEMETRY_BUILD_ARENA_UNAVAILABLE;
+		return;
+	}
+	if (arena.type < TYPE_CTF || arena.type > TYPE_DEATHMATCH || arena.stage < STAGE_OPEN ||
+	    arena.stage > STAGE_AFTERMATH)
+	{
+		output->quality |= TELEMETRY_BUILD_ARENA_INVALID;
+		return;
+	}
+	output->arena.enabled = (arena.flags & FLAG_ENABLED) != 0;
+	output->arena.type = arena.type;
+	output->arena.stage = arena.stage;
+	std::uint16_t matches = 0U;
+	for (std::size_t team = 0U; team < MAX_RACES; ++team)
+		for (const auto &member : arena.team[team].player)
+			if (member.ch == character)
+			{
+				++matches;
+				output->arena.team = team + 1U;
+				output->arena.player_flags = member.flags;
+			}
+	if (matches > 1U || (matches != 0U && !IS_PC(character)))
+	{
+		output->arena.membership = telemetry_battle_arena_membership::ambiguous;
+		output->arena.team = 0U;
+		output->arena.player_flags = 0;
+		output->quality |= TELEMETRY_BUILD_ARENA_INVALID;
+		return;
+	}
+	output->available |= TELEMETRY_BUILD_ARENA_ROSTER;
+	output->arena.membership = matches == 1U ? telemetry_battle_arena_membership::member :
+						   telemetry_battle_arena_membership::absent;
+}
+
 std::uint32_t game_combat_modifier_flags(const telemetry_combat_actor_ref &source,
 					 const telemetry_combat_actor_ref &target,
 					 std::uint32_t supplied) noexcept
@@ -3170,6 +3405,78 @@ bool telemetry_runtime_game_battle_actor(const struct char_data *character,
 		return true;
 	*context = {};
 	return false;
+}
+
+bool telemetry_runtime_game_battle_build_context(const char_data *character,
+						 telemetry_battle_build_context *output) noexcept
+{
+	if (output == nullptr)
+		return false;
+	*output = {};
+	telemetry_battle_actor_context actor{};
+	if (!telemetry_runtime_game_battle_actor(character, &actor))
+		return false;
+	output->actor = { actor.actor.actor_id, actor.actor.kind };
+	output->config_id = R.config.config_id;
+	output->build_version = R.config.build_version;
+	output->content_version = R.config.content_version;
+	output->version = TELEMETRY_BATTLE_BUILD_CONTEXT_VERSION;
+	output->primary_class_mask = character->player.m_class;
+	output->secondary_class_mask = character->player.secondary_class;
+	output->specialization = character->player.spec;
+	output->level = character->player.level;
+	output->race = character->player.race;
+	output->faction = character->player.racewar;
+	output->available = TELEMETRY_BUILD_BASE | TELEMETRY_BUILD_EFFECTIVE |
+			    TELEMETRY_BUILD_RESOURCES | TELEMETRY_BUILD_SAVING_MODIFIERS |
+			    TELEMETRY_BUILD_EFFECTIVE_FLAGS | TELEMETRY_BUILD_LISTED_AFFECTS;
+	output->quality = TELEMETRY_BUILD_SUPPORT_ORIGIN_UNKNOWN;
+	for (std::size_t index = 0U; index < TELEMETRY_BATTLE_BUILD_STATS; ++index)
+	{
+		output->base.stats[index] = character->base_stats[index];
+		output->effective.stats[index] = character->curr_stats[index];
+	}
+	const auto &points = character->points;
+	output->base.resources[0] = points.base_hit;
+	output->base.resources[1] = points.base_mana;
+	output->base.resources[2] = points.base_vitality;
+	output->base.resources[3] = points.base_ward;
+	output->effective.resources[0] = points.max_hit;
+	output->effective.resources[1] = points.max_mana;
+	output->effective.resources[2] = points.max_vitality;
+	output->effective.resources[3] = points.max_ward;
+	output->current_resources[0] = points.hit;
+	output->current_resources[1] = points.mana;
+	output->current_resources[2] = points.vitality;
+	output->current_resources[3] = points.ward;
+	output->base.combat[0] = points.base_armor;
+	output->base.combat[1] = points.base_hitroll;
+	output->base.combat[2] = points.base_damroll;
+	output->effective.combat[0] = points.curr_armor;
+	output->effective.combat[1] = points.hitroll;
+	output->effective.combat[2] = points.damroll;
+	for (std::size_t index = 0U; index < 5U; ++index)
+		output->saving_modifiers[index] = character->specials.apply_saving_throw[index];
+	build_flag_banks(output->effective_flags, character->specials.affected_by,
+			 character->specials.affected_by2, character->specials.affected_by3,
+			 character->specials.affected_by4, character->specials.affected_by5);
+	if (game_build_equipment(character, output->content_version, &output->equipment))
+		output->available |= TELEMETRY_BUILD_FIXED_EQUIPMENT;
+	else
+	{
+		output->equipment = {};
+		output->quality |= TELEMETRY_BUILD_EQUIPMENT_INVALID;
+	}
+	if (game_build_epics(character, output->content_version, &output->epics))
+		output->available |= TELEMETRY_BUILD_LEARNED_EPICS;
+	else
+	{
+		output->epics = {};
+		output->quality |= TELEMETRY_BUILD_EPICS_UNAVAILABLE;
+	}
+	game_build_listed_affects(character, output);
+	game_build_arena(character, output);
+	return true;
 }
 
 bool telemetry_runtime_game_battle_group_presence(

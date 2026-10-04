@@ -1,6 +1,7 @@
 #include "telemetry/telemetry_config_private.h"
 #include "telemetry/telemetry_config_reload.h"
 #include "telemetry/telemetry_runtime.h"
+#include "telemetry/telemetry_battle_build_context.h"
 #include "telemetry/telemetry_transport_private.h"
 #include "core/structs.h"
 
@@ -537,6 +538,23 @@ void check_enabled_lifecycle()
 	const telemetry_runtime_options options = make_enabled_options();
 	telemetry_test_start_runtime(options);
 	const telemetry_session_enter enter = make_enter(options.producer, options.config);
+	/* This harness does not link either native catalog. Missing weak symbols
+	 * leave only those families unavailable, with no invented empty build. */
+	char_data character{};
+	pc_only_data pc{};
+	character.only.pc = &pc;
+	pc.pid = 8591;
+	character.in_room = -1;
+	telemetry_battle_build_context build{};
+	assert(telemetry_runtime_game_battle_build_context(&character, &build));
+	assert(build.actor.id == 8591U &&
+	       !(build.available & (TELEMETRY_BUILD_LEARNED_EPICS | TELEMETRY_BUILD_ARENA_ROSTER |
+				    TELEMETRY_BUILD_ARENA_ROOM)) &&
+	       (build.quality & TELEMETRY_BUILD_EPICS_UNAVAILABLE) &&
+	       (build.quality & TELEMETRY_BUILD_ARENA_UNAVAILABLE) &&
+	       (build.quality & TELEMETRY_BUILD_ROOM_UNAVAILABLE) &&
+	       build.epics.catalog_skills == 0U &&
+	       build.arena.membership == telemetry_battle_arena_membership::unavailable);
 	const telemetry_capture_result entered = telemetry_runtime_session_enter(enter);
 	assert(entered.outcome == telemetry_runtime_outcome::accepted);
 	assert(entered.records_emitted >= 1U);

@@ -34,6 +34,7 @@ work. A future production deployment is a separate operational decision.
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
 | #487: economic projection compatibility | Pending audit and implementation | Reuse current accounting reconciliation where it meets acceptance; project canonical earned receipts without counting compatibility ledgers, transfers or openings as new rewards. |
 | #258: local observational acceptance and final runbook | In progress | Initial readiness/capacity recovery is implemented and qualified in executable fixtures. Remaining: dedicated roles/catalog, real session/progression readback, normal gameplay/save, failure/recovery and a single reproducible local qualification command. |
+| Native compact build snapshot reader | Reader qualified; durable capture pending | Version-1 value reader preserves exact class masks/spec, base/effective resources/stats, fixed equipment declarations, learned epic skill fingerprints, bounded listed effects and independent arena room/roster observations. The 440-byte snapshot has explicit unavailable/partial families. Normal/ASan/UBSan, both runtime lifecycle variants, 58 history/publication regressions, canonical fingerprint checks and the maintained server build pass. Cached boundary capture, a versioned record/storage/publication path, complete reviewed context classification and actual personal-server evidence remain required. See [BATTLES.md](BATTLES.md#native-combat-build-snapshot-reader). |
 
 ## Qualified first-layer checks
 
@@ -1296,3 +1297,57 @@ real authenticated source journeys, distinct PvE attempts, progression/portfolio
 context, the four suites/statistical exports, #487 compatibility and one actual
 personal-local gameplay/persistence/performance command/runbook. Production and
 staging access remain unnecessary for technical acceptance.
+
+## Native combat build snapshot foundation
+
+The compact context work now has an executable native value reader,
+`telemetry_runtime_game_battle_build_context`, with an independently versioned
+snapshot contract. It preserves exact class masks rather than projecting a
+multiclass character into a single class ID. Base/effective stats and resource
+fields remain separate. Saving values are the actual signed modifiers; gear
+fields are selected fixed loaded declarations. Neither effective-minus-base nor
+the gear fingerprint is presented as an applied-equipment contribution or a
+universal power score.
+
+The snapshot is **440 bytes**, with a **448-byte** compile-time ceiling.
+Equipment has a fixed **43-slot** traversal; all **309 compiled skill IDs** are
+bounded. Learned epic skill IDs/ranks and selected fixed equipment features have
+explicit canonical SHA-256 fingerprints tied to content version. Identity,
+item naming/prices, wealth and unspent points do not change these fingerprints.
+The reader retains at most **64 unique affect nodes**, detects cycles and cap
+truncation, separates metadata-only affects, and preserves unknown support
+origin. Room arena flags and unique membership in the fixed **3-by-20** roster
+remain separate. Duplicate roster/item pointers and missing/invalid catalogs do
+not silently produce a known empty build or a definitive arena membership.
+
+The normal and fresh **ASan/UBSan gameplay adapter journeys passed**, including
+all occupied equipment slots, the full skill range, exact signed/base/effective
+values, fingerprint stability/change cases, NPC reuse/pet identity, source
+unavailability, affect bounds/cycles and configuration version changes.
+Independent Python encoders match both native SHA-256 digests. OpenSSL memory
+callbacks observe **zero crypto heap calls during native reads**, including
+the saturated equipment/skill cases. Fingerprinting uses stack-owned SHA state
+with checked canonical buffers. Both flatfile and SQL-stub runtime lifecycle
+variants also pass with absent weak native skill/arena symbols. **58 existing
+battle history/source/publication regressions pass**, preserving the original
+123-fact/38-packet/28-contribution source, accepted 8/8 control and unavailable
+NULL behavior. Changed C/C++ formatting and maintained `make -C src -j1` pass.
+
+This is a tested native reader, **not durable context capture or a report suite**.
+It emits no record and is not wired into per-hit callbacks. No record kind,
+schema, outage inventory, migration or published definition changes. Sealed
+0063/0064 and the earlier MySQL/MariaDB writer/publication proofs retain their
+existing contracts; the SQL engines were not rerun for this reader-only change.
+Prototype procs, dynamic equipment effects, complete resistance mechanics,
+buff/support ownership, match generations/outcomes and the complete effective
+property catalog remain outside this observed subset.
+
+**Next executable expectation:** add reviewed entry/change capture with cached
+snapshots, caps and unknown coverage; register a separately versioned
+record/writer/outage/replay contract; retain and publish these matching values;
+run the actual personal-local gameplay/readback/performance journey. Use the
+existing bounded telemetry transport, private writer, loss inventory and
+publication machinery. Commands and field mappings are in
+[BATTLES.md](BATTLES.md#native-combat-build-snapshot-reader). All seven accepted
+completion requirements remain open for their unfinished work. Production and
+staging access remain unnecessary.

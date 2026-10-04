@@ -3,6 +3,8 @@
 #include "telemetry/telemetry_battle.h"
 #include "telemetry/telemetry_battle_contract.h"
 #include "telemetry/telemetry_battle_contribution.h"
+#include "telemetry/telemetry_battle_build_context.h"
+#include "combat/arena.h"
 #include "telemetry/telemetry_transport_private.h"
 #include "core/structs.h"
 #include "core/utils.h"
@@ -24,12 +26,34 @@
 #include <thread>
 #include <vector>
 #include <set>
+#include <openssl/crypto.h>
 
 P_room world = nullptr;
 P_char character_list = nullptr;
 struct zone_data *zone_table = nullptr;
 int top_of_zone_table = -1;
 int top_of_world = -1;
+Skill skills[MAX_AFFECT_TYPES + 1]{};
+struct arena_data arena
+{
+};
+thread_local bool fixture_track_crypto = false;
+thread_local std::uint64_t fixture_crypto_heap_calls = 0U;
+void *fixture_crypto_malloc(std::size_t bytes, const char *, int)
+{
+	fixture_crypto_heap_calls += fixture_track_crypto;
+	return std::malloc(bytes);
+}
+void *fixture_crypto_realloc(void *memory, std::size_t bytes, const char *, int)
+{
+	fixture_crypto_heap_calls += fixture_track_crypto;
+	return std::realloc(memory, bytes);
+}
+void fixture_crypto_free(void *memory, const char *, int)
+{
+	fixture_crypto_heap_calls += fixture_track_crypto;
+	std::free(memory);
+}
 P_char fixture_pet = nullptr;
 P_char fixture_pet_master = nullptr;
 std::vector<affected_type> fixture_control_effects;
@@ -854,6 +878,360 @@ void check_native_battle_context()
 	top_of_world = top_of_zone_table = -1;
 	std::puts(
 		"PASS: native live actor reuse, roster revisions/presence, session links and pet ownership cuts");
+}
+
+void check_native_build_context(bool export_context = false)
+{
+	char_data player{}, npc{};
+	pc_only_data player_pc{};
+	npc_only_data npc_only{};
+	player.only.pc = &player_pc;
+	player_pc.pid = 8571;
+	telemetry_battle_build_context context{};
+	context.version = 999U;
+	assert(!telemetry_runtime_game_battle_build_context(&player, &context));
+	assert(context.version == 0U && context.actor.id == 0U && context.available == 0U);
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	auto options = enabled_options();
+	options.config.build_version = 7U;
+	options.config.content_version = 11U;
+	assert(telemetry_config_compute_fingerprint(options.config, options.config.fingerprint,
+						    sizeof(options.config.fingerprint)));
+	options.config.config_id = telemetry_config_id_from_fingerprint(
+		options.config.fingerprint, sizeof(options.config.fingerprint));
+	telemetry_test_start_runtime(options);
+	room_data room{};
+	zone_data zone{};
+	zone.number = 1703;
+	world = &room;
+	zone_table = &zone;
+	top_of_world = top_of_zone_table = 0;
+	player.in_room = 0;
+	player.player.level = 56;
+	player.player.m_class = 0x20000001U;
+	player.player.secondary_class = 0x10000002U;
+	player.player.spec = 3U;
+	player.player.race = RACE_HUMAN;
+	player.player.racewar = 2U;
+	for (std::size_t index = 0U; index < TELEMETRY_BATTLE_BUILD_STATS; ++index)
+	{
+		player.base_stats[index] = 110 + index;
+		player.curr_stats[index] = 230 + index;
+	}
+	player.points.base_hit = 70'000;
+	player.points.max_hit = 123'456;
+	player.points.hit = -2;
+	player.points.base_mana = 70;
+	player.points.max_mana = 120;
+	player.points.mana = 105;
+	player.points.base_vitality = 90;
+	player.points.max_vitality = 150;
+	player.points.vitality = 20;
+	player.points.base_ward = 1;
+	player.points.max_ward = 12;
+	player.points.ward = 8;
+	player.points.base_armor = 100;
+	player.points.curr_armor = -15;
+	player.points.base_hitroll = 0;
+	player.points.hitroll = 21;
+	player.points.base_damroll = -2;
+	player.points.damroll = 35;
+	const std::int8_t saves[5] = { -128, -1, 0, 42, 127 };
+	for (std::size_t index = 0U; index < 5U; ++index)
+		player.specials.apply_saving_throw[index] = saves[index];
+	player.specials.affected_by = AFF_HASTE | AFF_PROT_FIRE;
+	obj_data weapon{}, shield{}, armor{};
+	obj_affect dynamic{};
+	dynamic.next = &dynamic; // Fixed equipment extraction never follows this list.
+	weapon.type = ITEM_WEAPON;
+	weapon.material = 4;
+	weapon.condition = 97;
+	weapon.craftsmanship = -7;
+	weapon.value[1] = 2;
+	weapon.value[2] = 6;
+	weapon.bitvector = 0x1234U;
+	weapon.affected[0] = { APPLY_AC, -5 };
+	weapon.affected[1] = { APPLY_HITROLL, 7 };
+	weapon.affected[2] = { APPLY_DAMROLL, 11 };
+	weapon.affected[3] = { APPLY_HIT, 13 };
+	shield.type = ITEM_SHIELD;
+	shield.value[3] = 25;
+	shield.bitvector2 = 0x55U;
+	shield.affected[0] = { APPLY_MANA, -2 };
+	shield.affects = &dynamic;
+	armor.type = ITEM_ARMOR;
+	armor.bitvector5 = 0x10000000U;
+	armor.affected[0] = { APPLY_HITROLL, -3 };
+	player.equipment[0] = &weapon;
+	player.equipment[1] = &shield;
+	player.equipment[MAX_WEAR - 1] = &armor;
+	skills[SKILL_TOUGHNESS].name = "fixture toughness";
+	skills[SKILL_TOUGHNESS].targets = TAR_SKILL | TAR_EPIC;
+	skills[SKILL_EPIC_AGILITY].name = "fixture agility";
+	skills[SKILL_EPIC_AGILITY].targets = TAR_SKILL | TAR_EPIC;
+	skills[SPELL_BLINDNESS].name = "fixture excluded epic spell";
+	skills[SPELL_BLINDNESS].targets = TAR_SPELL | TAR_EPIC;
+	player_pc.skills[SKILL_TOUGHNESS].learned = 50;
+	player_pc.skills[SPELL_BLINDNESS].learned = 99;
+	player_pc.skills[SKILL_MELEE_MASTERY].learned = 100;
+	affected_type effects[3]{};
+	effects[0].location = APPLY_HITROLL;
+	effects[0].modifier = -7;
+	effects[0].bitvector = AFF_HASTE;
+	effects[0].context = reinterpret_cast<void *>(std::uintptr_t{ 1U });
+	effects[0].next = &effects[1];
+	effects[1].flags = AFFTYPE_NOAPPLY;
+	effects[1].location = APPLY_MANA;
+	effects[1].bitvector = AFF_BLIND;
+	effects[1].next = &effects[2];
+	effects[2].location = APPLY_AC;
+	effects[2].bitvector2 = AFF2_PROT_LIGHTNING;
+	player.affected = effects;
+	auto read = [&](const char_data *character)
+	{
+		const auto before = fixture_crypto_heap_calls;
+		fixture_track_crypto = true;
+		const bool accepted =
+			telemetry_runtime_game_battle_build_context(character, &context);
+		fixture_track_crypto = false;
+		assert(fixture_crypto_heap_calls == before);
+		return accepted;
+	};
+	assert(read(&player));
+	const auto original = context;
+	assert(context.version == 1U && context.actor.id == 8571U &&
+	       context.actor.kind == telemetry_combat_actor_kind::player &&
+	       context.config_id == options.config.config_id && context.build_version == 7U &&
+	       context.content_version == 11U && context.level == 56U &&
+	       context.primary_class_mask == 0x20000001U &&
+	       context.secondary_class_mask == 0x10000002U && context.specialization == 3U &&
+	       context.race == RACE_HUMAN && context.faction == 2U);
+	assert(context.available == 1023U &&
+	       context.quality == TELEMETRY_BUILD_SUPPORT_ORIGIN_UNKNOWN);
+	for (std::size_t index = 0U; index < TELEMETRY_BATTLE_BUILD_STATS; ++index)
+		assert(context.base.stats[index] == 110 + static_cast<int>(index) &&
+		       context.effective.stats[index] == 230 + static_cast<int>(index));
+	assert(context.base.resources[0] == 70'000 && context.effective.resources[0] == 123'456 &&
+	       context.current_resources[0] == -2 && context.base.resources[1] == 70 &&
+	       context.effective.resources[1] == 120 && context.current_resources[1] == 105 &&
+	       context.base.resources[2] == 90 && context.effective.resources[2] == 150 &&
+	       context.current_resources[2] == 20 && context.base.resources[3] == 1 &&
+	       context.effective.resources[3] == 12 && context.current_resources[3] == 8);
+	assert(context.base.combat[0] == 100 && context.effective.combat[0] == -15 &&
+	       context.base.combat[1] == 0 && context.effective.combat[1] == 21 &&
+	       context.base.combat[2] == -2 && context.effective.combat[2] == 35);
+	assert(std::memcmp(context.saving_modifiers, saves, sizeof(saves)) == 0 &&
+	       context.effective_flags[0] == (AFF_HASTE | AFF_PROT_FIRE));
+	assert(context.equipment.occupied_slots == 3U && context.equipment.melee_weapons == 1U &&
+	       context.equipment.shields == 1U && context.equipment.armor == 1U &&
+	       context.equipment.items_with_dynamic_affects == 1U);
+	const std::int32_t modifiers[5] = { 13, -2, -5, 4, 11 };
+	assert(std::memcmp(context.equipment.direct_modifiers, modifiers, sizeof(modifiers)) == 0 &&
+	       context.equipment.flags[0] == 0x1234U && context.equipment.flags[1] == 0x55U &&
+	       context.equipment.flags[4] == 0x10000000U);
+	assert(context.epics.catalog_skills == 2U && context.epics.learned_skills == 1U &&
+	       context.listed_affects.observed_nodes == 3U &&
+	       context.listed_affects.offensive_modifier_nodes == 1U &&
+	       context.listed_affects.armor_modifier_nodes == 1U &&
+	       context.listed_affects.resource_modifier_nodes == 0U &&
+	       context.listed_affects.unapplied_nodes == 1U &&
+	       context.listed_affects.complete == 1U &&
+	       context.listed_affects.flags[0] == AFF_HASTE &&
+	       context.listed_affects.flags[1] == AFF2_PROT_LIGHTNING);
+	assert(context.arena.membership == telemetry_battle_arena_membership::absent &&
+	       context.arena.room_is_arena == 0U);
+	if (export_context)
+	{
+		std::printf("BUILD_CONTEXT_JSON {\"snapshot_bytes\":%zu,\"content_version\":11,"
+			    "\"crypto_heap_calls\":%llu,\"equipment_digest\":\"",
+			    sizeof(context),
+			    static_cast<unsigned long long>(fixture_crypto_heap_calls));
+		for (auto byte : context.equipment.fixed_feature_digest)
+			std::printf("%02x", byte);
+		std::printf("\",\"epic_digest\":\"");
+		for (auto byte : context.epics.learned_build_digest)
+			std::printf("%02x", byte);
+		std::puts("\"}");
+	}
+	const auto same_equipment = [&]()
+	{
+		return std::memcmp(context.equipment.fixed_feature_digest,
+				   original.equipment.fixed_feature_digest, 32U) == 0;
+	};
+	const auto same_epics = [&]()
+	{
+		return std::memcmp(context.epics.learned_build_digest,
+				   original.epics.learned_build_digest, 32U) == 0;
+	};
+	weapon.name = const_cast<char *>("renamed fixture");
+	weapon.obj_uid = 12345;
+	weapon.db_item_id = 77;
+	weapon.R_num = 8;
+	weapon.cost = 10000;
+	player_pc.epics = 98765;
+	player_pc.epic_skill_points = 54321;
+	assert(read(&player) && same_equipment() && same_epics());
+	++player.curr_stats.Str;
+	assert(read(&player) && context.effective.stats[0] == 231 && context.base.stats[0] == 110 &&
+	       same_equipment() && same_epics());
+	--player.curr_stats.Str;
+	++weapon.condition;
+	assert(read(&player) && !same_equipment() && same_epics());
+	--weapon.condition;
+	player.equipment[2] = &weapon;
+	player.equipment[0] = nullptr;
+	assert(read(&player) && !same_equipment());
+	player.equipment[0] = &weapon;
+	player.equipment[2] = nullptr;
+	player.equipment[1] = &weapon;
+	assert(read(&player) && !(context.available & TELEMETRY_BUILD_FIXED_EQUIPMENT) &&
+	       (context.quality & TELEMETRY_BUILD_EQUIPMENT_INVALID) &&
+	       context.equipment.occupied_slots == 0U && context.effective.resources[0] == 123'456);
+	player.equipment[1] = &shield;
+	obj_data full_equipment[MAX_WEAR]{};
+	for (std::size_t slot = 0U; slot < MAX_WEAR; ++slot)
+	{
+		full_equipment[slot].type = ITEM_WEAPON;
+		full_equipment[slot].affected[0] = { APPLY_HITROLL, -128 };
+		player.equipment[slot] = &full_equipment[slot];
+	}
+	assert(read(&player) && (context.available & TELEMETRY_BUILD_FIXED_EQUIPMENT) &&
+	       context.equipment.occupied_slots == (MAX_WEAR) &&
+	       context.equipment.melee_weapons == (MAX_WEAR) &&
+	       context.equipment.direct_modifiers[3] == -128 * (MAX_WEAR));
+	for (auto &object : player.equipment)
+		object = nullptr;
+	player.equipment[0] = &weapon;
+	player.equipment[1] = &shield;
+	player.equipment[MAX_WEAR - 1] = &armor;
+	++player_pc.skills[SKILL_TOUGHNESS].learned;
+	assert(read(&player) && same_equipment() && !same_epics());
+	player_pc.skills[SKILL_TOUGHNESS].learned = -1;
+	assert(read(&player) && !(context.available & TELEMETRY_BUILD_LEARNED_EPICS) &&
+	       (context.quality & TELEMETRY_BUILD_EPICS_UNAVAILABLE) &&
+	       context.epics.catalog_skills == 0U && context.epics.learned_skills == 0U);
+	player_pc.skills[SKILL_TOUGHNESS].learned = 50;
+	skills[SKILL_TOUGHNESS].targets = skills[SKILL_EPIC_AGILITY].targets = 0U;
+	assert(read(&player) && !(context.available & TELEMETRY_BUILD_LEARNED_EPICS));
+	skills[SKILL_TOUGHNESS].targets = skills[SKILL_EPIC_AGILITY].targets = TAR_SKILL | TAR_EPIC;
+	for (int id = FIRST_SKILL; id <= LAST_SKILL; ++id)
+	{
+		skills[id].name = "fixture full epic catalog";
+		skills[id].targets = TAR_SKILL | TAR_EPIC;
+		player_pc.skills[id].learned = 1;
+	}
+	assert(read(&player) && (context.available & TELEMETRY_BUILD_LEARNED_EPICS) &&
+	       context.epics.catalog_skills == LAST_SKILL - FIRST_SKILL + 1U &&
+	       context.epics.learned_skills == context.epics.catalog_skills);
+	for (int id = FIRST_SKILL; id <= LAST_SKILL; ++id)
+		skills[id] = {};
+	skills[SKILL_TOUGHNESS].name = "fixture toughness";
+	skills[SKILL_EPIC_AGILITY].name = "fixture agility";
+	skills[SKILL_TOUGHNESS].targets = skills[SKILL_EPIC_AGILITY].targets = TAR_SKILL | TAR_EPIC;
+	player_pc.skills[SKILL_TOUGHNESS].learned = 50;
+	player_pc.skills[SKILL_EPIC_AGILITY].learned = 0;
+	effects[0].next = &effects[0];
+	assert(read(&player) && context.listed_affects.observed_nodes == 1U &&
+	       context.listed_affects.complete == 0U &&
+	       (context.quality & TELEMETRY_BUILD_AFFECTS_CYCLIC));
+	affected_type long_list[TELEMETRY_BATTLE_BUILD_MAX_AFFECTS + 1U]{};
+	for (std::size_t index = 0U; index < TELEMETRY_BATTLE_BUILD_MAX_AFFECTS; ++index)
+		long_list[index].next = &long_list[index + 1U];
+	player.affected = long_list;
+	assert(read(&player) && context.listed_affects.observed_nodes == 64U &&
+	       context.listed_affects.complete == 0U &&
+	       (context.quality & TELEMETRY_BUILD_AFFECTS_TRUNCATED));
+	long_list[TELEMETRY_BATTLE_BUILD_MAX_AFFECTS - 1U].next = nullptr;
+	assert(read(&player) && context.listed_affects.observed_nodes == 64U &&
+	       context.listed_affects.complete == 1U &&
+	       !(context.quality & TELEMETRY_BUILD_AFFECTS_TRUNCATED));
+	player.affected = nullptr;
+	room.room_flags |= ROOM_ARENA;
+	assert(read(&player) && context.arena.room_is_arena == 1U &&
+	       context.arena.membership == telemetry_battle_arena_membership::absent);
+	arena.flags = FLAG_ENABLED;
+	arena.stage = STAGE_MATCH;
+	arena.type = TYPE_DEATHMATCH;
+	arena.team[1].player[MAX_TEAM - 1].ch = &player;
+	arena.team[1].player[MAX_TEAM - 1].flags = PLAYER_IT | PLAYER_DEAD;
+	assert(read(&player) &&
+	       context.arena.membership == telemetry_battle_arena_membership::member &&
+	       context.arena.team == 2U &&
+	       context.arena.player_flags == (PLAYER_IT | PLAYER_DEAD) &&
+	       context.arena.stage == STAGE_MATCH && context.arena.type == TYPE_DEATHMATCH &&
+	       context.arena.enabled == 1U);
+	arena.stage = STAGE_OPEN;
+	arena.flags = 0;
+	assert(read(&player) &&
+	       context.arena.membership == telemetry_battle_arena_membership::member &&
+	       context.arena.stage == STAGE_OPEN && context.arena.enabled == 0U);
+	arena.team[0].player[0].ch = &player;
+	assert(read(&player) && !(context.available & TELEMETRY_BUILD_ARENA_ROSTER) &&
+	       context.arena.membership == telemetry_battle_arena_membership::ambiguous &&
+	       context.arena.team == 0U && context.arena.player_flags == 0 &&
+	       (context.quality & TELEMETRY_BUILD_ARENA_INVALID));
+	arena.team[0].player[0].ch = nullptr;
+	arena.stage = STAGE_AFTERMATH + 1;
+	assert(read(&player) && !(context.available & TELEMETRY_BUILD_ARENA_ROSTER) &&
+	       context.arena.membership == telemetry_battle_arena_membership::unavailable);
+	arena = {};
+	player.in_room = -1;
+	assert(read(&player) && !(context.available & TELEMETRY_BUILD_ARENA_ROOM) &&
+	       (context.quality & TELEMETRY_BUILD_ROOM_UNAVAILABLE));
+	player.in_room = 0;
+	npc.only.npc = &npc_only;
+	npc.specials.act = ACT_ISNPC;
+	npc.in_room = 0;
+	npc.runtime_id = allocate_character_runtime_id();
+	assert(read(&npc) && context.actor.kind == telemetry_combat_actor_kind::npc &&
+	       !(context.available & TELEMETRY_BUILD_LEARNED_EPICS) &&
+	       (context.actor.id & TELEMETRY_BATTLE_NPC_GENERATION_TAG));
+	const auto previous_lifetime = context.actor.id;
+	npc.runtime_id = allocate_character_runtime_id();
+	assert(read(&npc) && context.actor.id != previous_lifetime);
+	fixture_pet = &npc;
+	fixture_pet_master = &player;
+	assert(read(&npc) && context.actor.kind == telemetry_combat_actor_kind::pet);
+	fixture_pet = fixture_pet_master = nullptr;
+	auto changed_config = options.config;
+	++changed_config.revision;
+	++changed_config.build_version;
+	++changed_config.content_version;
+	assert(telemetry_config_compute_fingerprint(changed_config, changed_config.fingerprint,
+						    sizeof(changed_config.fingerprint)));
+	changed_config.config_id = telemetry_config_id_from_fingerprint(
+		changed_config.fingerprint, sizeof(changed_config.fingerprint));
+	assert(telemetry_config_publish(changed_config).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	assert(read(&player) && context.config_id == changed_config.config_id &&
+	       context.build_version == 8U && context.content_version == 12U && !same_equipment() &&
+	       !same_epics() && context.base.resources[0] == 70'000);
+	player_pc.pid = 0;
+	assert(!read(&player) && context.version == 0U && context.available == 0U &&
+	       context.actor.id == 0U);
+	assert(!read(nullptr));
+	assert(!telemetry_runtime_game_battle_build_context(&npc, nullptr));
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = 0U;
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	assert(fake.battles.empty() && fake.contributions.empty() && fake.lifecycles.empty() &&
+	       fake.encounters.empty() && player.telemetry_session_sequence == 0U);
+	skills[SKILL_TOUGHNESS] = skills[SKILL_EPIC_AGILITY] = skills[SPELL_BLINDNESS] = {};
+	world = nullptr;
+	zone_table = nullptr;
+	top_of_world = top_of_zone_table = -1;
+	std::puts(
+		"PASS: bounded native build snapshots, fixed feature/epic fingerprints, unavailable families, arena distinction and zero crypto heap calls");
 }
 
 void check_staggered_checkpoint_cut()
@@ -2337,6 +2715,13 @@ fake_repository check_native_control_capture(bool use_native = false, bool expor
 
 int main(int argc, char **argv)
 {
+	if (argc == 2 && std::strcmp(argv[1], "--native-build-context") == 0)
+	{
+		assert(CRYPTO_set_mem_functions(fixture_crypto_malloc, fixture_crypto_realloc,
+						fixture_crypto_free) == 1);
+		check_native_build_context(true);
+		return 0;
+	}
 	if (argc == 2 && std::strcmp(argv[1], "--native-control-capture") == 0)
 	{
 		check_native_control_capture(false, true);
@@ -2358,6 +2743,9 @@ int main(int argc, char **argv)
 #endif
 	assert(argc == 1);
 	(void)argv;
+	assert(CRYPTO_set_mem_functions(fixture_crypto_malloc, fixture_crypto_realloc,
+					fixture_crypto_free) == 1);
+	check_native_build_context();
 	check_native_battle_context();
 	check_native_shared_battle_capture();
 	check_native_control_capture();
