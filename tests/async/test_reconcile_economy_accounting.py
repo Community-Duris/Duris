@@ -3,6 +3,7 @@
 
 import copy
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -13,19 +14,36 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 from reconcile_economy_accounting import (MAX_INPUT_BYTES, MAX_ROWS, NATIVE_COVERAGE_EXCEPTIONS,
                                           ORPHAN_EVIDENCE_SOURCES,
-                                          Reconciler, SnapshotError, view)  # noqa: E402
+                                          Reconciler, SnapshotError, account_key,
+                                          decode_source_event, source_kind_allowed, view)  # noqa: E402
 
 LINEAGE = "11" * 16
 EPOCH = "22" * 16
 OP = "33" * 16
-SOURCE = "44" * 48
 LEGACY = "55" * 16
 
 
-def key(kind, identity):
+def source_identity(kind=16, identity="44", sequence=0, slot=0):
+    return (kind.to_bytes(2, "little") + b"\x01\x00" + bytes.fromhex(identity * 16) +
+            bytes.fromhex("45" * 16) + sequence.to_bytes(8, "little") +
+            slot.to_bytes(4, "little")).hex()
+
+
+SOURCE = source_identity()
+
+
+def malformed_sources():
+    raw = bytes.fromhex(SOURCE)
+    return [value.to_bytes(2, "little") + raw[2:] for value in (0, 24, 65535)] + [
+        raw[:2] + value.to_bytes(2, "little") + raw[4:] for value in (0, 2, 65535)] + [
+        raw[:4] + bytes(16) + raw[20:], raw[:20] + bytes(16) + raw[36:],
+        raw[:4] + bytes(32) + raw[36:]]
+
+
+def key(kind, identity, context=0):
     return (bytes.fromhex(LINEAGE) + (1).to_bytes(2, "little") +
             kind.to_bytes(2, "little") + identity.to_bytes(8, "little") +
-            (0).to_bytes(8, "little") + bytes(4)).hex()
+            context.to_bytes(8, "little") + bytes(4)).hex()
 
 
 WALLET = key(1, 7)
@@ -95,6 +113,30 @@ def clean_snapshot():
     }
 
 
+def set_operation_source(snapshot, kind):
+    source = source_identity(kind=kind)
+    snapshot["operations"][0]["source_event"] = source
+    snapshot["source_claims"][0]["source_event"] = source
+
+
+def price_snapshot():
+    snapshot = clean_snapshot()
+    snapshot["operations"][0].update(reason=21, realized_price_copper=3000)
+    set_operation_source(snapshot, 12)
+    snapshot["native"]["lineage_realized_prices"] = [
+        {"operation_id": operation, "lineage": LINEAGE, "epoch": epoch,
+         "reason": reason, "outcome": "committed", "result_code": 0,
+         "inbox_receipt": {"status": 1, "result_code": 0, "failure_stage": 0,
+                           "committed_at_present": True},
+         "realized_price_copper": price, "personal_alias": "private-price-alias"}
+        for operation, epoch, reason, price in (
+            (OP, EPOCH, 21, 3000), ("44" * 16, "77" * 16, 22, 125),
+            ("55" * 16, "77" * 16, 24, 0), ("66" * 16, "77" * 16, 27, 2**63 - 1))]
+    snapshot["native"]["realized_price_coverage"] = {
+        "column_available": True, "candidate_rows": 4, "missing_price_rows": 0}
+    return snapshot
+
+
 def creation_snapshot():
     snapshot = clean_snapshot()
     snapshot["item_origins"][0].update(origin="creation", revision=0, root=81,
@@ -105,6 +147,121 @@ def creation_snapshot():
     return snapshot
 
 
+def stake_snapshot(terminal=False):
+    """Retained finite-round evidence fixture; no game producer or activation."""
+    snapshot = clean_snapshot()
+    stake = key(11, 700, 7)
+    source = (b"\x06\x00\x01\x00" + bytes.fromhex("71" * 16) +
+              bytes.fromhex("72" * 16) + (7).to_bytes(8, "little") + bytes(4)).hex()
+    snapshot["operations"][0].update(reason=18, source_event=source, item_event_count=0)
+    snapshot["source_claims"][0]["source_event"] = source
+    snapshot["native"]["holdings"][1].update(account_key=stake, revision=1)
+    snapshot["account_origins"][1].update(account_key=stake, origin="creation", revision=0)
+    snapshot["effects"][1].update(account_key=stake, before_revision=0, after_revision=1)
+    for name in ("item_origins", "item_references", "ownership_events"):
+        snapshot[name] = []
+    snapshot["native"]["items"] = []
+    if terminal:
+        terminal_id = "66" * 16
+        terminal_source = source[:-8] + "01000000"
+        snapshot["operations"].append({**snapshot["operations"][0], "operation_id": terminal_id,
+                                       "reason": 19, "original_operation_id": OP,
+                                       "source_event": terminal_source})
+        snapshot["source_claims"].append({"lineage": LINEAGE, "source_event": terminal_source,
+                                          "operation_id": terminal_id})
+        snapshot["receipts"].append({**snapshot["receipts"][0], "operation_id": terminal_id})
+        snapshot["effects"].extend([
+            {**snapshot["effects"][0], "operation_id": terminal_id,
+             "before": [7, 0, 0, 0], "after": [10, 0, 0, 0],
+             "before_revision": 2, "after_revision": 3},
+            {**snapshot["effects"][1], "operation_id": terminal_id,
+             "before": [3, 0, 0, 0], "after": [0, 0, 0, 0],
+             "before_revision": 1, "after_revision": 2}])
+        snapshot["postings"].extend([
+            {**snapshot["postings"][0], "operation_id": terminal_id,
+             "delta": [3, 0, 0, 0], "copper_value": 3},
+            {**snapshot["postings"][1], "operation_id": terminal_id,
+             "delta": [-3, 0, 0, 0], "copper_value": -3}])
+        snapshot["account_origins"][1]["retired_by"] = terminal_id
+        snapshot["native"]["holdings"] = [{**snapshot["native"]["holdings"][0],
+                                             "balance": [10, 0, 0, 0], "revision": 3}]
+    return snapshot
+
+
+def mapping_creation_snapshot(count):
+    """Valid synthetic creation evidence; no gameplay or native coverage claim."""
+    snapshot = {
+        "schema_version": 1, "lineage": LINEAGE, "epoch": EPOCH,
+        "complete": True, "quiescent": True, "backend": "disposable",
+        "native": {"holdings": [], "items": [], "mapping_creations": [],
+                   "mapping_creation_roots": [], "mapping_creation_coverage": {
+                       "rows": count, "creator_rows": count, "root_rows": count,
+                       "missing_roots": 0}},
+        "operations": [], "effects": [], "postings": [], "children": [],
+        "item_references": [], "ownership_events": [], "source_claims": [],
+        "account_origins": [], "item_origins": [], "receipts": [],
+    }
+    for index in range(1, count + 1):
+        op = index.to_bytes(16, "little").hex()
+        account = key(1, index)
+        source = source_identity(sequence=index)
+        operation = {
+            "operation_id": op, "lineage": LINEAGE, "epoch": EPOCH, "reason": 42,
+            "outcome": "committed", "result_code": 0, "source_event": source,
+            "account_count": 1, "posting_count": 0, "child_count": 0, "item_event_count": 0,
+        }
+        effect = {"account_index": 0, "account_key": account,
+                  "before": [0, 0, 0, 0], "after": [0, 0, 0, 0],
+                  "before_revision": 0, "after_revision": 1}
+        snapshot["operations"].append(operation)
+        snapshot["effects"].append({"operation_id": op, **effect})
+        snapshot["account_origins"].append({"account_key": account, "origin": "creation",
+                                            "balance": [0, 0, 0, 0], "revision": 0})
+        snapshot["receipts"].append({"operation_id": op, "status": 1, "result_code": 0,
+                                     "failure_stage": 0, "committed_at_present": True})
+        snapshot["source_claims"].append({"lineage": LINEAGE, "source_event": source,
+                                          "operation_id": op})
+        snapshot["native"]["holdings"].append({"account_key": account,
+                                               "balance": [0, 0, 0, 0], "revision": 1})
+        snapshot["native"]["mapping_creations"].append({
+            "mapping_id": index, "account_key": account, "account_kind": 1,
+            "context_id": 0, "native_id": index, "active_native_id": index,
+            "creating_operation_id": op})
+        snapshot["native"]["mapping_creation_roots"].append({
+            **operation, "effects": [effect], "creator_inbox_status": 1,
+            "creator_inbox_result_code": 0, "creator_inbox_failure_stage": 0,
+            "creator_inbox_committed_at_present": True})
+    return snapshot
+
+
+def near_limit_mapping_snapshot():
+    low, high = 1, 20_000
+    while low < high:
+        count = (low + high + 1) // 2
+        size = len(json.dumps(mapping_creation_snapshot(count), separators=(",", ":")).encode())
+        if size <= MAX_INPUT_BYTES - 1024:
+            low = count
+        else:
+            high = count - 1
+    return mapping_creation_snapshot(low)
+
+
+def measure_audit_cli(path, limit, name="exceptions"):
+    # A fresh wrapper has exactly one child, so its RUSAGE_CHILDREN peak is
+    # this CLI's peak rather than a prior native compiler/test process's peak.
+    probe = """import json,resource,subprocess,sys,time
+start=time.perf_counter()
+p=subprocess.run([sys.executable,sys.argv[1],sys.argv[2],'--limit',sys.argv[3],'--view',sys.argv[4]],capture_output=True,text=True,timeout=35)
+result={'exit_code':p.returncode,'elapsed_seconds':time.perf_counter()-start,
+        'peak_bytes':resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss*1024,
+        'stderr':p.stderr,'report':json.loads(p.stdout)}
+print(json.dumps(result,separators=(',',':')))
+"""
+    return json.loads(subprocess.check_output([
+        sys.executable, "-c", probe, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+        str(path), str(limit), name]))
+
+
 class ReconciliationTests(unittest.TestCase):
     def codes(self, snapshot):
         before = copy.deepcopy(snapshot)
@@ -112,6 +269,429 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(snapshot, before, "audit must leave its input untouched")
         self.assertEqual(sum(report["exception_counts"].values()), report["exception_count"])
         return set(report["exception_counts"])
+
+    def test_mapping_creation_effect_comparison_scans_evidence_once(self):
+        class MeasuredEffects(dict):
+            inspected = 0
+
+            def items(self):
+                for pair in super().items():
+                    self.inspected += 1
+                    yield pair
+
+        count = 1200
+        snapshot = mapping_creation_snapshot(count)
+        before = copy.deepcopy(snapshot)
+        self.assertEqual(self.codes(snapshot), set())
+        operations = {(row["operation_id"],): row for row in snapshot["operations"]}
+        origins = {(row["account_key"],): row for row in snapshot["account_origins"]}
+        effects = MeasuredEffects({(row["operation_id"], row["account_index"]): row
+                                   for row in snapshot["effects"]})
+        # Mixed key shapes were ignored by the old root comparison and remain
+        # ignored; unrelated values must not be normalized or interpreted.
+        effects["unrelated"] = None
+        effects[("unrelated",)] = None
+        effects[("unrelated", 0, 1)] = None
+        effects[("unrelated", 0)] = None
+        for corrupt in (False, True):
+            if corrupt:
+                snapshot["native"]["mapping_creation_roots"][0]["effects"][0]["after"] = [1, 0, 0, 0]
+            original = copy.deepcopy(snapshot)
+            effects.inspected = 0
+            reader = Reconciler()
+            reader.audit_mapping_creations("disposable", LINEAGE, snapshot["native"],
+                                           origins, operations, effects, EPOCH)
+            self.assertEqual(reader.counts, {"invalid_mapping_creation_root": 1} if corrupt else {})
+            self.assertLessEqual(effects.inspected, len(effects) * 2)
+            self.assertEqual(snapshot, original)
+        snapshot["native"]["mapping_creation_roots"][0]["effects"][0]["after"] = [0, 0, 0, 0]
+        self.assertEqual(snapshot, before)
+
+    def test_original_operation_identity_and_self_link(self):
+        for value in ([], {}, True, 7, "", "0" * 32, "gg" * 16, "AA" * 16,
+                      "44" * 15, "44" * 17, OP):
+            with self.subTest(value=value):
+                snapshot = clean_snapshot()
+                snapshot["operations"][0]["original_operation_id"] = value
+                self.assertEqual(self.codes(snapshot), {"invalid_original_operation"})
+        for value in (None, "44" * 16, "ff" * 16):
+            snapshot = clean_snapshot()
+            snapshot["operations"][0]["original_operation_id"] = value
+            self.assertEqual(self.codes(snapshot), set())
+
+    def test_required_original_link_preserves_distinct_link_and_missing_refusal(self):
+        for value, expected in ((OP, set()), (None, {"missing_original_operation"}),
+                                 ("77" * 16, {"missing_original_operation"}),
+                                 ("66" * 16, {"invalid_original_operation"}),
+                                 ([], {"invalid_original_operation"}),
+                                 ("0" * 32, {"invalid_original_operation"})):
+            with self.subTest(value=value):
+                snapshot = stake_snapshot(True)
+                snapshot["operations"][1]["original_operation_id"] = value
+                self.assertEqual(self.codes(snapshot), expected)
+
+    def test_rejected_root_cannot_self_link_its_original(self):
+        snapshot = clean_snapshot()
+        rejected = copy.deepcopy(snapshot["operations"][0])
+        rejected.update(operation_id="66" * 16, original_operation_id="66" * 16,
+                        outcome="rejected", result_code=9, source_event=None,
+                        account_count=0, posting_count=0, item_event_count=0)
+        snapshot["operations"].append(rejected)
+        snapshot["receipts"].append({"operation_id": "66" * 16, "status": 1,
+                                     "result_code": 9, "failure_stage": 0,
+                                     "committed_at_present": True})
+        self.assertEqual(self.codes(snapshot), {"invalid_original_operation"})
+
+    def test_original_link_operator_views_preserve_global_refusal_and_input(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "snapshot.json"
+            command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                       str(path)]
+            for value in (OP, [], "private-alias"):
+                snapshot = clean_snapshot()
+                snapshot["operations"][0]["original_operation_id"] = value
+                path.write_text(json.dumps(snapshot), encoding="utf-8")
+                before = path.read_bytes()
+                for limit in (0, 1, 100):
+                    result = subprocess.run(command + ["--view", "exceptions", "--limit", str(limit)],
+                                            capture_output=True, text=True, check=False)
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertEqual(json.loads(result.stdout)["exception_counts"],
+                                     {"invalid_original_operation": 1})
+                    self.assertNotIn("private-alias", result.stdout)
+                    self.assertEqual(path.read_bytes(), before)
+                result = subprocess.run(command + ["--view", "operation", "--operation-id", OP],
+                                        capture_output=True, text=True, check=False)
+                self.assertEqual(result.returncode, 1 if value == OP else 2, result.stderr)
+                if value == OP:
+                    self.assertEqual(json.loads(result.stdout)["coverage"]["exception_count"], 1)
+                self.assertNotIn("private-alias", result.stdout)
+                self.assertEqual(path.read_bytes(), before)
+
+    def test_source_kind_policy_covers_optional_and_multi_kind_reasons(self):
+        for reason, allowed, denied in ((3, 16, 1), (5, 1, 3), (7, 7, 2),
+                                        (21, 12, 16), (21, 18, 1), (24, 17, 13),
+                                        (31, 17, 16), (38, 10, 15), (44, 19, 1)):
+            self.assertTrue(source_kind_allowed(reason, allowed))
+            self.assertFalse(source_kind_allowed(reason, denied))
+        for kind in range(1, 24):
+            self.assertTrue(source_kind_allowed(32, kind))
+        for reason in (None, True, False, "3", 0, 47, 65535):
+            self.assertFalse(source_kind_allowed(reason, 16))
+        for kind in (None, True, "16", 0, 24, 65535):
+            self.assertFalse(source_kind_allowed(3, kind))
+
+    def test_matching_source_kind_mismatch_refuses_and_absence_stays_optional(self):
+        snapshot = clean_snapshot()
+        set_operation_source(snapshot, 1)
+        self.assertEqual(self.codes(snapshot), {"unauthorized_source_kind", "unauthorized_source_claim"})
+        snapshot["operations"][0]["source_event"] = None
+        snapshot["source_claims"] = []
+        self.assertEqual(self.codes(snapshot), set())
+        snapshot = clean_snapshot()
+        snapshot["operations"][0]["reason"] = 5
+        set_operation_source(snapshot, 1)
+        self.assertEqual(self.codes(snapshot), set())
+        set_operation_source(snapshot, 3)
+        self.assertEqual(self.codes(snapshot), {"unauthorized_source_kind", "unauthorized_source_claim"})
+        snapshot["operations"][0]["source_event"] = None
+        snapshot["source_claims"] = []
+        self.assertIn("missing_source_event", self.codes(snapshot))
+
+    def test_prior_source_claim_policy_and_retained_uid_source_are_checked(self):
+        snapshot = clean_snapshot()
+        bad = source_identity(kind=1)
+        prior = {"lineage": LINEAGE, "source_event": bad, "operation_id": "77" * 16,
+                 "operation_lineage": LINEAGE, "operation_epoch": "88" * 16,
+                 "operation_source_event": bad, "operation_reason": 3,
+                 "operation_outcome": "committed", "operation_result_code": 0,
+                 "operation_inbox_receipt": {"status": 1, "result_code": 0,
+                                              "failure_stage": 0, "committed_at_present": True}}
+        snapshot["source_claims"].append(prior)
+        self.assertEqual(self.codes(snapshot), {"unauthorized_source_claim"})
+        for reason in (None, True, "3", 0, 47):
+            prior["operation_reason"] = reason
+            self.assertEqual(self.codes(snapshot), {"unknown_source_claim_policy"})
+        prior["operation_reason"] = 3
+        native = {"lineage_uid_references": [], "lineage_uid_reference_roots": [{
+            "operation_id": "77" * 16, "epoch": "88" * 16, "reason": 3,
+            "source_event": bad, "outcome": "committed", "item_event_count": 0,
+            "reference_count": 0}], "lineage_uid_reference_coverage": {"rows": 0, "root_rows": 1}}
+        before = copy.deepcopy(native)
+        reader = Reconciler()
+        reader.audit_lineage_uid_references(LINEAGE, EPOCH, "disposable", native, {})
+        self.assertEqual(reader.counts, {"unauthorized_lineage_uid_source": 1})
+        self.assertEqual(native, before)
+
+    def test_source_policy_operator_cli_retains_bounded_global_refusal(self):
+        snapshot = clean_snapshot()
+        set_operation_source(snapshot, 1)
+        snapshot["operations"][0]["personal_alias"] = "private-source-policy"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "source-policy.json"
+            payload = json.dumps(snapshot).encode()
+            path.write_bytes(payload)
+            for limit in (0, 1, 100):
+                result = subprocess.run([sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                         str(path), "--view", "operation", "--operation-id", OP,
+                                         "--limit", str(limit)], capture_output=True, text=True, timeout=30)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                output = json.loads(result.stdout)
+                self.assertEqual(output["coverage"]["exception_count"], 2)
+                self.assertLessEqual(len(output["rows"]), limit)
+                self.assertNotIn("private-source-policy", result.stdout)
+                self.assertEqual(path.read_bytes(), payload)
+
+    def test_selected_baseline_claim_and_boolean_reason_do_not_inherit_policy(self):
+        snapshot = clean_snapshot()
+        snapshot["operations"][0]["reason"] = 38
+        set_operation_source(snapshot, 10)
+        self.assertIn("baseline_source_claim", self.codes(snapshot))
+        snapshot["operations"][0]["reason"] = True
+        self.assertIn("unknown_policy_reason", self.codes(snapshot))
+        self.assertIn("unknown_source_claim_policy", self.codes(snapshot))
+
+    def test_source_identity_version_kind_and_unsigned_bounds(self):
+        for kind in range(1, 24):
+            for sequence in (0, 2**64 - 1):
+                for slot in (0, 2**32 - 1):
+                    self.assertEqual(decode_source_event(source_identity(kind, "71", sequence, slot)),
+                                     (kind, "71" * 16, "45" * 16, sequence, slot))
+        malformed = [raw.hex() for raw in malformed_sources()]
+        malformed.extend((SOURCE[:-2], SOURCE + "00", "", source_identity(identity="aa").upper(), "gg" * 48,
+                          None, 0, b"x" * 48))
+        for value in malformed:
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(SnapshotError, "invalid source event"):
+                    decode_source_event(value)
+
+    def test_matching_malformed_source_rows_refuse_without_mutating_input(self):
+        for raw in malformed_sources():
+            snapshot = clean_snapshot()
+            snapshot["operations"][0]["source_event"] = raw.hex()
+            snapshot["source_claims"][0]["source_event"] = raw.hex()
+            codes = self.codes(snapshot)
+            self.assertIn("invalid_source_event", codes)
+            self.assertIn("invalid_source_claim", codes)
+            self.assertNotIn("missing_source_claim", codes)
+        rejected = clean_snapshot()
+        rejected["operations"][0]["outcome"] = "rejected"
+        rejected["operations"][0]["source_event"] = malformed_sources()[0].hex()
+        self.assertIn("invalid_source_event", self.codes(rejected))
+
+    def test_prior_epoch_claim_and_uid_roots_validate_source_grammar(self):
+        for raw in malformed_sources():
+            snapshot = clean_snapshot()
+            prior = {"lineage": LINEAGE, "source_event": raw.hex(),
+                     "operation_id": "77" * 16, "operation_lineage": LINEAGE,
+                     "operation_epoch": "88" * 16, "operation_reason": 3,
+                     "operation_source_event": raw.hex(), "operation_outcome": "committed",
+                     "operation_result_code": 0, "operation_inbox_receipt": {
+                         "status": 1, "result_code": 0, "failure_stage": 0,
+                         "committed_at_present": True}}
+            snapshot["source_claims"].append(prior)
+            self.assertIn("invalid_source_claim", self.codes(snapshot))
+            self.assertNotIn("orphan_source_claim", self.codes(snapshot))
+            native = {"lineage_uid_references": [], "lineage_uid_reference_roots": [{
+                "operation_id": "77" * 16, "epoch": "88" * 16, "reason": 3,
+                "source_event": raw.hex(), "outcome": "committed", "item_event_count": 0,
+                "reference_count": 0}], "lineage_uid_reference_coverage": {
+                    "rows": 0, "root_rows": 1}, "mapping_creations": []}
+            reader = Reconciler()
+            reader.audit_lineage_uid_references(LINEAGE, EPOCH, "disposable", native, {})
+            self.assertEqual(reader.counts, {"invalid_lineage_uid_reference_root": 1})
+            reader.audit_coin_pile_lifecycle_sources("disposable", native)
+            self.assertEqual(reader.counts["invalid_coin_pile_lifecycle_source"], 1)
+
+    def test_malformed_source_operator_view_is_bounded_and_retains_refusal(self):
+        snapshot = clean_snapshot()
+        snapshot["operations"][0]["source_event"] = malformed_sources()[0].hex()
+        snapshot["source_claims"][0]["source_event"] = snapshot["operations"][0]["source_event"]
+        snapshot["operations"][0]["personal_alias"] = "private-malformed-source"
+        before = copy.deepcopy(snapshot)
+        report = Reconciler().audit(snapshot)
+        for limit in (0, 1, 100):
+            result = view(snapshot, report, "operation", limit, operation_id=OP)
+            self.assertEqual(result["coverage"]["exception_count"], 2)
+            self.assertLessEqual(len(result["rows"]), limit)
+            self.assertNotIn("private-malformed-source", json.dumps(result))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "source.json"
+            payload = json.dumps(snapshot).encode()
+            path.write_bytes(payload)
+            for limit in (0, 1, 100):
+                result = subprocess.run([sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                         str(path), "--view", "operation", "--operation-id", OP,
+                                         "--limit", str(limit)], capture_output=True, text=True, timeout=30)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                output = json.loads(result.stdout)
+                self.assertEqual(output["coverage"]["exception_count"], 2)
+                self.assertLessEqual(len(output["rows"]), limit)
+                self.assertNotIn("private-malformed-source", result.stdout)
+                self.assertEqual(path.read_bytes(), payload)
+        self.assertEqual(snapshot, before)
+
+    def test_native_account_kind_range_and_unsigned_stake_identity(self):
+        for kind in range(1, 12):
+            for identity, context in ((1, 0), (2**64 - 1, 2**64 - 1)):
+                with self.subTest(kind=kind, identity=identity, context=context):
+                    self.assertEqual(account_key(key(kind, identity, context)),
+                                     (LINEAGE, kind, identity, context))
+        for kind in (0, 12, 65535):
+            with self.subTest(kind=kind):
+                with self.assertRaisesRegex(SnapshotError, "invalid account key"):
+                    account_key(key(kind, 1))
+
+    def test_retained_stake_is_an_ordinary_holding_through_terminal_outcome(self):
+        for terminal in (False, True):
+            with self.subTest(terminal=terminal):
+                self.assertEqual(self.codes(stake_snapshot(terminal)), set())
+        unauthorized = stake_snapshot()
+        unauthorized["operations"][0]["reason"] = 1
+        self.assertIn("unauthorized_counterparty", self.codes(unauthorized))
+
+    def test_stake_money_history_and_native_disagreement_are_reported(self):
+        def stale(s):
+            s["native"]["holdings"][1]["balance"][0] += 1
+        def history(s):
+            s["effects"][1]["before_revision"] = 1
+        def postings(s):
+            s["postings"][1].update(delta=[2, 0, 0, 0], copper_value=2)
+        def negative(s):
+            s["effects"][1]["after"] = [-3, 0, 0, 0]
+            s["native"]["holdings"][1]["balance"] = [-3, 0, 0, 0]
+        def no_origin(s):
+            s["account_origins"].pop()
+        def no_native(s):
+            s["native"]["holdings"].pop()
+        for code, mutation in (("stale_native_balance", stale), ("broken_account_history", history),
+                               ("account_effect_posting_mismatch", postings),
+                               ("negative_holding", negative), ("unknown_opening", no_origin),
+                               ("missing_native_holding", no_native)):
+            with self.subTest(code=code):
+                snapshot = stake_snapshot()
+                mutation(snapshot)
+                self.assertIn(code, self.codes(snapshot))
+        retired = stake_snapshot(True)
+        retired["native"]["holdings"].append({"account_key": key(11, 700, 7),
+                                                "balance": [0, 0, 0, 0], "revision": 2})
+        self.assertIn("retired_native_holding", self.codes(retired))
+        nonzero = stake_snapshot(True)
+        nonzero["effects"][-1]["after"] = [1, 0, 0, 0]
+        self.assertIn("retired_nonzero_holding", self.codes(nonzero))
+
+    def test_stake_does_not_expand_persistent_mapping_kinds(self):
+        stake = key(11, 700, 7)
+        native = {"mapping_creations": [{"mapping_id": 700, "account_key": stake,
+                                        "account_kind": 11, "context_id": 7, "native_id": 7,
+                                        "active_native_id": 7, "creating_operation_id": None}],
+                  "mapping_creation_roots": [], "mapping_creation_coverage": {
+                      "rows": 1, "creator_rows": 0, "root_rows": 0, "missing_roots": 0}}
+        with self.assertRaisesRegex(SnapshotError, "invalid mapping creation row"):
+            Reconciler().audit_mapping_creations("disposable", LINEAGE, native, {})
+        snapshot = clean_snapshot()
+        snapshot["native"]["retired_mappings"] = [{
+            "mapping_id": 700, "account_key": stake, "native_id": 7, "active_native_id": None,
+            "retiring_operation_id": OP, "operation_lineage": LINEAGE, "operation_epoch": EPOCH,
+            "operation_outcome": "committed", "operation_result_code": 0}]
+        snapshot["native"]["retirement_coverage"].update(rows=1, current_epoch_rows=1,
+                                                           unmatched_current_epoch_rows=1)
+        with self.assertRaisesRegex(SnapshotError, "invalid retired mapping"):
+            Reconciler().audit(snapshot)
+
+    def test_stake_operator_lookup_remains_bounded_and_retains_global_refusal(self):
+        snapshot = stake_snapshot()
+        snapshot["complete"] = False
+        snapshot["native"]["holdings"][1]["alias"] = "private-stake-alias"
+        before = copy.deepcopy(snapshot)
+        report = Reconciler().audit(snapshot)
+        stake = key(11, 700, 7)
+        for limit in (0, 1, 100):
+            with self.subTest(limit=limit):
+                result = view(snapshot, report, "holdings", limit, holding_key=stake)
+                self.assertEqual(result["count"], 1)
+                self.assertEqual(result["truncated"], limit == 0)
+                self.assertFalse(result["coverage"]["complete"])
+                if limit:
+                    self.assertEqual(result["rows"][0]["balance"], (3, 0, 0, 0))
+                self.assertNotIn("private-stake-alias", json.dumps(result))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "partial.json"
+            payload = json.dumps(snapshot).encode()
+            path.write_bytes(payload)
+            result = subprocess.run([sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                     str(path), "--view", "holdings", "--account-key", stake],
+                                    capture_output=True, text=True, timeout=30)
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertEqual(json.loads(result.stdout)["count"], 1)
+            self.assertEqual(path.read_bytes(), payload)
+        self.assertEqual(snapshot, before)
+
+    def test_all_operator_views_retain_global_coverage_and_counts(self):
+        for partial in (False, True):
+            for corrupt in (False, True):
+                snapshot = clean_snapshot()
+                snapshot.update(complete=not partial, quiescent=not partial)
+                if corrupt:
+                    snapshot["native"]["holdings"][0]["balance"] = [8, 0, 0, 0]
+                original = copy.deepcopy(snapshot)
+                report = Reconciler().audit(snapshot)
+                self.assertEqual(report["exception_count"], (2 if partial else 0) + int(corrupt))
+                for name in ("holdings", "provenance", "operation", "supply", "prices", "routes"):
+                    expected_count = None
+                    for limit in (0, 1, 100):
+                        with self.subTest(partial=partial, corrupt=corrupt, view=name, limit=limit):
+                            output = view(snapshot, report, name, limit, uid=81,
+                                          operation_id=OP if name == "operation" else None)
+                            coverage = output["coverage"]
+                            self.assertEqual({field: coverage[field] for field in (
+                                "lineage", "selected_epoch", "complete", "quiescent", "exception_count")}, {
+                                "lineage": LINEAGE, "selected_epoch": EPOCH,
+                                "complete": not partial, "quiescent": not partial,
+                                "exception_count": report["exception_count"]})
+                            if expected_count is None:
+                                expected_count = output["count"]
+                            self.assertEqual(output["count"], expected_count)
+                            self.assertLessEqual(len(output["rows"]), limit)
+                            self.assertEqual(output["truncated"], output["count"] > limit)
+                            self.assertNotIn("alias", json.dumps(output))
+                            self.assertEqual(snapshot, original)
+
+    def test_operator_cli_json_retains_global_status_at_every_limit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "snapshot.json"
+            cases = 0
+            for partial in (False, True):
+                for corrupt in (False, True):
+                    snapshot = clean_snapshot()
+                    snapshot.update(complete=not partial, quiescent=not partial)
+                    if corrupt:
+                        snapshot["native"]["holdings"][0]["balance"] = [8, 0, 0, 0]
+                    path.write_text(json.dumps(snapshot))
+                    original = path.read_bytes()
+                    report = Reconciler().audit(snapshot)
+                    for name in ("holdings", "provenance", "operation", "supply", "prices", "routes"):
+                        for limit in (0, 1, 100):
+                            command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                       str(path), "--view", name, "--limit", str(limit)]
+                            if name == "provenance":
+                                command += ["--uid", "81"]
+                            elif name == "operation":
+                                command += ["--operation-id", OP]
+                            result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                            with self.subTest(partial=partial, corrupt=corrupt, view=name, limit=limit):
+                                self.assertEqual(result.returncode, int(report["exception_count"] != 0), result.stderr)
+                                self.assertEqual(result.stderr, "")
+                                output = json.loads(result.stdout)
+                                self.assertEqual(output["coverage"]["exception_count"], report["exception_count"])
+                                self.assertEqual(output["coverage"]["complete"], not partial)
+                                self.assertEqual(output["coverage"]["quiescent"], not partial)
+                                self.assertEqual(output["coverage"]["lineage"], LINEAGE)
+                                self.assertEqual(output["coverage"]["selected_epoch"], EPOCH)
+                                self.assertLessEqual(len(output["rows"]), limit)
+                                self.assertEqual(path.read_bytes(), original)
+                                cases += 1
+            self.assertEqual(cases, 72)
 
     def test_clean_snapshot_and_erased_alias(self):
         snapshot = clean_snapshot()
@@ -147,7 +727,7 @@ class ReconciliationTests(unittest.TestCase):
                 self.assertEqual(result["coverage"], {
                     "lineage": LINEAGE, "selected_epoch": EPOCH, "complete": False,
                     "quiescent": True, "lineage_history_available": True,
-                    "unattributed_history_available": True})
+                    "unattributed_history_available": True, "exception_count": None})
                 self.assertNotIn("private-", json.dumps(result))
                 self.assertNotIn("alias", json.dumps(result))
                 self.assertEqual(snapshot, before)
@@ -554,18 +1134,20 @@ class ReconciliationTests(unittest.TestCase):
         snapshot = clean_snapshot()
         snapshot["backend"] = "sql_partial"
         snapshot["complete"] = False
-        prior = {"lineage": LINEAGE, "source_event": "66" * 48,
+        prior_source = source_identity(identity="66")
+        prior = {"lineage": LINEAGE, "source_event": prior_source,
                  "operation_id": "77" * 16, "operation_lineage": LINEAGE,
-                 "operation_epoch": "88" * 16,
-                 "operation_source_event": "66" * 48,
+                 "operation_epoch": "88" * 16, "operation_reason": 3,
+                 "operation_source_event": prior_source,
                  "operation_outcome": "committed", "operation_result_code": 0,
                  "operation_inbox_receipt": {"status": 1, "result_code": 0,
                                               "failure_stage": 0,
                                               "committed_at_present": True}}
         snapshot["source_claims"].append(prior)
         baseline = copy.deepcopy(prior)
-        baseline.update(source_event="aa" * 48, operation_id="99" * 16,
-                        operation_source_event="aa" * 48, operation_reason=38)
+        baseline_source = source_identity(kind=10, identity="aa")
+        baseline.update(source_event=baseline_source, operation_id="99" * 16,
+                        operation_source_event=baseline_source, operation_reason=38)
         snapshot["source_claims"].append(baseline)
         snapshot["source_claim_coverage"] = {
             "source_operations": 2, "missing_claim_operations": 0,
@@ -577,9 +1159,9 @@ class ReconciliationTests(unittest.TestCase):
         codes = self.codes(snapshot)
         self.assertIn("lineage_missing_source_claim", codes)
         self.assertIn("lineage_duplicate_source_event", codes)
-        prior["operation_source_event"] = "99" * 48
+        prior["operation_source_event"] = source_identity(identity="99")
         self.assertIn("orphan_source_claim", self.codes(snapshot))
-        prior["operation_source_event"] = "66" * 48
+        prior["operation_source_event"] = prior_source
         prior["operation_inbox_receipt"]["committed_at_present"] = False
         self.assertIn("orphan_source_claim", self.codes(snapshot))
         prior["operation_source_event"] = prior["source_event"]
@@ -655,6 +1237,7 @@ class ReconciliationTests(unittest.TestCase):
         self.assertIn("unexpected_realized_price", self.codes(snapshot))
         snapshot = clean_snapshot()
         snapshot["operations"][0].update(reason=21, realized_price_copper=3)
+        set_operation_source(snapshot, 12)
         self.assertEqual(view(snapshot, Reconciler().audit(snapshot), "prices", 10)["count"], 1)
         snapshot["operations"][0].update(outcome="rejected", result_code=9)
         snapshot["receipts"][0].update(result_code=9)
@@ -662,17 +1245,130 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(view(snapshot, Reconciler().audit(snapshot), "prices", 10)["count"], 0)
         snapshot = clean_snapshot()
         snapshot["operations"][0]["reason"] = 21
+        set_operation_source(snapshot, 12)
         snapshot["operations"][0]["realized_price_copper"] = True
         self.assertIn("invalid_realized_price", self.codes(snapshot))
         snapshot["operations"][0]["realized_price_copper"] = 2**63
         self.assertIn("invalid_realized_price", self.codes(snapshot))
         self.assertEqual(view(snapshot, Reconciler().audit(snapshot), "prices", 10)["count"], 0)
 
+    def test_prices_include_lineage_history_and_preserve_conflicts(self):
+        for conflict in (False, True):
+            snapshot = price_snapshot()
+            if conflict:
+                snapshot["native"]["lineage_realized_prices"][0]["realized_price_copper"] = 3001
+            original = copy.deepcopy(snapshot)
+            report = Reconciler().audit(snapshot)
+            self.assertEqual(report["exception_counts"],
+                             {"realized_price_scope_mismatch": 1} if conflict else {})
+            expected = sorted({(row["epoch"], row["operation_id"], row["reason"],
+                                row["realized_price_copper"])
+                               for row in (snapshot["operations"] +
+                                           snapshot["native"]["lineage_realized_prices"])})
+            for limit in (0, 1, 100):
+                with self.subTest(conflict=conflict, limit=limit):
+                    output = view(snapshot, report, "prices", limit)
+                    self.assertEqual(output["count"], 5 if conflict else 4)
+                    self.assertEqual(output["rows"], [
+                        {"epoch": epoch, "operation_id": operation, "reason": reason,
+                         "price_copper": price}
+                        for epoch, operation, reason, price in expected[:limit]])
+                    self.assertEqual(output["truncated"], len(expected) > limit)
+                    self.assertTrue(output["coverage"]["lineage_history_available"])
+                    self.assertEqual(output["coverage"]["realized_price_coverage"],
+                                     snapshot["native"]["realized_price_coverage"])
+                    self.assertEqual(output["coverage"]["exception_count"], int(conflict))
+                    self.assertNotIn("alias", json.dumps(output))
+                    self.assertEqual(snapshot, original)
+
+    def test_price_cli_preserves_history_coverage_and_input(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "prices.json"
+            cases = 0
+            for partial in (False, True):
+                for conflict in (False, True):
+                    snapshot = price_snapshot()
+                    snapshot.update(complete=not partial, quiescent=not partial)
+                    if conflict:
+                        snapshot["native"]["lineage_realized_prices"][0]["realized_price_copper"] = 3001
+                    report = Reconciler().audit(snapshot)
+                    path.write_text(json.dumps(snapshot))
+                    original = path.read_bytes()
+                    for limit in (0, 1, 100):
+                        result = subprocess.run([
+                            sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                            str(path), "--view", "prices", "--limit", str(limit)],
+                            capture_output=True, text=True, timeout=30)
+                        with self.subTest(partial=partial, conflict=conflict, limit=limit):
+                            self.assertEqual(result.returncode, int(report["exception_count"] != 0), result.stderr)
+                            self.assertEqual(result.stderr, "")
+                            output = json.loads(result.stdout)
+                            self.assertEqual(output, view(snapshot, report, "prices", limit))
+                            self.assertEqual(output["count"], 5 if conflict else 4)
+                            self.assertEqual(output["coverage"]["complete"], not partial)
+                            self.assertEqual(output["coverage"]["quiescent"], not partial)
+                            self.assertEqual(output["coverage"]["exception_count"], 2 * int(partial) + int(conflict))
+                            self.assertEqual(path.read_bytes(), original)
+                            cases += 1
+            self.assertEqual(cases, 12)
+
+    def test_prices_exclude_noncommitted_invalid_and_missing_values(self):
+        snapshot = price_snapshot()
+        retained = snapshot["native"]["lineage_realized_prices"]
+        for identity, outcome, price in (("88", "rejected", 9), ("89", "unknown", None),
+                                         ("90", "committed", True), ("91", "committed", -1),
+                                         ("92", "committed", 2**63), ("93", "committed", None)):
+            row = copy.deepcopy(retained[1])
+            row.update(operation_id=identity * 16, outcome=outcome, realized_price_copper=price,
+                       result_code=0 if outcome == "committed" else 9)
+            row["inbox_receipt"]["result_code"] = row["result_code"]
+            retained.append(row)
+        snapshot["native"]["realized_price_coverage"].update(candidate_rows=10, missing_price_rows=2)
+        original = copy.deepcopy(snapshot)
+        report = Reconciler().audit(snapshot)
+        self.assertEqual(report["exception_counts"], {
+            "rejected_realized_price": 1, "unknown_outcome": 1,
+            "invalid_realized_price": 3, "missing_realized_trade_price": 1})
+        output = view(snapshot, report, "prices", 100)
+        self.assertEqual(output["count"], 4)
+        self.assertEqual({row["operation_id"] for row in output["rows"]}, {OP, "44" * 16, "55" * 16, "66" * 16})
+        self.assertEqual(output["coverage"]["exception_count"], 6)
+        self.assertEqual(output["coverage"]["realized_price_coverage"]["missing_price_rows"], 2)
+        self.assertEqual(snapshot, original)
+
+    def test_prices_distinguish_unavailable_empty_and_missing_column_history(self):
+        for available, column in ((False, None), (True, True), (True, False)):
+            snapshot = clean_snapshot()
+            if available:
+                snapshot["native"].update(lineage_realized_prices=[], realized_price_coverage={
+                    "column_available": column, "candidate_rows": 0, "missing_price_rows": 0})
+            report = Reconciler().audit(snapshot)
+            for limit in (0, 1, 100):
+                with self.subTest(available=available, column=column, limit=limit):
+                    output = view(snapshot, report, "prices", limit)
+                    self.assertEqual(output["count"], 0)
+                    self.assertEqual(output["rows"], [])
+                    self.assertFalse(output["truncated"])
+                    self.assertEqual(output["coverage"]["lineage_history_available"], available)
+                    self.assertEqual(output["coverage"]["realized_price_coverage"],
+                                     snapshot["native"].get("realized_price_coverage"))
+                    self.assertEqual(output["coverage"]["exception_count"], int(column is False))
+        snapshot = price_snapshot()
+        del snapshot["native"]["realized_price_coverage"]
+        snapshot["backend"] = "sql_partial"
+        report = Reconciler().audit(snapshot)
+        output = view(snapshot, report, "prices", 100)
+        self.assertEqual(output["count"], 1)
+        self.assertFalse(output["coverage"]["lineage_history_available"])
+        self.assertIsNone(output["coverage"]["realized_price_coverage"])
+        self.assertIn("missing_realized_price_coverage", report["exception_counts"])
+
     def test_domain_purchase_realized_price_matches_current_lineage_root(self):
         for reason in (24, 27):
             with self.subTest(reason=reason):
                 snapshot = clean_snapshot()
                 snapshot["operations"][0].update(reason=reason, realized_price_copper=3000)
+                set_operation_source(snapshot, 17 if reason == 24 else 13)
                 snapshot["native"]["realized_price_coverage"] = {
                     "column_available": True, "candidate_rows": 1, "missing_price_rows": 0}
                 snapshot["native"]["lineage_realized_prices"] = [{
@@ -691,6 +1387,7 @@ class ReconciliationTests(unittest.TestCase):
     def test_realized_price_roots_require_durable_inbox_receipts(self):
         snapshot = clean_snapshot()
         snapshot["operations"][0].update(reason=24, realized_price_copper=3000)
+        set_operation_source(snapshot, 17)
         snapshot["native"]["realized_price_coverage"] = {
             "column_available": True, "candidate_rows": 1, "missing_price_rows": 0}
         snapshot["native"]["lineage_realized_prices"] = [{
@@ -723,7 +1420,7 @@ class ReconciliationTests(unittest.TestCase):
     def test_retired_account_has_zero_terminal_balance_and_no_native_row(self):
         snapshot = clean_snapshot()
         second_id = "66" * 16
-        second_source = "77" * 48
+        second_source = source_identity(identity="77")
         second = copy.deepcopy(snapshot["operations"][0])
         second.update(operation_id=second_id, reason=41, source_event=second_source,
                       item_event_count=0, realized_price_copper=None)
@@ -1582,6 +2279,599 @@ class ReconciliationTests(unittest.TestCase):
             result = subprocess.run(command, capture_output=True, text=True, check=False)
             self.assertEqual(result.returncode, 2, result.stderr)
             self.assertIn("limit exceeded", result.stderr)
+
+
+
+
+def native_stake_sql():
+    """Native structural fixture and SELECT-only SQL proof, without gameplay."""
+    import hashlib
+    import os
+    import struct
+    from unittest import mock
+    import pymysql
+    import migration_runner as migrations
+    import persistence_restore as restore
+    import economic_sql_audit_snapshot as exporter
+    sys.path.insert(0, str(ROOT / "tests/async"))
+    from test_persistence_backup_integration import sql
+    read_evidence = exporter.read_evidence
+    root = ROOT
+    work=root/'bin/tests/plan5-price-view-sql'
+    work.mkdir(mode=0o700,parents=True,exist_ok=True)
+    source=work/'probe.cpp'
+    source.write_text('''#include "economy/economic_accounting_intent.h"
+    #include <cassert>
+    #include <iostream>
+    critical_operation_id id(uint8_t value) { critical_operation_id result; result.bytes.fill(value); return result; }
+    void output(const std::vector<uint8_t> &bytes) {
+        for (size_t i=0;i<4;++i) std::cout.put(static_cast<char>(bytes.size() >> (i*8)));
+        std::cout.write(reinterpret_cast<const char *>(bytes.data()), bytes.size());
+    }
+    void source_case(std::vector<uint8_t> raw) {
+        economic_source_event decoded;
+        const bool valid=economic_source_event_decode(raw,&decoded)==economic_accounting_error::ok;
+        raw.insert(raw.begin(),uint8_t(valid)); output(raw);
+    }
+    void policy_case(economic_operation_metadata &meta,uint16_t reason,uint8_t kind) {
+        meta.reason=static_cast<economic_reason>(reason);
+        meta.actor_kind=reason>=38 && reason<=42 ? economic_actor_kind::operator_action : economic_actor_kind::domain;
+        if (!kind) meta.source_event.reset();
+        else {
+            economic_source_event event;
+            event.kind=static_cast<economic_source_kind>(kind);
+            event.source=id(0x71); event.generation=id(0x72); event.sequence=7; event.slot=0;
+            meta.source_event=event;
+        }
+        const bool valid=economic_operation_metadata_validate(meta)==economic_accounting_error::ok;
+        output({uint8_t(reason),uint8_t(reason>>8),kind,uint8_t(valid)});
+    }
+    int main() {
+        economic_accounting_plan p;
+        auto &m=p.metadata;
+        m.lineage=id(0x11); m.epoch=id(0x22); m.operation_id=id(0x33);
+        m.actor_kind=economic_actor_kind::domain; m.actor_id=7; m.writer_id=1;
+        m.reason=economic_reason::gambling_stake;
+        m.source_event={economic_source_kind::gambling_round,id(0x71),id(0x72),7,0};
+        p.accounts={{{m.lineage,economic_account_kind::wallet,7,0},{10,0,0,0},{7,0,0,0},1,2},
+                    {{m.lineage,economic_account_kind::gambling_stake,700,7},{},{3,0,0,0},0,1}};
+        p.postings={{0,0,0,{-3,0,0,0},-3},{1,1,0,{3,0,0,0},3}};
+        for (size_t step=0;step<2;++step) {
+            economic_frozen_intent intent;
+            intent.admission.metadata=m; intent.command_binding[0]=21; intent.domain_digest[0]=22;
+            std::vector<uint8_t> frozen,encoded;
+            assert(economic_intent_encode(intent,&frozen)==economic_accounting_error::ok);
+            assert(economic_intent_digest(intent,&m.intent_digest)==economic_accounting_error::ok);
+            m.domain_digest=intent.domain_digest;
+            assert(economic_plan_encode(p,&encoded)==economic_accounting_error::ok);
+            economic_accounting_plan decoded;
+            assert(economic_plan_decode(encoded,&decoded)==economic_accounting_error::ok);
+            output(frozen); output(encoded);
+            m.original_operation_id=m.operation_id; m.operation_id=id(0x66);
+            m.reason=economic_reason::gambling_payout; m.source_event->slot=1;
+            p.accounts[0].before={7,0,0,0}; p.accounts[0].after={10,0,0,0};
+            p.accounts[0].before_revision=2; p.accounts[0].after_revision=3;
+            p.accounts[1].before={3,0,0,0}; p.accounts[1].after={};
+            p.accounts[1].before_revision=1; p.accounts[1].after_revision=2;
+            p.postings[0].delta={3,0,0,0}; p.postings[0].copper=3;
+            p.postings[1].delta={-3,0,0,0}; p.postings[1].copper=-3;
+        }
+        economic_source_event event;
+        event.source=id(0x71); event.generation=id(0x72);
+        std::array<uint8_t,ECONOMIC_SOURCE_EVENT_BYTES> encoded;
+        for (uint16_t kind=1;kind<=23;++kind) {
+            event.kind=static_cast<economic_source_kind>(kind);
+            for (uint64_t sequence : {uint64_t(0),UINT64_MAX}) {
+                for (uint32_t slot : {uint32_t(0),UINT32_MAX}) {
+                    event.sequence=sequence; event.slot=slot;
+                    assert(economic_source_event_encode(event,&encoded)==economic_accounting_error::ok);
+                    source_case({encoded.begin(),encoded.end()});
+                }
+            }
+        }
+        std::vector<uint8_t> base(encoded.begin(),encoded.end());
+        for (uint16_t kind : {uint16_t(0),uint16_t(24),uint16_t(UINT16_MAX)}) {
+            auto raw=base; raw[0]=uint8_t(kind); raw[1]=uint8_t(kind>>8); source_case(raw);
+        }
+        for (uint16_t version : {uint16_t(0),uint16_t(2),uint16_t(UINT16_MAX)}) {
+            auto raw=base; raw[2]=uint8_t(version); raw[3]=uint8_t(version>>8); source_case(raw);
+        }
+        for (size_t start : {size_t(4),size_t(20)}) {
+            auto raw=base; std::fill(raw.begin()+start,raw.begin()+start+16,0); source_case(raw);
+        }
+        auto both=base; std::fill(both.begin()+4,both.begin()+36,0); source_case(both);
+        auto short_raw=base; short_raw.pop_back(); source_case(short_raw);
+        auto long_raw=base; long_raw.push_back(0); source_case(long_raw); source_case({});
+        economic_operation_metadata meta;
+        meta.lineage=id(0x11); meta.epoch=id(0x22); meta.operation_id=id(0x33);
+        meta.original_operation_id=id(0x44); meta.actor_id=7; meta.writer_id=1;
+        for (uint16_t reason=1;reason<=46;++reason)
+            for (uint8_t kind=0;kind<=23;++kind) policy_case(meta,reason,kind);
+        for (uint16_t reason : {uint16_t(0),uint16_t(47),uint16_t(UINT16_MAX)}) policy_case(meta,reason,16);
+        for (uint16_t reason : {uint16_t(3),uint16_t(19)}) {
+            meta.reason=static_cast<economic_reason>(reason);
+            meta.actor_kind=economic_actor_kind::domain;
+            meta.source_event->kind=reason==3 ? economic_source_kind::lifecycle : economic_source_kind::gambling_round;
+            for (uint8_t original=0;original<3;++original) {
+                meta.original_operation_id=id(original==0 ? 0 : original==1 ? 0x44 : 0x33);
+                const bool accepted=economic_operation_metadata_validate(meta)==economic_accounting_error::ok;
+                output({uint8_t(reason),uint8_t(reason>>8),original,uint8_t(accepted)});
+            }
+        }
+        // Structural, zero-effect roots for read-only price capture. Prices
+        // live beside the immutable plan in SQL; this is no producer proof.
+        for (uint16_t reason : {uint16_t(21),uint16_t(22),uint16_t(24),uint16_t(27)}) {
+            economic_accounting_plan price_plan;
+            auto &price_meta=price_plan.metadata;
+            price_meta.lineage=id(0x11); price_meta.epoch=id(reason==21 ? 0x22 : 0x77);
+            price_meta.operation_id=id(uint8_t(reason)); price_meta.actor_kind=economic_actor_kind::domain;
+            price_meta.actor_id=7; price_meta.writer_id=1; price_meta.reason=static_cast<economic_reason>(reason);
+            const auto kind=reason==24 ? economic_source_kind::service :
+                            reason==27 ? economic_source_kind::auction : economic_source_kind::shop_stock;
+            price_meta.source_event={kind,id(uint8_t(reason)),id(0x72),7,0};
+            economic_frozen_intent intent;
+            intent.admission.metadata=price_meta; intent.command_binding[0]=21; intent.domain_digest[0]=22;
+            std::vector<uint8_t> frozen,encoded;
+            assert(economic_intent_encode(intent,&frozen)==economic_accounting_error::ok);
+            assert(economic_intent_digest(intent,&price_meta.intent_digest)==economic_accounting_error::ok);
+            price_meta.domain_digest=intent.domain_digest;
+            assert(economic_plan_encode(price_plan,&encoded)==economic_accounting_error::ok);
+            economic_accounting_plan decoded;
+            assert(economic_plan_decode(encoded,&decoded)==economic_accounting_error::ok);
+            output(frozen); output(encoded);
+        }
+    }
+    ''')
+    sources=['src/economy/economic_accounting_plan.c','src/economy/economic_accounting_types.c',
+             'src/economy/economic_accounting_intent.c','src/persistence/critical_command.c',
+             'src/item/item_transfer_command.c','src/item/craft_pouch_mutation.c',
+             'src/combat/chaos_pouch_ledger.c','src/player/player_snapshot_codec.c']
+    environment=dict(os.environ,ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1')
+    outputs=[]
+    for mode in ('sql','flatfile'):
+        binary=work/('probe-'+mode)
+        command=['g++','-std=c++20','-Wall','-Wextra','-Wpedantic','-Werror','-O1','-g',
+                 '-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie','-no-pie','-Isrc',
+                 str(source),*[str(root/name) for name in sources],'-lcrypto','-o',str(binary)]
+        if mode=='flatfile': command.insert(1,'-D__NO_MYSQL__')
+        subprocess.run(command,check=True)
+        result=subprocess.check_output([str(binary)],env=environment)
+        (work/('native-'+mode+'.bin')).write_bytes(result)
+        outputs.append(result)
+        print('NATIVE_STAKE '+mode+' '+json.dumps({'binary':hashlib.sha256(binary.read_bytes()).hexdigest(),
+              'encoded':hashlib.sha256(result).hexdigest()},sort_keys=True),flush=True)
+    assert outputs[0]==outputs[1]
+    blocks=[]
+    payload=outputs[0]
+    offset=0
+    while offset<len(payload):
+        size,=struct.unpack_from('<I',payload,offset); offset+=4
+        blocks.append(payload[offset:offset+size]); offset+=size
+    assert len(blocks)==1229 and offset==len(payload)
+    cases=blocks[4:108]
+    assert sum(case[0] for case in cases)==92
+    for case in cases:
+        try:
+            decoded=decode_source_event(case[1:].hex())
+        except SnapshotError:
+            assert case[0]==0,case.hex()
+        else:
+            assert case[0]==1,case.hex()
+            raw=case[1:]
+            assert decoded==(int.from_bytes(raw[:2],'little'),raw[4:20].hex(),raw[20:36].hex(),
+                             int.from_bytes(raw[36:44],'little'),int.from_bytes(raw[44:48],'little'))
+    print('NATIVE_SOURCE_GRAMMAR modes=2 cases=104 accepted=92 refused=12 agreement=True',flush=True)
+    checker=Reconciler()
+    decisions={}
+    for case in blocks[108:1215]:
+        assert len(case)==4 and case[3] in (0,1)
+        reason,kind,accepted=struct.unpack('<HBB',case)
+        assert (reason,kind) not in decisions
+        decisions[reason,kind]=bool(accepted)
+        if kind:
+            assert source_kind_allowed(reason,kind)==bool(accepted),(reason,kind,accepted)
+        else:
+            required=checker.reasons[reason]['source_event_required']
+            assert type(required) is bool and (not required)==bool(accepted),(reason,accepted)
+    assert len(decisions)==1107 and sum(decisions.values())==346
+    print('NATIVE_SOURCE_POLICY modes=2 decisions=1107 present=1058 absent=46 unknown=3 accepted=346 refused=761 agreement=True',flush=True)
+    original_decisions={}
+    for case in blocks[1215:1221]:
+        reason,variant,accepted=struct.unpack('<HBB',case)
+        assert (reason,variant) not in original_decisions and accepted in (0,1)
+        original_decisions[reason,variant]=bool(accepted)
+        snapshot=clean_snapshot() if reason==3 else stake_snapshot(True)
+        root_row=snapshot['operations'][0 if reason==3 else 1]
+        root_row['original_operation_id']=(None if variant==0 else OP if reason==19 and variant==1
+                                           else '44'*16 if variant==1 else root_row['operation_id'])
+        before=copy.deepcopy(snapshot)
+        report=Reconciler().audit(snapshot)
+        assert (not report['exception_count'])==bool(accepted),(reason,variant,accepted,report)
+        assert snapshot==before
+    assert original_decisions=={(3,0):True,(3,1):True,(3,2):False,(19,0):False,(19,1):True,(19,2):False}
+    print('NATIVE_ORIGINAL_LINK modes=2 decisions=6 accepted=3 refused=3 agreement=True',flush=True)
+    batches=list(zip(blocks[:4:2],blocks[1:4:2]))
+    assert [b[1][:4] for b in batches]==[b'EAP1']*2
+    for frozen,plan in batches:
+        assert frozen[:4]==b'EAI1' and plan[152:184]==hashlib.sha256(b'DURIS-ECONOMIC-INTENT-V1\0'+frozen).digest()
+        assert account_key(plan[376:416].hex())==(LINEAGE,11,700,7)
+    price_batches=list(zip(blocks[1221::2],blocks[1222::2]))
+    assert len(price_batches)==4
+    for frozen,plan in price_batches:
+        assert frozen[:4]==b'EAI1' and plan[:4]==b'EAP1' and len(plan)==256
+        assert plan[152:184]==hashlib.sha256(b'DURIS-ECONOMIC-INTENT-V1\0'+frozen).digest()
+    assert [struct.unpack_from('<H',plan,96)[0] for _,plan in price_batches]==[21,22,24,27]
+    print('NATIVE_PRICE_ROOTS modes=2 roots=4 epochs=2 zero_effect_structural_only=True',flush=True)
+
+    with tempfile.TemporaryDirectory(prefix='duris-stake-audit-sql-') as directory:
+        base=Path(directory)
+        for engine in ('mariadb','mysql'):
+            candidate=base/engine; candidate.mkdir(mode=0o700)
+            with restore.private_database(candidate,engine) as env:
+                version=sql(env,'SELECT VERSION()')
+                assert 'MariaDB' in version if engine=='mariadb' else version.startswith('8.0.') and 'MariaDB' not in version
+                sql(env,payload=(root/'migrations/bootstrap_multithread_safe.sql').read_bytes())
+                with mock.patch.dict(os.environ,env,clear=True):
+                    manifest=migrations.load_manifest(); executor=migrations.MysqlExecutor(manifest)
+                    executor.adopt('fresh_bootstrap'); migrations.run_pending(manifest,executor)
+                assert sql(env,'SELECT sequence_number,migration_id FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1')=='56\t0056_spell_ward_durability'
+                print('STAKE_SQL_SCHEMA '+engine+' '+version+' through=0056',flush=True)
+                owner=pymysql.connect(unix_socket=env['DB_SOCKET'],user='root',database='duris_restore',
+                                      autocommit=True,cursorclass=pymysql.cursors.DictCursor)
+                try:
+                    def insert(table,fields):
+                        with owner.cursor() as cursor:
+                            cursor.execute('INSERT INTO '+table+' ('+','.join(fields)+') VALUES ('+
+                                           ','.join(['%s']*len(fields))+')',tuple(fields.values()))
+                    creator=bytes([7])*16
+                    insert('critical_operation_inbox',dict(operation_id=creator,command_hash=bytes([1])*32,
+                           keys_hash=bytes([2])*32,command_type=1,schema_version=1,payload_version=1,status=1,result_payload=b''))
+                    insert('economic_epoch',dict(lineage=bytes.fromhex(LINEAGE),epoch=bytes.fromhex(EPOCH),ordinal=2,
+                           transition_kind=1,transition_digest=bytes([3])*32,creating_operation_id=creator))
+                    insert('economic_lineage_state',dict(lineage=bytes.fromhex(LINEAGE),active_epoch=None))
+                    with owner.cursor() as cursor:
+                        cursor.execute("CREATE USER 'stake_reader'@'localhost' IDENTIFIED BY 'disposable-stake-reader'")
+                        cursor.execute("GRANT SELECT ON duris_restore.* TO 'stake_reader'@'localhost'")
+                    reader=pymysql.connect(unix_socket=env['DB_SOCKET'],user='stake_reader',password='disposable-stake-reader',
+                                           database='duris_restore',autocommit=True,cursorclass=pymysql.cursors.DictCursor)
+                    try:
+                        with reader.cursor() as cursor:
+                            try: cursor.execute('UPDATE economic_lineage_state SET revision=revision')
+                            except pymysql.MySQLError as error: assert error.args[0]==1142
+                            else: raise AssertionError('SELECT-only permission is missing')
+                        def rows():
+                            with owner.cursor() as cursor:
+                                result=[]
+                                for table in ('economic_lineage_state','economic_epoch','critical_operation_inbox',
+                                              'economic_accounting_operation','economic_accounting_account_effect',
+                                              'economic_accounting_coin_posting','economic_accounting_source_claim'):
+                                    cursor.execute('SELECT * FROM '+table+' ORDER BY 1,2'); result.append(cursor.fetchall())
+                                return result
+                        captures=0
+                        def audit(terminal,expected=(),prices=False):
+                            nonlocal captures
+                            captures+=1
+                            before=rows(); oracle=stake_snapshot(terminal)
+                            original=copy.deepcopy(oracle)
+                            cursor=mock.Mock(wraps=reader.cursor()); connection=mock.Mock(wraps=reader)
+                            connection.cursor.return_value=cursor
+                            try:
+                                cursor.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
+                                cursor.execute('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY')
+                                cut=read_evidence(cursor,bytes.fromhex(LINEAGE),bytes.fromhex(EPOCH),True)
+                                if prices:
+                                    price_rows,price_coverage=exporter.read_lineage_realized_prices(
+                                        cursor,bytes.fromhex(LINEAGE),True)
+                            finally:
+                                connection.rollback(); cursor.close()
+                            connection.rollback.assert_called_once_with(); cursor.close.assert_called_once_with()
+                            assert all(call.args[0].upper().startswith(('SELECT','SET TRANSACTION','START TRANSACTION'))
+                                       for call in cursor.execute.call_args_list)
+                            assert rows()==before and oracle==original
+                            snapshot=oracle|{k:v for k,v in cut.items() if k not in ('account_origins','item_origins')}
+                            if prices:
+                                snapshot['native'].update(lineage_realized_prices=price_rows,
+                                                          realized_price_coverage=price_coverage)
+                            snapshot_before=copy.deepcopy(snapshot)
+                            report=Reconciler().audit(snapshot)
+                            assert set(report['exception_counts'])==set(expected),report
+                            assert snapshot==snapshot_before
+                            if prices:
+                                assert price_coverage['column_available'] and price_coverage['candidate_rows']==4
+                                assert len(price_rows)==4 and {row['epoch'] for row in price_rows}=={EPOCH,'77'*16}
+                                assert price_coverage['missing_price_rows']==int('missing_realized_trade_price' in expected)
+                                expected_count=4-int(bool(expected))
+                                path=work/('captured-prices-'+engine+'.json')
+                                path.write_text(json.dumps(snapshot))
+                                original_bytes=path.read_bytes()
+                                for limit in (0,1,100):
+                                    output=view(snapshot,report,'prices',limit)
+                                    assert output['count']==expected_count and output['truncated']==(expected_count>limit)
+                                    assert output['coverage']['lineage_history_available']
+                                    assert output['coverage']['realized_price_coverage']==price_coverage
+                                    assert output['coverage']['exception_count']==int(bool(expected))
+                                    result=subprocess.run([sys.executable,str(root/'scripts/reconcile_economy_accounting.py'),
+                                                           str(path),'--view','prices','--limit',str(limit)],
+                                                          capture_output=True,text=True,timeout=30)
+                                    assert result.returncode==int(bool(expected)) and not result.stderr,result.stderr
+                                    assert json.loads(result.stdout)==output
+                                    assert path.read_bytes()==original_bytes and snapshot==snapshot_before
+                                if not expected:
+                                    snapshot.update(complete=False,quiescent=False)
+                                    partial=Reconciler().audit(snapshot)
+                                    for limit in (0,1,100):
+                                        output=view(snapshot,partial,'prices',limit)
+                                        assert output['count']==4 and output['coverage']['exception_count']==2
+                                        assert not output['coverage']['complete'] and not output['coverage']['quiescent']
+                                    assert snapshot==snapshot_before|{'complete':False,'quiescent':False}
+                            if not terminal and not expected:
+                                snapshot['complete']=False
+                                partial=Reconciler().audit(snapshot)
+                                for limit in (0,1,100):
+                                    result=view(snapshot,partial,'holdings',limit,holding_key=plan[376:416].hex())
+                                    assert result['count']==1 and result['truncated']==(limit==0)
+                                    assert result['coverage']['exception_count']==1 and not result['coverage']['complete']
+                                    for name in ('holdings','provenance','operation','supply','prices','routes'):
+                                        output=view(snapshot,partial,name,limit,uid=81,
+                                                    operation_id=snapshot['operations'][0]['operation_id']
+                                                    if name=='operation' else None)
+                                        assert output['coverage']['exception_count']==1
+                                        assert output['coverage']['lineage']==LINEAGE
+                                        assert output['coverage']['selected_epoch']==EPOCH
+                                        assert not output['coverage']['complete'] and output['coverage']['quiescent']
+                                        assert len(output['rows'])<=limit
+                                assert snapshot==snapshot_before|{'complete':False}
+                            return report
+                        for index,(frozen,plan) in enumerate(batches):
+                            op=plan[40:56]; accounts,postings,children,before,after,events=struct.unpack_from('<6I',plan,216)
+                            insert('critical_operation_inbox',dict(operation_id=op,command_hash=bytes([4])*32,keys_hash=bytes([5])*32,
+                                   command_type=3,schema_version=2,payload_version=1,status=1,result_code=0,
+                                   durable_revision=index+1,result_payload=b''))
+                            with owner.cursor() as cursor:
+                                cursor.execute('UPDATE critical_operation_inbox SET committed_at=CURRENT_TIMESTAMP(6) WHERE operation_id=%s',(op,))
+                            insert('economic_accounting_operation',dict(operation_id=op,lineage=plan[8:24],epoch=plan[24:40],
+                                   original_operation_id=None if index==0 else plan[56:72],accounting_version=1,
+                                   writer_id=1,policy_version=1,compiler_version=1,actor_kind=plan[72],actor_id=7,
+                                   reason=struct.unpack_from('<H',plan,96)[0],source_event=plan[104:152],
+                                   intent_digest=plan[152:184],domain_digest=plan[184:216],plan_digest=hashlib.sha256(plan).digest(),
+                                   canonical_intent=frozen,canonical_plan=plan,outcome=1,result_code=0,account_count=accounts,
+                                   posting_count=postings,child_count=children,item_event_count=events,
+                                   before_witness_count=before,after_witness_count=after))
+                            for n in range(accounts):
+                                offset=256+n*120; fields=dict(operation_id=op,account_index=n,account_key=plan[offset:offset+40])
+                                fields.update(zip((f'{side}_{coin}' for side in ('before','after') for coin in ('copper','silver','gold','platinum')),
+                                                  struct.unpack_from('<8q',plan,offset+40)))
+                                fields.update(zip(('before_revision','after_revision'),struct.unpack_from('<2Q',plan,offset+104)))
+                                insert('economic_accounting_account_effect',fields)
+                            for n in range(postings):
+                                offset=256+accounts*120+n*48; event,account,child=struct.unpack_from('<IHH',plan,offset)
+                                fields=dict(operation_id=op,line_index=n,event_index=event,account_index=account,child_index=child)
+                                fields.update(zip(('delta_copper','delta_silver','delta_gold','delta_platinum','copper_value'),
+                                                  struct.unpack_from('<5q',plan,offset+8)))
+                                insert('economic_accounting_coin_posting',fields)
+                            insert('economic_accounting_source_claim',dict(lineage=plan[8:24],source_event=plan[104:152],operation_id=op,outcome=1))
+                            audit(bool(index))
+                        with owner.cursor() as cursor:
+                            cursor.execute('UPDATE economic_accounting_account_effect SET after_copper=1 WHERE operation_id=%s AND account_index=1',(op,))
+                        audit(True,('account_effect_posting_mismatch','retired_nonzero_holding'))
+                        with owner.cursor() as cursor:
+                            cursor.execute('UPDATE economic_accounting_account_effect SET after_copper=0 WHERE operation_id=%s AND account_index=1',(op,))
+                        audit(True)
+                        def replace_source(value):
+                            # Preserve the canonical source/root FK while the
+                            # fixture owner substitutes matching corrupt bytes.
+                            owner.begin()
+                            try:
+                                with owner.cursor() as cursor:
+                                    cursor.execute('DELETE FROM economic_accounting_source_claim WHERE operation_id=%s',(op,))
+                                    cursor.execute('UPDATE economic_accounting_operation SET source_event=%s WHERE operation_id=%s',
+                                                   (value,op))
+                                insert('economic_accounting_source_claim',dict(lineage=plan[8:24],source_event=value,
+                                       operation_id=op,outcome=1))
+                                owner.commit()
+                            except Exception:
+                                owner.rollback()
+                                raise
+                        # Both rows agree on each corrupt S48 value. Agreement
+                        # must not substitute for native identity validity.
+                        for case in cases:
+                            if case[0] or len(case)!=49:
+                                continue
+                            replace_source(case[1:])
+                            audit(True,('invalid_source_event','invalid_source_claim'))
+                        replace_source(plan[104:152])
+                        audit(True)
+                        valid_by_kind={}
+                        for case in cases:
+                            if case[0]:
+                                kind=decode_source_event(case[1:].hex())[0]
+                                valid_by_kind.setdefault(kind,case[1:])
+                        assert set(valid_by_kind)==set(range(1,24))
+                        for kind,value in valid_by_kind.items():
+                            if kind==6:
+                                continue
+                            assert not decisions[19,kind]
+                            replace_source(value)
+                            audit(True,('unauthorized_source_kind','unauthorized_source_claim'))
+                        replace_source(plan[104:152])
+                        audit(True)
+                        # Canonical FK permits an original pointing at this
+                        # root's own inbox. Native metadata and the independent
+                        # reader must still refuse that self-link.
+                        for original_op in (batches[0][1][40:56],op):
+                            with owner.cursor() as cursor:
+                                cursor.execute('UPDATE economic_accounting_operation SET original_operation_id=operation_id WHERE operation_id=%s',
+                                               (original_op,))
+                            audit(True,('invalid_original_operation',))
+                            with owner.cursor() as cursor:
+                                cursor.execute('UPDATE economic_accounting_operation SET original_operation_id=%s WHERE operation_id=%s',
+                                               (None if original_op!=op else plan[56:72],original_op))
+                            audit(True)
+                        price_creator=bytes([8])*16
+                        insert('critical_operation_inbox',dict(operation_id=price_creator,command_hash=bytes([1])*32,
+                               keys_hash=bytes([2])*32,command_type=1,schema_version=1,payload_version=1,status=1,result_payload=b''))
+                        insert('economic_epoch',dict(lineage=bytes.fromhex(LINEAGE),epoch=bytes.fromhex('77'*16),ordinal=1,
+                               transition_kind=1,transition_digest=bytes([3])*32,creating_operation_id=price_creator))
+                        for index,(frozen,price_plan) in enumerate(price_batches):
+                            price_op=price_plan[40:56]
+                            insert('critical_operation_inbox',dict(operation_id=price_op,command_hash=bytes([4])*32,
+                                   keys_hash=bytes([5])*32,command_type=3,schema_version=2,payload_version=1,status=1,
+                                   result_code=0,durable_revision=index+1,result_payload=b''))
+                            with owner.cursor() as cursor:
+                                cursor.execute('UPDATE critical_operation_inbox SET committed_at=CURRENT_TIMESTAMP(6) WHERE operation_id=%s',
+                                               (price_op,))
+                            insert('economic_accounting_operation',dict(operation_id=price_op,lineage=price_plan[8:24],
+                                   epoch=price_plan[24:40],accounting_version=1,writer_id=1,policy_version=1,compiler_version=1,
+                                   actor_kind=price_plan[72],actor_id=7,reason=struct.unpack_from('<H',price_plan,96)[0],
+                                   source_event=price_plan[104:152],intent_digest=price_plan[152:184],domain_digest=price_plan[184:216],
+                                   plan_digest=hashlib.sha256(price_plan).digest(),canonical_intent=frozen,canonical_plan=price_plan,
+                                   outcome=1,result_code=0,account_count=0,posting_count=0,child_count=0,item_event_count=0,
+                                   before_witness_count=0,after_witness_count=0,realized_price_copper=(3000,125,0,2**63-1)[index]))
+                            insert('economic_accounting_source_claim',dict(lineage=price_plan[8:24],source_event=price_plan[104:152],
+                                   operation_id=price_op,outcome=1))
+                        audit(True,prices=True)
+                        historical_price_op=price_batches[1][1][40:56]
+                        with owner.cursor() as cursor:
+                            cursor.execute('UPDATE economic_accounting_operation SET realized_price_copper=NULL WHERE operation_id=%s',
+                                           (historical_price_op,))
+                        audit(True,('missing_realized_trade_price',),prices=True)
+                        owner.begin()
+                        with owner.cursor() as cursor:
+                            # Canonical rejection has no committed plan or
+                            # successful source claim. Keep FK/CHECKs enabled.
+                            cursor.execute('DELETE FROM economic_accounting_source_claim WHERE operation_id=%s',(historical_price_op,))
+                            cursor.execute('UPDATE economic_accounting_operation SET outcome=2,result_code=9,realized_price_copper=125,plan_digest=NULL,canonical_plan=NULL WHERE operation_id=%s',
+                                           (historical_price_op,))
+                            cursor.execute('UPDATE critical_operation_inbox SET result_code=9 WHERE operation_id=%s',(historical_price_op,))
+                        owner.commit()
+                        audit(True,('rejected_realized_price',),prices=True)
+                        owner.begin()
+                        with owner.cursor() as cursor:
+                            retained_plan=price_batches[1][1]
+                            cursor.execute('UPDATE economic_accounting_operation SET outcome=1,result_code=0,plan_digest=%s,canonical_plan=%s WHERE operation_id=%s',
+                                           (hashlib.sha256(retained_plan).digest(),retained_plan,historical_price_op))
+                            cursor.execute('UPDATE critical_operation_inbox SET result_code=0 WHERE operation_id=%s',(historical_price_op,))
+                            cursor.execute('INSERT INTO economic_accounting_source_claim (lineage,source_event,operation_id,outcome) VALUES (%s,%s,%s,1)',
+                                           (retained_plan[8:24],retained_plan[104:152],historical_price_op))
+                        owner.commit()
+                        audit(True,prices=True)
+                        print('PASS price-read-only '+engine+' captures=4 rollback=4 SQL-tables=7 unchanged inactive native-roots=4 epochs=2 CLI-cases=12 limits=0,1,100',flush=True)
+                        with owner.cursor() as cursor:
+                            cursor.execute('SELECT active_epoch FROM economic_lineage_state'); assert cursor.fetchall()==[{'active_epoch':None}]
+                        assert captures==45,captures
+                        print('PASS stake-read-only '+engine+' captures=45 rollback=45 SQL-tables=7 unchanged inactive source-refusals=9 source-kind-refusals=22 original-self-refusals=2',flush=True)
+                    finally: reader.close()
+                finally: owner.close()
+    print('STAKE_SQL_QUALIFIED '+json.dumps({'engines':2,'native_modes':2,'plans':2,'intents':2,
+          'read_only_captures':90,'fault_captures':72,'source_fault_captures':62,'source_kind_fault_captures':44,
+          'price_roots':4,'price_epochs':2,'price_captures':8,'price_CLI_cases':24,
+          'original_link_fault_captures':4,'native_original_link_cases':6,
+          'native_source_cases':104,'native_policy_cases':1107,
+          'permission_denials':2,'full_mutation_or_gameplay':False},sort_keys=True),flush=True)
+
+
+@unittest.skipUnless(os.environ.get("DURIS_RUN_STAKE_SQL_INTEGRATION") == "1",
+                     "requires explicit disposable Linux native/SQL stake invocation")
+class NativeStakeSQLTests(unittest.TestCase):
+    def test_native_stake_sql_both_engines(self):
+        native_stake_sql()
+
+
+@unittest.skipUnless(os.environ.get("DURIS_RUN_AUDIT_BUDGET") == "1" and sys.platform == "linux",
+                     "requires explicit Linux audit budget invocation")
+class AuditBudgetTests(unittest.TestCase):
+    def test_near_limit_price_view_cli_budget_and_limit_invariance(self):
+        import hashlib
+        snapshot = price_snapshot()
+        current, historical = snapshot["native"]["lineage_realized_prices"][:2]
+        for row in (current, historical):
+            del row["personal_alias"]
+        snapshot["native"]["lineage_realized_prices"] = [current]
+        coverage = snapshot["native"]["realized_price_coverage"]
+        coverage["candidate_rows"] = 1
+        base_size = len(json.dumps(snapshot, separators=(",", ":")).encode())
+        row_size = len(json.dumps(historical, separators=(",", ":")).encode()) + 1
+        count = min(MAX_ROWS - 1, (MAX_INPUT_BYTES - 2048 - base_size) // row_size)
+        snapshot["native"]["lineage_realized_prices"].extend(
+            {**historical, "operation_id": index.to_bytes(16, "little").hex()}
+            for index in range(1, count + 1))
+        coverage["candidate_rows"] = count + 1
+        with tempfile.TemporaryDirectory(prefix="duris-price-budget-") as directory:
+            path = Path(directory) / "prices.json"
+            for conflict in (False, True):
+                if conflict:
+                    current["realized_price_copper"] = 3001
+                payload = json.dumps(snapshot, separators=(",", ":")).encode()
+                # Compact prices reach the per-collection row bound first.
+                # Valid trailing JSON whitespace also exercises the byte bound.
+                payload += b" " * (MAX_INPUT_BYTES - 2048 - len(payload))
+                self.assertTrue(MAX_INPUT_BYTES - 4000 <= len(payload) <= MAX_INPUT_BYTES - 1024)
+                path.write_bytes(payload)
+                for limit in (0, 1, 100):
+                    result = measure_audit_cli(path, limit, "prices")
+                    self.assertEqual(result["exit_code"], int(conflict), result)
+                    self.assertEqual(result["stderr"], "")
+                    output = result["report"]
+                    self.assertEqual(output["count"], count + 1 + int(conflict))
+                    self.assertEqual(len(output["rows"]), limit)
+                    self.assertTrue(output["truncated"])
+                    self.assertEqual(output["coverage"]["exception_count"], int(conflict))
+                    self.assertTrue(output["coverage"]["lineage_history_available"])
+                    self.assertEqual(output["coverage"]["realized_price_coverage"], coverage)
+                    self.assertLessEqual(result["elapsed_seconds"], 30)
+                    self.assertLessEqual(result["peak_bytes"], 256 * 1024 * 1024)
+                    self.assertEqual(path.read_bytes(), payload)
+                    print("PRICE_VIEW_BUDGET " + json.dumps({
+                        "captured_price_roots": count + 1, "view_count": output["count"],
+                        "bytes": len(payload), "input_sha256": hashlib.sha256(payload).hexdigest(),
+                        "conflict": conflict, "limit": limit,
+                        "exception_count": output["coverage"]["exception_count"],
+                        "elapsed_seconds": result["elapsed_seconds"], "peak_bytes": result["peak_bytes"],
+                        "input_unchanged": True, "synthetic_component": True,
+                        "release_host_qualified": False}, sort_keys=True), flush=True)
+
+    def test_near_limit_mapping_snapshot_cli_budget_and_limit_invariance(self):
+        import hashlib
+        snapshot = near_limit_mapping_snapshot()
+        count = len(snapshot["operations"])
+        with tempfile.TemporaryDirectory(prefix="duris-audit-budget-") as directory:
+            path = Path(directory) / "snapshot.json"
+            for corrupt in (False, True):
+                if corrupt:
+                    snapshot["native"]["mapping_creation_roots"][0]["effects"][0]["after"] = [1, 0, 0, 0]
+                payload = json.dumps(snapshot, separators=(",", ":")).encode()
+                self.assertTrue(MAX_INPUT_BYTES - 4000 <= len(payload) <= MAX_INPUT_BYTES - 1024)
+                path.write_bytes(payload)
+                expected = {"invalid_mapping_creation_root": 1} if corrupt else {}
+                for limit in (0, 1, 100):
+                    result = measure_audit_cli(path, limit)
+                    self.assertEqual(result["exit_code"], int(corrupt), result)
+                    self.assertEqual(result["stderr"], "")
+                    self.assertEqual(result["report"]["exception_counts"], expected)
+                    self.assertEqual(result["report"]["checked"]["operations"], count)
+                    self.assertEqual(result["report"]["checked"]["effects"], count)
+                    self.assertLessEqual(len(result["report"]["exceptions"]), limit)
+                    self.assertLessEqual(result["elapsed_seconds"], 30)
+                    self.assertLessEqual(result["peak_bytes"], 256 * 1024 * 1024)
+                    self.assertEqual(path.read_bytes(), payload)
+                    print("AUDIT_BUDGET " + json.dumps({
+                        "roots": count, "bytes": len(payload), "input_sha256": hashlib.sha256(payload).hexdigest(),
+                        "corrupt": corrupt, "limit": limit, "exception_counts": expected,
+                        "elapsed_seconds": result["elapsed_seconds"], "peak_bytes": result["peak_bytes"],
+                        "input_unchanged": True, "synthetic_component": True,
+                        "release_host_qualified": False}, sort_keys=True), flush=True)
+            # A valid JSON document with whitespace over the byte budget must
+            # refuse before parsing, including when no details are requested.
+            oversized = payload + b" " * (MAX_INPUT_BYTES + 1 - len(payload))
+            path.write_bytes(oversized)
+            for limit in (0, 100):
+                result = subprocess.run([
+                    sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                    str(path), "--limit", str(limit)], capture_output=True, text=True, timeout=35)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("snapshot or output limit exceeded", result.stderr)
+                self.assertEqual(path.read_bytes(), oversized)
 
 
 if __name__ == "__main__":
