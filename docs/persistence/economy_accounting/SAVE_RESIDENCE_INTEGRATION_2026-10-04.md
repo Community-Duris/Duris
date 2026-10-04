@@ -148,3 +148,29 @@ Private BEFORE source copies are preserved at source base `c30a97622`.
 Formatting/diff hygiene only; no compiler/tests/native SQL or qualified push.
 Actual caller residence, serial lifecycle, other native writers, complete clean
 census, critical ACK, production startup/revisit and major-plan gates remain open.
+
+## Positive-PID synchronous save owner
+
+Source tracing found the synchronous `writeCharacter` path changed money and
+equipment before `sql_save_player` began its transaction, and its failed legacy
+rollback could clear the local flag without native idle proof. The owner now
+retains a resident claim, explicit execution scope and nested permit before that
+pre-save work, through native SQL, existing inventory restoration and post-save
+hooks. The raw pet participant also borrows the same scope before native mutation.
+
+The outer owner finishes exact-main-session cleanup before its permit/scope/claim
+unwind. Literal rollback and same-session idle checks do not trust the old local
+transaction flag. Unconfirmed cleanup closes the exact main connection and
+latches existing runtime exclusion loss, retaining the separate lifecycle control
+and pool. It introduces no reconnect or new recovery framework. A master-save
+exception follows the existing failed-source restoration tail; uncertain partial
+gameplay tails poison admission and cannot claim complete restoration.
+
+Enabled PID-zero creation, caller-owned transactions, direct migration without a
+scope and independent component/locker writers remain incomplete paths. The healthy
+inactive body remains the legacy path. Source review by the maintainer and architect
+accepted this bounded owner; formatting and diff hygiene passed. No compiler,
+tests, native SQL/gameplay/persistence/recovery checks or qualified push ran.
+Maintainer preserved the four original source files under
+`tmp/synchronous-save-boundary-before-v1.local`; this is not a compiler closure.
+Plan1 remains unfinished and ownership is still disabled.

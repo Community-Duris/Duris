@@ -40,6 +40,10 @@
 #include "economy/collector_service.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_save_journal.h"
+#include "player/player_save_replay_ownership.h"
+#ifndef __NO_MYSQL__
+#include "player/player_sql_transaction_cleanup.h"
+#endif
 #include "player/player_revision_state.h"
 #include "persistence/persistence_mode.h"
 #include "world/handler.h"
@@ -67,6 +71,7 @@
 #include <array>
 #include <limits>
 #include <new>
+#include <optional>
 #include <string>
 #include <vector>
 using namespace std;
@@ -1772,6 +1777,36 @@ static void finish_saved_character_inventory(P_char ch, bool save_succeeded, boo
 	}
 }
 
+#ifndef __NO_MYSQL__
+// Game-thread, exact-main-session cleanup only. Declared after the save permit
+// so rollback/retirement finishes before any replay can acquire this PID.
+class synchronous_save_session_cleanup
+{
+	MYSQL *original_;
+	unsigned long session_;
+	bool pending_ = true;
+
+    public:
+	explicit synchronous_save_session_cleanup(MYSQL *original) noexcept
+		: original_(original)
+		, session_(mysql_thread_id(original))
+	{
+	}
+	synchronous_save_session_cleanup(const synchronous_save_session_cleanup &) = delete;
+	synchronous_save_session_cleanup &
+	operator=(const synchronous_save_session_cleanup &) = delete;
+	~synchronous_save_session_cleanup() noexcept { (void)finish(); }
+	void arm() noexcept { pending_ = true; }
+	bool finish() noexcept
+	{
+		if (!pending_)
+			return true;
+		pending_ = false;
+		return sql_finish_owned_player_save(original_, session_);
+	}
+};
+#endif
+
 int writeCharacter(P_char ch, int type, int room)
 {
 	int i;
@@ -1795,237 +1830,327 @@ int writeCharacter(P_char ch, int type, int room)
 				    type == RENT_CAMPED || type == RENT_DEATH ||
 				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
 				    type == RENT_FIGHTARTI);
-	const character_save_admission admission = admit_character_save(ch, is_locker_char);
-	if (admission != character_save_admission::proceed)
-		return admission == character_save_admission::deferred;
-
-	// locker hook (pre-save)
-	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
-	    (world[ch->in_room].funct))
-		room = (*world[ch->in_room].funct)(ch->in_room, ch, (-80), NULL);
-
-	if (!is_locker_char && GET_PID(ch) > 0 && !sql_in_transaction() &&
-	    !IS_SET(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE) &&
-	    player_save_pipeline_is_nonterminal_type(type))
+#ifndef __NO_MYSQL__
+	player_save_execution_guard::resident_claim residence;
+	std::optional<player_save_execution_guard::execution_scope> execution_scope;
+	std::optional<player_save_execution_guard::permit> execution;
+	std::optional<synchronous_save_session_cleanup> native_cleanup;
+	const auto epoch = player_save_execution_guard::current_ownership_epoch();
+	const bool asynchronous_save = !is_locker_char && GET_PID(ch) > 0 &&
+				       !sql_in_transaction() &&
+				       !IS_SET(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE) &&
+				       player_save_pipeline_is_nonterminal_type(type);
+	if (epoch && !is_locker_char && !asynchronous_save)
 	{
-		room = calculate_save_room(ch, type, room);
-		const player_save_pipeline_result queued = player_save_pipeline_request(
-			ch, PLAYER_CHECKPOINT_COMPONENT_ALL, type, room);
-		return queued == player_save_pipeline_result::queued ||
-		       queued == player_save_pipeline_result::coalesced;
+		// Refuse unwired identity and caller-transaction lifetimes before any
+		// recovery callback, locker pre-hook, scalar update or equipment change.
+		if (!nevent_is_game_thread() || GET_PID(ch) <= 0 || sql_in_transaction() ||
+		    player_sql_idle_error(DB))
+			return 0;
+		residence = player_save_execution_guard::resident_claim(epoch, GET_PID(ch));
+		if (!residence)
+			return 0;
+		execution_scope.emplace(residence);
+		if (execution_scope->result() !=
+		    player_save_execution_guard::ownership_status::allowed)
+			return 0;
+		execution.emplace(GET_PID(ch));
+		if (!*execution)
+			return 0;
+		native_cleanup.emplace(DB);
 	}
+	auto save = [&]() -> int
+	{
+#endif
+		const character_save_admission admission = admit_character_save(ch, is_locker_char);
+		if (admission != character_save_admission::proceed)
+			return admission == character_save_admission::deferred;
+
+		// locker hook (pre-save)
+		if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
+		    (world[ch->in_room].funct))
+			room = (*world[ch->in_room].funct)(ch->in_room, ch, (-80), NULL);
+
+		if (!is_locker_char && GET_PID(ch) > 0 && !sql_in_transaction() &&
+		    !IS_SET(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE) &&
+		    player_save_pipeline_is_nonterminal_type(type))
+		{
+			room = calculate_save_room(ch, type, room);
+			const player_save_pipeline_result queued = player_save_pipeline_request(
+				ch, PLAYER_CHECKPOINT_COMPONENT_ALL, type, room);
+			return queued == player_save_pipeline_result::queued ||
+			       queued == player_save_pipeline_result::coalesced;
+		}
 
 #ifdef __NO_MYSQL__
-	if (!is_locker_char &&
-	    (terminal_type || IS_SET(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE)))
-	{
-		const bool establishing_baseline =
-			IS_SET(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
-		room = calculate_save_room(ch, type, room);
-		if (ch->desc)
-			ch->desc->rtype = type;
-		const player_save_terminal_result saved =
-			player_save_pipeline_terminal(ch, type, room, 5000, false);
-		if (saved != player_save_terminal_result::database_acknowledged)
-			return 0;
-		if (establishing_baseline)
+		if (!is_locker_char &&
+		    (terminal_type || IS_SET(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE)))
 		{
-			flatfile_player_domain_record domains;
-			std::string domain_error;
-			const char *account = get_account_name_safe(ch);
-			if (!account || !*account || !strcmp(account, "Unknown"))
+			const bool establishing_baseline =
+				IS_SET(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
+			room = calculate_save_room(ch, type, room);
+			if (ch->desc)
+				ch->desc->rtype = type;
+			const player_save_terminal_result saved =
+				player_save_pipeline_terminal(ch, type, room, 5000, false);
+			if (saved != player_save_terminal_result::database_acknowledged)
+				return 0;
+			if (establishing_baseline)
+			{
+				flatfile_player_domain_record domains;
+				std::string domain_error;
+				const char *account = get_account_name_safe(ch);
+				if (!account || !*account || !strcmp(account, "Unknown"))
+				{
+					statuslog(
+						56,
+						"&+RALERT&n: new-player bank revision sync failed: missing account context");
+					return 0;
+				}
+				const auto domain_result = flatfile_player_domain_load(
+					persistence_mode_flatfile_root(), GET_PID(ch), account,
+					GET_RACEWAR(ch), &domains, &domain_error);
+				if (domain_result != flatfile_player_domain_result::ok ||
+				    !domains.domains.bank_revision ||
+				    std::any_of(domains.domains.bank.begin(),
+						domains.domains.bank.end(),
+						[](uint64_t amount) { return amount > INT_MAX; }) ||
+				    std::any_of(domains.domains.wallet.begin(),
+						domains.domains.wallet.end(),
+						[](uint64_t amount) { return amount > INT_MAX; }))
+				{
+					statuslog(
+						56,
+						"&+RALERT&n: new-player bank revision sync failed (domain result %d): %s",
+						static_cast<int>(domain_result),
+						domain_result == flatfile_player_domain_result::ok ?
+							"invalid bank revision or currency balance overflow" :
+						domain_error.empty() ? "authority load failed" :
+								       domain_error.c_str());
+					persistence_alert(AVATAR, "player", "redacted", "none",
+							  "none", "bank_revision_sync_failed",
+							  NULL);
+					return 0;
+				}
+				const item_owner_identity owner = {
+					item_owner_type::player, static_cast<uint64_t>(GET_PID(ch)),
+					0
+				};
+				uint64_t owner_revision = 0;
+				std::vector<flatfile_item_ownership_record> owned_items;
+				std::string ownership_error;
+				const auto ownership = flatfile_item_repository_load_owner(
+					persistence_mode_flatfile_root(), owner, &owner_revision,
+					&owned_items, &ownership_error);
+				if (ownership != flatfile_item_repository_result::ok ||
+				    !owner_revision ||
+				    !item_ownership_runtime_hydrate_owner(owner, owner_revision))
+				{
+					statuslog(
+						56,
+						"&+RALERT&n: new-player item ownership revision sync failed");
+					persistence_alert(AVATAR, "player", "redacted", "none",
+							  "none", "ownership_revision_sync_failed",
+							  NULL);
+					return 0;
+				}
+				// Creation can precede CON_PLAYING, so hydrate this character explicitly.
+				// Publish only after every required authority read/validation succeeded.
+				const AccountBankBalances balances = {
+					static_cast<int>(domains.domains.bank[0]),
+					static_cast<int>(domains.domains.bank[1]),
+					static_cast<int>(domains.domains.bank[2]),
+					static_cast<int>(domains.domains.bank[3])
+				};
+				GET_BALANCE_COPPER(ch) = balances.copper;
+				GET_BALANCE_SILVER(ch) = balances.silver;
+				GET_BALANCE_GOLD(ch) = balances.gold;
+				GET_BALANCE_PLATINUM(ch) = balances.platinum;
+				ch->only.pc->bank_revision = domains.domains.bank_revision;
+				GET_COPPER(ch) = domains.domains.wallet[0];
+				GET_SILVER(ch) = domains.domains.wallet[1];
+				GET_GOLD(ch) = domains.domains.wallet[2];
+				GET_PLATINUM(ch) = domains.domains.wallet[3];
+				ch->only.pc->wallet_revision = domains.domains.wallet_revision;
+				publish_account_bank_balances_revision(
+					account, GET_RACEWAR(ch), &balances,
+					domains.domains.bank_revision);
+			}
+			if (!sync_account_character_projection(ch, room, TRUE))
 			{
 				statuslog(
 					56,
-					"&+RALERT&n: new-player bank revision sync failed: missing account context");
-				return 0;
+					"&+RALERT&n: flat-file account character projection save failed");
+				persistence_alert(AVATAR, "account", "redacted", "none", "none",
+						  "write_failed",
+						  "character projection save failed");
 			}
-			const auto domain_result = flatfile_player_domain_load(
-				persistence_mode_flatfile_root(), GET_PID(ch), account,
-				GET_RACEWAR(ch), &domains, &domain_error);
-			if (domain_result != flatfile_player_domain_result::ok ||
-			    !domains.domains.bank_revision ||
-			    std::any_of(domains.domains.bank.begin(), domains.domains.bank.end(),
-					[](uint64_t amount) { return amount > INT_MAX; }) ||
-			    std::any_of(domains.domains.wallet.begin(),
-					domains.domains.wallet.end(),
-					[](uint64_t amount) { return amount > INT_MAX; }))
+			clear_player_dirty_container_flags(ch);
+			REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+			REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+			REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
+			if (terminal_type)
 			{
-				statuslog(
-					56,
-					"&+RALERT&n: new-player bank revision sync failed (domain result %d): %s",
-					static_cast<int>(domain_result),
-					domain_result == flatfile_player_domain_result::ok ?
-						"invalid bank revision or currency balance overflow" :
-					domain_error.empty() ? "authority load failed" :
-							       domain_error.c_str());
-				persistence_alert(AVATAR, "player", "redacted", "none", "none",
-						  "bank_revision_sync_failed", NULL);
-				return 0;
+				for (i = 0; i < MAX_WEAR; ++i)
+					save_equip[i] =
+						ch->equipment[i] ? unequip_char(ch, i, TRUE) : NULL;
+				all_affects(ch, FALSE);
+				updateShortAffects(ch);
+				finish_saved_character_inventory(ch, true, terminal_type);
+				all_affects(ch, TRUE);
 			}
-			const item_owner_identity owner = { item_owner_type::player,
-							    static_cast<uint64_t>(GET_PID(ch)), 0 };
-			uint64_t owner_revision = 0;
-			std::vector<flatfile_item_ownership_record> owned_items;
-			std::string ownership_error;
-			const auto ownership = flatfile_item_repository_load_owner(
-				persistence_mode_flatfile_root(), owner, &owner_revision,
-				&owned_items, &ownership_error);
-			if (ownership != flatfile_item_repository_result::ok || !owner_revision ||
-			    !item_ownership_runtime_hydrate_owner(owner, owner_revision))
-			{
-				statuslog(
-					56,
-					"&+RALERT&n: new-player item ownership revision sync failed");
-				persistence_alert(AVATAR, "player", "redacted", "none", "none",
-						  "ownership_revision_sync_failed", NULL);
-				return 0;
-			}
-			// Creation can precede CON_PLAYING, so hydrate this character explicitly.
-			// Publish only after every required authority read/validation succeeded.
-			const AccountBankBalances balances = {
-				static_cast<int>(domains.domains.bank[0]),
-				static_cast<int>(domains.domains.bank[1]),
-				static_cast<int>(domains.domains.bank[2]),
-				static_cast<int>(domains.domains.bank[3])
-			};
-			GET_BALANCE_COPPER(ch) = balances.copper;
-			GET_BALANCE_SILVER(ch) = balances.silver;
-			GET_BALANCE_GOLD(ch) = balances.gold;
-			GET_BALANCE_PLATINUM(ch) = balances.platinum;
-			ch->only.pc->bank_revision = domains.domains.bank_revision;
-			GET_COPPER(ch) = domains.domains.wallet[0];
-			GET_SILVER(ch) = domains.domains.wallet[1];
-			GET_GOLD(ch) = domains.domains.wallet[2];
-			GET_PLATINUM(ch) = domains.domains.wallet[3];
-			ch->only.pc->wallet_revision = domains.domains.wallet_revision;
-			publish_account_bank_balances_revision(account, GET_RACEWAR(ch), &balances,
-							       domains.domains.bank_revision);
+			if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
+			    world[ch->in_room].funct)
+				(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+			return 1;
 		}
-		if (!sync_account_character_projection(ch, room, TRUE))
-		{
-			statuslog(56,
-				  "&+RALERT&n: flat-file account character projection save failed");
-			persistence_alert(AVATAR, "account", "redacted", "none", "none",
-					  "write_failed", "character projection save failed");
-		}
-		clear_player_dirty_container_flags(ch);
-		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
-		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
-		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
-		if (terminal_type)
-		{
-			for (i = 0; i < MAX_WEAR; ++i)
-				save_equip[i] = ch->equipment[i] ? unequip_char(ch, i, TRUE) : NULL;
-			all_affects(ch, FALSE);
-			updateShortAffects(ch);
-			finish_saved_character_inventory(ch, true, terminal_type);
-			all_affects(ch, TRUE);
-		}
-		if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
-		    world[ch->in_room].funct)
-			(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
-		return 1;
-	}
 #endif
 
-	if (!is_locker_char)
-	{
-		room = calculate_save_room(ch, type, room);
-
-		// skip locker characters for sql operations
-		sql_update_money(ch);
-		if ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI))
-			sql_update_playtime(ch);
-		sql_update_epics(ch);
-	}
-	else
-	{
-		room = calculate_save_room(ch, type, room);
-	}
-
-	if (ch->desc)
-		ch->desc->rtype = type;
-
-	// unequip everything and remove affects before saving
-	for (i = 0; i < MAX_WEAR; i++)
-		if (ch->equipment[i])
-			save_equip[i] = unequip_char(ch, i, TRUE);
-		else
-			save_equip[i] = NULL;
-
-	all_affects(ch, FALSE);
-	updateShortAffects(ch);
-
-	// save to database
-	if (strstr(GET_NAME(ch), ".locker"))
-	{
-		// save locker to database
-		int owner_pid = 0;
-		int owner_assoc_id = 0;
-
-		if (strncmp(GET_NAME(ch), "guild.", 6) == 0)
+		if (!is_locker_char)
 		{
-			// guild locker: guild.X.locker - extract guild id
-			owner_assoc_id = atoi(GET_NAME(ch) + 6);
-		}
-		else if (strncmp(GET_NAME(ch), "account.", 8) == 0)
-		{
-			// account locker - stored by name, no pid
-			owner_pid = 0;
+			room = calculate_save_room(ch, type, room);
+
+			// skip locker characters for sql operations
+			sql_update_money(ch);
+			if ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) &&
+			    (type != RENT_FIGHTARTI))
+				sql_update_playtime(ch);
+			sql_update_epics(ch);
 		}
 		else
 		{
-			// player locker: playername.locker - get player's pid
-			char pname[MAX_NAME_LENGTH + 1];
-			strlcpy(pname, GET_NAME(ch), sizeof pname);
-			char *dot = strstr(pname, ".locker");
-			if (dot)
-				*dot = '\0';
-			owner_pid = sql_get_player_pid(pname);
+			room = calculate_save_room(ch, type, room);
 		}
 
-		if (!sql_save_locker(ch, owner_pid, owner_assoc_id))
+		if (ch->desc)
+			ch->desc->rtype = type;
+
+		// unequip everything and remove affects before saving
+		for (i = 0; i < MAX_WEAR; i++)
+			if (ch->equipment[i])
+				save_equip[i] = unequip_char(ch, i, TRUE);
+			else
+				save_equip[i] = NULL;
+
+		all_affects(ch, FALSE);
+		updateShortAffects(ch);
+
+		// save to database
+		if (strstr(GET_NAME(ch), ".locker"))
 		{
-			logit(LOG_FILE, "sql_save_locker failed");
-			wizlog(AVATAR, "&+RERROR&N sql_save_locker failed");
-			persistence_alert(AVATAR, "locker", "redacted", "none", "none",
-					  "sql_save_failed", NULL);
-			if (!persistence_write_character_flat_fallback(ch, type, room))
+			// save locker to database
+			int owner_pid = 0;
+			int owner_assoc_id = 0;
+
+			if (strncmp(GET_NAME(ch), "guild.", 6) == 0)
 			{
-				persistence_alert(AVATAR, "locker", "redacted", "none", "none",
-						  "flat_fallback_failed", NULL);
+				// guild locker: guild.X.locker - extract guild id
+				owner_assoc_id = atoi(GET_NAME(ch) + 6);
 			}
-			result = 0;
+			else if (strncmp(GET_NAME(ch), "account.", 8) == 0)
+			{
+				// account locker - stored by name, no pid
+				owner_pid = 0;
+			}
+			else
+			{
+				// player locker: playername.locker - get player's pid
+				char pname[MAX_NAME_LENGTH + 1];
+				strlcpy(pname, GET_NAME(ch), sizeof pname);
+				char *dot = strstr(pname, ".locker");
+				if (dot)
+					*dot = '\0';
+				owner_pid = sql_get_player_pid(pname);
+			}
+
+			if (!sql_save_locker(ch, owner_pid, owner_assoc_id))
+			{
+				logit(LOG_FILE, "sql_save_locker failed");
+				wizlog(AVATAR, "&+RERROR&N sql_save_locker failed");
+				persistence_alert(AVATAR, "locker", "redacted", "none", "none",
+						  "sql_save_failed", NULL);
+				if (!persistence_write_character_flat_fallback(ch, type, room))
+				{
+					persistence_alert(AVATAR, "locker", "redacted", "none",
+							  "none", "flat_fallback_failed", NULL);
+				}
+				result = 0;
+			}
 		}
-	}
-	else
-	{
-		if (!sql_save_player(ch, type, room))
+		else
 		{
-			logit(LOG_FILE, "sql_save_player failed");
-			wizlog(AVATAR, "&+RERROR&N sql_save_player failed");
-			persistence_alert(AVATAR, "player", "redacted", "none", "none",
-					  "sql_save_failed", "type=%d", type);
-			persistence_alert(AVATAR, "player", "redacted", "none", "none",
-					  "flat_fallback_retired", "journal_required=1");
-			result = 0;
+			bool saved = false;
+#ifndef __NO_MYSQL__
+			if (native_cleanup)
+			{
+				try
+				{
+					saved = sql_save_player(ch, type, room);
+				}
+				catch (...)
+				{
+					// An exception is not durability proof. Restore the original live
+					// recovery source after exact-session cleanup below.
+				}
+			}
+			else
+#endif
+				saved = sql_save_player(ch, type, room);
+			if (!saved)
+			{
+				logit(LOG_FILE, "sql_save_player failed");
+				wizlog(AVATAR, "&+RERROR&N sql_save_player failed");
+				persistence_alert(AVATAR, "player", "redacted", "none", "none",
+						  "sql_save_failed", "type=%d", type);
+				persistence_alert(AVATAR, "player", "redacted", "none", "none",
+						  "flat_fallback_retired", "journal_required=1");
+				result = 0;
+			}
 		}
+
+#ifndef __NO_MYSQL__
+		if (native_cleanup && !native_cleanup->finish())
+			result = 0;
+		// Post-save hooks remain within this same owner. If the original session
+		// was retired, keep the helper disarmed rather than inspecting freed memory.
+		if (native_cleanup && DB)
+			native_cleanup->arm();
+#endif
+
+		// Failed saves restore the live recovery source. Inventory is released only
+		// after a durable terminal save; a flat fallback is recovery evidence.
+		finish_saved_character_inventory(ch, result != 0, terminal_type);
+
+		// reapply affects
+		all_affects(ch, TRUE);
+
+		// locker hook (post-save)
+		if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
+		    (world[ch->in_room].funct))
+			(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+
+#ifndef __NO_MYSQL__
+		if (native_cleanup && !native_cleanup->finish())
+			result = 0;
+#endif
+		return result;
+#ifndef __NO_MYSQL__
+	};
+	if (!native_cleanup)
+		return save();
+	try
+	{
+		return save();
 	}
-
-	// Failed saves restore the live recovery source. Inventory is released only
-	// after a durable terminal save; a flat fallback is recovery evidence.
-	finish_saved_character_inventory(ch, result != 0, terminal_type);
-
-	// reapply affects
-	all_affects(ch, TRUE);
-
-	// locker hook (post-save)
-	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
-	    (world[ch->in_room].funct))
-		(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
-
-	return result;
+	catch (...)
+	{
+		// Partial native/gameplay callback tails cannot be declared restored.
+		// Keep replay fail-closed, then dispose SQL before the owner unwinds.
+		player_save_execution_guard::poison_integrity();
+		(void)native_cleanup->finish();
+		return 0;
+	}
+#endif
 }
 
 #endif
