@@ -52,7 +52,7 @@ backend limitations and the tested revision before checking off acceptance.
 ## Current source preparation checkpoint
 
 The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
-remote histories and unqualified source milestones through95d03d02f. New source
+remote histories and unqualified source milestones throughc292cb0f0. New source
 prerequisites cover allocation-safe publication cleanup, checkpoint-spanning save
 execution guards, bounded runtime UID-root census, authority-bound native baseline
 initialization markers, ordinary item receipt sealing with ACK-only conflict
@@ -87,6 +87,10 @@ native callers/census, serialized lifecycle, actual revisit/startup and critical
 are integrated and qualified.
 Plan5 canonical restore slice57d4d99b2 is imported in e5a458f70; its report qualifies
 only its own consumed inputs. All new primary source remains unqualified.
+
+Independent SQL recovery/retained-death participants now borrow enabled caller
+scopes before mutation in c292cb0f0; outer transaction/lease-disposal/journal
+owners remain to integrate. Inactive bodies are preserved; no qualification ran.
 
 Production restored-save/actorless publication ownership, complete mutation census,
 critical ACK reservation, production wake/replay integration, complete ordinary-graph enrollment, authentic
