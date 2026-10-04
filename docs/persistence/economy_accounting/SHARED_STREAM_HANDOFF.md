@@ -99,3 +99,33 @@ pinned SQL engines, flatfile parity, supported day-one routes, migration/upgrade
 lost reply, replay and restart. Historical fixtures, inventory counts and focused
 passing components cannot substitute for these gates. No measured overall schedule
 reduction is established yet.
+
+## Current narrow producer and replay interfaces (source preparation)
+
+Plan 2's independent owner now prepares ordinary single-root room coin drop and
+pickup, exact canonical receipt retention, literal/native placement validation,
+body-bound wallet projection and completed-stage revalidation before every ACK
+retry. Containers, water/falling policies and other unsupported placement routes
+remain refused in active accounting. Callback-free cold replay remains held; the
+slice does not authorize hydration or actorless completion. Primary adds the
+production module to Makefile after local integration. The shared optional
+`coin_publication_callbacks::release` contract (`96e2af83a`) runs only after the
+original durable publication ACK and pending-owner extraction. It is noexcept,
+cleans producer staging only and keeps generic currency owners independent of
+world/materializer link dependencies. Existing two-callback aggregates remain
+compatible. Prepared fixture cases and source reviews are unqualified.
+
+Plan 1's next production boundary is observable in current boot source:
+`net/comm.c` starts `player_save_pipeline_init` before critical coordinator init;
+its dispatcher immediately calls journal replay. Critical replay restores native
+publication owners only later, under the coordinator mutex before worker launch.
+No startup census, resident PID hold, checkpoint-spanning permit, generation
+recheck or actorless native hydration presently bridges that order. Do not merely
+reverse calls: restored drop owners themselves require initialized save metadata,
+and reopening a held login to provide an actor would create a circular bypass.
+Prepare initialization separately from replay, register exact original-command
+holds before callbacks can apply, and release only after independent native proof
+and a clean save census. Preserve deferred frames, original operation/generation,
+ACK reservation and retained wakes. This is established missing source integration,
+not a tested failure or completed recovery feature. Keep healthy inactive paths
+and declined spell behavior unchanged until the full ownership handoff is ready.

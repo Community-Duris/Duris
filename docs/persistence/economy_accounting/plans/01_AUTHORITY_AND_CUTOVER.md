@@ -32,9 +32,11 @@ owner with second-phase inspection faults and a late-retirement success oracle.
 Named-lock SQL query construction and scalar comparisons now avoid temporary
 C++ strings in lifecycle acquisition/destruction and transferred cutover release.
 Fixed stack buffers refuse formatting overflow. This bounded allocation change
-is unqualified. Tentative GET_LOCK ownership on lost replies, confirmed release
-before clearing local/coordinator exclusion, exact recovery of retained locks,
-and their native fault checks remain separate open work.
+is unqualified. Tentative GET_LOCK ownership, checked same-session/thread release,
+coordinator confirmation, retained runtime ownership and pooled writer retirement
+are now implemented in `5834fe57c`, with failed-RPC retry correction in
+`55525b981`. Source review does not qualify them. Required native fault checks,
+maintained link closure, restored-save integration and full recovery remain open.
 
 ## Starting files and first checks
 
