@@ -1,4 +1,5 @@
 #include "persistence/critical_command_repository.h"
+#include "persistence/death_recovery_visibility.h"
 #include "persistence/quest_reward_obligation_repository.h"
 #include "economic_sql_coordinator_fixture.h"
 #include "economy/item_transfer_accounting.h"
@@ -2778,7 +2779,7 @@ int main()
 		      payload(player_one, player_two, item_transfer_reason::synthetic,
 			      created_result.to_owner_revision, player_two_revision, 1, 1));
 	assert(incomplete.outcome == critical_apply_outcome::terminal_failure &&
-	       incomplete.error_code == EMSGSIZE);
+	       incomplete.error_code == ITEM_TRANSFER_TOPOLOGY_CARDINALITY);
 	critical_apply_result stale =
 		apply(connection, 3,
 		      payload(player_one, player_two, item_transfer_reason::synthetic,
