@@ -1501,7 +1501,7 @@ a full personal-server session/save/readback or performance journey, complete
 native effect classification, continuous build exposure or a new build report.
 TSan remains unsupported on the local runner as previously recorded.
 
-**Next executable expectation:** retain exact kind-12 observations and publish
+**Historical expectation at native-capture delivery (superseded below):** retain exact kind-12 observations and publish
 them under a separately versioned comparison definition with independent
 schema-5 loss coverage. Verify packet/alias, point-time, configuration,
 availability and sampling-gap evidence before comparisons; preserve current

@@ -1285,7 +1285,7 @@ bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
 TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
 ```
 
-**Next executable expectation:** retain exact kind-12 observations and publish
+**Historical expectation at native-capture delivery (superseded below):** retain exact kind-12 observations and publish
 them under a separately versioned comparison definition with independent
 schema-5 loss coverage. Verify association packets, aliases, point clocks,
 configuration, selected availability and sampling gaps before comparing actors;
