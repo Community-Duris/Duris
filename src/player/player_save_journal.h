@@ -84,11 +84,46 @@ struct player_save_journal_retained_frame
 	bool quarantined = false;
 	bool policy_fenced = false;
 };
+// Native save_revision covers obsolete receipt-free ordinary checkpoints; it
+// does not prove an operation-bearing receipt or the historical snapshot body.
+// Only the native observation owner can issue this evidence, for this exact
+// still-held publication reservation. There is no caller-supplied revision API.
+class player_save_covered_revision final
+{
+    public:
+	player_save_covered_revision(const player_save_covered_revision &) = delete;
+	player_save_covered_revision &operator=(const player_save_covered_revision &) = delete;
+
+    private:
+	friend class player_save_restored_publication_owner;
+	player_save_covered_revision() noexcept = default;
+	friend bool player_snapshot_repository_observe_covered_revision(
+		int, const player_save_execution_guard::held_publication_reservation &,
+		player_save_covered_revision *) noexcept;
+	friend player_save_journal_result player_save_journal_retire_covered_ordinary(
+		int, const player_save_execution_guard::held_publication_reservation &,
+		const player_save_covered_revision &,
+		const std::vector<player_save_journal_retained_frame> &);
+	int pid_ = 0;
+	player_revision_t revision_ = 0;
+	const player_save_execution_guard::held_publication_reservation *reservation_ = nullptr;
+};
 // All-or-nothing collection under the journal mutex, without apply/checkpoint.
 // Failure leaves output empty. Existing corruption scanning may durably archive
 // corrupt bytes and latch the global fence; it never treats a partial cut as OK.
 player_save_journal_result
 player_save_journal_collect_retained(std::vector<player_save_journal_retained_frame> *output);
+// Publication-only collection binds original target-PID frames to the fresh
+// validated namespace; archive/policy/recovery evidence always refuses.
+player_save_journal_result player_save_journal_collect_publication_frames(
+	int pid, const player_save_execution_guard::held_publication_reservation &reservation,
+	std::vector<player_save_journal_retained_frame> *output);
+// Retire only collected exact bytes of covered receipt-free ordinary frames.
+// The hold remains installed; this does not execute a save or discharge a drop.
+player_save_journal_result player_save_journal_retire_covered_ordinary(
+	int pid, const player_save_execution_guard::held_publication_reservation &reservation,
+	const player_save_covered_revision &proof,
+	const std::vector<player_save_journal_retained_frame> &originals);
 // Fresh active frames plus validated archive/policy/recovery namespace. This
 // proves absence only while the original held-publication reservation excludes
 // that PID's writers. Retained or archived originals are never waived here.

@@ -1,6 +1,7 @@
 # Ordinary SQL-drop recovery interface — 2026-10-04
 
-**Source-reviewed design; publication implementation and qualification pending.**
+**Production source connected in `6d42ad788`; qualification and remaining
+integration pending.**
 Shared ownership remains with the primary. The execution guard80692d52b is a
 narrow prerequisite, not this complete recovery chain.
 
@@ -43,8 +44,9 @@ create nothing. Retryable/ambiguous/malformed/conflicting results remain retaine
 
 ## Complete coordinator/save ownership
 
-Production remains immediate save init before critical replay. The full future
-sequence is prepare closed save metadata → replay/register all exact critical
+The SQL production startup now prepares save metadata before critical replay,
+then starts saves after restoring the original holds. The complete sequence is
+prepare closed save metadata → replay/register all exact critical
 obligations → guarded save execution → actor-independent native publication →
 clean affected-PID mutation census/reservation → durable critical ACK → exact
 hold clear and sticky wake. Failed registration/publication/ACK stays closed.
@@ -58,8 +60,17 @@ retirement from the drop result. Coordinator itself must enforce the publication
 reservation, so another ACK caller cannot bypass it. A wake before worker parking
 must remain pending until accepted; replay requires its own revisit owner.
 
-Current item-movement callback dispatch/retry refuses missing actors; add only the
-validated ordinary-drop route, preserving other physical exclusions/schema1 behavior.
+For receipt-free ordinary frames already covered by the native player save
+revision, retain the existing stale-save policy rather than adding a new receipt
+table. Read the actual `player_data.save_revision` under its native row lock and
+confirm same-session cleanup while holding the exact publication reservation.
+Retire only freshly matched ordinary originals covered by that revision. Leave
+uncovered, operation-bearing and unrelated frames intact; repeat the census
+before native drop publication and guarded ACK. This is projection ordering under
+existing authority, not another economic operation or an additional release gate.
+
+Item-movement completion/retry now dispatches the validated restored SQL ordinary
+drop without an actor, preserving other physical exclusions/schema1 behavior.
 ACK must not wait for an actor only to notify. Restore login remains dependent on
 completed safe publication/census, not a blanket restored-hold hydration exception.
 Leaf guard takes no callbacks, SQL, worker/pipeline/journal/coordinator locks. Perform

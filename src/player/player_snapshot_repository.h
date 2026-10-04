@@ -7,6 +7,15 @@
 // Include player/player_sql_transaction_cleanup.h when constructing or
 // inspecting cleanup evidence. Callers using pointers need no helper definition.
 struct player_sql_cleanup;
+class player_save_covered_revision;
+
+// Read-only native owner for obsolete ordinary journal-frame coverage. The
+// exact held publication reservation remains live throughout observation and
+// later retirement. Proof is issued only after same-session row locking and
+// confirmed rollback/idle cleanup; this neither applies a snapshot nor ACKs it.
+bool player_snapshot_repository_observe_covered_revision(
+	int pid, const player_save_execution_guard::held_publication_reservation &reservation,
+	player_save_covered_revision *proof) noexcept;
 
 // Caller owns the transaction. Shared by checkpoint and legacy save adapters.
 bool player_snapshot_repository_write_pets(MYSQL *connection, const player_snapshot &snapshot);

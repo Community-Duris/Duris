@@ -1721,6 +1721,20 @@ bool player_save_restored_publication_owner::publish(const critical_completion &
 		     revision.inflight_components ||
 		     revision.current_revision != revision.acknowledged_revision))
 			return false;
+		std::vector<player_save_journal_retained_frame> originals;
+		if (player_save_journal_collect_publication_frames(
+			    pid, owner.reservation_, &originals) != player_save_journal_result::ok)
+			return false;
+		if (!originals.empty())
+		{
+			player_save_covered_revision covered;
+			if (!player_snapshot_repository_observe_covered_revision(
+				    pid, owner.reservation_, &covered) ||
+			    player_save_journal_retire_covered_ordinary(pid, owner.reservation_,
+									covered, originals) !=
+				    player_save_journal_result::ok)
+				return false;
+		}
 		if (player_save_journal_publication_census(pid, owner.reservation_) !=
 		    player_save_journal_result::ok)
 			return false;

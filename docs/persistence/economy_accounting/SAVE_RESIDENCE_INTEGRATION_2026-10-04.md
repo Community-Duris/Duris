@@ -218,3 +218,26 @@ native qualification/cold restarts/copyover and full Plan1 gates remain open.
 No compiler, AST, tests, services, native SQL, gameplay or recovery checks ran.
 Source review/formatting/diff hygiene passed; the user-requested major-plan test
 batch remains deferred. No new fixture/report family or qualified push was added.
+
+## Covered ordinary-save ordering
+
+At `2d6111f8b`, the restored publisher refused every overlapping save-journal
+frame, including ordinary saves already superseded by native `save_revision`.
+This is a source-established missing connection, not a new runtime RED result.
+The economy contract keeps ordinary projections separate from economic receipts;
+existing stale-save retirement supplies the required policy without a new ledger.
+
+The restored owner now collects affected originals under its exact held-PID
+reservation, reads locked native `player_data.save_revision` on one pooled
+session, and confirms rollback/idle cleanup before issuing private coverage proof.
+Journal retirement freshly matches encoded originals and removes only receipt-free
+ordinary frames covered by that revision. Uncovered, operation-bearing and
+unrelated frames remain intact. Fresh namespace/custody publication and guarded
+critical ACK still follow. An empty-target census syncs the directory to settle
+an earlier compaction whose rename succeeded but directory sync failed.
+
+The five changed source files are repository C/H, journal C/H and pipeline C.
+Source review, changed-line formatting and diff hygiene passed. No schema, new
+economic operation, fixture family or acceptance gate was added. No compiler,
+tests, SQL, services, gameplay or recovery checks ran; qualification stays deferred
+to major-plan readiness. Ownership remains disabled and Plan 1 remains unfinished.

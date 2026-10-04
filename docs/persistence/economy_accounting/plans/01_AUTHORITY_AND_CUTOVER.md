@@ -21,6 +21,16 @@ The user batches testing when each major plan is ready. Source review and
 implementation continue now; preserve original sources and prepared regression
 owners for milestone failure/fix proof. Written changes remain unqualified.
 
+Keep implementation within the group's R1–R8 contract and this plan's independent
+acceptance. Ordinary save projections do not need an additional economic receipt
+or historical snapshot ledger. For a retained, receipt-free ordinary save, the
+existing locked native `player_data.save_revision` can establish that the frame
+is already obsolete. Use that authority under the original held-PID reservation;
+the drop receipt's revision cannot substitute for it. Uncovered saves retain
+existing custody/replay checks, and operation-bearing saves retain their existing
+receipt requirements. Do not add optional frameworks or release gates for this
+ordering case. Prioritize connecting existing owners into the production path.
+
 Recovery-session cleanup is implemented in `7dc837e29`: original-session rollback
 proof covers replacement apply, creation verification, the inspection loader's
 second transaction and journal proof; uncertain boot leases retire. Late session
