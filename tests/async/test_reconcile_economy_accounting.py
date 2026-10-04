@@ -12,6 +12,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 from reconcile_economy_accounting import (MAX_INPUT_BYTES, MAX_ROWS, NATIVE_COVERAGE_EXCEPTIONS,
+                                          ORPHAN_EVIDENCE_SOURCES,
                                           Reconciler, SnapshotError, view)  # noqa: E402
 
 LINEAGE = "11" * 16
@@ -120,6 +121,43 @@ class ReconciliationTests(unittest.TestCase):
             data = view(snapshot, report, name, 3, uid=81)
             self.assertNotIn("alias", json.dumps(data))
             self.assertLessEqual(len(data["rows"]), 3)
+
+    def test_database_wide_orphan_evidence_is_specific_and_read_only(self):
+        snapshot = clean_snapshot()
+        # A missing root cannot supply a trustworthy selected lineage/epoch.
+        foreign_operation = "66" * 16
+        snapshot["orphan_evidence"] = [
+            {"table": name, "operation_id": foreign_operation, "row_index": 0}
+            for name in ORPHAN_EVIDENCE_SOURCES]
+        snapshot["orphan_evidence_coverage"] = {
+            "scope": "database", "table_counts": dict.fromkeys(ORPHAN_EVIDENCE_SOURCES, 1)}
+        self.assertEqual(self.codes(snapshot), {row[2] for row in ORPHAN_EVIDENCE_SOURCES.values()})
+        report = Reconciler(0).audit(snapshot)
+        self.assertEqual(report["exception_count"], 4)
+        self.assertEqual(report["exceptions"], [])
+
+    def test_orphan_evidence_coverage_cannot_be_omitted_or_forged(self):
+        snapshot = clean_snapshot()
+        snapshot["backend"] = "sql_partial"
+        self.assertIn("missing_orphan_evidence_coverage", self.codes(snapshot))
+        snapshot = clean_snapshot()
+        snapshot["orphan_evidence"] = []
+        coverage = {"scope": "database", "table_counts": dict.fromkeys(ORPHAN_EVIDENCE_SOURCES, 0)}
+        snapshot["orphan_evidence_coverage"] = coverage
+        self.assertEqual(self.codes(snapshot), set())
+        for field, value in (("scope", "epoch"), ("table_counts", {}),
+                             ("table_counts", dict.fromkeys(ORPHAN_EVIDENCE_SOURCES, True))):
+            with self.subTest(field=field, value=value):
+                bad = copy.deepcopy(snapshot)
+                bad["orphan_evidence_coverage"][field] = value
+                with self.assertRaisesRegex(SnapshotError, "orphan evidence coverage"):
+                    Reconciler().audit(bad)
+        for index in (-1, True, 65536):
+            with self.subTest(index=index):
+                bad = copy.deepcopy(snapshot)
+                bad["orphan_evidence"] = [{"table": "postings", "operation_id": OP, "row_index": index}]
+                with self.assertRaisesRegex(SnapshotError, "orphan evidence index"):
+                    Reconciler().audit(bad)
 
     def test_checked_copper_totals_for_holdings_origins_and_effects(self):
         # All denomination fields fit int64 and the postings still balance.

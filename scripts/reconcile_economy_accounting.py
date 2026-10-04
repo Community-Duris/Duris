@@ -28,6 +28,12 @@ TABLES = (
     "operations", "effects", "postings", "children", "item_references",
     "ownership_events", "source_claims", "account_origins", "item_origins", "receipts",
 )
+ORPHAN_EVIDENCE_SOURCES = {
+    "effects": ("economic_accounting_account_effect", "account_index", "orphan_account_effect"),
+    "postings": ("economic_accounting_coin_posting", "line_index", "orphan_coin_posting"),
+    "children": ("economic_accounting_child", "child_index", "orphan_accounting_child"),
+    "item_references": ("economic_accounting_item_reference", "event_index", "orphan_item_reference"),
+}
 NATIVE_MAPPING_KINDS = (
     "wallet", "bank", "pile", "auction_escrow", "pending_claim", "treasury",
 )
@@ -160,6 +166,7 @@ class Reconciler:
         if snapshot.get("quiescent") is not True:
             self.emit("unfenced_snapshot", scope="snapshot")
         tables = {name: self.table(snapshot, name) for name in TABLES}
+        self.audit_orphan_evidence(snapshot)
         native = snapshot.get("native")
         if not isinstance(native, dict):
             raise SnapshotError("missing native authority")
@@ -592,6 +599,33 @@ class Reconciler:
                 "exceptions": self.exceptions, "truncated": sum(self.counts.values()) > len(self.exceptions),
                 "checked": {name: len(tables[name]) for name in TABLES} |
                            {"native_holdings": len(holdings), "native_items": len(items)}}
+
+    def audit_orphan_evidence(self, snapshot: dict) -> None:
+        rows = snapshot.get("orphan_evidence")
+        coverage = snapshot.get("orphan_evidence_coverage")
+        if rows is None and coverage is None:
+            if snapshot.get("backend") == "sql_partial":
+                self.emit("missing_orphan_evidence_coverage", scope="snapshot")
+            return
+        rows = self.table(snapshot, "orphan_evidence")
+        counts = dict.fromkeys(ORPHAN_EVIDENCE_SOURCES, 0)
+        for row in rows:
+            table = row.get("table")
+            if not isinstance(table, str) or table not in ORPHAN_EVIDENCE_SOURCES:
+                raise SnapshotError("invalid orphan evidence table")
+            operation_id = require_id(row.get("operation_id"), "orphan operation ID")
+            if type(row.get("row_index")) is not int or not 0 <= row["row_index"] <= 65535:
+                raise SnapshotError("invalid orphan evidence index")
+            counts[table] += 1
+            self.emit(ORPHAN_EVIDENCE_SOURCES[table][2], operation_id=operation_id,
+                      table=table, line_index=row["row_index"])
+        if (not isinstance(coverage, dict) or set(coverage) != {"scope", "table_counts"} or
+                coverage["scope"] != "database" or not isinstance(coverage["table_counts"], dict) or
+                set(coverage["table_counts"]) != set(counts) or
+                any(type(value) is not int or value < 0
+                    for value in coverage["table_counts"].values()) or
+                coverage["table_counts"] != counts):
+            raise SnapshotError("invalid orphan evidence coverage")
 
     def audit_ship_coffers(self, backend: object, native: dict) -> None:
         rows, coverage = native.get("ship_coffers"), native.get("ship_coffer_coverage")
