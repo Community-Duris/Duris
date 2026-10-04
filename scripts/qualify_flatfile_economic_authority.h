@@ -170,6 +170,10 @@ enum class baseline_initialization : uint8_t
 struct epoch_marker
 {
 	identity epoch = {}, initializing_operation = {};
+	identity predecessor = {}, creating_operation = {};
+	uint64_t ordinal = 0;
+	uint16_t transition_kind = 0;
+	digest transition_digest = {};
 	baseline_initialization initialization = baseline_initialization::legacy_unknown;
 	std::array<uint8_t, 40> opening = {};
 };
@@ -194,10 +198,16 @@ inline epoch_catalog catalog(const std::filesystem::path &directory, const diges
 	{
 		epoch_marker entry;
 		entry.epoch = in.fixed<16>();
+		entry.ordinal = in.number(8);
+		entry.predecessor = in.fixed<16>();
+		entry.transition_kind = in.number(2);
+		need(in.number(6) == 0);
+		entry.transition_digest = in.fixed<32>();
+		entry.creating_operation = in.fixed<16>();
 		need(nonzero(entry.epoch) && seen.insert(entry.epoch).second &&
-		     in.number(8) == i + 1 && in.fixed<16>() == result.last_epoch &&
-		     in.number(2) != 0 && in.number(6) == 0 && nonzero(in.take(32)) &&
-		     nonzero(in.take(16)));
+		     entry.ordinal == i + 1 && entry.predecessor == result.last_epoch &&
+		     entry.transition_kind && nonzero(entry.transition_digest) &&
+		     nonzero(entry.creating_operation));
 		if (version == 2)
 		{
 			auto state = in.number(1);
@@ -261,6 +271,7 @@ class checker
 	uint64_t next_mapping = 0, epoch_count = 0;
 	digest epochs_digest = {};
 	std::array<digest, buckets> native_digests = {}, mapping_digests = {};
+	mutable cache<mapping> historic_accounts;
 
 	void absent(const std::string &name) const
 	{
@@ -396,6 +407,25 @@ class checker
 	explicit checker(const std::filesystem::path &root)
 		: directory(root / "economic-evidence")
 	{
+	}
+	// Historical account identity is immutable even when locator aliases and
+	// mapping revision/operation metadata have subsequently changed.
+	bool mapped_account(std::span<const uint8_t> account) const
+	{
+		if (account.size() != 40)
+			return false;
+		reader key{ account };
+		if (key.fixed<16>() != lineage || key.number(2) != 1)
+			return false;
+		auto kind = key.number(2), id = key.number(8), context = key.number(8);
+		if (key.number(4) != 0 || !id || id >= next_mapping)
+			return false;
+		const auto &rows = historic_accounts.get(id % 256, [&](auto bucket)
+							 { return mappings(bucket); });
+		const auto position = (id - 1) / 256;
+		return position < rows.size() && rows[position].authority == id &&
+		       number(rows[position].key, 0, 2) == kind &&
+		       number(rows[position].key, 2, 8) == context;
 	}
 	void run()
 	{

@@ -2,6 +2,7 @@
 #ifndef DURIS_QUALIFY_FLATFILE_ECONOMIC_RECORDS_H
 #define DURIS_QUALIFY_FLATFILE_ECONOMIC_RECORDS_H
 #include "qualify_flatfile_economic_baseline.h"
+#include "qualify_flatfile_economic_lifecycle.h"
 #include <tuple>
 
 namespace restore_economic_records
@@ -9,6 +10,7 @@ namespace restore_economic_records
 struct initialization_provenance
 {
 	size_t legacy_unknown_epochs = 0, never_initialized_epochs = 0, initialized_epochs = 0;
+	size_t lifecycle_receipts = 0;
 	bool complete() const { return legacy_unknown_epochs == 0; }
 };
 using namespace restore_economic_authority;
@@ -47,6 +49,7 @@ class checker
 	std::set<std::string> expected_files;
 	std::vector<digest> claimed_events;
 	restore_economic_baseline::checker baselines;
+	restore_economic_lifecycle::checker lifecycles;
 
 	void record(std::span<const uint8_t> encoded, const identity &operation)
 	{
@@ -64,6 +67,8 @@ class checker
 		auto command = in.take(command_size), plan = in.take(plan_size);
 		(void)in.take(result_size);
 		in.done();
+		lifecycles.record(operation, command, plan, durable_revision, result_code,
+				  result_size, failure_stage);
 		reader cmd{ command };
 		need(same(cmd.take(4), { reinterpret_cast<const uint8_t *>("CCM1"), 4 }) &&
 		     cmd.number(4) == 2 && cmd.fixed<16>() == operation);
@@ -269,13 +274,15 @@ class checker
 		: root(path)
 		, directory(path / "economic-evidence")
 		, baselines(path)
+		, lifecycles(path)
 	{
 	}
 	initialization_provenance run()
 	{
 		initialization_provenance provenance;
 		// Pure metadata validation, distinct from candidate journal recovery.
-		restore_economic_authority::checker(root).run();
+		restore_economic_authority::checker authority(root);
+		authority.run();
 		if (!std::filesystem::exists(directory) || std::filesystem::is_empty(directory))
 			return provenance;
 		auto control = frame(directory, "authority.eal", "DURECA1");
@@ -285,6 +292,8 @@ class checker
 		std::copy_n(control.begin() + 104, 32, catalog_digest.begin());
 		auto catalog = restore_economic_authority::catalog(directory, catalog_digest);
 		need(catalog.lineage == lineage);
+		lifecycles.load(lineage, catalog, control,
+				[&](auto account) { return authority.mapped_account(account); });
 		for (const auto &entry : catalog.entries)
 		{
 			epochs.insert(entry.epoch);
@@ -299,6 +308,7 @@ class checker
 			if (control[16520 + index / 8] & (1u << (index % 8)))
 				bucket(index);
 		baselines.finish(lineage, catalog.entries);
+		provenance.lifecycle_receipts = lifecycles.finish();
 		// At most 256 * 4096 keys (32 MiB of digests), bounded by the native
 		// index format. Keep no unbounded map of roots or retained record bytes.
 		std::sort(claimed_events.begin(), claimed_events.end());

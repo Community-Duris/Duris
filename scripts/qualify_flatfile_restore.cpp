@@ -213,6 +213,7 @@ int main(int argc, char **argv)
 				  << ",\"never_initialized_epochs\":"
 				  << result.never_initialized_epochs
 				  << ",\"initialized_epochs\":" << result.initialized_epochs
+				  << ",\"lifecycle_receipts\":" << result.lifecycle_receipts
 				  << ",\"baseline_provenance_complete\":"
 				  << (result.complete() ? "true" : "false") << "}\n";
 			return 0;
