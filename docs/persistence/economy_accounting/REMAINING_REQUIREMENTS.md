@@ -16,8 +16,9 @@ bank/coin/item coordinator/pool checks plus maintained lifecycle,22 checked-rele
 14 startup and18 recovery-session cases pass within their stated scopes on both
 engines. The scoped ordinary SQL drop now passes actual gameplay publication,
 guarded ACK and two complete cold boots per engine after correcting empty-slot
-census exhaustion. Final Plan 1 acceptance consolidation and maintenance of that
-regression remain; Plans 2–4 and combined Plan 5 are unfinished. No R1–R8 or
+census exhaustion. The maintained regression now passes on both engines and Plan 1's original
+independent acceptance is complete within the recorded source scopes; Plans 2–4,
+combined Plan 5 and full activation-owner integration remain unfinished. No R1–R8 or
 full-feature acceptance gate is waived by this scoped result.
 
 ## Product boundary

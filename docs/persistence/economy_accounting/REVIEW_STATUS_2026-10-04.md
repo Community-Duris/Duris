@@ -1,7 +1,7 @@
 # Accounting review status — 2026-10-04
 
-Status: **Plan 1 qualification is underway; activation and release remain
-blocked**. `coverage_complete=False`. R1–R8 and every applicable major-plan
+Status: **Plan 1's original independent acceptance is complete; activation and
+release remain blocked**. `coverage_complete=False`. R1–R8 and every applicable major-plan
 acceptance gate remain required. This checkpoint supersedes the October 3 source
 preparation status, not its bounded historical test evidence.
 
@@ -16,8 +16,10 @@ payload/custody, guarded ACK and two full-world cold boots pass on MariaDB
 10.11.14 (135 seconds) and MySQL 8.0.46 (169 seconds), within the original 600
 seconds per engine; Redis is disabled and all owned cleanup checks pass.
 See the consolidated report for exact inputs and preserved failed runs.
-Maintained gameplay-regression integration and original Plan 1 acceptance
-consolidation are next. Plans 2–4 remain source work, not qualified coverage.
+The maintained gameplay regression now passes both engines (113/154 seconds),
+against the same current production closure, with all original assertions and
+limits. Plan1 independent acceptance is consolidated in its owning plan.
+Plans 2–4 remain source work, not qualified coverage.
 
 Plan5 retained namespace slice `7f64e1890` is imported and normally pushed in
 `b21b0c28d`. Its reader now retains original lineage/epoch joins and detects
@@ -48,10 +50,9 @@ on both engines. Private expectation repairs preserve closed pre-start mutation,
 closed post-start registration, retained original holds and explicit resume;
 ID-only acknowledgements cannot release restored ownership. Original failures
 remain preserved. All18 current-source recovery-session cases now pass on both
-engines, including inspection failures and late lease retirement. The actual
-ordinary-drop gameplay/two-cold-boot journey remains required and unfinished.
-These results do not complete Plan 1 or qualify actual active ordinary-drop
-publication/restart. See the consolidated report for exact inputs and logs.
+engines, including inspection failures and late lease retirement. At that earlier checkpoint the actual ordinary-drop journey remained unfinished;
+the later maintained both-engine result above supersedes that gap. These older
+component results alone did not establish Plan1 acceptance. See the consolidated report for exact inputs and logs.
 
 Plan5 `e694798f6` and `bbb72ecff` are integrated as `47aa60de0` and
 `4fdbb7033`: independent baseline zero-effect checks and database-wide orphan

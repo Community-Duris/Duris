@@ -1,11 +1,13 @@
 # Save residence integration — 2026-10-04
 
-Status: source implemented and reviewed; **unqualified**. This connects the
-existing replay-ownership leaf to save capture, queues, workers and receipt
-delivery. Ownership remains disabled in production. Plan 1 is not complete.
+Status: **Plan1 original independent acceptance complete within the recorded
+source-bound evidence**. This connects replay ownership to save capture, queues,
+workers and receipt delivery. Production activation and complete writer coverage
+remain blocked; Plans2–4 and combined Plan5 remain unfinished.
 
-Latest result: actual ordinary-drop publication and the two-cold-boot gate now
-pass on both SQL engines after the equipment-census fix detailed at the end.
+Latest result: the maintained actual ordinary-drop producer and two-cold-boot
+regression pass on both SQL engines against the current production closure.
+Original independent Plan1 acceptance is consolidated at the end and in its plan.
 Earlier unfinished statements below retain their dated input-specific context.
 
 ## Established missing behavior
@@ -768,3 +770,69 @@ acceptance next. Plans2–4 source integration, full backend/writer/day-one cove
 combined Plan5 qualification and activation-owner/verifier integration remain.
 Coverage remains false, release blocked and production accounting inactive.
 No optional framework or acceptance gate was added.
+
+### Plan1 maintained regression and original independent acceptance
+
+The three maintained owners now retain the executed real producer/literal
+checkpoint/guarded ACK/two-cold-boot journey, with the default historical inactive
+mode preserved. Explicit native pre-admission busy responses may retry only
+before any literal checkpoint or journal admission, within the original60-second
+drop bound. Both successful maintained runs needed zero retries. The22 negative
+self-tests, Python AST/source checks, unchanged C++ tokens versus the qualified
+private proposal, changed-line clang18 fixedpoint and diff hygiene pass.
+
+Exact maintained input SHA256:
+
+- lifecycle CPP: ce7e7ef2e81cd95cfc440830ce14e76aabb6265a92372488b4f4da1acf6752d7.
+- room CPP: 18f0631657d610f929fa2e1a956394dc3972853fa4ccdc028b8b48a1dfe61292.
+- journey: 0e998c4ce4bfc5dc7696d8fab4bb96ca71695273f767a12902c98fb0941bd7f1.
+
+Formatting changed both CPP byte identities, so both helpers were rebuilt instead
+of relabeling prior evidence. The frozen V12 source binds all1248 production
+inputs to46e37a1fc, differing from the original V4 source only by the published
+equipment-census fix. Manifest SHA256
+fe0f87664a55d9e34aa483ce3415887b0a6335d6159043f283712b9ace6d2642.
+Strict C++20 ASan/UBSan room compilation passes in152.373 seconds within300;
+lifecycle passes in106.431 seconds under its unchanged maintained supervision.
+Binary SHA256 room dd5db7419c0e6b63a7ceed0d3fe2fae6941ac2d8d1cfb2a5cfb41399c4fdda78,
+lifecycle45483b930b02edb0a26193286681748b3bd128965139f8b19e5e537a0aa2a52b.
+Current complete-world SQL observer remains the previously qualified quiet V9
+binary4cfa154fd96d5077790a0c964dc8c3601291aff1b0ce884208fe2af19a5e99fa.
+
+V12 runtime preparation failed before gameplay because the new frozen tree
+omitted existing areas_mini fixture support; both engine failures and complete
+cleanup are retained. V13 support-pin validation refused empty ancillary files
+before starting services. V14 pins all supplied ancillary support while retaining
+the original nonempty complete-world/migration prerequisites; no code, helper,
+world, oracle or runtime bound changed. Wrapper SHA256
+20b4955cbd0f0883e7b0d573f86adcc5add3f03de77a3de8c3d9af5ca7d4b0c1.
+
+MariaDB10.11.14 passes in113 seconds and MySQL8.0.46 in154, within600 per engine;
+boot120/drop60/stop30/helper120 limits are unchanged. Actual ordinary do_drop,
+original three-UID graph, all payload bytes, native custody/ledger/accounting,
+guarded journal-zero ACK and two full native cold boots pass without Redis,
+replacement UIDs or reseeding. Original schema1/inactive behavior is preserved.
+Both task-owned engines pass identity, schema absence, process stop and port reuse.
+
+Evidence roots under /opt/duris-plan1-qualification-20261004:
+
+- p1d-mariadb-08d80251.W7ceqt active_drop/result.json SHA256
+  fbe6bb99a5bd4bedf792fe3e15b2e25337a4a17d4dcf8a42dd90de18301cfedf.
+- p1d-mysql-c682e2b4.IJSNpS active_drop/result.json SHA256
+  6ba7b1583d7b47e86a1e7f21db57b650dbb0db5c407bf7d215fe9908536cf9ae.
+- V12 native journey qualifications sql-room-recovery-94c4663b81834dd7 and
+  sql-room-recovery-0daac0326ddc4087 hash57160bccb2dbb0fd3eccd2f1680b53df70bda873339464640839cfb611acf6f0
+  and38254f4352d71c39453d11873c633277b9d786a07056de77cfbb6953c95103cb.
+- Private compact receipt tmp/plan1-maintained-native-v14-20261004.local.json
+  and static input receipt tmp/plan1-maintained-drop-integration-static-20261004.local.json.
+
+The owning Plan1 acceptance table maps only the original requirements. Actual
+flatfile bank and item native evidence already establishes retained original-ID
+receipt/publication, changed-ID refusal, one-effect replay and explicit ACK;
+the dispatcher double is separate evidence. Existing real SQL family/lifecycle,
+strict builds and current-source startup/recovery evidence retain their exact
+source scopes above. This completes the independently deliverable Plan1 authority
+procedure. It does not complete Plan2 physical coin producers, other item/domain
+writers, Plan5 combined release qualification or production activation ownership.
+The synthetic three-route manifest proves only its isolated route. Registry
+coverage remains false and release blocked; no R1–R8 gate is waived or added.

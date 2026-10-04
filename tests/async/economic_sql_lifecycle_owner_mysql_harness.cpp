@@ -1,5 +1,6 @@
 #include "economy/economic_baseline_adapter.h"
 #include "economy/economic_gameplay_authority.h"
+#include "economy/economic_sql_source_normalize.h"
 #include "core/defines.h"
 #include "persistence/economic_sql_accounting_lifecycle_transaction.h"
 #include "persistence/economic_sql_lifecycle_guard.h"
@@ -35,6 +36,7 @@ class economic_gameplay_authority_test_access
 
 namespace
 {
+bool stopped_drop_setup = false;
 critical_apply_result no_gameplay_apply(const critical_command &, void *)
 {
 	return { critical_apply_outcome::retryable_failure, 0, EIO };
@@ -62,7 +64,8 @@ MYSQL *connect_fixture()
 	const std::string schema = required("DB_NAME");
 	if ((host != "127.0.0.1" && host != "host.docker.internal") || std::getenv("DB_SOCKET") ||
 	    std::strcmp(required("ECONOMIC_SQL_LIFECYCLE_DISPOSABLE_SCHEMA"), "1") ||
-	    !schema.starts_with("economic_lifecycle_test_") ||
+	    !(stopped_drop_setup ? schema.starts_with("economic_schema_test_rb_") :
+				   schema.starts_with("economic_lifecycle_test_")) ||
 	    schema.find_first_not_of(
 		    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_") !=
 		    std::string::npos)
@@ -369,8 +372,230 @@ void assert_baseline_witness(MYSQL *connection, const economic_sql_lifecycle_rec
 }
 } // namespace
 
-int main()
+// Disposable, stopped-world Plan 1 acceptance setup. Unlike the default matrix,
+// this branch never seeds/replaces players or items and never tears down authority.
+static void assert_stopped_native_baseline(MYSQL *connection,
+					   const economic_sql_lifecycle_receipt &receipt,
+					   const economic_sql_source_snapshot &source)
 {
+	economic_sql_normalized_sources normalized;
+	if (economic_sql_normalize_sources(source, 512, &normalized) !=
+	    economic_accounting_error::ok)
+		throw std::runtime_error("original stopped native source normalization failed");
+	const auto stored =
+		rows(connection,
+		     "SELECT canonical_witness FROM economic_baseline_witness WHERE operation_id=" +
+			     sql_id(receipt.baseline_operation_id));
+	if (stored.size() != 1 || stored[0].size() != 1 || stored[0][0] == "<NULL>")
+		throw std::runtime_error("retained fixture baseline witness missing");
+	const std::vector<uint8_t> bytes(stored[0][0].begin(), stored[0][0].end());
+	std::optional<economic_prepared_baseline> prepared;
+	if (economic_baseline_decode(bytes, &prepared) != economic_accounting_error::ok ||
+	    !prepared)
+		throw std::runtime_error("retained fixture baseline witness invalid");
+	size_t checked = 0;
+	for (const auto &holding : normalized.holdings)
+	{
+		economic_account_key account{ receipt.lineage, economic_account_kind::pile,
+					      holding.native_id, 0 };
+		if (holding.kind == economic_sql_holding_kind::wallet)
+		{
+			const auto found = std::find_if(receipt.wallets.begin(),
+							receipt.wallets.end(),
+							[&](const auto &value)
+							{ return value.pid == holding.native_id; });
+			if (found == receipt.wallets.end())
+				throw std::runtime_error("original wallet mapping missing");
+			account = found->account;
+		}
+		else if (holding.kind == economic_sql_holding_kind::bank)
+		{
+			const auto &row =
+				source.tables.at(holding.source.table).rows.at(holding.source.row);
+			const auto found =
+				std::find_if(receipt.banks.begin(), receipt.banks.end(),
+					     [&](const auto &value)
+					     {
+						     return row.cells.at(1) &&
+							    value.name == *row.cells[1] &&
+							    value.racewar == holding.native_context;
+					     });
+			if (found == receipt.banks.end())
+				throw std::runtime_error("original bank mapping missing");
+			account = found->account;
+		}
+		else if (holding.kind == economic_sql_holding_kind::treasury)
+		{
+			const auto found =
+				std::find_if(receipt.treasuries.begin(), receipt.treasuries.end(),
+					     [&](const auto &value)
+					     { return value.native_id == holding.native_id; });
+			if (found == receipt.treasuries.end())
+				throw std::runtime_error("original treasury mapping missing");
+			account = found->account;
+		}
+		else if (holding.kind != economic_sql_holding_kind::pile)
+			continue;
+		const auto &holdings = prepared->witness().holdings;
+		const auto found = std::find_if(holdings.begin(), holdings.end(),
+						[&](const auto &value)
+						{ return same_account(value.account, account); });
+		if (holding.disposition != economic_sql_holding_disposition::current ||
+		    !holding.balance || !holding.native_revision || found == holdings.end() ||
+		    found->balance != *holding.balance ||
+		    found->native_revision != *holding.native_revision ||
+		    found->source_digest != holding.source.digest)
+			throw std::runtime_error(
+				"retained baseline differs from original native holding");
+		++checked;
+	}
+	if (checked != prepared->witness().holdings.size() ||
+	    checked != receipt.wallets.size() + receipt.banks.size() + receipt.treasuries.size() +
+			       static_cast<size_t>(std::count_if(
+				       normalized.holdings.begin(), normalized.holdings.end(),
+				       [](const auto &value)
+				       { return value.kind == economic_sql_holding_kind::pile; })))
+		throw std::runtime_error("baseline/mapping/native source cardinality mismatch");
+}
+
+static int setup_stopped_drop_fixture()
+{
+	MYSQL *connection = nullptr;
+	bool coordinator = false;
+	try
+	{
+		if (std::strcmp(required("TEST_DB_DISPOSABLE"), "1") ||
+		    std::strcmp(required("ECONOMIC_ACCOUNTING_DISPOSABLE_SCHEMA"), "1") ||
+		    std::strcmp(required("DB_HOST"), "127.0.0.1"))
+			throw std::runtime_error("explicit stopped disposable fixture required");
+		connection = connect_fixture();
+		const std::string schema = required("DB_NAME");
+		if (schema.size() != std::strlen("economic_schema_test_rb_") + 8 ||
+		    std::strlen("duris.player.death.restitution.") + schema.size() > 64 ||
+		    required("DB_ALLOWED_TARGETS") != "127.0.0.1/" + schema)
+			throw std::runtime_error("stopped fixture target/name mismatch");
+		assert_scalar(
+			connection,
+			"SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE DB=DATABASE() AND ID<>CONNECTION_ID()",
+			"0");
+		assert_scalar(connection,
+			      "SELECT COUNT(*) FROM economic_sql_lifecycle_installation", "0");
+		assert_scalar(connection, "SELECT COUNT(*) FROM economic_sql_global_activation",
+			      "0");
+		assert_scalar(
+			connection,
+			"SELECT COUNT(*) FROM economic_lineage_state WHERE active_epoch IS NOT NULL",
+			"0");
+		if (scalar(connection, "SELECT COUNT(*) FROM player_data") == "0")
+			throw std::runtime_error(
+				"real character must precede authority installation");
+		economic_sql_lifecycle_request request;
+		if (!critical_operation_id_generate(&request.operation_id) ||
+		    !critical_operation_id_generate(&request.lineage) ||
+		    !critical_operation_id_generate(&request.epoch))
+			throw std::runtime_error("fixture lifecycle identity allocation failed");
+		request.actor_id = 9001;
+		request.accepted_at_usec = 123456789;
+		economic_sql_lifecycle_receipt receipt;
+		economic_sql_source_snapshot original_sources;
+		{
+			economic_sql_lifecycle_guard guard;
+			const auto acquired = economic_sql_lifecycle_guard::acquire_maintenance(
+				connection, &guard);
+			if (acquired ||
+			    economic_sql_capture_sources(connection, {}, &original_sources) ||
+			    economic_sql_validate_sources(original_sources))
+				throw std::runtime_error(
+					"original stopped native source capture failed");
+			const auto installed =
+				acquired ? acquired :
+					   economic_sql_accounting_lifecycle_transaction::install(
+						   connection, guard, request, &receipt);
+			if (installed || !guard.release())
+				throw std::runtime_error(
+					"guarded stopped-world source capture/install refused");
+		}
+		if (receipt.wallets.empty() || !receipt.baseline_revision ||
+		    receipt.source_capture_digest == economic_sql_source_digest{} ||
+		    receipt.native_boundary_digest == economic_sql_source_digest{})
+			throw std::runtime_error("incomplete native baseline receipt");
+		assert_stopped_native_baseline(connection, receipt, original_sources);
+		assert_scalar(
+			connection,
+			"SELECT COUNT(*) FROM economic_lineage_state WHERE active_epoch IS NOT NULL",
+			"0");
+		coordinator = critical_command_coordinator_init(
+			required("ECONOMIC_SQL_LIFECYCLE_JOURNAL_DIR"), no_gameplay_apply, nullptr,
+			1);
+		if (!coordinator)
+			throw std::runtime_error(
+				"stopped cutover coordinator initialization failed");
+		economic_sql_activation_evidence coverage;
+		coverage.manifest_digest.fill(0x44);
+		coverage.audit_digest.fill(0x55);
+		coverage.route_count = coverage.verified_route_count = 3;
+		{
+			economic_sql_lifecycle_guard guard;
+			economic_sql_cutover_capability lease;
+			economic_sql_cutover_transaction_owner owner;
+			if (economic_sql_lifecycle_guard::acquire_maintenance(connection, &guard) ||
+			    !guard.acquire_cutover_capability(3000, &lease) ||
+			    !owner.begin(guard, lease))
+				throw std::runtime_error("stopped cutover ownership refused");
+			const auto activated =
+				economic_sql_accounting_lifecycle_transaction::activate_verified(
+					connection, owner, request, coverage,
+					verify_synthetic_routes);
+			if (activated)
+			{
+				(void)owner.rollback();
+				throw std::runtime_error("verified fixture activation refused");
+			}
+			if (!owner.commit())
+				throw std::runtime_error(
+					"fixture activation terminal/cleanup refused");
+		}
+		if (!critical_command_coordinator_shutdown())
+			throw std::runtime_error("stopped fixture coordinator shutdown refused");
+		coordinator = false;
+		{
+			economic_sql_lifecycle_guard guard;
+			bool active = false;
+			if (economic_sql_lifecycle_guard::acquire_runtime(connection, &guard) ||
+			    economic_sql_accounting_lifecycle_transaction::recover_runtime(
+				    connection, guard, &active) ||
+			    !active || !guard.release())
+				throw std::runtime_error("native activation readback refused");
+		}
+		economic_gameplay_authority_test_access::reset();
+		mysql_close(connection);
+		mysql_library_end();
+		puts("PASS STOPPED_DROP_AUTHORITY actual_capture=1 baseline_readback=1 verified_cutover=1 runtime_readback=1 synthetic_routes=3 production_route_qualification=0");
+		return 0;
+	}
+	catch (const std::exception &error)
+	{
+		if (coordinator)
+			(void)critical_command_coordinator_shutdown();
+		if (connection)
+			mysql_close(connection);
+		mysql_library_end();
+		fprintf(stderr, "STOPPED-DROP-SETUP-ERROR %s\n", error.what());
+		return 2;
+	}
+}
+
+int main(int argc, char **argv)
+{
+	if (argc == 2 && !std::strcmp(argv[1], "--setup-stopped-drop-fixture"))
+	{
+		stopped_drop_setup = true;
+		if (mysql_library_init(0, nullptr, nullptr))
+			return 2;
+		return setup_stopped_drop_fixture();
+	}
+	if (argc != 1)
+		return 2;
 	MYSQL *setup = nullptr;
 	MYSQL *owner_connection = nullptr;
 	MYSQL *runtime_connection = nullptr;

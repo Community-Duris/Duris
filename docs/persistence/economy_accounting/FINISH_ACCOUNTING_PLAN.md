@@ -58,8 +58,10 @@ focused components, 35 worker/journal guard cases per backend, bank/coin/item
 coordinator/pool, lifecycle, 22 checked-release, 14 startup and 18 recovery-session
 cases pass within their recorded input scopes. The actual ordinary drop now passes
 guarded ACK and two complete native cold boots on each SQL engine. The maintained
-gameplay regression and independent Plan 1 acceptance consolidation are next;
-Plans 2–4, combined Plan 5 and full R1–R8 release acceptance remain unfinished. The
+gameplay regression now passes both engines against the current source, and
+Plan 1's original independent acceptance is complete within those recorded scopes.
+Plans 2–4, combined Plan 5, activation-owner integration and full R1–R8 release
+acceptance remain unfinished. The
 [consolidated save/recovery report](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md)
 retains the exact slices, source-established gaps and evidence limits.
 
