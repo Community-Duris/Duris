@@ -17,10 +17,12 @@ and MariaDB 10.11.14. The item topology expectation and maintained lifecycle
 link closure are solved in fdd27c681 and 1dc242ed5, each passing both engines.
 Coin fixture lifetime is solved in80565e8a7; all original native coin cases pass
 both engines with clean pooled sessions checked before the deliberate legacy kill.
-All22 prepared checked-release cases now pass on both engines after correcting
-only the explicit-resume fixture expectation. The startup owner preserves closed
-pre-start mutation checks; stale post-start registration and ID-only hold-release
-expectations are repaired privately and recompiling. Original failures remain.
+All22 prepared checked-release cases and all14 startup/held-save cases now pass
+on both engines. Private expectation repairs preserve closed pre-start mutation,
+closed post-start registration, retained original holds and explicit resume;
+ID-only acknowledgements cannot release restored ownership. Original failures
+remain preserved. Current-source18-case recovery-session execution and the actual
+ordinary-drop gameplay/two-cold-boot journey remain required and unfinished.
 These results do not complete Plan 1 or qualify actual active ordinary-drop
 publication/restart. See the consolidated report for exact inputs and logs.
 

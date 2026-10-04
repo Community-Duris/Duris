@@ -918,7 +918,8 @@ component owners, 35 worker/journal guard cases per backend, real pooled bank,
 coin and item matrices and maintained SQL lifecycle/cutover checks on both engines.
 Solved fixture issues fdd27c681,1dc242ed5,80565e8a7 preserve all original cases,
 limits and production behavior. All22 prepared checked-release cases also pass
-both engines; prepared startup expectation repair and actual active ordinary-drop
+both engines; all14 prepared startup/held-save cases also pass both engines.
+Current-source18 recovery-session cases and actual active ordinary-drop
 publication/two cold boots remain open. Existing guarded lifecycle APIs suffice
 for the permitted disposable synthetic-coverage fixture; no new production CLI
 or Plan5 waiver is needed. Plan1 remains incomplete. Continue original Plans2-4

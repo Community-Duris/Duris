@@ -605,3 +605,29 @@ are verified. Startup owner remains failed on stale post-start registration and
 ID-only release assumptions; its private next candidate is recompiling, with all
 previous failed candidates preserved. This result does not qualify the unrelated
 startup owner, active ordinary-drop route, Plans2-4 or full release.
+
+### Plan 1 qualification: staged startup and restored-hold owner
+
+All14 original prepared startup/held-save cases now pass on MariaDB10.11.14
+(2 seconds) and MySQL8.0.46 (6 seconds), within the original120-second aggregate
+limit. The private owner expected unavailable instead of the existing invalid
+closed request; it then attempted restore registration after execution started
+and treated an ID-only API call as authority to release a restored hold. Those
+expectations now follow the existing source: no pre-start mutation, registration
+closes after start, original holds survive, unrelated replay progresses and
+matching IDs alone cannot authorize release. Every original case remains; no
+production API, guard, result code or publication rule changed.
+
+Evidence roots /opt/duris-plan1-qualification-20261004/p1r-mariadb-dcd598e1.Zud0kM
+and p1r-mysql-e2f51a8a.KkbIro (pipeline/result.json) verify all14 names/order,
+unchanged source/owner/binary inputs and owned cleanup. Binary SHA256:
+1121ffae363f6492dad515784e309154217c2436b091c43c1a43eb6c6a2066a7.
+Metadata6a767ff72de4c3a000e8713a3ca5b4ce36560831e4400f60b3bc6e273fb8ea79;
+original runnerd18e0958fc02332ed11a8360a5a6af136bfe9b4b6f7ea78f0154e33fc2465976.
+Runtime reports2e57109b1604292912e0cf46bfd9ca8cd6a676d1e5698ca79d8db7df106a1afa
+and1e08b9f558e9055aa9c45cb266c8db17395a0f2e2c7d6d33f91233b9ed195c1e.
+Original failures and private corrected inputs remain under prepared-v1 through-v4.
+These tests exercise actual pipeline/worker/journal/repository/pool with controlled
+world and receipt leaves; they do not prove actual guarded gameplay ACK or cold
+native graph reconstruction. Those remain assigned acceptance, together with the
+already-prepared18 recovery-session cases on the current production source.
