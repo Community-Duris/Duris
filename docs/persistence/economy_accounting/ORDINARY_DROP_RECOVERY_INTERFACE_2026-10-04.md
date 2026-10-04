@@ -173,6 +173,19 @@ result and exact journal frames; omitted archives/quarantines or missing namespa
 proof cannot become a clean census. Actual unrelated-PID progress remains required.
 No replay source change or test followed from this review.
 
+## Current connected production source
+
+The later `6d42ad788` connects restored ordinary-drop publication and reserved
+replay revisit; `e99468f93` retires only covered, receipt-free ordinary save
+originals under locked native save-revision authority. `1d6043f57` connects the
+actual live single-root SQL producer to literal checkpoint/hold and specialized
+publication before generic registry application. Retained native handler stages
+and separate ACK/release state preserve the original across retries. These
+supersede the historical missing connections above in source, not qualification.
+See [the consolidated report](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md).
+Ownership stays disabled; remaining production ownership/lifecycle, complete
+graph coverage and major-plan native/player/cold-recovery acceptance remain open.
+
 ## Current integrated source5766555f8
 
 The complete indexed SQL boot prototype catalog is now implemented and consumed

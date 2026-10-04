@@ -63631,8 +63631,8 @@
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
   },
   "pending_source_integration": {
-    "candidate_commit": "e99468f937861db8301ea5bcb95116202091b8ee",
-    "status": "Source integration throughe99468f93 connects positive-PID synchronous save residence/native cleanup, phased SQL startup and actor-independent restored ordinary-drop publication with private guarded ACK, fresh affected-PID journal/control census, covered receipt-free ordinary-frame retirement from locked native save_revision and release-driven reserved revisit. No ordinary receipt schema or new acceptance gate. Ownership remains disabled. PID-zero/caller-owned transactions, other native writers and serialized shutdown, uncovered-save/rejected-outcome disposition, complete ordinary graph/live-producer coverage, authentic baseline/cutover/pause and major-plan qualification remain pending. Plan5 native baseline claim audit17b824618 is integrated in ad504f5c0 and its native cases registered in4e5faf66a; qualification applies only to peer inputs. Historical census/source anchors and prior rows are preserved; no current coverage or qualification claim.",
+    "candidate_commit": "1192d08c5c054c8ab42b20def02041cff088e981",
+    "status": "Source integration through 1192d08c5 connects synchronous/core save residence/native cleanup, phased SQL startup, restored ordinary-drop guarded ACK and reserved replay revisit, covered ordinary-save retirement from locked native save_revision, and the actual live ordinary SQL drop checkpoint/native publication/ACK/release. c542a2642 and1192d08c5 refuse unsupported enabled maintenance/rename before mutation. No new receipt schema, optional framework or acceptance gate. Ownership remains disabled. PID-zero/caller-owned transactions, serialized shutdown, uncovered-save/rejected-outcome disposition, complete ordinary graph coverage, authentic baseline/cutover/pause and major-plan qualification remain pending. Plan5 root-binding audit45c895ff4 is integrated in24766ebff with existing native case registration; qualification applies only to peer inputs. Historical census/source anchors and prior rows are preserved; no current coverage or qualification claim.",
     "qualified": false,
     "prepared_nonwriter_routes": [
       "recovery.inert_literal_staging",
@@ -63659,6 +63659,8 @@
       "src/player/player_quarantine_recovery.c",
       "src/player/player_quarantine_recovery.h",
       "src/core/files.c",
+      "src/account/account.c",
+      "src/net/modify.c",
       "src/sql/sql_player.c",
       "src/sql/sql.c",
       "src/sql/sql.h",
@@ -63667,6 +63669,10 @@
       "src/persistence/critical_command_coordinator.c",
       "src/persistence/critical_command_coordinator.h",
       "src/item/item_movement_transaction.c",
+      "src/item/item_movement_transaction.h",
+      "src/item/ordinary_drop_recovery.c",
+      "src/item/ordinary_drop_recovery.h",
+      "src/cmd/actobj.c",
       "src/net/comm.c"
     ]
   }

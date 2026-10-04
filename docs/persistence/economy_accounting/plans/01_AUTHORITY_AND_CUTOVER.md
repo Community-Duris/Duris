@@ -31,6 +31,15 @@ existing custody/replay checks, and operation-bearing saves retain their existin
 receipt requirements. Do not add optional frameworks or release gates for this
 ordering case. Prioritize connecting existing owners into the production path.
 
+`c542a2642` supplies enabled pre-mutation refusal for unsupported character/account
+deletion and pwipe. `1d6043f57` connects the actual single-root ordinary SQL drop
+to its literal checkpoint and native publication owner before generic registry
+application. Source review passed; tests remain deferred and ownership disabled.
+Next production connections are supported native core metadata ownership and
+clean serialized closure of retained saves/workers/publications, followed by
+authentic baseline/cutover/pause and existing flatfile bank/item parity. Keep
+these within independent Plan 1 acceptance; add no optional frameworks or gates.
+
 Recovery-session cleanup is implemented in `7dc837e29`: original-session rollback
 proof covers replacement apply, creation verification, the inspection loader's
 second transaction and journal proof; uncertain boot leases retire. Late session
