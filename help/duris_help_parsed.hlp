@@ -6457,6 +6457,11 @@ when they resist. Both sides weaken together, and both disappear when
 the barrier is dispelled or exhausted. Messages identify spells and
 barriers that were dispelled, weakened, or broken. Protected effects
 remain protected; permanent effects have no duration to shorten.
+
+Portals have no raidable requirement; their dispel level rules still apply.
+An eligible failed attempt shortens a timed portal's remaining life by 10%.
+Both ends weaken together. Moonstones and bloodstones retain their short
+expiry after a dispel, and repeated dispels can only make that expiry sooner.
 The following help topics also matched your search:
  Potion of Dispel Magic
 #0

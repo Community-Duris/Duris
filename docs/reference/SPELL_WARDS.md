@@ -77,7 +77,7 @@ saying whether it was dispelled, weakened, or broken. Partial wear does not prin
 the generic total-failure message. These rules apply to all four finite player
 ward kinds, including ordinary casts and Group Globe.
 See [Dispel Magic](DISPEL_MAGIC.md) for ordinary timed spells, magical barriers,
-and the draft balance choices.
+and their balance rules.
 
 SQL saves, pfiles, and copyover retain capacity, source identity, broken state,
 and relative deadlines. Offline time is paused. Managed pfile durations use
