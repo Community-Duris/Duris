@@ -507,3 +507,7 @@ The existing coordinator owner initially failed to link an unused private pipeli
 ### Plan 1 qualification: controlled lifecycle release contract
 
 The runtime-owner fixture lacked the current bool release API. Its controlled guard now preserves ownership on release failure, releases once after repair, and makes repeated shutdown idempotent. The original native runtime owner passes (1.566 seconds), including the bounded failure/retry sequence; log tmp/plan1-test_economic_sql_runtime_owner-20261004-v3.local.log, SHA256 d6cce9595cf01f22c4eb3ecc3a1ae4798628f384c9bbb018b1cce60d40c0590e. This is controlled-interface evidence; actual SQL named-lock release and session-loss qualification remain separate.
+
+### Plan 1 qualification: flatfile native admission closure
+
+Both existing flatfile owners now link the real economic baseline codec and adapter required by current admission. The gate harness also discards its unused private pipeline ACK overload; no baseline validation stub or assertion was removed. Native ASan/UBSan runs pass: authority gate 176.892 seconds (log SHA256 44b1af482d7261ea6686ca3a9bea3fb7850bfba248f7d6682d7e3232c507ad9d), actual bank admission/publication restart 205.131 seconds (15099389fc38a5e3738aeee8f88ec4a0b5452559fb41a800ea68be8dd1598cb1). Logs are tmp/plan1-test_economic_accounting_flatfile_gate-20261004-v3.local.log and tmp/plan1-test_economic_flatfile_admission_native-20261004-v3.local.log. Original native cases and runtime limits remain unchanged; this does not establish all writer coverage or release readiness.
