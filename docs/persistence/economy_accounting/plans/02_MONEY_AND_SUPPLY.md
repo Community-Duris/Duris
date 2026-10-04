@@ -57,7 +57,10 @@ database for native SQL acceptance.
 - Fault tests cover denomination overflow, negative holdings, changed replay,
   source-event reuse with a new ID, endpoint failure, pile publication failure,
   lost reply, and restart. Player journeys cover ATM, change, drop/pickup, split
-  remainder/morph, claims, and blackjack push/win/loss/interruption.
+  remainder/morph and claims. Blackjack remains deprecated under active epochs:
+  qualify refusal before wager, wallet or pending-payout mutation. Active blackjack
+  push/win/loss and round-recovery journeys are outside the supported product;
+  existing inactive legacy regression coverage remains separate.
 - Focused money regressions and both server builds pass. Report routes that
   remain intentionally unsupported with executable refusal tests.
 
