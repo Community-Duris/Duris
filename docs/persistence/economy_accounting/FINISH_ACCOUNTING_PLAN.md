@@ -68,6 +68,11 @@ payload repair and dispel object/timer changes outside the lexical scan. Their
 backend status remains unverified. These counts do not replace route qualification.
 The shared ownership and pending Plan 5 qualification interface are recorded in
 [the stream handoff](SHARED_STREAM_HANDOFF.md).
+The user's current execution cadence batches tests when each major plan is ready.
+Continue implementation and code review, preserve immutable BEFORE sources and
+regression fixtures, and defer new test runs until those milestones. Mark written
+changes as implemented but unqualified until the required checks pass. Retain all
+R1-R8, native/gameplay/persistence/recovery and final candidate acceptance gates.
 
 Restored SQL ordinary-drop obligation registration and clean authoritative
 hydration now have bounded component qualification on both engines. Original

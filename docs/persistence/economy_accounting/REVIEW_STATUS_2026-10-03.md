@@ -2777,9 +2777,10 @@ remain prohibited. Normal milestone publication follows combined-source checks.
 
 ### Current combined-source integration checkpoint
 
-The local merge combines qualified SQL-cleanup parent `79e766b54` with incoming
-`9d0ea2a1` and canonical migration 0056. All seven conflict contents are resolved;
-merge recording and wider candidate qualification remain pending at this checkpoint.
+Local merge `03438beab` combines qualified SQL-cleanup parent `79e766b54` with
+incoming `9d0ea2a1` and canonical migration 0056. All seven conflicts are resolved
+and committed. Local merge `d19459bd` also integrates Plan 5's `7d2f8e815` orphan
+audit slice. Wider candidate qualification and normal publication remain pending.
 Local definite-admission disposition is retained after the incoming diagnostic-only
 recovery correlation field. ACK reservation and failure retention are unchanged.
 The incoming manifest-based runner is preserved and eleven local owners are
@@ -2802,8 +2803,25 @@ activity runtime/contract, nevent scheduler, latency, save journal, pipeline and
 worker. Diagnostics passes separately with the supported linker wrapper; its
 original missing-system-libm setup failure is retained. These are native component
 checks, not complete SQL, player, ward restart or release qualification.
-Runtime compatibility validation passes for 0056. Linux migration/boot contract
-checks are being rerun after Windows ownership/symlink/socket/interpreter boundaries.
+Runtime compatibility validation passes for 0056. Linux migration/boot contracts
+pass all 24 and 10 cases respectively after Windows ownership/symlink/socket/
+interpreter boundaries; original failures remain retained. Combined-source Plan 5
+unit checks pass 63 reconciliation, 11 audit-origin and 16 audit-invariant cases.
+Reduced-schema native audit evidence still requires current-candidate rerun and
+does not establish canonical fresh/upgrade or interruption/CLI qualification.
+
+Two isolated implementation specialists now own shop publication retention and
+REMOVE-CURSE custody fixtures/producer work. Primary owns their shared contract
+dependencies and integration. Source preparation is concurrent; native compiler
+and heavy runtime slots are bounded. See `SHARED_STREAM_HANDOFF.md` for the three
+qualification scope. Subsequent user steering defers new test runs until each major
+plan is ready. The check already underway may finish; queued new owners are canceled.
+Immutable BEFORE sources and regression fixtures remain preserved for milestone
+failure/fix qualification. Implementation commits remain unqualified until those
+batches pass. No required R1-R8 gate is removed, and no
+measured overall time saving is claimed yet. Plan 2's acceptance wording now matches
+permanently deprecated active blackjack: refusal before wager/wallet/pending-payout
+mutation, with existing inactive legacy coverage retained.
 
 The root-runner integration tests refuse the missing required matrix rows for the
 ordinary and retained SQL exception owners. Preserve workload completeness and
