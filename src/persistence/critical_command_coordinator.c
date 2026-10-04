@@ -11,6 +11,7 @@
 #include <mutex>
 #include <new>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
@@ -68,8 +69,16 @@ std::unordered_map<std::string, std::unique_ptr<operation_state>> operations;
 std::deque<std::string> pending;
 std::deque<std::string> pending_admission;
 critical_completion_delivery completion_delivery;
-std::unordered_map<std::string, std::string> active_keys;
-std::unordered_map<std::string, std::deque<std::string>> fences;
+struct entity_key_hash
+{
+	using is_transparent = void;
+	size_t operator()(std::string_view key) const noexcept
+	{
+		return std::hash<std::string_view>{}(key);
+	}
+};
+std::unordered_map<std::string, std::string, entity_key_hash, std::equal_to<>> active_keys;
+std::unordered_map<std::string, std::deque<std::string>, entity_key_hash, std::equal_to<>> fences;
 std::unordered_map<std::string, completed_state> completed_cache;
 std::deque<std::string> completed_order;
 size_t completed_cache_bytes = 0;
@@ -178,13 +187,19 @@ std::string operation_key(const critical_operation_id &operation_id)
 			   operation_id.bytes.size());
 }
 
-std::string entity_key(const critical_entity_key &key)
+std::array<char, 9> entity_key_bytes(const critical_entity_key &key) noexcept
 {
-	std::string encoded(9, '\0');
+	std::array<char, 9> encoded = {};
 	encoded[0] = static_cast<char>(key.type);
 	for (unsigned int index = 0; index < 8; ++index)
 		encoded[index + 1] = static_cast<char>(key.id >> (index * 8));
 	return encoded;
+}
+
+std::string entity_key(const critical_entity_key &key)
+{
+	const auto encoded = entity_key_bytes(key);
+	return std::string(encoded.data(), encoded.size());
 }
 
 bool operation_is_queued(const operation_state &state)
@@ -247,7 +262,8 @@ void release_keys(const std::string &identity, const critical_command &command)
 {
 	for (const critical_entity_key &key : command.keys)
 	{
-		auto found = active_keys.find(entity_key(key));
+		const auto encoded = entity_key_bytes(key);
+		auto found = active_keys.find(std::string_view(encoded.data(), encoded.size()));
 		if (found != active_keys.end() && found->second == identity)
 			active_keys.erase(found);
 	}
@@ -264,7 +280,10 @@ void remove_fences(const std::string &identity, const critical_command &command)
 {
 	for (const critical_entity_key &key : command.keys)
 	{
-		auto found = fences.find(entity_key(key));
+		// On the publication ACK path the durable frame is already retired.
+		// Lookup must not depend on a temporary string's allocation or SSO.
+		const auto encoded = entity_key_bytes(key);
+		auto found = fences.find(std::string_view(encoded.data(), encoded.size()));
 		if (found == fences.end())
 			continue;
 		auto &identities = found->second;
@@ -319,39 +338,56 @@ void update_depth()
 }
 
 void remember_completed(const std::string &identity, const critical_command &command,
-			const critical_completion &completion)
+			const critical_completion &completion) noexcept
 {
-	std::vector<uint8_t> encoded;
-	if (critical_command_encode(command, &encoded) != critical_command_codec_result::ok)
-		return;
-	const size_t retained_size = encoded.size() + sizeof(critical_completion);
-	if (encoded.size() > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES ||
-	    retained_size < encoded.size() ||
-	    retained_size > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES)
-		return;
-	while (!completed_order.empty() &&
-	       (completed_cache.size() >= CRITICAL_COORDINATOR_COMPLETED_CACHE_MAX ||
-		completed_cache_bytes > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES - retained_size))
-	{
-		auto found = completed_cache.find(completed_order.front());
-		if (found != completed_cache.end())
-		{
-			completed_cache_bytes -= found->second.encoded_size;
-			completed_cache.erase(found);
-		}
-		completed_order.pop_front();
-	}
+	// This bounded cache is an optimization, never durable authority. Every
+	// fallible cache preparation belongs inside the exception boundary; ACK
+	// cleanup must finish even if the original frame is already checkpointed.
 	try
 	{
-		completed_cache.emplace(identity, completed_state{ .command = command,
-								   .completion = completion,
-								   .encoded_size = retained_size });
-		completed_order.push_back(identity);
+		std::vector<uint8_t> encoded;
+		if (critical_command_encode(command, &encoded) != critical_command_codec_result::ok)
+			return;
+		const size_t retained_size = encoded.size() + sizeof(critical_completion);
+		if (encoded.size() > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES ||
+		    retained_size < encoded.size() ||
+		    retained_size > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES)
+			return;
+		while (!completed_order.empty() &&
+		       (completed_cache.size() >= CRITICAL_COORDINATOR_COMPLETED_CACHE_MAX ||
+			completed_cache_bytes >
+				CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES - retained_size))
+		{
+			auto found = completed_cache.find(completed_order.front());
+			if (found != completed_cache.end())
+			{
+				completed_cache_bytes -= found->second.encoded_size;
+				completed_cache.erase(found);
+			}
+			completed_order.pop_front();
+		}
+		auto inserted = completed_cache.emplace(
+			identity, completed_state{ .command = command,
+						   .completion = completion,
+						   .encoded_size = retained_size });
+		if (!inserted.second)
+			return;
+		try
+		{
+			completed_order.push_back(identity);
+		}
+		catch (...)
+		{
+			// Insertion succeeded but FIFO admission failed. Roll back only
+			// this new entry before charging its retained bytes.
+			completed_cache.erase(inserted.first);
+			return;
+		}
 		completed_cache_bytes += retained_size;
 	}
-	catch (const std::bad_alloc &)
+	catch (...)
 	{
-		completed_cache.erase(identity);
+		// No cache failure may strand a completed publication obligation.
 	}
 }
 
@@ -1295,7 +1331,15 @@ bool critical_command_coordinator_acknowledge_publication(const critical_operati
 {
 	if (critical_operation_id_is_zero(operation_id))
 		return false;
-	const std::string identity = operation_key(operation_id);
+	std::string identity;
+	try
+	{
+		identity = operation_key(operation_id);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 	{
 		std::lock_guard<std::mutex> lock(coordinator_mutex);
 		auto found = operations.find(identity);
