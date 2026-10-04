@@ -424,3 +424,28 @@ formatting and diff hygiene passed. No compiler/tests/native SQL/gameplay/recove
 ran. This slice remains unqualified; supported graph admission/recovery alignment
 and major-plan acceptance remain open. No new schema, authority framework or
 acceptance gate was added; inactive paths retain their behavior.
+
+## Ordinary-drop admission and recovery eligibility
+
+Live ordinary SQL drop admission previously accepted literal graphs that the
+existing all-absent recovery owner could not enroll. The shared bounded classifier
+now reuses that owner's existing prototype, activity, parent and inert-literal
+checks before literal checkpoint preparation, before hold/submission and before
+cold enrollment. Unsupported graphs refuse before mutation. The depth comparison
+matches the existing capture/codec limit; source identity and canonical bytes
+remain caller duties. Existing-graph observation and rejection behavior are unchanged.
+
+The three source files are recovery C/H and movement C. Original copies remain in
+`tmp/ordinary-drop-eligibility-before-20261004`. Final source pins are
+`c897665e29b8f7dfb79a2ced7df7b74da71d355ae50e2e2ea1a192aa312397e4`,
+`d2fd723751acac041873624fbf3a43d33f6b286533975f831a425abe24d6cca7` and
+`dd24c1217387f8c89088e5631838195735474cd849ab8b9239437ad506f6ca0a`, respectively.
+Independent source review, changed-line formatting and diff hygiene passed.
+No tests, compiler, native SQL, gameplay or recovery checks have run for this slice.
+
+This closes the identified production source prerequisite for Plan 1's existing
+independent qualification batch. The primary will now qualify the combined source
+using existing owners and both builds, with real coordinator/pool lost-reply and
+restart checks, flatfile bank/item parity and the guarded lifecycle procedure.
+It adds no new framework, activity support or acceptance gate. Unsupported broader
+routes remain required in their owning plans; full R1–R8 and release remain open.

@@ -3,6 +3,15 @@
 
 #include "persistence/critical_command_completion.h"
 
+struct player_item_snapshot;
+enum class inert_item_stage_result;
+
+// Pure, bounded SQL recovery representability check shared by live admission
+// and all-absent enrollment. No capture, parser, allocation or authority update.
+// Source/UID uniqueness and canonical byte validation remain caller duties.
+inert_item_stage_result ordinary_drop_recovery_eligibility(const player_item_snapshot *items,
+							   size_t count) noexcept;
+
 enum class ordinary_drop_observation_status : uint8_t
 {
 	verified_existing,
