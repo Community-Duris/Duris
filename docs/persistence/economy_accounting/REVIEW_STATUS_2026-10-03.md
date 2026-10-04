@@ -2949,3 +2949,30 @@ canonical frame and ACK checks, controlled repository outcomes and ordinary
 controls. Its receipt `tmp/worker-typed-identity-prepared-v2.local.json` is SHA-256
 `d7f22f403cff50d2a72471ebeefdbeac86f421da7fc7f5bb49e7aa04338b4eaa`,
 binding 529 inputs at `7c391d98d`. Original 300/120 limits are unmeasured.
+
+
+### Phased save startup prerequisite; source only
+
+Save pipeline preparation and execution are now separate opt-in APIs. Preparation
+opens validated journal/recovery metadata with admission and load replay closed,
+without starting persistence workers or the dispatcher. Start preserves restored
+metadata, refuses duplicate execution and leaves prepared holds intact on startup
+failure; cleanup/join happens outside the pipeline mutex. Resume and the synchronous
+save/hydration admission helpers cannot reopen a prepared, unstarted pipeline.
+The existing init wrapper retains immediate prepare/start behavior and tears down
+on failed start. Production comm boot calls remain unchanged until the complete
+restored-save ownership handoff is implemented; this API does not close that race.
+
+Read-only architecture review confirms the coordinator already restores all replay
+observers before its workers launch. Durable-save census must scan the actual
+journal, including retained/quarantined frames; resident pipeline diagnostics are
+not that census. Checkpoint-spanning apply permits, original operation/generation
+holds, independent ACK fences, retained wakes, actorless native hydration and
+partial-startup dependent-owner cleanup remain required before production wiring.
+
+BEFORE manifest tmp/save-startup-phase-before-v1.local/manifest.json is SHA-256
+07923782e8b4dc477e971b44bd8e3b0aea795d366e563c22bdcfd11e96bcdebb,
+base65e4f1590872eaf6514663568b7b36bbdb1b73a8. Deferred qualification must cover
+prepared admission and shutdown, duplicate start, worker/hook/dispatcher failure,
+retry retaining exact holds, legacy inactive initialization and the full overlapping
+save/critical recovery journey. No compiler/native/SQL/gameplay tests ran.

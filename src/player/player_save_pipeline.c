@@ -71,6 +71,7 @@ player_save_pipeline_replay_gate replay_gate;
 size_t retained_bytes = 0;
 bool stop_requested = false;
 bool accepting = false;
+bool execution_started = false;
 bool append_inflight = false;
 int append_inflight_pid = 0;
 player_revision_t append_inflight_revision = 0;
@@ -803,7 +804,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 }
 } // namespace
 
-bool player_save_pipeline_init(const char *journal_directory, void (*verify_resolved_recovery)())
+bool player_save_pipeline_prepare(const char *journal_directory, void (*verify_resolved_recovery)())
 {
 	if (!journal_directory || journal_directory[0] != '/')
 		return false;
@@ -815,17 +816,13 @@ bool player_save_pipeline_init(const char *journal_directory, void (*verify_reso
 	replay_gate.begin_replay();
 	if (!player_save_journal_init(journal_directory, PLAYER_SAVE_JOURNAL_MAX_BYTES))
 		return false;
-	if (verify_resolved_recovery)
-		verify_resolved_recovery();
-	if (!player_save_worker_init(selected_snapshot_apply(), nullptr))
+	try
 	{
-		player_save_journal_shutdown();
-		return false;
+		if (verify_resolved_recovery)
+			verify_resolved_recovery();
 	}
-	if (!player_save_worker_set_journal_hooks(nullptr, player_save_journal_worker_ack, nullptr,
-						  player_save_journal_worker_terminal))
+	catch (...)
 	{
-		player_save_worker_shutdown();
 		player_save_journal_shutdown();
 		return false;
 	}
@@ -834,24 +831,58 @@ bool player_save_pipeline_init(const char *journal_directory, void (*verify_reso
 		health = {};
 		health.initialized = true;
 		stop_requested = false;
-		accepting = true;
+		accepting = false;
+		execution_started = false;
 		append_inflight = false;
 		append_inflight_pid = 0;
 		append_inflight_revision = 0;
 	}
-	try
-	{
-		dispatcher = std::thread(dispatcher_main);
-	}
-	catch (const std::system_error &)
+	return true;
+}
+
+bool player_save_pipeline_start(void)
+{
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
-		health.initialized = false;
+		if (!health.initialized || stop_requested || execution_started ||
+		    dispatcher.joinable())
+			return false;
+	}
+	try
+	{
+		if (!player_save_worker_init(selected_snapshot_apply(), nullptr))
+			return false;
+		if (!player_save_worker_set_journal_hooks(nullptr, player_save_journal_worker_ack,
+							  nullptr,
+							  player_save_journal_worker_terminal))
+		{
+			player_save_worker_shutdown();
+			return false;
+		}
+		dispatcher = std::thread(dispatcher_main);
+	}
+	catch (...)
+	{
 		player_save_worker_shutdown();
-		player_save_journal_shutdown();
 		return false;
 	}
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		execution_started = true;
+		accepting = true;
+		update_depth_locked();
+	}
 	return true;
+}
+
+bool player_save_pipeline_init(const char *journal_directory, void (*verify_resolved_recovery)())
+{
+	if (!player_save_pipeline_prepare(journal_directory, verify_resolved_recovery))
+		return false;
+	if (player_save_pipeline_start())
+		return true;
+	player_save_pipeline_shutdown();
+	return false;
 }
 
 /** Join the dispatcher and workers, then release retained pipeline state. */
@@ -876,6 +907,7 @@ void player_save_pipeline_shutdown(void)
 	literal_inventory_checkpoints.fill({});
 	retained_bytes = 0;
 	accepting = false;
+	execution_started = false;
 	append_inflight = false;
 	append_inflight_pid = 0;
 	append_inflight_revision = 0;
@@ -1994,7 +2026,7 @@ void player_save_pipeline_quiesce(void)
 void player_save_pipeline_resume(void)
 {
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
-	if (health.initialized && !stop_requested)
+	if (health.initialized && execution_started && !stop_requested)
 		accepting = true;
 	update_depth_locked();
 }
@@ -2183,6 +2215,8 @@ bool player_save_pipeline_save_admitted(int pid)
 	if (player_save_journal_pid_quarantined(pid))
 		return false;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	if (health.initialized && !execution_started)
+		return false;
 	if (find_target_save_login_fence_locked(pid))
 		return false;
 	if (auto *literal = find_literal_inventory_locked(pid); literal && literal->held)
@@ -2200,6 +2234,8 @@ bool player_save_pipeline_authoritative_hydration_admitted(int pid)
 	if (pid <= 0 || player_save_journal_pid_quarantined(pid))
 		return false;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	if (health.initialized && !execution_started)
+		return false;
 	if (find_target_save_login_fence_locked(pid))
 		return false;
 	if (auto *literal = find_literal_inventory_locked(pid);
