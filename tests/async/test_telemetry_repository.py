@@ -62,7 +62,8 @@ def repository_mapping_contract() -> None:
     names = set(re.findall(r"TELEMETRY_COLUMN\(([a-z0-9_]+),", descriptor))
     serializer_lines, macro = [], False
     for line in repository.splitlines():
-        if line.startswith(("#define FIELD", "#define TELEMETRY_BATTLE_FIELD", "#define TELEMETRY_BC_FIELD")):
+        if line.startswith(("#define FIELD", "#define TELEMETRY_BATTLE_FIELD", "#define TELEMETRY_BC_FIELD",
+                            "#define TELEMETRY_BUILD_FIELD", "#define TELEMETRY_BUILD_BYTES")):
             macro = True
         if not macro:
             serializer_lines.append(line)
@@ -130,9 +131,19 @@ def repository_mapping_contract() -> None:
     assert canonical_contribution == migration_columns("0062_telemetry_battle_contributions.sql")
     assert set(canonical_contribution) <= names
     contribution = function_body(repository, "case telemetry_record_kind::battle_contribution:",
-                                 "case telemetry_record_kind::coverage_gap:")
+                                 "case telemetry_record_kind::battle_build:")
     assert '#include "telemetry/telemetry_battle_contribution_fields.inc"' in contribution
     assert 'number(values, telemetry_column_id::name, p.member)' in contribution
+    build_fields = (ROOT / "src/telemetry/telemetry_battle_build_fields.inc").read_text()
+    canonical_build = re.findall(r"TELEMETRY_BUILD_(?:FIELD|BYTES)\(([a-z0-9_]+),", build_fields)
+    assert len(canonical_build) == len(set(canonical_build)) == 110
+    assert canonical_build == migration_columns("0065_telemetry_battle_builds.sql")
+    assert set(canonical_build) <= names
+    build = function_body(repository, "case telemetry_record_kind::battle_build:",
+                          "case telemetry_record_kind::coverage_gap:")
+    assert '#include "telemetry/telemetry_battle_build_fields.inc"' in build
+    assert 'number(values, telemetry_column_id::name, p.member)' in build
+    assert 'hex(p.member, width)' in build
 
 
 def sql_environment() -> tuple[dict[str, str], list[str], str]:
@@ -355,6 +366,7 @@ def main():
         failure_source = str(ROOT / "src/telemetry/telemetry_failure.c")
         battle_sources = [str(ROOT / "src/telemetry/telemetry_battle.c"),
                           str(ROOT / "src/telemetry/telemetry_battle_contribution.c"),
+                          str(ROOT / "src/telemetry/telemetry_battle_build_observation.c"),
                           str(ROOT / "src/telemetry/telemetry_battle_contract.c")]
         harness = str(ROOT / "tests/async/telemetry_repository_harness.cc")
         no_sql = tmp / "no_mysql"

@@ -14,12 +14,13 @@ import math
 from typing import Any, Callable, Mapping, MutableMapping, Protocol, Sequence, cast
 
 try:
-    from . import observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions, battle_source
+    from . import observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions, battle_build_contract as builds, battle_source
 except ImportError:
     import observation_semantics as observations
     import identity_publication
     import battle_contract as battles
     import battle_contribution_contract as contributions
+    import battle_build_contract as builds
     import battle_source
 
 try:  # Running as a package.
@@ -600,7 +601,7 @@ def _validate_common_row(row: Mapping[str, Any], previous_ingest_id: int | None)
     if isinstance(schema_version, bool) or not isinstance(schema_version, int) or schema_version != 1:
         raise SemanticError(f"unsupported raw telemetry schema_version {schema_version!r}")
     kind = row.get("record_kind")
-    if isinstance(kind, bool) or not isinstance(kind, int) or kind not in range(1, 12):
+    if isinstance(kind, bool) or not isinstance(kind, int) or kind not in range(1, 13):
         raise SemanticError(f"unsupported raw telemetry record_kind {kind!r}")
     return ingest_id
 
@@ -977,6 +978,15 @@ def build_page_contributions(
         if replay_key in seen_replay_keys:
             raise SemanticError("raw page contains a duplicate replay key")
         seen_replay_keys.add(replay_key)
+        if kind == 12:
+            try:
+                builds.validate_raw_observation(row)
+            except builds.BuildContractError as error:
+                raise SemanticError(str(error)) from error
+            # Sealed definitions retain their earlier source, amount and
+            # coverage meaning. Build observations need a separately qualified
+            # publication that resolves the exact association reference.
+            continue
         if kind == 11:
             try:
                 contributions.validate_raw_segment(row)

@@ -775,6 +775,7 @@ OBJS =  $(SHIP_OBJS) \
 				 telemetry/telemetry_battle.o \
 				 telemetry/telemetry_battle_contract.o \
 				 telemetry/telemetry_battle_contribution.o \
+				 telemetry/telemetry_battle_build_observation.o \
 				 telemetry/telemetry_combat_summary.o \
 				 telemetry/telemetry_failure.o \
 				 telemetry/telemetry_health.o \

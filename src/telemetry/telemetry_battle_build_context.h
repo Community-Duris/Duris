@@ -9,7 +9,6 @@
 
 /* Native snapshot contract, independently versioned from the sealed kind-10/11
  * records. This is a value reader, not a transport/persistence record. */
-inline constexpr std::uint16_t TELEMETRY_BATTLE_BUILD_CONTEXT_VERSION = 1U;
 inline constexpr std::size_t TELEMETRY_BATTLE_BUILD_STATS = 10U;
 inline constexpr std::size_t TELEMETRY_BATTLE_BUILD_RESOURCES = 4U;
 inline constexpr std::size_t TELEMETRY_BATTLE_BUILD_FLAG_BANKS = 5U;
@@ -20,32 +19,6 @@ inline constexpr std::size_t TELEMETRY_BATTLE_BUILD_MAX_AFFECTS = 64U;
  * equipment modifiers = APPLY_HIT,APPLY_MANA,APPLY_AC,APPLY_HITROLL,APPLY_DAMROLL;
  * saving modifiers = para,rod,fear,breath,spell; flags = native banks 1..5.
  * These are observed modifiers/values, not probabilities or a power score. */
-enum telemetry_battle_build_available : std::uint32_t
-{
-	TELEMETRY_BUILD_BASE = 1U << 0U,
-	TELEMETRY_BUILD_EFFECTIVE = 1U << 1U,
-	TELEMETRY_BUILD_RESOURCES = 1U << 2U,
-	TELEMETRY_BUILD_SAVING_MODIFIERS = 1U << 3U,
-	TELEMETRY_BUILD_EFFECTIVE_FLAGS = 1U << 4U,
-	TELEMETRY_BUILD_FIXED_EQUIPMENT = 1U << 5U,
-	TELEMETRY_BUILD_LEARNED_EPICS = 1U << 6U,
-	TELEMETRY_BUILD_LISTED_AFFECTS = 1U << 7U,
-	TELEMETRY_BUILD_ARENA_ROOM = 1U << 8U,
-	TELEMETRY_BUILD_ARENA_ROSTER = 1U << 9U,
-};
-
-enum telemetry_battle_build_quality : std::uint32_t
-{
-	TELEMETRY_BUILD_EPICS_UNAVAILABLE = 1U << 0U,
-	TELEMETRY_BUILD_EQUIPMENT_INVALID = 1U << 1U,
-	TELEMETRY_BUILD_AFFECTS_TRUNCATED = 1U << 2U,
-	TELEMETRY_BUILD_AFFECTS_CYCLIC = 1U << 3U,
-	TELEMETRY_BUILD_ARENA_UNAVAILABLE = 1U << 4U,
-	TELEMETRY_BUILD_ARENA_INVALID = 1U << 5U,
-	TELEMETRY_BUILD_ROOM_UNAVAILABLE = 1U << 6U,
-	TELEMETRY_BUILD_SUPPORT_ORIGIN_UNKNOWN = 1U << 7U,
-};
-
 struct telemetry_battle_build_values
 {
 	std::int16_t stats[TELEMETRY_BATTLE_BUILD_STATS];

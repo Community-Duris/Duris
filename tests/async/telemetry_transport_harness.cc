@@ -487,6 +487,66 @@ void contribution_admission_test()
 	finish();
 }
 
+void build_admission_test()
+{
+	case_name =
+		"build point uses control reserve and retains signed values and exact association";
+	bind_and_init(config(4U, 1U, 2U, 1U));
+	for (std::uint64_t sequence = 1U; sequence <= 3U; ++sequence)
+		CHECK(telemetry_transport_enqueue(detail_record(sequence)).admission ==
+		      telemetry_queue_admission::accepted_detail);
+	telemetry_record record{};
+	record.header = detail_record(4U).header;
+	record.header.kind = telemetry_record_kind::battle_build;
+	auto &p = record.payload.battle_build;
+	p.battle = { record.header.key.producer, 1U };
+	p.environment_id = 77U;
+	p.season_id = 66U;
+	p.config_id = 1U;
+	p.actor_id = 55U;
+	p.actor_kind = telemetry_combat_actor_kind::player;
+	p.sequence = 42U;
+	p.association_revision = 3U;
+	p.association_fact_sequence = 17U;
+	p.at_monotonic_usec = 1000U;
+	p.at_utc_usec = record.header.occurrence_utc_usec;
+	p.definition_version = TELEMETRY_BATTLE_BUILD_DEFINITION_VERSION;
+	p.native_context_version = TELEMETRY_BATTLE_BUILD_CONTEXT_VERSION;
+	p.build_version = p.content_version = 1U;
+	p.available = TELEMETRY_BUILD_BASE;
+	p.context_quality = TELEMETRY_BUILD_SUPPORT_ORIGIN_UNKNOWN;
+	p.base_stats[0] = -32768;
+	p.base_resources[0] = 70000;
+	p.base_combat[0] = -15;
+	p.boundary = telemetry_battle_build_boundary::actor_entry;
+	p.status = telemetry_battle_build_status::snapshot;
+	CHECK(telemetry_record_is_valid(record));
+	CHECK(telemetry_transport_enqueue(record).admission ==
+	      telemetry_queue_admission::accepted_control_reserve);
+	const auto dropped_control = telemetry_transport_enqueue(control_record(5U));
+	CHECK(dropped_control.admission == telemetry_queue_admission::rejected_control_full ||
+	      dropped_control.admission == telemetry_queue_admission::rejected_stopping);
+	// The admitted queue owns the original selected point, including its association.
+	p.sequence = p.association_revision = p.association_fact_sequence = 999U;
+	p.base_stats[0] = 0;
+	p.base_resources[0] = 0;
+	p.base_combat[0] = 0;
+	for (unsigned int attempt = 0U; attempt < 8U; ++attempt)
+		(void)telemetry_transport_pulse(100U + attempt);
+	CHECK(repository_state.calls == 2U);
+	const auto &stored = repository_state.observed[1].records[1];
+	CHECK(stored.header.kind == telemetry_record_kind::battle_build);
+	CHECK(stored.payload.battle_build.sequence == 42U);
+	CHECK(stored.payload.battle_build.association_revision == 3U);
+	CHECK(stored.payload.battle_build.association_fact_sequence == 17U);
+	CHECK(stored.payload.battle_build.base_stats[0] == -32768);
+	CHECK(stored.payload.battle_build.base_resources[0] == 70000);
+	CHECK(stored.payload.battle_build.base_combat[0] == -15);
+	CHECK(telemetry_transport_health_copy().applied_records == 4U);
+	CHECK(telemetry_transport_health_copy().dropped_control == 1U);
+	finish();
+}
+
 void immutable_retry_and_ambiguous_tests()
 {
 	case_name = "immutable retry and ambiguous barrier";
@@ -853,6 +913,7 @@ int main()
 	row_and_age_flush_tests();
 	reserve_and_loss_tests();
 	contribution_admission_test();
+	build_admission_test();
 	immutable_retry_and_ambiguous_tests();
 	validation_and_isolation_tests();
 	circuit_breaker_tests();

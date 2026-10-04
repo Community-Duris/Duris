@@ -818,6 +818,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "3757688bd03830cd81f41dc37a6c79ae02ab667954864acb359eb400c9e46963",
       "verify_checksum": "b21d8d115545a990d988fe65f6efec79d68ef61b8dca40e42096f29b588ea4b9"
+    },
+    {
+      "id": "0065_telemetry_battle_builds",
+      "sequence": 65,
+      "description": "Persist selected battle build point observations with exact replay and independent incident schema 5",
+      "apply": "immutable/0065_telemetry_battle_builds.sql",
+      "verify": "immutable/0065_telemetry_battle_builds.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "d6838b321408191d727892973e27215475a287ad3653b6a2a67d8ee859ac6455",
+      "verify_checksum": "ca0be3bbf10362354b2d673eb95ab146b29849f87ba96c0aa69d799221548a94"
     }
   ]
 }

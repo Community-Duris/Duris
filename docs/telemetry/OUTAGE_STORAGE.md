@@ -56,14 +56,15 @@ a terminal boundary. UTC unknown is exported as `null`.
 
 ## Bounded publication and recovery
 
-Wire version 3 (`DMSTLJ03`) stores at most 256 producer lifetimes in an
-81,984-byte ledger and recognizes record families 1–11, including shared battles
-and disjoint contributions. Readers retain version 1 (`DMSTLJ01`, families 1–9)
-and version 2 (`DMSTLJ02`, families 1–10). Both observed and last-failure masks
+Wire version 4 (`DMSTLJ04`) stores at most 256 producer lifetimes in an
+81,984-byte ledger and recognizes record families 1–12, including shared battles,
+disjoint contributions and selected build observations. Readers retain version 1
+(`DMSTLJ01`, families 1–9), version 2 (`DMSTLJ02`, families 1–10) and version 3
+(`DMSTLJ03`, families 1–11). Both observed and last-failure masks
 enforce each version's original family limit, even with a valid checksum. The frame
 size, word ordering, checksum and publication bounds are unchanged. An offline
 read preserves the original bytes and reports their actual version; a worker's
-next valid publication atomically writes v3 while retaining the prior observations.
+next valid publication atomically writes v4 while retaining the prior observations.
 `outages.owner` is the stable exclusive lock file. Each publication writes an
 owner-only `outages.pending` file, synchronizes it, renames it to `outages.ledger`,
 and synchronizes the directory. A SHA-256 checksum detects damaged frames;
@@ -112,7 +113,8 @@ meaning. Store exported packets privately, not in the repository.
 The reader supplies evidence for a reviewed incident inventory; it does not
 automatically register a report gap. See [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md)
 for the qualified review/publication path, including independent schemas v3 for
-battle association loss and v4 for contribution loss. Its evidence establishes a sampled outage watermark. A missing
+battle association loss, v4 for contribution loss and v5 for selected build loss.
+Its evidence establishes a sampled outage watermark. A missing
 battle cannot acquire an invented duration or outcome through that review.
 
 ## Reproducible local qualification
@@ -133,7 +135,7 @@ interrupted rename/publication, idempotent recovery, real SIGKILL, real exec,
 historical-chain refusal, storage changes and the full producer quota. The
 offline reader consumes a real native frame and is checked for unchanged bytes,
 null unknown ends, active-owner refusal, retained interrupted evidence, original
-v1/v2 family limits, v3 contribution masks and history-preserving atomic upgrade.
+v1/v2/v3 family limits, v4 build masks and history-preserving atomic upgrade.
 
 The runtime journey runs SQL-header and client-free variants with bounded
 synthetic repository faults. It verifies registration before SQL initialization

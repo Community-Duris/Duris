@@ -12,7 +12,8 @@ case "${1:-}" in
     --battle-storage) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_battle_storage.py ;;
     --battle-runtime) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_battle_runtime_sql.py ;;
     --contribution-storage) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_battle_contribution_storage.py ;;
-    *) printf 'usage: run_telemetry_repository_sql.sh [--incidents|--observations|--identity|--identity-review|--identity-publication|--battle-storage|--battle-runtime|--contribution-storage]\n' >&2; exit 2 ;;
+    --build-storage) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_battle_build_storage.py ;;
+    *) printf 'usage: run_telemetry_repository_sql.sh [--incidents|--observations|--identity|--identity-review|--identity-publication|--battle-storage|--battle-runtime|--contribution-storage|--build-storage]\n' >&2; exit 2 ;;
 esac
 IMAGE="${TELEMETRY_REPOSITORY_DB_IMAGE:-mariadb:10.11.14}"
 case "$IMAGE" in

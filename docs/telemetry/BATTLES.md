@@ -1087,10 +1087,123 @@ crypto heap calls during native reads; digest computation uses stack-owned SHA
 state. The runtime fixture also executes the absent native catalog/arena-symbol
 case. This does not qualify a complete server performance or persistence journey.
 
-**Remaining expectation:** connect these values to reviewed entry/change
+The separately versioned record/SQL/outage/replay contract is now implemented
+below. **Remaining expectation:** connect these values to reviewed entry/change
 boundaries with cached snapshots, rate limits and explicit unknown coverage;
-add a separately versioned record/SQL/outage/replay contract and retained
-publication; qualify actual personal-local source/readback/performance journeys.
+retain and publish matching observations; qualify actual personal-local
+source/readback/performance journeys.
 The current reader is not called from per-hit hooks. Durable matching dimensions,
 reviewed equipment/support classification, complete resistance/prevention,
 effective-property coverage and arena outcomes remain unfinished under #258.
+
+## Durable selected combat build observations
+
+Record kind **12**, `battle_build`, stores definition-**1** selected observations
+from the version-1 native reader. This implements the storage and loss contract;
+live boundary capture and report publication remain pending. The existing
+transport, worker, typed column descriptor, private writer and reviewed incident
+registrar handle this family. No separate service or storage transport is added.
+
+The selected payload is **448 bytes** in C++, and the complete fixed record is
+**488 bytes**, within the existing 512-byte record limit and 64-KiB batch limit.
+Its independent portable encoding is **447 bytes**: **108 exact-width scalar
+fields and two 32-byte digests** in the order of
+`src/telemetry/telemetry_battle_build_fields.inc`. Scalars use network byte order
+and signed fields preserve two's-complement values. ABI padding is excluded.
+The native reader's five raw listed-affect flag banks are omitted from this
+selected record; the bounded counts and traversal/origin uncertainty remain.
+The field-layout seal is
+`059f0e9236f3d30340feacf7329d8c0857cee23a2e94c327eb60bb2a8c51b5a5`.
+
+Each point retains the original battle producer/id, live actor key/kind,
+environment/season, configuration/build/content versions, exact association
+revision and fact sequence, and one monotonic/UTC clock pair. The transport
+producer and occurrence UTC must match the payload. The logical key is
+`(bctx_battle_boot_id, bctx_battle_process_id, bctx_sequence)`; the producer must
+allocate a fresh process-wide context sequence. A second transport receipt
+cannot replace the same logical point. NPC/pet keys require the original tagged
+runtime generation; they cannot borrow player epic data or another actor's build.
+The native-to-record factory refuses mismatched actor/configuration/version or
+nonzero reserved values and clears the output on refusal.
+
+The record includes exact level/race/faction, primary/secondary class masks and
+specialization, base/effective stats and combat/resource values, current
+resources, signed saving modifiers, effective and fixed-equipment flag banks,
+selected equipment counts/modifiers/digest, learned-epic counts/digest, bounded
+listed-affect counts and independent arena room/roster observations. Availability
+is independent by family. Missing families have cleared values; their zeroes are
+not observations of an empty build. Known equipment/epic digests must be nonzero,
+counts must obey the reader bounds, and partial affect/arena observations retain
+their explicit quality markers. Support origin remains unknown.
+
+Snapshot boundaries identify actor entry, reviewed actor changes, configuration
+changes, periodic samples or source recovery. Separate **unavailable** points
+identify rate limits, source failure or configuration withdrawal and contain no
+profile values or stale digests. Configuration withdrawal has zero
+configuration/build/content IDs; other points require an existing configuration
+with matching environment/season/build/content. The association reference records
+which native association the point accompanies. It does not prove that the
+matching packet was retained, that the build remained constant between points,
+or that an arena match/outcome is known. Those links and coverage must be checked
+by the future retained-source/report path before using a point in a comparison.
+
+Migration **0065**, `0065_telemetry_battle_builds`, adds **110 nullable typed
+columns**, the logical unique key and **nine enforced CHECK constraints**. Older
+families have NULL build fields; kind 12 has NULL fields from every older payload
+family. Existing sealed migrations retain their bytes. Guarded reruns preserve
+facts and reject incompatible column widths, reordered logical indexes or altered
+checks through the verifier instead of repairing them. Writer retries compare
+every selected field and digest; lost acknowledgements preserve identical replay.
+Conflicts and invalid records use the existing quarantine evidence path.
+
+The native and offline outage readers now write/read **DMSTLJ04** for record
+families 1–12. Original v1/v2/v3 inventories remain readable with their original
+family ceilings of 9/10/11; both observation and failure masks refuse a future
+family. Upgrading an inventory appends through the existing atomic replacement
+path. Independent private incident **schema 5** supports kinds 1–12 through
+`telemetry_incident_registry_v5` and `telemetry_incident_v5`. Registration checks
+the committed first verified post-fix fact, scope and UTC, and rolls back metadata
+and detail together. Current published definition 5 continues to reserve schema 4.
+No new report definition is activated. Definitions 1/2/3/5 validate and skip kind
+12 while advancing ingestion; their inputs, totals and quality meaning are
+unchanged. This record is not yet retained or exposed by battle reports.
+
+These matching fields make the next balance comparisons more useful. A class or
+faction outcome can be compared within observed level, build, gear and group
+context; a temporary resource/effect advantage need not be mistaken for a class
+advantage. A gear fingerprint distinguishes selected setups without inventing a
+universal gear-power score. Explicit missing observations prevent old or partial
+context from silently becoming complete evidence. The points alone cannot
+establish causal balance, power equivalence, continuous exposure or player skill.
+
+The focused local commands are:
+
+```sh
+python3 tests/async/test_telemetry_battle_build_contract.py
+python3 tests/async/test_telemetry_battle_build_contract.py --sanitize
+python3 tests/async/test_telemetry_transport.py
+python3 tests/async/test_telemetry_outage.py
+python3 tests/async/test_telemetry_battle_history.py
+bash tests/async/run_telemetry_repository_sql.sh --build-storage
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --build-storage
+```
+
+The SQL wrapper creates an owned disposable loopback database and removes it
+after testing. It requires the local build/SQL tools described by the repository
+test setup, and does not require production or staging access. The field/factory
+tests compare native and independent Python encodings, signed limits, digest
+bytes, partial families, gaps, corruption, strict row shape and sealed-report
+compatibility. SQL journeys apply the complete 65-step chain, compare all fields,
+exercise CHECK/logical-key refusals, guarded reruns and schema drift/restoration,
+and register schema-5 loss evidence using a restricted reviewer. The private
+writer journey covers all twelve families, exact replay, lost acknowledgements,
+NULL separation, immutable configuration qualification and quarantine evidence.
+
+**Next executable expectation:** wire bounded entry/change/periodic capture into
+the existing native battle associations with a fixed cache, sequence allocation,
+rate limits and explicit loss/recovery points. Then retain the matching points
+and publish them under a new versioned comparison definition with schema-5 loss
+coverage, preserving current definition-5 meaning. Qualify the actual
+personal-local gameplay/readback/performance journey. Complete reviewed native
+context/classification, typed outcomes and the four balance suites remain open
+under #258; the durable contract does not complete those requirements.

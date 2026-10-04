@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <string_view>
 #include <type_traits>
 
 /*
@@ -72,6 +73,7 @@ enum class telemetry_record_kind : std::uint8_t
 	ownership = 9,
 	battle = 10,
 	battle_contribution = 11,
+	battle_build = 12,
 };
 
 /* Observed authenticated descriptor ownership; preparation alone emits no fact. */
@@ -1046,6 +1048,120 @@ struct telemetry_battle_contribution_payload
 	std::uint8_t reserved;
 };
 
+/* Compact observed build context is a separate domain from relationship facts
+ * and contribution amounts. Native affect flag banks are omitted: this family
+ * keeps selected traversal counts and their explicit source uncertainty. */
+inline constexpr std::uint16_t TELEMETRY_BATTLE_BUILD_DEFINITION_VERSION = 1U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_BUILD_CONTEXT_VERSION = 1U;
+
+enum telemetry_battle_build_available : std::uint32_t
+{
+	TELEMETRY_BUILD_BASE = 1U << 0U,
+	TELEMETRY_BUILD_EFFECTIVE = 1U << 1U,
+	TELEMETRY_BUILD_RESOURCES = 1U << 2U,
+	TELEMETRY_BUILD_SAVING_MODIFIERS = 1U << 3U,
+	TELEMETRY_BUILD_EFFECTIVE_FLAGS = 1U << 4U,
+	TELEMETRY_BUILD_FIXED_EQUIPMENT = 1U << 5U,
+	TELEMETRY_BUILD_LEARNED_EPICS = 1U << 6U,
+	TELEMETRY_BUILD_LISTED_AFFECTS = 1U << 7U,
+	TELEMETRY_BUILD_ARENA_ROOM = 1U << 8U,
+	TELEMETRY_BUILD_ARENA_ROSTER = 1U << 9U,
+};
+
+enum telemetry_battle_build_quality : std::uint32_t
+{
+	TELEMETRY_BUILD_EPICS_UNAVAILABLE = 1U << 0U,
+	TELEMETRY_BUILD_EQUIPMENT_INVALID = 1U << 1U,
+	TELEMETRY_BUILD_AFFECTS_TRUNCATED = 1U << 2U,
+	TELEMETRY_BUILD_AFFECTS_CYCLIC = 1U << 3U,
+	TELEMETRY_BUILD_ARENA_UNAVAILABLE = 1U << 4U,
+	TELEMETRY_BUILD_ARENA_INVALID = 1U << 5U,
+	TELEMETRY_BUILD_ROOM_UNAVAILABLE = 1U << 6U,
+	TELEMETRY_BUILD_SUPPORT_ORIGIN_UNKNOWN = 1U << 7U,
+};
+
+enum class telemetry_battle_build_status : std::uint8_t
+{
+	snapshot = 1,
+	unavailable = 2,
+};
+
+enum class telemetry_battle_build_boundary : std::uint8_t
+{
+	actor_entry = 1,
+	actor_changed = 2,
+	configuration_changed = 3,
+	periodic_sample = 4,
+	source_resumed = 5,
+	rate_limit = 6,
+	source_unavailable = 7,
+	configuration_unavailable = 8,
+};
+
+struct telemetry_battle_build_observation
+{
+	telemetry_battle_id battle;
+	telemetry_environment_id environment_id;
+	telemetry_season_id season_id;
+	telemetry_config_id config_id;
+	telemetry_id actor_id;
+	telemetry_sequence sequence;
+	telemetry_revision association_revision;
+	telemetry_monotonic_usec at_monotonic_usec;
+	telemetry_utc_usec at_utc_usec;
+	std::uint64_t effective_flags[5];
+	std::uint64_t equipment_flags[5];
+	std::uint8_t equipment_digest[32];
+	std::uint8_t epic_digest[32];
+	std::uint32_t primary_class_mask;
+	std::uint32_t secondary_class_mask;
+	std::uint32_t build_version;
+	std::uint32_t content_version;
+	std::uint32_t available;
+	std::uint32_t context_quality;
+	telemetry_quality_mask quality_flags;
+	std::uint32_t association_fact_sequence;
+	std::int32_t base_resources[4];
+	std::int32_t effective_resources[4];
+	std::int32_t current_resources[4];
+	std::int32_t base_combat[3];
+	std::int32_t effective_combat[3];
+	std::int32_t equipment_modifiers[5];
+	std::int32_t arena_player_flags;
+	std::int16_t base_stats[10];
+	std::int16_t effective_stats[10];
+	std::uint16_t definition_version;
+	std::uint16_t native_context_version;
+	std::uint16_t level;
+	std::uint16_t race;
+	std::uint16_t faction;
+	std::uint16_t epic_catalog_skills;
+	std::uint16_t epic_learned_skills;
+	std::uint16_t affect_nodes;
+	std::uint16_t offensive_modifier_nodes;
+	std::uint16_t armor_modifier_nodes;
+	std::uint16_t resource_modifier_nodes;
+	std::uint16_t unapplied_nodes;
+	telemetry_combat_actor_kind actor_kind;
+	std::uint8_t specialization;
+	std::int8_t saving_modifiers[5];
+	std::uint8_t equipment_counts[7];
+	std::uint8_t affects_complete;
+	std::uint8_t arena_membership;
+	std::uint8_t arena_room;
+	std::uint8_t arena_enabled;
+	std::uint8_t arena_type;
+	std::uint8_t arena_stage;
+	std::uint8_t arena_team;
+	telemetry_battle_build_boundary boundary;
+	telemetry_battle_build_status status;
+};
+
+static_assert(std::is_trivially_copyable_v<telemetry_battle_build_observation>);
+static_assert(std::is_standard_layout_v<telemetry_battle_build_observation>);
+static_assert(sizeof(telemetry_battle_build_observation) + sizeof(telemetry_record_header) <=
+	      TELEMETRY_RECORD_MAX_BYTES);
+
 union telemetry_record_payload
 {
 	telemetry_interval_payload interval;
@@ -1059,6 +1175,7 @@ union telemetry_record_payload
 	telemetry_ownership_payload ownership;
 	telemetry_battle_fact battle;
 	telemetry_battle_contribution_payload battle_contribution;
+	telemetry_battle_build_observation battle_build;
 };
 
 /* Fixed-size tagged value.  The active payload is selected by header.kind. */
@@ -1130,7 +1247,8 @@ constexpr bool telemetry_record_kind_is_valid(telemetry_record_kind kind) noexce
 	       kind == telemetry_record_kind::encounter ||
 	       kind == telemetry_record_kind::combat_summary ||
 	       kind == telemetry_record_kind::ownership || kind == telemetry_record_kind::battle ||
-	       kind == telemetry_record_kind::battle_contribution;
+	       kind == telemetry_record_kind::battle_contribution ||
+	       kind == telemetry_record_kind::battle_build;
 }
 
 constexpr bool telemetry_record_kind_is_control(telemetry_record_kind kind) noexcept
@@ -1142,7 +1260,8 @@ constexpr bool telemetry_record_kind_is_control(telemetry_record_kind kind) noex
 	       kind == telemetry_record_kind::encounter ||
 	       kind == telemetry_record_kind::combat_summary ||
 	       kind == telemetry_record_kind::ownership || kind == telemetry_record_kind::battle ||
-	       kind == telemetry_record_kind::battle_contribution;
+	       kind == telemetry_record_kind::battle_contribution ||
+	       kind == telemetry_record_kind::battle_build;
 }
 
 constexpr bool telemetry_lifecycle_kind_is_valid(telemetry_lifecycle_kind kind) noexcept
@@ -2148,6 +2267,157 @@ constexpr bool telemetry_battle_contribution_payload_is_valid(
 			(TELEMETRY_QUALITY_CONTEXT_UNKNOWN | TELEMETRY_QUALITY_QUEUE_DROP));
 }
 
+namespace telemetry_battle_build_detail
+{
+using observation = telemetry_battle_build_observation;
+
+template <typename T, std::size_t Size> constexpr bool zero(const T (&values)[Size]) noexcept
+{
+	for (auto value : values)
+		if (value != 0)
+			return false;
+	return true;
+}
+
+constexpr bool metadata(std::string_view name) noexcept
+{
+	return name.starts_with("bctx_battle_") || name == "bctx_environment_id" ||
+	       name == "bctx_season_id" || name == "bctx_config_id" || name == "bctx_actor_id" ||
+	       name == "bctx_actor_kind" || name == "bctx_sequence" ||
+	       name.starts_with("bctx_association_") || name.starts_with("bctx_at_") ||
+	       name == "bctx_definition_version" || name == "bctx_native_context_version" ||
+	       name == "bctx_boundary" || name == "bctx_status" || name == "bctx_build_version" ||
+	       name == "bctx_content_version" || name == "bctx_quality_flags" ||
+	       name == "bctx_context_quality";
+}
+
+constexpr bool empty_profile(const observation &v) noexcept
+{
+#define TELEMETRY_BUILD_FIELD(name, member, width, signed_value) \
+	if constexpr (!metadata(#name))                          \
+		if (static_cast<std::uint64_t>(v.member) != 0U)  \
+			return false;
+#define TELEMETRY_BUILD_BYTES(name, member, width) \
+	if (!zero(v.member))                       \
+		return false;
+#include "telemetry/telemetry_battle_build_fields.inc"
+#undef TELEMETRY_BUILD_FIELD
+#undef TELEMETRY_BUILD_BYTES
+	return true;
+}
+
+} // namespace telemetry_battle_build_detail
+
+constexpr bool
+telemetry_battle_build_observation_is_valid(const telemetry_battle_build_observation &v) noexcept
+{
+	using namespace telemetry_battle_build_detail;
+	if (!telemetry_battle_id_is_valid(v.battle) || v.environment_id == 0U ||
+	    v.season_id == 0U || v.sequence == 0U || v.association_revision == 0U ||
+	    v.association_fact_sequence == 0U ||
+	    !telemetry_battle_actor_key_is_valid({ v.actor_id, v.actor_kind }) ||
+	    v.definition_version != TELEMETRY_BATTLE_BUILD_DEFINITION_VERSION ||
+	    v.native_context_version != TELEMETRY_BATTLE_BUILD_CONTEXT_VERSION ||
+	    !telemetry_quality_mask_is_valid(v.quality_flags) ||
+	    (v.context_quality & ~255U) != 0U || (v.available & ~1023U) != 0U ||
+	    v.boundary < telemetry_battle_build_boundary::actor_entry ||
+	    v.boundary > telemetry_battle_build_boundary::configuration_unavailable)
+		return false;
+	if (v.boundary == telemetry_battle_build_boundary::configuration_unavailable)
+	{
+		if (v.config_id != 0U || v.build_version != 0U || v.content_version != 0U)
+			return false;
+	}
+	else if (v.config_id == 0U || v.build_version == 0U || v.content_version == 0U)
+		return false;
+	if (v.status == telemetry_battle_build_status::unavailable)
+		return v.boundary >= telemetry_battle_build_boundary::rate_limit &&
+		       (v.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN) && empty_profile(v);
+	if (v.status != telemetry_battle_build_status::snapshot || v.available == 0U ||
+	    v.boundary > telemetry_battle_build_boundary::source_resumed ||
+	    !(v.context_quality & TELEMETRY_BUILD_SUPPORT_ORIGIN_UNKNOWN))
+		return false;
+	if (!(v.available & TELEMETRY_BUILD_BASE) &&
+	    (!zero(v.base_stats) || !zero(v.base_resources) || !zero(v.base_combat)))
+		return false;
+	if (!(v.available & TELEMETRY_BUILD_EFFECTIVE) &&
+	    (!zero(v.effective_stats) || !zero(v.effective_resources) || !zero(v.effective_combat)))
+		return false;
+	if (!(v.available & TELEMETRY_BUILD_RESOURCES) && !zero(v.current_resources))
+		return false;
+	if (!(v.available & TELEMETRY_BUILD_SAVING_MODIFIERS) && !zero(v.saving_modifiers))
+		return false;
+	if (!(v.available & TELEMETRY_BUILD_EFFECTIVE_FLAGS) && !zero(v.effective_flags))
+		return false;
+	if (!(v.available & TELEMETRY_BUILD_FIXED_EQUIPMENT))
+	{
+		if (!zero(v.equipment_counts) || !zero(v.equipment_modifiers) ||
+		    !zero(v.equipment_flags) || !zero(v.equipment_digest))
+			return false;
+	}
+	else if (v.equipment_counts[0] > 43U || v.equipment_counts[6] > v.equipment_counts[0] ||
+		 v.equipment_counts[1] + v.equipment_counts[2] + v.equipment_counts[3] +
+				 v.equipment_counts[4] + v.equipment_counts[5] !=
+			 v.equipment_counts[0] ||
+		 zero(v.equipment_digest) ||
+		 (v.context_quality & TELEMETRY_BUILD_EQUIPMENT_INVALID))
+		return false;
+	if (!(v.available & TELEMETRY_BUILD_LEARNED_EPICS))
+	{
+		if (v.epic_catalog_skills != 0U || v.epic_learned_skills != 0U ||
+		    !zero(v.epic_digest))
+			return false;
+	}
+	else if (v.actor_kind != telemetry_combat_actor_kind::player ||
+		 v.epic_catalog_skills == 0U || v.epic_catalog_skills > 309U ||
+		 v.epic_learned_skills > v.epic_catalog_skills || zero(v.epic_digest) ||
+		 (v.context_quality & TELEMETRY_BUILD_EPICS_UNAVAILABLE))
+		return false;
+	if (!(v.available & TELEMETRY_BUILD_LISTED_AFFECTS))
+	{
+		if (v.affect_nodes != 0U || v.offensive_modifier_nodes != 0U ||
+		    v.armor_modifier_nodes != 0U || v.resource_modifier_nodes != 0U ||
+		    v.unapplied_nodes != 0U || v.affects_complete != 0U)
+			return false;
+	}
+	else
+	{
+		const auto partial = v.context_quality & (TELEMETRY_BUILD_AFFECTS_TRUNCATED |
+							  TELEMETRY_BUILD_AFFECTS_CYCLIC);
+		if (v.affect_nodes > 64U || v.unapplied_nodes > v.affect_nodes ||
+		    v.offensive_modifier_nodes + v.armor_modifier_nodes +
+				    v.resource_modifier_nodes >
+			    v.affect_nodes - v.unapplied_nodes ||
+		    v.affects_complete > 1U || (v.affects_complete && partial) ||
+		    (!v.affects_complete && !partial) ||
+		    ((v.context_quality & TELEMETRY_BUILD_AFFECTS_TRUNCATED) &&
+		     v.affect_nodes != 64U) ||
+		    ((v.context_quality & TELEMETRY_BUILD_AFFECTS_CYCLIC) && v.affect_nodes == 0U))
+			return false;
+	}
+	if (v.arena_room > 1U ||
+	    (!(v.available & TELEMETRY_BUILD_ARENA_ROOM) && v.arena_room != 0U) ||
+	    ((v.available & TELEMETRY_BUILD_ARENA_ROOM) &&
+	     (v.context_quality & TELEMETRY_BUILD_ROOM_UNAVAILABLE)) ||
+	    v.arena_enabled > 1U || v.arena_type > 5U || v.arena_stage > 5U)
+		return false;
+	if (v.available & TELEMETRY_BUILD_ARENA_ROSTER)
+	{
+		if (v.context_quality &
+		    (TELEMETRY_BUILD_ARENA_INVALID | TELEMETRY_BUILD_ARENA_UNAVAILABLE))
+			return false;
+		if (v.arena_membership == 1U)
+			return v.arena_team == 0U && v.arena_player_flags == 0;
+		return v.arena_membership == 2U &&
+		       v.actor_kind == telemetry_combat_actor_kind::player && v.arena_team >= 1U &&
+		       v.arena_team <= 3U;
+	}
+	return (v.arena_membership == 0U ||
+		(v.arena_membership == 3U &&
+		 (v.context_quality & TELEMETRY_BUILD_ARENA_INVALID))) &&
+	       v.arena_team == 0U && v.arena_player_flags == 0;
+}
+
 /* The switch reads only the union member selected by header.kind. */
 constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcept
 {
@@ -2195,6 +2465,13 @@ constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcep
 				       .process_id &&
 		       record.header.occurrence_utc_usec ==
 			       record.payload.battle_contribution.cut.decision_utc_usec;
+	case telemetry_record_kind::battle_build:
+		return telemetry_battle_build_observation_is_valid(record.payload.battle_build) &&
+		       record.header.key.producer.boot_id ==
+			       record.payload.battle_build.battle.producer.boot_id &&
+		       record.header.key.producer.process_id ==
+			       record.payload.battle_build.battle.producer.process_id &&
+		       record.header.occurrence_utc_usec == record.payload.battle_build.at_utc_usec;
 	case telemetry_record_kind::invalid:
 		break;
 	}

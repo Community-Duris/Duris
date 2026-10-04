@@ -41,6 +41,16 @@ def project(p: dict, start=100, end=200):
 
 
 class IncidentSemantics(unittest.TestCase):
+    def test_cli_templates_include_build_schema_without_changing_the_default(self):
+        command = [sys.executable, str(ROOT / "scripts/telemetry/incident.py"), "--template"]
+        for arguments, version in (([], 1), (["--registry-schema-version", "5"], 5)):
+            result = subprocess.run(command + arguments, check=True, capture_output=True,
+                                    text=True, timeout=10)
+            self.assertEqual(json.loads(result.stdout)["registry_schema_version"], version)
+        refused = subprocess.run(command + ["--registry-schema-version", "6"],
+                                 capture_output=True, text=True, timeout=10)
+        self.assertEqual(refused.returncode, 2)
+
     def test_ownership_is_only_supported_by_explicit_schema_two(self):
         p = packet(2)
         p["incidents"][0].update(record_kind_mask=1 << 9, fix_reference_digest="44" * 32,
@@ -70,7 +80,7 @@ class IncidentSemantics(unittest.TestCase):
         with self.assertRaisesRegex(incident.IncidentError, "stored_inventory_digest_mismatch"):
             incident.validate_stored(first, rows, registry_schema_version=2)
         self.assertEqual([incident.generation_schema(v) for v in (1, 2, 3, 4, 5)], [1, 1, 2, 3, 4])
-        for version in (True, 0, 5, "2", None):
+        for version in (True, 0, 6, "2", None):
             with self.assertRaises(incident.IncidentError):
                 incident.template(version)
         p = packet(2)
@@ -103,7 +113,7 @@ class IncidentSemantics(unittest.TestCase):
             incident.validate_packet(p)
 
     def test_stored_digests_refuse_unbounded_integer_conversion(self):
-        for schema in (1, 2, 3, 4):
+        for schema in (1, 2, 3, 4, 5):
             meta, rows = incident.validate_packet(packet(schema))
             for value in (1 << 40, "11" * 32, b"x", bytearray(b"x" * 32)):
                 bad = dict(meta, packet_digest=value)
@@ -123,6 +133,25 @@ class IncidentSemantics(unittest.TestCase):
             with self.assertRaisesRegex(incident.IncidentError, "unknown_record_family"):
                 incident.validate_packet(p)
         self.assertEqual(len({incident.schema_contract(schema)[2:] for schema in (1, 2, 3, 4)}), 4)
+
+    def test_build_family_requires_independent_v5_review_history(self):
+        p = packet(5)
+        p["incidents"][0].update(record_kind_mask=1 << 12, fix_reference_digest="44" * 32,
+            first_verified_postfix=dict(boot_id=11, process_id=22, record_seq=34,
+                                       record_kind=12, occurrence_utc_usec=None))
+        meta, rows = incident.validate_packet(p)
+        incident.validate_stored(meta, rows, registry_schema_version=5)
+        self.assertEqual(rows[0]["verified_record_kind"], 12)
+        for schema in (1, 2, 3, 4):
+            p["registry_schema_version"] = schema
+            with self.assertRaisesRegex(incident.IncidentError, "unknown_record_family"):
+                incident.validate_packet(p)
+        p["registry_schema_version"] = 5
+        p["incidents"][0]["record_kind_mask"] = 1 << 13
+        with self.assertRaisesRegex(incident.IncidentError, "unknown_record_family"):
+            incident.validate_packet(p)
+        self.assertEqual(len({incident.schema_contract(schema)[2:] for schema in (1, 2, 3, 4, 5)}), 5)
+        self.assertEqual(incident.generation_schema(5), 4)
 
     def test_unknown_end_and_backlog_stay_unknown(self):
         meta, rows = project(packet())

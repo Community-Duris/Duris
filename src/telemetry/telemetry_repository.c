@@ -513,6 +513,19 @@ fields record_fields(const telemetry_record &record)
 #undef TELEMETRY_BC_FIELD
 		break;
 	}
+	case telemetry_record_kind::battle_build:
+	{
+		const auto &p = record.payload.battle_build;
+#define TELEMETRY_BUILD_FIELD(name, member, width, signed_value) \
+	number(values, telemetry_column_id::name, p.member);
+#define TELEMETRY_BUILD_BYTES(column, member, width)                            \
+	values.emplace_back(telemetry_column(telemetry_column_id::column).name, \
+			    hex(p.member, width));
+#include "telemetry/telemetry_battle_build_fields.inc"
+#undef TELEMETRY_BUILD_FIELD
+#undef TELEMETRY_BUILD_BYTES
+		break;
+	}
 	case telemetry_record_kind::coverage_gap:
 	{
 		const auto &p = record.payload.gap;
@@ -545,6 +558,12 @@ fields record_fields(const telemetry_record &record)
 
 /* Only compile-time field names and decimal integers or fixed digest hex are
  * assembled as SQL. No string supplied by a player or configuration is SQL text. */
+bool hex_field(const std::string &name)
+{
+	return name == "fingerprint" || name == "payload_sha256" || name == "record_payload" ||
+	       name == "bctx_equipment_digest" || name == "bctx_epic_digest";
+}
+
 std::string names(const fields &values, bool select = false)
 {
 	std::string result;
@@ -552,18 +571,15 @@ std::string names(const fields &values, bool select = false)
 	{
 		if (!result.empty())
 			result += ',';
-		result += select && item.first == "fingerprint" ? "HEX(`fingerprint`)" :
-								  "`" + item.first + "`";
+		result += select && hex_field(item.first) ? "HEX(`" + item.first + "`)" :
+							    "`" + item.first + "`";
 	}
 	return result;
 }
 
 std::string literal(const field &item)
 {
-	return item.first == "fingerprint" || item.first == "payload_sha256" ||
-			       item.first == "record_payload" ?
-		       "UNHEX('" + item.second + "')" :
-		       item.second;
+	return hex_field(item.first) ? "UNHEX('" + item.second + "')" : item.second;
 }
 
 std::string where(const fields &values)
@@ -998,6 +1014,38 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 		auto row = mysql_fetch_row(config.get());
 		if (!row || !equal_row(row, expected))
 			return telemetry_apply_outcome::rejected_invalid;
+	}
+
+	if (record.header.kind == telemetry_record_kind::battle_build)
+	{
+		const auto &p = record.payload.battle_build;
+		fields logical_key;
+		number(logical_key, telemetry_column_id::bctx_battle_boot_id,
+		       p.battle.producer.boot_id);
+		number(logical_key, telemetry_column_id::bctx_battle_process_id,
+		       p.battle.producer.process_id);
+		number(logical_key, telemetry_column_id::bctx_sequence, p.sequence);
+		auto existing =
+			query("SELECT 1 FROM telemetry_interval WHERE " + where(logical_key));
+		if (mysql_fetch_row(existing.get()))
+			return telemetry_apply_outcome::duplicate_conflict;
+		/* A configuration-unavailable marker carries no fabricated profile or
+		 * configuration. Otherwise require the declared build/content to match
+		 * the already admitted immutable configuration, including gap markers. */
+		if (p.config_id != 0U)
+		{
+			fields expected;
+			number(expected, telemetry_column_id::season_id, p.season_id);
+			number(expected, telemetry_column_id::build_version, p.build_version);
+			number(expected, telemetry_column_id::content_version, p.content_version);
+			auto config = query("SELECT " + names(expected, true) +
+					    " FROM telemetry_config WHERE environment_id=" +
+					    std::to_string(p.environment_id) +
+					    " AND config_id=" + std::to_string(p.config_id));
+			auto row = mysql_fetch_row(config.get());
+			if (!row || !equal_row(row, expected))
+				return telemetry_apply_outcome::rejected_invalid;
+		}
 	}
 
 	if (record.header.kind == telemetry_record_kind::configuration)

@@ -6,6 +6,7 @@
 #include "telemetry/telemetry_battle.h"
 #include "telemetry/telemetry_battle_contract.h"
 #include "telemetry/telemetry_battle_contribution.h"
+#include "telemetry/telemetry_battle_build_observation.h"
 #include "persistence/persistence_mode.h"
 
 #include <atomic>
@@ -530,6 +531,54 @@ static telemetry_record contribution_record(telemetry_sequence sequence)
 	return record;
 }
 
+static telemetry_record build_record(telemetry_sequence receipt, telemetry_sequence sequence = 1U)
+{
+	const auto sample = contribution_record(receipt);
+	const auto &association = sample.payload.battle_contribution.context;
+	const auto &config = normal_interval_configs[0].payload.configuration.config;
+	telemetry_battle_build_context native{};
+	native.actor = { association.actor.actor.actor_id, association.actor.actor.kind };
+	native.config_id = association.scope.config_id;
+	native.build_version = config.build_version;
+	native.content_version = config.content_version;
+	native.version = TELEMETRY_BATTLE_BUILD_CONTEXT_VERSION;
+	native.available = 1023U;
+	native.quality = TELEMETRY_BUILD_SUPPORT_ORIGIN_UNKNOWN;
+	native.primary_class_mask = 0x20000001U;
+	native.secondary_class_mask = 0x10000002U;
+	native.level = 56U;
+	native.race = 1U;
+	native.faction = 2U;
+	native.specialization = 3U;
+	native.base.stats[0] = -32768;
+	native.effective.stats[9] = 32767;
+	native.base.resources[0] = 70000;
+	native.effective.resources[0] = 123456;
+	native.current_resources[0] = -2;
+	native.effective.combat[0] = -15;
+	native.saving_modifiers[0] = -128;
+	native.saving_modifiers[4] = 127;
+	native.effective_flags[4] = UINT64_MAX;
+	native.equipment.flags[4] = UINT64_MAX;
+	for (std::size_t index = 0U; index < 32U; ++index)
+	{
+		native.equipment.fixed_feature_digest[index] = index + 1U;
+		native.epics.learned_build_digest[index] = 255U - index;
+	}
+	native.epics.catalog_skills = 2U;
+	native.epics.learned_skills = 1U;
+	native.listed_affects.complete = 1U;
+	native.arena.membership = telemetry_battle_arena_membership::absent;
+	telemetry_record record{};
+	record.header = sample.header;
+	record.header.kind = telemetry_record_kind::battle_build;
+	CHECK(telemetry_battle_build_observation_from_context(
+		native, association, sequence, 1000U, record.header.occurrence_utc_usec,
+		telemetry_battle_build_boundary::actor_entry, &record.payload.battle_build));
+	CHECK(telemetry_record_is_valid(record));
+	return record;
+}
+
 static telemetry_record record_kind_fixture(telemetry_record_kind kind)
 {
 	switch (kind)
@@ -558,6 +607,8 @@ static telemetry_record record_kind_fixture(telemetry_record_kind kind)
 		return battle_record(7310U);
 	case telemetry_record_kind::battle_contribution:
 		return contribution_record(7311U);
+	case telemetry_record_kind::battle_build:
+		return build_record(7312U);
 	default:
 		CHECK(false);
 		return {};
@@ -601,6 +652,9 @@ static void change_one_field(telemetry_record &record)
 	case telemetry_record_kind::battle_contribution:
 		++record.payload.battle_contribution.counters.damage_dealt;
 		break;
+	case telemetry_record_kind::battle_build:
+		++record.payload.battle_build.current_resources[0];
+		break;
 	default:
 		CHECK(false);
 	}
@@ -609,7 +663,7 @@ static void change_one_field(telemetry_record &record)
 
 static void every_record_kind_round_trip_tests()
 {
-	for (unsigned int number = 1U; number <= 11U; ++number)
+	for (unsigned int number = 1U; number <= 12U; ++number)
 	{
 		const auto kind = static_cast<telemetry_record_kind>(number);
 		std::string label = "record-kind:" + std::to_string(number);
@@ -1069,6 +1123,106 @@ static void contribution_storage_tests()
 	expect_one(refused, telemetry_apply_outcome::quarantined_invalid);
 	std::puts(
 		"Battle contribution SQL storage: PASS (65 exact fields, disjoint totals, replay, lost acknowledgement, NULL families and scope)");
+}
+
+static void build_storage_tests()
+{
+	case_name = "selected build snapshots retain all 110 typed fields and exact receipt";
+	reset_fixture();
+	seed_config();
+	auto original = build_record(45000U);
+	original.header.occurrence_utc_usec = original.payload.battle_build.at_utc_usec =
+		TELEMETRY_UTC_UNKNOWN;
+	fault = fault_kind::commit_lost_committed;
+	CHECK(telemetry_repository_apply(&original, 1U).outcome ==
+	      telemetry_batch_outcome::commit_ambiguous);
+	expect_one(original, telemetry_apply_outcome::duplicate_identical);
+	const auto &p = original.payload.battle_build;
+	std::string predicate =
+		"SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=12 AND record_seq=45000";
+#define TELEMETRY_BUILD_FIELD(name, member, width, signed_value) \
+	predicate += " AND " #name "=" + battle_number(p.member);
+#define TELEMETRY_BUILD_BYTES(name, member, width)                     \
+	predicate += " AND HEX(" #name ")='";                          \
+	for (auto byte : p.member)                                     \
+	{                                                              \
+		char encoded[3]{};                                     \
+		std::snprintf(encoded, sizeof(encoded), "%02X", byte); \
+		predicate += encoded;                                  \
+	}                                                              \
+	predicate += "'";
+#include "telemetry/telemetry_battle_build_fields.inc"
+#undef TELEMETRY_BUILD_FIELD
+#undef TELEMETRY_BUILD_BYTES
+	CHECK(scalar(predicate.c_str()) == 1U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_session") == 0U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=12 AND "
+		     "(duration_usec IS NOT NULL OR combat_damage_dealt IS NOT NULL OR encounter_event IS NOT NULL "
+		     "OR ownership_account_token IS NOT NULL OR battle_boot_id IS NOT NULL OR bc_battle_boot_id IS NOT NULL)") ==
+	      0U);
+	auto conflict = original;
+	++conflict.payload.battle_build.equipment_digest[0];
+	expect_one(conflict, telemetry_apply_outcome::duplicate_conflict);
+	conflict = original;
+	conflict.header.key.record_seq = 45100U;
+	expect_one(conflict, telemetry_apply_outcome::duplicate_conflict);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_seq=45100") == 0U);
+
+	case_name = "build configuration, producer and occurrence remain exact";
+	for (int mutation = 0; mutation < 7; ++mutation)
+	{
+		auto invalid = build_record(45200U + mutation, 10U + mutation);
+		auto &value = invalid.payload.battle_build;
+		if (mutation == 0)
+			++value.environment_id;
+		if (mutation == 1)
+			++value.season_id;
+		if (mutation == 2)
+			++value.config_id;
+		if (mutation == 3)
+			++value.build_version;
+		if (mutation == 4)
+			++value.content_version;
+		if (mutation == 5)
+			++invalid.header.key.producer.process_id;
+		if (mutation == 6)
+			++invalid.header.occurrence_utc_usec;
+		CHECK(telemetry_record_is_valid(invalid) == (mutation < 5));
+		expect_one(invalid, telemetry_apply_outcome::rejected_invalid);
+	}
+
+	case_name = "missing configuration remains an empty point marker";
+	auto gap = build_record(45300U, 20U);
+	auto &v = gap.payload.battle_build;
+#define TELEMETRY_BUILD_FIELD(name, member, width, signed_value)       \
+	if constexpr (!telemetry_battle_build_detail::metadata(#name)) \
+		v.member = {};
+#define TELEMETRY_BUILD_BYTES(name, member, width) std::memset(v.member, 0, width);
+#include "telemetry/telemetry_battle_build_fields.inc"
+#undef TELEMETRY_BUILD_FIELD
+#undef TELEMETRY_BUILD_BYTES
+	v.status = telemetry_battle_build_status::unavailable;
+	v.boundary = telemetry_battle_build_boundary::configuration_unavailable;
+	v.config_id = v.build_version = v.content_version = 0U;
+	v.quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+	CHECK(telemetry_record_is_valid(gap));
+	expect_one(gap, telemetry_apply_outcome::applied);
+	expect_one(gap, telemetry_apply_outcome::duplicate_identical);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=12 AND bctx_status=2 AND "
+		     "bctx_config_id=0 AND bctx_available=0 AND bctx_level=0 AND bctx_effective_hit=0") ==
+	      1U);
+
+	case_name = "build SQL data refusal retains canonical digest and quarantine payload";
+	auto refused = build_record(45400U, 30U);
+	fault = fault_kind::invalid_data;
+	expect_one(refused, telemetry_apply_outcome::quarantined_invalid);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_quarantine WHERE record_kind=12 AND record_seq=45400 "
+		     "AND OCTET_LENGTH(payload_sha256)=32 AND OCTET_LENGTH(record_payload)=488") ==
+	      1U);
+	fault = fault_kind::invalid_data;
+	expect_one(refused, telemetry_apply_outcome::quarantined_invalid);
+	std::puts(
+		"Battle build SQL storage: PASS (110 exact fields and digests, signed values, lost acknowledgement, replay, NULL families, scope and empty gaps)");
 }
 
 static void typed_extension_mapping_tests()
@@ -1566,11 +1720,27 @@ static void startup_contract_tests()
 		shutdown_fixture();
 	};
 	case_name = "startup validates a missing combat column, not just base tables";
+	// MySQL refuses renaming a column used by a CHECK. Preserve and restore
+	// the new family-isolation CHECK around this disposable missing-column test.
+	execute("SELECT CHECK_CLAUSE FROM information_schema.check_constraints "
+		"WHERE constraint_schema=DATABASE() AND constraint_name='chk_telemetry_bctx_inactive'");
+	MYSQL_RES *check_result = mysql_store_result(observer);
+	CHECK(check_result != nullptr);
+	MYSQL_ROW check_row = mysql_fetch_row(check_result);
+	CHECK(check_row != nullptr && check_row[0] != nullptr);
+	const std::string inactive_check(check_row[0]);
+	CHECK(mysql_fetch_row(check_result) == nullptr);
+	mysql_free_result(check_result);
+	const bool mariadb = std::strstr(mysql_get_server_info(observer), "MariaDB") != nullptr;
+	execute(std::string("ALTER TABLE telemetry_interval ") +
+		(mariadb ? "DROP CONSTRAINT " : "DROP CHECK ") + "chk_telemetry_bctx_inactive");
 	execute("ALTER TABLE telemetry_interval CHANGE COLUMN combat_healing_attempted "
 		"combat_healing_attempted_fixture_hidden BIGINT UNSIGNED NULL");
 	refuses_schema();
 	execute("ALTER TABLE telemetry_interval CHANGE COLUMN combat_healing_attempted_fixture_hidden "
 		"combat_healing_attempted BIGINT UNSIGNED NULL");
+	execute("ALTER TABLE telemetry_interval ADD CONSTRAINT chk_telemetry_bctx_inactive CHECK (" +
+		inactive_check + ")");
 	case_name = "startup rejects unsigned XP deltas that cannot store death losses";
 	execute("ALTER TABLE telemetry_interval MODIFY COLUMN progression_applied_xp BIGINT UNSIGNED NULL");
 	refuses_schema();
@@ -1868,6 +2038,7 @@ int main()
 	progression_replay_tests();
 	shared_battle_storage_tests();
 	contribution_storage_tests();
+	build_storage_tests();
 	typed_extension_mapping_tests();
 	config_and_scope_tests();
 	global_scope_tests();
@@ -1881,7 +2052,7 @@ int main()
 	shutdown_fixture();
 	mysql_close(observer);
 	std::puts(
-		"SQL repository runtime: PASS (record kinds 1-11, 10 golden fixtures, and focused "
+		"SQL repository runtime: PASS (record kinds 1-12, 10 golden fixtures, and focused "
 		"failure/isolation regressions)");
 }
 #endif

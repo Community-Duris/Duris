@@ -224,7 +224,7 @@ a battle suite, recover missing gameplay facts or establish complete coverage.
 Migration `0062_telemetry_battle_contributions` adds the independent
 `telemetry_incident_registry_v4` and `telemetry_incident_v4` histories for
 families 1–11. Each earlier schema keeps its original family limits, registry
-sequence and digest identity. The current retained lifecycle inventory contains
+sequence and digest identity. At this delivery the retained lifecycle inventory contained
 250 database tables. The bounds remain 64 incidents and 128 KiB per packet.
 
 A kind-11 verified post-fix reference must match a real committed transport
@@ -246,11 +246,41 @@ SELECT on that history plus its existing published snapshot authority. Reports
 read the existing published snapshot tables and have no raw or private review
 access. The game writer has no incident registration authority.
 
-The common atomic snapshot/read seam selects schema v4 for future definitions
-beginning with 5, preserves v3 for definition 4 and preserves the older selections
-for definitions 1/2/3. The balance catalog and atomic battle outputs remain
-pending; seam qualification establishes no completed balance report. The local
+The common atomic snapshot/read seam selects schema v4 beginning with definition
+5, preserves v3 for definition 4 and preserves the older selections for
+definitions 1/2/3. Definition 5 now publishes battle observations as described in
+[BATTLES.md](BATTLES.md#atomic-battle-observation-publication); the complete balance
+catalog remains pending. The local
 storage fixture exercises real CLI registration, committed reference refusals,
 rollback, exact retries after a lost commit reply, retained corrections,
 immutable snapshots, private permissions, guarded reruns and refusal/restoration
 of metadata drift. No production or staging access is needed.
+
+## Selected build-loss review contract
+
+Migration `0065_telemetry_battle_builds` adds independent
+`telemetry_incident_registry_v5` and `telemetry_incident_v5` histories for families
+1–12. Schemas 1/2/3/4 retain their original family ceilings, digest and review
+sequence. Bounds remain 64 incidents and 128 KiB per packet. The current lifecycle
+inventory contains 256 database tables.
+
+A kind-12 verified post-fix reference must match a committed raw receipt and its
+explicit build-observation environment/season, kind and occurrence UTC. Missing
+or mismatched receipts are refused. Registration, exact retry and metadata/detail
+rollback use the existing reviewed registrar. The restricted reviewer requires
+SELECT/INSERT on the two private v5 tables and SELECT on raw telemetry for that
+bounded reference check. The game writer has no registration authority.
+
+```sh
+python3 scripts/telemetry/incident.py --template --registry-schema-version 5
+python3 scripts/telemetry/incident.py /private/path/reviewed-build-incidents.json --register
+bash tests/async/run_telemetry_repository_sql.sh --build-storage
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --build-storage
+```
+
+Schema 5 can be reviewed independently. It is not automatically selected by a
+published generation: current definition 5 continues to use schema 4 and excludes
+build observations. A future build comparison definition must explicitly consume
+schema-5 coverage and qualify its retained-source and atomic publication path.
+Neither a reviewed inventory nor an unavailable build marker reconstructs the
+missing profile or establishes continuous context between observed points.

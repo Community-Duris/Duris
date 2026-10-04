@@ -10,8 +10,8 @@ work. A future production deployment is a separate operational decision.
 
 | Requirement | State | Evidence or remaining work |
 | --- | --- | --- |
-| #561: full writer startup contract | Implemented and locally qualified | Validate every current writer column, type, signedness, width, nullable/default semantics, InnoDB engine and 14 required indexes. Exercise effective SELECT/INSERT/session UPDATE with zero-row statements and rollback. Reject admission until the worker qualifies; later transient outages retain buffering. |
-| #565: shared serialization/schema descriptor | Implemented and locally qualified | `telemetry_columns.inc` supplies the column identities used by serializers and startup validation. Preserve all record kinds 1–11, admitted replay keys and column prefixes. Reserved/padding/absent union fields and sink-generated fields have explicit exclusions. |
+| #561: full writer startup contract | Implemented and locally qualified | Validate every current writer column, type, signedness, width, nullable/default semantics, InnoDB engine and 15 required indexes. Exercise effective SELECT/INSERT/session UPDATE with zero-row statements and rollback. Reject admission until the worker qualifies; later transient outages retain buffering. |
+| #565: shared serialization/schema descriptor | Implemented and locally qualified | `telemetry_columns.inc` supplies the column identities used by serializers and startup validation. Preserve all record kinds 1–12, admitted replay keys and column prefixes. Reserved/padding/absent union fields and sink-generated fields have explicit exclusions. |
 | #566: durable outage/loss evidence | Implemented and locally qualified | Worker registration before SQL initialization/admission; protected exclusive checksummed storage; bounded coherent samples; clean drain versus known abandonment and unknown tails; real restart/exec/SIGKILL and storage-failure tests. Offline read-only export preserves unknown ends. See [OUTAGE_STORAGE.md](OUTAGE_STORAGE.md) and the qualified #567 report integration below. |
 | #567: reviewed incident coverage | Implemented and locally qualified | Consecutive retained inventory versions, nullable unknown ends, committed first verified post-fix references, explicit backlog/reconstruction dispositions and atomic published coverage snapshots. Reports preserve gaps, source uncertainty and bounded private-role separation. Full local MariaDB/MySQL chains, capacity, digest/permission negatives, lost commit replies and unchanged v1 totals qualified. Historical facts require evidence; synthetic fixtures do not establish a real incident history. See [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Initial session qualification/capacity recovery | Implemented and locally qualified | Existing descriptor sweep and context/evidence adapters retry missing entry. Deferred copyover retains one handoff in descriptor memory; supplied keys/totals/revision survive. No earlier unobserved time or human activity is invented. True capacity refusal rolls back IDs; lifecycle queue loss retains admitted IDs. See [SESSION_LIFECYCLE.md](SESSION_LIFECYCLE.md). |
@@ -34,7 +34,8 @@ work. A future production deployment is a separate operational decision.
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
 | #487: economic projection compatibility | Pending audit and implementation | Reuse current accounting reconciliation where it meets acceptance; project canonical earned receipts without counting compatibility ledgers, transfers or openings as new rewards. |
 | #258: local observational acceptance and final runbook | In progress | Initial readiness/capacity recovery is implemented and qualified in executable fixtures. Remaining: dedicated roles/catalog, real session/progression readback, normal gameplay/save, failure/recovery and a single reproducible local qualification command. |
-| Native compact build snapshot reader | Reader qualified; durable capture pending | Version-1 value reader preserves exact class masks/spec, base/effective resources/stats, fixed equipment declarations, learned epic skill fingerprints, bounded listed effects and independent arena room/roster observations. The 440-byte snapshot has explicit unavailable/partial families. Normal/ASan/UBSan, both runtime lifecycle variants, 58 history/publication regressions, canonical fingerprint checks and the maintained server build pass. Cached boundary capture, a versioned record/storage/publication path, complete reviewed context classification and actual personal-server evidence remain required. See [BATTLES.md](BATTLES.md#native-combat-build-snapshot-reader). |
+| Native compact build snapshot reader | Reader qualified; boundary capture pending | Version-1 value reader preserves exact class masks/spec, base/effective resources/stats, fixed equipment declarations, learned epic skill fingerprints, bounded listed effects and independent arena room/roster observations. The 440-byte snapshot has explicit unavailable/partial families. Normal/ASan/UBSan, both runtime lifecycle variants, 58 history/publication regressions, canonical fingerprint checks and the maintained server build pass. The selected durable contract is qualified below; cached boundary capture, publication, complete reviewed classification and actual personal-server evidence remain required. See [BATTLES.md](BATTLES.md#native-combat-build-snapshot-reader). |
+| Durable selected build observations and loss review | Storage contract qualified; capture/publication pending | Kind 12 has 110 typed selected fields, a 447-byte portable encoding and a 448-byte C++ payload. Migration 0065 adds guarded columns, exact logical replay and nine checks; DMSTLJ04 and independent private incident schema 5 retain build loss without changing older histories. Native/Python contract and ASan/UBSan, all-twelve-family writer, both full-65-step SQL chains, permissions, replay, lost acknowledgements, NULL separation and drift/restoration are locally qualified. Existing definitions 1/2/3/5 skip the new family with their meanings preserved. No live boundary emitter or new build report is active. See [BATTLES.md](BATTLES.md#durable-selected-combat-build-observations). |
 
 ## Qualified first-layer checks
 
@@ -1342,12 +1343,108 @@ Prototype procs, dynamic equipment effects, complete resistance mechanics,
 buff/support ownership, match generations/outcomes and the complete effective
 property catalog remain outside this observed subset.
 
-**Next executable expectation:** add reviewed entry/change capture with cached
-snapshots, caps and unknown coverage; register a separately versioned
-record/writer/outage/replay contract; retain and publish these matching values;
-run the actual personal-local gameplay/readback/performance journey. Use the
+The separately versioned selected record/writer/outage/replay contract is now
+implemented in the following delivery. **Next executable expectation:** add
+reviewed entry/change capture with cached snapshots, caps and unknown coverage;
+retain and publish these matching values; run the actual personal-local
+gameplay/readback/performance journey. Use the
 existing bounded telemetry transport, private writer, loss inventory and
 publication machinery. Commands and field mappings are in
 [BATTLES.md](BATTLES.md#native-combat-build-snapshot-reader). All seven accepted
 completion requirements remain open for their unfinished work. Production and
 staging access remain unnecessary.
+
+## Durable selected combat build contract
+
+The native reader now has a separately versioned selected point-observation
+contract, registered as kind **12**, `battle_build`. Definition **1** preserves
+**110 fields**, including two exact 32-byte fingerprints, in a **447-byte**
+portable encoding. The C++ payload is **448 bytes**; the full fixed record is
+**488 bytes**, below the existing 512-byte record limit. The native reader's
+440-byte layout remains unchanged. Its raw listed-affect flag banks are excluded
+from this persisted subset; bounded counts and partial/origin uncertainty remain.
+
+Battle/live-actor identity, original producer, exact association revision/fact,
+one clock pair and configuration/build/content versions qualify every point.
+The process-wide context sequence has independent logical replay identity.
+Factory and raw validators refuse mismatches rather than borrowing another
+actor's build. Availability remains separate by family. Rate/source/configuration
+unavailability is an empty point marker with explicit unknown quality; it never
+reuses the previous gear/epic digest. No uninterrupted validity, applied gear
+contribution, complete power score, caster origin or arena result is inferred.
+
+Migration **0065** adds **110 typed nullable columns**, the logical unique key,
+**nine CHECK constraints** and the two independent private incident-schema-**5**
+tables. The current lifecycle inventory contains **256 database tables**. Earlier
+manifest entries and sealed migrations retain their exact bytes. The compiled
+boot contract and all three histories move to head 65. The measured fresh and
+restored normalized metadata fingerprints are:
+
+| Engine | Fingerprint at head 65 |
+| --- | --- |
+| MySQL 8.0.46 | `c344d46b902d27a272cd8567b19b174d51203008be9184611fe7cf66bbe3a74e` |
+| MariaDB 10.11.14 | `80b328c879fa3181f532fe0b0e0a1475a8b8998d572a98dc95120f9d81417369` |
+
+The existing private writer serializes and compares every selected field and
+digest. Header/producer/UTC/configuration conflicts refuse; identical transport
+retries remain one receipt, including after a lost commit reply. A different
+receipt cannot replace the same logical point. Invalid records retain canonical
+SHA-256 and fixed-record quarantine evidence. Known values from older families
+remain separate: older rows have NULL build columns, and kind 12 has NULL older
+payload columns. No alternate worker or transport is introduced.
+
+Durable outage version **4**, `DMSTLJ04`, includes kind 12. Native and offline
+readers preserve earlier v1/v2/v3 inventories with their original family ceilings
+for both observed and failure masks; atomic upgrades preserve previous
+observations. The maintained incident CLI exposes schema-5 templates while
+preserving its original default. Independent schema-5 registration verifies the
+committed post-fix receipt and explicit scope/UTC, rolls metadata and detail back
+together on failure and retains exact retries. Current published definition 5
+still selects incident schema 4. Definitions 1/2/3/5 validate and skip kind 12
+without changing their input totals, retained-source or quality meaning. There is
+no newly activated build report.
+
+Local qualification passed **10 native/Python contract tests**, normally and
+with fresh **ASan/UBSan**, including exact field order/widths, independent portable
+encoding, signed extremes, digest bytes, partial families, empty markers,
+corruption, strict row shape and sealed-definition compatibility. The native
+queue preserves admitted values and exact association references through control
+reserve; loss stays explicit when that reserve is full. **20 incident tests**,
+native/offline outage tests, both durable runtime-outage variants, the gameplay
+adapter and both runtime lifecycle variants pass. TSan remains unsupported after
+its trivial runtime probe failed; the transport harness did not run under TSan.
+
+Both disposable **full-65-step MySQL and MariaDB** chains passed the selected
+field/constraint/NULL/replay journey, independent restricted schema-5 registration,
+guarded reruns, incompatible-width/reordered-index/weakened-check refusal and
+exact restored metadata. Both all-twelve-family writer journeys passed, including
+lost acknowledgements, logical conflicts, empty configuration gaps and exact
+quarantine evidence. The MySQL fixture temporarily preserves/restores the new
+family-isolation CHECK around its pre-existing missing-column startup test,
+because MySQL refuses renaming a checked column. The actual migration keeps that
+constraint enforced.
+
+The established native source/definition-5 publication journey also passes on
+both engines at head 65, preserving **123 association facts / 38 packets / 28
+verified contribution links**, **112/112 damage** and the fresh **8/8 accepted
+control** publication. Retained source, rollback, lost acknowledgements, private
+roles, CLI, original generations, drift/restoration and snapshot verification
+remain qualified. **58 history/source/publication**, **14 engine**, **15 identity
+publication**, **14 report**, **24 immutable migration**, **22 lifecycle** and
+**10 boot/runtime** regressions pass. Header/golden contracts, Python/shell syntax,
+changed C/C++ formatting, manifest validators and maintained `make -C src -j1`
+also pass. SQL databases/reviewer roles are removed and owned database fixtures
+stopped; MySQL retains the existing no-native-AIO fixture workaround.
+
+**Next executable expectation:** implement bounded native entry/change/periodic
+capture with a fixed actor cache, fresh context sequence, caps and explicit
+loss/recovery points. Retain exact matching observations and publish a separately
+versioned comparison definition with schema-5 loss coverage, preserving existing
+definition-5 meaning. Then qualify actual personal-local gameplay, readback and
+performance. This delivery supplies a durable contract, not a live boundary
+emitter or the full balance suites. Complete reviewed context/classification,
+typed outcomes, distinct PvE attempts, progression/portfolio additions, the four
+suites/statistical exports, #487 compatibility and the final personal-server gate
+remain open. All seven final requirements keep their unfinished portions; no
+production or staging access is needed. Commands and field meaning are in
+[BATTLES.md](BATTLES.md#durable-selected-combat-build-observations).
