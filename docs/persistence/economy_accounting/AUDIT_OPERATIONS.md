@@ -7,6 +7,18 @@ Exceptions mean **pause the affected writer/epoch and investigate**; a zero
 exception count is meaningful only when the snapshot is complete and all route
 coverage gates are independently qualified.
 
+The bounded `--view provenance --uid <UID>` query combines selected-epoch
+ownership events, captured lineage UID history, and captured unattributed UID
+events. It orders by revision, operation ID and event index, counts identical
+projections once, and retains conflicting positions for investigation. Its
+`coverage` object names the lineage and selected epoch, carries the input's
+`complete` and `quiescent` flags, and says whether the two history collections
+are available. These flags describe captured evidence, not a release
+certification. SQL lineage history starts after each retained opening revision;
+history before that opening and absent stores are not reconstructed. An empty
+result does not prove a UID never existed. Output remains ID-only and bounded;
+`--limit 0` retains the full count and coverage while omitting row details.
+
 ## Snapshot contract, version 1
 
 Supply a UTF-8 JSON file of at most 32 MiB. Set `complete: true` only after
