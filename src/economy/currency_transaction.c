@@ -243,8 +243,7 @@ bool coin_body_identity_matches(P_char character, const currency_command_payload
 {
 	return character && IS_PC(character) && character->only.pc &&
 	       static_cast<uint32_t>(GET_PID(character)) == wallet.pid &&
-	       !std::strcmp(currency_transaction_account_name(character),
-			    wallet.account_name.data()) &&
+	       !std::strcmp(get_account_name_safe(character), wallet.account_name.data()) &&
 	       character->player.racewar == wallet.racewar;
 }
 
