@@ -609,6 +609,72 @@ class ReconciliationTests(unittest.TestCase):
             self.assertEqual(path.read_bytes(), payload)
         self.assertEqual(snapshot, before)
 
+    def test_all_operator_views_retain_global_coverage_and_counts(self):
+        for partial in (False, True):
+            for corrupt in (False, True):
+                snapshot = clean_snapshot()
+                snapshot.update(complete=not partial, quiescent=not partial)
+                if corrupt:
+                    snapshot["native"]["holdings"][0]["balance"] = [8, 0, 0, 0]
+                original = copy.deepcopy(snapshot)
+                report = Reconciler().audit(snapshot)
+                self.assertEqual(report["exception_count"], (2 if partial else 0) + int(corrupt))
+                for name in ("holdings", "provenance", "operation", "supply", "prices", "routes"):
+                    expected_count = None
+                    for limit in (0, 1, 100):
+                        with self.subTest(partial=partial, corrupt=corrupt, view=name, limit=limit):
+                            output = view(snapshot, report, name, limit, uid=81,
+                                          operation_id=OP if name == "operation" else None)
+                            coverage = output["coverage"]
+                            self.assertEqual({field: coverage[field] for field in (
+                                "lineage", "selected_epoch", "complete", "quiescent", "exception_count")}, {
+                                "lineage": LINEAGE, "selected_epoch": EPOCH,
+                                "complete": not partial, "quiescent": not partial,
+                                "exception_count": report["exception_count"]})
+                            if expected_count is None:
+                                expected_count = output["count"]
+                            self.assertEqual(output["count"], expected_count)
+                            self.assertLessEqual(len(output["rows"]), limit)
+                            self.assertEqual(output["truncated"], output["count"] > limit)
+                            self.assertNotIn("alias", json.dumps(output))
+                            self.assertEqual(snapshot, original)
+
+    def test_operator_cli_json_retains_global_status_at_every_limit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "snapshot.json"
+            cases = 0
+            for partial in (False, True):
+                for corrupt in (False, True):
+                    snapshot = clean_snapshot()
+                    snapshot.update(complete=not partial, quiescent=not partial)
+                    if corrupt:
+                        snapshot["native"]["holdings"][0]["balance"] = [8, 0, 0, 0]
+                    path.write_text(json.dumps(snapshot))
+                    original = path.read_bytes()
+                    report = Reconciler().audit(snapshot)
+                    for name in ("holdings", "provenance", "operation", "supply", "prices", "routes"):
+                        for limit in (0, 1, 100):
+                            command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                       str(path), "--view", name, "--limit", str(limit)]
+                            if name == "provenance":
+                                command += ["--uid", "81"]
+                            elif name == "operation":
+                                command += ["--operation-id", OP]
+                            result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                            with self.subTest(partial=partial, corrupt=corrupt, view=name, limit=limit):
+                                self.assertEqual(result.returncode, int(report["exception_count"] != 0), result.stderr)
+                                self.assertEqual(result.stderr, "")
+                                output = json.loads(result.stdout)
+                                self.assertEqual(output["coverage"]["exception_count"], report["exception_count"])
+                                self.assertEqual(output["coverage"]["complete"], not partial)
+                                self.assertEqual(output["coverage"]["quiescent"], not partial)
+                                self.assertEqual(output["coverage"]["lineage"], LINEAGE)
+                                self.assertEqual(output["coverage"]["selected_epoch"], EPOCH)
+                                self.assertLessEqual(len(output["rows"]), limit)
+                                self.assertEqual(path.read_bytes(), original)
+                                cases += 1
+            self.assertEqual(cases, 72)
+
     def test_clean_snapshot_and_erased_alias(self):
         snapshot = clean_snapshot()
         self.assertEqual(self.codes(snapshot), set())
@@ -643,7 +709,7 @@ class ReconciliationTests(unittest.TestCase):
                 self.assertEqual(result["coverage"], {
                     "lineage": LINEAGE, "selected_epoch": EPOCH, "complete": False,
                     "quiescent": True, "lineage_history_available": True,
-                    "unattributed_history_available": True})
+                    "unattributed_history_available": True, "exception_count": None})
                 self.assertNotIn("private-", json.dumps(result))
                 self.assertNotIn("alias", json.dumps(result))
                 self.assertEqual(snapshot, before)
@@ -2102,7 +2168,7 @@ def native_stake_sql():
     from test_persistence_backup_integration import sql
     read_evidence = exporter.read_evidence
     root = ROOT
-    work=root/'bin/tests/plan5-mapping-audit-sql'
+    work=root/'bin/tests/plan5-operator-coverage-sql'
     work.mkdir(mode=0o700,parents=True,exist_ok=True)
     source=work/'probe.cpp'
     source.write_text('''#include "economy/economic_accounting_intent.h"
@@ -2353,6 +2419,16 @@ def native_stake_sql():
                                     result=view(snapshot,partial,'holdings',limit,holding_key=plan[376:416].hex())
                                     assert result['count']==1 and result['truncated']==(limit==0)
                                     assert result['coverage']['exception_count']==1 and not result['coverage']['complete']
+                                    for name in ('holdings','provenance','operation','supply','prices','routes'):
+                                        output=view(snapshot,partial,name,limit,uid=81,
+                                                    operation_id=snapshot['operations'][0]['operation_id']
+                                                    if name=='operation' else None)
+                                        assert output['coverage']['exception_count']==1
+                                        assert output['coverage']['lineage']==LINEAGE
+                                        assert output['coverage']['selected_epoch']==EPOCH
+                                        assert not output['coverage']['complete'] and output['coverage']['quiescent']
+                                        assert len(output['rows'])<=limit
+                                assert snapshot==snapshot_before|{'complete':False}
                             return report
                         for index,(frozen,plan) in enumerate(batches):
                             op=plan[40:56]; accounts,postings,children,before,after,events=struct.unpack_from('<6I',plan,216)

@@ -2121,6 +2121,12 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
             raise SnapshotError("account filter requires holdings view")
     if name == "exceptions":
         return report
+    coverage = {
+        "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
+        "complete": snapshot.get("complete") is True,
+        "quiescent": snapshot.get("quiescent") is True,
+        "exception_count": report.get("exception_count"),
+    }
     if name == "holdings":
         rows = [{"account_key": row["account_key"], "kind": account_key(row["account_key"])[1],
                  "balance": vector(row["balance"]), "revision": row["revision"]}
@@ -2130,10 +2136,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
             raise SnapshotError("invalid native holding revision")
         if holding_key is not None:
             return {**bounded_rows(rows, limit), "coverage": {
-                "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
-                "complete": snapshot.get("complete") is True,
-                "quiescent": snapshot.get("quiescent") is True,
-                "exception_count": report.get("exception_count"),
+                **coverage,
                 "scope": "captured_native_holdings", "account_key": holding_key}}
     elif name == "provenance":
         if type(uid) is not int or not 0 < uid < 2**64:
@@ -2159,9 +2162,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
         rows = sorted(unique.values(),
                       key=lambda row: (row["revision"], row["operation_id"], row["event_index"]))
         return {**bounded_rows(rows, limit), "coverage": {
-            "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
-            "complete": snapshot.get("complete") is True,
-            "quiescent": snapshot.get("quiescent") is True,
+            **coverage,
             "lineage_history_available": isinstance(snapshot["native"].get("uid_history_events"), list),
             "unattributed_history_available": isinstance(
                 snapshot["native"].get("unattributed_uid_events"), list)}}
@@ -2218,10 +2219,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
             (row[field] for field in ("line_index", "event_index", "account_index", "child_index", "row_index")
              if field in row), 0), json.dumps(row, sort_keys=True)))
         return {**bounded_rows(rows, limit), "record_counts": record_counts, "coverage": {
-            "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
-            "complete": snapshot.get("complete") is True,
-            "quiescent": snapshot.get("quiescent") is True,
-            "exception_count": report.get("exception_count"), "root_scope": "selected_epoch",
+            **coverage, "root_scope": "selected_epoch",
             "operation_id": operation_id}}
     elif name == "supply":
         totals: dict[tuple, int] = defaultdict(int)
@@ -2251,7 +2249,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                 for row in matrix["routes"]]
     else:
         raise SnapshotError("unknown view")
-    return bounded_rows(rows, limit)
+    return {**bounded_rows(rows, limit), "coverage": coverage}
 
 
 def main() -> int:
