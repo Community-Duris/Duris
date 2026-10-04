@@ -174,3 +174,47 @@ tests, native SQL/gameplay/persistence/recovery checks or qualified push ran.
 Maintainer preserved the four original source files under
 `tmp/synchronous-save-boundary-before-v1.local`; this is not a compiler closure.
 Plan1 remains unfinished and ownership is still disabled.
+
+## Restored ordinary-drop production integration
+
+The actual SQL boot path now prepares saves, restores critical commands and their
+exact immutable drop holds, then starts save execution. Critical initialization
+failure keeps preparation closed. Flatfile immediate startup and healthy inactive
+schema1 routes retain their existing path. Movement completion/retry dispatch now
+recognizes the validated restored SQL ordinary drop and runs it without an actor,
+before generic registry/callback handling.
+
+One private original-slot owner binds frozen command, semantic completion, PID,
+hold generation and ownership epoch. It reserves exclusion while the hold remains
+installed, grants no save execution scope/permit, and refuses resident/queued/
+inflight/worker/revision obligations. Fresh active journal and validated control
+file fingerprints include archive, policy, legacy quarantine and recovery evidence;
+any affected unresolved frame/history remains held, never declared obsolete from
+the drop result. Control digest allocation precedes archive publication.
+
+The owner calls the existing fresh native graph publication helper, requires its
+confirmed cleanup, repeats the journal census and supplies a nonconstructible
+capability to the coordinator. Coordinator ACK checks original frozen command,
+sealed result and its own lifetime before durable critical checkpoint. ID-only ACK
+and ID-only release cannot clear a restored obligation. Guarded ACK retains
+lifecycle exclusion through exact hold consumption outside coordinator locks,
+then emits the exact worker wake and a retained reserved-journal revisit notice.
+Same-thread lifecycle draining can finish already accepted work; foreign lifecycle
+ownership, shutdown and cutover cannot cross the ACK/consumption interval.
+
+The dispatcher observes release sequence before selecting notices, tracks actual
+remaining replay-eligible journal PIDs, and revisits only `replay_deferred` work
+once original owners release. Replay itself reacquires reservations and rereads
+frames. IO/corruption failures do not gain automatic retry authority. Ownership
+integrity failure closes save admission and the load gate. Source reviewers found
+and closed a missed-notice sleep race and post-durable fingerprint allocation gap.
+
+This is connected production source, **not completed ordinary-drop recovery**.
+Production ownership enable remains absent until all native writers and serialized
+shutdown/census are covered. Overlapping retained saves need their legitimate
+native disposition; rejected receipts need verified no-publication completion.
+Activity-bearing ordinary graph coverage, original live producer integration,
+native qualification/cold restarts/copyover and full Plan1 gates remain open.
+No compiler, AST, tests, services, native SQL, gameplay or recovery checks ran.
+Source review/formatting/diff hygiene passed; the user-requested major-plan test
+batch remains deferred. No new fixture/report family or qualified push was added.

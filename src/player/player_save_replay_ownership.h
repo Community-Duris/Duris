@@ -9,6 +9,8 @@
 #include <system_error>
 #include <vector>
 
+class player_save_restored_publication_owner;
+
 // Private opt-in leaf. Exact snapshot/receipt/namespace evidence stays with its
 // source owner. This supplies neither a complete mutation census nor critical ACK
 // authority. Production must not enable it until every residence/transfer and
@@ -155,6 +157,13 @@ class resident_claim
 		std::lock_guard<std::mutex> lock(detail::mutex);
 		if (!detail::valid_epoch_locked(epoch) || pid <= 0)
 			return;
+		// A restored publication owns this PID until its original ACK. A new
+		// body cannot drain while held and must not become a permanent resident.
+		if (detail::held_locked(pid))
+		{
+			status_ = ownership_status::held;
+			return;
+		}
 		const auto found = detail::owned_pids.find(pid);
 		if (found != detail::owned_pids.end() && found->second.ticket)
 		{
@@ -276,6 +285,126 @@ class resident_claim
 		generation_ = epoch_ = 0;
 		pid_ = 0;
 		detail::changed_locked();
+	}
+};
+
+// Publication reserves exclusion only. It deliberately supplies no authority
+// accepted by execution_scope or permit, and never temporarily removes a hold.
+class held_publication_reservation
+{
+    public:
+	held_publication_reservation(uint64_t epoch, int pid,
+				     const critical_operation_id &operation,
+				     uint64_t hold_generation) noexcept
+	{
+		std::lock_guard<std::mutex> lock(detail::mutex);
+		if (!detail::valid_epoch_locked(epoch) || pid <= 0 || !hold_generation)
+			return;
+		bool exact_hold = false;
+		for (const auto &hold : detail::holds)
+			exact_hold = exact_hold ||
+				     (hold.pid == pid && hold.operation.bytes == operation.bytes &&
+				      hold.generation == hold_generation);
+		if (!exact_hold)
+			return;
+		const auto found = detail::owned_pids.find(pid);
+		status_ = ownership_status::busy;
+		if ((found != detail::owned_pids.end() &&
+		     (found->second.claims || found->second.ticket || found->second.reserved ||
+		      found->second.scope_owner)) ||
+		    detail::permits.count(pid))
+			return;
+		status_ = ownership_status::unavailable;
+		if ((found == detail::owned_pids.end() &&
+		     detail::owned_pids.size() >= detail::max_permitted_pids) ||
+		    !detail::generation_available_locked())
+			return;
+		try
+		{
+			auto state = detail::owned_pids.try_emplace(pid).first;
+			generation_ = ++detail::next_owner_generation;
+			state->second.ticket = generation_;
+			state->second.reserved = true;
+			epoch_ = epoch;
+			pid_ = pid;
+			operation_ = operation;
+			hold_generation_ = hold_generation;
+			status_ = ownership_status::allowed;
+			detail::changed_locked();
+		}
+		catch (const std::bad_alloc &)
+		{
+		}
+	}
+	held_publication_reservation(const held_publication_reservation &) = delete;
+	held_publication_reservation &operator=(const held_publication_reservation &) = delete;
+	~held_publication_reservation() noexcept
+	{
+		if (!generation_)
+			return;
+		std::lock_guard<std::mutex> lock(detail::mutex);
+		if (!matches_locked())
+			detail::integrity_failed = true;
+		else
+		{
+			auto &state = detail::owned_pids.find(pid_)->second;
+			state.ticket = 0;
+			state.reserved = false;
+			detail::erase_idle_locked(pid_);
+		}
+		detail::changed_locked();
+	}
+	ownership_status result() const noexcept { return status_; }
+	bool valid() const noexcept
+	{
+		std::lock_guard<std::mutex> lock(detail::mutex);
+		return !detail::integrity_failed && matches_locked();
+	}
+	bool matches_pid(int pid) const noexcept { return pid > 0 && pid == pid_ && valid(); }
+
+    private:
+	friend class ::player_save_restored_publication_owner;
+	// The pipeline consumes this only after its guarded coordinator ACK. Clear
+	// exclusion and the exact hold together; another PID's integrity refusal
+	// cannot invalidate an already durable ACK's otherwise exact local cleanup.
+	bool consume_acknowledged_hold() noexcept
+	{
+		std::lock_guard<std::mutex> lock(detail::mutex);
+		if (!matches_locked())
+			return false;
+		for (auto &hold : detail::holds)
+			if (hold.pid == pid_ && hold.generation == hold_generation_ &&
+			    hold.operation.bytes == operation_.bytes)
+			{
+				hold = {};
+				auto &state = detail::owned_pids.find(pid_)->second;
+				state.ticket = 0;
+				state.reserved = false;
+				detail::erase_idle_locked(pid_);
+				generation_ = 0;
+				detail::changed_locked();
+				return true;
+			}
+		return false;
+	}
+
+	uint64_t epoch_ = 0, generation_ = 0, hold_generation_ = 0;
+	int pid_ = 0;
+	critical_operation_id operation_ = {};
+	ownership_status status_ = ownership_status::invalid_epoch;
+	bool matches_locked() const noexcept
+	{
+		const auto found = detail::owned_pids.find(pid_);
+		if (!epoch_ || epoch_ != detail::ownership_epoch || !generation_ ||
+		    found == detail::owned_pids.end() || found->second.ticket != generation_ ||
+		    !found->second.reserved || found->second.claims || found->second.scope_owner ||
+		    detail::permits.count(pid_))
+			return false;
+		for (const auto &hold : detail::holds)
+			if (hold.pid == pid_ && hold.generation == hold_generation_ &&
+			    hold.operation.bytes == operation_.bytes)
+				return true;
+		return false;
 	}
 };
 

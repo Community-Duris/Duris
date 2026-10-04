@@ -89,6 +89,11 @@ struct player_save_journal_retained_frame
 // corrupt bytes and latch the global fence; it never treats a partial cut as OK.
 player_save_journal_result
 player_save_journal_collect_retained(std::vector<player_save_journal_retained_frame> *output);
+// Fresh active frames plus validated archive/policy/recovery namespace. This
+// proves absence only while the original held-publication reservation excludes
+// that PID's writers. Retained or archived originals are never waived here.
+player_save_journal_result player_save_journal_publication_census(
+	int pid, const player_save_execution_guard::held_publication_reservation &reservation);
 // A deferred apply retains all frames for that PID, including earlier proofs
 // from this pass, and skips later same-PID callbacks. Other PIDs may checkpoint.
 // replay_deferred keeps the existing global replay/load gate closed. The caller

@@ -283,6 +283,15 @@ inline void poison_integrity() noexcept
 		detail::changed_locked();
 }
 
+inline bool publication_operation_held(const critical_operation_id &operation) noexcept
+{
+	std::lock_guard<std::mutex> lock(detail::mutex);
+	for (const auto &hold : detail::holds)
+		if (hold.pid && hold.operation.bytes == operation.bytes)
+			return true;
+	return false;
+}
+
 // Caller clears its exact slot first under pipeline_mutex, then releases the
 // matching generation here. A violated internal identity poisons admission.
 inline bool release_hold(int pid, const critical_operation_id &operation,

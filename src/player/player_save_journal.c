@@ -99,6 +99,21 @@ std::set<int32_t> policy_pids;
 bool quarantine_state_ready = false;
 bool quarantine_state_failed = false;
 
+struct control_fingerprint
+{
+	bool observed = false, exists = false;
+	size_t bytes = 0;
+	std::array<uint8_t, 32> digest = {};
+};
+control_fingerprint archive_fingerprint, policy_fingerprint, legacy_fingerprint;
+std::array<uint8_t, 32> sha256(const uint8_t *bytes, size_t size);
+
+void remember_control(control_fingerprint &fingerprint, const std::vector<uint8_t> &bytes,
+		      bool exists)
+{
+	fingerprint = { true, exists, bytes.size(), sha256(bytes.data(), bytes.size()) };
+}
+
 uint64_t realtime_msec()
 {
 	struct timespec value = {};
@@ -500,6 +515,7 @@ bool load_quarantine_archive()
 	bool exists = false;
 	if (!read_safe_bytes(archive_path, ARCHIVE_MAX_BYTES, &bytes, &exists))
 		return false;
+	remember_control(archive_fingerprint, bytes, exists);
 	if (!exists)
 		return true;
 	if (bytes.size() < ARCHIVE_HEADER_SIZE ||
@@ -603,6 +619,7 @@ bool load_quarantine_pid_policy()
 	bool exists = false;
 	if (!read_safe_bytes(quarantine_pids_path, 4096, &bytes, &exists))
 		return false;
+	remember_control(policy_fingerprint, bytes, exists);
 	if (!exists || bytes.empty())
 		return true;
 	size_t offset = 0;
@@ -718,6 +735,10 @@ bool persist_quarantine_archive(const std::set<int32_t> &pids,
 			raw_offset += encoded.size() + 40;
 		}
 	}
+	// Prepare allocating digest work before publishing the new archive. No
+	// exception after rename may leave durable recovery records ahead of memory.
+	control_fingerprint candidate_fingerprint;
+	remember_control(candidate_fingerprint, bytes, true);
 	const int fd = open_safe_file(archive_temporary_path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	if (fd < 0)
 		return false;
@@ -730,6 +751,8 @@ bool persist_quarantine_archive(const std::set<int32_t> &pids,
 		ok = sync_directory();
 	if (!ok)
 		unlink(archive_temporary_path.c_str());
+	else
+		archive_fingerprint = candidate_fingerprint;
 	return ok;
 }
 
@@ -787,6 +810,7 @@ bool load_legacy_quarantine_bytes()
 	bool exists = false;
 	if (!read_safe_bytes(quarantine_path, journal_quota, &bytes, &exists))
 		return false;
+	remember_control(legacy_fingerprint, bytes, exists);
 	if (!exists || bytes.empty())
 		return true;
 	for (const auto &record : archive_records)
@@ -1218,6 +1242,7 @@ bool player_save_journal_init(const char *directory, size_t quota_bytes)
 		archive_records.clear();
 		recovery_records.clear();
 		policy_pids.clear();
+		archive_fingerprint = policy_fingerprint = legacy_fingerprint = {};
 		if (!directory || !*directory || directory[0] != '/' ||
 		    quota_bytes < JOURNAL_HEADER_SIZE + 64 ||
 		    quota_bytes > PLAYER_SAVE_JOURNAL_MAX_BYTES)
@@ -1687,6 +1712,56 @@ player_save_journal_collect_retained(std::vector<player_save_journal_retained_fr
 	catch (const std::bad_alloc &)
 	{
 		++health.backpressure;
+		return player_save_journal_result::replay_blocked;
+	}
+}
+
+player_save_journal_result player_save_journal_publication_census(
+	int pid, const player_save_execution_guard::held_publication_reservation &reservation)
+{
+	if (!reservation.matches_pid(pid))
+		return player_save_journal_result::replay_blocked;
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	if (!health.initialized || !quarantine_state_ready || quarantine_state_failed)
+		return player_save_journal_result::not_initialized;
+	try
+	{
+		const auto matches_control = [](const std::string &path, size_t limit,
+						const control_fingerprint &expected)
+		{
+			std::vector<uint8_t> bytes;
+			bool exists = false;
+			return expected.observed && read_safe_bytes(path, limit, &bytes, &exists) &&
+			       exists == expected.exists && bytes.size() == expected.bytes &&
+			       sha256(bytes.data(), bytes.size()) == expected.digest;
+		};
+		// Reopening the controls binds their already validated decoded state to
+		// this fresh namespace, including an expected absence, not missing evidence.
+		if (!matches_control(archive_path, ARCHIVE_MAX_BYTES, archive_fingerprint) ||
+		    !matches_control(quarantine_pids_path, 4096, policy_fingerprint) ||
+		    !matches_control(quarantine_path, journal_quota, legacy_fingerprint))
+			return player_save_journal_result::replay_blocked;
+		if (quarantined_pids.count(pid) || archived_pids.count(pid) ||
+		    policy_pids.count(pid))
+			return player_save_journal_result::quarantined_pid;
+		for (const auto &record : archive_records)
+			if (!record.pid || record.pid == pid)
+				return player_save_journal_result::replay_blocked;
+		for (const auto &stored : recovery_records)
+			if (stored.record.baseline.pid == pid ||
+			    stored.record.replacement.pid == pid)
+				return player_save_journal_result::replay_blocked;
+		scan_result scanned = scan_journal_safe();
+		if (scanned.result != player_save_journal_result::ok)
+			return scanned.result;
+		for (const auto &frame : scanned.frames)
+			if (frame.snapshot.pid == pid)
+				return player_save_journal_result::replay_deferred;
+		return reservation.valid() ? player_save_journal_result::ok :
+					     player_save_journal_result::replay_blocked;
+	}
+	catch (...)
+	{
 		return player_save_journal_result::replay_blocked;
 	}
 }

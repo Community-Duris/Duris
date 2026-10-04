@@ -1,6 +1,7 @@
 #include "persistence/death_recovery_visibility.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/persistence_diagnostics.h"
+#include "player/player_save_pipeline.h"
 
 #include <algorithm>
 #include <chrono>
@@ -65,6 +66,7 @@ std::condition_variable result_available;
 std::condition_variable admission_available;
 std::condition_variable publication_checkpoint_finished;
 size_t publication_checkpoints_inflight = 0;
+size_t guarded_publications_inflight = 0;
 std::unordered_map<std::string, std::unique_ptr<operation_state>> operations;
 std::deque<std::string> pending;
 std::deque<std::string> pending_admission;
@@ -963,8 +965,8 @@ bool cutover_ready_locked()
 {
 	update_depth();
 	if (lifecycle_guard_active || !health.initialized || !health.running || health.accepting ||
-	    stop_requested || health.queued || health.inflight || health.blocked ||
-	    health.publication_pending || health.awaiting_durability ||
+	    stop_requested || guarded_publications_inflight || health.queued || health.inflight ||
+	    health.blocked || health.publication_pending || health.awaiting_durability ||
 	    health.admission_queue_bytes || health.append_inflight || health.fenced_keys ||
 	    !operations.empty() || !pending.empty() || !pending_admission.empty() ||
 	    pending_admission_bytes || admission_inflight_bytes || !active_keys.empty() ||
@@ -1060,7 +1062,8 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 bool critical_command_coordinator_try_acquire_lifecycle_guard(void)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
-	if (lifecycle_guard_active || active_cutover_phase != cutover_owner_phase::none)
+	if (lifecycle_guard_active || active_cutover_phase != cutover_owner_phase::none ||
+	    guarded_publications_inflight)
 		return false;
 	lifecycle_guard_active = true;
 	lifecycle_guard_was_accepting = health.accepting;
@@ -1086,7 +1089,8 @@ bool critical_command_coordinator_shutdown(void)
 {
 	{
 		std::lock_guard<std::mutex> lock(coordinator_mutex);
-		if (active_cutover_phase != cutover_owner_phase::none)
+		if (active_cutover_phase != cutover_owner_phase::none ||
+		    guarded_publications_inflight)
 		{
 			health.shutdown_refused = true;
 			health.accepting = false;
@@ -1345,7 +1349,8 @@ bool critical_command_coordinator_acknowledge_publication(const critical_operati
 		auto found = operations.find(identity);
 		if (found == operations.end() ||
 		    !operation_is_publication_pending(*found->second) ||
-		    found->second->publication_checkpointing)
+		    found->second->publication_checkpointing ||
+		    player_save_execution_guard::publication_operation_held(operation_id))
 			return false;
 		found->second->publication_checkpointing = true;
 		++publication_checkpoints_inflight;
@@ -1382,6 +1387,103 @@ bool critical_command_coordinator_acknowledge_publication(const critical_operati
 	update_depth();
 	work_available.notify_all();
 	return true;
+}
+
+bool critical_command_coordinator_acknowledge_publication(
+	player_save_restored_publication_owner &owner)
+{
+	if (!owner.publication_proven_ || owner.acknowledged_ || !owner.reservation_.valid())
+		return false;
+	std::string identity;
+	try
+	{
+		identity = operation_key(owner.completion_.operation_id);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		auto found = operations.find(identity);
+		if (found == operations.end() ||
+		    !operation_is_publication_pending(*found->second) ||
+		    found->second->publication_checkpointing || !coordinator_generation ||
+		    coordinator_generation_exhausted || !health.initialized || stop_requested ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    !owner.reservation_.valid())
+			return false;
+		const auto &state = *found->second;
+		const auto &receipt = state.publication_completion;
+		const auto success = [](critical_apply_outcome outcome)
+		{
+			return outcome == critical_apply_outcome::applied ||
+			       outcome == critical_apply_outcome::already_applied;
+		};
+		std::vector<uint8_t> frozen;
+		if (critical_command_encode(state.command, &frozen) !=
+			    critical_command_codec_result::ok ||
+		    frozen != owner.frozen_ ||
+		    receipt.operation_id.bytes != owner.completion_.operation_id.bytes ||
+		    !success(receipt.outcome) || !success(owner.completion_.outcome) ||
+		    receipt.disposition != owner.completion_.disposition ||
+		    receipt.durable_revision != owner.completion_.durable_revision ||
+		    receipt.error_code != owner.completion_.error_code ||
+		    receipt.failure_stage != owner.completion_.failure_stage ||
+		    receipt.result_size != owner.completion_.result_size ||
+		    receipt.result_payload != owner.completion_.result_payload)
+			return false;
+		owner.coordinator_generation_ = coordinator_generation;
+		found->second->publication_checkpointing = true;
+		++publication_checkpoints_inflight;
+		++guarded_publications_inflight;
+	}
+	catch (...)
+	{
+		return false;
+	}
+	critical_command_journal_result checkpoint = critical_command_journal_result::io_failure;
+	try
+	{
+		checkpoint = critical_command_journal_checkpoint(owner.completion_.operation_id);
+	}
+	catch (...)
+	{
+	}
+	std::unique_lock<std::mutex> lock(coordinator_mutex);
+	const auto finish_guarded = [&]()
+	{
+		--guarded_publications_inflight;
+		--publication_checkpoints_inflight;
+		publication_checkpoint_finished.notify_all();
+	};
+	auto found = operations.find(identity);
+	if (found == operations.end() || !operation_is_publication_pending(*found->second) ||
+	    coordinator_generation != owner.coordinator_generation_)
+	{
+		finish_guarded();
+		return false;
+	}
+	auto &state = *found->second;
+	state.publication_checkpointing = false;
+	auto trace =
+		persistence_command_trace(state.command, persistence_trace_stage::publication_ack);
+	trace.outcome = static_cast<uint32_t>(checkpoint);
+	persistence_trace_record(trace);
+	if (checkpoint != critical_command_journal_result::ok)
+	{
+		finish_guarded();
+		return false;
+	}
+	remove_fences(identity, state.command);
+	remember_completed(identity, state.command, state.publication_completion);
+	operations.erase(found);
+	++health.completed;
+	owner.acknowledged_ = true;
+	update_depth();
+	work_available.notify_all();
+	lock.unlock();
+	// Do not acquire the pipeline owner under coordinator_mutex. Keep lifecycle
+	// exclusion until exact-generation consumption and its release notice finish.
+	const bool consumed = owner.consume_acknowledged_hold();
+	lock.lock();
+	finish_guarded();
+	return consumed;
 }
 
 void queue_unqueued_admission_failures_locked()
@@ -1592,7 +1694,8 @@ bool critical_command_coordinator_owner::acquire_cutover_lease(uint64_t timeout_
 	{
 		std::lock_guard<std::mutex> lock(coordinator_mutex);
 		if (!health.initialized || !health.running || stop_requested ||
-		    lifecycle_guard_active || active_cutover_phase != cutover_owner_phase::none)
+		    lifecycle_guard_active || guarded_publications_inflight ||
+		    active_cutover_phase != cutover_owner_phase::none)
 			return false;
 		cutover_was_accepting = health.accepting;
 		cutover_reopen_allowed = health.accepting;
