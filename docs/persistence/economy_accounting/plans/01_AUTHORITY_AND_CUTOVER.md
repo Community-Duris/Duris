@@ -815,3 +815,16 @@ not semantic RED. Hook refusal retains its genuine parked slot and does not inve
 repair authority. Manual restored registration/release and unrelated-PID replay
 are not production critical-ACK wiring or restored-save deferral qualification.
 No compiler, native, AST, SQL, services or tests ran.
+
+
+### October 4 source prerequisites; unqualified
+
+[Current checkpoint](../REVIEW_STATUS_2026-10-04.md) records save execution permits
+and exact generation holds80692d52b, authority-bound baseline initialization0aa0bceeb,
+allocation-safe coordinator cleanup254a0379d and ordinary receipt progress retention
+fd5683abc. These narrow source changes supersede earlier statements that no permit
+or marker exists; they do not complete production startup or ACK authority.
+Lifecycle staged composition, independent Plan5 marker readers, authentic baseline
+source proof, full mutation census, inert actorless publication, ACK reservation,
+wake retention and full native/gameplay/recovery qualification remain open.
+Keep all historical component scopes and original test budgets. No new checks ran.
