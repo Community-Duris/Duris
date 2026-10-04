@@ -4,6 +4,7 @@
 #include "economic_sql_commit_reply_loss_fixture.h"
 #include "sql/sql_pool.h"
 #include <cassert>
+#include <cstdio>
 
 // The production pool owns every lease. Only its disposable connection factory
 // is supplied by the enclosing native harness; production boot is separate.
@@ -51,6 +52,15 @@ struct economic_sql_real_pool_lifecycle
 	{
 		assert(sql_pool_in_use() == 0 && sql_pool_total() == 1);
 		auto *clean = sql_pool_acquire();
+		if (!clean || (clean->server_status & SERVER_STATUS_IN_TRANS) ||
+		    !(clean->server_status & SERVER_STATUS_AUTOCOMMIT))
+			std::fprintf(
+				stderr,
+				"pool cleanup assertion: handle=%u status=%u session=%lu error=%u active=%d available=%d in_use=%d total=%d\n",
+				clean ? 1U : 0U, clean ? clean->server_status : 0U,
+				clean ? mysql_thread_id(clean) : 0UL,
+				clean ? mysql_errno(clean) : 0U, sql_pool_is_active(),
+				sql_pool_available(), sql_pool_in_use(), sql_pool_total());
 		assert(clean && !(clean->server_status & SERVER_STATUS_IN_TRANS) &&
 		       (clean->server_status & SERVER_STATUS_AUTOCOMMIT));
 		sql_pool_release(clean);

@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <memory>
 #include <vector>
 
 extern "C" int __real_mysql_real_query(MYSQL *, const char *, unsigned long);
@@ -1677,7 +1678,7 @@ int main()
 	const unsigned int port = port_value ? static_cast<unsigned int>(atoi(port_value)) : 3306;
 	assert(mysql_real_connect(connection, host, user, password, database, port, nullptr, 0));
 #ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
-	economic_sql_real_pool_lifecycle real_pool_lifecycle;
+	auto real_pool_lifecycle = std::make_unique<economic_sql_real_pool_lifecycle>();
 #endif
 	const std::string account = "currency_harness_account";
 	execute("DELETE FROM currency_wallet_baseline WHERE pid IN (SELECT pid FROM player_data "
@@ -1890,6 +1891,11 @@ int main()
 	execute("DELETE FROM player_data WHERE pid=" + std::to_string(pid));
 	execute("DELETE FROM account_banks WHERE id=" + std::to_string(bank_id));
 	execute("DELETE FROM accounts WHERE account_name='" + account + "'");
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+	// Complete pool lease/session checks before the legacy direct-session KILL
+	// deliberately latches runtime SQL admission closed on unresolved cleanup.
+	real_pool_lifecycle.reset();
+#endif
 	const char *selection = std::getenv("CURRENCY_TEST_ATM_ONLY");
 	if (selection && std::strcmp(selection, "1") == 0)
 		puts("currency ATM legacy/activated/replay checks passed; coin matrix not run");
