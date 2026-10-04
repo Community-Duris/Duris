@@ -174,3 +174,22 @@ the intact fixture still lacks native world holdings/items and remains partial
 and inactive. Primary reviewed and integrated source only. No primary test batch,
 new native schema, shared interface, budget change or qualified push occurred.
 Combined qualification and all remaining R7/release requirements stay open.
+
+## Retained SQL baseline restore integration
+
+Peer `be91ba2aaa82eee51143f941e2209fc2b37cf4c1` is integrated in `589893f08`.
+[Its report](PLAN5_SQL_BASELINE_RESTORE_SLICE_2026-10-04.md) extends independent
+restore evidence to all retained SQL baseline books. Native evidence, including
+the peer's dump/clone/replay cuts, remains bound to the peer's consumed inputs.
+Primary reviewed and integrated its seven owned scripts/tests/report files;
+no production source or schema changed and combined qualification remains open.
+
+Narrow primary interface request: retain an independent per-epoch initialization
+witness binding the nonzero16-byte baseline initialization operation and40-byte
+opening account key (kind9), atomically with the initialized book. Preserve it
+across turnover/deactivation. Marked missing books must refuse restore/retry;
+pre-witness historical compatibility must be explicit. Plan5 owns independent
+readers and damage/backup/restore evidence; primary owns the production authority
+format/transaction and activation integration. This addresses the existing full
+release baseline-loss requirement, not a new independent Plan1 gate. No witness
+implementation or feature completion is claimed by this source-only handoff.
