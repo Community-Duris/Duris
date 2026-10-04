@@ -17,6 +17,8 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import economic_sql_audit_snapshot as snapshot_exporter
+import economic_sql_audit_origins as origin_exporter
+from economic_restore_evidence import decode_plan
 from economic_sql_audit_origins import OriginError, capture, decode_witness  # noqa: E402
 from economic_sql_audit_snapshot import (native_source_count,
                                          read_lineage_realized_prices)  # noqa: E402
@@ -105,6 +107,28 @@ def witness(holdings=None):
     return baseline_root(blob)
 
 
+def baseline_projections(row):
+    """Project a synthetic fixture root; authentic integration rows use native bytes."""
+    operation, blob = row["operation_id"], row["canonical_witness"]
+    plan = decode_plan(row["canonical_plan"])
+    effects = [dict(operation_id=operation, account_index=index, account_key=key,
+                    **dict(zip((side + "_" + coin for side in ("before", "after")
+                                for coin in ("copper", "silver", "gold", "platinum")), (*before, *after))),
+                    before_revision=before_revision, after_revision=after_revision)
+               for index, (key, before, after, before_revision, after_revision) in enumerate(plan["effects"])]
+    postings = [dict(operation_id=operation, line_index=index, event_index=event,
+                     account_index=account, child_index=child,
+                     **dict(zip(("delta_" + coin for coin in ("copper", "silver", "gold", "platinum")), delta)),
+                     copper_value=amount)
+                for index, (event, account, child, delta, amount) in enumerate(plan["postings"])]
+    holdings, items = struct.unpack_from("<II", blob, 184)
+    identities = [(1, struct.unpack_from("<Q", blob, 212 + index * 112)[0]) for index in range(holdings)]
+    identities += [(2, struct.unpack_from("<Q", blob, 192 + holdings * 112 + index * 88)[0]) for index in range(items)]
+    reservations = [dict(lineage=blob[16:32], epoch=blob[32:48], identity_kind=kind,
+                         identity_id=identity, operation_id=operation) for kind, identity in identities]
+    return effects, postings, reservations
+
+
 class Cursor:
     def __init__(self, rows):
         self.rows = rows
@@ -129,17 +153,29 @@ class Cursor:
 class Connection:
     def __init__(self, control=None, rows=None):
         rows = [witness()] if rows is None else rows
+        projections = [[], [], []]
+        for row in rows:
+            # Invalid capsule tests still exercise the root reader first.
+            try:
+                details = baseline_projections(row)
+            except ValueError:
+                details = ([], [], [])
+            for family, values in zip(projections, details):
+                family.extend(values)
         self.scan = Cursor([
             None, None,
             [{"table_name": name, "engine": "InnoDB"} for name in
              ("economic_baseline_control", "economic_baseline_witness",
-              "economic_accounting_operation", "critical_operation_inbox")],
+              "economic_accounting_operation", "critical_operation_inbox",
+              "economic_accounting_account_effect", "economic_accounting_coin_posting", "economic_baseline_reservation")],
             {"opening_account": OPENING, "revision": 1, "last_operation_id": OP}
             if control is None else control,
             {"row_count": len(rows),
              "blob_bytes": sum(len(row[name]) for row in rows
                                for name in ("canonical_witness", "canonical_intent", "canonical_plan"))},
             rows,
+            {"projection_rows": sum(map(len, projections))},
+            *projections,
         ])
         self.rollbacks = 0
 
@@ -209,6 +245,53 @@ class ItemRevisionTests(unittest.TestCase):
 
 
 class OriginTests(unittest.TestCase):
+    def test_missing_extra_duplicate_and_altered_sql_baseline_projections_refuse(self):
+        for index in (7, 8, 9):
+            connection = Connection()
+            for field in connection.scan.rows[index][0]:
+                with self.subTest(family=index, field=field):
+                    changed = Connection()
+                    previous = changed.scan.rows[index][0][field]
+                    changed.scan.rows[index][0][field] = (previous + 1 if isinstance(previous, int) else
+                                                        bytes([previous[0] ^ 1]) + previous[1:])
+                    with self.assertRaisesRegex(OriginError, "EAB1 SQL projection mismatch"):
+                        capture(changed, LINEAGE, EPOCH)
+                    self.assertEqual(changed.rollbacks, 1)
+                    self.assertTrue(changed.scan.closed)
+            for change in ("missing", "extra", "duplicate"):
+                with self.subTest(family=index, change=change):
+                    changed = Connection()
+                    values = changed.scan.rows[index]
+                    if change == "missing":
+                        values.pop()
+                    else:
+                        values.append(copy.deepcopy(values[0]))
+                        if change == "extra":
+                            field = ("account_index", "line_index", "identity_id")[index - 7]
+                            values[-1][field] += 100
+                    changed.scan.rows[6]["projection_rows"] = sum(map(len, changed.scan.rows[7:10]))
+                    with self.assertRaisesRegex(OriginError, "EAB1 SQL projection mismatch"):
+                        capture(changed, LINEAGE, EPOCH)
+                    self.assertEqual(changed.rollbacks, 1)
+                    self.assertTrue(changed.scan.closed)
+
+    def test_sql_baseline_projection_bounds_and_transactional_tables(self):
+        connection = Connection()
+        connection.scan.rows[6]["projection_rows"] = origin_exporter.MAX_ROWS + 1
+        with self.assertRaisesRegex(OriginError, "baseline SQL projection source"):
+            capture(connection, LINEAGE, EPOCH)
+        self.assertEqual(len(connection.scan.statements), 7)
+        for index in (4, 5, 6):
+            with self.subTest(table=index):
+                connection = Connection()
+                connection.scan.rows[2][index]["engine"] = "MyISAM"
+                with self.assertRaisesRegex(OriginError, "not InnoDB"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertEqual(connection.rollbacks, 1)
+        with mock.patch.object(origin_exporter, "MAX_ROWS", 5):
+            with self.assertRaisesRegex(OriginError, "baseline SQL projection source"):
+                capture(Connection(), LINEAGE, EPOCH)
+
     def test_rehashed_witness_and_canonical_root_disagreement_refuse(self):
         for offset in (64, 120, 152, 232, 264, 272, 320, 344, 360):
             with self.subTest(offset=offset):
@@ -255,7 +338,7 @@ class OriginTests(unittest.TestCase):
                    "operation_lineage": LINEAGE.hex(), "operation_epoch": value}
                   for value in (current, retained, retained)]
         cursor = mock.Mock()
-        cursor.fetchone.return_value = {"row_count": 2, "blob_bytes": 1000}
+        cursor.fetchone.return_value = {"row_count": 2, "blob_bytes": 1000, "projection_rows": 6}
         origins = {"baseline_source_events": {OP.hex(): "aa" * 48}}
         with mock.patch.object(snapshot_exporter, "read_origins_in_transaction", return_value=origins) as read:
             snapshot_exporter.bind_baseline_claim_witnesses(cursor, LINEAGE, EPOCH, claims, origins)
@@ -268,12 +351,17 @@ class OriginTests(unittest.TestCase):
                 with self.assertRaisesRegex(snapshot_exporter.ExportError, "baseline claim witness source"):
                     snapshot_exporter.bind_baseline_claim_witnesses(cursor, LINEAGE, EPOCH, claims, origins)
                 read.assert_not_called()
-        cursor.fetchone.return_value = {"row_count": 2, "blob_bytes": 1000}
+        cursor.fetchone.return_value = {"row_count": 2, "blob_bytes": 1000, "projection_rows": 6}
         with mock.patch.object(snapshot_exporter, "read_origins_in_transaction", side_effect=OriginError("missing book")):
             snapshot_exporter.bind_baseline_claim_witnesses(cursor, LINEAGE, EPOCH, claims, origins)
         self.assertIsNone(claims[1]["baseline_witness"])
         self.assertIsNone(claims[2]["baseline_witness"])
         self.assertTrue(all(call.args[0].startswith("SELECT ") for call in cursor.execute.call_args_list))
+        cursor.fetchone.return_value = {"row_count": 2, "blob_bytes": 1000, "projection_rows": 100_001}
+        with mock.patch.object(snapshot_exporter, "read_origins_in_transaction") as read:
+            with self.assertRaisesRegex(snapshot_exporter.ExportError, "baseline claim projection source"):
+                snapshot_exporter.bind_baseline_claim_witnesses(cursor, LINEAGE, EPOCH, claims, origins)
+            read.assert_not_called()
 
     def test_native_numeric_holding_order_at_unsigned_boundaries(self):
         for first, second in ((255, 256), (65535, 65536), (2**32 - 1, 2**32),
@@ -404,6 +492,10 @@ class OriginTests(unittest.TestCase):
         witness_query = connection.scan.statements[5][0]
         self.assertIn("i.failure_stage AS inbox_failure_stage", witness_query)
         self.assertIn("i.committed_at IS NOT NULL", witness_query)
+        reservation_query, reservation_parameters = connection.scan.statements[9]
+        self.assertIn("LEFT JOIN economic_baseline_witness", reservation_query)
+        self.assertIn("((p.lineage=%s AND p.epoch=%s) OR (w.lineage=%s AND w.epoch=%s))", reservation_query)
+        self.assertEqual(reservation_parameters, (LINEAGE, EPOCH, LINEAGE, EPOCH, origin_exporter.MAX_ROWS - 4 + 1))
 
     def test_digest_header_count_and_origin_corruption_refuse(self):
         for change in ("digest", "header", "count", "lineage", "source", "owner"):

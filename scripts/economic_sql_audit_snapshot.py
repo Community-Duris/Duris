@@ -18,7 +18,8 @@ import re
 import struct
 import sys
 
-from economic_sql_audit_origins import ITEM_STATES, OriginError, identity, read_origins_in_transaction
+from economic_sql_audit_origins import (ITEM_STATES, OriginError, baseline_projection_bound,
+                                       identity, read_origins_in_transaction)
 from reconcile_economy_accounting import (MAX_INPUT_BYTES, MAX_ROWS, ORPHAN_EVIDENCE_SOURCES,
                                           REGISTRY_PATH, TABLES)
 
@@ -346,6 +347,10 @@ def bind_baseline_claim_witnesses(cursor, lineage: bytes, epoch: bytes,
     if (bounds is None or bounds["row_count"] > MAX_ROWS or
             bounds["blob_bytes"] > MAX_INPUT_BYTES):
         raise ExportError("baseline claim witness source exceeds audit input limit")
+    try:
+        baseline_projection_bound(cursor, lineage)
+    except OriginError as error:
+        raise ExportError("baseline claim projection source exceeds audit input limit") from error
     cache = {epoch.hex(): origins["baseline_source_events"]}
     for claim in baselines:
         claim["baseline_witness"] = None
