@@ -12,6 +12,7 @@
 #include <cstring>
 #include <memory>
 #include <new>
+#include <optional>
 #include <openssl/sha.h>
 #include <set>
 #include <string_view>
@@ -472,6 +473,21 @@ retain_death_conflict(MYSQL *connection, const player_snapshot &request, bool te
 		*cleanup = {};
 	return { player_death_conflict_outcome::failed, ENOTSUP, 0 };
 #else
+	// This borrowed mutation requires the caller's existing exact-PID scope.
+	// Refuse before touching cleanup output or starting native SQL. The caller
+	// retains ownership through later disposal of any retire-required session.
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		execution.emplace(request.pid);
+		if (!*execution)
+			return { player_death_conflict_outcome::failed,
+				 execution->result() ==
+						 player_save_execution_guard::admission::held ?
+					 EAGAIN :
+					 ENOMEM,
+				 0 };
+	}
 	player_sql_cleanup local;
 	auto &proof = cleanup ? *cleanup : local;
 	player_sql_transaction_cleanup owner(connection, proof);
@@ -660,6 +676,23 @@ apply_death_conflict_owned(MYSQL *connection, const player_snapshot &request,
 		*cleanup = {};
 	return { player_save_apply_outcome::terminal_failure, 0, ENOTSUP };
 #else
+	// Cover both the original save and the later evidence/terminal transaction;
+	// a late participant guard cannot protect earlier native admission.
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		execution.emplace(request.pid);
+		if (!*execution)
+			return { execution->result() ==
+						 player_save_execution_guard::admission::held ?
+					 player_save_apply_outcome::deferred :
+					 player_save_apply_outcome::retryable_failure,
+				 0,
+				 execution->result() ==
+						 player_save_execution_guard::admission::held ?
+					 0U :
+					 ENOMEM };
+	}
 	player_sql_cleanup local;
 	auto &proof = cleanup ? *cleanup : local;
 	player_sql_transaction_cleanup entry(connection, proof);
@@ -759,6 +792,23 @@ player_save_apply_result player_death_conflict_apply_from_pool(const player_snap
 	(void)context;
 	return { player_save_apply_outcome::terminal_failure, 0, ENOTSUP };
 #else
+	// Declare admission before the lease: writer cleanup, replacement/readback
+	// and final lease retirement must all finish before this permit unwinds.
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		execution.emplace(request.pid);
+		if (!*execution)
+			return { execution->result() ==
+						 player_save_execution_guard::admission::held ?
+					 player_save_apply_outcome::deferred :
+					 player_save_apply_outcome::retryable_failure,
+				 0,
+				 execution->result() ==
+						 player_save_execution_guard::admission::held ?
+					 0U :
+					 ENOMEM };
+	}
 	if (!request.death)
 		return player_snapshot_repository_apply_from_pool(request, context);
 	player_sql_pool_lease lease(sql_pool_acquire());

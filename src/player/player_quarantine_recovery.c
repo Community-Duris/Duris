@@ -6,6 +6,7 @@
 #include "persistence/persistence_observability.h"
 #include "player/player_snapshot_repository.h"
 #include "player/player_sql_transaction_cleanup.h"
+#include "player/player_save_replay_ownership.h"
 #include "flatfile/flatfile_player_repository.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_identity_repository.h"
@@ -19,6 +20,7 @@
 #include <set>
 #include <cstring>
 #include <memory>
+#include <optional>
 #include "core/utility.h"
 
 namespace
@@ -540,6 +542,13 @@ bool player_quarantine_recovery_sql_receipt(MYSQL *connection,
 					    const player_save_recovery_record &record, bool write,
 					    bool *present)
 {
+	std::optional<player_save_execution_guard::permit> execution;
+	if (write && player_save_execution_guard::current_ownership_epoch())
+	{
+		execution.emplace(record.replacement.pid);
+		if (!*execution)
+			return false;
+	}
 	std::array<uint8_t, 32> digest;
 	std::vector<uint8_t> receipt;
 	if (!connection || !present || record.backend != 2 ||
@@ -691,6 +700,16 @@ bool player_quarantine_recovery_prepare_sql(MYSQL *connection, int pid,
 					    player_save_recovery_record *record, std::string *error,
 					    player_sql_cleanup *cleanup)
 {
+	// Borrow the caller's existing exact-PID owner before transaction/capture.
+	// The caller retains that scope through any later uncertain lease disposal.
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		execution.emplace(pid);
+		if (!*execution)
+			return refuse(error,
+				      "recovery ownership unavailable; retain archive and fence");
+	}
 	player_sql_cleanup local;
 	auto &proof = cleanup ? *cleanup : local;
 	player_sql_transaction_cleanup owner(connection, proof);
@@ -754,6 +773,16 @@ bool player_quarantine_recovery_resume_sql(MYSQL *connection, int pid,
 					   const std::string &backend_identity, std::string *error,
 					   player_sql_cleanup *cleanup)
 {
+	// This permit spans replacement, native verification, journal resolution
+	// and all phase cleanup. It does not manufacture a new replay-bypassing owner.
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		execution.emplace(pid);
+		if (!*execution)
+			return refuse(error,
+				      "recovery ownership unavailable; retain archive and fence");
+	}
 	player_sql_cleanup local;
 	auto &proof = cleanup ? *cleanup : local;
 	proof = {};
