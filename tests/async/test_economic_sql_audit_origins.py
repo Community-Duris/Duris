@@ -4,9 +4,13 @@
 import copy
 import hashlib
 import json
+import os
 from pathlib import Path
+import shutil
 import struct
+import subprocess
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -22,24 +26,27 @@ EPOCH = bytes.fromhex("22" * 16)
 OP = bytes.fromhex("33" * 16)
 
 
-def key(kind, authority):
-    return LINEAGE + struct.pack("<HHQQ4x", 1, kind, authority, 0)
+def key(kind, authority, context=0):
+    return LINEAGE + struct.pack("<HHQQ4x", 1, kind, authority, context)
 
 
 OPENING = key(9, 99)
 
 
-def witness():
-    blob = (b"EAB1" + struct.pack("<HHII", 1, 192, 392, 0) + LINEAGE + EPOCH +
+def witness(holdings=None):
+    holdings = [key(1, 7)] if holdings is None else holdings
+    size = 192 + len(holdings) * 112 + 88
+    blob = (b"EAB1" + struct.pack("<HHII", 1, 192, size, 0) + LINEAGE + EPOCH +
             bytes.fromhex("44" * 16) + struct.pack("<QQ", 7, 1) + OPENING +
             bytes.fromhex("55" * 32) + bytes.fromhex("66" * 32) +
-            struct.pack("<II", 1, 1))
+            struct.pack("<II", len(holdings), 1))
     assert len(blob) == 192
-    blob += key(1, 7) + struct.pack("<4qQ", 5, 0, 0, 0, 4) + bytes.fromhex("77" * 32)
+    blob += b"".join(account + struct.pack("<4qQ", 5, 0, 0, 0, 4) + bytes.fromhex("77" * 32)
+                     for account in holdings)
     blob += (struct.pack("<QBB6x5Q", 81, 1, 1, 7, 0, 81, 0, 2) +
              bytes.fromhex("88" * 32))
-    assert len(blob) == 392
-    return {"operation_id": OP, "book_revision": 1, "holding_count": 1,
+    assert len(blob) == size
+    return {"operation_id": OP, "book_revision": 1, "holding_count": len(holdings),
             "item_count": 1, "witness_digest": hashlib.sha256(blob).digest(),
             "canonical_witness": blob, "reason": 38, "outcome": 1,
             "result_code": 0, "inbox_status": 1, "inbox_result": 0,
@@ -149,6 +156,47 @@ class ItemRevisionTests(unittest.TestCase):
 
 
 class OriginTests(unittest.TestCase):
+    def test_native_numeric_holding_order_at_unsigned_boundaries(self):
+        for first, second in ((255, 256), (65535, 65536), (2**32 - 1, 2**32),
+                              (2**63 - 1, 2**63), (2**64 - 2, 2**64 - 1)):
+            with self.subTest(first=first, second=second):
+                keys = [key(1, first), key(1, second)]
+                row = witness(keys)
+                holdings, _ = decode_witness(row, LINEAGE, EPOCH, OPENING)
+                self.assertEqual([h["account_key"] for h in holdings], [k.hex() for k in keys])
+                connection = Connection(rows=[row])
+                self.assertEqual(capture(connection, LINEAGE, EPOCH)["account_origins"], holdings)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+
+    def test_byte_ordered_numeric_regression_refuses_and_rolls_back(self):
+        for lifetimes in ((256, 1), (256, 512, 255), (65536, 65535), (2**32, 2**32 - 1)):
+            with self.subTest(lifetimes=lifetimes):
+                keys = [key(1, lifetime) for lifetime in lifetimes]
+                self.assertEqual(keys, sorted(keys))
+                row = witness(keys)
+                with self.assertRaisesRegex(OriginError, "invalid or duplicate EAB1 holding"):
+                    decode_witness(row, LINEAGE, EPOCH, OPENING)
+                connection = Connection(rows=[row])
+                with self.assertRaisesRegex(OriginError, "invalid or duplicate EAB1 holding"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+
+    def test_account_kind_order_precedes_unsigned_lifetime_and_context(self):
+        keys = [key(1, 2**64 - 1, 2**64 - 1), key(2, 1, 2**64 - 1)]
+        holdings, _ = decode_witness(witness(keys), LINEAGE, EPOCH, OPENING)
+        self.assertEqual([h["account_key"] for h in holdings], [k.hex() for k in keys])
+        with self.assertRaisesRegex(OriginError, "invalid or duplicate EAB1 holding"):
+            decode_witness(witness(list(reversed(keys))), LINEAGE, EPOCH, OPENING)
+
+    def test_duplicate_lifetimes_stay_invalid_across_kinds_and_contexts(self):
+        for keys in ([key(1, 7), key(1, 7)], [key(1, 7), key(1, 7, 1)],
+                     [key(1, 7), key(2, 7)]):
+            with self.subTest(keys=keys):
+                with self.assertRaisesRegex(OriginError, "invalid or duplicate EAB1 holding"):
+                    decode_witness(witness(keys), LINEAGE, EPOCH, OPENING)
+
     def test_orphan_export_is_bounded_and_does_not_invent_a_lineage(self):
         cursor = mock.Mock()
         cursor.fetchall.side_effect = [[{"operation_id": OP, "row_index": 3}], [], [], []]
@@ -291,6 +339,247 @@ class OriginTests(unittest.TestCase):
         with self.assertRaisesRegex(OriginError, "duplicate baseline account"):
             capture(connection, LINEAGE, EPOCH)
         self.assertEqual(connection.rollbacks, 1)
+
+
+@unittest.skipUnless(os.environ.get("DURIS_RUN_ECONOMIC_ORIGIN_INTEGRATION") == "1",
+                     "requires explicit disposable Linux native/SQL integration invocation")
+class NativeSQLOriginTests(unittest.TestCase):
+    """Actual native EAB1/CCM1/EAI1/EAP1 bytes in fresh canonical SQL schemas.
+
+    This tests the origin reader, not SQL mutation/lifecycle execution or an
+    activation attestation. All SQL fixture writes use a separate private owner.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        for command in ("g++", "mysql", "mysqld", "mariadbd", "mariadb-install-db"):
+            if not shutil.which(command):
+                raise RuntimeError("native/SQL integration prerequisite unavailable: " + command)
+        from test_flatfile_restore_economic_authority import build_fixture
+        cls.temp = tempfile.TemporaryDirectory(prefix="duris-native-origin-sql-")
+        cls.addClassCleanup(cls.temp.cleanup)
+        cls.base = Path(cls.temp.name)
+        cls.state = cls.base / "native"
+        cls.fixture = build_fixture(ROOT / "bin/tests/flatfile_origin_sql_fixture")
+        subprocess.run([str(cls.fixture), str(cls.state), "baseline-rich"], check=True,
+                       env=dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
+                                UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"))
+        cls.evidence = cls.state / "economic-evidence"
+        cls.retained = {p.name: (p.read_bytes(), p.stat().st_mode, p.stat().st_nlink)
+                        for p in cls.evidence.iterdir()}
+        assert cls.retained["authority.eal"][0][112:128] == bytes(16)
+        cls.batches = []
+        for path in cls.evidence.glob("*.eab"):
+            blob = path.read_bytes()
+            op = bytes.fromhex(path.stem.rsplit("-", 1)[1])
+            index = (cls.evidence / f"bucket-{op[0]:02x}.eai").read_bytes()
+            entries = [index[n:n + 64] for n in range(80, len(index), 64)]
+            entry, = [entry for entry in entries if entry[:16] == op]
+            segment, offset, size = struct.unpack_from("<III", entry, 48)
+            segment_bytes = (cls.evidence / f"bucket-{op[0]:02x}-{segment}.eas").read_bytes()
+            # Native index offsets exclude the 48-byte envelope and 32-byte segment header.
+            frame = segment_bytes[80 + offset:80 + offset + size]
+            assert frame[:8] == b"DURECR2\0" and hashlib.sha256(frame[48:]).digest() == frame[16:48]
+            assert hashlib.sha256(frame).digest() == entry[16:48]
+            command_size, plan_size = struct.unpack_from("<II", frame, 48)
+            command = frame[74:74 + command_size]
+            plan = frame[74 + command_size:74 + command_size + plan_size]
+            keys, revisions, payload_size = struct.unpack_from("<III", command, 40)
+            intent_at = 52 + keys * 16 + revisions * 24 + payload_size + 4
+            intent = command[intent_at:]
+            assert command[:4] == b"CCM1" and command[8:24] == op
+            assert plan[:4] == b"EAP1" and plan[40:56] == op and intent[:4] == b"EAI1"
+            cls.batches.append((blob, op, struct.unpack_from("<Q", frame, 64)[0], command, plan, intent))
+        cls.batches.sort(key=lambda row: (row[0][32:48], row[2]))
+        assert len(cls.batches) == 4
+        print("NATIVE_ORIGIN_FIXTURE " + json.dumps({
+            "sha256": hashlib.sha256(cls.fixture.read_bytes()).hexdigest(),
+            "witnesses": [{"sha256": hashlib.sha256(row[0]).hexdigest(), "revision": row[2],
+                           "epoch": row[0][32:48].hex()} for row in cls.batches]}, sort_keys=True), flush=True)
+
+    def seed(self, connection):
+        cursor = connection.cursor()
+
+        def insert(table, fields):
+            cursor.execute("INSERT INTO " + table + " (" + ",".join(fields) + ") VALUES (" +
+                           ",".join(["%s"] * len(fields)) + ")", tuple(fields.values()))
+
+        creator = bytes([7]) + bytes(15)
+        insert("critical_operation_inbox", dict(operation_id=creator, command_hash=bytes([1]) * 32,
+               keys_hash=bytes([2]) * 32, command_type=1, schema_version=1, payload_version=1,
+               status=1, result_code=0, result_payload=b""))
+        lineage = self.batches[0][0][16:32]
+        epochs = sorted({row[0][32:48] for row in self.batches})
+        for ordinal, epoch in enumerate(epochs, 1):
+            insert("economic_epoch", dict(lineage=lineage, epoch=epoch, ordinal=ordinal,
+                   transition_kind=1, transition_digest=bytes([42]) + bytes(31),
+                   creating_operation_id=creator))
+        insert("economic_lineage_state", dict(lineage=lineage, active_epoch=None))
+        for epoch in epochs:
+            rows = [row for row in self.batches if row[0][32:48] == epoch]
+            insert("economic_baseline_control", dict(lineage=lineage, epoch=epoch,
+                   opening_account=rows[0][0][80:120], creating_operation_id=creator))
+        for blob, op, revision, command, plan, intent in self.batches:
+            epoch = blob[32:48]
+            keys = b"".join(command[n:n + 1] + command[n + 8:n + 16]
+                            for n in range(52, 52 + struct.unpack_from("<I", command, 40)[0] * 16, 16))
+            insert("critical_operation_inbox", dict(operation_id=op,
+                   command_hash=hashlib.sha256(command).digest(), keys_hash=hashlib.sha256(keys).digest(),
+                   command_type=struct.unpack_from("<H", command, 24)[0], schema_version=2,
+                   payload_version=1, status=1, result_code=0, failure_stage=0,
+                   durable_revision=revision, result_payload=b""))
+            cursor.execute("UPDATE critical_operation_inbox SET committed_at=CURRENT_TIMESTAMP(6) "
+                           "WHERE operation_id=%s", (op,))
+            accounts, postings, children, before, after, events = struct.unpack_from("<6I", plan, 216)
+            insert("economic_accounting_operation", dict(operation_id=op, lineage=lineage, epoch=epoch,
+                   accounting_version=1, writer_id=struct.unpack_from("<I", plan, 84)[0],
+                   policy_version=struct.unpack_from("<I", plan, 88)[0],
+                   compiler_version=struct.unpack_from("<I", plan, 92)[0], actor_kind=plan[72],
+                   actor_id=struct.unpack_from("<Q", plan, 76)[0], reason=38, source_event=plan[104:152],
+                   intent_digest=plan[152:184], domain_digest=plan[184:216],
+                   plan_digest=hashlib.sha256(plan).digest(), canonical_intent=intent,
+                   canonical_plan=plan, outcome=1, result_code=0, account_count=accounts,
+                   posting_count=postings, child_count=children, item_event_count=events,
+                   before_witness_count=before, after_witness_count=after))
+            insert("economic_accounting_source_claim", dict(lineage=lineage, source_event=plan[104:152],
+                   operation_id=op, outcome=1))
+            for index in range(accounts):
+                record = plan[256 + index * 120:256 + (index + 1) * 120]
+                fields = dict(operation_id=op, account_index=index, account_key=record[:40])
+                fields.update(zip((f"{side}_{coin}" for side in ("before", "after")
+                                   for coin in ("copper", "silver", "gold", "platinum")),
+                                  struct.unpack_from("<8q", record, 40)))
+                fields.update(zip(("before_revision", "after_revision"), struct.unpack_from("<2Q", record, 104)))
+                insert("economic_accounting_account_effect", fields)
+            for index in range(postings):
+                offset = 256 + accounts * 120 + index * 48
+                event, account, child = struct.unpack_from("<IHH", plan, offset)
+                fields = dict(operation_id=op, line_index=index, event_index=event,
+                              account_index=account, child_index=child)
+                fields.update(zip(("delta_copper", "delta_silver", "delta_gold", "delta_platinum", "copper_value"),
+                                  struct.unpack_from("<5q", plan, offset + 8)))
+                insert("economic_accounting_coin_posting", fields)
+            holdings, items = struct.unpack_from("<II", blob, 184)
+            insert("economic_baseline_witness", dict(operation_id=op, lineage=lineage, epoch=epoch,
+                   book_revision=revision, witness_version=1, holding_count=holdings, item_count=items,
+                   witness_digest=hashlib.sha256(blob).digest(), canonical_witness=blob))
+            identities = [(1, struct.unpack_from("<Q", blob, 192 + n * 112 + 20)[0]) for n in range(holdings)]
+            identities += [(2, struct.unpack_from("<Q", blob, 192 + holdings * 112 + n * 88)[0]) for n in range(items)]
+            for kind, identity in identities:
+                insert("economic_baseline_reservation", dict(lineage=lineage, epoch=epoch,
+                       identity_kind=kind, identity_id=identity, operation_id=op))
+            cursor.execute("UPDATE economic_baseline_control SET revision=%s,last_operation_id=%s "
+                           "WHERE lineage=%s AND epoch=%s", (revision, op, lineage, epoch))
+        cursor.close()
+
+    def check_engine(self, engine):
+        import pymysql
+        import migration_runner as migrations
+        import persistence_restore as restore
+        from test_persistence_backup_integration import sql
+        candidate = self.base / engine
+        candidate.mkdir(mode=0o700)
+        with restore.private_database(candidate, engine) as env:
+            version = sql(env, "SELECT VERSION();")
+            self.assertTrue("MariaDB" in version if engine == "mariadb" else
+                            version.startswith("8.0.") and "MariaDB" not in version, version)
+            sql(env, payload=(ROOT / "migrations/bootstrap_multithread_safe.sql").read_bytes())
+            with mock.patch.dict(os.environ, env, clear=True):
+                manifest = migrations.load_manifest()
+                executor = migrations.MysqlExecutor(manifest)
+                executor.adopt("fresh_bootstrap")
+                migrations.run_pending(manifest, executor)
+            # run_pending closes its owned SQL session; inspect history in a new private one.
+            terminal = sql(env, "SELECT sequence_number,migration_id FROM mud_schema_history "
+                                "ORDER BY sequence_number DESC LIMIT 1")
+            self.assertEqual(terminal, "56\t0056_spell_ward_durability")
+            print("ORIGIN_SQL_SCHEMA " + engine + " " + version + " through=" + terminal.replace("\t", " "), flush=True)
+            owner = pymysql.connect(unix_socket=env["DB_SOCKET"], user="root", database="duris_restore",
+                                    autocommit=True, cursorclass=pymysql.cursors.DictCursor)
+            try:
+                self.seed(owner)
+                with owner.cursor() as cursor:
+                    cursor.execute("CREATE USER 'origin_reader'@'localhost' IDENTIFIED BY 'disposable-origin-reader'")
+                    cursor.execute("GRANT SELECT ON duris_restore.* TO 'origin_reader'@'localhost'")
+                reader = pymysql.connect(unix_socket=env["DB_SOCKET"], user="origin_reader",
+                                         password="disposable-origin-reader", database="duris_restore",
+                                         autocommit=True, cursorclass=pymysql.cursors.DictCursor)
+                try:
+                    with reader.cursor() as cursor:
+                        with self.assertRaises(pymysql.MySQLError) as denied:
+                            cursor.execute("UPDATE economic_baseline_control SET revision=revision")
+                        self.assertEqual(denied.exception.args[0], 1142)
+
+                    def database_rows():
+                        with owner.cursor() as cursor:
+                            rows = []
+                            for table in ("economic_lineage_state", "economic_epoch", "critical_operation_inbox",
+                                          "economic_accounting_operation", "economic_accounting_account_effect",
+                                          "economic_accounting_coin_posting", "economic_accounting_source_claim",
+                                          "economic_baseline_control", "economic_baseline_witness", "economic_baseline_reservation"):
+                                cursor.execute("SELECT * FROM " + table + " ORDER BY 1,2")
+                                rows.append(cursor.fetchall())
+                            return rows
+
+                    def read(epoch, refuses=False):
+                        before = database_rows()
+                        cursor = mock.Mock(wraps=reader.cursor())
+                        connection = mock.Mock(wraps=reader)
+                        connection.cursor.return_value = cursor
+                        try:
+                            if refuses:
+                                with self.assertRaisesRegex(OriginError, "invalid or duplicate EAB1 holding"):
+                                    capture(connection, self.batches[0][0][16:32], epoch)
+                                result = None
+                            else:
+                                result = capture(connection, self.batches[0][0][16:32], epoch)
+                        finally:
+                            connection.rollback.assert_called_once_with()
+                            cursor.close.assert_called_once_with()
+                        self.assertTrue(all(call.args[0].upper().startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
+                                            for call in cursor.execute.call_args_list))
+                        self.assertEqual(database_rows(), before)
+                        return result
+
+                    for epoch in sorted({row[0][32:48] for row in self.batches}):
+                        result = read(epoch)
+                        rows = [row for row in self.batches if row[0][32:48] == epoch]
+                        self.assertEqual(result["witness_count"], len(rows))
+                        expected = [row[0][192 + n * 112:192 + n * 112 + 40].hex()
+                                    for row in rows for n in range(struct.unpack_from("<I", row[0], 184)[0])]
+                        self.assertEqual([h["account_key"] for h in result["account_origins"]], expected)
+                    blob, op, _, _, _, _ = self.batches[0]
+                    holdings, = struct.unpack_from("<I", blob, 184)
+                    self.assertEqual(holdings, 4)
+                    native_rows = [blob[192 + n * 112:192 + (n + 1) * 112] for n in range(holdings)]
+                    self.assertEqual([struct.unpack_from("<Q", row, 20)[0] for row in native_rows],
+                                     [255, 256, 512, 2**64 - 1])
+                    for order in (sorted(native_rows, key=lambda row: row[:40]),
+                                  list(reversed(native_rows)), [native_rows[0]] * 2 + native_rows[2:]):
+                        bad = blob[:192] + b"".join(order) + blob[192 + holdings * 112:]
+                        with owner.cursor() as cursor:
+                            cursor.execute("UPDATE economic_baseline_witness SET canonical_witness=%s,witness_digest=%s "
+                                           "WHERE operation_id=%s", (bad, hashlib.sha256(bad).digest(), op))
+                        read(blob[32:48], refuses=True)
+                    with owner.cursor() as cursor:
+                        cursor.execute("UPDATE economic_baseline_witness SET canonical_witness=%s,witness_digest=%s "
+                                       "WHERE operation_id=%s", (blob, hashlib.sha256(blob).digest(), op))
+                        cursor.execute("SELECT active_epoch FROM economic_lineage_state")
+                        self.assertEqual(cursor.fetchall(), [{"active_epoch": None}])
+                    read(blob[32:48])
+                    self.assertEqual({p.name: (p.read_bytes(), p.stat().st_mode, p.stat().st_nlink)
+                                      for p in self.evidence.iterdir()}, self.retained)
+                    print("PASS native-origin " + engine + " captures=3 refusals=3 rollback=6 SELECT-only bytes-unchanged inactive", flush=True)
+                finally:
+                    reader.close()
+            finally:
+                owner.close()
+
+    def test_native_origins_mysql_8(self):
+        self.check_engine("mysql")
+
+    def test_native_origins_mariadb(self):
+        self.check_engine("mariadb")
 
 
 if __name__ == "__main__":
