@@ -1231,6 +1231,13 @@ Five physically local Tower requests currently belong to Braddistock by giver
 range. Preserve those native receipts and the existing owning journal. Plan
 explicit physical affiliation/referral/campaign references and discovery policy
 separately; do not silently migrate owners based on filenames or birth rooms.
+Azlion/Darrin’s D1 repeatability currently uses owner Braddistock mode two,
+even though physical Tower mode is zero. Qualify physical spawn/retirement/
+renewal separately from receipt ownership before actual daily use. The oak
+entrance resets closed but unlocked in both directions, so its inside key
+is not a required initial-entry receipt; both stasis doors reset locked.
+Use effective reset/current state, including pickability, to explain access.
+
 A future builder-selected owner correction needs versioned history compatibility,
 static/runtime parity, focused regression and a separate repair/news record.
 

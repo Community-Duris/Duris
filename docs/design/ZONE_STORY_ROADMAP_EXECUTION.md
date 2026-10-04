@@ -3049,7 +3049,13 @@ Current catalog/runtime giver ranges credit these to Braddistock and forbid
 borrowing bindings into Tower. Tower discovery/encounters do not discover that
 owner. Plan explicit physical affiliation/referral and cross-zone campaign
 references independently of immutable receipt ownership, with discovery policy,
-versioned upgrade and historical compatibility tests. No owner migration ships.
+versioned upgrade and historical compatibility tests. No owner migration ships. Azlion/Darrin D1 are catalog-repeatable because
+Braddistock reset mode two is used, despite physical Tower mode zero. Plan
+physical spawn/retirement/renewal episodes independently of credit-owner mode;
+static potential-daily metadata is not actual replenishment. The oak entrance
+resets closed but unlocked in both directions; both stasis directions reset
+locked, with differing pickability. Explain effective state without an
+invented inside-key prerequisite.
 
 Magic speech clears lock/secret state but retains closed doors; illusion-maze
 objects override direction exits; the elemental “portal of darkness” is a trapped

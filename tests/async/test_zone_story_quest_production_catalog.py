@@ -3127,6 +3127,7 @@ assert all(s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].ge
 defs={r['block']['line']:r['definition'] for r in lortower['requests']}
 assert {n for n,d in defs.items() if d['daily_eligible']}=={12,33,71,119,155}
 assert defs[61]['daily_exclusion']==defs[143]['daily_exclusion']=='Story-only quest'
+assert all(d['repeatable'] and d['daily_eligible'] for d in catalog['definitions'] if d['giver_vnum'] in (134146,134162))
 units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==1340]
 assert len(units)==6 and sum(u['achievement'] for u in units)==6 and sum(u['daily_candidate'] for u in units)==5
 contacts={c['mob_vnum']:c for c in lortower_map['contacts']}
@@ -3157,6 +3158,10 @@ assert [r['arguments'][2:5] for r in commands if r['command']=='P' and r['argume
 assert [r['arguments'][2:5] for r in commands if r['command']=='P' and r['arguments'][1]==134050]==[[1,134047,30]]
 for giver,room in ((134146,134112),(134150,134127),(134162,134138),(134167,134140),(134169,134042)):
     assert [r['arguments'][3] for r in commands if r['command']=='M' and r['arguments'][1]==giver]==[room]
+for room,direction,state in ((134008,2,1),(134010,0,1),(134049,0,2),(134046,2,2)):
+    assert [r['arguments'][3] for r in commands if r['command']=='D' and r['arguments'][1:3]==[room,direction]]==[state]
+assert 'closed but unlocked' in stories['katalia-bindings']['steps'][0]['hint']
+assert 'reset mode two' in lortower_map['orientation'][-1]
 assert not re.search(r'\bD\d+',rooms[134120]) and re.search(r'\bD5\s+[^~]*~[^~]*~\s+0 0 134141\b',rooms[134140],re.S)
 assert re.search(r'\bD1\s+[^~]*~[^~]*~\s+0 0 1883\b',rooms[134000],re.S)
 for v,d,word in ((134034,0,'sargon'),(134040,1,'sargon'),(134041,3,'sargon'),(134073,4,'thothrontithos')):

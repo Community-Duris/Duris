@@ -98,7 +98,7 @@ not both giants or a durable shared gate.
 | Death key 134111 | G100/cap one on Verinor 134104 at 134072 | Bone-side-route source is not personal kill or first recovery proof |
 | Elemental key 134112 | P100/cap one in container 134083, O at 134096 | Named portal is a trapped container; use actual parent, not assumed teleport behavior |
 | Creation key 134113 | G100/cap one on Gailon 134141 at 134116 | Gailon's E18 charred key 134102 is separate; connected west route differs |
-| Stasis key 134117 | Statue Q155 only | Fits forward north door at 134049; reverse door/reset state differs |
+| Stasis key 134117 | Statue Q155 only | Fits forward north door at 134049; both sides reset locked, with different pickability |
 | Star pieces 134131–134135 | G on Kinslor 134040/134018, Mordren 134062/134029, Cardinal 134081/134039, Earlion that Is 134091/134046, Urian 134133/134122 | Five distinct exact kinds, one Darrin exchange; no forced combat chronology |
 | Star Key 134125 | Darrin Q266 only | Hill keystone/container and prison door use; receipt is not surviving Sargon |
 | Ring 134144 | Isabia Q304 only | Danthas consumes it; ITEM_TRASH is an exact offering, not a failed recipe |
@@ -106,6 +106,14 @@ not both giants or a durable shared gate.
 Other access keys include entrance 134108 on the sergeant, black-guard 134027
 on 134052/134033, prison 134038 in the hidden board, audience 134094 on
 Earlion that Is, treasury 134095 on Urian, and charred 134102 on Gailon.
+Both oak entrance directions, 134008 south and 134010 north, reset to state
+one: closed but unlocked. The sergeant's inside-the-tower entrance key is
+therefore not a required initial-entry receipt or self-key blocker. Both
+stasis directions, 134049 north and 134046 south, reset to state two: closed
+and locked, despite raw kind three versus two (different pickability).
+Use effective reset state and current shared state, rather than raw numeric
+world kind, to explain an access prerequisite.
+
 Several keys use ITEM_OTHER/ITEM_TRASH rather than ITEM_KEY. This is not a
 proven defect: [has_key](../../../src/cmd/actmove.c#L2856) matches the held
 or loose object's exact VNUM, without requiring ITEM_KEY. Similar black/bone
@@ -187,6 +195,13 @@ and [runtime ownership](../../../src/world/zone_story_quest_production.c#L222)
 use giver ranges. Braddistock begins at 134142, so the five recipients above
 are credited there even though they are placed in Tower rooms. Current
 mapping validation rejects borrowing their contracts into the Tower journal.
+The mismatch also affects static repeatability: Braddistock's reset mode
+is two, while physical Tower mode is zero. Azlion and Darrin have D1 but
+currently remain catalog-repeatable and potential daily candidates because
+the owner mode is used. That metadata does not establish a renewed physical
+recipient. Keep the frozen receipt owner, and qualify spawn/retirement/renewal
+against actual placement and actor episodes independently before daily use.
+
 Meeting them in a discovered Tower room does not discover Braddistock or
 make its owning journal available. Existing receipts and denominators remain
 unchanged; this is a real cross-zone presentation/discovery gap, not a reason
@@ -223,7 +238,7 @@ doors now accept the intended plain passwords.”
 
 | Finding | Evidence and limit | Plan/acceptance |
 | --- | --- | --- |
-| Credit owner differs from physical story | Five local requests credit Braddistock by giver range; static/runtime agree | Separate immutable receipt owner from explicit physical affiliation/referral; owning-zone discovery policy, aliases/campaign refs, versioned upgrade and receipt compatibility tests. Keep current owners until approved builder intent |
+| Credit owner differs from physical story | Five local requests credit Braddistock by giver range; static/runtime agree | Separate immutable receipt owner from explicit physical affiliation/referral; owning-zone discovery policy, aliases/campaign refs, versioned upgrade and receipt compatibility tests. Determine physical actor renewal independently of owner reset mode. Keep current owners until approved builder intent |
 | Cash support hidden by daily reason | Q61 is D1/reset-zero, classified Story-only before coin-support reason; grouped supported note branch prevents all-unavailable warning | Track offering support independently of daily eligibility, per branch; keep explicit guarded guidance. Add recoverable atomic fee allocation/debit/reward/retirement only after accounting qualification |
 | Dialogue/access stages unrecorded | M topics, accepted passwords, secret clearing, door opening, portals, falls and key use have different effects | Accepted semantic events with actor/target, source revision, episode, successful transition and surviving arrival; failed attempts and stale/shared gate state earn no credit |
 | Original source versus supplied proof | Twelve exchanges accept exact items; five swords, five distinct pieces and shared bone key have different quantities/uses | Per-UID first-source/handoff lineage and conditional source requirements; one-use root allocation, competing requests, current versus spent supplies, replay and cold recovery |

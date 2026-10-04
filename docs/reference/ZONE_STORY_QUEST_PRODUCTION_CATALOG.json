@@ -121049,7 +121049,7 @@
           ]
         },
         {
-          "description": "The sergeant starts in 134015 with the equipped entrance key and accepts a Bloodstone letter for a separate small note and experience.",
+          "description": "The sergeant starts in 134015 with the equipped entrance key and accepts a Bloodstone letter for a separate small note and experience. Both entrance directions reset closed but unlocked; the equipped key is not mandatory initial-entry history.",
           "keyword": "orc",
           "mob_vnum": 134026,
           "name": "an orc sergeant",
@@ -121099,7 +121099,7 @@
           ]
         },
         {
-          "description": "The statue of Earlion starts at 134049 and accepts three different route keys for the stasis key. It is not the living Earlion in 134046.",
+          "description": "The statue of Earlion starts at 134049 and accepts three different route keys for the stasis key. It is not the living Earlion in 134046. Both sides of the stasis door reset locked, with different native pickability.",
           "keyword": "statue",
           "mob_vnum": 134074,
           "name": "a statue of an old man",
@@ -121301,7 +121301,7 @@
         "Active, ready accounting is mandatory for discovery, visible encounters, journals and new achievement/daily credit. Discovering the Tower of Darkness has its own achievement. Questions, reading, kills, current possession and attempted travel do not complete native exchanges.",
         "The Tower source also includes Dubneth village, the farmhouse and church, planar side routes, loading rooms and Sargon\u2019s prison. Follow exact source and destination identities; lore names alone do not define quest terminals.",
         "Five physically local requests \u2014 Azlion, Jenifer, Father Darrin, Danthas and Isabia \u2014 currently belong to Braddistock by giver-number range. Their accepted recipes remain in that owning journal. Tower encounters do not discover Braddistock; the broader physical campaign is guidance until explicit cross-zone affiliation and discovery support is designed.",
-        "Acquire the entrance key from the sergeant for the forward oak gate. The Bloodstone letter yields a small note; the note or guarded 100-platinum bribe yields the captain key. Earlier receipts are optional route help, and key issuance is not unlocking, opening or passage.",
+        "The oak entrance resets closed but unlocked in both directions; opening, rather than prior sergeant-key history, is the initial route requirement. The sergeant carries the matching key for later locked state. The Bloodstone letter yields a small note; the note or guarded 100-platinum bribe yields the captain key. Earlier receipts are optional route help, and key issuance is not unlocking, opening or passage.",
         "Recover the hidden board\u2019s steel key for Katalia, and use the priest\u2019s different small black key for Amelia. Amelia\u2019s locket and five exact swords yield Dorthan\u2019s shield. Supplies received from another player remain valid without personal rescue/source history.",
         "Speak the exact magic words at the actual locked exits: sargon for the cleric routes, darkfather for the upper-level diagonal door, and thothrontithos for the elemental route. Successful speech clears lock/secret state, while opening and surviving arrival remain separate. Asking a quest topic is a different interaction.",
         "The illusion maze has actual direction-triggered teleport objects that can override ordinary room exits. Select the active room object and command, rather than trusting labels alone. The central portal reaches Janyon\u2019s hall. The portal of darkness containing an elemental key is a container, not a teleporter.",
@@ -121310,7 +121310,8 @@
         "The Cardinal\u2019s bone key also opens a chest with a thirty-percent hammer child. Isabia consumes that key and yields a ring; Danthas consumes the ring for leggings. Access keys and delivered proof need distinct physical allocation. Isabia\u2019s D0 departure remains narrative only.",
         "Danthas and other mobile actors can start in loading/holding rooms. Some routes enter a room with no outward exit; actual roaming, population, admitted generation and perception need qualification before reliable daily supply. Reset mode zero keeps disappearing recipients story-only.",
         "The bounded active-world scan finds an outward route to Troll Hills 1883 but no ordinary incoming exit or foreign fixed ITEM_TELEPORT into this room range. This is an access concern to qualify with builders and other travel mechanisms before proposing a topology change.",
-        "Fenrral\u2019s one village tavern shop sells food and drinks; this is not rental or a story outcome. Hammer proc placeholders, copied item/shop descriptions, holding-room placement and narrated-but-unimplemented departures remain separate pending proposals. No unsupported event credit or fee bypass is introduced."
+        "Fenrral\u2019s one village tavern shop sells food and drinks; this is not rental or a story outcome. Hammer proc placeholders, copied item/shop descriptions, holding-room placement and narrated-but-unimplemented departures remain separate pending proposals. No unsupported event credit or fee bypass is introduced.",
+        "Azlion and Father Darrin retire on acceptance in physical Tower reset mode zero, but their current Braddistock owner has reset mode two, making the static catalog mark them repeatable/potential daily. This is not proven physical renewal: qualify actual actor episodes and supply independently of immutable receipt owner before daily use."
       ],
       "revision": 1,
       "schema_version": 3,
@@ -121328,7 +121329,7 @@
           "steps": [
             {
               "count": 1,
-              "hint": "The sergeant in 134015 has the entrance oak key equipped in slot 18. Its kind opens the forward tower entrance; alternate routes and current door state remain separate. Carry the exact kind loose. Supplied matching material fits; possession does not prove personal combat, first recovery, source, unlocking or arrival.",
+              "hint": "The sergeant in 134015 has the entrance oak key equipped in slot 18. Both entrance directions reset closed but unlocked, so this key is not a required initial-entry prerequisite. It can unlock a later locked door; current state and actual opening remain separate. Carry the exact kind loose. Supplied matching material fits; possession does not prove personal combat, first recovery, source, unlocking or arrival.",
               "id": "material-134108",
               "item_vnums": [
                 134108
