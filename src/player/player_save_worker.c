@@ -34,6 +34,8 @@ struct queued_snapshot
 };
 
 static_assert(std::is_nothrow_move_assignable_v<player_snapshot>);
+static_assert(std::is_nothrow_move_assignable_v<player_save_completion>);
+static_assert(std::is_nothrow_move_constructible_v<player_save_completion>);
 
 struct pid_slot
 {
@@ -98,6 +100,8 @@ bool valid_snapshot(const player_snapshot &snapshot)
 
 void queue_ready_locked(int pid)
 {
+	if (ready_set.contains(pid))
+		return;
 	if (ready_set.insert(pid).second)
 	{
 		try
@@ -609,6 +613,44 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 	size_t consumed = 0;
 	while (consumed < capacity && !results.empty())
 	{
+		// Retain the deliverable result until every allocation needed for its
+		// retry or pending promotion has succeeded. A real journal ACK may
+		// already have happened; consuming this result early loses its receipts.
+		const auto &front = results.front();
+		auto staged_slot = slots.find(front.pid);
+		bool ready_staged = false;
+		if (staged_slot != slots.end() && staged_slot->second.active &&
+		    staged_slot->second.active->snapshot.revision == front.revision &&
+		    staged_slot->second.active->snapshot.components == front.components)
+		{
+			const auto &slot = staged_slot->second;
+			const bool retry =
+				front.outcome == player_save_apply_outcome::retryable_failure ||
+				front.outcome == player_save_apply_outcome::ambiguous_commit;
+			const bool retry_ready = retry && slot.active->retry_count <
+								  PLAYER_SAVE_WORKER_MAX_RETRIES;
+			const bool finish_ready =
+				slot.pending &&
+				(front.outcome == player_save_apply_outcome::applied ||
+				 front.outcome == player_save_apply_outcome::already_applied ||
+				 front.outcome == player_save_apply_outcome::stale_revision ||
+				 front.outcome == player_save_apply_outcome::terminal_failure ||
+				 (retry && !retry_ready));
+			if (retry_ready || finish_ready)
+			{
+				try
+				{
+					ready_staged = !ready_set.contains(front.pid);
+					queue_ready_locked(front.pid);
+				}
+				catch (const std::bad_alloc &)
+				{
+					// queue_ready_locked removes any partial ready entry. Leave
+					// all result/job/revision/receipt ownership for a later pulse.
+					break;
+				}
+			}
+		}
 		player_save_completion completion = std::move(results.front());
 		results.pop_front();
 		result_available.notify_one();
@@ -710,6 +752,8 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 			slot.deferred_original = false;
 			if (!promote_pending_locked(completion.pid, slot))
 			{
+				if (ready_staged)
+					cancel_ready_locked(completion.pid);
 				saturating_increment(health.terminal_failures);
 				retained_bytes -= slot.pending->snapshot.encoded_size_bound;
 				slot.pending.reset();
