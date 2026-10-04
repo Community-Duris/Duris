@@ -338,8 +338,10 @@ def bind_baseline_claim_witnesses(cursor, lineage: bytes, epoch: bytes,
         return
     # Bound the whole retained lineage before decoding another epoch's book.
     cursor.execute(
-        "SELECT COUNT(*) AS row_count,COALESCE(SUM(OCTET_LENGTH(canonical_witness)),0) "
-        "AS blob_bytes FROM economic_baseline_witness WHERE lineage=%s", (lineage,))
+        "SELECT COUNT(*) AS row_count,COALESCE(SUM(OCTET_LENGTH(w.canonical_witness)+"
+        "COALESCE(OCTET_LENGTH(o.canonical_intent),0)+COALESCE(OCTET_LENGTH(o.canonical_plan),0)),0) "
+        "AS blob_bytes FROM economic_baseline_witness w LEFT JOIN economic_accounting_operation o "
+        "ON o.operation_id=w.operation_id WHERE w.lineage=%s", (lineage,))
     bounds = cursor.fetchone()
     if (bounds is None or bounds["row_count"] > MAX_ROWS or
             bounds["blob_bytes"] > MAX_INPUT_BYTES):

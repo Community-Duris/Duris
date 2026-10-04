@@ -23,7 +23,7 @@ from economic_sql_audit_snapshot import (native_source_count,
 
 LINEAGE = bytes.fromhex("11" * 16)
 EPOCH = bytes.fromhex("22" * 16)
-OP = bytes.fromhex("33" * 16)
+OP = hashlib.sha256(bytes.fromhex("44" * 16) + struct.pack("<IQ", 0x42415345, 1)).digest()[:16]
 
 
 def key(kind, authority, context=0):
@@ -31,6 +31,62 @@ def key(kind, authority, context=0):
 
 
 OPENING = key(9, 99)
+
+
+def baseline_root(blob, revision=1):
+    """Synthetic canonical root for unit/sibling fixtures; native tests use C++."""
+    lineage, epoch = blob[16:32], blob[32:48]
+    operation = hashlib.sha256(blob[48:64] + struct.pack("<I", 0x42415345) + blob[72:80]).digest()[:16]
+    source = struct.pack("<HH", 10, 1) + blob[48:64] + epoch + blob[72:80] + bytes(4)
+    actor = struct.unpack_from("<Q", blob, 64)[0]
+    holdings, items = struct.unpack_from("<II", blob, 184)
+    payload = b"EBC1" + struct.pack("<HHII", 1, 48, len(blob), 0) + hashlib.sha256(blob).digest()
+    domain = hashlib.sha256(b"DURIS-ECONOMIC-DOMAIN-V1\0" + struct.pack("<HHI", 20, 1, 48) + payload).digest()
+    intent = bytearray(256)
+    intent[:4] = b"EAI1"
+    struct.pack_into("<HHIIIIHBBH", intent, 4, 1, 256, 256, 4, 1, 1, 38, 2, 1, 1)
+    intent[32:80] = lineage + epoch + operation
+    struct.pack_into("<Q", intent, 96, actor)
+    intent[112:160], intent[160:192], intent[192:224] = source, bytes([91]) * 32, domain
+    intent = bytes(intent)
+    intent_digest = hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + intent).digest()
+    accounts, postings, equity = [], [], []
+    for index in range(holdings):
+        record = blob[192 + index * 112:192 + (index + 1) * 112]
+        values = struct.unpack_from("<4q", record, 40)
+        total = sum(value * unit for value, unit in zip(values, (1, 10, 100, 1000)))
+        accounts.append(record[:40] + bytes(32) + record[40:72] + struct.pack("<QQ", 0, 1))
+        if total:
+            postings.append(struct.pack("<IHH4qq", len(postings), index, 0, *values, total))
+            equity.append((values, total))
+    if equity:
+        accounts.append(blob[80:120] + bytes(80))
+        for values, total in equity:
+            postings.append(struct.pack("<IHH4qq", len(postings), holdings, 0,
+                                        *(-value for value in values), -total))
+    snapshots = [blob[192 + holdings * 112 + index * 88:192 + holdings * 112 + index * 88 + 56] + bytes(8)
+                 for index in range(items)]
+    counts = (len(accounts), len(postings), 0, items, items, 0)
+    plan = bytearray(256)
+    plan[:4] = b"EAP1"
+    struct.pack_into("<H", plan, 4, 1)
+    plan[8:56], plan[72], plan[100] = lineage + epoch + operation, 2, 1
+    struct.pack_into("<QIIIH", plan, 76, actor, 4, 1, 1, 38)
+    plan[104:152], plan[152:184], plan[184:216] = source, intent_digest, domain
+    struct.pack_into("<6I", plan, 216, *counts)
+    plan = bytes(plan) + b"".join(accounts + postings + snapshots + snapshots)
+    return dict(operation_id=operation, book_revision=revision, holding_count=holdings, item_count=items,
+                witness_digest=hashlib.sha256(blob).digest(), canonical_witness=blob, witness_version=1,
+                reason=38, outcome=1, result_code=0, inbox_status=1, inbox_result=0,
+                inbox_failure_stage=0, inbox_committed_at_present=1, inbox_revision=revision,
+                inbox_type=20, inbox_schema=2, inbox_payload=1, inbox_result_payload=b"",
+                root_lineage=lineage, root_epoch=epoch, original_operation_id=None,
+                accounting_version=1, writer_id=4, policy_version=1, compiler_version=1,
+                actor_kind=2, actor_id=actor, source_event=source, intent_digest=intent_digest,
+                domain_digest=domain, plan_digest=hashlib.sha256(plan).digest(),
+                canonical_intent=intent, canonical_plan=plan,
+                account_count=counts[0], posting_count=counts[1], child_count=0,
+                before_witness_count=items, after_witness_count=items, item_event_count=0)
 
 
 def witness(holdings=None):
@@ -46,11 +102,7 @@ def witness(holdings=None):
     blob += (struct.pack("<QBB6x5Q", 81, 1, 1, 7, 0, 81, 0, 2) +
              bytes.fromhex("88" * 32))
     assert len(blob) == size
-    return {"operation_id": OP, "book_revision": 1, "holding_count": len(holdings),
-            "item_count": 1, "witness_digest": hashlib.sha256(blob).digest(),
-            "canonical_witness": blob, "reason": 38, "outcome": 1,
-            "result_code": 0, "inbox_status": 1, "inbox_result": 0,
-            "inbox_failure_stage": 0, "inbox_committed_at_present": 1}
+    return baseline_root(blob)
 
 
 class Cursor:
@@ -85,7 +137,8 @@ class Connection:
             {"opening_account": OPENING, "revision": 1, "last_operation_id": OP}
             if control is None else control,
             {"row_count": len(rows),
-             "blob_bytes": sum(len(row["canonical_witness"]) for row in rows)},
+             "blob_bytes": sum(len(row[name]) for row in rows
+                               for name in ("canonical_witness", "canonical_intent", "canonical_plan"))},
             rows,
         ])
         self.rollbacks = 0
@@ -156,6 +209,46 @@ class ItemRevisionTests(unittest.TestCase):
 
 
 class OriginTests(unittest.TestCase):
+    def test_rehashed_witness_and_canonical_root_disagreement_refuse(self):
+        for offset in (64, 120, 152, 232, 264, 272, 320, 344, 360):
+            with self.subTest(offset=offset):
+                row = witness()
+                blob = bytearray(row["canonical_witness"])
+                blob[offset] ^= 1
+                row["canonical_witness"] = bytes(blob)
+                row["witness_digest"] = hashlib.sha256(blob).digest()
+                connection = Connection(rows=[row])
+                with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+        for field, changed in (("root_lineage", bytes([1]) * 16), ("root_epoch", bytes([2]) * 16),
+                               ("writer_id", 5), ("accounting_version", 2), ("policy_version", 2),
+                               ("compiler_version", 2), ("actor_kind", 1), ("actor_id", 8),
+                               ("original_operation_id", bytes(16)), ("source_event", None),
+                               ("domain_digest", bytes([1]) * 32), ("intent_digest", bytes([1]) * 32),
+                               ("plan_digest", bytes([1]) * 32), ("canonical_intent", b"EAI1"),
+                               ("canonical_plan", b"EAP1"), ("account_count", 1),
+                               ("inbox_revision", 2), ("inbox_type", 1), ("inbox_schema", 1),
+                               ("inbox_payload", 2), ("inbox_result_payload", b"x"), ("witness_version", 2)):
+            with self.subTest(field=field):
+                row = witness()
+                row[field] = changed
+                connection = Connection(rows=[row])
+                with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+
+    def test_zero_opening_vectors_bind_without_equity(self):
+        blob = bytearray(witness()["canonical_witness"])
+        blob[232:264] = bytes(32)
+        row = baseline_root(bytes(blob))
+        result = capture(Connection(rows=[row]), LINEAGE, EPOCH)
+        self.assertEqual(result["account_origins"][0]["balance"], [0, 0, 0, 0])
+        self.assertEqual(row["posting_count"], 0)
+        self.assertEqual(row["account_count"], 1)
+
     def test_baseline_claim_books_are_cached_and_globally_bounded(self):
         current, retained = EPOCH.hex(), "88" * 16
         claims = [{"operation_reason": 38, "operation_id": OP.hex(),
@@ -359,9 +452,9 @@ class OriginTests(unittest.TestCase):
 
     def test_cross_witness_duplicate_origin_refuses(self):
         first = witness()
-        second = copy.deepcopy(first)
-        second["operation_id"] = bytes.fromhex("99" * 16)
-        second["book_revision"] = 2
+        blob = bytearray(first["canonical_witness"])
+        struct.pack_into("<Q", blob, 72, 2)
+        second = baseline_root(bytes(blob), revision=2)
         connection = Connection(
             control={"opening_account": OPENING, "revision": 2,
                      "last_operation_id": second["operation_id"]}, rows=[first, second])

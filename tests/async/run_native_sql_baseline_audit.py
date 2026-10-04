@@ -21,7 +21,7 @@ if (os.environ.get("TEST_DB_DISPOSABLE") != "1" or os.environ.get("ENVIRONMENT")
         not os.environ.get("DB_SOCKET", "").startswith("/plan5-restore-baseline-")):
     raise SystemExit("fresh private baseline daemon/socket required")
 fixture = Path(os.environ["DURIS_PLAN5_BASELINE_FIXTURE"]).resolve()
-assert fixture.is_relative_to((ROOT / "bin/tests/plan5-native-baseline-audit").resolve())
+assert fixture.is_relative_to((ROOT / "bin/tests/plan5-baseline-root-binding").resolve())
 settings = dict(unix_socket=os.environ["DB_SOCKET"], user=os.environ["DB_USER"],
                 password=os.environ["DB_PASSWD"], database="duris_restore", autocommit=True,
                 cursorclass=pymysql.cursors.DictCursor, read_timeout=30, write_timeout=30)
@@ -173,6 +173,43 @@ try:
     old_epoch = bytes.fromhex(native["epochs"][0])
     lineage = bytes.fromhex(native["lineage"])
     claims = {row["operation_id"]: row for row in intact["economic_accounting_source_claim"]}
+    def root_fault(operation):
+        return ({"findings": {"baseline_source_claim": 1}} if operation == old else
+                {"refusal": "EAB1 committed root mismatch"})
+
+    for operation, scope_name in ((selected, "selected"), (old, "retained")):
+        retained_witness = next(row for row in intact["economic_baseline_witness"] if row["operation_id"] == operation)
+        original_blob = retained_witness["canonical_witness"]
+        item_offset = 192 + retained_witness["holding_count"] * 112
+        for label, offset in (("opening-value", 232), ("actor", 64), ("boundary", 120), ("coverage", 152),
+                              ("holding-revision", 264), ("holding-source", 272),
+                              ("item-owner", item_offset + 16), ("item-revision", item_offset + 48),
+                              ("item-source", item_offset + 56)):
+            blob = bytearray(original_blob)
+            blob[offset] ^= 1
+            query = "UPDATE economic_baseline_witness SET canonical_witness=%s,witness_digest=%s WHERE operation_id=%s"
+            cut(scope_name + "-" + label + "-rehashed",
+                [(query, (bytes(blob), hashlib.sha256(blob).digest(), operation))],
+                [(query, (original_blob, retained_witness["witness_digest"], operation))], **root_fault(operation))
+        for column, changed in (("actor_id", 8), ("writer_id", 5), ("compiler_version", 2),
+                                ("account_count", 0), ("before_witness_count", 0),
+                                ("intent_digest", bytes([1]) * 32), ("domain_digest", bytes([2]) * 32),
+                                ("plan_digest", bytes([3]) * 32)):
+            field(scope_name + "-root-" + column, "economic_accounting_operation", column,
+                  operation, changed, **root_fault(operation))
+        for column, changed in (("durable_revision", 2), ("result_payload", b"x")):
+            field(scope_name + "-receipt-" + column, "critical_operation_inbox", column,
+                  operation, changed, **root_fault(operation))
+        root_row = next(row for row in intact["economic_accounting_operation"] if row["operation_id"] == operation)
+        for column, offset in (("canonical_intent", 96), ("canonical_plan", 76)):
+            damaged = bytearray(root_row[column])
+            damaged[offset] ^= 1
+            digest_column = "intent_digest" if column == "canonical_intent" else "plan_digest"
+            tagged = b"DURIS-ECONOMIC-INTENT-V1\0" if column == "canonical_intent" else b""
+            query = "UPDATE economic_accounting_operation SET " + column + "=%s," + digest_column + "=%s WHERE operation_id=%s"
+            cut(scope_name + "-" + column + "-metadata-rehashed",
+                [(query, (bytes(damaged), hashlib.sha256(tagged + damaged).digest(), operation))],
+                [(query, (root_row[column], root_row[digest_column], operation))], **root_fault(operation))
     for operation, label in ((old, "retained-claim-missing"), (selected, "selected-claim-missing")):
         claim = claims[operation]
         cut(label, [("DELETE FROM economic_accounting_source_claim WHERE operation_id=%s", (operation,))],
@@ -190,11 +227,13 @@ try:
           old, changed_source, {"baseline_source_claim": 1, "lineage_missing_source_claim": 1}, broken_fk=True)
     for operation, other, label in ((old, selected, "retained-root-reuses-selected-source"),
                                     (selected, old, "selected-root-reuses-retained-source")):
+        source_fault = ({"findings": {"baseline_source_claim": 1, "lineage_missing_source_claim": 1,
+                                      "lineage_duplicate_source_event": 1}} if operation == old else
+                        {"refusal": "EAB1 committed root mismatch"})
         field(label, "economic_accounting_operation", "source_event", operation, claims[other]["source_event"],
-              {"orphan_source_claim": 1, "lineage_missing_source_claim": 1, "lineage_duplicate_source_event": 1},
-              broken_fk=True)
+              broken_fk=True, **source_fault)
     field("retained-required-source-missing", "economic_accounting_operation", "source_event", old, None,
-          {"orphan_source_claim": 1, "lineage_missing_required_source_event": 1}, broken_fk=True)
+          {"baseline_source_claim": 1, "lineage_missing_required_source_event": 1}, broken_fk=True)
     field("retained-receipt-not-committed", "critical_operation_inbox", "status", old, 0,
           {"baseline_source_claim": 1})
     field("selected-receipt-not-committed", "critical_operation_inbox", "status", selected, 0,
