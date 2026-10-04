@@ -163,18 +163,21 @@ baseline source8b6dbff6d4249cad943c0c61134a703cff1c08934213415c3ee5c275f2687b13;
 lifecycle source3ddf535b07305e8305b05f5ecdd8be5fb317bcd50683de3e14f1e3c42b7a8e51.
 These are source-review inputs, not published production bytes or runtime proof.
 
-## Native origin source integration; qualification pending
 
-The seven-file native origin and central lifecycle registration slice is now
-integrated. Its version 3 catalog layout, fixed origin values/invariants and
-unchanged version 1 lifecycle receipt are exactly the interface described above.
-Generic same-ID initialization retains baseline origin; unrelated old catalogs
-retain unknown origin. Required-file discovery must derive the original filename
-from each known lifecycle initializer. Private descriptors remain protected.
+## Primary source integration now available; native qualification pending
 
-Independent persistence source review, changed-line clang 18 formatting and
-AST/JSON/diff hygiene pass. Native compatibility, original atomic/fault recovery
-and matching independent Plan5 v3 consumption remain pending; existing v1/v2
-reader results cannot qualify new v3 state. No production activation, data
-conversion, new store, optional framework or additional acceptance gate is added.
-The dependent retained flat startup owner is a separate source slice.
+The described v3 origin interface and central lifecycle registration are now
+integrated, along with native retained flat runtime reconstruction and trusted
+configured-root startup/shutdown. The wire layout and canonical v1 receipt above
+are unchanged from the prepared handoff. The original initializer selects the
+required file; generic same-ID initialization is explicitly a different origin.
+All 14 input pins are in the primary private integration receipt and the registry's
+candidate-worktree evidence. Source review passes; no new native result is claimed.
+
+The independently owned present-file reader 9306818b5 was normally integrated
+and pushed as 621ba722b. Its v1/v2 parser remains authoritative within that input
+scope; new v3 source is unqualified until Plan5 adds the independent matching
+origin reader and required-file discovery. Primary owns native compatibility,
+the original atomic/recovery and startup/gameplay qualification. Plan5 owns its
+independent consumer/audit cuts. There is no production activation, data migration,
+new receipt store, optional framework or added acceptance gate.
