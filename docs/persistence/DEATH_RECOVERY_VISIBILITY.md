@@ -162,6 +162,12 @@ native conflict-evidence fixture and explicit disposable database guards.
 
 ## Historical obligations
 
+Issue #526 now has a separate [guarded payload repair workflow](ITEM_PAYLOAD_REPAIR.md)
+for an exact UID under existing active SQL player custody. Its preparation requires
+complete identity-bound native evidence; absent evidence remains a classified
+refusal. A `payload_repair` receipt is not a death delivery. Visibility must not
+interpret the receipt alone as historical restitution or a resolved incident.
+
 Validation on 2026-10-03 passed native disposition fixtures and protected status
 journeys on MariaDB 10.11.19 and MySQL 8.0.46 for master and the accounting port.
 Both branches passed `make -C src`, the flatfile build, the relevant executable
