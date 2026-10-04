@@ -1,9 +1,11 @@
 # Portable copyover format and recovery
 
-Copyover file version **18** replaces the native version 17 writer. New files use
+Copyover file version **19** combines portable world recovery with telemetry
+account ownership. New files use
 magic `DCOF`, explicit little-endian integers, typed records with declared payload
-lengths, and a whole-file CRC-32. Native `COPY` versions **12–17** remain readable
-only on the known compatible legacy ABI. Redis recovery and its in-memory buffer
+lengths, and a whole-file CRC-32. Portable `DCOF` version **18** remains readable.
+Native `COPY` versions **12–18** remain readable only on the known compatible
+legacy ABI. Redis recovery and its in-memory buffer
 interfaces are unchanged.
 
 The format is implemented in `src/persistence/copyover_codec.c`. Its explicit
@@ -12,7 +14,7 @@ integer encoding and checksum follow the local player save journal pattern.
 is a pattern reference for bounded decoding and atomic publication; that change
 converted board and house persistence, rather than copyover.
 
-## Version 18 header
+## Portable version 18/19 header
 
 The header is exactly 64 bytes. All multibyte fields are little endian. Signed
 integers use two's complement. Lengths and counts are unsigned.
@@ -20,7 +22,7 @@ integers use two's complement. Lengths and counts are unsigned.
 | Offset | Width | Field |
 | ---: | ---: | --- |
 | 0 | 4 bytes | Magic `DCOF` |
-| 4 | u32 | File version, exactly 18 |
+| 4 | u32 | File version: writer 19; reader 18 or 19 |
 | 8 | u32 | Header size, exactly 64 |
 | 12 | u32 | Byte-order marker `0x01020304`, stored `04 03 02 01` |
 | 16 | i64 | Timestamp, Unix seconds; must fit the recovering host's `time_t` |
@@ -48,7 +50,7 @@ descriptor, mob, and telemetry strings. There is no native alignment padding.
 | Kind | Payload bytes | Fields, in encoding order |
 | ---: | ---: | --- |
 | 1: descriptor | 670 | i32 fd; strings player name[50], host[50], host2[254]; i8 terminal type; five i32 values (GMCP, compression, room rnum, MTTS flags, retired charset field); client[64], retired terminal[32]; i32 fighting type/id, fighting name[50]; u32 pet count; three arrays of ten i32 values (pet vnums, hit, max hit); u8 death retry pending, i32 retry delay, u64 corpse UID |
-| 2: telemetry | 183 | i32 fd, player name[50], u8 validity; session producer boot/process IDs, sequence, subject ID (four u64); i32 player ID; eleven u64 values (season, environment, previous producer boot/process IDs, checkpoint revision, six cumulative counters); u32 quality flags |
+| 2: telemetry | 207 in version 19; 183 in version 18 | i32 fd, player name[50], u8 validity; session producer boot/process IDs, sequence, subject ID (four u64); i32 player ID; eleven u64 values (season, environment, previous producer boot/process IDs, checkpoint revision, six cumulative counters); u32 quality flags. Version 19 appends u64 account token, i64 ownership observation UTC microseconds, u32 ownership quality flags, u8 ownership source and three reserved zero bytes. |
 | 3: mob | 356 | Twelve i32 values (vnum, instance ID, room vnum, hit/max hit, mana/max mana, vitality/max vitality, position, fighting type/id); fighting name[50]; u32 affect count; 43 i32 equipment vnums; u32 inventory count; i32 gold/birthplace; four i32 transport values (origin, destination, state, step), rider[50]; i32 shopkeeper shop ID |
 | 4: affect | 59 | i16 type, i8 wear-off message index, i32 duration, u32 flags, i32 modifier, two u8 locations, u16 level, five u64 bitvectors |
 | 5: carried item | 4 | i32 vnum. The legacy writer's uninitialized, unused UID is intentionally omitted. |
@@ -112,6 +114,14 @@ optional identities are ignored, and ambiguous or unusable metadata cannot
 borrow another player's session. Framing, checksum, and required-state allocation
 failures reject the entire file.
 
+Ownership validation includes the token, observation time, source, quality flags
+and reserved bytes. Invalid optional ownership discards that telemetry handoff
+while valid descriptor and world state recover. Older files explicitly lack
+ownership evidence. A valid handoff temporarily refused before queue admission
+is retained for a later descriptor sweep; recovery never turns temporary queue
+pressure into a fabricated fresh session. Once admitted, continuity remains
+stable even if subsequent telemetry delivery is lost.
+
 ## Legacy compatibility and deployment
 
 | Native version | Descriptor bytes | Mob bytes | Additional state |
@@ -119,15 +129,17 @@ failures reject the entire file.
 | 12 | 660 | 288 | Object trees and live custody; no durable shopkeeper provenance |
 | 13 | 660 | 356 | Transport state and durable shopkeeper provenance |
 | 14 | 660 | 356 | Generated NPC extension |
-| 15 | 660 | 356 | Native telemetry header/entries |
+| 15 | 660 | 356 | Native `TLMY` version 1 telemetry header/entries |
 | 16 | 660 | 360 | Exact shopkeeper shop binding; `-1` for older records |
 | 17 | 680 | 360 | Death retry state |
+| 18 | 680 | 360 | Native `TLMY` version 2 telemetry entries with account ownership |
 
 The legacy ABI gate requires little-endian LP64: 32-bit `int`, signed 64-bit
 `time_t`, 64-bit `unsigned long`, and the checked historical sizes and offsets of
 all nested structures. These include the 40-byte header, 64-byte affects,
 16-byte carried entries, 3328-byte object items, 72-byte custody entries, and
-200-byte telemetry entries. Legacy padding is ignored; the unused carried UID
+200-byte telemetry entries for versions 15–17 and 224-byte entries for native
+version 18. Legacy padding is ignored; the unused carried UID
 is never used as authority. All supported legacy files receive complete bounds
 and state validation before recovery. Unknown versions, reversed byte order,
 incompatible layouts, and malformed/truncated input are refused with a reason.
@@ -135,12 +147,17 @@ incompatible layouts, and malformed/truncated input are refused with a reason.
 Old files have no ABI tag or checksum. Compatibility can only be established for
 the known layout, and corruption that still forms valid legacy values cannot be
 reliably detected. Do not transfer legacy files between ABIs or treat their
-padding as meaningful state. Version 18 is independent of native padding and
+padding as meaningful state. Portable versions 18 and 19 are independent of native padding and
 field widths on disk, while recovery still requires representable runtime values.
 
-For an upgrade, a running version 17 binary can write its existing file and exec
-the new reader on the compatible host. Subsequent copyovers write version 18.
-An older binary cannot read version 18: rollback to an old reader requires a
+Two branches independently used outer version 18. Magic distinguishes the
+portable `DCOF` file from telemetry's native `COPY` file; both readers remain
+explicitly supported. The combined writer uses version 19 so its extended
+portable telemetry record cannot be mistaken for the shorter version-18 record.
+
+For an upgrade, a running binary can write a supported older file and exec
+the new reader on the compatible host. Subsequent copyovers write version 19.
+An older binary cannot read version 19: rollback to an old reader requires a
 normal restart from the acknowledged durable player/world authorities, or the
 original compatible legacy handoff. Do not change a file's version number to
 force acceptance. Socket descriptors describe this process's inherited sockets;

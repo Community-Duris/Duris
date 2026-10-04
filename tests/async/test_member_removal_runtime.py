@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-from _paths import extract_function
+from _paths import ROOT, extract_function
 
 PRELUDE = r'''
 #include <cassert>
@@ -14,9 +14,14 @@ PRELUDE = r'''
 #include <cstdlib>
 #include <string>
 #include <vector>
+#include "telemetry/telemetry_types.h"
 struct char_data;
 using P_char = char_data *;
-struct group_list { P_char ch; group_list *next; };
+struct group_list {
+    P_char ch;
+    group_list *next;
+    telemetry_group_generation telemetry_generation{};
+};
 struct affected_type { int modifier = 9; };
 struct char_data {
     group_list *group = nullptr;
@@ -72,7 +77,7 @@ void mm_release(int, group_list *node) { released.push_back(node); delete node; 
 void send_to_char(const char *msg, P_char ch) { ch->messages.emplace_back(msg); }
 void update_groupies(P_char ch, bool = false) { ++ch->updates; }
 void telemetry_runtime_game_context(P_char ch, void *) { ++ch->telemetry; }
-enum class telemetry_encounter_outcome { withdrawal = 5 };
+void telemetry_runtime_game_battle_context(P_char ch) { assert(ch && !ch->group); }
 void telemetry_runtime_game_encounter_leave(P_char, telemetry_encounter_outcome) {}
 void telemetry_group_context_changed(group_list *gl) {
     for (; gl; gl = gl->next) ++gl->ch->telemetry;
@@ -257,6 +262,7 @@ with tempfile.TemporaryDirectory(prefix="member-removal-") as directory:
         "g++", "-std=c++20", "-g", "-O1", "-Wall", "-Wextra", "-Werror",
         "-fsanitize=address,undefined", "-fno-sanitize-recover=all",
         "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
+        "-I", str(ROOT / "src"),
         str(source), "-o", str(binary),
     ], check=True)
     env = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",

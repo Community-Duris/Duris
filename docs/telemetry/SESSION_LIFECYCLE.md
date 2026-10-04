@@ -12,23 +12,55 @@ other PII in telemetry records.
 | Runtime bootstrap | `src/net/comm.c:main` | `telemetry_runtime_options_from_environment()` then `telemetry_runtime_init()` | Configuration is resolved once at the server boundary; disabled/unsupported telemetry does not gate login. |
 | Normal account, new character, and WebSocket entry | `src/account/nanny.c:enter_game` | `telemetry_runtime_game_enter`, then `telemetry_runtime_game_context` when `STATE(d) == CON_PLAYING` | `enter_game` is shared by the account and WebSocket flows. The call is after login/world initialization and before the function returns. |
 | Legacy menu entry | `src/account/nanny.c:select_main_menu` | `telemetry_runtime_game_enter`, then `telemetry_runtime_game_context` | The legacy caller changes the descriptor to `CON_PLAYING` after `enter_game`; this is the only entry call outside the shared tail. |
+| Initial qualification or state-capacity recovery | Existing `src/net/comm.c:run_session_input_phase` descriptor sweep, plus context/evidence adapters | `telemetry_runtime_game_presence` | Retries observed playing descriptors even without input. Uses the original PC for switched descriptors; menus and NPCs do not open player sessions. No additional descriptor scan, SQL, filesystem operation, wait or allocation occurs. |
 | Link-loss detach | `src/net/comm.c:close_socket` | `telemetry_runtime_game_connection_transition(...detached)`, then `telemetry_runtime_game_evidence(...linkdead)` | Uses `descriptor.original` for switched immortals. The descriptor transition is recorded before existing disconnect/session-audit work. |
 | Resident reconnect | `src/account/nanny.c:reconnect`, `src/account/account.c:is_char_in_game`, and the direct `src/net/ws_handlers.c` online-character attach | `telemetry_runtime_game_connection_transition(...attached)`, then `telemetry_runtime_game_context` | Runs after the descriptor is attached and marked `CON_PLAYING`; it does not open a second logical session. Legacy nanny, account-selection, and WebSocket reconnects are covered. |
 | Explicit quit | `src/cmd/actoth.c:do_quit` | `telemetry_runtime_game_session_exit(...logout)` | Mortal quit changes the descriptor to `CON_PWD_D_CONF` before terminal save, so the explicit hook runs after a successful save and before extraction while the connection identity is still available. |
 | Camp / rent / terminal unload | `src/cmd/actoth.c:do_camp`, rent callers, and `src/world/handler.c:extract_char_after_terminal_save` | Central `telemetry_runtime_game_session_exit` with `logout` for a live descriptor, otherwise `disconnect` | The handler runs only after the authoritative terminal save succeeds. A nonzero runtime session sequence prevents the explicit quit hook from being emitted twice. |
 | Idle exit | `src/world/limits.c` idle-rent path | `close_socket` detach/linkdead, then the central terminal-save exit hook | Socket close remains before `RENT_LINKDEAD` save, preserving the existing persistence order. AFK transition also requests a context observation. |
 | Admin kick / forced socket close | `src/net/comm.c:close_socket` | Same detach and linkdead adapters as link loss | This records the connection edge without treating a resident character as a logical logout. Any later terminal extraction closes the logical session. |
-| Copyover / process handoff | `src/persistence/copyover.c` | Runtime handoff/resume adapters | Version 15 stores bounded optional telemetry records alongside the existing world format; versions 12–14 resume with absent handoffs. |
+| Copyover / process handoff | `src/persistence/copyover.c` | Runtime handoff/resume adapters | Version 18 stores telemetry-v2 ownership context; versions 15–17 retain the sealed telemetry-v1 layout with absent ownership, and 12–14 resume with absent handoffs. |
 
 The copyover reader bounds telemetry allocation by `FD_SETSIZE`, the server's
 accepted-socket ceiling. Corrupt record fields are consumed and discarded without
 misaligning the following world section. Recovery visits every recovered player
-once: missing, unmatched, or duplicate metadata becomes an absent handoff, and a
-runtime-rejected handoff retries as absent after identity rollback. An absent
+once: missing, unmatched, or duplicate metadata becomes an absent handoff, and an
+invalid handoff retries as absent after identity rollback. Temporary qualification
+or capacity refusal retains the exact supplied or absent handoff in descriptor
+memory for a later observation. An absent
 handoff starts a new session with uncertain/unclosed-tail quality, not fabricated
 continuity. Allocation failure also consumes the framing and falls back to absent
 handoffs. Truncated files and invalid framing still fail closed because the
 mandatory world section cannot be located safely.
+
+Initial writer qualification can finish after gameplay login or copyover recovery.
+The existing descriptor sweep retries missing entry without requiring reconnect
+or a command. A context change or first command can also supply that observation.
+Successful capture starts at the retry's fresh monotonic/UTC anchor; it does not
+claim the earlier login or qualification wait as measured presence. Mere presence
+does not establish human activity: the existing classifier retains unknown time
+until its evidence establishes another category.
+
+For copyover, one runtime-only handoff value per descriptor retains the original
+session key, cumulative counters, checkpoint revision and last observed ownership
+context while admission is unavailable. The old producer's monotonic clock never
+crosses that boundary. The new wire remains readable alongside its explicit v1
+layout. Ownership is reobserved from the authenticated reloaded account at a fresh
+clock; a saved token supplies no current authority. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md#copyover-account-context).
+Detach or exit
+clears the pending value; socket allocation/reuse zeroes the descriptor. After
+admission, later presence calls keep the same IDs and emit no second entry.
+True state-capacity refusal rolls back provisional IDs, permitting a later retry.
+Lifecycle queue loss after state installation keeps those IDs and reports the
+loss, so later activity and checkpoints can continue.
+
+The executable adapter qualification is
+`python3 tests/async/test_telemetry_gameplay_adapters.py`. It covers delayed worker
+qualification, presence without input, command/context recovery, switched players,
+supplied/absent handoffs, cancellation, forbidden/partial identities, full state
+capacity followed by recovery, and lifecycle queue loss. It verifies no observed
+interval begins before the successful retry. This is a focused runtime fixture;
+the final personal server gameplay/save/readback journey is tracked separately.
 
 Handoff creation flushes the activity classifier and snapshots session counters
 at one shared monotonic/UTC observation. If file publication or `exec` fails,

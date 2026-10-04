@@ -72,6 +72,7 @@ struct telemetry_runtime_options
 
 struct char_data;
 struct descriptor_data;
+struct acct_entry;
 
 /* Typed, value-only evidence accepted from gameplay hooks.  The enum values
  * intentionally mirror telemetry_activity_evidence_kind without including the
@@ -109,20 +110,6 @@ struct telemetry_session_enter
 	telemetry_config_id config_id;
 	std::uint32_t classifier_version;
 	std::uint32_t policy_version;
-	telemetry_quality_mask quality_flags;
-};
-
-/* Bounded copyover state; no monotonic timestamp crosses process incarnations.
- * Export after accounting through the handoff cut. Revision is the last allocated
- * checkpoint revision (including dropped checkpoints), zero if none was sealed.
- * Import retains cumulative totals and starts from entry's NEW clock anchor.
- * This is observational state; failure never vetoes gameplay copyover. */
-struct telemetry_session_handoff
-{
-	telemetry_session_ref session;
-	telemetry_producer_id previous_producer;
-	telemetry_checkpoint_revision last_checkpoint_revision;
-	telemetry_cumulative_counters cumulative;
 	telemetry_quality_mask quality_flags;
 };
 
@@ -261,6 +248,7 @@ constexpr bool telemetry_session_resume_is_valid(const telemetry_session_resume 
 		       std::numeric_limits<telemetry_checkpoint_revision>::max() &&
 	       telemetry_cumulative_counters_are_valid(prior.cumulative) &&
 	       telemetry_quality_mask_is_valid(prior.quality_flags) &&
+	       telemetry_ownership_handoff_is_valid(prior.ownership) &&
 	       (entry.quality_flags & prior.quality_flags) == prior.quality_flags;
 }
 
@@ -341,6 +329,14 @@ bool telemetry_runtime_next_session(telemetry_session_id *session) noexcept;
 bool telemetry_runtime_now(telemetry_monotonic_usec *monotonic_usec,
 			   telemetry_utc_usec *utc_usec) noexcept;
 
+/* Account-load preparation may use native account SQL. Call only at the
+ * account persistence boundary, before capture. Unknown identity never gates
+ * authentication; capture uses the cached values and never calls this helper. */
+bool telemetry_runtime_account_prepare(struct acct_entry *account);
+/* Game-thread scope snapshot for an owned account-load job; no SQL or allocation. */
+bool telemetry_runtime_account_scope(std::uint64_t &environment_id,
+				     std::uint64_t &season_id) noexcept;
+
 /*
  * Value-only server-boundary adapters.  They keep gameplay hooks free of
  * session/classifier state-machine construction and never make telemetry
@@ -348,6 +344,11 @@ bool telemetry_runtime_now(telemetry_monotonic_usec *monotonic_usec,
  */
 telemetry_capture_result telemetry_runtime_game_enter(struct char_data *character,
 						      struct descriptor_data *descriptor);
+/* Retry entry for an observed playing descriptor, including a deferred copyover
+ * handoff. Safe on every existing descriptor sweep: admitted IDs are unchanged,
+ * no input is inferred, and no time before successful admission is invented. */
+telemetry_capture_result telemetry_runtime_game_presence(struct char_data *character,
+							 struct descriptor_data *descriptor);
 /* Captures current traced dimensions and publishes a bounded context update.
  * Call after game_enter or copyover resume; no SQL or filesystem work occurs. */
 telemetry_capture_result telemetry_runtime_game_context(struct char_data *character,
@@ -374,6 +375,41 @@ telemetry_capture_result telemetry_runtime_game_evidence(struct char_data *chara
  * telemetry and never gate combat, movement, grouping, rewards, or teardown. */
 telemetry_capture_result telemetry_runtime_game_encounter_begin(struct char_data *character,
 								telemetry_encounter_mode mode);
+/* Accepted hostile edge: observe actual PC participants on both sides.
+ * Pet ownership classifies PvP but never aliases NPC storage as a PC. */
+telemetry_capture_result telemetry_runtime_game_combat_engage(struct char_data *source,
+							      struct char_data *target);
+struct group_list;
+struct telemetry_battle_actor_context;
+struct telemetry_battle_build_context;
+/* Accepted formal-group mutation, called once before roster/context callbacks.
+ * Advance runtime metadata and cut existing observed battle actor contexts. */
+void telemetry_runtime_game_group_changed(struct group_list *) noexcept;
+/* Bounded native value adapters for the shared collector. NPC actor IDs use the
+ * existing live runtime lifetime. Missing links remain absent; these calls do
+ * not start a battle or allocate an authenticated session. */
+bool telemetry_runtime_game_battle_actor(const struct char_data *,
+					 telemetry_battle_actor_context *) noexcept;
+/* Game-thread bounded value snapshot used by cached battle context capture. Call at
+ * reviewed entry/change boundaries, never once per hit. Missing families remain
+ * unavailable, and refusal clears the result. Does not emit a record, create a
+ * session/battle, establish buff ownership or infer an arena match/outcome. */
+bool telemetry_runtime_game_battle_build_context(const struct char_data *,
+						 telemetry_battle_build_context *) noexcept;
+/* Mark selected native state after an accepted mutation. This copies no build,
+ * emits no record and starts no battle; the next bounded observation samples
+ * the live state. Repeated marks coalesce while capture is rate limited. */
+void telemetry_runtime_game_battle_build_changed(const struct char_data *) noexcept;
+/* Proves actual same-room, same formal-roster presence. The association engine
+ * separately requires the source to be an already active battle participant. */
+bool telemetry_runtime_game_battle_group_presence(const struct char_data *,
+						  const struct char_data *,
+						  telemetry_battle_actor_context *,
+						  telemetry_battle_actor_context *) noexcept;
+/* Accepted source boundaries; no battle, session or participation is invented
+ * by a context update or a leave. Leave also operates during config gaps. */
+telemetry_capture_result telemetry_runtime_game_battle_context(struct char_data *);
+telemetry_capture_result telemetry_runtime_game_battle_leave(struct char_data *);
 telemetry_capture_result telemetry_runtime_game_encounter_group_sync(struct char_data *character);
 telemetry_capture_result telemetry_runtime_game_encounter_observe(struct char_data *character);
 telemetry_capture_result
@@ -392,9 +428,41 @@ void telemetry_runtime_game_combat_damage(struct char_data *source, struct char_
 void telemetry_runtime_game_combat_healing(struct char_data *healer, struct char_data *target,
 					   std::uint64_t attempted, std::uint64_t effective,
 					   std::uint32_t modifier_flags) noexcept;
+/* Accepted applications only, after affect mutation and before combat teardown.
+ * Self effects observe an existing battle and never establish a hostile edge.
+ * The typed result API records separately reviewed native rejection paths. */
 void telemetry_runtime_game_combat_control(struct char_data *source, struct char_data *target,
 					   std::uint16_t applications,
 					   std::uint32_t modifier_flags) noexcept;
+/* Selected effective flag banks, read without changing gameplay. Elapsed state
+ * is partial until the producer inventory covers every selected mutation. */
+std::uint16_t telemetry_runtime_game_control_mask(const struct char_data *target) noexcept;
+/* Observe a completed native flag mutation in an existing active battle. This
+ * does not hash a build, enroll an actor or attribute elapsed state to a caster. */
+void telemetry_runtime_game_control_changed(struct char_data *target) noexcept;
+/* Stack-only scope for remove/reapply operations. The character must remain
+ * alive until finish(); use it before teardown, never across character deletion.
+ * Nested scopes and runtime point reads cannot expose intermediate flag banks. */
+class telemetry_control_mutation_scope
+{
+    public:
+	explicit telemetry_control_mutation_scope(struct char_data *,
+						  bool observe_final = true) noexcept;
+	~telemetry_control_mutation_scope() noexcept;
+	void finish() noexcept;
+	telemetry_control_mutation_scope(const telemetry_control_mutation_scope &) = delete;
+	telemetry_control_mutation_scope &
+	operator=(const telemetry_control_mutation_scope &) = delete;
+
+    private:
+	struct char_data *character_;
+	std::uint16_t before_mask_;
+	bool observe_final_;
+};
+void telemetry_runtime_game_combat_control_result(
+	struct char_data *source, struct char_data *target, telemetry_control_family family,
+	telemetry_control_result result, std::uint16_t before_mask, std::int32_t configured_ticks,
+	std::uint16_t flags) noexcept;
 void telemetry_runtime_game_combat_cast_attempt(struct char_data *caster, int spell) noexcept;
 void telemetry_runtime_game_combat_cast_complete(struct char_data *caster) noexcept;
 void telemetry_runtime_game_combat_cast_abort(struct char_data *caster) noexcept;

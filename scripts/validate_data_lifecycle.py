@@ -42,6 +42,20 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "economic_baseline.sql",
     ROOT / "migrations" / "immutable" / "0051_player_item_runtime_state.sql",
     ROOT / "migrations" / "immutable" / "0053_craft_progression.sql",
+    ROOT / "migrations" / "immutable" / "0054_telemetry_incident_coverage.sql",
+    ROOT / "migrations" / "immutable" / "0055_telemetry_observation_projections.sql",
+    ROOT / "migrations" / "immutable" / "0056_telemetry_account_identity.sql",
+    ROOT / "migrations" / "immutable" / "0057_telemetry_ownership_observations.sql",
+    ROOT / "migrations" / "immutable" / "0058_telemetry_identity_review.sql",
+    ROOT / "migrations" / "immutable" / "0059_telemetry_ownership_incident_coverage.sql",
+    ROOT / "migrations" / "immutable" / "0060_telemetry_identity_publication.sql",
+    ROOT / "migrations" / "immutable" / "0061_telemetry_shared_battle_facts.sql",
+    ROOT / "migrations" / "immutable" / "0062_telemetry_battle_contributions.sql",
+    ROOT / "migrations" / "immutable" / "0063_telemetry_battle_source.sql",
+    ROOT / "migrations" / "immutable" / "0064_telemetry_battle_publication.sql",
+    ROOT / "migrations" / "immutable" / "0065_telemetry_battle_builds.sql",
+    ROOT / "migrations" / "immutable" / "0066_telemetry_build_publication.sql",
+    ROOT / "migrations" / "immutable" / "0067_telemetry_typed_control.sql",
     ROOT / "migrations" / "immutable" / "0055_sql_room_item_payload.sql",
 )
 
@@ -104,6 +118,7 @@ REQUIRED_NON_DATABASE_STORES = {
         "recovery_state", "FLATFILE_ROOT/metadata/player-recovery-*.receipt",
     ),
     "file:critical_command_journal": ("journal", "CRITICAL_COMMAND_JOURNAL_DIR"),
+    "file:telemetry_outage_ledger": ("journal", "TELEMETRY_OUTAGE_LEDGER_DIR"),
     "file:persistence_fallback": ("fallback", "legacy persistence fallback file"),
     "file:persistence_fallback_quarantine": (
         "quarantine", "legacy persistence fallback quarantine",
@@ -555,6 +570,12 @@ def validate_manifest(manifest: dict, expected_tables: set[str],
                 entry["terminal_action"] != "retain"):
             raise ValidationError(
                 f"{entry_id}: native flatfile authority must remain protected and retained"
+            )
+        if entry_id == "file:telemetry_outage_ledger" and (
+                not entry["protected_record"] or entry["season_action"] != "retain" or
+                entry["terminal_action"] != "retain"):
+            raise ValidationError(
+                "telemetry coverage evidence must remain protected and retained"
             )
         if entry["protected_record"] and entry["exception"] not in PROTECTED_EXCEPTIONS:
             raise ValidationError(f"{entry_id} protected record lacks a recognized exception")

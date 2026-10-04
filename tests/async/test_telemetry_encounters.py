@@ -27,6 +27,7 @@ def source_contract() -> None:
     runtime = (SRC / "telemetry" / "telemetry_runtime.c").read_text()
     for name in (
         "telemetry_runtime_game_encounter_begin",
+        "telemetry_runtime_game_combat_engage",
         "telemetry_runtime_game_encounter_group_sync",
         "telemetry_runtime_game_encounter_observe",
         "telemetry_runtime_game_encounter_leave",
@@ -37,7 +38,7 @@ def source_contract() -> None:
     assert "telemetry_transport_enqueue" in runtime
 
     fight = (SRC / "combat" / "fight.c").read_text() + (SRC / "combat" / "fight_state.c").read_text()
-    assert "telemetry_runtime_game_encounter_begin" in fight
+    assert "telemetry_runtime_game_combat_engage" in fight
     assert "telemetry_encounter_outcome::death" in fight
     group = (SRC / "guild" / "group.c").read_text()
     assert "telemetry_runtime_game_encounter_group_sync" in group

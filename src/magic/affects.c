@@ -49,6 +49,7 @@ extern unsigned long long ne_event_tick;
 #include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
+#include "telemetry/telemetry_runtime.h"
 #include "world/vnum.obj.h"
 #include "world/weather.h"
 
@@ -1535,6 +1536,7 @@ void all_affects(P_char ch, int mode)
 
 	if (ch == NULL) /* replaced call to SanityCheck with this */
 		return;
+	telemetry_control_mutation_scope control_state(ch, mode != FALSE);
 
 	/* Keep relative ward deadlines current before an equipment transition or
 	 * a full affect rebuild.  The equipment sync below only runs on the apply
@@ -1668,6 +1670,7 @@ char affect_total(P_char ch, int kill_ch)
 		return FALSE;
 	}
 
+	telemetry_control_mutation_scope control_state(ch);
 	all_affects(ch, FALSE); /*
 	                         * effectively resets character to a state
 	                         * with NO affects
@@ -1682,6 +1685,7 @@ char affect_total(P_char ch, int kill_ch)
 	all_affects(ch, TRUE); /*
 	                        * now add them all back
 	                        */
+	control_state.finish(); // The following death branch can destroy the character.
 
 	if (kill_ch && (GET_HIT(ch) < -10) && (GET_STAT(ch) != STAT_DEAD) &&
 	    (IS_NPC(ch) || !ch->desc || (ch->desc && (ch->desc->connected == CON_PLAYING))))
@@ -1819,6 +1823,7 @@ char affect_total(P_char ch, int kill_ch)
 			StartRegen(ch, regen_resource::ward);
 	}
 
+	telemetry_runtime_game_battle_build_changed(ch);
 	return FALSE;
 }
 
@@ -1877,6 +1882,7 @@ void event_short_affect(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 struct affected_type *affect_to_char(P_char ch, struct affected_type *af)
 {
 	struct affected_type *affected_alloc;
+	telemetry_control_mutation_scope control_state(ch);
 
 	if (!dead_affect_pool)
 		dead_affect_pool = mm_create("AFFECTS", sizeof(struct affected_type),
@@ -2047,6 +2053,7 @@ void affect_remove(P_char ch, struct affected_type *af)
 		      (ch ? "no affects." : "no ch."));
 		return;
 	}
+	telemetry_control_mutation_scope control_state(ch);
 
 	/*
 	 * remove structure *af from linked list
@@ -2140,6 +2147,7 @@ void affect_remove(P_char ch, struct affected_type *af)
 void affect_from_char(P_char ch, int skill)
 {
 	struct affected_type *hjp, *tmp;
+	telemetry_control_mutation_scope control_state(ch);
 
 	for (hjp = ch->affected; hjp; hjp = tmp)
 	{
@@ -2241,6 +2249,7 @@ void affect_join(P_char ch, struct affected_type *af, int avg_dur, int avg_mod)
 {
 	struct affected_type *hjp;
 	bool found = FALSE;
+	telemetry_control_mutation_scope control_state(ch);
 
 	for (hjp = ch->affected; !found && hjp; hjp = hjp->next)
 	{
@@ -3285,19 +3294,36 @@ void update_damage_data()
 //   The victim is not blinded if it's !blind.
 bool blind(P_char ch, P_char victim, int duration)
 {
+	const auto before = telemetry_runtime_game_control_mask(victim);
+	const auto record_result = [ch, victim, before](telemetry_control_result result,
+							std::int32_t ticks = 0,
+							std::uint16_t flags = 0U)
+	{
+		telemetry_runtime_game_combat_control_result(ch, victim,
+							     telemetry_control_family::blindness,
+							     result, before, ticks, flags | (0U));
+	};
 	struct affected_type af;
 
-	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
+	if (!IS_ALIVE(ch))
 	{
+		record_result(telemetry_control_result::source_ineligible);
+		return FALSE;
+	}
+	if (!IS_ALIVE(victim))
+	{
+		record_result(telemetry_control_result::target_ineligible);
 		return FALSE;
 	}
 	if (IS_SET(victim->specials.affected_by5, AFF5_NOBLIND))
 	{
+		record_result(telemetry_control_result::immune);
 		return FALSE;
 	}
 
 	if (IS_AFFECTED(victim, AFF_BLIND))
 	{
+		record_result(telemetry_control_result::already_present);
 		act("&+L$N &+Lis already blind as a bat!", TRUE, ch, 0, victim, TO_CHAR);
 		send_to_char("Your eyes hurt briefly, but the feeling dissipates.\r\n", victim);
 		return FALSE;
@@ -3305,11 +3331,13 @@ bool blind(P_char ch, P_char victim, int duration)
 	// Parasites and slime are immune to blindness. Nov08 -Lucrot
 	if (GET_RACE(victim) == RACE_PARASITE || GET_RACE(victim) == RACE_SLIME)
 	{
+		record_result(telemetry_control_result::immune);
 		return FALSE;
 	}
 
-	if (!has_innate(victim, INNATE_EYELESS) && !isname("_noblind_", GET_NAME(victim)) &&
-	    !IS_TRUSTED(victim))
+	const bool blind_immune = has_innate(victim, INNATE_EYELESS) ||
+				  isname("_noblind_", GET_NAME(victim));
+	if (!blind_immune && !IS_TRUSTED(victim))
 	{
 		act("&+L$n &+Lseems to be blinded!", TRUE, victim, 0, 0, TO_ROOM);
 		send_to_char("&+LYou have been blinded!\r\n", victim);
@@ -3321,26 +3349,42 @@ bool blind(P_char ch, P_char victim, int duration)
 		af.bitvector = AFF_BLIND;
 		af.duration = duration;
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
+		record_result(telemetry_control_result::applied, af.duration, 0U);
 		return TRUE;
 	}
 
+	record_result(blind_immune ? telemetry_control_result::immune :
+				     telemetry_control_result::target_protected);
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------------
 void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 {
+	const auto before = telemetry_runtime_game_control_mask(stunnee);
+	const auto record_result = [stunner, stunnee, before](telemetry_control_result result,
+							      std::int32_t ticks = 0,
+							      std::uint16_t flags = 0U)
+	{
+		telemetry_runtime_game_combat_control_result(stunner, stunnee,
+							     telemetry_control_family::stun, result,
+							     before, ticks, flags | (0U));
+	};
 	struct affected_type af;
 	int attlevel = GET_LEVEL(stunner), deflevel = GET_LEVEL(stunnee);
 
 	if (!IS_ALIVE(stunnee))
 	{
+		record_result(telemetry_control_result::target_ineligible);
 		return;
 	}
 
 	// Elite mobs are !stun. Oct08 -Lucrot
 	if (IS_ELITE(stunnee))
 	{
+		record_result(telemetry_control_result::immune);
 		return;
 	}
 
@@ -3351,12 +3395,14 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 	{
 		if (!number(0, (int)BOUNDED(0, (60 - deflevel), 59)))
 		{
+			record_result(telemetry_control_result::immune);
 			return;
 		}
 	}
 
 	if (IS_AFFECTED2(stunnee, AFF2_STUNNED))
 	{
+		record_result(telemetry_control_result::already_present);
 		send_to_char("&+wIf you could get more stunned you would.\r\n", stunnee);
 		return;
 	}
@@ -3378,6 +3424,9 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 			af.bitvector2 = AFF2_STUNNED;
 			af.duration = duration;
 			affect_to_char(stunnee, &af);
+			telemetry_runtime_game_combat_control(stunner, stunnee, 1U,
+							      TELEMETRY_COMBAT_MODIFIER_NONE);
+			record_result(telemetry_control_result::applied, af.duration, 0U);
 
 			send_to_char("&+wThe world starts spinning, and your ears are ringing!\r\n",
 				     stunnee);
@@ -3393,6 +3442,10 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 			af.bitvector2 = AFF2_STUNNED;
 			af.duration = duration / 2;
 			affect_to_char(stunnee, &af);
+			telemetry_runtime_game_combat_control(stunner, stunnee, 1U,
+							      TELEMETRY_COMBAT_MODIFIER_NONE);
+			record_result(telemetry_control_result::applied, af.duration,
+				      TELEMETRY_CONTROL_HALF_STUN);
 
 			send_to_char(
 				"&+wWow that &+Rsmarts... &+Wbut you manage to recover quickly!\r\n",
@@ -3403,6 +3456,8 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 				stop_fighting(stunnee);
 			}
 		}
+		else
+			record_result(telemetry_control_result::saved);
 	}
 	else
 	{
@@ -3412,6 +3467,10 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 		af.bitvector2 = AFF2_STUNNED;
 		af.duration = duration;
 		affect_to_char(stunnee, &af);
+		telemetry_runtime_game_combat_control(stunner, stunnee, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
+		record_result(telemetry_control_result::applied, af.duration,
+			      TELEMETRY_CONTROL_SAVE_BYPASSED);
 
 		send_to_char("&+wThe world starts spinning, and your ears are ringing!\r\n",
 			     stunnee);

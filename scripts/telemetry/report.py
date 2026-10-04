@@ -26,6 +26,11 @@ import tempfile
 import time
 from typing import Any, Callable, Mapping, Sequence
 
+try:
+    from . import incident
+except ImportError:
+    import incident
+
 try:  # Running as a package.
     from .db_access import ConnectionSettings, PyMySQLConnectionFactory
     from .rollup_definitions import (
@@ -66,7 +71,7 @@ REPORT_RUNTIME_DEFAULT_S = 30.0
 REPORT_RUNTIME_HARD_MAX = 3_600.0
 REPORT_ROW_BYTE_BOUND = 2_048
 REPORT_MIN_FETCH_ROWS = 2
-CACHE_SCHEMA_VERSION = 1
+CACHE_SCHEMA_VERSION = 2
 MICROSECONDS_PER_HOUR = 3_600_000_000
 UINT64_MAX = (1 << 64) - 1
 UINT32_MAX = (1 << 32) - 1
@@ -1115,6 +1120,20 @@ class ReportDatabase:
             source_rows_fetched=len(rows),
         )
 
+    def _read_incident_coverage(self, target: RollupTarget, state: Mapping[str, Any], *, max_bytes: int) -> Mapping[str, Any]:
+        where, parameters = _scope_where(target)
+        predicate = " AND ".join(where)
+        metas = self._execute("SELECT " + ",".join(incident.PUBLICATION_COLUMNS) +
+                              " FROM telemetry_rollup_incident_coverage WHERE " + predicate + " LIMIT 1", parameters)
+        if metas and (int(metas[0]["incident_count"]) + 1) * incident.INCIDENT_ROW_BYTE_BOUND > max_bytes:
+            raise BoundsExceeded("incident coverage exceeds report byte reservation")
+        rows = self._execute("SELECT " + ",".join((*incident.INCIDENT_COLUMNS, "occurrence_relation")) +
+                             " FROM telemetry_rollup_incident FORCE INDEX(PRIMARY) WHERE " + predicate +
+                             " ORDER BY incident_id LIMIT %s", (*parameters, incident.MAX_INCIDENTS + 1))
+        return incident.public_coverage(metas[0] if metas else None, rows,
+                                        occurrence_window=incident.occurrence_window(state),
+                                        registry_schema_version=incident.generation_schema(target.definition_version))
+
     def read(self, request: ReportRequest) -> dict[str, Any]:
         request.validate()
         self.deadline = self.clock() + float(request.max_runtime_s)
@@ -1152,6 +1171,7 @@ class ReportDatabase:
                 target,
                 state,
                 snapshot_high_watermark=int(state["rebuild_through_ingest_id"]),
+                incident_coverage=self._read_incident_coverage(target, state, max_bytes=request.max_bytes),
             )
             coverage_public = coverage.public_dict()
             coverage_public["occurrence_bounds_known"] = coverage.occurrence_bounds_known

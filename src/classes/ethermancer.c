@@ -1,4 +1,5 @@
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -1460,6 +1461,7 @@ void event_tupor_wake(P_char /*ch*/, P_char victim, P_obj /*obj*/, void * /*data
 	if (IS_AFFECTED(victim, AFF_SLEEP))
 	{
 		REMOVE_BIT(victim->specials.affected_by, AFF_SLEEP);
+		telemetry_runtime_game_control_changed(victim);
 	}
 
 	do_wake(victim, NULL, CMD_WAKE);

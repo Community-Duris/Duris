@@ -72,7 +72,14 @@ bool handoff_equal(const telemetry_session_handoff &left,
 	       producer_equal(left.previous_producer, right.previous_producer) &&
 	       left.last_checkpoint_revision == right.last_checkpoint_revision &&
 	       counters_equal(left.cumulative, right.cumulative) &&
-	       left.quality_flags == right.quality_flags;
+	       left.quality_flags == right.quality_flags &&
+	       left.ownership.account_token == right.ownership.account_token &&
+	       left.ownership.observed_at_utc_usec == right.ownership.observed_at_utc_usec &&
+	       left.ownership.quality_flags == right.ownership.quality_flags &&
+	       left.ownership.source == right.ownership.source &&
+	       left.ownership.reserved[0] == right.ownership.reserved[0] &&
+	       left.ownership.reserved[1] == right.ownership.reserved[1] &&
+	       left.ownership.reserved[2] == right.ownership.reserved[2];
 }
 
 bool transition_equal(const telemetry_connection_transition &left,
@@ -257,7 +264,8 @@ std::size_t find_empty_slot(const telemetry_session_state *state) noexcept
 std::size_t find_closed_slot(const telemetry_session_state *state) noexcept
 {
 	for (std::size_t index = 0; index < state->max_slots; ++index)
-		if (state->slots[index].lifecycle == telemetry_session_slot_lifecycle::closed)
+		if (state->slots[index].lifecycle == telemetry_session_slot_lifecycle::closed &&
+		    state->slots[index].ownership_pending_count == 0U)
 			return index;
 	return state->max_slots;
 }
@@ -271,7 +279,8 @@ std::size_t find_expired_detached_slot(const telemetry_session_state *state,
 	{
 		const telemetry_session_slot &slot = state->slots[index];
 		if (slot.lifecycle != telemetry_session_slot_lifecycle::resident ||
-		    slot.connected != 0U || now < slot.detached_since_monotonic_usec ||
+		    slot.ownership_pending_count != 0U || slot.connected != 0U ||
+		    now < slot.detached_since_monotonic_usec ||
 		    now - slot.detached_since_monotonic_usec < state->detached_retire_after_usec)
 			continue;
 		if (best == state->max_slots || slot.detached_since_monotonic_usec < oldest)
@@ -359,6 +368,39 @@ bool emit_record(telemetry_session_state *state, telemetry_record &record,
 	if (!allocate_key(state, record.header.kind, record, result, session, connection))
 		return false;
 	return submit_record(state, record, result, session, connection);
+}
+
+bool drain_ownership(telemetry_session_state *state, telemetry_session_slot &slot,
+		     telemetry_session_state_result &result) noexcept
+{
+	for (unsigned attempt = 0U; attempt < 2U && slot.ownership_pending_count; ++attempt)
+	{
+		auto &record = slot.ownership_pending[0];
+		// A false sink admission has not established an immutable persisted key.
+		// Other records may have admitted meanwhile, so retry in admission order
+		// with the original clock/payload and a fresh key. SQL retry is downstream
+		// of a successful admission and retains that admitted key unchanged.
+		record.header.key = {};
+		if (!allocate_key(state, telemetry_record_kind::ownership, record, result,
+				  &slot.session, &record.payload.ownership.connection))
+			return false;
+		if (!submit_record(state, record, result, &slot.session,
+				   &record.payload.ownership.connection))
+			return false;
+		if (slot.ownership_overflow && slot.ownership_pending_count == 1U)
+		{
+			slot.ownership_overflow = 0U;
+			slot.ownership_needs_anchor = 1U;
+		}
+		else if (!slot.ownership_overflow)
+			slot.ownership_needs_anchor = 0U;
+		--slot.ownership_pending_count;
+		slot.ownership_pending[0] = slot.ownership_pending_count ?
+						    slot.ownership_pending[1] :
+						    telemetry_record{};
+		slot.ownership_pending[1] = {};
+	}
+	return slot.ownership_pending_count == 0U;
 }
 
 bool emit_pending_gap(telemetry_session_state *state, telemetry_session_state_result &result,
@@ -574,7 +616,8 @@ bool handoff_is_zero(const telemetry_session_handoff &handoff) noexcept
 	       telemetry_producer_id_is_zero(handoff.previous_producer) &&
 	       handoff.last_checkpoint_revision == 0U &&
 	       counters_equal(handoff.cumulative, telemetry_cumulative_counters{}) &&
-	       handoff.quality_flags == TELEMETRY_QUALITY_NONE;
+	       handoff.quality_flags == TELEMETRY_QUALITY_NONE &&
+	       telemetry_ownership_handoff_is_zero(handoff.ownership);
 }
 
 telemetry_session_state_result
@@ -658,6 +701,7 @@ telemetry_session_state_result checkpoint_at_slot(telemetry_session_state *state
 		return result;
 	}
 	slot.quality_flags |= elapsed_quality;
+	(void)drain_ownership(state, slot, result);
 	(void)emit_pending_gap(state, result, at_utc_usec, &slot.session, &connection);
 	telemetry_record record{};
 	record.header.schema_version = TELEMETRY_SCHEMA_VERSION;
@@ -858,6 +902,7 @@ telemetry_session_state_transition(telemetry_session_state *state,
 				quality))
 		return result;
 	const telemetry_connection_id closing_connection = slot.connection;
+	(void)drain_ownership(state, slot, result);
 	slot.connection = ZERO_CONNECTION_ID;
 	slot.connected = 0U;
 	slot.mode = telemetry_session_accounting_mode::linkdead;
@@ -871,6 +916,111 @@ telemetry_session_state_transition(telemetry_session_state *state,
 			       transition.at_monotonic_usec, transition.at_utc_usec, quality);
 	result_merge(result, emitted);
 	result.outcome = emitted.outcome;
+	result_from_slot(result, slot);
+	return result;
+}
+
+telemetry_session_state_result
+telemetry_session_state_observe_ownership(telemetry_session_state *state,
+					  telemetry_ownership_payload observation) noexcept
+{
+	auto result = result_with(telemetry_session_state_outcome::invalid);
+	if (!state_ready(state) || !telemetry_ownership_payload_is_valid(observation) ||
+	    !producer_equal(observation.connection.producer, state->producer))
+		return result;
+	const int found = find_slot(state, observation.session);
+	if (found < 0)
+		return found == -1 ? result_with(telemetry_session_state_outcome::not_found) :
+				     result;
+	auto &slot = state->slots[static_cast<std::size_t>(found)];
+	if (slot.lifecycle != telemetry_session_slot_lifecycle::resident || !slot.connected ||
+	    !connection_equal(slot.connection, observation.connection) ||
+	    observation.at_monotonic_usec < slot.last_observed_monotonic_usec ||
+	    (slot.ownership_has_sample &&
+	     observation.at_monotonic_usec < slot.ownership_last_sample.at_monotonic_usec))
+		return result;
+	const bool changed =
+		!slot.ownership_has_sample ||
+		observation.account_token != slot.ownership_last_sample.account_token ||
+		!connection_equal(observation.connection, slot.ownership_last_sample.connection);
+	if (slot.ownership_has_sample && changed &&
+	    observation.at_monotonic_usec == slot.ownership_last_sample.at_monotonic_usec)
+	{
+		// Conflicting ownership at one clock point cannot establish a duration.
+		slot.quality_flags |= TELEMETRY_QUALITY_CLOCK_DISCONTINUITY;
+		result_from_slot(result, slot);
+		return result;
+	}
+	if (observation.account_token == 0U)
+		observation.source = telemetry_ownership_source::unavailable;
+	else if (!slot.ownership_has_sample)
+		observation.source =
+			slot.has_resume_snapshot ? telemetry_ownership_source::copyover :
+			!connection_equal(observation.connection, slot.entry_connection) ?
+						   telemetry_ownership_source::reconnect :
+						   observation.source;
+	else if (!connection_equal(observation.connection, slot.ownership_last_sample.connection))
+		observation.source = telemetry_ownership_source::reconnect;
+	else if (changed)
+		observation.source = telemetry_ownership_source::ownership_changed;
+	observation.quality_flags |= slot.quality_flags;
+	const bool fresh_anchor =
+		slot.ownership_needs_anchor &&
+		(!slot.ownership_has_sample ||
+		 observation.at_monotonic_usec > slot.ownership_last_sample.at_monotonic_usec);
+	const bool had_pending = slot.ownership_pending_count != 0U;
+	const bool drained = drain_ownership(state, slot, result);
+	const bool recovered_anchor =
+		slot.ownership_needs_anchor &&
+		(!slot.ownership_has_sample ||
+		 observation.at_monotonic_usec > slot.ownership_last_sample.at_monotonic_usec);
+	if ((fresh_anchor || recovered_anchor) && observation.account_token &&
+	    slot.ownership_has_sample &&
+	    connection_equal(observation.connection, slot.ownership_last_sample.connection))
+		observation.source = telemetry_ownership_source::ownership_changed;
+	const auto actual_sample = observation;
+	if (changed || fresh_anchor || recovered_anchor)
+	{
+		bool retain = drained;
+		if (!drained && slot.ownership_pending_count == 1U && !slot.ownership_overflow)
+		{
+			// Keep the earliest missing transition, without choosing a later owner
+			// for a span in which several ownership changes may be lost.
+			observation.account_token = 0U;
+			observation.source = telemetry_ownership_source::unavailable;
+			observation.quality_flags |= TELEMETRY_QUALITY_CARDINALITY_OVERFLOW |
+						     TELEMETRY_QUALITY_QUEUE_DROP |
+						     TELEMETRY_QUALITY_SEQUENCE_GAP;
+			slot.ownership_overflow = 1U;
+			retain = true;
+		}
+		if (retain)
+		{
+			auto &record = slot.ownership_pending[slot.ownership_pending_count++];
+			record = {};
+			record.header.schema_version = TELEMETRY_SCHEMA_VERSION;
+			record.header.kind = telemetry_record_kind::ownership;
+			record.header.occurrence_utc_usec = observation.at_utc_usec;
+			record.payload.ownership = observation;
+			if (drained)
+				(void)drain_ownership(state, slot, result);
+		}
+		else
+			slot.quality_flags |= TELEMETRY_QUALITY_CARDINALITY_OVERFLOW |
+					      TELEMETRY_QUALITY_SEQUENCE_GAP;
+	}
+	// Preserve the actual current sample, even if its emitted loss marker is unknown.
+	// A recovery anchor must use a later observation, never a stale saved owner.
+	slot.ownership_has_sample = 1U;
+	slot.ownership_last_sample = actual_sample;
+	result.outcome =
+		slot.ownership_pending_count ?
+			(telemetry_record_key_is_valid(slot.ownership_pending[0].header.key) ?
+				 telemetry_session_state_outcome::sink_rejected :
+				 telemetry_session_state_outcome::allocator_exhausted) :
+			(changed || had_pending || result.records_accepted ?
+				 telemetry_session_state_outcome::accepted :
+				 telemetry_session_state_outcome::idempotent);
 	result_from_slot(result, slot);
 	return result;
 }
@@ -1000,6 +1150,7 @@ telemetry_session_state_result telemetry_session_state_exit(telemetry_session_st
 	if (!account_elapsed_to(slot, exit.at_monotonic_usec, exit.at_utc_usec, quality))
 		return result;
 	slot.quality_flags |= quality;
+	(void)drain_ownership(state, slot, result);
 	telemetry_session_state_result checkpoint =
 		checkpoint_at_slot(state, slot, exit.at_monotonic_usec, exit.at_utc_usec);
 	result_merge(result, checkpoint);
@@ -1063,10 +1214,22 @@ telemetry_session_state_result telemetry_session_state_handoff_copy_at(
 	telemetry_session_slot &slot = state->slots[static_cast<std::size_t>(found)];
 	if (slot.lifecycle == telemetry_session_slot_lifecycle::closed)
 		return result_with(telemetry_session_state_outcome::not_found);
+	if (slot.ownership_has_sample &&
+	    now_monotonic_usec < slot.ownership_last_sample.at_monotonic_usec)
+		return result;
 	telemetry_quality_mask quality = slot.quality_flags;
 	if (!account_elapsed_to(slot, now_monotonic_usec, now_utc_usec, quality))
 		return result;
 	slot.quality_flags |= quality;
+	if (!drain_ownership(state, slot, result))
+	{
+		result.outcome =
+			telemetry_record_key_is_valid(slot.ownership_pending[0].header.key) ?
+				telemetry_session_state_outcome::sink_rejected :
+				telemetry_session_state_outcome::allocator_exhausted;
+		result_from_slot(result, slot);
+		return result;
+	}
 	// A successful handoff must not silently discard explicit pending loss.
 	// This is one nonblocking RAM admission attempt, never a durability wait.
 	if (!emit_pending_gap(state, result, now_utc_usec, &slot.session, &slot.connection))
@@ -1084,6 +1247,21 @@ telemetry_session_state_result telemetry_session_state_handoff_copy_at(
 	handoff->quality_flags = slot.quality_flags | (state->pending_control_drops != 0U ?
 							       TELEMETRY_QUALITY_QUEUE_DROP :
 							       TELEMETRY_QUALITY_NONE);
+	if (slot.ownership_has_sample)
+	{
+		const auto &sample = slot.ownership_last_sample;
+		handoff->ownership.account_token =
+			slot.ownership_needs_anchor ? 0U : sample.account_token;
+		handoff->ownership.observed_at_utc_usec = sample.at_utc_usec;
+		handoff->ownership.source = handoff->ownership.account_token ?
+						    sample.source :
+						    telemetry_ownership_source::unavailable;
+		handoff->ownership.quality_flags = sample.quality_flags | slot.quality_flags;
+		if (slot.ownership_needs_anchor)
+			handoff->ownership.quality_flags |= TELEMETRY_QUALITY_CARDINALITY_OVERFLOW |
+							    TELEMETRY_QUALITY_QUEUE_DROP |
+							    TELEMETRY_QUALITY_SEQUENCE_GAP;
+	}
 	result.outcome = telemetry_session_state_outcome::accepted;
 	result_from_slot(result, slot);
 	return result;
@@ -1198,6 +1376,10 @@ telemetry_session_state_retire_expired(telemetry_session_state *state) noexcept
 		result.outcome = telemetry_session_state_outcome::clock_unavailable;
 		return result;
 	}
+	// Also flush closed and detached owners before allowing their slot to retire.
+	for (std::size_t index = 0; index < state->max_slots; ++index)
+		if (state->slots[index].ownership_pending_count)
+			(void)drain_ownership(state, state->slots[index], result);
 	for (std::size_t count = 0; count < state->max_slots; ++count)
 	{
 		const std::size_t index = find_expired_detached_slot(state, now_monotonic_usec);
@@ -1206,8 +1388,12 @@ telemetry_session_state_retire_expired(telemetry_session_state *state) noexcept
 		telemetry_session_state_result retired = retire_one_at(state, index, now_utc_usec);
 		result_merge(result, retired);
 	}
-	if (result.slots_retired == 0U)
+	if (result.records_dropped)
+		result.outcome = telemetry_session_state_outcome::sink_rejected;
+	else if (result.slots_retired == 0U && result.records_accepted == 0U)
 		result.outcome = telemetry_session_state_outcome::idempotent;
+	else if (result.slots_retired == 0U)
+		result.outcome = telemetry_session_state_outcome::accepted;
 	else
 		result.outcome = telemetry_session_state_outcome::retired;
 	return result;

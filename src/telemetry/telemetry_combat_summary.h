@@ -13,28 +13,6 @@ inline constexpr std::size_t TELEMETRY_COMBAT_SUMMARY_MAX_ACTIVE = 128U;
 inline constexpr std::size_t TELEMETRY_COMBAT_SUMMARY_MAX_ACTORS =
 	TELEMETRY_COMBAT_SUMMARY_MAX_PARTICIPANTS;
 
-struct telemetry_combat_actor_ref
-{
-	telemetry_id actor_id;
-	telemetry_pid actor_pid;
-	telemetry_subject_id owner_subject_id;
-	telemetry_combat_actor_kind kind;
-	std::uint8_t reserved[3];
-	std::uint16_t power_band;
-};
-
-constexpr bool telemetry_combat_actor_ref_is_valid(const telemetry_combat_actor_ref &actor) noexcept
-{
-	if (!telemetry_combat_actor_kind_is_valid(actor.kind) || actor.actor_id == 0U ||
-	    actor.reserved[0] != 0U || actor.reserved[1] != 0U || actor.reserved[2] != 0U)
-		return false;
-	if (actor.kind == telemetry_combat_actor_kind::player)
-		return actor.actor_pid > 0 && actor.owner_subject_id == actor.actor_id;
-	if (actor.kind == telemetry_combat_actor_kind::pet)
-		return actor.actor_pid == TELEMETRY_UNKNOWN_PID && actor.owner_subject_id != 0U;
-	return actor.actor_pid == TELEMETRY_UNKNOWN_PID && actor.owner_subject_id == 0U;
-}
-
 enum class telemetry_combat_summary_outcome : std::uint8_t
 {
 	accepted = 0,

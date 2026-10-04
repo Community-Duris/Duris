@@ -13,6 +13,17 @@ import time
 import math
 from typing import Any, Callable, Mapping, MutableMapping, Protocol, Sequence, cast
 
+try:
+    from . import observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions, battle_build_contract as builds, control_contract as controls, battle_source
+except ImportError:
+    import observation_semantics as observations
+    import identity_publication
+    import battle_contract as battles
+    import battle_contribution_contract as contributions
+    import battle_build_contract as builds
+    import control_contract as controls
+    import battle_source
+
 try:  # Running as a package.
     from .rollup_definitions import (
         COHORT_DIMENSION_FIELDS,
@@ -309,6 +320,9 @@ class PageContribution:
     player_days: dict[tuple[Any, ...], PlayerDayDelta] = field(default_factory=dict)
     cohorts: dict[tuple[Any, ...], CohortDelta] = field(default_factory=dict)
     members: dict[tuple[Any, ...], MemberDelta] = field(default_factory=dict)
+    observations: observations.ObservationPage = field(default_factory=observations.ObservationPage)
+    identity_inputs: list[Mapping[str, Any]] = field(default_factory=list)
+    battle_inputs: list[Mapping[str, Any]] = field(default_factory=list)
     state_quality_flags: int = 0
     coverage_start_utc_usec: int | None = None
     coverage_end_utc_usec: int | None = None
@@ -451,7 +465,7 @@ def _validate_optional_enums(row: Mapping[str, Any]) -> None:
         "context_quality": range(5),
         "lifecycle": range(5),
         "end_reason": range(6),
-        "gap_reason": range(1, 7),
+        "gap_reason": range(1, 8),
         "backend": range(1, 3),
         "enabled": range(2),
     }
@@ -585,10 +599,10 @@ def _validate_common_row(row: Mapping[str, Any], previous_ingest_id: int | None)
     if previous_ingest_id is not None and ingest_id <= previous_ingest_id:
         raise CursorError("raw page ingest_id values must be strictly increasing")
     schema_version = row.get("schema_version")
-    if schema_version != 1:
+    if isinstance(schema_version, bool) or not isinstance(schema_version, int) or schema_version != 1:
         raise SemanticError(f"unsupported raw telemetry schema_version {schema_version!r}")
     kind = row.get("record_kind")
-    if isinstance(kind, bool) or not isinstance(kind, int) or kind not in range(1, 6):
+    if isinstance(kind, bool) or not isinstance(kind, int) or kind not in range(1, 14):
         raise SemanticError(f"unsupported raw telemetry record_kind {kind!r}")
     return ingest_id
 
@@ -902,11 +916,52 @@ def build_page_contributions(
         start_cursor=start_cursor,
         page_last_ingest_id=start_cursor,
         fetched_rows=len(rows),
-        estimated_bytes=0,
+        estimated_bytes=battle_source.HEADER_BYTE_BOUND if target.definition_version in battle_source.DEFINITION_VERSIONS else 0,
     )
     previous_ingest: int | None = None
     coverage_end_seen: int | None = prior_coverage_end_utc_usec
     seen_replay_keys: set[tuple[int, int, int]] = set()
+
+    def retain_identity_input(row, quality):
+        if target.definition_version == identity_publication.DEFINITION_VERSION:
+            contribution.identity_inputs.append(identity_publication.retain_input(row, target, quality))
+            contribution.estimated_bytes += identity_publication.INPUT_ROW_BYTE_BOUND
+            if max_page_bytes is not None and contribution.estimated_bytes > max_page_bytes:
+                raise BoundsExceeded("retained identity input exceeds page byte budget")
+
+    def retain_battle_input(row):
+        nonlocal coverage_end_seen
+        if target.definition_version not in battle_source.DEFINITION_VERSIONS:
+            return
+        kind = row["record_kind"]
+        if kind not in battle_source.counts(target.scope_tuple):
+            return
+        if tuple(row[name] for name in battle_source.SOURCE_SCOPE[kind]) != target.scope_tuple[2:]:
+            return
+        prefix = {9: "", 10: "battle_", 11: "bc_", 12: "bctx_"}[kind]
+        quality = _normalize_raw_quality(row[prefix + "quality_flags"])
+        occurrence = row["occurrence_utc_usec"]
+        if occurrence == UTC_UNKNOWN:
+            quality |= ROLLUP_QUALITY_UTC_UNKNOWN
+        else:
+            if coverage_end_seen is not None and occurrence < coverage_end_seen:
+                quality |= ROLLUP_QUALITY_LATE_INPUT
+            starts = [value for value in (contribution.coverage_start_utc_usec, occurrence) if value is not None]
+            ends = [value for value in (contribution.coverage_end_utc_usec, occurrence) if value is not None]
+            contribution.coverage_start_utc_usec = min(starts)
+            contribution.coverage_end_utc_usec = max(ends)
+            coverage_end_seen = occurrence if coverage_end_seen is None else max(coverage_end_seen, occurrence)
+        contribution.state_quality_flags |= quality
+        try:
+            retained = battle_source.retain_input(row, target.scope_tuple, quality)
+        except battle_source.SourceError as error:
+            raise SemanticError(str(error)) from error
+        # Reserve both retained values and source verification before the SQL
+        # transaction decodes this page; buffering raw rows is counted separately.
+        contribution.estimated_bytes += battle_source.PUBLICATION_INPUT_BYTE_BOUND
+        if max_page_bytes is not None and contribution.estimated_bytes > max_page_bytes:
+            raise BoundsExceeded("retained battle input exceeds page byte budget")
+        contribution.battle_inputs.append(retained)
 
     for row in rows:
         ingest_id = _validate_common_row(row, previous_ingest)
@@ -918,7 +973,6 @@ def build_page_contributions(
                 f"raw page exceeds max_page_bytes={max_page_bytes}; cursor remains {start_cursor}"
             )
         kind = int(row["record_kind"])
-        _validate_optional_enums(row)
         replay_key = (
             _unsigned(row.get("boot_id"), "boot_id", allow_zero=False),
             _unsigned(row.get("process_id"), "process_id", allow_zero=False),
@@ -927,6 +981,84 @@ def build_page_contributions(
         if replay_key in seen_replay_keys:
             raise SemanticError("raw page contains a duplicate replay key")
         seen_replay_keys.add(replay_key)
+        if kind == 13:
+            try:
+                controls.validate_raw_observation(row)
+            except controls.ControlContractError as error:
+                raise SemanticError(str(error)) from error
+            retain_battle_input(row)
+            # Earlier definitions advance their cursor over valid control
+            # detail without changing their selected source or metric meaning.
+            continue
+        if kind == 12:
+            try:
+                builds.validate_raw_observation(row)
+            except builds.BuildContractError as error:
+                raise SemanticError(str(error)) from error
+            retain_battle_input(row)
+            # Sealed definitions retain their earlier source, amount and
+            # coverage meaning; only definition 6 retains build points.
+            continue
+        if kind == 11:
+            try:
+                contributions.validate_raw_segment(row)
+            except contributions.ContributionContractError as error:
+                raise SemanticError(str(error)) from error
+            retain_battle_input(row)
+            # Existing definitions preserve their earlier amounts; a battle
+            # study must join complete association evidence independently.
+            continue
+        if kind == 10:
+            try:
+                battles.validate_raw_fact(row)
+            except battles.BattleContractError as error:
+                raise SemanticError(str(error)) from error
+            retain_battle_input(row)
+            # Definitions 1/2/3 retain their earlier amounts. Shared battles
+            # require complete packets and independent versioned publication.
+            continue
+        if kind in (6, 7, 8, 9):
+            try:
+                observation = observations.validate_observation(row)
+                # Ownership is retained for the identity generation. It adds
+                # no duration or new metrics to the existing v1/v2 definitions.
+                if kind == 9:
+                    retain_battle_input(row)
+                    if target.definition_version == identity_publication.DEFINITION_VERSION and (
+                        observation["environment_id"], observation["season_id"]) == (target.environment_id, target.season_id):
+                        _day, quality, _occurrence = observations.point_day(observation)
+                        contribution.state_quality_flags |= quality
+                        retain_identity_input(row, quality)
+                    continue
+                # Version 1 keeps its playtime meaning while advancing over
+                # every valid family in the immutable mixed-kind input stream.
+                if target.definition_version == 1:
+                    continue
+                if target.definition_version in battle_source.DEFINITION_VERSIONS:
+                    continue
+                if (observation["environment_id"], observation["season_id"]) != (target.environment_id, target.season_id):
+                    continue
+                day, quality, occurrence = observations.point_day(observation)
+                if occurrence is not None:
+                    if coverage_end_seen is not None and occurrence < coverage_end_seen:
+                        quality |= ROLLUP_QUALITY_LATE_INPUT
+                    starts = [value for value in (contribution.coverage_start_utc_usec, occurrence) if value is not None]
+                    ends = [value for value in (contribution.coverage_end_utc_usec, occurrence) if value is not None]
+                    contribution.coverage_start_utc_usec = min(starts)
+                    contribution.coverage_end_utc_usec = max(ends)
+                    coverage_end_seen = occurrence if coverage_end_seen is None else max(coverage_end_seen, occurrence)
+                contribution.state_quality_flags |= quality
+                # Definition 2 owns the sealed observation tables. Definition 3
+                # retains progression facts for identity publication; its
+                # catalog does not offer the version-2 observation reports.
+                if target.definition_version == observations.DEFINITION_VERSION:
+                    contribution.observations.add(observation, target, day, quality, occurrence)
+                if kind == 6:
+                    retain_identity_input(row, quality)
+            except (observations.ObservationError, identity_publication.PublicationError) as error:
+                raise SemanticError(str(error)) from error
+            continue
+        _validate_optional_enums(row)
         environment, season = _row_scope(row)
         if (
             environment in (None, 0)
@@ -942,7 +1074,7 @@ def build_page_contributions(
         raw_quality = _normalize_raw_quality(_raw_quality(row))
         if kind == GAP_KIND:
             gap_reason = row.get("gap_reason")
-            if isinstance(gap_reason, bool) or not isinstance(gap_reason, int) or gap_reason not in range(1, 7):
+            if isinstance(gap_reason, bool) or not isinstance(gap_reason, int) or gap_reason not in range(1, 8):
                 raise SemanticError("coverage gap has no valid gap_reason")
 
         if kind == CONFIGURATION_KIND:
@@ -955,6 +1087,12 @@ def build_page_contributions(
             continue
 
         contribution.state_quality_flags |= raw_quality
+        if target.definition_version == battle_source.DEFINITION_VERSION:
+            # Legacy families are outside this selected source window. Generic
+            # capture gaps still qualify its cursor, but produce no playtime rows.
+            if kind == GAP_KIND:
+                contribution.state_quality_flags |= ROLLUP_QUALITY_PROCESS_GAP
+            continue
         session_key = _session_key(row)
         if kind == GAP_KIND:
             if session_key is not None:
@@ -1048,6 +1186,10 @@ def build_page_contributions(
             interval_quality |= ROLLUP_QUALITY_LATE_INPUT
         session.quality_flags |= interval_quality
         contribution.state_quality_flags |= interval_quality
+        try:
+            retain_identity_input(row, interval_quality)
+        except identity_publication.PublicationError as error:
+            raise SemanticError(str(error)) from error
         for item in slices:
             attributable = item.duration_usec if item.known_utc and context_known else 0
             session.attributable_usec = _checked_add(
@@ -1092,6 +1234,9 @@ def build_page_contributions(
         + len(contribution.player_days)
         + len(contribution.cohorts)
         + len(contribution.members)
+        + contribution.observations.output_fanout
+        + len(contribution.identity_inputs)
+        + len(contribution.battle_inputs)
     )
     if max_output_fanout is not None and contribution.output_fanout > max_output_fanout:
         raise BoundsExceeded(
@@ -1258,6 +1403,9 @@ def coverage_from_state_row(
     row: Mapping[str, Any],
     *,
     snapshot_high_watermark: int | None = None,
+    incident_coverage: Mapping[str, Any] | None = None,
+    identity_coverage: Mapping[str, Any] | None = None,
+    battle_coverage: Mapping[str, Any] | None = None,
 ) -> RollupCoverage:
     snapshot = (
         int(row.get("rebuild_through_ingest_id", 0))
@@ -1271,10 +1419,15 @@ def coverage_from_state_row(
         publication_status=int(row["publication_status"]),
         coverage_start_utc_usec=row.get("coverage_start_utc_usec"),
         coverage_end_utc_usec=row.get("coverage_end_utc_usec"),
-        quality_flags=int(row["quality_flags"]),
+        quality_flags=int(row["quality_flags"]) | (0 if incident_coverage is None else int(incident_coverage["quality_flags"])) |
+            (0 if identity_coverage is None else int(identity_coverage["quality_flags"])) |
+            (0 if battle_coverage is None else int(battle_coverage["quality_flags"])),
         provisional=bool(row["provisional"]),
         rebuild_from_ingest_id=int(row["rebuild_from_ingest_id"]),
         rebuild_through_ingest_id=int(row["rebuild_through_ingest_id"]),
+        incident_coverage=incident_coverage,
+        identity_coverage=identity_coverage,
+        battle_coverage=battle_coverage,
     )
 
 
@@ -1429,7 +1582,7 @@ class RollupEngine:
         max_runtime_s: float = REPORT_RUNTIME_DEFAULT_S,
     ) -> ReportSnapshot:
         target.__post_init__()
-        report_definition(report_name)
+        report_definition(report_name, target.definition_version)
         return self.database.read_report(
             target,
             report_name,

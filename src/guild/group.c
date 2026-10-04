@@ -59,7 +59,10 @@ static bool do_group_add(P_char ch, P_char victim);
  * bounded adapter owns dimensions/classification; no gameplay state is changed. */
 static void telemetry_group_context_changed(struct group_list *group)
 {
-	for (struct group_list *member = group; member; member = member->next)
+	telemetry_runtime_game_group_changed(group);
+	unsigned source_visited = 0U;
+	for (struct group_list *member = group; member && source_visited < 256U;
+	     member = member->next, ++source_visited)
 	{
 		if (member->ch && IS_PC(member->ch))
 		{
@@ -378,6 +381,7 @@ void do_appoint(P_char ch, char *argument, int /*cmd*/)
 	}
 
 	update_groupies(ch);
+	telemetry_group_context_changed(ch->group);
 }
 
 void do_group(P_char ch, char *argument, int /*cmd*/)
@@ -1048,6 +1052,8 @@ bool group_remove_member(P_char ch)
 
 	if (is_leader)
 	{ /* group leader */
+		if (gl->next)
+			gl->next->telemetry_generation = gl->telemetry_generation;
 
 		/* move all the group members to point to the new group leader
 		   (who is the second person in the group list */
@@ -1087,6 +1093,7 @@ bool group_remove_member(P_char ch)
 			remove_aura_message(gl->ch, gl->ch);
 		gl->ch->group = NULL;
 		(void)telemetry_runtime_game_context(gl->ch, gl->ch->desc);
+		(void)telemetry_runtime_game_battle_context(gl->ch);
 		send_to_char("Your group has been disbanded.\n", gl->ch);
 		mm_release(dead_group_pool, gl);
 		gl = NULL;
@@ -1112,6 +1119,7 @@ bool group_remove_member(P_char ch)
 		fix_group_ranks(gl->ch);
 	update_groupies(ch);
 	(void)telemetry_runtime_game_context(ch, ch->desc);
+	(void)telemetry_runtime_game_battle_context(ch);
 	telemetry_group_context_changed(gl);
 	return TRUE;
 }
@@ -1298,6 +1306,7 @@ bool group_add_member(P_char leader, P_char member)
 		leader->group = (struct group_list *)mm_get(dead_group_pool);
 		leader->group->ch = leader;
 		leader->group->next = NULL;
+		leader->group->telemetry_generation = {};
 		REMOVE_BIT(leader->specials.act2, PLR2_BACK_RANK);
 		if (in_command_aura(leader))
 		{
@@ -1313,6 +1322,7 @@ bool group_add_member(P_char leader, P_char member)
 	gl->next = (struct group_list *)mm_get(dead_group_pool);
 	gl->next->ch = member;
 	gl->next->next = NULL;
+	gl->next->telemetry_generation = {};
 	member->group = leader->group;
 	REMOVE_BIT(member->specials.act2, PLR2_BACK_RANK);
 	if (in_command_aura(member))

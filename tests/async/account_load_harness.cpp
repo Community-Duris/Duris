@@ -5,6 +5,8 @@
 #include "net/comm.h"
 #include "net/network_wakeup.h"
 #include "net/ws_handlers.h"
+#include "sql/sql_telemetry_account_identity.h"
+#include "telemetry/telemetry_runtime.h"
 
 #include <openssl/crypto.h>
 #include <poll.h>
@@ -18,6 +20,21 @@
 
 using Clock = std::chrono::steady_clock;
 static const auto game_thread = std::this_thread::get_id();
+static bool telemetry_enabled = true;
+static uint64_t telemetry_environment = 7;
+bool telemetry_runtime_account_scope(uint64_t &environment, uint64_t &season) noexcept
+{
+	assert(std::this_thread::get_id() == game_thread);
+	environment = telemetry_enabled ? telemetry_environment : 0;
+	season = telemetry_enabled ? 11 : 0;
+	return telemetry_enabled;
+}
+bool sql_prepare_telemetry_account_token_on(MYSQL *, const char *, uint64_t, uint64_t, uint64_t,
+					    uint64_t *)
+{
+	assert(false); // This session harness supplies a worker-owned query callback.
+	return false;
+}
 P_acct account_list = nullptr;
 static std::string output;
 static int auth_failures = 0, verified_names = 0, password_submissions = 0;
@@ -91,6 +108,7 @@ struct query_control
 	bool hold = false, entered = false;
 	account_load_outcome outcome = account_load_outcome::loaded;
 	char blocked = 0;
+	bool telemetry_available = true;
 };
 static account_load_result query(const account_load_request &request, void *raw)
 {
@@ -112,6 +130,13 @@ static account_load_result query(const account_load_request &request, void *raw)
 	result.snapshot.blocked = control.blocked;
 	result.snapshot.confirmed = 1;
 	result.snapshot.flags[0] = 123;
+	if (control.telemetry_available && control.blocked != ACCOUNT_BLOCK_DELETION &&
+	    request.telemetry_environment_id && request.telemetry_season_id)
+	{
+		result.snapshot.telemetry_account_token = 92 + request.telemetry_environment_id;
+		result.snapshot.telemetry_environment_id = request.telemetry_environment_id;
+		result.snapshot.telemetry_season_id = request.telemetry_season_id;
+	}
 	result.snapshot.ips.push_back({ "localhost", "127.0.0.1", 2 });
 	account_load_character character;
 	character.pid = 42;
@@ -204,6 +229,8 @@ int main()
 	assert(d->account->num_ips == 1 && d->account->num_chars == 1);
 	assert(d->account->acct_flags1 == 123 && d->account->acct_character_list->pid == 42);
 	assert(d->account->acct_character_list->secondary_class == 8);
+	assert(d->account->telemetry_account_token == 99 &&
+	       d->account->telemetry_environment_id == 7 && d->account->telemetry_season_id == 11);
 	other = free_account(other);
 	close_socket(d);
 
@@ -227,11 +254,33 @@ int main()
 	hold(control);
 	name(d, "First");
 	entered(control);
+	telemetry_environment = 8;
 	name(d, "Second");
 	release(control);
 	drain(d);
 	assert(!strcmp(d->account->acct_name, "Second"));
+	assert(d->account->telemetry_account_token == 100 &&
+	       d->account->telemetry_environment_id == 8 && d->account->telemetry_season_id == 11);
 	close_socket(d);
+	telemetry_environment = 7;
+	// Disabled capture and failed optional preparation both clear stale identity,
+	// preserve loaded credentials and continue to the same password prompt.
+	for (int unavailable = 0; unavailable < 2; ++unavailable)
+	{
+		telemetry_enabled = unavailable != 0;
+		control.telemetry_available = unavailable == 0;
+		STATE(d) = CON_GET_ACCT_NAME;
+		name(d, "UnknownIdentity");
+		d->account->telemetry_account_token = 81;
+		d->account->telemetry_environment_id = 8;
+		d->account->telemetry_season_id = 12;
+		drain(d);
+		assert(STATE(d) == CON_GET_ACCT_PASSWD && d->account->acct_password);
+		assert(!d->account->telemetry_account_token &&
+		       !d->account->telemetry_environment_id && !d->account->telemetry_season_id);
+		close_socket(d);
+	}
+	telemetry_enabled = control.telemetry_available = true;
 
 	// In-place name, account pointer, fd, state and character changes cancel without
 	// touching the replacement context or running the old continuation.

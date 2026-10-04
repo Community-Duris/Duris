@@ -1,4 +1,5 @@
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "world/db.h"
@@ -570,6 +571,7 @@ void convertMob(P_char ch, bool apply_mob_gold)
 	}
 
 	/* remove ALL affects that don't belong! */
+	telemetry_control_mutation_scope control_state(ch);
 	REMOVE_BIT(ch->specials.affected_by,
 		   /*           AFF_BLIND |*/
 		   AFF_KNOCKED_OUT | AFF_BOUND | AFF_CHARM | AFF_FEAR | AFF_MEDITATE | AFF_CAMPING |

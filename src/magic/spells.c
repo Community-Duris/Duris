@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "world/rested.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -2940,8 +2941,11 @@ void event_change_yzar_race(P_char ch, P_char victim, P_obj /*obj*/, void * /*da
 
 	GET_RACE(ch) = yzar_races[number(0, NUM_YZARS - 1)];
 	// We need to adjust for the change in racial maxhps.
-	all_affects(ch, FALSE);
-	all_affects(ch, TRUE);
+	{
+		telemetry_control_mutation_scope control_state(ch);
+		all_affects(ch, FALSE);
+		all_affects(ch, TRUE);
+	}
 	GET_HIT(ch) = (hps < 1) ? 1 : hps;
 	if (GET_MAX_VITALITY(ch) > 175)
 	{

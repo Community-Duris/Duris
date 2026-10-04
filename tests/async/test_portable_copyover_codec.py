@@ -27,7 +27,7 @@ def seal(value):
     return bytes(value)
 
 
-def reference():
+def reference(version=19):
     """Independent specification encoder; no production source extraction."""
     maximum = (1 << 64) - 1
     desc = (struct.pack("<i", 9) + text("synthetic", 50) + text("127.0.0.1", 50) +
@@ -40,6 +40,10 @@ def reference():
     handoff = struct.pack("<4Qi11QI", 1, 2, 3, maximum, -1,
                           4, 5, 6, 7, 8, 9, 10, 11, 12, 13, maximum, 0xffffffff)
     telemetry = struct.pack("<i", 9) + text("synthetic", 50) + b"\1" + handoff
+    if version == 19:
+        telemetry += struct.pack("<QqIB3x", 77, -1, 1, 3)
+    else:
+        assert version == 18
     mob = (struct.pack("<12i", 1001, -1, 200, -2, 0x7fffffff, -0x80000000,
                        200, -3, 300, 10, 1, -1) + text("synthetic", 50) +
            struct.pack("<I43iI2i", 1, *([-1] * 42 + [1000]), 1, -99, -1) +
@@ -60,8 +64,8 @@ def reference():
     obj = struct.pack("<I", len(tree)) + tree + struct.pack("<I", 1) + custody
     door = struct.pack("<3i", 200, 9, -1)
     payloads = [desc, telemetry, mob, affect, carried, generated, obj, door]
-    assert list(map(len, payloads)) == [670, 183, 356, 59, 4, 8, 3402, 12]
-    header = struct.pack("<4sIIIqQ5I3i", b"DCOF", 18, 64, 0x01020304, -123456789,
+    assert list(map(len, payloads)) == [670, 207 if version == 19 else 183, 356, 59, 4, 8, 3402, 12]
+    header = struct.pack("<4sIIIqQ5I3i", b"DCOF", version, 64, 0x01020304, -123456789,
                          0, 0, 1, 1, 1, 1, -1, 7, 8)
     return seal(header + b"".join(frame(i, p) for i, p in enumerate(payloads, 1))), payloads
 
@@ -89,6 +93,9 @@ def legacy(version, payloads):
     t[:55] = telemetry[:55]
     t[64:100] = telemetry[55:91]
     t[104:196] = telemetry[91:183]
+    if version == 18:
+        assert len(telemetry) == 207
+        t += telemetry[183:207]
     # Portable item has a four-byte gap before timers in the retired ABI.
     item = obj[12:12 + 3324]
     native_item = item[:68] + b"\xa5" * 4 + item[68:]
@@ -98,7 +105,7 @@ def legacy(version, payloads):
     c[32:69] = portable_c[25:62]
     native_obj = obj[4:12] + native_item + c
     header = struct.pack("<4siq6i3i", b"COPY", version, -123456789, 1, 1, 1, 1, 0, 0, -1, 7, 8)
-    trailer = b"TLMY" + struct.pack("<II", 1, 1) + t if version >= 15 else b""
+    trailer = b"TLMY" + struct.pack("<II", 2 if version == 18 else 1, 1) + t if version >= 15 else b""
     return (header + d[:660 if version < 17 else 680] + trailer +
             m[:288 if version == 12 else 356 if version < 16 else 360] + a +
             struct.pack("<Q", 0xdeadbeefdeadbeef) + carried + b"\xa5" * 4 +
@@ -127,16 +134,21 @@ def main():
         run("write", golden)
         assert golden.read_bytes() == expected, "portable bytes differ from independent specification"
         run("read", golden)
+        old_portable = directory / "portable-v18.dat"
+        old_portable.write_bytes(reference(18)[0])
+        run("read", old_portable)
         run("high-fds")  # Socket numbers are not bounded by the connection count.
         run("children")  # Preserve records beyond the old 64/256 recovery caps.
         run("sweep", golden)  # Every prefix and a high-bit flip at every byte.
         run("failures")
         door = directory / "door.dat"
         run("door", door)
-        assert door.read_bytes() == bytes.fromhex(
-            (ROOT / "tests/async/fixtures/copyover/v18-door.hex").read_text())
+        old_door = bytearray(bytes.fromhex(
+            (ROOT / "tests/async/fixtures/copyover/v18-door.hex").read_text()))
+        struct.pack_into("<I", old_door, 4, 19)
+        assert door.read_bytes() == seal(old_door)
         legacy_paths = []
-        for version in range(12, 18):
+        for version in range(12, 19):
             fixture = directory / f"legacy-{version}.dat"
             fixture.write_bytes(legacy(version, payloads))
             legacy_paths.append(fixture)
@@ -154,7 +166,7 @@ def main():
             struct.pack_into(fmt, data, offset, value)
             reject(name, seal(data))  # Valid CRC: tests field/framing validation itself.
 
-        mutate("unknown-version", 4, "<I", 19)
+        mutate("unknown-version", 4, "<I", 20)
         mutate("old-portable-version", 4, "<I", 17)
         mutate("wrong-order", 12, "<I", 0x04030201)
         mutate("bad-header-size", 8, "<I", 63)
@@ -171,7 +183,7 @@ def main():
         mutate("bad-pet-count", 72 + 533, "<I", 11)
         mutate("bad-death-delay", 72 + 658, "<i", 3)
         mutate("bad-death-pending", 72 + 657, "<B", 2)
-        mob_start = 64 + 678 + 191 + 8
+        mob_start = 64 + 678 + 215 + 8
         mutate("negative-affect-count", mob_start + 98, "<I", 0xffffffff)
         mutate("too-many-inventory", mob_start + 274, "<I", 32769)
         object_start = 64 + sum(8 + len(p) for p in payloads[:6]) + 8
@@ -215,7 +227,26 @@ def main():
             stream.truncate(128 * 1024 * 1024 + 1)
         bad_files.append(oversized)
         run("reject", *bad_files)
-    print("portable copyover: golden bytes, all records/sentinels, v12-v17 ABI fixtures, "
+
+        # Semantically invalid optional ownership is consumed and discarded;
+        # valid world/gameplay data still decodes from both new and native v18.
+        absent_files = []
+        ownership_offset = 64 + 678 + 8 + 183
+        for name, relative_offset, fmt, value in (
+                ("source", 20, "<B", 0), ("quality", 16, "<I", 1 << 31),
+                ("reserved", 21, "<B", 1), ("token", 0, "<Q", 0)):
+            data = bytearray(expected)
+            struct.pack_into(fmt, data, ownership_offset + relative_offset, value)
+            path = directory / ("portable-bad-ownership-" + name + ".dat")
+            path.write_bytes(seal(data))
+            absent_files.append(path)
+            data = bytearray(legacy(18, payloads))
+            struct.pack_into(fmt, data, 52 + 680 + 12 + 200 + relative_offset, value)
+            path = directory / ("native-v18-bad-ownership-" + name + ".dat")
+            path.write_bytes(data)
+            absent_files.append(path)
+        run("absent-metadata", *absent_files)
+    print("portable copyover: v19 exact ownership bytes, sealed portable v18 and native v12-v18 fixtures, "
           "truncation/bit-flip sweeps, counts/lengths/version rejection and sync/allocation failures passed")
 
 

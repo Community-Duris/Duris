@@ -34,7 +34,17 @@ distinct player subject IDs across player and pet rows. Pets therefore do not
 inflate the player denominator, and NPCs do not become players through damage,
 healing, control, or tanking attribution. `power_band` and the compact opponent
 fields are observed context; they are not a claim that popularity measures
-strength.
+strength. The current native `power_band` adapter records character level; it
+does not measure equipment strength or intrinsic class/race power. A pet's
+owner link does not establish that its owner is connected, actively playing,
+or a distinct human controller.
+
+The native modifier adapter marks an observed player-owned pair as PvP,
+including player-to-pet and pet-to-player pairs. Pet and NPC source flags remain
+separate. The accepted combat-entry adapter also observes actual PCs on both
+sides, including an attacked PC when the source is an NPC. Pet-only edges do
+not create synthetic player participation. These are encounter observations;
+shared battle identity, sides and roster segments remain under implementation.
 
 ## Metrics
 

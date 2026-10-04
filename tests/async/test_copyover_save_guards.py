@@ -109,10 +109,10 @@ checks = {
     "descriptor capture requires the player's actual pet link":
         "GET_MASTER(f->follower) == ch" in descriptor_capture,
     "portable file validates completely before descriptor allocation":
-        "#define COPYOVER_VERSION 18" in (SRC / "copyover.h").read_text() and
+        "#define COPYOVER_VERSION 19" in (SRC / "copyover.h").read_text() and
         recover.index("copyover_codec_read(fp, &state") < recover.index("mm_get(dead_desc_pool)"),
-    "legacy v12-v17 reads require the known ABI":
-        "version < 12 || version > 17" in codec and
+    "legacy v12-v18 reads require the known ABI":
+        "version < 12 || version > 18" in codec and
         "copyover_codec_legacy_abi_compatible()" in codec,
     "file and directory sync precede socket mutation":
         body.index("copyover_codec_finish(fp") < publish <

@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -348,7 +349,10 @@ void event_tentacles(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*
 			break;
 
 	if (!tch)
+	{
 		REMOVE_BIT(ch->specials.affected_by2, AFF2_MAJOR_PARALYSIS);
+		telemetry_runtime_game_control_changed(ch);
+	}
 }
 
 int tentacle(P_char ch, P_char pl, int cmd, char * /*arg*/)
@@ -362,6 +366,7 @@ int tentacle(P_char ch, P_char pl, int cmd, char * /*arg*/)
 	if (NewSaves(pl, SAVING_SPELL, 0) && (GET_POS(pl) == POS_STANDING))
 	{
 		REMOVE_BIT(ch->specials.affected_by2, AFF2_MAJOR_PARALYSIS);
+		telemetry_runtime_game_control_changed(ch);
 		act("$N breaks free of $n's grip and quickly eliminates $m!", TRUE, ch, 0, pl,
 		    TO_NOTVICT);
 		act("You finally manage to get free of $n's grip and kick $s ass!", TRUE, pl, 0, 0,

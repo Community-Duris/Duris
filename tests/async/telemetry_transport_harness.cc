@@ -320,7 +320,8 @@ telemetry_record control_record(std::uint64_t sequence)
 	return record;
 }
 
-void bind_and_init(const telemetry_transport_config &transport_config = config())
+void bind_and_init(const telemetry_transport_config &transport_config = config(),
+		   bool prepare_writer = true)
 {
 	const auto repository = repository_binding();
 	const auto clock = clock_binding();
@@ -329,6 +330,8 @@ void bind_and_init(const telemetry_transport_config &transport_config = config()
 	const auto outcome = telemetry_transport_init(transport_config);
 	CHECK(outcome == telemetry_transport_outcome::started ||
 	      outcome == telemetry_transport_outcome::unavailable);
+	if (prepare_writer && outcome == telemetry_transport_outcome::started)
+		CHECK(telemetry_transport_pulse(0U).examined == 0U);
 }
 
 void finish()
@@ -364,7 +367,7 @@ void row_and_age_flush_tests()
 	CHECK(admitted.last_admitted_record_seq == 1U);
 	CHECK(admitted.last_committed_record_seq == 0U);
 	CHECK(admitted.queue_depth == 1U);
-	CHECK(admitted.advisory_lock_state == telemetry_advisory_lock_state::unavailable);
+	CHECK(admitted.advisory_lock_state == telemetry_advisory_lock_state::held);
 	CHECK(telemetry_transport_pulse(150U).examined == 0U);
 	CHECK(telemetry_transport_enqueue(detail_record(2U)).admission ==
 	      telemetry_queue_admission::accepted_detail);
@@ -436,6 +439,111 @@ void reserve_and_loss_tests()
 	CHECK(repository_state.calls == 3U);
 	CHECK(repository_state.observed[2].records[0].header.key.record_seq == 7U);
 	CHECK(repository_state.observed[2].records[0].payload.gap.dropped_records == 2U);
+	finish();
+}
+
+void contribution_admission_test()
+{
+	case_name = "sealed contribution uses control reserve and retains its immutable payload";
+	bind_and_init(config(4U, 1U, 2U, 1U));
+	for (std::uint64_t sequence = 1U; sequence <= 3U; ++sequence)
+		CHECK(telemetry_transport_enqueue(detail_record(sequence)).admission ==
+		      telemetry_queue_admission::accepted_detail);
+	telemetry_record record{};
+	record.header = detail_record(4U).header;
+	record.header.kind = telemetry_record_kind::battle_contribution;
+	auto &p = record.payload.battle_contribution;
+	p.context.battle = { record.header.key.producer, 1U };
+	p.context.scope = { 77U, 66U, 1U, 1U, 1U, -1, 0U };
+	p.context.actor.actor = { 55U, 55, 55U, telemetry_combat_actor_kind::player, {}, 20U };
+	p.context.actor.dimensions = { 1U, 2U, 3U, 4U, 5, 1U };
+	p.context.actor.context_version = TELEMETRY_BATTLE_ACTOR_CONTEXT_VERSION;
+	p.context.association_revision = p.last_association_revision = 1U;
+	p.context.association_fact_sequence = p.last_association_fact_sequence = 5U;
+	p.context.available_metrics = TELEMETRY_BC_DAMAGE;
+	p.context.side_status = telemetry_battle_side_status::qualified_observed_graph;
+	p.context.side = 1U;
+	p.context.mode = telemetry_encounter_mode::pvp;
+	p.sequence = 1U;
+	p.start_usec = 100U;
+	p.start_utc_usec = 1000;
+	p.cut = { 100U, 1000, 100U, 1000 };
+	p.counters.damage_dealt = 42U;
+	p.definition_version = TELEMETRY_BATTLE_CONTRIBUTION_VERSION;
+	p.end_reason = telemetry_battle_contribution_end::battle_ended;
+	CHECK(telemetry_record_is_valid(record));
+	CHECK(telemetry_transport_enqueue(record).admission ==
+	      telemetry_queue_admission::accepted_control_reserve);
+	// The admitted queue owns the original fixed record value.
+	p.counters.damage_dealt = 999U;
+	for (unsigned int attempt = 0U; attempt < 8U; ++attempt)
+		(void)telemetry_transport_pulse(100U + attempt);
+	CHECK(repository_state.calls == 2U);
+	const auto &stored = repository_state.observed[1].records[1];
+	CHECK(stored.header.kind == telemetry_record_kind::battle_contribution);
+	CHECK(stored.header.key.record_seq == 4U);
+	CHECK(stored.payload.battle_contribution.counters.damage_dealt == 42U);
+	CHECK(telemetry_transport_health_copy().applied_records == 4U);
+	finish();
+}
+
+void build_admission_test()
+{
+	case_name =
+		"build point uses control reserve and retains signed values and exact association";
+	bind_and_init(config(4U, 1U, 2U, 1U));
+	for (std::uint64_t sequence = 1U; sequence <= 3U; ++sequence)
+		CHECK(telemetry_transport_enqueue(detail_record(sequence)).admission ==
+		      telemetry_queue_admission::accepted_detail);
+	telemetry_record record{};
+	record.header = detail_record(4U).header;
+	record.header.kind = telemetry_record_kind::battle_build;
+	auto &p = record.payload.battle_build;
+	p.battle = { record.header.key.producer, 1U };
+	p.environment_id = 77U;
+	p.season_id = 66U;
+	p.config_id = 1U;
+	p.actor_id = 55U;
+	p.actor_kind = telemetry_combat_actor_kind::player;
+	p.sequence = 42U;
+	p.association_revision = 3U;
+	p.association_fact_sequence = 17U;
+	p.at_monotonic_usec = 1000U;
+	p.at_utc_usec = record.header.occurrence_utc_usec;
+	p.definition_version = TELEMETRY_BATTLE_BUILD_DEFINITION_VERSION;
+	p.native_context_version = TELEMETRY_BATTLE_BUILD_CONTEXT_VERSION;
+	p.build_version = p.content_version = 1U;
+	p.available = TELEMETRY_BUILD_BASE;
+	p.context_quality = TELEMETRY_BUILD_SUPPORT_ORIGIN_UNKNOWN;
+	p.base_stats[0] = -32768;
+	p.base_resources[0] = 70000;
+	p.base_combat[0] = -15;
+	p.boundary = telemetry_battle_build_boundary::actor_entry;
+	p.status = telemetry_battle_build_status::snapshot;
+	CHECK(telemetry_record_is_valid(record));
+	CHECK(telemetry_transport_enqueue(record).admission ==
+	      telemetry_queue_admission::accepted_control_reserve);
+	const auto dropped_control = telemetry_transport_enqueue(control_record(5U));
+	CHECK(dropped_control.admission == telemetry_queue_admission::rejected_control_full ||
+	      dropped_control.admission == telemetry_queue_admission::rejected_stopping);
+	// The admitted queue owns the original selected point, including its association.
+	p.sequence = p.association_revision = p.association_fact_sequence = 999U;
+	p.base_stats[0] = 0;
+	p.base_resources[0] = 0;
+	p.base_combat[0] = 0;
+	for (unsigned int attempt = 0U; attempt < 8U; ++attempt)
+		(void)telemetry_transport_pulse(100U + attempt);
+	CHECK(repository_state.calls == 2U);
+	const auto &stored = repository_state.observed[1].records[1];
+	CHECK(stored.header.kind == telemetry_record_kind::battle_build);
+	CHECK(stored.payload.battle_build.sequence == 42U);
+	CHECK(stored.payload.battle_build.association_revision == 3U);
+	CHECK(stored.payload.battle_build.association_fact_sequence == 17U);
+	CHECK(stored.payload.battle_build.base_stats[0] == -32768);
+	CHECK(stored.payload.battle_build.base_resources[0] == 70000);
+	CHECK(stored.payload.battle_build.base_combat[0] == -15);
+	CHECK(telemetry_transport_health_copy().applied_records == 4U);
+	CHECK(telemetry_transport_health_copy().dropped_control == 1U);
 	finish();
 }
 
@@ -610,6 +718,7 @@ void circuit_breaker_tests()
 	repository_state = {};
 	CHECK(telemetry_transport_init(config(4U, 1U, 1U, 1U)) ==
 	      telemetry_transport_outcome::started);
+	(void)telemetry_transport_pulse(0U);
 	CHECK(telemetry_transport_enqueue(detail_record(1U)).admission ==
 	      telemetry_queue_admission::accepted_detail);
 	CHECK(telemetry_transport_pulse(200U).examined == 1U);
@@ -641,10 +750,10 @@ void circuit_breaker_tests()
 	repository_state = {};
 
 	case_name = "permanent repository initialization failure does not reconnect";
-	bind_and_init(config(4U, 1U, 2U, 1U));
+	bind_and_init(config(4U, 1U, 2U, 1U), false);
 	repository_state.init_permanent = true;
 	CHECK(telemetry_transport_enqueue(detail_record(100U)).admission ==
-	      telemetry_queue_admission::accepted_detail);
+	      telemetry_queue_admission::rejected_not_ready);
 	CHECK(telemetry_transport_pulse(101U).outcome == telemetry_transport_outcome::unavailable);
 	CHECK(repository_state.init_calls == 1U);
 	CHECK(telemetry_transport_health_copy().state == telemetry_health_state::circuit_open);
@@ -735,6 +844,20 @@ void lifecycle_race_and_stress_tests()
 	bind_and_init(config(16U, 4U, 4U, 1U));
 	std::atomic<bool> producing{ true };
 	std::atomic<std::uint64_t> next_sequence{ 100U };
+	std::uint64_t coherent_samples = 0U;
+	const auto observe = [&]
+	{
+		telemetry_outage_observation sample{};
+		if (!telemetry_transport_outage_copy_for_worker(&sample))
+			return;
+		++coherent_samples;
+		CHECK(sample.inflight_records + sample.unattempted_records ==
+		      sample.health.queue_depth);
+		CHECK(sample.health.admitted_detail ==
+		      sample.health.applied_records + sample.health.queue_depth);
+		CHECK(sample.health.last_committed_record_seq <=
+		      sample.health.last_admitted_record_seq);
+	};
 	std::thread worker(
 		[&]
 		{
@@ -743,9 +866,13 @@ void lifecycle_race_and_stress_tests()
 				clock_state.now.fetch_add(1U, std::memory_order_relaxed);
 				(void)telemetry_transport_pulse(
 					clock_state.now.load(std::memory_order_relaxed));
+				observe();
 			}
 			for (unsigned int attempt = 0U; attempt < 256U; ++attempt)
+			{
 				(void)telemetry_transport_pulse(1'000'000U + attempt);
+				observe();
+			}
 		});
 	for (unsigned int attempt = 0U; attempt < 20'000U; ++attempt)
 	{
@@ -755,6 +882,7 @@ void lifecycle_race_and_stress_tests()
 	}
 	producing.store(false, std::memory_order_release);
 	worker.join();
+	CHECK(coherent_samples != 0U);
 	CHECK(telemetry_transport_health_copy().queue_depth <= 16U);
 	finish();
 }
@@ -784,6 +912,8 @@ int main()
 {
 	row_and_age_flush_tests();
 	reserve_and_loss_tests();
+	contribution_admission_test();
+	build_admission_test();
 	immutable_retry_and_ambiguous_tests();
 	validation_and_isolation_tests();
 	circuit_breaker_tests();

@@ -47,11 +47,11 @@ class CorpseLifecycleRepositoryTest(unittest.TestCase):
             (ROOT / "migrations/data_lifecycle_manifest.json").read_text()
         )
         lifecycle_entries = {entry["id"]: entry for entry in lifecycle["entries"]}
-        self.assertEqual(runtime["current_table_count"], 226)
+        self.assertEqual(runtime["current_table_count"], 263)
         self.assertIn("'corpse_catalog_state'", runtime["runtime_table_sql_list"])
         self.assertIn("'economic_sql_activation_receipt'", runtime["runtime_table_sql_list"])
         self.assertEqual(runtime["migration_head"]["id"],
-                         "0055_sql_room_item_payload")
+                         "0067_telemetry_typed_control")
         entry = lifecycle_entries["database:corpse_catalog_state"]
         self.assertEqual(entry["data_category"], "reconciliation_or_replay_record")
         self.assertEqual(entry["export_rule"]["disposition"], "exclude")

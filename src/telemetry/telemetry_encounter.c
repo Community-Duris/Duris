@@ -369,6 +369,22 @@ void telemetry_encounter_state_init(telemetry_encounter_state *state) noexcept
 		*state = {};
 }
 
+bool telemetry_encounter_current(const telemetry_encounter_state *state,
+				 telemetry_encounter_participant participant,
+				 telemetry_encounter_id *encounter) noexcept
+{
+	if (encounter == nullptr)
+		return false;
+	*encounter = {};
+	if (state == nullptr || !telemetry_encounter_participant_is_valid(participant))
+		return false;
+	const int index = find_participant(*state, participant, true);
+	if (index < 0)
+		return false;
+	*encounter = state->slots[static_cast<std::size_t>(index)].encounter;
+	return true;
+}
+
 telemetry_encounter_update
 telemetry_encounter_begin(telemetry_encounter_state *state, telemetry_encounter_id encounter,
 			  telemetry_encounter_source source, telemetry_encounter_mode mode,

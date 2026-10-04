@@ -23,6 +23,30 @@ versions, zone, and bounded group identity. Participant identity is the stable
 subject/PID pair captured at the event boundary; no character pointer, name, or
 SQL handle enters the queue.
 
+Current formal groups receive a generation retained on their live head node.
+The full group identity is `(encounter_boot_id, encounter_process_id, group_key)`;
+the key has bit 63 set and a nonzero 63-bit generation counter. Appointment
+retains the head's generation, and leader departure transfers it to the next
+head before releasing the old node. Both group allocation sites clear reused
+pool metadata. Disbanding and creating another group, even with the same leader,
+therefore starts a different group lifetime. Generation exhaustion refuses
+capture for a new formal group rather than reusing an identity. Ungrouped PCs
+use their positive character PID within the observing producer's scope.
+
+Earlier producers used a leader PID for formal groups. An untagged historical
+key cannot establish that the participant was solo. Group identity does not
+establish an account, controller, coalition, or a persistent team across
+producers. Runtime initialization replaces cached metadata from an earlier
+producer; intentional copyover closes the old encounters with its explicit
+outcome. The group metadata is not serialized into records or copyover files.
+
+Runtime-only roster revisions now advance before the native group hook's
+post-mutation callbacks. The shared-battle value adapter uses those revisions,
+the existing live NPC runtime lifetimes and active observed encounter links.
+This does not add a roster revision to existing kind-7 storage or activate
+durable shared collection. See [BATTLES.md](BATTLES.md) for the native value
+contract and remaining integration gate.
+
 ## Events and metrics
 
 The bounded engine emits:
@@ -74,7 +98,20 @@ success, and lifecycle copyover/shutdown. All adapters are best effort and
 value-only. No telemetry call is placed before the gameplay operation it
 describes has committed.
 
-The encounter facts are ready for the aggregate/report owners (#268/#269). The
-report definition in `scripts/telemetry/encounter_definitions.py` specifies the
-denominators and unresolved-tail policy without reading the raw fact stream;
-the aggregate implementation remains a separate, bounded work item.
+The accepted hostile-edge adapter observes actual PCs on both sides after
+`set_fighting` assigns its opponent. An NPC attacking a PC can therefore start
+the attacked player's observation. Combat between actors with player ownership,
+including pets, supplies PvP mode; ordinary NPC combat supplies PvE mode. Every
+PC participant adapter checks the NPC flag before reading the PC union member.
+A pet remains an NPC actor with an owner; its owner is not given a synthetic PC
+participation event. An NPC-only edge starts no player encounter.
+
+These observations still use the existing participant/group encounter IDs.
+They do not yet join opposing encounters into one shared battle or establish
+coalition sides, changing battle roster segments, decisive winners, or a full
+zone attempt. Definition 2 publishes bounded existing encounter and contribution
+observations; see [OBSERVATION_PROJECTIONS.md](OBSERVATION_PROJECTIONS.md).
+The full remaining balance requirements are recorded in
+[IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+The locally qualified pure shared association and its remaining native/storage
+integration gate are described in [BATTLES.md](BATTLES.md).

@@ -25,6 +25,26 @@ constexpr size_t CHECKSUM_OFFSET = 32;
 constexpr uint32_t MAX_WORLD_RECORDS = 1'000'000;
 constexpr size_t RECORD_HEADER_BYTES = 8;
 constexpr size_t CUSTODY_WIRE_BYTES = 62;
+
+// Sealed LP64 telemetry-v1 layout from native COPY versions 15–17.
+// Native COPY v18 added ownership; portable DCOF v18 retained the v1 fields.
+struct telemetry_copyover_handoff_v1
+{
+	telemetry_session_ref session;
+	telemetry_producer_id previous_producer;
+	telemetry_checkpoint_revision last_checkpoint_revision;
+	telemetry_cumulative_counters cumulative;
+	telemetry_quality_mask quality_flags;
+};
+
+struct telemetry_copyover_entry_v1
+{
+	int fd;
+	char player_name[50];
+	uint8_t handoff_valid;
+	uint8_t reserved[3];
+	telemetry_copyover_handoff_v1 handoff;
+};
 static_assert(sizeof(int) == 4 && sizeof(unsigned int) == 4 && sizeof(sh_int) == 2);
 static_assert(sizeof(unsigned long) <= 8 && MAX_WEAR == 43 && MAX_OBJ_AFFECT == 4);
 
@@ -218,7 +238,7 @@ void fields(wire &w, copyover_room &e)
 	w.number(e.state, 4, true);
 }
 
-void fields(wire &w, telemetry_copyover_entry &e)
+void telemetry_fields(wire &w, telemetry_copyover_entry &e, bool ownership)
 {
 	w.number(e.fd, 4, true);
 	w.text(e.player_name);
@@ -236,6 +256,22 @@ void fields(wire &w, telemetry_copyover_entry &e)
 	       &h.cumulative.linkdead_usec })
 		w.number(*value, 8);
 	w.number(h.quality_flags, 4);
+	if (ownership)
+	{
+		w.number(h.ownership.account_token, 8);
+		w.number(h.ownership.observed_at_utc_usec, 8, true);
+		w.number(h.ownership.quality_flags, 4);
+		uint8_t source = static_cast<uint8_t>(h.ownership.source);
+		w.number(source, 1);
+		h.ownership.source = static_cast<telemetry_ownership_source>(source);
+		for (uint8_t &reserved : h.ownership.reserved)
+			w.number(reserved, 1);
+	}
+}
+
+void fields(wire &w, telemetry_copyover_entry &e)
+{
+	telemetry_fields(w, e, true);
 }
 
 void fields(wire &w, item_ownership_runtime_entry &e)
@@ -361,10 +397,10 @@ bool valid_counts(const copyover_header &h, size_t bytes, bool portable)
 	    static_cast<uint32_t>(h.num_rooms) > MAX_WORLD_RECORDS)
 		return false;
 	// Necessary minimum sizes, checked before any count-based reserve or resize.
-	const uint64_t minimum = static_cast<uint64_t>(h.num_descriptors) * (portable ? 678 + 191 :
-									     h.version >= 15 ?
-											660 + 200 :
-											660) +
+	const uint64_t minimum = static_cast<uint64_t>(h.num_descriptors) *
+					 (portable	  ? 678 + (h.version >= 19 ? 215 : 191) :
+					  h.version >= 15 ? 660 + 200 :
+							    660) +
 				 static_cast<uint64_t>(h.num_mobs) * (portable ? 380 : 288) +
 				 static_cast<uint64_t>(h.num_objects) * (portable ? 3348 : 3340) +
 				 static_cast<uint64_t>(h.num_rooms) * (portable ? 20 : 12);
@@ -494,7 +530,11 @@ bool read_portable(wire &file, copyover_decoded_state *state, const char **error
 	for (int i = 0; i < state->header.num_descriptors; ++i)
 	{
 		telemetry_copyover_entry e = {};
-		if (!read_fields(file, record_type::telemetry, &e))
+		wire payload;
+		if (!framed(file, record_type::telemetry, &payload))
+			return fail(error, "invalid telemetry frame");
+		telemetry_fields(payload, e, state->header.version >= 19);
+		if (!payload.done())
 			return fail(error, "invalid telemetry frame");
 		if (retain_telemetry)
 			try
@@ -571,17 +611,41 @@ bool read_legacy(wire &file, copyover_decoded_state *state, const char **error)
 	{
 		unsigned char header[12] = {};
 		file.raw(header, 12);
-		if (!file.ok || memcmp(header, "TLMY", 4) || get_unsigned(header + 4, 4) != 1 ||
+		const bool ownership = version >= 18;
+		const size_t entry_size = ownership ? sizeof(telemetry_copyover_entry) :
+						      sizeof(telemetry_copyover_entry_v1);
+		if (!file.ok || memcmp(header, "TLMY", 4) ||
+		    get_unsigned(header + 4, 4) != (ownership ? 2U : 1U) ||
 		    get_unsigned(header + 8, 4) !=
 			    static_cast<uint32_t>(state->header.num_descriptors) ||
-		    static_cast<size_t>(state->header.num_descriptors) > file.remaining / 200)
+		    static_cast<size_t>(state->header.num_descriptors) >
+			    file.remaining / entry_size)
 			return fail(error, "invalid legacy telemetry framing");
 		bool retain_telemetry = true;
 		for (int i = 0; i < state->header.num_descriptors; ++i)
 		{
 			telemetry_copyover_entry e = {};
-			if (!read_legacy_value(file, &e))
-				return fail(error, "truncated legacy telemetry");
+			if (ownership)
+			{
+				if (!read_legacy_value(file, &e))
+					return fail(error, "truncated legacy telemetry");
+			}
+			else
+			{
+				telemetry_copyover_entry_v1 old = {};
+				if (!read_legacy_value(file, &old))
+					return fail(error, "truncated legacy telemetry");
+				e.fd = old.fd;
+				memcpy(e.player_name, old.player_name, sizeof(e.player_name));
+				e.handoff_valid = old.handoff_valid;
+				memcpy(e.reserved, old.reserved, sizeof(e.reserved));
+				e.handoff.session = old.handoff.session;
+				e.handoff.previous_producer = old.handoff.previous_producer;
+				e.handoff.last_checkpoint_revision =
+					old.handoff.last_checkpoint_revision;
+				e.handoff.cumulative = old.handoff.cumulative;
+				e.handoff.quality_flags = old.handoff.quality_flags;
+			}
 			if (retain_telemetry)
 				try
 				{
@@ -670,37 +734,37 @@ bool validate_state(copyover_decoded_state *state, const char **error)
 	// Metadata remains optional. Invalid legacy handoffs resume as absent, just as
 	// before; portable framing/CRC errors reject the entire file.
 	auto &telemetry = state->telemetry;
-	telemetry.erase(std::remove_if(telemetry.begin(), telemetry.end(),
-				       [](const auto &e)
-				       {
-					       if (e.fd <= 0 || !memchr(e.player_name, 0, 50) ||
-						   e.handoff_valid > 1 || e.reserved[0] ||
-						   e.reserved[1] || e.reserved[2])
-						       return true;
-					       if (!e.handoff_valid)
-					       {
-						       const auto &h = e.handoff;
-						       return h.session.id.producer.boot_id ||
-							      h.session.id.producer.process_id ||
-							      h.session.id.session_seq ||
-							      h.session.subject_id ||
-							      h.session.pid ||
-							      h.session.season_id ||
-							      h.session.environment_id ||
-							      h.previous_producer.boot_id ||
-							      h.previous_producer.process_id ||
-							      h.last_checkpoint_revision ||
-							      h.cumulative.connected_usec ||
-							      h.cumulative.active_usec ||
-							      h.cumulative.idle_usec ||
-							      h.cumulative.unknown_usec ||
-							      h.cumulative.resident_usec ||
-							      h.cumulative.linkdead_usec ||
-							      h.quality_flags;
-					       }
-					       return false;
-				       }),
-			telemetry.end());
+	telemetry.erase(
+		std::remove_if(
+			telemetry.begin(), telemetry.end(),
+			[](const auto &e)
+			{
+				if (e.fd <= 0 || !memchr(e.player_name, 0, 50) ||
+				    e.handoff_valid > 1 || e.reserved[0] || e.reserved[1] ||
+				    e.reserved[2] ||
+				    !telemetry_ownership_handoff_is_valid(e.handoff.ownership))
+					return true;
+				if (!e.handoff_valid)
+				{
+					const auto &h = e.handoff;
+					return h.session.id.producer.boot_id ||
+					       h.session.id.producer.process_id ||
+					       h.session.id.session_seq || h.session.subject_id ||
+					       h.session.pid || h.session.season_id ||
+					       h.session.environment_id ||
+					       h.previous_producer.boot_id ||
+					       h.previous_producer.process_id ||
+					       h.last_checkpoint_revision ||
+					       h.cumulative.connected_usec ||
+					       h.cumulative.active_usec || h.cumulative.idle_usec ||
+					       h.cumulative.unknown_usec ||
+					       h.cumulative.resident_usec ||
+					       h.cumulative.linkdead_usec || h.quality_flags ||
+					       !telemetry_ownership_handoff_is_zero(h.ownership);
+				}
+				return false;
+			}),
+		telemetry.end());
 	std::set<uint64_t> item_uids;
 	for (const auto &object : state->objects)
 		if (!valid_object(object, &item_uids))
@@ -721,7 +785,8 @@ bool decode(const std::vector<unsigned char> &bytes, copyover_decoded_state *out
 	const bool portable = memcmp(bytes.data(), MAGIC, 4) == 0;
 	if (portable)
 	{
-		if (get_unsigned(bytes.data() + 4, 4) != COPYOVER_VERSION)
+		const uint64_t version = get_unsigned(bytes.data() + 4, 4);
+		if (version != 18 && version != COPYOVER_VERSION)
 			return fail(error, "unsupported portable version");
 		if (bytes.size() < COPYOVER_WIRE_HEADER_BYTES)
 			return fail(error, "truncated portable header");
@@ -733,7 +798,7 @@ bool decode(const std::vector<unsigned char> &bytes, copyover_decoded_state *out
 		    checksum(bytes.data(), bytes.size()))
 			return fail(error, "checksum mismatch");
 		memcpy(state.header.magic, COPYOVER_MAGIC, 4);
-		state.header.version = COPYOVER_VERSION;
+		state.header.version = static_cast<int>(version);
 		wire header(bytes.data() + 16, 8);
 		header.number(state.header.timestamp, 8, true);
 		if (!header.done())
@@ -754,7 +819,7 @@ bool decode(const std::vector<unsigned char> &bytes, copyover_decoded_state *out
 		if (memcmp(bytes.data(), COPYOVER_MAGIC, 4))
 			return fail(error, "unrecognized copyover magic");
 		const uint64_t version = get_unsigned(bytes.data() + 4, 4);
-		if (version < 12 || version > 17)
+		if (version < 12 || version > 18)
 			return fail(error, "unsupported legacy version or byte order");
 		if (!copyover_codec_legacy_abi_compatible())
 			return fail(error,
@@ -791,7 +856,7 @@ bool read_bytes(FILE *file, std::vector<unsigned char> *bytes, const char **erro
 
 bool copyover_codec_legacy_abi_compatible()
 {
-	// Versions 12-17 did not record an ABI tag. Only accept the established
+	// Native versions 12–18 did not record an ABI tag. Only accept the established
 	// little-endian LP64 layout, including every nested native object layout.
 	return std::endian::native == std::endian::little && sizeof(int) == 4 &&
 	       sizeof(time_t) == 8 && std::numeric_limits<time_t>::is_signed &&
@@ -817,9 +882,13 @@ bool copyover_codec_legacy_abi_compatible()
 	       offsetof(item_ownership_runtime_entry, owner) == 24 &&
 	       offsetof(item_owner_identity, id) == 8 &&
 	       offsetof(item_ownership_runtime_entry, item_revision) == 48 &&
-	       sizeof(telemetry_copyover_entry) == 200 &&
+	       sizeof(telemetry_copyover_entry_v1) == 200 &&
+	       offsetof(telemetry_copyover_entry_v1, handoff) == 64 &&
+	       sizeof(telemetry_copyover_handoff_v1) == 136 &&
+	       sizeof(telemetry_copyover_entry) == 224 &&
 	       offsetof(telemetry_copyover_entry, handoff) == 64 &&
-	       sizeof(telemetry_session_handoff) == 136 &&
+	       sizeof(telemetry_session_handoff) == 160 &&
+	       offsetof(telemetry_session_handoff, ownership) == 136 &&
 	       offsetof(telemetry_session_ref, season_id) == 40 &&
 	       offsetof(telemetry_session_handoff, cumulative) == 80 && MAX_WEAR == 43 &&
 	       MAX_OBJ_AFFECT == 4;

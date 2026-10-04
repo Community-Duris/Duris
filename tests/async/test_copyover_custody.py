@@ -224,7 +224,7 @@ int main(int argc, char **argv)
             if (fault == 2 || fault == 6) {
                 copyover_decoded_state state;
                 assert(copyover_codec_read(file, &state, nullptr));
-                assert(state.header.version == 18);
+                assert(state.header.version == COPYOVER_VERSION);
             } else {
                 char bytes[27]; assert(std::fread(bytes, 1, 27, file) == 27);
                 assert(!std::memcmp(bytes, "previous synthetic snapshot", 27));

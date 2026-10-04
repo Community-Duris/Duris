@@ -15,6 +15,15 @@ with tempfile.TemporaryDirectory(prefix="duris-wards-") as directory:
         '#include "cmd/interp.h"',
         '#include "classes/disguise.h"', '#include "world/falling.h"',
         '#include "world/events.h"',
+        '#include "telemetry/telemetry_runtime.h"', '#include <limits>',
+        # Exercise the maintained mutation scope with capture isolated from
+        # this ward/spell/codec fixture. Enabled capture is qualified separately
+        # by test_telemetry_gameplay_adapters.py --native-affects.
+        'void telemetry_runtime_game_control_changed(P_char) noexcept {}',
+        extract_function("telemetry/telemetry_runtime.c", "std::uint16_t telemetry_runtime_game_control_mask("),
+        extract_function("telemetry/telemetry_runtime.c", "telemetry_control_mutation_scope::telemetry_control_mutation_scope("),
+        extract_function("telemetry/telemetry_runtime.c", "telemetry_control_mutation_scope::~telemetry_control_mutation_scope("),
+        extract_function("telemetry/telemetry_runtime.c", "void telemetry_control_mutation_scope::finish("),
         'extern P_char character_list;', 'extern const racial_data_type racial_data[];',
         'extern P_index obj_index;',
         '#include <strings.h>', 'void do_point(P_char, P_char);',

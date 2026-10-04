@@ -5,14 +5,17 @@ contract that a report consumer (#269) can import without importing the worker.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 import math
 from types import MappingProxyType
 from typing import Any, Mapping
 
 DEFINITION_VERSION = 1
-SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION})
+SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2, 3, 5, 6})
+BATTLE_DEFINITION_VERSION = 5
+BATTLE_BUILD_DEFINITION_VERSION = 6
+BATTLE_DEFINITION_VERSIONS = frozenset((BATTLE_DEFINITION_VERSION, BATTLE_BUILD_DEFINITION_VERSION))
 
 PUBLICATION_BUILDING = 0
 PUBLICATION_PUBLISHED = 1
@@ -57,7 +60,7 @@ COHORT_DIMENSION_FIELDS = (
 SESSION_ID_FIELDS = ("session_boot_id", "session_process_id", "session_seq")
 SCOPE_FIELDS = ("definition_version", "generation", "environment_id", "season_id")
 
-# Raw quality flags are bits 0..8 in telemetry_types.h.  Bits 16+ belong to the
+# Raw quality flags are bits 0..9 in telemetry_types.h.  Bits 16+ belong to the
 # external rollup only and are intentionally documented rather than overloaded.
 ROLLUP_QUALITY_UTC_UNKNOWN = 1 << 16
 ROLLUP_QUALITY_UTC_MISMATCH = 1 << 17
@@ -70,7 +73,9 @@ ROLLUP_QUALITY_LIFECYCLE_CONFLICT = 1 << 23
 ROLLUP_QUALITY_CHECKPOINT_CONFLICT = 1 << 24
 ROLLUP_QUALITY_LATE_INPUT = 1 << 25
 ROLLUP_QUALITY_SESSION_GAP = 1 << 26
-ROLLUP_QUALITY_KNOWN_MASK = (1 << 9) - 1
+ROLLUP_QUALITY_INCIDENT_GAP = 1 << 27
+ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN = 1 << 28
+ROLLUP_QUALITY_KNOWN_MASK = (1 << 10) - 1
 ROLLUP_QUALITY_MASK = (
     ROLLUP_QUALITY_KNOWN_MASK
     | ROLLUP_QUALITY_UTC_UNKNOWN
@@ -84,6 +89,8 @@ ROLLUP_QUALITY_MASK = (
     | ROLLUP_QUALITY_CHECKPOINT_CONFLICT
     | ROLLUP_QUALITY_LATE_INPUT
     | ROLLUP_QUALITY_SESSION_GAP
+    | ROLLUP_QUALITY_INCIDENT_GAP
+    | ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN
 )
 
 
@@ -176,6 +183,9 @@ class RollupCoverage:
     provisional: bool
     rebuild_from_ingest_id: int
     rebuild_through_ingest_id: int
+    incident_coverage: Mapping[str, Any] | None = None
+    identity_coverage: Mapping[str, Any] | None = None
+    battle_coverage: Mapping[str, Any] | None = None
 
     @property
     def input_complete_to_snapshot(self) -> bool:
@@ -211,6 +221,9 @@ class RollupCoverage:
             "provisional": self.provisional,
             "rebuild_from_ingest_id": self.rebuild_from_ingest_id,
             "rebuild_through_ingest_id": self.rebuild_through_ingest_id,
+            "incident_coverage": self.incident_coverage,
+            **({"identity_coverage": self.identity_coverage} if self.target.definition_version >= 3 else {}),
+            **({"battle_coverage": self.battle_coverage} if self.target.definition_version in BATTLE_DEFINITION_VERSIONS else {}),
         }
 
 
@@ -361,10 +374,11 @@ def validate_target(target: RollupTarget) -> None:
         target.definition_version, bool
     ):
         raise ValueError("definition_version must be an integer")
-    if target.definition_version not in SUPPORTED_DEFINITION_VERSIONS:
+    build_versions = SUPPORTED_DEFINITION_VERSIONS
+    if target.definition_version not in build_versions:
         raise ValueError(
             f"unsupported rollup definition version {target.definition_version}; "
-            f"supported={sorted(SUPPORTED_DEFINITION_VERSIONS)}"
+            f"buildable={sorted(build_versions)}"
         )
     for name in ("generation", "environment_id", "season_id"):
         value = getattr(target, name)
@@ -457,24 +471,160 @@ REPORT_ALIASES = MappingProxyType(
     }
 )
 
+OBSERVATION_REPORT_DEFINITIONS = MappingProxyType({
+    "progression_observations": ReportDefinition(
+        name="progression_observations", definition_version=2, grain="subject_session_day_and_exact_source_dimensions",
+        table="telemetry_rollup_progression_day",
+        dimensions=("utc_day", "subject_id", "pid", *SESSION_ID_FIELDS, "level", "level_band", "class_id", "race_id",
+                    "faction_id", "zone_vnum", "group_size", "config_id", "classifier_version", "policy_version",
+                    "source", "reason", "observation_status", "modifier_flags"),
+        metrics=("observations", "zero_applied_observations", "negative_applied_observations", "requested_xp",
+                 "computed_xp", "applied_xp", "earned_positive_xp", "death_loss_xp", "restored_positive_xp", "quality_flags"),
+        denominator="Amounts observed at the XP storage boundary. No hourly rate or persisted reward is inferred; keep observation statuses and configurations separate.",
+        distinct_semantics="Subjects are characters; sessions, accounts and humans are different grains. No account/controller association is available.",
+        distribution_semantics="Daily source cells support source totals, not per-award distributions. Level thresholds are excluded from all XP amounts.",
+        unavailable_metrics=("xp_per_hour", "durable_reward_total", "account_distinct_count", "controller_distinct_count", "controller_union_time"),
+        rate_unit="not_computed"),
+    "level_observations": ReportDefinition(
+        name="level_observations", definition_version=2, grain="observed_level_transition_replay_key",
+        table="telemetry_rollup_level_event", dimensions=("subject_id", "pid", *SESSION_ID_FIELDS, "kind", "source", "reason", "observation_status"),
+        metrics=("before_level", "after_level", "threshold_xp", "modifier_flags", "at_monotonic_usec", "occurrence_utc_usec", "quality_flags"),
+        denominator="Observed transition points. threshold_xp is threshold consumption, never an XP reward. Missing beginning or end exposure is censored.",
+        distinct_semantics="A row is a transition observation, not an independently observed player or attained milestone cohort.",
+        distribution_semantics="Transitions are retained for later milestones; time to level is unavailable without compatible covered exposure and censoring.",
+        unavailable_metrics=("xp_reward", "time_to_level", "controller_time_to_level"), rate_unit="not_computed"),
+    "encounter_observations": ReportDefinition(
+        name="encounter_observations", definition_version=2, grain="original_observed_encounter",
+        table="telemetry_rollup_encounter", dimensions=("encounter_boot_id", "encounter_process_id", "encounter_seq", "config_id", "zone_vnum", "group_key"),
+        metrics=("start_seen", "close_seen", "elapsed_usec", "outcome", "mode", "mode_mask", "participant_count", "expected_credit_count", "source_events", "quality_flags"),
+        denominator="Independent start and close observations are retained. Only actual close supplies elapsedness. Expected reward credit is separate from participation.",
+        distinct_semantics="Each row is one producer encounter; opposing encounters are not a shared battle, and a generic success is not a full zone clear.",
+        distribution_semantics="Closed elapsed durations retain known termination reasons; unclosed rows have NULL elapsedness. Copyover, shutdown and unknown close are censored outcomes.",
+        unavailable_metrics=("battle_win_rate", "zone_clear_rate", "unique_human_count"), rate_unit="not_computed"),
+    "encounter_participants": ReportDefinition(
+        name="encounter_participants", definition_version=2, grain="encounter_subject_and_pid",
+        table="telemetry_rollup_encounter_participant", dimensions=("encounter_boot_id", "encounter_process_id", "encounter_seq", "subject_id", "pid"),
+        metrics=("participant_usec", "effort_revision", "join_seen", "leave_seen", "summary_seen", "outcome", "quality_flags"),
+        denominator="Latest absolute cumulative measured effort. Leave and summary are not summed, rejoins do not reset effort, and join-only effort is NULL.",
+        distinct_semantics="Character participation is distinct from expected credit, account ownership and reviewed human control.",
+        distribution_semantics="Participant effort distributions require complete declared encounter cohorts; unmeasured effort remains unknown.",
+        unavailable_metrics=("expected_credit_effort", "controller_union_time", "unique_human_count"), rate_unit="not_computed"),
+    "combat_contributions": ReportDefinition(
+        name="combat_contributions", definition_version=2, grain="encounter_actor_with_captured_ownership",
+        table="telemetry_rollup_combat_actor", dimensions=("encounter_boot_id", "encounter_process_id", "encounter_seq", "actor_kind", "actor_id", "actor_pid", "owner_subject_id", "mode", "config_id"),
+        metrics=("damage_dealt", "damage_taken", "healing_attempted", "effective_healing", "overhealing", "control_applications",
+                 "casting_attempts", "casting_completions", "casting_aborts", "casting_elapsed_usec", "tanking_usec", "quality_flags"),
+        denominator="Latest absolute actor contribution snapshot. Actor counts and unique_player_count are captured per-encounter context and cannot be summed across actor rows.",
+        distinct_semantics="Pets retain their captured owner; NPCs have no player owner. Neither is an extra human. power_band is a captured level proxy, not gear or skill strength.",
+        distribution_semantics="Damage, effective healing, control and tanking remain distinct measures. No universal contribution or power score is computed.",
+        unavailable_metrics=("battle_win_rate", "gear_strength", "skill_strength", "unique_human_count", "universal_power_score"), rate_unit="not_computed"),
+})
 
-def report_definition(name: str) -> ReportDefinition:
+IDENTITY_REPORT_DEFINITIONS = MappingProxyType({
+    "identity_effort": ReportDefinition(
+        name="identity_effort", definition_version=3, grain="dated_configuration_cell_and_explicit_identity_basis",
+        table="telemetry_rollup_identity_effort",
+        dimensions=("utc_day", "partition_kind", "basis", "identity_token", "config_id", "classifier_version",
+                    "policy_version", "faction_id", "level_band", "group_context_mode", "category"),
+        metrics=("character_usec", "utc_covered_character_usec", "unknown_clock_character_usec", "covered_union_usec",
+                 "union_usec", "distinct_characters", "distinct_accounts", "quality_flags"),
+        denominator="Exact observed input-derived intervals, split at ownership/review/day boundaries. Account and confirmed-controller clocks use interval unions; summed character effort remains separate. Unknown identity populations have NULL union clocks. Presence is a separate category when observed.",
+        distinct_semantics="Characters, accounts and confirmed controllers are separate bases. Unknown controllers are not combined into one person. Portfolio and faction/level/observed-group partitions overlap and cannot be summed; union cells are not additive.",
+        distribution_semantics="These aggregate union and summed-effort cells are not per-session duration samples or a complete human census.",
+        account_metrics_available=True, unavailable_metrics=("continuous_human_attention", "complete_controller_population",
+            "battle_presence_effort", "xp_per_hour"), rate_unit="not_computed"),
+    "portfolio_progression": ReportDefinition(
+        name="portfolio_progression", definition_version=3, grain="dated_configuration_identity_and_exact_xp_source_cell",
+        table="telemetry_rollup_portfolio_xp",
+        dimensions=("utc_day", "partition_kind", "basis", "identity_token", "config_id", "classifier_version",
+                    "policy_version", "faction_id", "level_band", "group_context_mode", "source", "reason",
+                    "observation_status", "modifier_flags"),
+        metrics=("observations", "zero_applied_observations", "negative_applied_observations", "requested_xp", "computed_xp",
+                 "applied_xp", "earned_positive_xp", "death_loss_xp", "restored_positive_xp", "linked_observations",
+                 "clock_unknown_observations", "incident_affected_observations", "quality_flags"),
+        denominator="XP observations attributed at their actual producer-clock point using retained authenticated ownership and the reserved dated review. Earned, lost, restored and administrative/source/status cells retain their separate meanings. No canonical economic reward or hourly rate is inferred.",
+        distinct_semantics="Character, account and confirmed-controller bases are separate projections of the same observations; summing bases or overlapping partitions duplicates XP. Missing ownership and linkage stay explicit unknown populations.",
+        distribution_semantics="Source aggregates support portfolio amount comparisons, not award distributions, milestones or causal rotation effects.",
+        account_metrics_available=True, unavailable_metrics=("xp_per_hour", "durable_economic_reward_total", "time_to_milestone",
+            "causal_rotation_advantage", "complete_controller_population"), rate_unit="not_computed"),
+})
+
+BATTLE_REPORT_DEFINITIONS = MappingProxyType({
+    name: ReportDefinition(name=name, definition_version=BATTLE_DEFINITION_VERSION,
+        grain=grain, table="telemetry_rollup_battle_row", dimensions=dimensions, metrics=metrics,
+        denominator="Immutable shared-battle observations and exact measured presence. Character-owner counts are not account/controller counts. Amounts crossing identity boundaries are not divided. Unavailable metrics, clocks, identity and decisive outcomes remain explicit; no rate is computed.",
+        distinct_semantics="Canonical battles and original alias lineage remain distinct. Actor snapshots, contribution segments and historical exposures are alternative projections; do not sum them together. Pets cannot borrow an unproven owner's authenticated identity.",
+        distribution_semantics="Observed and censored lifecycles retain source/linkage/loss quality. No complete battle, player population, winner, gear strength or causal comparison is established by these observations.",
+        account_metrics_available=name in ("battle_contributions", "battle_exposure"), unavailable_metrics=("battle_win_rate", "zone_clear_rate", "gear_strength",
+            "complete_controller_population", "continuous_human_attention", "economic_reward_rate"), rate_unit="not_computed")
+    for name, grain, dimensions, metrics in (
+        ("battle_observations", "original_and_canonical_battle", ("battle", "canonical_battle", "canonical"),
+            ("start_seen", "close_seen", "packet_history_complete", "contribution_count", "available_metric_mask", "outcome", "quality_flags")),
+        ("battle_actors", "canonical_battle_and_latest_actor_snapshot", ("canonical_battle", "battle_actor_id", "battle_actor_kind"),
+            ("battle_present_usec", "battle_contributor_usec", "effort_replay_verified", "quality_flags")),
+        ("battle_contributions", "original_disjoint_contribution_segment", ("canonical_battle", "bc_segment_seq", "bc_actor_id", "account_token", "controller_token"),
+            ("bc_damage_dealt", "bc_damage_taken", "bc_effective_healing", "bc_control_applications", "link_status", "attribution_status", "publication_quality_flags", "attribution_quality_flags")),
+        ("battle_exposure", "dated_actor_context_and_observed_identity_interval", ("source_battle", "canonical_battle", "battle_actor_id", "utc_day", "battle_config_id", "battle_actor_class_id", "battle_actor_faction_id", "account_token", "controller_token"),
+            ("battle_present_usec", "battle_contributor_usec", "battle_outnumbered_owner_usec", "observed_side_owners", "observed_opposing_owners", "linkage_status", "quality_flags")),
+        ("battle_associations", "original_immutable_association_fact", ("battle_boot_id", "battle_process_id", "battle_seq", "battle_revision", "battle_fact_sequence"),
+            ("battle_fact_kind", "battle_fact_count", "battle_actor_id", "battle_related_actor_id", "battle_related_battle_seq", "battle_mode", "battle_side_status", "battle_quality_flags", "projection_quality_flags")),
+    )
+})
+
+BUILD_REPORT_DEFINITIONS = MappingProxyType({
+    **{name: replace(value, definition_version=BATTLE_BUILD_DEFINITION_VERSION, table=value.table + "_v6")
+        for name, value in BATTLE_REPORT_DEFINITIONS.items()},
+    "battle_build_points": ReportDefinition(name="battle_build_points", definition_version=BATTLE_BUILD_DEFINITION_VERSION,
+        grain="original_actor_build_point", table="telemetry_rollup_battle_row_v6",
+        dimensions=("canonical_battle", "bctx_sequence", "bctx_actor_id", "bctx_actor_kind", "bctx_config_id",
+            "bctx_build_version", "bctx_content_version", "bctx_level", "bctx_race_id", "bctx_faction_id",
+            "bctx_classes_mask", "bctx_specialization", "bctx_equipment_digest", "bctx_epic_digest"),
+        metrics=("bctx_available", "bctx_status", "bctx_boundary", "bctx_context_quality", "link_status",
+            "point_clock_status", "configuration_status", "point_context_verified", "publication_quality_flags"),
+        denominator="Exact observed build points, including unavailable markers. A verified point requires its complete association prefix, producer clocks, retained configuration and independent schema-5 loss review. No continuous build exposure or contribution rate is inferred.",
+        distinct_semantics="Build points are repeated samples of original actors and canonical battles, not independent fights or people. PCs, pets and NPCs retain their own profiles. Availability bits qualify each raw cleared field family; unknown values are not measured zero.",
+        distribution_semantics="Use available families and configuration/content versions as explicit comparison dimensions. Point snapshots do not establish buff ownership, universal power, arena results or causal effects. Missing, stale and grace-tail points remain in coverage.",
+        unavailable_metrics=("continuous_build_exposure", "damage_by_build", "build_win_rate", "buff_caster_identity",
+            "unique_human_count", "universal_power_score", "arena_match_result"), rate_unit="not_computed"),
+})
+
+
+def report_definition(name: str, definition_version: int | None = None) -> ReportDefinition:
     canonical = REPORT_ALIASES.get(name, name)
     try:
-        return REPORT_DEFINITIONS[canonical]
+        definition = REPORT_DEFINITIONS.get(canonical) or OBSERVATION_REPORT_DEFINITIONS.get(canonical) or IDENTITY_REPORT_DEFINITIONS.get(canonical) or BATTLE_REPORT_DEFINITIONS.get(canonical) or BUILD_REPORT_DEFINITIONS[canonical]
     except KeyError as error:
         raise ValueError(
             f"unknown report definition {name!r}; "
-            f"available={sorted(REPORT_DEFINITIONS)}"
+            f"available={sorted((*REPORT_DEFINITIONS, *OBSERVATION_REPORT_DEFINITIONS, *IDENTITY_REPORT_DEFINITIONS, *BATTLE_REPORT_DEFINITIONS))}"
         ) from error
+    if definition_version is None:
+        return definition
+    if isinstance(definition_version, bool) or not isinstance(definition_version, int) or definition_version not in SUPPORTED_DEFINITION_VERSIONS:
+        raise ValueError("unsupported report definition version")
+    if definition.definition_version > definition_version:
+        raise ValueError(f"report requires definition version {definition.definition_version}")
+    if canonical in OBSERVATION_REPORT_DEFINITIONS and definition_version != 2:
+        raise ValueError("observation report requires definition version 2")
+    if (canonical in BUILD_REPORT_DEFINITIONS) != (definition_version in BATTLE_DEFINITION_VERSIONS):
+        raise ValueError("battle reports require their independent definition version")
+    return BUILD_REPORT_DEFINITIONS[canonical] if definition_version == BATTLE_BUILD_DEFINITION_VERSION else replace(definition, definition_version=definition_version)
 
 
-def report_definitions() -> tuple[ReportDefinition, ...]:
-    return tuple(REPORT_DEFINITIONS[name] for name in sorted(REPORT_DEFINITIONS))
+def report_definitions(definition_version: int = 1) -> tuple[ReportDefinition, ...]:
+    if definition_version in BATTLE_DEFINITION_VERSIONS:
+        definitions = BUILD_REPORT_DEFINITIONS if definition_version == BATTLE_BUILD_DEFINITION_VERSION else BATTLE_REPORT_DEFINITIONS
+        return tuple(report_definition(name, definition_version) for name in sorted(definitions))
+    names = set(REPORT_DEFINITIONS)
+    if definition_version == 2:
+        names.update(OBSERVATION_REPORT_DEFINITIONS)
+    if definition_version >= 3:
+        names.update(IDENTITY_REPORT_DEFINITIONS)
+    return tuple(report_definition(name, definition_version) for name in sorted(names))
 
 
-def report_catalog() -> tuple[dict[str, Any], ...]:
-    return tuple(definition.public_dict() for definition in report_definitions())
+def report_catalog(definition_version: int = 1) -> tuple[dict[str, Any], ...]:
+    return tuple(definition.public_dict() for definition in report_definitions(definition_version))
 
 
 def unknown_dimensions() -> dict[str, int]:
@@ -529,6 +679,8 @@ __all__ = [
     "ROLLUP_QUALITY_KNOWN_MASK",
     "ROLLUP_QUALITY_LATE_INPUT",
     "ROLLUP_QUALITY_SESSION_GAP",
+    "ROLLUP_QUALITY_INCIDENT_GAP",
+    "ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN",
     "ROLLUP_QUALITY_LIFECYCLE_CONFLICT",
     "ROLLUP_QUALITY_PROCESS_GAP",
     "ROLLUP_QUALITY_UTC_BACKWARD",

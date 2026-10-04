@@ -1,6 +1,7 @@
 #include "telemetry/telemetry_config_private.h"
 #include "telemetry/telemetry_config_reload.h"
 #include "telemetry/telemetry_runtime.h"
+#include "telemetry/telemetry_battle_build_context.h"
 #include "telemetry/telemetry_transport_private.h"
 #include "core/structs.h"
 
@@ -14,6 +15,8 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <vector>
+#include "telemetry_test_runtime.h"
 #include <unistd.h>
 
 P_room world = nullptr;
@@ -139,7 +142,7 @@ struct fake_repository
 		unavailable,
 	};
 
-	mode init_mode = mode::ready;
+	std::atomic<mode> init_mode{ mode::ready };
 	std::uint32_t init_calls = 0U;
 	std::uint32_t apply_calls = 0U;
 	std::uint32_t applied_records = 0U;
@@ -152,6 +155,8 @@ struct fake_repository
 	blocked_callback apply_callback;
 	std::atomic<telemetry_monotonic_usec> transport_now{ 0U };
 	telemetry_dimensions dimensions{};
+	std::vector<telemetry_record> battles;
+	std::vector<telemetry_record> contributions;
 };
 
 struct reload_property_values
@@ -248,6 +253,13 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 {
 	auto *fake = static_cast<fake_repository *>(context);
 	++fake->apply_calls;
+	if (fake->init_mode == fake_repository::mode::unavailable)
+	{
+		telemetry_apply_batch_result unavailable{};
+		unavailable.outcome = telemetry_batch_outcome::unavailable;
+		unavailable.failure_class = telemetry_failure_class::transient_connection;
+		return unavailable;
+	}
 	if (fake->block_apply)
 		fake->apply_callback.call();
 	fake->applied_records += static_cast<std::uint32_t>(count);
@@ -265,6 +277,16 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 	{
 		result.results[index].key = records[index].header.key;
 		result.results[index].outcome = telemetry_apply_outcome::applied;
+		if (records[index].header.kind == telemetry_record_kind::battle)
+		{
+			assert(telemetry_record_is_valid(records[index]));
+			fake->battles.push_back(records[index]);
+		}
+		if (records[index].header.kind == telemetry_record_kind::battle_contribution)
+		{
+			assert(telemetry_record_is_valid(records[index]));
+			fake->contributions.push_back(records[index]);
+		}
 		if (records[index].header.kind == telemetry_record_kind::session_lifecycle)
 		{
 			fake->dimensions = records[index].payload.lifecycle.dimensions;
@@ -514,8 +536,25 @@ void check_enabled_lifecycle()
 	       telemetry_transport_outcome::started);
 
 	const telemetry_runtime_options options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	const telemetry_session_enter enter = make_enter(options.producer, options.config);
+	/* This harness does not link either native catalog. Missing weak symbols
+	 * leave only those families unavailable, with no invented empty build. */
+	char_data character{};
+	pc_only_data pc{};
+	character.only.pc = &pc;
+	pc.pid = 8591;
+	character.in_room = -1;
+	telemetry_battle_build_context build{};
+	assert(telemetry_runtime_game_battle_build_context(&character, &build));
+	assert(build.actor.id == 8591U &&
+	       !(build.available & (TELEMETRY_BUILD_LEARNED_EPICS | TELEMETRY_BUILD_ARENA_ROSTER |
+				    TELEMETRY_BUILD_ARENA_ROOM)) &&
+	       (build.quality & TELEMETRY_BUILD_EPICS_UNAVAILABLE) &&
+	       (build.quality & TELEMETRY_BUILD_ARENA_UNAVAILABLE) &&
+	       (build.quality & TELEMETRY_BUILD_ROOM_UNAVAILABLE) &&
+	       build.epics.catalog_skills == 0U &&
+	       build.arena.membership == telemetry_battle_arena_membership::unavailable);
 	const telemetry_capture_result entered = telemetry_runtime_session_enter(enter);
 	assert(entered.outcome == telemetry_runtime_outcome::accepted);
 	assert(entered.records_emitted >= 1U);
@@ -572,7 +611,7 @@ void check_game_context_and_copyover_handoff()
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	const telemetry_runtime_options options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 
 	room_data rooms[1]{};
 	zone_data zones[1]{};
@@ -645,7 +684,7 @@ void check_game_context_and_copyover_handoff()
 	telemetry_runtime_options resumed_options = make_enabled_options();
 	resumed_options.producer.boot_id = options.producer.boot_id + 1U;
 	resumed_options.producer.process_id = options.producer.process_id + 1U;
-	assert(telemetry_runtime_init(resumed_options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(resumed_options);
 
 	char_data resumed_player{};
 	pc_only_data resumed_pc{};
@@ -688,7 +727,7 @@ void check_game_context_and_copyover_handoff()
 	telemetry_runtime_options absent_options = make_enabled_options();
 	absent_options.producer.boot_id = resumed_options.producer.boot_id + 1U;
 	absent_options.producer.process_id = resumed_options.producer.process_id + 1U;
-	assert(telemetry_runtime_init(absent_options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(absent_options);
 	char_data absent_player{};
 	pc_only_data absent_pc{};
 	absent_player.only.pc = &absent_pc;
@@ -737,8 +776,6 @@ void check_copyover_durability_barrier(bool blocked, bool rejected, bool unavail
 {
 	fake_repository fake{};
 	fake.block_apply = blocked;
-	if (unavailable)
-		fake.init_mode = fake_repository::mode::unavailable;
 	const telemetry_transport_repository_binding repository = {
 		fake_init, rejected ? reject_copyover_batch : fake_apply, fake_request_stop,
 		fake_shutdown, &fake
@@ -747,7 +784,9 @@ void check_copyover_durability_barrier(bool blocked, bool rejected, bool unavail
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	const auto options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
+	if (unavailable)
+		fake.init_mode = fake_repository::mode::unavailable;
 	const auto enter = make_enter(options.producer, options.config);
 	assert(telemetry_runtime_session_enter(enter).outcome ==
 	       telemetry_runtime_outcome::accepted);
@@ -845,7 +884,7 @@ void check_producer_reuse_rejected()
 		       telemetry_runtime_outcome::accepted);
 		assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
 	};
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	finish();
 	assert(fake.required_fresh_producer.boot_id == options.producer.boot_id);
 	assert(fake.required_fresh_producer.process_id == options.producer.process_id);
@@ -855,7 +894,7 @@ void check_producer_reuse_rejected()
 	const auto fresh = make_enabled_options();
 	assert(fresh.producer.boot_id != options.producer.boot_id ||
 	       fresh.producer.process_id != options.producer.process_id);
-	assert(telemetry_runtime_init(fresh) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(fresh);
 	finish();
 	telemetry_transport_unbind_for_tests();
 	std::printf("runtime producer reuse: outcome=%u fresh=accepted\n",
@@ -874,7 +913,7 @@ void check_classifier_counter_ownership()
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	const auto options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	const auto enter = make_enter(options.producer, options.config);
 	assert(telemetry_runtime_session_enter(enter).outcome ==
 	       telemetry_runtime_outcome::accepted);
@@ -933,7 +972,7 @@ void check_effective_property_reload()
 	reload_property_values values{ 0.0F, 10.0F, 1.0F, 0.2F, 0.15F, 1.0F };
 	reload_property_catalog catalog{};
 	const telemetry_runtime_options options = make_property_reload_options(values, catalog);
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	const telemetry_config_snapshot initial = telemetry_config_snapshot_copy();
 	assert(telemetry_config_is_valid(initial));
 	assert(initial.property_version == 1001U);
@@ -1032,6 +1071,122 @@ void check_effective_property_reload()
 	telemetry_transport_unbind_for_tests();
 }
 
+void check_battle_capture_across_property_reload()
+{
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	reload_property_values values{ 0.0F, 10.0F, 1.0F, 0.2F, 0.15F, 1.0F };
+	reload_property_catalog catalog{};
+	const auto options = make_property_reload_options(values, catalog);
+	telemetry_test_start_runtime(options);
+	const auto original = telemetry_config_snapshot_copy();
+	char_data source{}, target{};
+	pc_only_data source_pc{}, target_pc{};
+	source.only.pc = &source_pc;
+	target.only.pc = &target_pc;
+	source_pc.pid = 9901;
+	target_pc.pid = 9902;
+	source.in_room = target.in_room = -1;
+	source.player.level = target.player.level = 25;
+	assert(telemetry_runtime_game_combat_engage(&source, &target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	telemetry_runtime_game_combat_damage(&source, &target, 7U, 0U);
+	telemetry_runtime_game_combat_cast_attempt(&source, 1);
+	values.payout_factor = 1.25F;
+	telemetry_config_property_capture probe_capture{};
+	probe_capture.reader = { reload_property_read, &values };
+	probe_capture.mode = telemetry_config_property_capture_mode::require_reader;
+	telemetry_config_property_snapshot probe{};
+	assert(telemetry_config_property_snapshot_capture(&probe_capture, &probe) ==
+	       telemetry_config_build_outcome::built);
+	telemetry_config_reload_notify();
+	assert(telemetry_config_snapshot_copy().config_id == 0U);
+	assert(telemetry_runtime_game_combat_engage(&source, &target).outcome ==
+	       telemetry_runtime_outcome::invalid);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	assert(telemetry_runtime_game_battle_leave(&target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	reload_catalog_add(catalog, probe, 1002U);
+	telemetry_config_reload_notify();
+	const auto recovered = telemetry_config_snapshot_copy();
+	assert(telemetry_config_is_valid(recovered) && recovered.config_id != original.config_id);
+	telemetry_runtime_game_combat_damage(&source, &target, 1U, 0U);
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_pulse({ now, utc, 0U, 0U }).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	bool saw_gap = false, saw_recovered = false, saw_unknown_effort = false, saw_leave = false;
+	unsigned closes = 0U;
+	assert(!fake.battles.empty());
+	for (const auto &record : fake.battles)
+	{
+		const auto &row = record.payload.battle;
+		assert(row.battle.sequence == 1U);
+		saw_gap |=
+			row.mode == telemetry_encounter_mode::unknown &&
+			(row.quality_flags &
+			 (TELEMETRY_QUALITY_CONTEXT_UNKNOWN | TELEMETRY_QUALITY_QUEUE_DROP)) ==
+				(TELEMETRY_QUALITY_CONTEXT_UNKNOWN | TELEMETRY_QUALITY_QUEUE_DROP);
+		saw_recovered |= row.scope.config_id == recovered.config_id &&
+				 row.side_status == telemetry_battle_side_status::partial;
+		saw_unknown_effort |= row.effort.unknown_mode_usec > 0U;
+		saw_leave |= row.kind == telemetry_battle_fact_kind::actor_context &&
+			     row.actor.actor.actor_id == 9902U && row.active == 0U;
+		if (row.kind == telemetry_battle_fact_kind::close)
+		{
+			assert(row.close_reason == telemetry_battle_close_reason::shutdown &&
+			       row.end_censored == 1U);
+			++closes;
+		}
+	}
+	assert(saw_gap && saw_recovered && saw_unknown_effort && saw_leave && closes == 1U);
+	std::uint64_t dealt = 0U, taken = 0U, attempts = 0U, unresolved = 0U;
+	unsigned gap_segments = 0U, recovered_segments = 0U;
+	for (const auto &record : fake.contributions)
+	{
+		const auto &row = record.payload.battle_contribution;
+		dealt += row.counters.damage_dealt;
+		taken += row.counters.damage_taken;
+		attempts += row.counters.casting_attempts;
+		unresolved += row.counters.casting_unresolved;
+		if (row.context.scope.config_id == original.config_id)
+		{
+			assert(row.end_reason == telemetry_battle_contribution_end::source_gap &&
+			       row.cut.observed_usec <= row.cut.decision_usec &&
+			       (row.quality_flags & (TELEMETRY_QUALITY_CONTEXT_UNKNOWN |
+						     TELEMETRY_QUALITY_QUEUE_DROP)) ==
+				       (TELEMETRY_QUALITY_CONTEXT_UNKNOWN |
+					TELEMETRY_QUALITY_QUEUE_DROP));
+			++gap_segments;
+		}
+		else
+		{
+			assert(row.context.scope.config_id == recovered.config_id &&
+			       row.context.side_status == telemetry_battle_side_status::partial &&
+			       (row.quality_flags & (TELEMETRY_QUALITY_CONTEXT_UNKNOWN |
+						     TELEMETRY_QUALITY_QUEUE_DROP)) ==
+				       (TELEMETRY_QUALITY_CONTEXT_UNKNOWN |
+					TELEMETRY_QUALITY_QUEUE_DROP));
+			++recovered_segments;
+		}
+	}
+	assert(dealt == 8U && taken == 8U && attempts == 1U && unresolved == 1U &&
+	       gap_segments == 2U && recovered_segments == 2U);
+	std::puts(
+		"PASS: native battle and contribution configuration withdrawal, measured source-gap prefix, teardown and reviewed recovery");
+}
+
 void check_bounded_shutdown_request_and_final_reap()
 {
 	fake_repository fake{};
@@ -1043,7 +1198,7 @@ void check_bounded_shutdown_request_and_final_reap()
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	const telemetry_runtime_options options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	const telemetry_session_enter enter = make_enter(options.producer, options.config);
 	const telemetry_capture_result entered = telemetry_runtime_session_enter(enter);
 	assert(entered.outcome == telemetry_runtime_outcome::accepted);
@@ -1101,8 +1256,7 @@ void check_bounded_shutdown_request_and_final_reap()
 	assert(telemetry_transport_bind_for_tests(&resumed_repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	// A new runtime after final reap requires a new producer incarnation.
-	assert(telemetry_runtime_init(make_enabled_options()) ==
-	       telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(make_enabled_options());
 	assert(telemetry_runtime_now(&now, &ignored_utc));
 	shutdown.deadline_monotonic_usec = now + 5'000'000U;
 	assert(telemetry_runtime_shutdown(shutdown) == telemetry_runtime_outcome::accepted);
@@ -1128,6 +1282,7 @@ int main()
 	check_producer_reuse_rejected();
 	check_classifier_counter_ownership();
 	check_effective_property_reload();
+	check_battle_capture_across_property_reload();
 	check_bounded_shutdown_request_and_final_reap();
 	std::puts("telemetry runtime lifecycle and copyover integration passed");
 	return 0;

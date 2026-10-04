@@ -74,9 +74,11 @@ telemetry_handoff_result telemetry_runtime_game_handoff_copy(char_data *ch) {
         result.outcome = telemetry_runtime_outcome::queue_full;
     result.handoff.session.id.session_seq = std::strcmp(GET_NAME(ch), "alpha") == 0 ? 11 : 22;
     result.handoff.session.pid = 42;
+    result.handoff.ownership = { result.handoff.session.id.session_seq + 100,
+        2000, 0, telemetry_ownership_source::authenticated_login, {} };
     return result;
 }
-struct observation { P_desc descriptor; std::uint64_t sequence; };
+struct observation { P_desc descriptor; std::uint64_t sequence; std::uint64_t account_token; };
 std::vector<observation> observations;
 bool resume_full_before_admission = false;
 bool resume_full_after_admission = false;
@@ -88,11 +90,15 @@ telemetry_capture_result telemetry_runtime_game_session_resume(
         return result;
     }
     if (handoff && resume_full_before_admission) {
+        d->telemetry_pending_handoff = *handoff;
+        d->telemetry_resume_pending = 2;
         telemetry_capture_result result{};
         result.outcome = telemetry_runtime_outcome::queue_full;
         return result;
     }
-    observations.push_back({d, handoff ? handoff->session.id.session_seq : 0});
+    d->telemetry_resume_pending = 0;
+    observations.push_back({d, handoff ? handoff->session.id.session_seq : 0,
+        handoff ? handoff->ownership.account_token : 0});
     if (handoff && resume_full_after_admission) {
         d->telemetry_connection_sequence = 1;
         telemetry_capture_result result{};
@@ -145,13 +151,22 @@ std::vector<telemetry_copyover_entry> saved(bool allocation_failure = false) {
     fclose(file); return state.telemetry;
 }
 void exactly_once(std::uint64_t seq_a, std::uint64_t seq_b) {
+    if (observations.size() != 2) std::fprintf(stderr,
+        "resume expected=%llu/%llu observations=%zu deferred=%u/%u\n",
+        static_cast<unsigned long long>(seq_a), static_cast<unsigned long long>(seq_b),
+        observations.size(), a.telemetry_resume_pending, b.telemetry_resume_pending);
     assert(observations.size() == 2);
     assert(observations[0].descriptor == &a && observations[0].sequence == seq_a);
     assert(observations[1].descriptor == &b && observations[1].sequence == seq_b);
+    assert(observations[0].account_token == (seq_a ? seq_a + 100 : 0));
+    assert(observations[1].account_token == (seq_b ? seq_b + 100 : 0));
 }
 int main() {
     setup(); auto entries = saved();
     assert(entries.size() == 2 && entries[0].handoff.session.id.session_seq == 11);
+    assert(entries[0].handoff.ownership.account_token == 111 &&
+        entries[0].handoff.ownership.observed_at_utc_usec == 2000 &&
+        entries[0].handoff.ownership.source == telemetry_ownership_source::authenticated_login);
     assert(flush_calls == 1 && captures == 2);
     b.next = nullptr; restore_telemetry_copyover_sessions(&entries); exactly_once(11,22);
     setup(); absent_player_name = "beta"; entries = saved();
@@ -183,7 +198,18 @@ int main() {
         setup(); entries = saved();
         resume_full_before_admission = !after; resume_full_after_admission = after;
         b.next = nullptr; restore_telemetry_copyover_sessions(&entries);
-        exactly_once(after ? 11 : 0, after ? 22 : 0);
+        if (after) exactly_once(11,22);
+        else {
+            assert(observations.empty() && a.telemetry_resume_pending == 2 &&
+                b.telemetry_resume_pending == 2 && !a.telemetry_connection_sequence &&
+                !b.telemetry_connection_sequence);
+            assert(a.telemetry_pending_handoff.ownership.account_token == 111 &&
+                b.telemetry_pending_handoff.ownership.account_token == 122);
+            resume_full_before_admission = false;
+            telemetry_runtime_game_session_resume(&alpha, &a, &a.telemetry_pending_handoff);
+            telemetry_runtime_game_session_resume(&beta, &b, &b.telemetry_pending_handoff);
+            exactly_once(11,22);
+        }
     }
     setup(); FILE *file = tmpfile(); assert(file);
     assert(!write_telemetry_copyover_state(file, -1));

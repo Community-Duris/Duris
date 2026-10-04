@@ -3,6 +3,7 @@
 #include "sql/sql_exclusion_guard.h"
 #include "sql/sql_pool.h"
 #include "sql/sql_thread_init.h"
+#include "sql/sql_telemetry_account_identity.h"
 
 #include <algorithm>
 #include <atomic>
@@ -326,6 +327,32 @@ account_load_result account_load_execute(MYSQL *connection, const account_load_r
 		execute(connection, "COMMIT", request.deadline_usec);
 		transaction.active = false;
 		result.outcome = account_load_outcome::loaded;
+		// The account snapshot is committed before optional token preparation.
+		// A telemetry outage must not discard valid credentials or block login.
+		if (request.telemetry_environment_id && request.telemetry_season_id &&
+		    account_load_now_usec() < request.deadline_usec)
+		{
+			uint64_t token = 0;
+			try
+			{
+				if (sql_prepare_telemetry_account_token_on(
+					    connection, snapshot.name.c_str(),
+					    request.telemetry_environment_id,
+					    request.telemetry_season_id, request.deadline_usec,
+					    &token) &&
+				    token)
+				{
+					snapshot.telemetry_account_token = token;
+					snapshot.telemetry_environment_id =
+						request.telemetry_environment_id;
+					snapshot.telemetry_season_id = request.telemetry_season_id;
+				}
+			}
+			catch (...)
+			{
+				// Retain the committed snapshot with explicitly unknown identity.
+			}
+		}
 	}
 	catch (const query_failure &failure)
 	{
@@ -393,8 +420,11 @@ account_load_result execute_repository(const account_load_request &request, void
 	    result.error >= CR_MIN_ERROR || mysql_errno(connection) >= CR_MIN_ERROR)
 	{
 		sql_pool_discard_connection(connection);
-		result.snapshot = {};
-		result.outcome = account_load_outcome::load_failed;
+		if (result.outcome != account_load_outcome::loaded)
+		{
+			result.snapshot = {};
+			result.outcome = account_load_outcome::load_failed;
+		}
 	}
 	return result;
 #else

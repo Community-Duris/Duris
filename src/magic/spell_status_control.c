@@ -9,6 +9,7 @@
 #include "world/graph.h"
 #include "combat/damage.h"
 #include "magic/spells.h"
+#include "telemetry/telemetry_runtime.h"
 #include <string.h>
 #include <strings.h>
 
@@ -51,6 +52,15 @@ void spell_blindness(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_c
 void spell_major_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			   P_char victim, P_obj obj)
 {
+	const auto before = telemetry_runtime_game_control_mask(victim);
+	const auto record_result = [ch, victim, before, level](telemetry_control_result result,
+							       std::int32_t ticks = 0,
+							       std::uint16_t flags = 0U)
+	{
+		telemetry_runtime_game_combat_control_result(
+			ch, victim, telemetry_control_family::major_paralysis, result, before,
+			ticks, flags | (level < 0 ? TELEMETRY_CONTROL_NEGATIVE_LEVEL : 0U));
+	};
 	struct affected_type af;
 	int lev = level;
 
@@ -59,17 +69,30 @@ void spell_major_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 		return;
 	}
 	if (GET_STAT(ch) == STAT_DEAD)
+	{
+		record_result(telemetry_control_result::source_ineligible);
 		return;
+	}
 
 	appear(ch);
 
-	if (!IS_TRUSTED(ch) &&
-	    (resists_spell(ch, victim) ||
-	     (IS_NPC(victim) && IS_SET(victim->specials.act, ACT_IMMUNE_TO_PARA))))
-		return;
+	if (!IS_TRUSTED(ch))
+	{
+		if (resists_spell(ch, victim))
+		{
+			record_result(telemetry_control_result::resisted);
+			return;
+		}
+		if (IS_NPC(victim) && IS_SET(victim->specials.act, ACT_IMMUNE_TO_PARA))
+		{
+			record_result(telemetry_control_result::immune);
+			return;
+		}
+	}
 
 	if (check_freedom_of_movement(victim, number(0, 1)) && !IS_TRUSTED(ch))
 	{
+		record_result(telemetry_control_result::movement_protection);
 		send_to_char("&+CTheir movement magic prevented your spell!&n\r\n", ch);
 		return;
 	}
@@ -92,6 +115,10 @@ void spell_major_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 		af.bitvector2 = AFF2_MAJOR_PARALYSIS;
 
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
+		record_result(telemetry_control_result::applied, af.duration,
+			      (IS_TRUSTED(ch) || level < 0) ? TELEMETRY_CONTROL_SAVE_BYPASSED : 0U);
 
 		act("$n &+Mceases to move.. still and lifeless.", FALSE, victim, 0, 0, TO_ROOM);
 		send_to_char("&+LYour body becomes like stone as the paralyzation takes effect.\n",
@@ -106,11 +133,15 @@ void spell_major_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 
 		remember(victim, ch);
 	}
-	else if (IS_NPC(victim) && CAN_SEE(victim, ch))
+	else
 	{
-		remember(victim, ch);
-		if (!IS_FIGHTING(victim))
-			MobStartFight(victim, ch);
+		record_result(telemetry_control_result::saved);
+		if (IS_NPC(victim) && CAN_SEE(victim, ch))
+		{
+			remember(victim, ch);
+			if (!IS_FIGHTING(victim))
+				MobStartFight(victim, ch);
+		}
 	}
 }
 
@@ -120,14 +151,31 @@ void spell_major_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 void spell_minor_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			   P_char victim, P_obj /*obj*/)
 {
+	const auto before = telemetry_runtime_game_control_mask(victim);
+	const auto record_result = [ch, victim, before, level](telemetry_control_result result,
+							       std::int32_t ticks = 0,
+							       std::uint16_t flags = 0U)
+	{
+		telemetry_runtime_game_combat_control_result(
+			ch, victim, telemetry_control_family::minor_paralysis, result, before,
+			ticks, flags | (level < 0 ? TELEMETRY_CONTROL_NEGATIVE_LEVEL : 0U));
+	};
 	struct affected_type af;
 
-	if (resists_spell(ch, victim) ||
-	    (IS_NPC(victim) && IS_SET(victim->specials.act, ACT_IMMUNE_TO_PARA)))
+	if (resists_spell(ch, victim))
+	{
+		record_result(telemetry_control_result::resisted);
 		return;
+	}
+	if (IS_NPC(victim) && IS_SET(victim->specials.act, ACT_IMMUNE_TO_PARA))
+	{
+		record_result(telemetry_control_result::immune);
+		return;
+	}
 
 	if (check_freedom_of_movement(victim, false) && !IS_TRUSTED(ch))
 	{
+		record_result(telemetry_control_result::movement_protection);
 		send_to_char("&+CTheir movement magic prevented your spell!&n\r\n", ch);
 		return;
 	}
@@ -141,6 +189,9 @@ void spell_minor_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 		af.bitvector2 = AFF2_MINOR_PARALYSIS;
 
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
+		record_result(telemetry_control_result::applied, af.duration, 0U);
 
 		act("$n &+Wturns pale as some magical force occupies $s body, causing all motion to halt.",
 		    FALSE, victim, 0, 0, TO_ROOM);
@@ -154,6 +205,8 @@ void spell_minor_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 		 */
 		StopMercifulAttackers(victim);
 	}
+	else
+		record_result(telemetry_control_result::saved);
 } /*
    * spell_paralyze
    */
@@ -163,15 +216,28 @@ void spell_minor_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 void spell_slow(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
 		P_obj /*obj*/)
 {
+	const auto before = telemetry_runtime_game_control_mask(victim);
+	const auto record_result = [ch, victim, before, level](telemetry_control_result result,
+							       std::int32_t ticks = 0,
+							       std::uint16_t flags = 0U)
+	{
+		telemetry_runtime_game_combat_control_result(
+			ch, victim, telemetry_control_family::slow, result, before, ticks,
+			flags | (level < 0 ? TELEMETRY_CONTROL_NEGATIVE_LEVEL : 0U));
+	};
 	struct affected_type af;
 
 	if (GET_STAT(ch) == STAT_DEAD)
+	{
+		record_result(telemetry_control_result::source_ineligible);
 		return;
+	}
 
 	appear(ch);
 
 	if (IS_AFFECTED2(victim, AFF2_SLOW))
 	{
+		record_result(telemetry_control_result::already_present);
 		act("Just between you and me, $N looks pretty slow already.", FALSE, ch, 0, victim,
 		    TO_CHAR);
 		return;
@@ -179,13 +245,17 @@ void spell_slow(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 
 	if (GET_CLASS(victim, CLASS_MONK))
 	{
+		record_result(telemetry_control_result::class_ineligible);
 		act("$N's intense concentration means that $E cannot be slowed!", TRUE, ch, 0,
 		    victim, TO_CHAR);
 		return;
 	}
 
 	if (resists_spell(ch, victim))
+	{
+		record_result(telemetry_control_result::resisted);
 		return;
+	}
 
 	if (!saves_spell(victim, SAVING_PARA))
 	{
@@ -196,10 +266,16 @@ void spell_slow(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 		af.bitvector2 = AFF2_SLOW;
 
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
+		record_result(telemetry_control_result::applied, af.duration, 0U);
 
 		act("&+m$n begins to sllooowwww down.", TRUE, victim, 0, 0, TO_ROOM);
 		send_to_char("&+mYou feel yourself slowing down.\n", victim);
 	}
+
+	else
+		record_result(telemetry_control_result::saved);
 
 	if (IS_NPC(victim) && CAN_SEE(victim, ch))
 	{
@@ -214,11 +290,21 @@ void spell_slow(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 void spell_sleep(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
 		 P_obj /*obj*/)
 {
+	const auto before = telemetry_runtime_game_control_mask(victim);
+	const auto record_result = [ch, victim, before, level](telemetry_control_result result,
+							       std::int32_t ticks = 0,
+							       std::uint16_t flags = 0U)
+	{
+		telemetry_runtime_game_combat_control_result(
+			ch, victim, telemetry_control_family::sleep, result, before, ticks,
+			flags | (level < 0 ? TELEMETRY_CONTROL_NEGATIVE_LEVEL : 0U));
+	};
 	struct affected_type af;
 	int i;
 
 	if (GET_STAT(ch) == STAT_DEAD)
 	{
+		record_result(telemetry_control_result::source_ineligible);
 		send_to_char("They are already... quite... asleep... for good.&n\n", ch);
 		return;
 	}
@@ -228,6 +314,7 @@ void spell_sleep(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type
 
 	if (resists_spell(ch, victim))
 	{
+		record_result(telemetry_control_result::resisted);
 		send_to_char("Your victim resists your attempt to make them sleep.&n\n", ch);
 		return;
 	}
@@ -238,6 +325,7 @@ void spell_sleep(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type
 			if (victim->equipment[i] &&
 			    IS_SET(victim->equipment[i]->extra_flags, ITEM_NOSLEEP))
 			{
+				record_result(telemetry_control_result::target_protected);
 				send_to_char(
 					"&+CYour target appears to be protected against sleeping!\n",
 					ch);
@@ -255,8 +343,9 @@ void spell_sleep(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type
 				return;
 			}
 		}
-	if ((level < 0) || (!saves_spell(victim, SAVING_SPELL) && (GET_LEVEL(victim) < 56) &&
-			    !IS_DEMON(victim) && !IS_UNDEADRACE(victim) && !IS_ELEMENTAL(victim)))
+	const bool sleep_saved = level < 0 ? false : saves_spell(victim, SAVING_SPELL);
+	if ((level < 0) || (!sleep_saved && (GET_LEVEL(victim) < 56) && !IS_DEMON(victim) &&
+			    !IS_UNDEADRACE(victim) && !IS_ELEMENTAL(victim)))
 	{
 		bzero(&af, sizeof(af));
 		af.type = SPELL_SLEEP;
@@ -278,12 +367,20 @@ void spell_sleep(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type
 			SET_POS(victim, GET_POS(victim) + STAT_SLEEPING);
 		}
 		affect_join(victim, &af, FALSE, FALSE);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
+		record_result(telemetry_control_result::applied, af.duration,
+			      (level < 0 ? TELEMETRY_CONTROL_SAVE_BYPASSED : 0U) |
+				      ((before & 32U) ? TELEMETRY_CONTROL_SLEEP_REFRESH : 0U));
 		/*
 		 * stop all non-vicious/agg attackers
 		 */
 		StopMercifulAttackers(victim);
 		return;
 	}
+	record_result(sleep_saved	      ? telemetry_control_result::saved :
+		      GET_LEVEL(victim) >= 56 ? telemetry_control_result::level_ineligible :
+						telemetry_control_result::immune);
 	if (IS_NPC(victim) && CAN_SEE(victim, ch))
 	{
 		remember(victim, ch);
@@ -697,8 +794,23 @@ void spell_fly(int level, P_char /*ch*/, char * /*arg*/, [[maybe_unused]] int ty
 void spell_silence(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 		   P_char victim, P_obj /*obj*/)
 {
-	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
+	const auto before = telemetry_runtime_game_control_mask(victim);
+	const auto record_result = [ch, victim, before](telemetry_control_result result,
+							std::int32_t ticks = 0,
+							std::uint16_t flags = 0U)
 	{
+		telemetry_runtime_game_combat_control_result(ch, victim,
+							     telemetry_control_family::silence,
+							     result, before, ticks, flags | (0U));
+	};
+	if (!IS_ALIVE(ch))
+	{
+		record_result(telemetry_control_result::source_ineligible);
+		return;
+	}
+	if (!IS_ALIVE(victim))
+	{
+		record_result(telemetry_control_result::target_ineligible);
 		return;
 	}
 
@@ -724,20 +836,34 @@ void spell_silence(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] in
 
 	//  debug("Silence percent is: %d", percent);
 
-	if ((IS_TRUSTED(victim) && victim != ch) || (IS_GREATER_RACE(victim)) ||
-	    (IS_ELITE(victim)) || (percent < 10))
+	if (IS_TRUSTED(victim) && victim != ch)
 	{
+		record_result(telemetry_control_result::target_protected);
+		return;
+	}
+	if (IS_GREATER_RACE(victim) || IS_ELITE(victim))
+	{
+		record_result(telemetry_control_result::immune);
+		return;
+	}
+	if (percent < 10)
+	{
+		record_result(telemetry_control_result::percentage_rejected);
 		return;
 	}
 
 	if (IS_AFFECTED2(victim, AFF2_SILENCED))
 	{
+		record_result(telemetry_control_result::already_present);
 		send_to_char("They are already quiet!\n", ch);
 		return;
 	}
 
 	if (resists_spell(ch, victim))
+	{
+		record_result(telemetry_control_result::resisted);
 		return;
+	}
 
 	struct affected_type af;
 	bzero(&af, sizeof(af));
@@ -752,6 +878,9 @@ void spell_silence(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] in
 		af.flags = AFFTYPE_SHORT;
 		af.bitvector2 = AFF2_SILENCED;
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
+		record_result(telemetry_control_result::applied, af.duration, 0U);
 	}
 	else if (percent > 70)
 	{
@@ -763,6 +892,9 @@ void spell_silence(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] in
 		af.flags = AFFTYPE_SHORT;
 		af.bitvector2 = AFF2_SILENCED;
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
+		record_result(telemetry_control_result::applied, af.duration, 0U);
 	}
 	else if (percent > 40)
 	{
@@ -774,6 +906,9 @@ void spell_silence(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] in
 		af.duration = 5 * WAIT_SEC;
 		af.bitvector2 = AFF2_SILENCED;
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
+		record_result(telemetry_control_result::applied, af.duration, 0U);
 	}
 	else if (percent > 5)
 	{
@@ -785,6 +920,9 @@ void spell_silence(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] in
 		af.duration = 3 * WAIT_SEC;
 		af.bitvector2 = AFF2_SILENCED;
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
+		record_result(telemetry_control_result::applied, af.duration, 0U);
 	}
 }
 void spell_feeblemind(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
@@ -1503,6 +1641,15 @@ void spell_tranquility(int level, P_char ch, char * /*arg*/, int /*type*/, P_cha
 void spell_entangle(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
 		    P_obj /*obj*/)
 {
+	const auto before = telemetry_runtime_game_control_mask(victim);
+	const auto record_result = [ch, victim, before, level](telemetry_control_result result,
+							       std::int32_t ticks = 0,
+							       std::uint16_t flags = 0U)
+	{
+		telemetry_runtime_game_combat_control_result(
+			ch, victim, telemetry_control_family::entangle, result, before, ticks,
+			flags | (level < 0 ? TELEMETRY_CONTROL_NEGATIVE_LEVEL : 0U));
+	};
 	struct affected_type af;
 	int skl_lvl, chance, sect;
 
@@ -1515,23 +1662,32 @@ void spell_entangle(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 	sect = SECTOR_TYPE(ch->in_room);
 	if (!IS_OUTSIDE(ch->in_room) || !HAS_VEGETATION(sect))
 	{
+		record_result(telemetry_control_result::location_ineligible);
 		send_to_char("Not too much to entangle yer opponent with here..\n", ch);
 		return;
 	}
 
-	if (!IS_ALIVE(victim) || IS_TRUSTED(victim))
+	if (!IS_ALIVE(victim))
 	{
+		record_result(telemetry_control_result::target_ineligible);
+		return;
+	}
+	if (IS_TRUSTED(victim))
+	{
+		record_result(telemetry_control_result::target_protected);
 		return;
 	}
 
 	if (affected_by_spell(victim, SPELL_ENTANGLE) || IS_AFFECTED2(victim, AFF2_MINOR_PARALYSIS))
 	{
+		record_result(telemetry_control_result::already_present);
 		send_to_char("Nothing happens.\n", ch);
 		return;
 	}
 
 	if (check_freedom_of_movement(victim, number(0, 1)) && !IS_TRUSTED(ch))
 	{
+		record_result(telemetry_control_result::movement_protection);
 		send_to_char("&+CTheir movement magic prevented your spell!&n\r\n", ch);
 		return;
 	}
@@ -1550,7 +1706,8 @@ void spell_entangle(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 
 	bzero(&af, sizeof(af));
 
-	if (!NewSaves(victim, SAVING_PARA, skl_lvl) &&
+	const bool entangle_saved = NewSaves(victim, SAVING_PARA, skl_lvl);
+	if (!entangle_saved &&
 	    !(IS_NPC(victim) && IS_SET(victim->specials.act, ACT_IMMUNE_TO_PARA)))
 	{
 		send_to_char(
@@ -1573,6 +1730,9 @@ void spell_entangle(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 				"&+GThe vegetation closes tightly, completely entangling you!\n",
 				victim);
 			SET_BIT(victim->specials.affected_by, AFF_BOUND);
+			telemetry_runtime_game_combat_control(ch, victim, 1U,
+							      TELEMETRY_COMBAT_MODIFIER_NONE);
+			record_result(telemetry_control_result::applied, af.duration, 0U);
 		}
 		else
 		{
@@ -1591,8 +1751,14 @@ void spell_entangle(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 			act("&+gVegetation &+Gbursts&+g from the ground, impeding $n.&N", TRUE,
 			    victim, 0, 0, TO_ROOM);
 			affect_to_char(victim, &af);
+			telemetry_runtime_game_combat_control(ch, victim, 1U,
+							      TELEMETRY_COMBAT_MODIFIER_NONE);
+			record_result(telemetry_control_result::applied, af.duration, 0U);
 		}
 	}
+	else
+		record_result(entangle_saved ? telemetry_control_result::saved :
+					       telemetry_control_result::immune);
 }
 
 void spell_contain_being(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,

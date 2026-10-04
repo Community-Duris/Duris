@@ -738,6 +738,146 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "e53e06ca7a5b482b6efee950a4db69fdb7d796b7ff71ed495e67bd3194133bb1",
       "verify_checksum": "e3fbff0b062da55fc7231411beefe8be216341755df7fa088ba64b1f86653551"
+    },
+    {
+      "id": "0054_telemetry_incident_coverage",
+      "sequence": 57,
+      "description": "Retain reviewed telemetry incidents and published coverage snapshots",
+      "apply": "immutable/0054_telemetry_incident_coverage.sql",
+      "verify": "immutable/0054_telemetry_incident_coverage.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "87910e4bfdff86b1557ca5d390a58a15bf9373336b09dc8a6d15f36bebb6795b",
+      "verify_checksum": "7082566a54e2acd60496a90971761ff36fb606c0d9ccbd0eded9fc908b736e0d"
+    },
+    {
+      "id": "0055_telemetry_observation_projections",
+      "sequence": 58,
+      "description": "Project collected progression encounter and combat observations at definition 2",
+      "apply": "immutable/0055_telemetry_observation_projections.sql",
+      "verify": "immutable/0055_telemetry_observation_projections.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "b39e37286927c8f94cb32e3ca3aff73658a1a8f317e13f6d99d3b065ee04063c",
+      "verify_checksum": "6f5e2dd39410bb4a2417ecef028cecb2906abf15408b51dd9cfdff0ade630ce9"
+    },
+    {
+      "id": "0056_telemetry_account_identity",
+      "sequence": 59,
+      "description": "Retain private account lifetimes and scoped opaque telemetry account tokens",
+      "apply": "immutable/0056_telemetry_account_identity.sql",
+      "verify": "immutable/0056_telemetry_account_identity.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "72e84f8fcea1dee822d1f73a8275696da27d3079124a1bdf5a2dff86c27686a8",
+      "verify_checksum": "4f3d1d21ded4380197fea2917335af873786dc279a0b6778a236182b99795e24"
+    },
+    {
+      "id": "0057_telemetry_ownership_observations",
+      "sequence": 60,
+      "description": "Capture typed authenticated account ownership observations without adding effort",
+      "apply": "immutable/0057_telemetry_ownership_observations.sql",
+      "verify": "immutable/0057_telemetry_ownership_observations.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "6da0f3c861f1c8b49acfd982a314ed3a04267799a353942a061e8b1fa48327c5",
+      "verify_checksum": "029ab78e7c3c54ceceb21f54f86a502393aa32e0008332e2574bd50381b1515c"
+    },
+    {
+      "id": "0058_telemetry_identity_review",
+      "sequence": 61,
+      "description": "Authenticate dated cross-account reviews and freeze generation identity versions",
+      "apply": "immutable/0058_telemetry_identity_review.sql",
+      "verify": "immutable/0058_telemetry_identity_review.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "c26852c2c100806fae5a857a446f4ab9edcb829e43154a13f0352f28f2a7a8f1",
+      "verify_checksum": "9b2aa9241bfa8d81e041e43370649088149e0ad447ef1de861035af1de02b4dc"
+    },
+    {
+      "id": "0059_telemetry_ownership_incident_coverage",
+      "sequence": 62,
+      "description": "Retain independent reviewed ownership-loss inventories for balance generations",
+      "apply": "immutable/0059_telemetry_ownership_incident_coverage.sql",
+      "verify": "immutable/0059_telemetry_ownership_incident_coverage.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "86d2e75f02cf3cc634f44d828eb4c80031ad6490348f55af7750aebaf7907b26",
+      "verify_checksum": "680ac451a977c2bd8d2deda428b40d499a80ca445211efef663832ffe63479a6"
+    },
+    {
+      "id": "0060_telemetry_identity_publication",
+      "sequence": 63,
+      "description": "Retain exact identity inputs and publish reviewed effort and XP portfolios atomically",
+      "apply": "immutable/0060_telemetry_identity_publication.sql",
+      "verify": "immutable/0060_telemetry_identity_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "2645843d3c3f5182278ae2a1746efa2f3428309f4f8d9b7cc79c3fecb2a186de",
+      "verify_checksum": "95ae27a6871fbd34e353c970749cc8f9f29068268caca50a1513c9b0ae5fed71"
+    },
+    {
+      "id": "0061_telemetry_shared_battle_facts",
+      "sequence": 64,
+      "description": "Persist shared battle facts with logical replay and independent incident schema 3",
+      "apply": "immutable/0061_telemetry_shared_battle_facts.sql",
+      "verify": "immutable/0061_telemetry_shared_battle_facts.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "4dd602c9aa0ec861ce819bbb19c2555ae76c6ed55c9376df0300691bd15bbebc",
+      "verify_checksum": "8238821bb4e16305f99662768ae4a95353987b3bd72c2652f98d262adb75a047"
+    },
+    {
+      "id": "0062_telemetry_battle_contributions",
+      "sequence": 65,
+      "description": "Persist battle contributions with exact segment replay and independent incident schema 4",
+      "apply": "immutable/0062_telemetry_battle_contributions.sql",
+      "verify": "immutable/0062_telemetry_battle_contributions.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "70cd9746ca79b3a788ec5bfa4f9f2a47e12dc88e3dd68ac8875386147ccc71b5",
+      "verify_checksum": "48c1756b63378ad76e285d7734b3d359e6eed70a956992002435dfd2138ccae7"
+    },
+    {
+      "id": "0063_telemetry_battle_source",
+      "sequence": 66,
+      "description": "Retain exact battle source with the generation cursor and immutable identity reservation",
+      "apply": "immutable/0063_telemetry_battle_source.sql",
+      "verify": "immutable/0063_telemetry_battle_source.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "9fe2d8f82612d5ba3c65d9c23a96af6db7afd37eaaf29f5c30b23749d37bed60",
+      "verify_checksum": "e9c80c1363ec397bf684de2bae59b0a9d3da1faae1d34410df1f6c0d66310625"
+    },
+    {
+      "id": "0064_telemetry_battle_publication",
+      "sequence": 67,
+      "description": "Atomically publish retained battle observations with dated presence and reserved identity attribution",
+      "apply": "immutable/0064_telemetry_battle_publication.sql",
+      "verify": "immutable/0064_telemetry_battle_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "3757688bd03830cd81f41dc37a6c79ae02ab667954864acb359eb400c9e46963",
+      "verify_checksum": "b21d8d115545a990d988fe65f6efec79d68ef61b8dca40e42096f29b588ea4b9"
+    },
+    {
+      "id": "0065_telemetry_battle_builds",
+      "sequence": 68,
+      "description": "Persist selected battle build point observations with exact replay and independent incident schema 5",
+      "apply": "immutable/0065_telemetry_battle_builds.sql",
+      "verify": "immutable/0065_telemetry_battle_builds.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "d6838b321408191d727892973e27215475a287ad3653b6a2a67d8ee859ac6455",
+      "verify_checksum": "ca0be3bbf10362354b2d673eb95ab146b29849f87ba96c0aa69d799221548a94"
+    },
+    {
+      "id": "0066_telemetry_build_publication",
+      "sequence": 69,
+      "description": "Retain and atomically publish exact build points under independent battle definition 6",
+      "apply": "immutable/0066_telemetry_build_publication.sql",
+      "verify": "immutable/0066_telemetry_build_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "b607a89b91674eda67d3d71f4d87e5c6e0d02b5537bc573e5697487ccdd5aa7a",
+      "verify_checksum": "f21db7966c37fb7b73ec75d3df1cd74d5b6880dc9934aaf7514c2e2a2cd0500d"
+    },
+    {
+      "id": "0067_telemetry_typed_control",
+      "sequence": 70,
+      "description": "Persist typed control resolutions and target intervals with exact replay and independent incident schema 6",
+      "apply": "immutable/0067_telemetry_typed_control.sql",
+      "verify": "immutable/0067_telemetry_typed_control.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "fccaba3f8c7c2480b555178334d598b7b1c929a0f3df8cec1e2942e6baf08638",
+      "verify_checksum": "7f2e23bd872b74adf1bc0355e0b01247b483aebbb450d68f82e7cc79ee466808"
     }
   ]
 }

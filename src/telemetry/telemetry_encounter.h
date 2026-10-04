@@ -94,6 +94,11 @@ struct telemetry_encounter_update
 
 void telemetry_encounter_state_init(telemetry_encounter_state *state) noexcept;
 
+/* Read-only link to an active observed participant; terminal/inactive history
+ * cannot be promoted to a current encounter. Failure clears the output. */
+bool telemetry_encounter_current(const telemetry_encounter_state *, telemetry_encounter_participant,
+				 telemetry_encounter_id *) noexcept;
+
 telemetry_encounter_update
 telemetry_encounter_begin(telemetry_encounter_state *state, telemetry_encounter_id encounter,
 			  telemetry_encounter_source source, telemetry_encounter_mode mode,

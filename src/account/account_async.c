@@ -2,6 +2,7 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
+#include "telemetry/telemetry_runtime.h"
 
 #include <memory>
 #include <utility>
@@ -34,6 +35,9 @@ void apply_snapshot(P_acct account, const account_load_snapshot &snapshot)
 	account->acct_flags2 = snapshot.flags[1];
 	account->acct_flags3 = snapshot.flags[2];
 	account->acct_flags4 = snapshot.flags[3];
+	account->telemetry_account_token = snapshot.telemetry_account_token;
+	account->telemetry_environment_id = snapshot.telemetry_environment_id;
+	account->telemetry_season_id = snapshot.telemetry_season_id;
 	account->num_ips = static_cast<int>(snapshot.ips.size());
 	account->num_chars = static_cast<int>(snapshot.characters.size());
 	struct acct_ip **ip_tail = &account->acct_unique_ips;
@@ -107,8 +111,10 @@ bool account_async_start(P_desc d, account_load_completion finish)
 		request->email = text(d->account->acct_email);
 		request->confirmation = text(d->account->acct_confirmation);
 		request->blocked = d->account->acct_blocked;
-		request->job =
-			account_load_submit({ request->id, request->deadline, request->name });
+		account_load_request input = { request->id, request->deadline, request->name };
+		(void)telemetry_runtime_account_scope(input.telemetry_environment_id,
+						      input.telemetry_season_id);
+		request->job = account_load_submit(std::move(input));
 		if (!request->job)
 			return false;
 		d->account_request = request.release();

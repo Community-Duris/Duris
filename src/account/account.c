@@ -3783,7 +3783,12 @@ static void free_acct_entry_shallow(struct acct_entry *loaded)
 
 int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 {
-	if (!acct || !acct->acct_name)
+	if (!acct)
+		return -1;
+	acct->telemetry_account_token = 0U;
+	acct->telemetry_environment_id = 0U;
+	acct->telemetry_season_id = 0U;
+	if (!acct->acct_name)
 		return -1;
 
 	char name_backup[256];
@@ -3966,6 +3971,7 @@ int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 #else
 	free(loaded);
 #endif
+	(void)telemetry_runtime_account_prepare(acct);
 	return 1;
 }
 

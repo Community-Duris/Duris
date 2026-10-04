@@ -28,6 +28,7 @@ enum class case_kind : std::uint8_t
 struct fault_repository
 {
 	std::atomic<std::uint32_t> init_failures{ 0U };
+	std::atomic<bool> disconnect_on_apply{ false };
 	std::atomic<std::uint32_t> init_calls{ 0U };
 	std::atomic<std::uint32_t> apply_calls{ 0U };
 	std::atomic<std::uint32_t> applied_records{ 0U };
@@ -161,6 +162,13 @@ telemetry_apply_batch_result repository_apply(void *context, const telemetry_rec
 	if (records == nullptr || count == 0U || count > TELEMETRY_BATCH_MAX_RECORDS_PROPOSAL)
 		return {};
 	repository.apply_calls.fetch_add(1U, std::memory_order_relaxed);
+	if (repository.disconnect_on_apply.exchange(false, std::memory_order_acq_rel))
+	{
+		telemetry_apply_batch_result unavailable{};
+		unavailable.outcome = telemetry_batch_outcome::unavailable;
+		unavailable.failure_class = telemetry_failure_class::transient_connection;
+		return unavailable;
+	}
 	std::uint64_t first_record = 0U;
 	repository.first_record_seq.compare_exchange_strong(first_record,
 							    records[0].header.key.record_seq,
@@ -276,6 +284,7 @@ void setup(fault_repository &repository, fault_clock &clock, std::uint32_t capac
 	if (telemetry_transport_init(config(capacity, reserve)) !=
 	    telemetry_transport_outcome::started)
 		fail("could not initialize fault transport");
+	(void)telemetry_transport_pulse(0U);
 }
 
 void teardown(fault_repository &repository, fault_clock &clock)
@@ -356,9 +365,11 @@ case_result run_saturation()
 case_result run_recovery()
 {
 	fault_repository repository{};
-	repository.init_failures.store(3U, std::memory_order_release);
 	fault_clock clock{};
 	setup(repository, clock);
+	// Qualify startup first, then lose SQL with a retained admitted batch.
+	repository.init_failures.store(3U, std::memory_order_release);
+	repository.disconnect_on_apply.store(true, std::memory_order_release);
 	for (std::uint64_t sequence = 1U; sequence <= 8U; ++sequence)
 		if (telemetry_transport_enqueue(detail_record(sequence)).admission !=
 		    telemetry_queue_admission::accepted_detail)
@@ -370,10 +381,17 @@ case_result run_recovery()
 	}
 	clock.now.store(20'000U, std::memory_order_release);
 	(void)telemetry_transport_pulse(20'000U);
+	(void)telemetry_transport_pulse(20'000U);
 	case_result result = snapshot(case_name(case_kind::repository_recovery), repository, {});
 	if (result.repository_init_calls < 4U || result.queue_depth_before_teardown != 0U ||
 	    result.applied_records != 8U)
+	{
+		std::fprintf(stderr, "recovery: init_calls=%llu pending=%llu applied=%llu\n",
+			     static_cast<unsigned long long>(result.repository_init_calls),
+			     static_cast<unsigned long long>(result.queue_depth_before_teardown),
+			     static_cast<unsigned long long>(result.applied_records));
 		fail("repository recovery did not catch up the retained batch");
+	}
 	teardown(repository, clock);
 	return result;
 }

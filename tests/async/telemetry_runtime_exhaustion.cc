@@ -25,6 +25,55 @@ static int runtime_test_random(unsigned char *bytes, int count)
 
 namespace
 {
+void check_build_sequence_exhaustion()
+{
+	R.battle_build.next_sequence = std::numeric_limits<telemetry_sequence>::max();
+	assert(next_build_sequence() == std::numeric_limits<telemetry_sequence>::max());
+	assert(next_build_sequence() == 0U && next_build_sequence() == 0U);
+	assert(R.battle_build.next_sequence == 0U &&
+	       (R.battle_build.quality_flags & TELEMETRY_QUALITY_SEQUENCE_GAP));
+	R.battle_build = {};
+	std::puts("build context sequence exhaustion: refuses permanently without key wrap/reuse");
+}
+
+void check_null_build_boundary()
+{
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	const auto options = make_enabled_options();
+	telemetry_test_start_runtime(options);
+	const auto previous = R.config.config_id;
+	auto changed = R.config;
+	++changed.revision;
+	++changed.policy_version;
+	assert(telemetry_config_compute_fingerprint(changed, changed.fingerprint,
+						    sizeof(changed.fingerprint)));
+	changed.config_id = telemetry_config_id_from_fingerprint(changed.fingerprint,
+								 sizeof(changed.fingerprint));
+	assert(telemetry_config_publish(changed).outcome == telemetry_runtime_outcome::accepted);
+	const auto next_record = R.next_record_sequence;
+	telemetry_battle_build_context output{};
+	output.version = 999U;
+	assert(!telemetry_runtime_game_battle_build_context(nullptr, &output));
+	assert(output.version == 0U && output.available == 0U);
+	assert(R.config.config_id == previous && R.battle.scope.config_id == previous &&
+	       R.next_record_sequence == next_record);
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	std::puts(
+		"null build boundary: clears output without adopting configuration or cutting associations");
+}
+
 void check_copyover_caller_ack_race()
 {
 	R.flush_completed.store(0U);
@@ -191,7 +240,7 @@ void check_copyover_generation_barrier_recovery()
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	const auto options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	const auto enter = make_enter(options.producer, options.config);
 	assert(telemetry_runtime_session_enter(enter).outcome ==
 	       telemetry_runtime_outcome::accepted);
@@ -278,8 +327,7 @@ void check_late_copyover_ack()
 	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
-	assert(telemetry_runtime_init(make_enabled_options()) ==
-	       telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(make_enabled_options());
 	telemetry_monotonic_usec now = 0U;
 	assert(production_monotonic_now(&now));
 	const auto deadline = now + 500'000U;
@@ -343,7 +391,7 @@ void check_exhausted_lifecycle(bool exiting, bool reattaching = false)
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	const auto options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	auto enter = make_enter(options.producer, options.config);
 	assert(telemetry_runtime_now(&enter.at_monotonic_usec, &enter.at_utc_usec));
 	assert(telemetry_runtime_session_enter(enter).outcome ==
@@ -435,7 +483,9 @@ void check_exhausted_lifecycle(bool exiting, bool reattaching = false)
 
 int main()
 {
+	check_build_sequence_exhaustion();
 	check_identity_fail_closed();
+	check_null_build_boundary();
 	check_copyover_caller_ack_race();
 	check_copyover_generation_barrier_recovery();
 	check_late_copyover_ack();

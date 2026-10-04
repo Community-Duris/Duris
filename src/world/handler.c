@@ -1088,6 +1088,7 @@ void char_from_room(P_char ch)
 	world_activity_character_leave(ch);
 
 	ch->specials.was_in_room = world[ch->in_room].number;
+	(void)telemetry_runtime_game_battle_leave(ch);
 	ch->in_room = NOWHERE;
 	ch->next_in_room = 0;
 }
@@ -1333,6 +1334,7 @@ bool char_to_room(P_char ch, int room, int dir)
 
 	AddCharToZone(ch);
 	world_activity_character_enter(ch);
+	(void)telemetry_runtime_game_battle_context(ch);
 	character_maintenance_enter(ch);
 
 	if ((t_ch = get_linked_char(ch, LNK_RIDING)) && t_ch->in_room != ch->in_room)
@@ -2175,6 +2177,7 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 
 	mark_char_or_owner_dirty(ch);
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+	telemetry_runtime_game_battle_build_changed(ch);
 }
 
 // Removes an object from a char's equipped slot [pos].
@@ -2198,6 +2201,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 
 	if (!saving)
 		clear_links(ch, obj, LNKFLG_BREAK_REMOVE);
+	telemetry_control_mutation_scope control_state(ch);
 	all_affects(ch, FALSE);
 	ch->equipment[pos] = NULL;
 	world_activity_object_leave(obj);
@@ -2205,6 +2209,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 	obj->loc_p = LOC_NOWHERE;
 	obj->loc.wearing = NULL; // must clear full pointer, not just int-sized loc.room
 	all_affects(ch, TRUE);
+	control_state.finish();
 
 	balance_affects(ch);
 
@@ -2217,6 +2222,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 
 	mark_char_or_owner_dirty(ch);
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+	telemetry_runtime_game_battle_build_changed(ch);
 
 	return (obj);
 }
@@ -5694,6 +5700,7 @@ void extract_char(P_char ch)
 	training_dummy_begin_removal(ch);
 	char_from_room(ch);
 	training_dummy_end_removal(ch);
+	(void)telemetry_runtime_game_battle_leave(ch);
 
 	// Pull the char from the list
 	// If at the head..

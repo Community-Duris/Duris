@@ -9,12 +9,15 @@ PRELUDE = r'''
 #include "core/utils.h"
 #include "net/comm.h"
 #include "magic/spells.h"
+#include "telemetry/telemetry_runtime.h"
 #include <cassert>
 #include <cstdio>
 #include <strings.h>
 
 void send_to_char(const char *, P_char) {}
 void act(const char *, int, P_char, P_obj, void *, int) {}
+// Capture is isolated here; enabled control capture has its own native journey.
+void telemetry_runtime_game_control_changed(P_char) noexcept {}
 bool affected_by_spell(P_char ch, int type) {
     for (auto *af = ch->affected; af; af = af->next)
         if (af->type == type) return true;

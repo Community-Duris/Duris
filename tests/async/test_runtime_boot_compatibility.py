@@ -69,8 +69,8 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         fails here instead of at a server's boot gate.
         """
         report = runtime.validate()
-        # Includes death evidence/recovery and SQL lifecycle tables.
-        self.assertEqual(report["current_table_count"], 226)
+        # Includes death evidence/recovery, SQL lifecycle, and identity review tables.
+        self.assertEqual(report["current_table_count"], 263)
         for table in ("player_death_disposition", "player_death_custody",
                       "player_death_conflict_evidence"):
             self.assertIn("'" + table + "'", self.header)
@@ -83,8 +83,14 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("'economic_sql_lifecycle_installation'", self.header)
         self.assertIn("'economic_sql_activation_receipt'", self.header)
         self.assertIn("'economic_sql_global_activation'", self.header)
+        for table in ("telemetry_identity_reviewer", "telemetry_identity_registry",
+                      "telemetry_identity_association", "telemetry_generation_identity",
+                      "telemetry_incident_registry_v2", "telemetry_incident_v2",
+                      "telemetry_rollup_identity_coverage", "telemetry_identity_input",
+                      "telemetry_rollup_identity_effort", "telemetry_rollup_portfolio_xp"):
+            self.assertIn("'" + table + "'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0056_spell_ward_durability")
+                         "0067_telemetry_typed_control")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
@@ -113,20 +119,26 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         import tempfile
         from unittest import mock
         value = runtime.load()
-        self.assertEqual(value["migration_head"]["sequence"], 56)
-        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 56)
+        self.assertEqual(value["migration_head"]["sequence"], 70)
+        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 70)
         self.assertEqual(value["staging_0045_migration_head"]["id"],
-                         "0056_spell_ward_durability")
+                         "0067_telemetry_typed_control")
         self.assertNotEqual(value["migration_head"]["history_checksum"],
                             value["staging_0045_migration_head"]["history_checksum"])
-        self.assertEqual(value["master_0031_migration_head"]["sequence"], 56)
+        self.assertEqual(value["master_0031_migration_head"]["sequence"], 70)
         self.assertEqual(value["master_0031_migration_head"]["id"],
-                         "0056_spell_ward_durability")
-        self.assertEqual(len({value[field]["history_checksum"] for field in (
-            "migration_head", "staging_0045_migration_head", "master_0031_migration_head")}), 3)
+                         "0067_telemetry_typed_control")
+        retained_telemetry = ("telemetry_0067_migration_head",
+            "telemetry_0067_staging_0045_migration_head", "telemetry_0067_master_0031_migration_head")
+        for field in retained_telemetry:
+            self.assertEqual(value[field]["sequence"], 70)
+            self.assertEqual(value[field]["id"], "0056_spell_ward_durability")
+        histories = ("migration_head", "staging_0045_migration_head",
+                     "master_0031_migration_head", *retained_telemetry)
+        self.assertEqual(len({value[field]["history_checksum"] for field in histories}), 6)
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "runtime.json"
-            for field in ("staging_0045_migration_head", "master_0031_migration_head",
+            for field in (*histories,
                           "migration_history_sql",
                           "extra_description_generation_sql"):
                 damaged = json.loads(json.dumps(value))
@@ -139,7 +151,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
                     with self.assertRaises(runtime.migration_runner.MigrationContractError):
                         runtime.validate()
             header = Path(directory) / "runtime.h"
-            for field in ("staging_0045_migration_head", "master_0031_migration_head"):
+            for field in histories:
                 header.write_text(self.header.replace(value[field]["history_checksum"], "0" * 64))
                 with mock.patch.object(runtime, "HEADER", header):
                     with self.assertRaises(runtime.migration_runner.MigrationContractError):

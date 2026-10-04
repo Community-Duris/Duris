@@ -12,7 +12,8 @@
 const char *copyover_state_file();
 #define COPYOVER_FILE copyover_state_file()
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 18 // portable file codec; reads compatible native versions 12-17
+#define COPYOVER_VERSION \
+	19 // portable ownership handoff; reads portable v18 and compatible native v12-v18
 
 // In-memory state and legacy ABI declarations. Never write these structures to a file.
 struct copyover_header

@@ -41,6 +41,7 @@ struct account_load_snapshot
 	unsigned long flags[4] = {};
 	std::vector<account_load_ip> ips;
 	std::vector<account_load_character> characters;
+	uint64_t telemetry_account_token = 0, telemetry_environment_id = 0, telemetry_season_id = 0;
 };
 
 enum class account_load_outcome
@@ -60,6 +61,7 @@ struct account_load_request
 	uint64_t id = 0;
 	uint64_t deadline_usec = 0;
 	std::string name;
+	uint64_t telemetry_environment_id = 0, telemetry_season_id = 0;
 };
 
 struct account_load_result

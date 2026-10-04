@@ -56,7 +56,10 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
     def test_restore_accepts_all_complete_supported_histories(self):
         for path in (runner.DEFAULT_MANIFEST,
                      ROOT / "migrations/migration_manifest.staging_0045.json",
-                     ROOT / "migrations/migration_manifest.master_0031.json"):
+                     ROOT / "migrations/migration_manifest.master_0031.json",
+                     ROOT / "migrations/migration_manifest.telemetry_0067.json",
+                     ROOT / "migrations/migration_manifest.telemetry_0067_staging_0045.json",
+                     ROOT / "migrations/migration_manifest.telemetry_0067_master_0031.json"):
             manifest = runner.load_manifest(path)
             rows = [runner.AppliedMigration(
                 step.migration_id, step.sequence, step.description,
@@ -64,6 +67,37 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
                 manifest.runner_version) for step in manifest.migrations]
             with self.subTest(manifest=path.name):
                 restore_qualifier.require_completed_history(rows)
+
+    def test_independent_recorded_lineages_append_without_rewriting_receipts(self):
+        histories = (
+            ("migration_manifest.json", 56, "fd82b219e1bdf95804fa6ee8dfe3d3c0fd29f59e910da83bf82c7e816f06cc60"),
+            ("migration_manifest.staging_0045.json", 56, "c778f9d5971418cc193c9663814f5af59872b363db9394da35ad2fa923372bd9"),
+            ("migration_manifest.master_0031.json", 56, "393a92f807f31f7b3810a6e415a05ad5d305d02fd590112415f4e5ed64224dc3"),
+            ("migration_manifest.telemetry_0067.json", 67, "f8af5838b5ac77756f1d5180c3d42a793377a75799d3cb45dcfb51321ac80e2e"),
+            ("migration_manifest.telemetry_0067_staging_0045.json", 67, "08d07ec9a950aaca627030dac5db458d176ce4cd096db6ab2ca82cb4d67c28c6"),
+            ("migration_manifest.telemetry_0067_master_0031.json", 67, "4d654e5a29d9f232aa4d16c6692a93a93dbe59bf37118f51428f54787c2f9a8a"),
+        )
+        for name, count, checksum in histories:
+            with self.subTest(manifest=name):
+                manifest = runner.load_manifest(ROOT / "migrations" / name)
+                prefix = [runner.AppliedMigration(
+                    step.migration_id, step.sequence, step.description,
+                    step.apply_checksum, step.verify_checksum, step.compatibility,
+                    manifest.runner_version) for step in manifest.migrations[:count]]
+                self.assertEqual(runner.history_checksum(prefix), checksum)
+                with self.assertRaisesRegex(RuntimeError, "incomplete_or_unknown"):
+                    restore_qualifier.require_completed_history(prefix)
+                executor = FakeExecutor(prefix)
+                self.assertEqual(runner.run_pending(manifest, executor),
+                                 [step.migration_id for step in manifest.migrations[count:]])
+                self.assertEqual(executor.rows[:count], prefix)
+                self.assertEqual(len(executor.rows), 70)
+                restore_qualifier.require_completed_history(executor.rows)
+                self.assertEqual(runner.run_pending(manifest, FakeExecutor(executor.rows)), [])
+                edited = list(executor.rows)
+                edited[-1] = replace(edited[-1], description="synthetic changed final receipt")
+                with self.assertRaisesRegex(RuntimeError, "incomplete_or_unknown"):
+                    restore_qualifier.require_completed_history(edited)
 
     def test_restore_rejects_partial_mixed_and_edited_histories(self):
         manifest = runner.load_manifest()
@@ -186,9 +220,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 56)
+        self.assertEqual(len(manifest.migrations), 70)
         self.assertEqual(manifest.migrations[-1].migration_id,
-                         "0056_spell_ward_durability")
+                         "0067_telemetry_typed_control")
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
@@ -336,7 +370,7 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(runner.run_pending(staging, executor),
                          [item.migration_id for item in staging.migrations[45:]])
         self.assertEqual(executor.rows[:45], rows)
-        self.assertEqual(len(executor.rows), 56)
+        self.assertEqual(len(executor.rows), 70)
         replay = FakeExecutor(executor.rows)
         self.assertEqual(runner.run_pending(staging, replay), [])
         self.assertEqual(replay.events, ["lock", "baseline", "unlock"])
@@ -369,9 +403,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(runner.run_pending(master, resumed),
                          [item.migration_id for item in master.migrations[31:]])
         self.assertEqual(resumed.rows[:31], prefix)
-        self.assertEqual(len(resumed.rows), 56)
+        self.assertEqual(len(resumed.rows), 70)
         self.assertEqual(resumed.rows[-1].migration_id,
-                         "0056_spell_ward_durability")
+                         "0067_telemetry_typed_control")
         replay = FakeExecutor(resumed.rows)
         self.assertEqual(runner.run_pending(master, replay), [])
         self.assertEqual(replay.events, ["lock", "baseline", "unlock"])

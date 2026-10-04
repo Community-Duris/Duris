@@ -5,6 +5,7 @@
 //
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "world/world_activity.h"
 #include "world/character_maintenance.h"
 #include "core/structs.h"
@@ -588,6 +589,7 @@ int outpost_generate(Building *building)
 	set_current_outpost_hitpoints(building);
 	GET_RACE(mob) = RACE_CONSTRUCT;
 	SET_BIT(mob->specials.affected_by2, AFF2_MAJOR_PARALYSIS);
+	telemetry_runtime_game_control_changed(mob);
 	SET_BIT(mob->specials.act, ACT_SPEC);
 	building->set_proc();
 

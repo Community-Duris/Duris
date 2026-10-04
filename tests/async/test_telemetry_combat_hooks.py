@@ -34,6 +34,9 @@ def main():
     assert start.index('can_hit_target(ch, victim)') < start.index('GET_OPPONENT(ch) = victim;')
     assert start.index('IS_IMMOBILE(ch)') < start.index('GET_OPPONENT(ch) = victim;')
     assert start.index('GET_OPPONENT(ch) = victim;') < start.index('telemetry_combat_context_changed(ch)')
+    assert start.count('telemetry_runtime_game_combat_engage(ch, victim)') == 1
+    assert start.index('GET_OPPONENT(ch) = victim;') < \
+        start.index('telemetry_runtime_game_combat_engage(ch, victim)')
     assert stop.count('telemetry_combat_context_changed(ch)') == 1
     assert stop.index('GET_OPPONENT(ch) = NULL;') < stop.index('telemetry_combat_context_changed(ch)')
     assert 'game_evidence' not in helper  # automatic combat is not human activity
@@ -79,13 +82,16 @@ void gmcp_combat_end(P_char) {}
 void update_pos(P_char) {}
 std::vector<bool> observed;
 std::vector<P_char> promoted;
+std::vector<std::pair<P_char, P_char>> engagements;
 void world_activity_promote_character(P_char ch) { promoted.push_back(ch); }
 telemetry_capture_result telemetry_runtime_game_context(char_data *ch, descriptor_data *) {
     observed.push_back(ch->specials.fighting != nullptr);
     return {};
 }
 void telemetry_runtime_game_combat_context(char_data *) noexcept {}
-telemetry_capture_result telemetry_runtime_game_encounter_begin(char_data *, telemetry_encounter_mode) {
+telemetry_capture_result telemetry_runtime_game_combat_engage(char_data *source, char_data *target) {
+    assert(GET_OPPONENT(source) == target);
+    engagements.emplace_back(source, target);
     return {};
 }
 ''' + helper + '\nvoid accepted_start(P_char ch, P_char victim) {\n' + block + '\n}\n' + stop + r'''
@@ -97,11 +103,14 @@ int main() {
     assert(combat_list == &player && IS_FIGHTING(&player));
     assert(promoted.size() == 2 && promoted[0] == &player && promoted[1] == &target);
     assert(observed.size() == 1 && observed.back());
+    assert(engagements.size() == 1 && engagements[0].first == &player &&
+           engagements[0].second == &target);
     stop_fighting(&player);
     assert(!combat_list && !IS_FIGHTING(&player));
     assert(observed.size() == 2 && !observed.back());
     stop_fighting(&player); // no-op doesn't emit another boundary
     assert(observed.size() == 2);
+    assert(engagements.size() == 1);
     telemetry_combat_context_changed(nullptr);
     player.npc = true;
     telemetry_combat_context_changed(&player);
@@ -110,7 +119,7 @@ int main() {
     player.desc = &descriptor; descriptor.connected = 1;
     telemetry_combat_context_changed(&player);
     assert(observed.size() == 2);
-    std::puts("combat start/stop context boundaries and observer guards passed");
+    std::puts("combat start/stop context boundaries, accepted hostile edge and observer guards passed");
 }
 '''
     with tempfile.TemporaryDirectory(prefix='telemetry-combat-hooks-') as directory:

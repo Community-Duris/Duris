@@ -1,6 +1,7 @@
 #include "account/account_load.h"
 #include "sql/sql_exclusion_guard.h"
 #include "sql/sql_pool.h"
+#include "sql/sql_telemetry_account_identity.h"
 #include <mysql/mysql.h>
 
 #include <cassert>
@@ -20,6 +21,7 @@ static int lose_owner_after = 0;
 static unsigned int error_code = 0, injected_error = 1064;
 static bool rollback_fails = false, missing = false, empty = false;
 static bool discarded = false;
+static int telemetry_mode = 0, telemetry_calls = 0;
 static size_t ip_rows = 1, character_rows = 1;
 static size_t email_bytes = 0;
 static my_ulonglong affected = 1;
@@ -31,6 +33,24 @@ struct fixture_rows
 	size_t next = 0;
 };
 static std::map<MYSQL_RES *, fixture_rows> results;
+
+bool sql_prepare_telemetry_account_token_on(MYSQL *db, const char *name, uint64_t environment,
+					    uint64_t season, uint64_t deadline, uint64_t *token)
+{
+	assert(db == &connection && !strcmp(name, "Example"));
+	assert(environment == 7 && season == 11 && account_load_now_usec() < deadline);
+	assert(committed == 4 && !repairs && results.empty() && step == 10);
+	assert(connection.server_status == SERVER_STATUS_AUTOCOMMIT);
+	++telemetry_calls;
+	*token = 99; // A failed helper must not publish even a partially supplied token.
+	if (telemetry_mode == 2)
+		throw std::bad_alloc{};
+	if (telemetry_mode == 3)
+		error_code = 2006;
+	if (telemetry_mode == 4)
+		connection.server_status |= SERVER_STATUS_IN_TRANS;
+	return telemetry_mode == 0;
+}
 
 extern "C" int mysql_query(MYSQL *db, const char *query)
 {
@@ -155,6 +175,7 @@ static void reset()
 	connection = {};
 	connection.server_status = SERVER_STATUS_AUTOCOMMIT;
 	step = fail_at = repairs = committed = rolled_back = 0;
+	telemetry_mode = telemetry_calls = 0;
 	lose_owner_after = 0;
 	duris_sql_exclusion_guard_state_ref().lost = false;
 	error_code = 0;
@@ -179,6 +200,24 @@ int main()
 	assert(result.snapshot.flags[3] == 6 && result.snapshot.ips.at(0).count == 9);
 	assert(result.snapshot.characters.at(0).secondary_class == 16);
 	assert(result.snapshot.characters.at(0).last_save == 104);
+	assert(!telemetry_calls && !result.snapshot.telemetry_account_token &&
+	       !result.snapshot.telemetry_environment_id && !result.snapshot.telemetry_season_id);
+	for (int optional = 0; optional < 3; ++optional)
+	{
+		reset();
+		telemetry_mode = optional;
+		auto scoped = request();
+		scoped.telemetry_environment_id = 7;
+		scoped.telemetry_season_id = 11;
+		result = account_load_execute(&connection, scoped);
+		assert(result.outcome == account_load_outcome::loaded && committed == 4 &&
+		       !rolled_back && telemetry_calls == 1);
+		assert(result.snapshot.password == "hash" &&
+		       result.snapshot.characters.size() == 1);
+		assert(result.snapshot.telemetry_account_token == (optional == 0 ? 99U : 0U));
+		assert(result.snapshot.telemetry_environment_id == (optional == 0 ? 7U : 0U));
+		assert(result.snapshot.telemetry_season_id == (optional == 0 ? 11U : 0U));
+	}
 	// Shared synchronous repair must preserve the original SQL ownership fence.
 	reset();
 	duris_sql_exclusion_guard_state_ref().lost = true;
@@ -273,5 +312,33 @@ int main()
 		account_load_worker_shutdown();
 	}
 	assert(results.empty());
+	// Optional telemetry transport/transaction failures retire the worker handle,
+	// while preserving the already committed account snapshot for login.
+	for (int optional = 3; optional < 5; ++optional)
+	{
+		reset();
+		telemetry_mode = optional;
+		auto scoped = request();
+		scoped.telemetry_environment_id = 7;
+		scoped.telemetry_season_id = 11;
+		assert(account_load_worker_init());
+		auto *job = account_load_submit(scoped);
+		assert(job);
+		const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+		while (!account_load_poll(job, &result))
+		{
+			assert(std::chrono::steady_clock::now() < deadline);
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+		assert(discarded && telemetry_calls == 1 && committed == 4 &&
+		       result.outcome == account_load_outcome::loaded);
+		assert(result.snapshot.password == "hash" &&
+		       result.snapshot.characters.size() == 1);
+		assert(!result.snapshot.telemetry_account_token &&
+		       !result.snapshot.telemetry_environment_id &&
+		       !result.snapshot.telemetry_season_id);
+		account_load_release(job);
+		account_load_worker_shutdown();
+	}
 	puts("account load owned snapshot, query failures, rollback, limits and pool retirement passed");
 }

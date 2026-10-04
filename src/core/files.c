@@ -33,6 +33,7 @@
 #include "combat/justice.h"
 #ifndef _PFILE_
 #include "combat/spell_wards.h"
+#include "telemetry/telemetry_runtime.h"
 #endif
 #include "core/mm.h"
 #include "classes/necromancy.h"
@@ -1915,6 +1916,7 @@ int writeCharacter(P_char ch, int type, int room)
 		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
 		if (terminal_type)
 		{
+			telemetry_control_mutation_scope control_state(ch);
 			for (i = 0; i < MAX_WEAR; ++i)
 				save_equip[i] = ch->equipment[i] ? unequip_char(ch, i, TRUE) : NULL;
 			all_affects(ch, FALSE);
@@ -1948,6 +1950,7 @@ int writeCharacter(P_char ch, int type, int room)
 		ch->desc->rtype = type;
 
 	// unequip everything and remove affects before saving
+	telemetry_control_mutation_scope control_state(ch);
 	for (i = 0; i < MAX_WEAR; i++)
 		if (ch->equipment[i])
 			save_equip[i] = unequip_char(ch, i, TRUE);
@@ -2019,6 +2022,7 @@ int writeCharacter(P_char ch, int type, int room)
 
 	// reapply affects
 	all_affects(ch, TRUE);
+	control_state.finish();
 
 	// locker hook (post-save)
 	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
@@ -4506,6 +4510,7 @@ int writePet(P_char ch)
 	ADD_LONG(buf, time(0)); /* save time */
 
 	/* unequip everything and remove affects before saving */
+	telemetry_control_mutation_scope control_state(ch);
 
 	for (i = 0; i < MAX_WEAR; i++)
 		if (ch->equipment[i])
@@ -4541,6 +4546,7 @@ int writePet(P_char ch)
 			equip_char(ch, save_equip[i], i, 1);
 
 	all_affects(ch, TRUE); /* reapply affects (including equip) */
+	control_state.finish();
 
 	if ((int)(buf - buff) > SAV_MAXSIZE)
 	{

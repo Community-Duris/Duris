@@ -34,6 +34,7 @@
 #include "net/output_channel.h"
 #include "net/output_preference_state.h"
 #include "economy/shopkeeper_save_policy.h"
+#include "telemetry/telemetry_types.h"
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -1567,6 +1568,8 @@ struct char_data
 	uint64_t telemetry_session_sequence;
 	uint64_t telemetry_session_producer_boot_id;
 	uint64_t telemetry_session_producer_process_id;
+	/* Nested native rebuilds are observed only after their final effective state. */
+	uint32_t telemetry_control_rebuild_depth;
 };
 
 /* ======================================================================== */
@@ -1885,6 +1888,10 @@ struct descriptor_data
 	uint64_t telemetry_connection_sequence;
 	uint64_t telemetry_connection_producer_boot_id;
 	uint64_t telemetry_connection_producer_process_id;
+	/* Runtime-only deferred copyover observation: 0 none, 1 absent, 2 supplied.
+	 * Never written to player files or added to the copyover wire format. */
+	telemetry_session_handoff telemetry_pending_handoff;
+	uint8_t telemetry_resume_pending;
 };
 
 /* Almost every construction of this type is a brace-initializer that lists only
@@ -2220,6 +2227,8 @@ struct group_list
 {
 	P_char ch;
 	struct group_list *next;
+	/* Head-owned, runtime-only telemetry identity; never an account or leader PID. */
+	telemetry_group_generation telemetry_generation{};
 };
 
 struct auction_data

@@ -15,6 +15,25 @@ or dirty connections are retired rather than returned for reuse. Synchronous
 non-login callers share the same repair implementation and retain their
 existing loading paths.
 
+When telemetry is enabled with a valid environment and season, the game thread
+copies those fixed scope IDs into the owned request without SQL or allocation.
+After the required snapshot transaction commits, the worker optionally prepares
+the account lifetime and scoped opaque token on its own borrowed connection.
+The existing allocator is shared with synchronous account loading; the worker
+path never uses the main SQL handle or its transaction state. Each preparation
+query must still fit the request's monotonic deadline and SQL ownership fence.
+
+Only a committed token and its scope enter the returned snapshot. Disabled or
+unavailable capture, missing scope, preparation exceptions, rollback and
+ambiguous token commits leave all three identity fields zero while preserving
+the committed account snapshot. Optional failures that leave the worker handle
+dirty or with a transport error retire that handle. The game thread copies the
+returned identity with the other account scalars and clears any previous value.
+Cancellation, stale-context checks and the overall login deadline still apply
+to publication. Loading credentials or preparing a token does not establish
+authentication; telemetry ownership observations require the later authenticated
+playing descriptor and matching current account membership.
+
 Requests and results own standard-library storage. The worker never receives a
 descriptor, account pointer, continuation, or plaintext WebSocket password.
 Only the game thread allocates live account strings/list nodes or publishes the
@@ -50,3 +69,11 @@ WebSocket password submission, queue saturation, owned snapshots, transaction
 rollback, row/payload limits, connection retirement, and shutdown. The existing
 account projection suite continues to exercise the shared repair queries and
 their ownership, baseline, and tombstone predicates.
+
+`python3 tests/async/test_telemetry_account_identity.py` qualifies the actual
+scope reader and synchronous cache helper in SQL and client-free builds. Its
+explicitly configured disposable `--sql-fixture` mode executes both allocator
+entry points and the production account snapshot loader against MariaDB and
+MySQL. It checks independent connection ownership, scope/retry behavior,
+deadline and outer-transaction refusal, optional failures preserving committed
+credentials, ambiguous commit recovery and restricted identity grants.

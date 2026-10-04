@@ -569,6 +569,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/latency_trace.o \
 				 sql/sql_persistence_raw.o \
 				 sql/sql_pool.o \
+				 sql/sql_telemetry_account_identity.o \
 				 sql/sql_economic_runtime.o \
 				 item/plushit.o \
 				 net/poll.o \
@@ -781,9 +782,15 @@ OBJS =  $(SHIP_OBJS) \
 				 telemetry/telemetry_activity.o \
 				 telemetry/telemetry_config.o \
 				 telemetry/telemetry_encounter.o \
+				 telemetry/telemetry_battle.o \
+				 telemetry/telemetry_battle_contract.o \
+				 telemetry/telemetry_battle_contribution.o \
+				 telemetry/telemetry_battle_build_observation.o \
+				 telemetry/telemetry_control.o \
 				 telemetry/telemetry_combat_summary.o \
 				 telemetry/telemetry_failure.o \
 				 telemetry/telemetry_health.o \
+				 telemetry/telemetry_outage.o \
 				 telemetry/telemetry_repository.o \
 				 telemetry/telemetry_runtime.o \
 				 telemetry/telemetry_progression.o \

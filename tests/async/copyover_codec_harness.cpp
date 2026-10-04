@@ -98,6 +98,11 @@ static void write_fixture(FILE *file, bool door_only)
 		t.handoff.last_checkpoint_revision = 8;
 		t.handoff.cumulative = { 9, 10, 11, 12, 13, UINT64_MAX };
 		t.handoff.quality_flags = UINT32_MAX;
+		t.handoff.ownership = { 77U,
+					-1,
+					TELEMETRY_QUALITY_CONTEXT_UNKNOWN,
+					telemetry_ownership_source::copyover,
+					{} };
 		assert(copyover_codec_write(file, t));
 		copyover_mob m = {};
 		m.vnum = 1001;
@@ -212,7 +217,21 @@ static void check_fixture(const copyover_decoded_state &s, bool legacy)
 	assert(custody.item_revision == UINT64_MAX && custody.owner.id == 77);
 	assert(custody.root_item_uid == UINT64_MAX && custody.state == item_custody_state::active);
 	assert(s.doors[0].dir == 9 && s.doors[0].state == -1);
-	assert(legacy == (s.header.version < 18));
+	assert(legacy ? s.header.version >= 12 && s.header.version <= 18 :
+			s.header.version == 18 || s.header.version == 19);
+	if (!s.telemetry.empty())
+	{
+		const auto &ownership = s.telemetry[0].handoff.ownership;
+		if (s.header.version >= 19 || (legacy && s.header.version == 18))
+		{
+			assert(ownership.account_token == 77U &&
+			       ownership.observed_at_utc_usec == -1);
+			assert(ownership.quality_flags == TELEMETRY_QUALITY_CONTEXT_UNKNOWN &&
+			       ownership.source == telemetry_ownership_source::copyover);
+		}
+		else
+			assert(telemetry_ownership_handoff_is_zero(ownership));
+	}
 }
 
 int main(int argc, char **argv)
@@ -229,7 +248,8 @@ int main(int argc, char **argv)
 		assert(copyover_codec_finish(file, &error));
 		assert(fclose(file) == 0);
 	}
-	else if (action == "read" || action == "legacy" || action == "reject")
+	else if (action == "read" || action == "legacy" || action == "reject" ||
+		 action == "absent-metadata")
 	{
 		assert(argc >= 3);
 		for (int i = 2; i < argc; ++i)
@@ -251,7 +271,14 @@ int main(int argc, char **argv)
 					fprintf(stderr, "%s: %s\n", argv[i], error);
 					abort();
 				}
-				check_fixture(state, action == "legacy");
+				if (action == "absent-metadata")
+					assert(state.telemetry.empty() &&
+					       state.descriptors.size() == 1 &&
+					       state.mobs.size() == 1 &&
+					       state.objects.size() == 1 &&
+					       state.doors.size() == 1);
+				else
+					check_fixture(state, action == "legacy");
 			}
 			fclose(file);
 		}

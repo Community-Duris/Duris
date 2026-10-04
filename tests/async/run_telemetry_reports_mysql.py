@@ -37,7 +37,7 @@ else:
 with connection, connection.cursor() as cursor:
     cursor.execute('CREATE DATABASE '+cfg['database'])
     cursor.execute('USE '+cfg['database'])
-    for name in ('0014_telemetry_storage.sql','0017_telemetry_rollup_support.sql'):
+    for name in ('0014_telemetry_storage.sql','0017_telemetry_rollup_support.sql','0054_telemetry_incident_coverage.sql'):
         sql=(pathlib.Path('migrations/immutable')/name).read_text()
         sql='\n'.join(line for line in sql.splitlines() if not line.lstrip().startswith('--'))
         for statement in sql.split(';'):
@@ -45,7 +45,8 @@ with connection, connection.cursor() as cursor:
                 cursor.execute(statement)
     cursor.execute('CREATE USER %s IDENTIFIED BY %s', ('duris269_report', cfg['report']))
     for table in ('telemetry_rollup_state','telemetry_rollup_session',
-                  'telemetry_cohort_day','telemetry_cohort_member'):
+                  'telemetry_cohort_day','telemetry_cohort_member',
+                  'telemetry_rollup_incident_coverage','telemetry_rollup_incident'):
         cursor.execute('GRANT SELECT ON '+cfg['database']+'.'+table+' TO %s', ('duris269_report',))
     cursor.execute('SELECT VERSION()')
     print('Isolated report database:', cursor.fetchone()[0], flush=True)
@@ -81,7 +82,7 @@ def main():
         for folder in ('scripts/telemetry','tests/async'):
             for path in sorted((ROOT/folder).glob('*.py')):
                 tar.add(path, arcname=str(path.relative_to(ROOT)))
-        for name_sql in ('0014_telemetry_storage.sql','0017_telemetry_rollup_support.sql'):
+        for name_sql in ('0014_telemetry_storage.sql','0017_telemetry_rollup_support.sql','0054_telemetry_incident_coverage.sql'):
             path = ROOT/'migrations/immutable'/name_sql
             tar.add(path, arcname=str(path.relative_to(ROOT)))
         tar.add(Path(pymysql.__file__).parent, arcname='.deps/pymysql',

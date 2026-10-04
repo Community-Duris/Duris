@@ -42,7 +42,7 @@ def function_body(source: str, start: str, end: str) -> str:
 def mapped_columns(source: str) -> list[str]:
     columns = []
     for line in source.splitlines():
-        explicit = re.search(r'number\(values, "([a-z0-9_]+)"', line)
+        explicit = re.search(r'number\(values, telemetry_column_id::([a-z0-9_]+)', line)
         inferred = re.search(r'FIELD\(values, [^,]+, ([a-z0-9_]+)\)', line)
         if explicit:
             columns.append(explicit.group(1))
@@ -58,6 +58,23 @@ def migration_columns(name: str) -> list[str]:
 
 def repository_mapping_contract() -> None:
     repository = (ROOT / "src" / "telemetry" / "telemetry_repository.c").read_text()
+    descriptor = (ROOT / "src/telemetry/telemetry_columns.inc").read_text()
+    names = set(re.findall(r"TELEMETRY_COLUMN\(([a-z0-9_]+),", descriptor))
+    serializer_lines, macro = [], False
+    for line in repository.splitlines():
+        if line.startswith(("#define FIELD", "#define TELEMETRY_BATTLE_FIELD", "#define TELEMETRY_BC_FIELD",
+                            "#define TELEMETRY_BUILD_FIELD", "#define TELEMETRY_BUILD_BYTES",
+                            "#define TELEMETRY_CONTROL_FIELD")):
+            macro = True
+        if not macro:
+            serializer_lines.append(line)
+        macro = macro and line.endswith("\\")
+    serializer = "\n".join(serializer_lines)
+    mapped = set(re.findall(r"telemetry_column_id::([a-z0-9_]+)", serializer))
+    assert mapped <= names, f"serializer columns lack canonical descriptors: {mapped - names}"
+    assert 'const char *name, T value' not in repository, "untyped serializer bypass"
+    assert 'validate_writer_schema();' in repository
+    assert 'SELECT * FROM ' not in repository, "incomplete startup table probe"
     encounter = function_body(repository, "void encounter_fields", "void combat_summary_fields")
     combat = function_body(repository, "void combat_summary_fields", "fields counter_fields")
     progression = function_body(
@@ -95,6 +112,39 @@ def repository_mapping_contract() -> None:
     assert "FIELD(values, summary" not in combat, (
         f"engine={engine} migration=0025_telemetry_combat_summaries "
         "record_kind=8 unprefixed_FIELD_mapping")
+    ownership = function_body(repository, "case telemetry_record_kind::ownership:",
+                              "case telemetry_record_kind::combat_summary:")
+    ownership_schema = migration_columns("0057_telemetry_ownership_observations.sql")
+    self_owned_columns = [name for name in mapped_columns(ownership) if name.startswith("ownership_")]
+    assert self_owned_columns == ownership_schema, "ownership fields must map to their typed nullable columns"
+    battle_fields = (ROOT / "src/telemetry/telemetry_battle_fields.inc").read_text()
+    canonical_battle = re.findall(r"TELEMETRY_BATTLE_FIELD\(([a-z0-9_]+),", battle_fields)
+    assert len(canonical_battle) == 70 and len(set(canonical_battle)) == 70
+    assert canonical_battle == migration_columns("0061_telemetry_shared_battle_facts.sql")
+    assert set(canonical_battle) <= names
+    battle = function_body(repository, "case telemetry_record_kind::battle:",
+                           "case telemetry_record_kind::battle_contribution:")
+    assert '#include "telemetry/telemetry_battle_fields.inc"' in battle
+    assert 'number(values, telemetry_column_id::name, p.member)' in battle
+    contribution_fields = (ROOT / "src/telemetry/telemetry_battle_contribution_fields.inc").read_text()
+    canonical_contribution = re.findall(r"TELEMETRY_BC_FIELD\(([a-z0-9_]+),", contribution_fields)
+    assert len(canonical_contribution) == len(set(canonical_contribution)) == 65
+    assert canonical_contribution == migration_columns("0062_telemetry_battle_contributions.sql")
+    assert set(canonical_contribution) <= names
+    contribution = function_body(repository, "case telemetry_record_kind::battle_contribution:",
+                                 "case telemetry_record_kind::battle_build:")
+    assert '#include "telemetry/telemetry_battle_contribution_fields.inc"' in contribution
+    assert 'number(values, telemetry_column_id::name, p.member)' in contribution
+    build_fields = (ROOT / "src/telemetry/telemetry_battle_build_fields.inc").read_text()
+    canonical_build = re.findall(r"TELEMETRY_BUILD_(?:FIELD|BYTES)\(([a-z0-9_]+),", build_fields)
+    assert len(canonical_build) == len(set(canonical_build)) == 110
+    assert canonical_build == migration_columns("0065_telemetry_battle_builds.sql")
+    assert set(canonical_build) <= names
+    build = function_body(repository, "case telemetry_record_kind::battle_build:",
+                          "case telemetry_record_kind::coverage_gap:")
+    assert '#include "telemetry/telemetry_battle_build_fields.inc"' in build
+    assert 'number(values, telemetry_column_id::name, p.member)' in build
+    assert 'hex(p.member, width)' in build
 
 
 def sql_environment() -> tuple[dict[str, str], list[str], str]:
@@ -110,7 +160,7 @@ def sql_environment() -> tuple[dict[str, str], list[str], str]:
         raise RuntimeError("disposable SQL fixture is missing: " + ", ".join(missing))
     host = os.environ["TELEMETRY_REPOSITORY_HOST"]
     database = os.environ["TELEMETRY_REPOSITORY_DATABASE"]
-    if not DATABASE_PATTERN.fullmatch(database):
+    if not DATABASE_PATTERN.fullmatch(database) or len(database) > 64:
         raise RuntimeError("disposable SQL fixture database name is not uniquely test-scoped")
     if host != "127.0.0.1":
         raise RuntimeError("disposable SQL fixture host must be explicit TCP loopback")
@@ -192,6 +242,7 @@ def fixture_safety_contract() -> None:
     for field, value in (("TELEMETRY_REPOSITORY_HOST", "production.example"),
                          ("TELEMETRY_REPOSITORY_HOST", "localhost"),
                          ("TELEMETRY_REPOSITORY_DATABASE", "duris"),
+                         ("TELEMETRY_REPOSITORY_DATABASE", "duris_telemetry_test_" + "a" * 45),
                          ("TELEMETRY_REPOSITORY_PORT", "0"),
                          ("TELEMETRY_REPOSITORY_PORT", "65536"),
                          ("TELEMETRY_REPOSITORY_PORT", "invalid"),
@@ -208,7 +259,7 @@ def fixture_safety_contract() -> None:
         environment, command, database = sql_environment()
         assert "DB_SOCKET" not in environment and "MYSQL_UNIX_PORT" not in environment
         assert "--protocol=tcp" in command and database == safe["TELEMETRY_REPOSITORY_DATABASE"]
-    print("Fixture target safety: PASS (seven unsafe targets refused, inherited sockets removed)", flush=True)
+    print("Fixture target safety: PASS (eight unsafe targets refused, inherited sockets removed)", flush=True)
 
 
 def drop_sql_fixture(environment: dict[str, str], command: list[str], database: str) -> None:
@@ -315,6 +366,11 @@ def main():
                              "-I", str(ROOT / "src"), "-I", str(tmp)]
         source = str(ROOT / "src/telemetry/telemetry_repository.c")
         failure_source = str(ROOT / "src/telemetry/telemetry_failure.c")
+        battle_sources = [str(ROOT / "src/telemetry/telemetry_battle.c"),
+                          str(ROOT / "src/telemetry/telemetry_battle_contribution.c"),
+                          str(ROOT / "src/telemetry/telemetry_battle_build_observation.c"),
+                          str(ROOT / "src/telemetry/telemetry_control.c"),
+                          str(ROOT / "src/telemetry/telemetry_battle_contract.c")]
         harness = str(ROOT / "tests/async/telemetry_repository_harness.cc")
         no_sql = tmp / "no_mysql"
         subprocess.run(common + ["-D__NO_MYSQL__", failure_source, source, harness,
@@ -322,7 +378,7 @@ def main():
         subprocess.run([str(no_sql)], check=True, timeout=30)
         mysql = shlex.split(subprocess.check_output(["mysql_config", "--cflags", "--libs"], text=True)) + ["-lcrypto"]
         sql = tmp / "sql"
-        subprocess.run(common + [failure_source, source, harness, "-Wl,--wrap=mysql_real_query", "-Wl,--wrap=mysql_errno", "-Wl,--wrap=_Znwm",
+        subprocess.run(common + [failure_source, source, harness] + battle_sources + ["-Wl,--wrap=mysql_real_query", "-Wl,--wrap=mysql_errno", "-Wl,--wrap=_Znwm",
                                   "-o", str(sql)] + mysql, check=True)
         print("SQL repository harness compile: PASS", flush=True)
         if args.sql_fixture:

@@ -13,6 +13,12 @@ def require_completed_history(rows):
             migrations.ROOT / "migrations/migration_manifest.staging_0045.json"),
         migrations.load_manifest(
             migrations.ROOT / "migrations/migration_manifest.master_0031.json"),
+        migrations.load_manifest(
+            migrations.ROOT / "migrations/migration_manifest.telemetry_0067.json"),
+        migrations.load_manifest(
+            migrations.ROOT / "migrations/migration_manifest.telemetry_0067_staging_0045.json"),
+        migrations.load_manifest(
+            migrations.ROOT / "migrations/migration_manifest.telemetry_0067_master_0031.json"),
     )
     for manifest in manifests:
         try:

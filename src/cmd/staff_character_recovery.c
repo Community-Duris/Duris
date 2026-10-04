@@ -1,6 +1,7 @@
 /* Staff restore and affect-cleanup commands. */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "world/character_maintenance.h"
 #include "core/structs.h"
 #include "core/defines.h"
@@ -58,6 +59,7 @@ static void do_reboot_restore(P_char ch, P_char victim)
 	{
 		affect_from_char(victim, SPELL_BLINDNESS);
 		REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);
+		telemetry_runtime_game_control_changed(victim);
 	}
 
 	if (IS_AFFECTED4(victim, AFF4_CARRY_PLAGUE))
