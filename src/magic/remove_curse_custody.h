@@ -1,6 +1,7 @@
 #ifndef DURIS_REMOVE_CURSE_CUSTODY_H
 #define DURIS_REMOVE_CURSE_CUSTODY_H
 
+#include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
 #include "item/item_ownership_runtime.h"
