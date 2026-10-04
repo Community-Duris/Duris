@@ -199,6 +199,23 @@ retain every native alias. Yeenoghu's dispatch/safety/balance and truthful
 clue/departure work are pending actual repairs. This journal ships no native
 fix; later repairs need identifiable fix commits and clear PR/news evidence.
 
+Court of the Muse's [dossier](../design/zone-stories/COURT_OF_THE_MUSE.md)
+shows four seasonal producers and a separate four-token admission delivery.
+Producer histories are optional; supplied distinct tokens fit without personal
+favors. Twelve koi scales are one counted material check, while two instances
+of an imaginary friend share one contract/outcome. Exact source instances
+matter: later matching satyrs/sprites do not all inherit carried essence.
+
+The book and dew really key cave doors because shared lookup matches vnum
+without requiring key item type; locket prose alone does not override that.
+The dew is also consumed by Spring, so explain competing use without making
+optional cave access a required campaign. World door types and reset states
+are separate. Actual trap charge/damage, key destruction, access/fall/current
+and reset return need qualified events. Unsupported trap values and conflicting
+pouch/clue text need deliberate separate content fixes; seasonal/audience,
+fishing or soul-extraction objectives need real accepted endpoints. No native
+repair or new schema path ships with the journal; later fixes need clear news.
+
 ## Schema version 1
 
 Version 1 remains supported. Use version 2 or 3 for new starter and hometown

@@ -99,9 +99,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 41 | Home of the Divine | [Comprehensive source dossier](zone-stories/HOME_OF_THE_DIVINE.md): all 52 blocks/32 exchanges/twenty raw M families, 122 rooms/62 mobs/83 objects/one shop, 240 resets/156 families; shared item teleport, shop/forge and epic teacher | Revision one: twenty outcomes/twelve services, 27 contacts/48 optional checks; exact tokens/hearts/treasures, independent crafting/access and foreign returns | No native repair ships; missing bounty reward/preflight, guarded scale/six mixed fees, two-copy weapon supply, rare wandering, access/trap/fall/container and recipient episodes pending |
 | 42 | The Halfcut Hills | [Comprehensive source dossier](zone-stories/THE_HALFCUT_HILLS.md): 28 blocks/thirteen deliveries/fifteen addressed, 470 rooms/83 mobs/sixty objects/one shop, 413 resets/177 families; bound crossbow plus shared switch/teleport/inn/shop/epic teacher | Revision one: thirteen independent outcomes, nineteen contacts/twenty-four optional checks; exact miners/badges/note and competing trophies | Separate crossbow scheduler/continuation fix ships; missing drow reward/preflight, source/recipient/container/wandering/access, real home arrival and branch/attempt campaign decisions pending |
 | 43 | The Scorched Valley | [Comprehensive source dossier](zone-stories/THE_SCORCHED_VALLEY.md): twenty blocks/nine deliveries/eleven addressed; 132 rooms/sixty mobs/fifty-five objects/no local shop, 211 resets/118 families; three literal assignments and shared keys/container/rifts/artifact/combat | Revision one: nine outcomes, twenty-two contacts/twenty-two optional checks; exact foreign proof and blood-to-four-colors-to-necklace | No native repair ships. Advisor source/recipient episode, foreign encounters, nested/access evidence, Yeenoghu dispatch/safety/balance, truthful clue/departure and rod/state/finale design pending |
-| 44–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 44 | Court of the Muse | [Comprehensive source dossier](zone-stories/COURT_OF_THE_MUSE.md): fifteen blocks/nine deliveries/six addressed; ninety-nine rooms/thirty-six mobs/forty-three objects/one shop, 209 resets/ninety-two families; shared teachers, doors, traps, portals, fall/current | Revision one: nine outcomes, twenty-five contacts/sixteen optional checks; four distinct seasonal producers/admission, twelve scales and exact independent requests | No native repair ships. Cave/pouch/trap decisions, competing dew/source/retiring episodes, actual access/key destruction/reset return and seasonal/audience endpoints pending |
+| 45–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Court of the Muse (`court`).
+The next area is Valley of the Snow Ogres (`snogres`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -110,6 +111,8 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-COURT-ACCESS / CONTENT / TRAPS | Cave locket clues actually key to book/dew; shared lookup permits both. Dew is also consumed for Spring. Pouch description conflicts with whole-flower text. Spring/Summer/Autumn tokens, autumn mask and diamond stud declare damage codes absent from trap dispatch; Winter has real cold pickup damage. Forward admission key breaks; reverse key zero is normally opened reciprocally but reset/restart is separate. | Choose truthful cave/pouch wording and intended supported trap data in separate fix/news commits. Qualify reveal/unlock/open, competing-use ordering, exact GET/retry/charge persistence, damage continuation, key destruction and ordinary versus restored-lock return. Do not infer all visits are stranded or treat unreset world-file four as secret. |
+| ZSQ-COURT-SOURCES / RITUALS / AUDIENCE | Four exact tokens accept supplied materials without personal favors. Fifteen koi-scale declarations support twelve; fisherman retires. Two friends share one contract; eight initial essence carriers do not cover every later matching mob. Seasonal rituals, fishing lesson, soul extraction, Muse audience and elk-heart finale lack accepted endpoints. | Qualify live source/recipient generations and personal lineage separately; preserve nine independent outcomes. Add explicit actor/effect/access/audience/finale transactions and AND/attempt policy only for builder-selected objectives. Shop and shared class-matched level teachers remain context, not extra credit. |
 | ZSQ-SCORCH-ACCESS / EPISODES / OWNERSHIP | Five distinct keys lead to a locked, pickproof blood chest. Final key holder is advisor/recipient for three other requests. Bodyguard/recipients have foreign holding routes; exact Grog/Zuzon heads come from foreign zones. | Qualify key/open/container ancestry and source/recipient replacement episodes. Physical-room discovery is required and normal arrival supplies it; the immediate hint still uses the physical journal. Plan an owning-journal referral without remote discovery or changed credit, preserving supplied proof and contract ownership. |
 | ZSQ-SCORCH-DISPATCH / CONTENT / STATE | Yeenoghu rejects CMD_MOB_COMBAT and declines periodic registration; outer whirlwind/fetid traversal needs callback continuation review before activation. Head clue promises either commander but only one supplies accepted head; Q206 says departure without D. Captive/resummon/society/curse and rod/finale are narrative or lack endpoints. | Separate dispatch/safety/balance fix and truthful text or builder-selected actual alternatives/lifecycle. Define real entity/effect/assembly/finale transactions before new credit. No native repair ships; every implemented repair requires clear fix/news reporting. Curated contact topics cover all families without increasing the current limit. |
 | ZSQ-HALFCUT-REWARD / RESCUE / EPISODES | Drow request literally names absent item 25000 after potion 27056; reward item admission lacks loadability preflight. Four jar declarations support three miners/Bartis; acceptance retires recipients without home arrival. Bartis badge bundle must precede final jar in the same episode; faction scalps compete with six-proof delivery. | Builder selects intended reward; add pre-consumption/new-credit preflight preserving frozen obligations, then a separate native recipe fix. Qualify jar/container/scalp source generations and retiring NPC episodes. Select narrative rescue versus atomic movement, branch/attempt/all-stage policy without rejecting supplied independent proof. |
@@ -2123,3 +2126,59 @@ maps remain unchanged. Catalog: 64 maps/1690 achievements/1490 potential
 dailies/2225 rows. Original 220-area order stays intact: first forty-three
 source-comprehensive, 177 pending. Continue with Court of the Muse. Journal
 guidance and pending findings must not be reported as restored native gameplay.
+
+## Court of the Muse completed source map — October 3, 2026
+
+The [dossier](zone-stories/COURT_OF_THE_MUSE.md) explains all fifteen native
+blocks: seven QA/two Q and five MA/one M. A means room echo, not alignment.
+Complete review covers ninety-nine rooms/eighty prose/twenty-eight headers/
+forty-one metadata/eighty exit families, thirty-six mobiles, forty-three
+objects, one actual apple shop and 209 resets/ninety-two families. There are
+no literal local special assignments; automatic class-matched teachers and
+shared doors, traps, item teleports, fall/current, follower and quest paths
+were traced. All local declared targets and reciprocal surface boundary exist.
+
+Revision one has nine independent outcomes, twenty-five contacts and sixteen
+optional checks. Snowflake/petals/dew/leaf give four exact tokens and native XP.
+Their distinct bundle gives a separate admission key. Four producer histories
+remain optional: supplied tokens fit, and receipts cannot restore spent proof
+or certify seasonal effects/audience. The fisherman requires twelve scales,
+with fifteen declared fish-and-scale sources, and retires. Two friend instances
+share one obsidian outcome; eight initial satyr/sprite sources carry essence,
+not every matching mob. Larissa's exact wand lies on a falling ice floor.
+
+The book and dew are real key references accepted by generic lookup despite
+locket-shaped cave clues. Use dew at its optional gate before offering that
+copy. Shared loading masks door type; D resets set secret/closed/locked state.
+Autumn leaf has secret-stump or enter-stump access. Jump waterfall, enter arch,
+seasonal portal and branch portal have distinct actual commands/destinations.
+Forward admission key has a 100 percent break declaration, subject to durable
+destruction acceptance. Reciprocal opening and court down permit ordinary
+return; restored reverse lock/key zero needs a separately played recovery
+episode before a return repair is selected. Currents/falls are actual hazards.
+
+**Pending repairs, none shipped:** align cave clues with working book/dew
+keys or design intended lockets; align pouch/whole-flower text; select intended
+trap data. Spring/Summer trap damage 9, Autumn token/mask 12 and diamond stud
+16 have no case in the shared 0–8 handler. Charged GET can consume a charge
+and reject pickup without a matching effect/message. Winter cold damage is
+real. Qualify single/bulk pickup, retry, persisted charge, callback survival
+and actual accounting before repairing content. Keep separate clear fix commits
+and prominent PR/news before-after entries when an actual repair ships.
+
+Narrated seasonal changes, skipping/fishing rituals, soul extraction and a
+Muse audience have no accepted terminal. Elk heart is carried loot, with an
+elf/elk alias discrepancy, without a reviewed consumer. Three teacher flags
+give shared level/runestone guidance rather than local epic contracts. Potion
+and wand use are separate effects. These roles can remain useful lore until
+builders select explicit supported endpoints and campaign/attempt policy.
+
+Focused source/native fixtures cover exact terms, all dialogue, source parent
+ancestry, working access/trap values, supplied four-season tokens, eleven versus
+twelve scales, wrong/worn/spent proof, optional history, read-only readiness,
+independent receipts and cold recovery. Synthetic completion is not actual
+fishing, gate opening, safe trap recovery, ritual or a full-accounting journey.
+All 2668 native definitions, revision-two fingerprint, registry and other
+sixty-four journals stay unchanged. Catalog: 65 maps/1690 achievements/1490
+potential dailies/2225 rows. Original order: forty-four source-comprehensive,
+176 pending. Continue with Valley of the Snow Ogres (`snogres`).

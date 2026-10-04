@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 43 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 44 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -104,6 +104,13 @@ trophies and encounters retain contract ownership. The advisor is also a key
 holder; captive/resummon/society/curse state remains narrative. Yeenoghu dispatch
 and attack safety, clue/departure repairs, source/recipient episodes and rod
 assembly/finale integration are explicit pending work. No native repair ships.
+Court of the Muse's [completed dossier](zone-stories/COURT_OF_THE_MUSE.md)
+adds nine outcomes, twenty-five contacts and sixteen optional checks. Four
+seasonal favors lead to a distinct token bundle and independent admission;
+twelve scales retire the fisherman, while shared friends and exact soul/wand
+sources retain their own outcomes. Book/dew keys work despite locket clues;
+dew competes with its offering. Cave/pouch/trap fixes, access/reset/return and
+seasonal/audience transactions remain pending. No native repair ships.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
 ## Reviewed first integrations
@@ -228,7 +235,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 41 | [Home of the Divine](zone-stories/HOME_OF_THE_DIVINE.md) (`divhome`) | Four elemental tokens → siren; seven hearts → independent bounties; nine exact curiosities → cash; Riser → fire/frost maces → paid swords → guarded merge; cloud → palace key, badge → prison key; titan token → prince or Raith; foreign flute/Pure-Dark returns. | Source-comprehensive, revision one: twenty outcomes/twelve services, 27 contacts/all nineteen useful addressed families, 48 optional checks. Missing bounty reward/preflight, guarded generic scale/six mixed fees, duplicate stock, access/trap/fall/container/rare-wander and retiring episodes remain pending. No native repair ships. |
 | 42 | [The Halfcut Hills](zone-stories/THE_HALFCUT_HILLS.md) (`halfcut`) | Wagon medicine → wounded dwarf; four brown jars → three miners + Bartis; three distinct badges → complete badge before final jar → note → sentry earring; raid leader scalp → Remi; four competing faction scalps + Bartis/Hulkuis → one six-proof belt delivery. | Source-comprehensive, revision one: thirteen outcomes/nineteen contacts/all fifteen addressed families/twenty-four optional checks. Separate bound crossbow fix ships. Missing drow reward/preflight, recipient/source episodes, containers/wandering, real access/rescue/branch/campaign qualification pending. |
 | 43 | [The Scorched Valley](zone-stories/THE_SCORCHED_VALLEY.md) (`scorchvalley`) | Pit heirloom → survivor; frost giant sack / three local-and-foreign heads / Mount Banishment essence → advisor; two distinct banners + pit hide / cart charm → collector; godly magic → Torg advisor; five-key temple blood → Fields Between seeker → four distinct rings → wandering wildmage necklace. | Source-comprehensive, revision one: nine outcomes/twenty-two contacts/all eleven addressed families/twenty-two optional checks. Source/recipient episodes, foreign encounters, nested recovery and actual access need qualification. Yeenoghu dispatch/safety/balance and clue/departure repairs remain pending; no native fix or invented captive/resummon/society/curse/rod finale credit. |
-| 44 | Court of the Muse (`court`) | [Meet the giver → 12 × a scale of a koi fish → a druidic necklace of fish scales](../../areas/qst/court.qst#L87) | 9 Q; 6 dialogue; 4 candidate link items |
+| 44 | [Court of the Muse](zone-stories/COURT_OF_THE_MUSE.md) (`court`) | Frost thief snowflake / Tookles petal pouch / Grielda dew / stump red leaf → four seasonal favors → four distinct tokens → priestess admission key; twelve koi scales → necklace; obsidian → either friend → sunshine; initial soul essence → Kyra → decay; icy diamond wand → Larissa → stud. | Source-comprehensive, revision one: nine outcomes/twenty-five contacts/all six addressed families/sixteen optional checks. Supplied tokens preserve optional history; no ritual, audience, fishing or soul-extraction credit. Book/dew keys, competing use, source/retiring episodes, traps and safe access/return need qualification; cave/pouch/trap repairs pending, no native fix. |
 | 45 | Valley of the Snow Ogres (`snogres`) | [Meet the giver → 6 × a substantial chunk of remorhaz hide; 1 × an onyx-hilted cold-iron claymore; 1 × an onyx-hilted cold-iron greatsword → a magical pair of remorhaz hide vambraces](../../areas/qst/snogres.qst#L159) | 9 Q; 6 dialogue; 4 candidate link items |
 | 46 | The Mountain Valley of Dawndale (`airshipgrave`) | [Meet the giver → 2 × a vial of liquid sunlight; 1 × a handful of combustable rock dust; 1 × a bucket of rank pool water and the remaining ingredients → the lost blade of the Astral Dancer, 'Ender'](../../areas/qst/airshipgrave.qst#L101) | 13 Q; 4 dialogue; 4 candidate link items |
 | 47 | The 222nd Layer of the Abyss (`juiblex`) | [Meet the giver → 1 × the head of the lost wildmage; 1 × the head of the lost wildmage; 1 × the head of the lost great wildmage and the remaining ingredients → a necklace of wildmage scalps](../../areas/qst/juiblex.qst#L593) | 23 Q; 25 dialogue; 3 candidate link items |

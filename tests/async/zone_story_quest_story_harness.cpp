@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 64 &&
+		require(catalog.story_mappings.size() == 65 &&
 				tracker.summary_for(7, 42).total == 1690,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -3949,6 +3949,124 @@ int main(int argc, char **argv)
 				recovered_scorch.progress_for_zone(7, 42, 712).completed == 9 &&
 				recovered_scorch.progress_for_zone(7, 42, 712).total == 9,
 			"Scorched frozen recovery changed independent identity or invented an extra campaign");
+
+		const auto &court_map = *std::find_if(catalog.story_mappings.begin(),
+						      catalog.story_mappings.end(),
+						      [](const auto &mapping)
+						      { return mapping.source_area == "court"; });
+		const auto &court_admission = story_for("court", "priestess-four-seasons");
+		const auto &court_fisherman = story_for("court", "fisherman-dozen-scales");
+		const auto &court_winter = story_for("court", "winter-snowflake");
+		service supplied_court(catalog);
+		require(supplied_court.discover_zone(7, 42, 67, 6716, 100, "arrival") ==
+					result::applied &&
+				supplied_court.render_journal(7, 42, 67, 10, 1, 101, false, false)
+						.find("] " + court_admission.title + "\r\n") ==
+					std::string::npos,
+			"Court discovery revealed an unmet admission request");
+		for (const auto &contact : court_map.contacts)
+			require(supplied_court.meet_npc(7, 42, contact.mob_vnum, 6704, 101) ==
+					result::applied,
+				"Court synthetic encounter fixture failed");
+		const auto court_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Court journal section missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		for (int item : { 6714, 6715, 6716, 6717 })
+			supplies.carried[item] = 1;
+		supplies.carried[6702] = 11;
+		supplies.carried[6725] = 1;
+		const auto court_before = supplied_court.serialize_state();
+		journal = supplied_court.render_journal(7, 42, 67, 10, 1, 102, false, false,
+							&supplies);
+		require(court_section(court_admission)
+						.find("Next: " +
+						      court_admission.steps.back().text) !=
+					std::string::npos &&
+				court_section(court_admission)
+						.find("[Pending] " +
+						      court_admission.steps.front().text) !=
+					std::string::npos &&
+				court_section(court_fisherman)
+						.find("[Missing now] " +
+						      court_fisherman.steps.front().text) !=
+					std::string::npos &&
+				court_section(court_winter)
+						.find("[Missing now] " +
+						      court_winter.steps.front().text) !=
+					std::string::npos,
+			"Court supplied seasons required personal favors, or eleven scales/worn-kind snowflake fit");
+		supplies.carried[6702] = 12;
+		journal = supplied_court.render_journal(7, 42, 67, 10, 1, 103, false, false,
+							&supplies);
+		require(court_section(court_fisherman)
+						.find("[Ready now] " +
+						      court_fisherman.steps.front().text) !=
+					std::string::npos &&
+				supplied_court.serialize_state() == court_before &&
+				supplied_court.progress_for_zone(7, 42, 67).total == 9 &&
+				supplied_court.progress_for_zone(7, 42, 67).completed == 0,
+			"Court twelve-copy readiness mutated state or granted a catch, ritual or completion");
+		for (const auto &step : court_admission.steps)
+		{
+			if (step.kind != "carried_item")
+				continue;
+			const auto item = step.item_vnums.front();
+			supplies.carried.erase(item);
+			supplies.equipped[14] = item;
+			supplies.carried[6713] = 1;
+			journal = supplied_court.render_journal(7, 42, 67, 10, 1, 104, false, false,
+								&supplies);
+			require(court_section(court_admission).find("[Missing now] " + step.text) !=
+					std::string::npos,
+				"Court worn token or supplied key replaced an exact seasonal token");
+			supplies.equipped.clear();
+			supplies.carried[item] = 1;
+		}
+		supplies.carried.erase(6715);
+		supplies.carried[6714] = 4;
+		journal = supplied_court.render_journal(7, 42, 67, 10, 1, 105, false, false,
+							&supplies);
+		require(court_section(court_admission)
+					.find("[Missing now] " + court_admission.steps[5].text) !=
+				std::string::npos,
+			"Court repeated Spring token replaced distinct Autumn proof");
+		supplies.carried[6715] = 1;
+		supplies.carried.erase(6717);
+		record(supplied_court, court_winter.contracts.front(), "court-winter", 67, 6788);
+		journal = supplied_court.render_journal(7, 42, 67, 10, 1, 106, false, false,
+							&supplies);
+		require(court_section(court_admission)
+						.find("[Recorded] " +
+						      court_admission.steps[3].text) !=
+					std::string::npos &&
+				court_section(court_admission)
+						.find("[Missing now] " +
+						      court_admission.steps[7].text) !=
+					std::string::npos &&
+				supplied_court.progress_for_zone(7, 42, 67).completed == 1,
+			"Court favor history restored spent Winter proof or completed admission");
+		service independent_court(catalog);
+		record(independent_court, court_admission.contracts.front(),
+		       "court-supplied-admission", 67, 6704);
+		service restored_court(catalog);
+		require(restored_court.deserialize_state(independent_court.serialize_state(),
+							 &error) &&
+				restored_court.progress_for_zone(7, 42, 67).completed == 1,
+			"Court supplied admission recovery invented four personal favors or an audience");
+		for (const auto &entry : court_map.stories)
+			if (entry.id != court_admission.id)
+				record(restored_court, entry.contracts.front(), entry.id.c_str(),
+				       67, 6704);
+		service recovered_court(catalog);
+		require(recovered_court.deserialize_state(restored_court.serialize_state(),
+							  &error) &&
+				recovered_court.progress_for_zone(7, 42, 67).completed == 9 &&
+				recovered_court.progress_for_zone(7, 42, 67).total == 9,
+			"Court recovery multiplied friend instances or invented a ritual/campaign finale");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

@@ -1813,7 +1813,79 @@ boss=scorch_special.split("int yeenoghu(",1)[1]
 assert "if (cmd == CMD_SET_PERIODIC)\n\t\treturn FALSE;" in boss and "if (cmd)\n\t\treturn FALSE;" in boss
 assert "#define CMD_MOB_COMBAT -102" in (ROOT/"src/cmd/interp.h").read_text(encoding="utf8")
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley"):
+# Court keeps exact distinct seasons, counted scales and independent native receipts.
+# Access/trap declarations below qualify guidance, not an actual content repair.
+court=inventory_module.area_evidence(ROOT,"court")
+court_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="court")
+court_stories={s["id"]:s for s in court_map["stories"]}
+assert (court_map["schema_version"],court_map["revision"],court_map["coverage"])==(3,1,"complete")
+assert len(court_stories)==9 and len(court_map["contacts"])==25 and not court_map["exclusions"]
+assert sum(t.get("optional",False) for s in court_stories.values() for t in s["steps"])==16
+assert (len(court["requests"]),len(court["dialogue"]),len(court["mobs"]),len(court["items"]),len(court["reset_commands"]))==(9,6,36,43,209)
+assert not court["special_assignments"]
+assert collections.Counter(b["kind"] for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/court.qst")=={"QA":7,"Q":2,"MA":5,"M":1}
+bindings=[b for s in court_stories.values() for b in s["contracts"]]
+assert len(bindings)==9 and {tuple(sorted(b.items())) for b in bindings}=={
+    tuple(sorted(r["block"]["binding"].items())) for r in court["requests"]}
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==67]
+assert (len(units),sum(u["achievement"] for u in units),sum(u["daily_candidate"] for u in units))==(9,9,9)
+by_line={r["block"]["line"]:r["block"] for r in court["requests"]}
+for line,required,reward in ((10,[6722],[("I",6717),("E",50000)]),
+    (27,[6727],[("I",6716),("E",50000)]),(37,[6724],[("I",6714),("E",50000)]),
+    (53,[6720],[("I",6715),("E",50000)]),(67,[6734],[("I",6735)]),
+    (74,[6732],[("I",6733)]),(87,[6702]*12,[("I",6703)]),
+    (114,[6714,6715,6716,6717],[("I",6713)]),(126,[6741],[("I",6740)])):
+    assert by_line[line]["give"]==[("I",v) for v in required] and by_line[line]["receive"]==reward
+    assert by_line[line]["binding"]["completion_key"].endswith("disappear="+str(int(line==87)))
+admission=court_stories["priestess-four-seasons"]
+assert [t["contracts"] for t in admission["steps"][:4]]==[
+    court_stories[k]["contracts"] for k in ("spring-dew","autumn-leaf","summer-petals","winter-snowflake")]
+assert [t["item_vnums"] for t in admission["steps"][4:-1]]==[[6714],[6715],[6716],[6717]]
+assert court_stories["fisherman-dozen-scales"]["steps"][0]["count"]==12
+contacts={c["mob_vnum"]:c for c in court_map["contacts"]}
+for v,c in contacts.items():
+    assert c["keyword"] in court["mobs"][v]["keywords"] and len(c["topics"])<=32
+    native=set(t for b in court["dialogue"] if b["giver_vnum"]==v for t in b["body"][0].rstrip("~").split())
+    assert set(c["topics"])==native
+for b in court["dialogue"]:
+    assert set(b["body"][0].rstrip("~").split())&set(contacts[b["giver_vnum"]]["topics"])
+assert all(not contacts[v]["topics"] for v in (6708,6718,6735))
+parent=room=None;sources=collections.defaultdict(list);families=set()
+assert collections.Counter(r["command"] for r in court["reset_commands"])=={"M":122,"G":42,"E":23,"O":9,"D":8,"F":5}
+for r in court["reset_commands"]:
+    c,v=r["command"],r["arguments"]
+    assert v[4]==100 and v[5:]==[0,0,0]
+    if c in ("M","F"):parent,room=v[1],v[3]
+    families.add((c,tuple(v[:3]),parent if c in ("G","E") else None))
+    if c in ("G","E"):sources[v[1]].append((parent,room,v[2]))
+assert len(families)==92
+assert sources[6722]==[(6731,6792,1)] and sources[6724]==[(6734,6793,1)] and sources[6727]==[(6724,6752,1)]
+assert sources[6742]==[(6717,6787,1)] # Current follower is frost spirit, not Sieck.
+assert sources[6732]==[(v,6702,8) for v in (6700,6702,6703,6701)]+[(v,6703,8) for v in (6721,6723,6720,6722)]
+assert sources[6702]==[(6715,6755,15)]*5+[(6715,6758,15)]*3+[(6715,6761,15)]*7
+assert collections.Counter(v for v,room,cap in sources[6734])=={6723:4,6702:1,6711:2}
+assert [r["arguments"][1:4] for r in court["reset_commands"] if r["command"]=="F" and r["arguments"][1]==6716]==[[6716,2,6740],[6716,2,6749]]
+assert [r["arguments"][1:4] for r in court["reset_commands"] if r["command"]=="O" and r["arguments"][1] in (6719,6720,6741)]==[[6719,1,6718],[6720,1,6771],[6741,1,6786]]
+room_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/wld/court.wld").read_text(encoding="utf8"),re.M|re.S)}
+assert set(room_bodies)==set(range(6700,6799))
+assert len({(b.split("~")[0].strip(),b.split("~")[1].strip()) for b in room_bodies.values()})==80
+for room,flags,key,target in ((6709,6,6719,6710),(6710,6,6724,6711),(6711,6,6724,6710),
+    (6704,7,6713,6798),(6798,3,0,6704),(6768,5,0,6769),(6796,4,0,6700),(6716,0,0,531688)):
+    assert f"{flags} {key} {target}" in room_bodies[room]
+for room,chance in ((6700,25),(6701,25),(6759,75),(6786,50),(6787,50)):
+    assert re.search(r"\bF\s+"+str(chance)+r"\b",room_bodies[room])
+obj_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/obj/court.obj").read_text(encoding="utf8"),re.M|re.S)}
+for v,target,command in ((6700,6796,7),(6705,6720,7),(6709,6770,7),(6718,6706,7),(6730,6713,264)):
+    values=list(map(int,obj_bodies[v].split("~")[4].split()[:15]))
+    assert values[0]==25 and values[11:14]==[target,command,-1]
+assert list(map(int,obj_bodies[6713].split("~")[4].split()[:15]))[12]==100
+assert obj_bodies[6719].split("~")[4].split()[0]=="33" and obj_bodies[6724].split("~")[4].split()[0]=="8"
+for v,damage,level in ((6714,9,16),(6715,12,16),(6716,9,16),(6717,3,16),(6721,12,31),(6740,16,16)):
+    assert re.search(r"\bT\s+2\s+"+str(damage)+r"\s+1\s+"+str(level)+r"\b",obj_bodies[v])
+assert (ROOT/"areas/shp/court.shp").read_text(encoding="utf8").startswith("#6728~")
+assert sources[6706]==[(6728,6794,999)]
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
