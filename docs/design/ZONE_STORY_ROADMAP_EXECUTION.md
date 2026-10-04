@@ -94,9 +94,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 38 | The Hall of the Ancients | [Comprehensive source dossier](zone-stories/THE_HALL_OF_THE_ANCIENTS.md): all 25 blocks/eleven exchanges/fourteen addressed families, 247 rooms/55 mobs/53 objects/one shop, 395 resets/153 families, twelve literal procedures and shared dispatch | Revision one: five outcomes/four services/two elder exclusions, 27 contacts/23 optional checks; actual sixteen-piece and ten-piece recipes, supplied foreign proof and source/access guidance | Separate Sin actual-opponent/null-actor combat fix ships; three mixed fees and oversized belt guarded; elder ordering, source budgets/chance, collector transaction, early death arming, GET settlement and campaign/access qualification pending |
 | 39 | Sarmiz'Duul | [Comprehensive source dossier](zone-stories/SARMIZ_DUUL.md): 21 blocks/eight exchanges/thirteen raw addressed families, 583 rooms/57 mobs/61 objects/four shops, 535 resets/199 families, five literal procedures plus foreign custom moonstone execution | Revision one: eight outcomes, 24 contacts/nineteen optional checks; exact courtship/relic/royal/conspiracy recipes, supplied foreign proof and custom guidance | No native repair ships; active-accounting pirate core guard retained; recipient targeting, partial seed/assembly/payment ordering, unfinished multi-core behavior, missing mount stock, potion prose/type and campaign/access/episode qualification pending |
 | 40 | Duke Delwyn | [Comprehensive source dossier](zone-stories/DUKE_DELWYN.md): 53 blocks/eleven exchanges/nine addressed + 33 ambient families, 207 rooms/96 mobs/41 objects, 278 resets/170 families; automatic teacher/shared trap/falling and reciprocal surface boundary | Revision one: six outcomes/five paid services, nineteen contacts/seventeen optional checks; exact bell/cog, four-stage banner, knight and two-item warning guidance | No native repair ships; mixed/coin payments guarded, live source/container lineage, trap/fall/safe return, occasion/advertised service/peaceful handover and campaign decisions pending |
-| 41–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 41 | Home of the Divine | [Comprehensive source dossier](zone-stories/HOME_OF_THE_DIVINE.md): all 52 blocks/32 exchanges/twenty raw M families, 122 rooms/62 mobs/83 objects/one shop, 240 resets/156 families; shared item teleport, shop/forge and epic teacher | Revision one: twenty outcomes/twelve services, 27 contacts/48 optional checks; exact tokens/hearts/treasures, independent crafting/access and foreign returns | No native repair ships; missing bounty reward/preflight, guarded scale/six mixed fees, two-copy weapon supply, rare wandering, access/trap/fall/container and recipient episodes pending |
+| 42–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Home of the Divine (`divhome`).
+The next area is The Halfcut Hills (`halfcut`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -105,6 +106,9 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-DIVINE-REWARD / SCALE / SETTLEMENT | Relazier bounty names missing object 31341; native admission does not validate reward-item loadability before offering consumption. Generic scale 392 has an inactive-accounting-only death source. Six mixed crafting fees stay guarded; Wicks's item-only cash rewards already have a durable path. | Builder selects intended bounty reward. Add pre-consumption item preflight/new-credit guard while preserving frozen obligations, then a distinct tested native recipe fix. Qualify recoverable scale death issuance and atomic fee/XP/output settlement; do not conflate reward cash with paid services or weaken guards. |
+| ZSQ-DIVINE-SUPPLY / ACCESS / EPISODES | Final forge route needs two cap-one Riser/shard copies and 300000 copper. Real enter/touch routes, two different keys, closed P containers, trapped claw, falls, rare holding/dead-end wandering and retiring recipients affect supply; token and Relazier branches compete. | Qualify exact UID allocation, empty-zone resets, actor survival/arrival, parent/location lineage, recipient episodes and foreign ownership. Builder selects scarcity/branch policy; preserve supplied independent receipts. Safe travel, freeing prisoners, personal kills and full campaigns need their own accepted terminals. |
+| ZSQ-DIVINE-CONTENT / SHARED ROLES | Four heart extra-description aliases name the wrong heart; several success strings and rare-room prose are empty. Emition shop/smith and Snent epic teaching have real shared bindings despite no local literal special. Reln's thousandfold jade fee matches dialogue. | Add truthful aliases/messages and qualify holding stranding before any builder-approved layout change. Keep price and binding facts intact. Actual later repairs require identifiable fix commits and prominent trigger/before-after/proof/news entries; this journal checkpoint ships none. |
 | ZSQ-MINI-ACCESS / EPISODES / SOURCES | Three independent outcomes; optional knight history and supplied sword pieces; hidden nested letter/hilt; exact maze route and cutpurse door. Nine outgoing targets are absent, while city/tavern/outpost have valid surface entries. | Preserve supplied native inputs. Qualify actual reset/shop/GET/P-parent and recipient generations, accepted phrase/unlock/open/arrival and explicit all-stage episode policy. Builder selects intended missing-edge repairs, reported separately when shipped. |
 | ZSQ-MINI-FEES / PETS / CONTENT | Four six-item plus 400,000-copper armor services are guarded. Ghostly shop takes coins rather than narrated marks; prose claims five types but four recipes exist. Pet claim restoration is commented out. | Coordinate exact material/wallet/output receipt and mount/owner/ticket settlement before enablement. Choose truthful armor/shop/sword prose or balanced new mechanics. Treat these as pending repairs, with player-facing PR/news entries only after implementation and validation. |
 | ZSQ-MINI-IDENTITY / DISPATCH | Dryad assignments/branch/current room identities disagree; navigator attaches to an insect swarm; miner really owns random world quests. Magik receives CMD_MELEE_HIT 1000 and its dispel branch is reachable. Legacy room M metadata is ignored. | Builder chooses intended bindings/destinations; bound dryad messages and freeze validated actor/follower state. Preserve real generated tasks. Add accepted targeted effect evidence if desired; do not repair an already reachable Magik dispatch or invent a metadata mechanic. |
@@ -1918,3 +1922,67 @@ travel. All 2668 native definitions, revision-two fingerprint, registry and
 other sixty maps remain unchanged. Catalog: 61 maps, 1702 achievements,
 1496 potential dailies and 2225 rows. Original 220-area order remains intact:
 first forty source-comprehensive, 180 pending. Continue with Home of the Divine.
+
+## Home of the Divine completed source map — October 3, 2026
+
+The [dossier](zone-stories/HOME_OF_THE_DIVINE.md) explains all 52 native
+blocks: thirty Q/two QA/twenty M, including one empty default. Complete world
+review covers 122 rooms/89 exact prose groups/nineteen headers/24 metadata
+groups/113 exit families, 62 mobiles, 83 objects, one seven-stock shop and
+240 resets/156 families. No literal local special is assigned; shared native
+reward, shop/forge, epic teacher, teleport, trap/falling, wandering and source
+execution are reviewed. Seven item teleport declarations and the reciprocal
+surface peak boundary resolve; the prison loom uses touch, not enter.
+
+Revision one has twenty independent outcomes, twelve preparation/access
+services, 27 contacts and 48 optional checks. Four elemental tokens form one
+siren request, seven hearts remain independent bounties, and Wicks's nine
+exact curiosities pay cash without becoming paid services. Prince/Raith token
+and foreign Pure-Dark exchanges do not enforce allegiance or require earlier
+personal routes. Four item-only crafting, six mixed crafting and two key
+services remain outside achievement/daily credit. All 32 native identities
+remain intact, including same-named eggs, flute/weapon variants and typed XP.
+
+**Concrete missing-reward blocker:** the Relazier heart bounty promises
+object 31341, absent from all object files. Current durable admission validates
+reward kinds, not item loadability; consumption and later failed reward
+instantiation remain possible. A journal warning is not a native guard.
+Builders must choose the intended reward, and reward-reference preflight
+before consuming/new credit must preserve existing frozen obligations. No
+replacement or fail-closed fix is claimed in this checkpoint.
+
+**Intentional accounting blockers:** generic scale 392 exists but its automatic
+dragon-death issuance is disabled with accounting active. Six mixed fees and
+ordinary forge/epic teaching have separate settlement requirements. Retain
+guards until recoverable source, item/wallet/XP/skill/output and recipient
+publication are qualified. Starting the final weapon from Riser requires two
+maces, two shards and 300000 copper; global cap-one and mode-one empty-zone
+reset policies do not promise fresh same-visit supply.
+
+Prison access needs the real touch loom and cloudy key; the palace uses its
+different wispy key. Closed statue/nest/anvil contents, the flaming claw's
+get/put fire trap and local/foreign fall chances expand accepted ancestry,
+actor survival and confirmed travel qualification. Rare holding NPCs can
+wander through one-way routes or into dead ends; source layout is neither
+categorically unreachable nor guaranteed usable. Relazier retirement removes
+carried heart; prince/Raith consume competing tokens. Explicit attempts,
+branches and source/recipient generations must precede personal campaign,
+escape, royal-drain, kill or full-stage credit.
+
+**Actual native repairs shipped: none.** Missing bounty/admission, wrong heart
+extra aliases, empty success strings and rare-room usability have balanced
+proposals. Reln's jade fee is consistent, and shared procedures are bound.
+Only actual tested repairs belong in player news, with distinct fix commits
+where practical, zone/trigger/before-after/proof/limits and a news sentence.
+The existing separate Hall Shadow of Sin fix remains clearly identifiable.
+
+Existing source/native fixtures verify exact recipes/topics, source/gate and
+same-name identities, encounter visibility, four-token preparation, wrong/worn
+inputs, supplied proof without producer history, spent material despite
+history, twelve service exclusions and twenty independent frozen receipts
+through cold recovery. They do not execute live ownership, settlement, missing
+reward, first source, trap/fall survival, travel or reset episodes. All 2668
+native definitions, revision-two fingerprint, zone registry and other 61 maps
+remain unchanged. Catalog: 62 maps, 1690 achievements, 1490 potential dailies,
+2225 rows. Original 220-area order remains intact: first 41 comprehensive,
+179 pending. Continue with The Halfcut Hills.

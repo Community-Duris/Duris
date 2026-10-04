@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 40 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 41 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -83,6 +83,13 @@ Four guarded textile stages feed a separately accepted supplied-banner outcome;
 bell/cog, chess and military-document routes retain exact independent receipts.
 Trap/falling access, provenance, atomic fees and bounded occasion/service/source
 builder decisions remain open. No native content repair ships here.
+Home of the Divine's [completed dossier](zone-stories/HOME_OF_THE_DIVINE.md)
+adds twenty outcomes/twelve services, 27 contacts and 48 optional checks.
+The missing Relazier bounty reward and absent reward-item preflight are
+concrete repair blockers; generic dragon-scale issuance and six mixed fees
+remain deliberately guarded. Exact treasures/weapon stages, real loom/prison
+routes, rare wandering and competing/retiring episodes are documented without
+personal kill, escape or campaign credit. No native repair ships here.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
 ## Reviewed first integrations
@@ -204,7 +211,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | ---: | --- | --- | --- |
 | 39 | [Sarmiz'Duul](zone-stories/SARMIZ_DUUL.md) (`sarmiz`) | Obsidian → ornate dagger → letter → distinct blue token/flask; lockpicks → relic → dust/cloak; Peacekeeper badge → formulas; three-item royal and four-item conspiracy recipes; custom foreign moonstone fragments/core → assembly → ring or paid ship crew. | Source-comprehensive, revision one: eight achievements/potential dailies, 24 contacts/all thirteen raw addressed families, nineteen optional checks. No native repair ships; active-accounting pirate core guard, custom recipient/seed/assembly/settlement, missing stock, potion mismatch and campaign/episode work remain explicit. |
 | 40 | [The Motte and Bailey of Duke Delwyn](zone-stories/DUKE_DELWYN.md) (`delwyn`) | Bell → cog → blade; fleece → four paid textile stages → banner → slippers; ivory knight → boots; trapped-desk assessment → note, then note + braid → signet. | Source-comprehensive, revision one: six outcomes/five services, nineteen contacts/all nine addressed families, seventeen optional checks. Four textile fees/coin service guarded; supplied proof, safe falling/trap access and source episodes separate. No native repair ships; occasion/advertised-service/peaceful source/campaign decisions remain pending. |
-| 41 | Home of the Divine (`divhome`) | [Meet the giver → 1 × a token of earth; 1 × a token of water; 1 × a token of air and the remaining ingredients → a silky black dress of the sirens, a harp of the sirens](../../areas/qst/divhome.qst#L8) | 32 Q; 20 dialogue; 4 candidate link items |
+| 41 | [Home of the Divine](zone-stories/HOME_OF_THE_DIVINE.md) (`divhome`) | Four elemental tokens → siren; seven hearts → independent bounties; nine exact curiosities → cash; Riser → fire/frost maces → paid swords → guarded merge; cloud → palace key, badge → prison key; titan token → prince or Raith; foreign flute/Pure-Dark returns. | Source-comprehensive, revision one: twenty outcomes/twelve services, 27 contacts/all nineteen useful addressed families, 48 optional checks. Missing bounty reward/preflight, guarded generic scale/six mixed fees, duplicate stock, access/trap/fall/container/rare-wander and retiring episodes remain pending. No native repair ships. |
 | 42 | The Halfcut Hills (`halfcut`) | [Meet the giver → 1 × the orc's scalp; 1 × the drow's scalp; 1 × the goblin's scalp and the remaining ingredients → a duergar belt](../../areas/qst/halfcut.qst#L177) | 13 Q; 15 dialogue; 4 candidate link items |
 | 43 | The Scorched Valley (`scorchvalley`) | [Meet the giver → 1 × the red ring of perfection; 1 × the blue ring of perfection; 1 × the green ring of perfection and the remaining ingredients → a necklace of perfection](../../areas/qst/scorchvalley.qst#L256) | 9 Q; 11 dialogue; 4 candidate link items |
 | 44 | Court of the Muse (`court`) | [Meet the giver → 12 × a scale of a koi fish → a druidic necklace of fish scales](../../areas/qst/court.qst#L87) | 9 Q; 6 dialogue; 4 candidate link items |

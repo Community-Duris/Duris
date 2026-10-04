@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 61 authored journals, accounting-gated player surfaces, starter/town
+**Status: 62 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -15,7 +15,7 @@ Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
 the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
 Ship Yards, Ultarium, the Surface Realm, Tharnadia, Mini Zones and the City
 of Torrhan, Golden Hall of the Crown, Ashrumite Village and The Hall of the
-Ancients, Sarmiz'Duul and Duke Delwyn now have complete source story maps; their active-world journeys remain unqualified. Savannah projects seventeen
+Ancients, Sarmiz'Duul, Duke Delwyn and Home of the Divine now have complete source story maps; their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
 checks. The [Savannah dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md)
@@ -475,6 +475,29 @@ boundary is reciprocal and valid. The note's wedding versus the Duke's birthday
 reply, unbound advertised trade/lodging, and optional peaceful source handovers
 have bounded builder repair proposals. No native/content repair ships here;
 use separate fix commits and prominent tested PR/news handoff for later repairs.
+
+Home of the Divine's [comprehensive dossier](zone-stories/HOME_OF_THE_DIVINE.md)
+covers all 32 exchanges/twenty raw M families, 122 rooms, 62 mobiles,
+83 objects, one shop, 240 resets/156 families and shared teleport/shop/forge/
+epic-teacher execution. Revision one has twenty outcomes, twelve services,
+27 contacts and 48 optional checks. Four-token siren, seven heart requests,
+nine exact cash-reward treasures, competing titan-token deliveries and the
+foreign Pure-Dark return remain independent. Ten crafting/two access services
+do not become campaign achievements. Six mixed fees stay guarded; the generic
+dragon-scale death source is disabled with accounting active. Cash reward
+settlement is distinct from a fee and is already supported for item-only input.
+
+The hunter's Relazier bounty names missing reward 31341. Native admission
+currently checks supported reward kinds without preflighting item loadability;
+an offering can be consumed before recovery cannot instantiate the reward.
+Static daily candidacy and a journal warning do not fix that risk. Expand
+reward-reference validation and safe admission before consumption/new credit,
+preserving frozen outstanding obligations. Builders must select the intended
+reward before a separate native recipe fix. Preserve the deliberate scale
+guard until recoverable custom death issuance is qualified. Key/trap/fall/
+container/rare-wander and retiring-recipient journeys need accepted evidence;
+first ownership, successful freeing, allegiance, war and personal crafting
+campaigns remain untracked. No native repair ships in this checkpoint.
 
 ## Accounting requirement and delivery sequence
 
@@ -1187,7 +1210,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 180 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 179 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1210,6 +1233,17 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
 
 
+- [x] Complete Home of the Divine's 32-exchange/twenty-raw-addressed source
+  dossier: twenty independent outcomes/twelve services, 27 contacts and 48
+  optional checks; exact elemental, heart, treasure, crafting/key and foreign
+  return identities, shared bindings and all 156 reset families.
+- [ ] Resolve the missing Relazier bounty reward through builder-selected
+  native terms, add reward item preflight before consumption/new credit, and
+  qualify frozen obligations. Retain scale and mixed-payment guards until
+  recoverable death-source and atomic fee/output settlement pass. Qualify
+  duplicate Riser/shard allocation, recipient episodes, container ancestry,
+  real touch/enter/unlock/trap/fall journeys and foreign receipt ownership;
+  report actual aliases/prose/topology repairs as distinct fix/news changes.
 - [x] Complete Duke Delwyn's eleven-exchange/nine-addressed source dossier:
   207 rooms/96 mobiles/41 objects, 278 resets/170 families, automatic teacher,
   shared trap/falling and reciprocal surface boundary. Six outcomes, five paid
@@ -1409,6 +1443,7 @@ contract classification; it does not claim complete objective coverage.
 | The Hall of the Ancients | 1 | Complete: five outcomes/four services/two elder exclusions across eleven contracts | [Source-comprehensive dossier](zone-stories/THE_HALL_OF_THE_ANCIENTS.md); 27 contacts/all fourteen addressed families and 23 optional checks | Five achievements/two potential dailies; three mixed fees and sixteen-root device guarded; elder/supply/source/GET/access qualification open | Exact quantities/foreign proof/optional history and excluded receipt recovery; separate Sin null/wrong-target fix, other repairs pending with explicit news handoff |
 | Sarmiz'Duul | 1 | Complete: eight independent native deliveries; custom moonstone guidance without invented terminal | [Source-comprehensive dossier](zone-stories/SARMIZ_DUUL.md); 24 contacts/all thirteen raw addressed families and nineteen optional checks | Eight achievements/potential dailies; source and retiring episodes open; pirate core unavailable with accounting active | Exact three/four-item and supplied-proof routes, independent receipt recovery; custom targeting/seed/assembly/ring/crew, missing stock and potion/campaign repairs pending with news handoff |
 | Duke Delwyn | 1 | Complete: six independent deliveries/five paid services | [Source-comprehensive dossier](zone-stories/DUKE_DELWYN.md); nineteen contacts/all nine addressed families and seventeen optional checks | Six achievements/potential dailies; four paid textile stages and coin service guarded; live access/source/episodes open | Exact bell/cog, banner, knight and two-item warning; trap/falling/container lineage, atomic fees, occasion/service/peaceful handover decisions pending; no native repair ships |
+| Home of the Divine | 1 | Complete: twenty independent outcomes/twelve crafting or access services | [Source-comprehensive dossier](zone-stories/HOME_OF_THE_DIVINE.md); 27 contacts/all nineteen useful addressed families and 48 optional checks | Twenty potential candidates do not certify missing bounty reward, fresh scale or source supply; six mixed fees guarded | Exact four tokens/seven hearts/nine treasures, competing token and Pure-Dark receipts; missing reward/preflight, duplicate stock, touch/enter/prison/trap/falls, rare wandering and retiring episodes pending; no native repair ships |
 
 ## Twin Towers evidence and decisions
 

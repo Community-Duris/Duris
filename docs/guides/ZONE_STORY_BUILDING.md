@@ -136,6 +136,25 @@ is reciprocal. Occasion-text, advertised trade/lodging and optional peaceful
 material handovers remain builder decisions, with no native repair in this
 journal checkpoint. Actual later repairs need separate tested fix/news entries.
 
+Home of the Divine's [dossier](../design/zone-stories/HOME_OF_THE_DIVINE.md)
+distinguishes nine item-only cash-reward requests from six guarded mixed fees
+and twelve support rows overall. Classify the interaction's purpose and actual
+input/output: receiving coins is not a paid service. Multiple recipes for the
+same NPC must bind by complete normalized terms, not giver or item name alone.
+The two same-named wyvern eggs and flute/weapon variants remain exact kinds.
+
+The missing Relazier bounty reward demonstrates why candidate shape and
+carried-material readiness cannot certify payout. Current admission lacks item
+loadability preflight; warnings do not add a consumption guard. Builders choose
+the intended reward, followed by deliberate pre-consumption/recovery and native
+repair work. Keep generic dragon-scale and mixed-payment guards; a sidecar
+cannot enable source issuance or safe fees. Two separate Riser/shard UIDs,
+real touch/enter/key/container/trap/fall routes and competing/retiring episodes
+need qualification. Optional support receipts cannot replace spent stock,
+enforce allegiance, free a prisoner or complete a crafting campaign. Wrong
+heart aliases and empty prose are pending repairs, with distinct fix/news
+entries only after implementation. No native repair ships in this checkpoint.
+
 ## Schema version 1
 
 Version 1 remains supported. Use version 2 or 3 for new starter and hometown

@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 61 &&
-				tracker.summary_for(7, 42).total == 1702,
+		require(catalog.story_mappings.size() == 62 &&
+				tracker.summary_for(7, 42).total == 1690,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -3572,6 +3572,134 @@ int main(int argc, char **argv)
 				restored_delwyn.progress_for_zone(7, 42, 828).completed == 6 &&
 				restored_delwyn.progress_for_zone(7, 42, 828).total == 6,
 			"Delwyn recovery counted services or invented an all-stage finale");
+
+		const auto &divine_map = *std::find_if(
+			catalog.story_mappings.begin(), catalog.story_mappings.end(),
+			[](const auto &mapping) { return mapping.source_area == "divhome"; });
+		const auto &divine_siren = story_for("divhome", "siren-four-elements");
+		const auto &divine_merge = story_for("divhome", "emition-dusk-and-dawn");
+		service supplied_divine(catalog);
+		require(supplied_divine.discover_zone(7, 42, 407, 40700, 100, "arrival") ==
+					result::applied &&
+				supplied_divine.render_journal(7, 42, 407, 10, 1, 101, false, false)
+						.find("] " + divine_siren.title + "\r\n") ==
+					std::string::npos,
+			"Divine discovery revealed an unmet siren request");
+		for (const auto &contact : divine_map.contacts)
+			require(supplied_divine.meet_npc(7, 42, contact.mob_vnum, 40700, 101) ==
+					result::applied,
+				"Divine fixture encounter failed");
+		const auto divine_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Divine journal section missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		for (int item : { 40762, 40763, 40764, 40765, 40780, 40782, 392, 40718, 22032 })
+			supplies.carried[item] = 1;
+		const auto divine_before = supplied_divine.serialize_state();
+		journal = supplied_divine.render_journal(7, 42, 407, 10, 1, 102, false, false,
+							 &supplies);
+		require(divine_section(divine_siren)
+						.find("Next: " + divine_siren.steps.back().text) !=
+					std::string::npos &&
+				divine_section(divine_merge)
+						.find("[Pending] " +
+						      divine_merge.steps.front().text) !=
+					std::string::npos &&
+				divine_section(divine_merge)
+						.find("Next: " + divine_merge.steps.back().text) !=
+					std::string::npos &&
+				divine_section(divine_merge).find("200000 copper") !=
+					std::string::npos &&
+				divine_section(story_for("divhome", "bounty-relazier"))
+						.find("absent") != std::string::npos &&
+				supplied_divine.serialize_state() == divine_before &&
+				supplied_divine.progress_for_zone(7, 42, 407).total == 20 &&
+				supplied_divine.progress_for_zone(7, 42, 407).completed == 0,
+			"Divine rendering wrote credit, lost guarded/missing-reward guidance or counted services");
+		for (const auto *recipe : { &divine_siren, &divine_merge })
+			for (const auto &step : recipe->steps)
+			{
+				if (step.kind != "carried_item")
+					continue;
+				const auto item = step.item_vnums.front();
+				supplies.carried.erase(item);
+				supplies.equipped[14] = item;
+				supplies.carried[40770] = 5;
+				journal = supplied_divine.render_journal(7, 42, 407, 10, 1, 103,
+									 false, false, &supplies);
+				require(divine_section(*recipe).find(
+						"[Missing now] " + step.text) != std::string::npos,
+					"worn or wrong Divine proof replaced an exact carried material");
+				supplies.equipped.clear();
+				supplies.carried[item] = 1;
+			}
+		for (const auto &pair : { std::make_pair("wicks-harpy-wyvern-egg", 31105),
+					  std::make_pair("wicks-exotic-wyvern-egg", 500026),
+					  std::make_pair("wicks-single-horseshoe", 40734),
+					  std::make_pair("wicks-moria-horseshoes", 99061) })
+		{
+			const auto &request = story_for("divhome", pair.first);
+			supplies.carried.erase(pair.second);
+			supplies.carried[pair.second == 31105  ? 500026 :
+					 pair.second == 500026 ? 31105 :
+					 pair.second == 40734  ? 99061 :
+								 40734] = 4;
+			journal = supplied_divine.render_journal(7, 42, 407, 10, 1, 104, false,
+								 false, &supplies);
+			require(divine_section(request).find("[Missing now] " +
+							     request.steps.front().text) !=
+					std::string::npos,
+				"Divine same-named egg or single/full horseshoes became substitutes");
+		}
+		const auto &divine_fire_sword = story_for("divhome", "emition-sun-longsword");
+		record(supplied_divine, divine_fire_sword.contracts.front(), "divine-fire-service",
+		       407, 40757);
+		supplies.carried.erase(40780);
+		journal = supplied_divine.render_journal(7, 42, 407, 10, 1, 105, false, false,
+							 &supplies);
+		require(divine_section(divine_merge)
+						.find("[Recorded] " +
+						      divine_merge.steps.front().text) !=
+					std::string::npos &&
+				divine_section(divine_merge)
+						.find("[Missing now] " +
+						      divine_merge.steps[2].text) !=
+					std::string::npos,
+			"Divine producer receipt replaced its spent fire longsword");
+		for (const auto &entry : divine_map.stories)
+			if (entry.category == "service" && entry.id != divine_fire_sword.id)
+				record(supplied_divine, entry.contracts.front(), entry.id.c_str(),
+				       407, 40757);
+		require(supplied_divine.progress_for_zone(7, 42, 407).completed == 0,
+			"Divine crafting/access service receipts awarded campaign or achievement credit");
+		for (const auto *id : { "leolan-titan-token", "raith-titan-token",
+					"relazier-puredark", "wicks-exotic-wyvern-egg" })
+		{
+			const auto &entry = story_for("divhome", id);
+			record(supplied_divine, entry.contracts.front(), id, 407, 40717);
+		}
+		require(supplied_divine.progress_for_zone(7, 42, 407).completed == 4,
+			"Divine independent supplied token/foreign/treasure receipts became an exclusive campaign");
+		service recovered_divine(catalog);
+		require(recovered_divine.deserialize_state(supplied_divine.serialize_state(),
+							   &error) &&
+				recovered_divine.progress_for_zone(7, 42, 407).completed == 4,
+			"Divine cold recovery lost independent receipts");
+		for (const auto &entry : divine_map.stories)
+			if (entry.category != "service" && entry.id != "leolan-titan-token" &&
+			    entry.id != "raith-titan-token" && entry.id != "relazier-puredark" &&
+			    entry.id != "wicks-exotic-wyvern-egg")
+				record(recovered_divine, entry.contracts.front(), entry.id.c_str(),
+				       407, 40717);
+		service restored_divine(catalog);
+		require(restored_divine.deserialize_state(recovered_divine.serialize_state(),
+							  &error) &&
+				restored_divine.progress_for_zone(7, 42, 407).completed == 20 &&
+				restored_divine.progress_for_zone(7, 42, 407).total == 20,
+			"Divine recovery counted support services or invented a full crafting/war finale");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

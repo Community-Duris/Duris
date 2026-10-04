@@ -1586,7 +1586,80 @@ assert re.search(r"\bT\s+512\s+4\s+1\s+30\b", obj_bodies[82814])
 assert "wedding" in obj_bodies[82824]
 assert "birthday" in " ".join(next(r["block"] for r in delwyn["requests"] if r["block"]["giver_vnum"]==82878)["body"])
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn"):
+# Divine contracts share recipients and sometimes visible item names. Keep
+# exact delivery identity, reward-cash versus fees and support history separate.
+divine=inventory_module.area_evidence(ROOT,"divhome")
+divine_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="divhome")
+divine_stories={s["id"]:s for s in divine_map["stories"]}
+assert (divine_map["schema_version"],divine_map["revision"],divine_map["coverage"])==(3,1,"complete")
+assert len(divine_stories)==32 and len(divine_map["contacts"])==27 and not divine_map["exclusions"]
+assert sum(t.get("optional",False) for s in divine_stories.values() for t in s["steps"])==48
+assert (len(divine["requests"]),len(divine["dialogue"]),len(divine["mobs"]),len(divine["items"]),len(divine["reset_commands"]),len(divine["special_assignments"]))==(32,20,62,83,240,0)
+bindings=[b for s in divine_stories.values() for b in s["contracts"]]
+assert len(bindings)==32 and {tuple(sorted(b.items())) for b in bindings}=={
+    tuple(sorted(r["block"]["binding"].items())) for r in divine["requests"]}
+assert all(s["steps"][-1]["contracts"]==s["contracts"] for s in divine_stories.values())
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==407]
+assert (len(units),sum(u["achievement"] for u in units),sum(u["daily_candidate"] for u in units))==(32,20,20)
+assert sum(s["category"]=="service" for s in divine_stories.values())==12
+assert sum(s["id"].startswith("bounty-") for s in divine_stories.values())==7
+treasures={s["id"]:s for s in divine_stories.values() if s["id"].startswith("wicks-")}
+assert len(treasures)==9 and all(s["category"]=="request" for s in treasures.values())
+by_line={r["block"]["line"]:r["block"] for r in divine["requests"]}
+assert [(n,by_line[n]["receive"]) for n in (239,244,251,257,263,268,273,277,282)]==[
+    (239,[("C",50000)]),(244,[("C",10000)]),(251,[("C",25000)]),(257,[("C",25000)]),
+    (263,[("C",5000)]),(268,[("C",10000)]),(273,[("C",25000)]),(277,[("C",55000)]),(282,[("C",40000)])]
+assert sum(any(k=="C" for k,n in b["give"]) for b in by_line.values())==6
+assert by_line[178]["give"]==[("I",40780),("I",40782),("I",392),("C",200000)]
+assert by_line[178]["receive"]==[("I",40781),("E",150000)]
+assert by_line[392]["give"]==[("I",76697),("C",10000000)]
+assert by_line[67]["receive"]==[("I",22625)] and by_line[78]["receive"]==[("I",22020)]
+assert by_line[82]["receive"]==[("I",31341)] and 31341 not in inventory_items
+assert "absent" in divine_stories["bounty-relazier"]["summary"]
+assert by_line[295]["give"]==by_line[329]["give"]==[("I",40718)]
+assert by_line[312]["receive"]==[("I",40745)] and by_line[405]["receive"]==[("I",40740)]
+def divine_materials(id):return [(t["item_vnums"],t["count"]) for t in divine_stories[id]["steps"] if t["kind"]=="carried_item"]
+assert divine_materials("siren-four-elements")==[([40762],1),([40763],1),([40764],1),([40765],1)]
+for id,item in (("wicks-harpy-wyvern-egg",31105),("wicks-exotic-wyvern-egg",500026),("wicks-single-horseshoe",40734),("wicks-moria-horseshoes",99061)):
+    assert divine_materials(id)==[([item],1)]
+for producer,consumer in (("phoenix-fire-mace","emition-sun-longsword"),("shiva-frost-mace","emition-frost-longsword")):
+    assert divine_stories[consumer]["steps"][0]["contracts"]==divine_stories[producer]["contracts"]
+merge=divine_stories["emition-dusk-and-dawn"]
+assert [t["contracts"] for t in merge["steps"][:2]]==[divine_stories[id]["contracts"] for id in ("emition-sun-longsword","emition-frost-longsword")]
+assert "300000 copper" in merge["summary"] and "disabled" in " ".join(divine_map["orientation"])
+contacts={c["mob_vnum"]:c for c in divine_map["contacts"]}
+for v,c in contacts.items():assert c["keyword"] in divine["mobs"][v]["keywords"]
+useful=0
+for b in divine["dialogue"]:
+    if inventory_module.plain(" ".join(b["body"][1:]).replace("~","")):
+        useful+=1
+        assert set(b["body"][0].rstrip("~").split())<=set(contacts[b["giver_vnum"]]["topics"])
+assert useful==19 and "default" not in contacts[40706]["topics"] and not contacts[40761]["topics"]
+parent=room=None;sources=collections.defaultdict(list)
+for r in divine["reset_commands"]:
+    c,v=r["command"],r["arguments"]
+    assert v[4]==100 and v[5:]==[0,0,0]
+    if c=="M":parent,room=v[1],v[3]
+    if c in ("G","E") and v[1] in (40718,40727,40744,40756,40757,40758,40760,40776):sources[v[1]].append((parent,room,v[2]))
+assert sources[40718]==[(40729,40772,1)] and sources[40727]==[(40736,40797,1)]
+assert sources[40756]==[(40747,40803,1)] and sources[40757]==[(40755,40803,1)]
+assert sources[40758]==[(40756,40813,1)] and sources[40776]==[(40761,40803,1)]
+assert sources[40760]==[(40757,40812,1)] and len(sources[40744])==3
+assert {(r["arguments"][1],r["arguments"][3]) for r in divine["reset_commands"] if r["command"]=="P"}=={(40719,40703),(40746,40743),(40751,40714)}
+room_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/wld/divhome.wld").read_text(encoding="utf8"),re.M|re.S)}
+assert set(room_bodies)==set(range(40700,40822)) and "0 0 615667" in room_bodies[40780]
+for v,chance in ((40747,30),(40760,30),(40768,40),(40788,50),(40811,25)):
+    assert re.search(r"^F\s+"+str(chance)+r"\s*$",room_bodies[v],re.M)
+for v,key in ((40748,40740),(40751,40740),(40781,40745),(40782,40745),(40812,40745)):
+    assert re.search(r"\b"+str(key)+r"\s+\d+",room_bodies[v])
+obj_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/obj/divhome.obj").read_text(encoding="utf8"),re.M|re.S)}
+assert re.search(r"\bT\s+2\s+2\s+1\s+20\b",obj_bodies[40760])
+for v,target,cmd in ((40720,40773,7),(40721,40758,7),(40723,40781,320),(40724,40756,320),(40753,22053,7),(40754,40780,7),(40755,40700,7)):
+    values=list(map(int,obj_bodies[v].split("~")[4].split()[:15]))
+    assert values[0]==25 and values[11:14]==[target,cmd,-1]
+assert (ROOT/"areas/shp/divhome.shp").read_text(encoding="utf8").startswith("#40712~")
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
