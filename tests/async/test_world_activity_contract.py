@@ -55,7 +55,7 @@ def test_promotion_is_indexed_and_rebuilt_after_recovery():
 def test_mundane_handle_is_sequence_validated_and_corpse_walk_has_no_heap_visitor():
     assert "world_activity_mundane_event_sequence" in STRUCTS
     assert "nevent_handle_is_active(event)" in ACTIVITY
-    assert "event.event->func != event_mob_mundane" in ACTIVITY
+    assert "event.event->func == event_mob_mundane" in ACTIVITY
     assert "std::array<frame, 1024>" in ACTIVITY
     assert "sibling_cycle(child)" in ACTIVITY
     assert "visited++ < 65536" in ACTIVITY
@@ -74,8 +74,8 @@ def test_runtime_switch_and_build_registration_exist():
         assert key in PROPERTIES
     assert "world/world_activity.o" in MAKEFILE
     assert "bootstrapped && enabled_changed && config.enabled" in ACTIVITY
-    assert 'get_property("world.activity.enabled", 0)' in ACTIVITY
-    assert "world.activity.enabled=0.000" in PROPERTIES
+    assert 'get_property("world.activity.enabled", 1)' in ACTIVITY
+    assert "world.activity.enabled=1.000" in PROPERTIES
 
 
 def test_bounded_regions_equipment_and_scheduler_cleanup():
