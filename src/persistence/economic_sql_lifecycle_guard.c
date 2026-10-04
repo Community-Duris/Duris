@@ -2,6 +2,8 @@
 #include <cerrno>
 #include <charconv>
 #include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <limits>
 #include <memory>
 #include <string>
@@ -80,8 +82,10 @@ bool idle(MYSQL *connection)
 }
 bool owns_named_lock(MYSQL *connection, const char *name, unsigned long session)
 {
-	const std::string query = "SELECT IS_USED_LOCK('" + std::string(name) + "')";
-	if (mysql_real_query(connection, query.data(), query.size()))
+	char query[160];
+	const int length = std::snprintf(query, sizeof(query), "SELECT IS_USED_LOCK('%s')", name);
+	if (length < 0 || static_cast<size_t>(length) >= sizeof(query) ||
+	    mysql_real_query(connection, query, static_cast<unsigned long>(length)))
 		return false;
 	result_ptr result(mysql_store_result(connection), mysql_free_result);
 	if (!result || mysql_num_rows(result.get()) != 1 || mysql_num_fields(result.get()) != 1)
@@ -90,16 +94,19 @@ bool owns_named_lock(MYSQL *connection, const char *name, unsigned long session)
 	if (!row || !row[0])
 		return false;
 	uint64_t lock_session = 0;
-	const auto length = std::char_traits<char>::length(row[0]);
-	const auto parsed = std::from_chars(row[0], row[0] + length, lock_session);
-	return parsed.ec == std::errc{} && parsed.ptr == row[0] + length &&
+	const auto row_length = std::char_traits<char>::length(row[0]);
+	const auto parsed = std::from_chars(row[0], row[0] + row_length, lock_session);
+	return parsed.ec == std::errc{} && parsed.ptr == row[0] + row_length &&
 	       lock_session == static_cast<uint64_t>(session);
 }
 unsigned int lock(MYSQL *connection, const char *name, unsigned int timeout, bool *acquired)
 {
-	const std::string query =
-		"SELECT GET_LOCK('" + std::string(name) + "'," + std::to_string(timeout) + ")";
-	if (mysql_real_query(connection, query.data(), query.size()))
+	char query[160];
+	const int length =
+		std::snprintf(query, sizeof(query), "SELECT GET_LOCK('%s',%u)", name, timeout);
+	if (length < 0 || static_cast<size_t>(length) >= sizeof(query))
+		return EOVERFLOW;
+	if (mysql_real_query(connection, query, static_cast<unsigned long>(length)))
 		return mysql_error_code(connection);
 	result_ptr result(mysql_store_result(connection), mysql_free_result);
 	if (!result || mysql_num_rows(result.get()) != 1 || mysql_num_fields(result.get()) != 1)
@@ -107,15 +114,18 @@ unsigned int lock(MYSQL *connection, const char *name, unsigned int timeout, boo
 	const auto row = mysql_fetch_row(result.get());
 	if (!row || !row[0])
 		return EBUSY;
-	*acquired = std::string(row[0]) == "1";
+	*acquired = std::strcmp(row[0], "1") == 0;
 	return *acquired ? 0 : EBUSY;
 }
 void unlock(MYSQL *connection, unsigned long session, const char *name)
 {
 	if (!connection || mysql_thread_id(connection) != session)
 		return;
-	const std::string query = "SELECT RELEASE_LOCK('" + std::string(name) + "')";
-	(void)mysql_real_query(connection, query.data(), query.size());
+	char query[160];
+	const int length = std::snprintf(query, sizeof(query), "SELECT RELEASE_LOCK('%s')", name);
+	if (length < 0 || static_cast<size_t>(length) >= sizeof(query))
+		return;
+	(void)mysql_real_query(connection, query, static_cast<unsigned long>(length));
 	MYSQL_RES *result = mysql_store_result(connection);
 	if (result)
 		mysql_free_result(result);
@@ -176,7 +186,7 @@ unsigned int runtime_installation_state(MYSQL *connection)
 	const auto row = mysql_fetch_row(result.get());
 	if (!row || !row[0])
 		return EIO;
-	return std::string(row[0]) == "0" ? 0 : EPERM;
+	return std::strcmp(row[0], "0") == 0 ? 0 : EPERM;
 }
 #endif
 } // namespace
