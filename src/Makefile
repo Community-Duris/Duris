@@ -158,6 +158,7 @@ OBJS =  $(SHIP_OBJS) \
 				 magic/spell_incendiary_cloud.o \
 				 magic/spell_spore_cloud.o \
 				 magic/spell_alignment_dispel.o \
+				 magic/spell_dispel_magic.o \
 				 magic/spell_sunray.o \
 				 magic/spell_obtenebration.o \
 				 world/achievements.o \
