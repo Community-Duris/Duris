@@ -890,12 +890,56 @@ class ReconciliationTests(unittest.TestCase):
         snapshot["orphan_evidence"] = [
             {"table": name, "operation_id": foreign_operation, "row_index": 0}
             for name in ORPHAN_EVIDENCE_SOURCES]
+        snapshot["orphan_evidence"][-1].update(row_index=2, identity_id=2**64 - 1,
+                                              claimed_lineage="77" * 16, claimed_epoch="88" * 16)
         snapshot["orphan_evidence_coverage"] = {
             "scope": "database", "table_counts": dict.fromkeys(ORPHAN_EVIDENCE_SOURCES, 1)}
         self.assertEqual(self.codes(snapshot), {row[2] for row in ORPHAN_EVIDENCE_SOURCES.values()})
         report = Reconciler(0).audit(snapshot)
-        self.assertEqual(report["exception_count"], 4)
+        self.assertEqual(report["exception_count"], 5)
         self.assertEqual(report["exceptions"], [])
+
+    def test_orphan_baseline_reservation_identity_coverage_and_operator_lookup(self):
+        for kind in (1, 2):
+            for identity in (1, 2**63, 2**64 - 1):
+                with self.subTest(kind=kind, identity=identity):
+                    snapshot = clean_snapshot()
+                    snapshot["orphan_evidence"] = [{"table": "baseline_reservations", "operation_id": "66" * 16,
+                        "row_index": kind, "identity_id": identity, "claimed_lineage": "77" * 16,
+                        "claimed_epoch": "88" * 16}]
+                    counts = dict.fromkeys(ORPHAN_EVIDENCE_SOURCES, 0)
+                    counts["baseline_reservations"] = 1
+                    snapshot["orphan_evidence_coverage"] = {"scope": "database", "table_counts": counts}
+                    before = copy.deepcopy(snapshot)
+                    report = Reconciler().audit(snapshot)
+                    self.assertEqual(report["exception_counts"], {"orphan_baseline_reservation": 1})
+                    self.assertEqual(report["exceptions"], [{"code": "orphan_baseline_reservation",
+                        "operation_id": "66" * 16, "table": "baseline_reservations", "identity_kind": kind,
+                        "identity_id": identity, "claimed_lineage": "77" * 16, "claimed_epoch": "88" * 16}])
+                    for limit in (0, 1, 100):
+                        result = view(snapshot, report, "operation", limit, operation_id="66" * 16)
+                        self.assertEqual(result["record_counts"]["operations"], 0)
+                        self.assertEqual(result["record_counts"]["orphan_evidence"], 1)
+                        self.assertEqual(result["count"], 1)
+                        if limit:
+                            self.assertEqual(result["rows"][0], {"record": "orphan_evidence", **snapshot["orphan_evidence"][0],
+                                                                "identity_kind": kind})
+                    for field, values in (("row_index", (0, 3, True)),
+                                          ("identity_id", (0, -1, True, 2**64, str(identity))),
+                                          ("claimed_lineage", (None, "0" * 32, "bad")),
+                                          ("claimed_epoch", (None, "0" * 32, "bad"))):
+                        for changed in values:
+                            bad = copy.deepcopy(snapshot)
+                            bad["orphan_evidence"][0][field] = changed
+                            with self.assertRaisesRegex(SnapshotError, "orphan"):
+                                Reconciler().audit(bad)
+                            with self.assertRaisesRegex(SnapshotError, "orphan"):
+                                view(bad, {}, "operation", 1, operation_id="66" * 16)
+                    legacy = copy.deepcopy(snapshot)
+                    del legacy["orphan_evidence_coverage"]["table_counts"]["baseline_reservations"]
+                    with self.assertRaisesRegex(SnapshotError, "orphan evidence coverage"):
+                        Reconciler().audit(legacy)
+                    self.assertEqual(snapshot, before)
 
     def test_orphan_evidence_coverage_cannot_be_omitted_or_forged(self):
         snapshot = clean_snapshot()

@@ -44,6 +44,7 @@ ORPHAN_EVIDENCE_SOURCES = {
     "postings": ("economic_accounting_coin_posting", "line_index", "orphan_coin_posting"),
     "children": ("economic_accounting_child", "child_index", "orphan_accounting_child"),
     "item_references": ("economic_accounting_item_reference", "event_index", "orphan_item_reference"),
+    "baseline_reservations": ("economic_baseline_reservation", "identity_kind", "orphan_baseline_reservation"),
 }
 NATIVE_MAPPING_KINDS = (
     "wallet", "bank", "pile", "auction_escrow", "pending_claim", "treasury",
@@ -133,6 +134,16 @@ def require_id(value: object, label: str) -> str:
     return value
 
 
+def reservation_orphan_identity(row: dict) -> dict:
+    """Retain untrusted scope and the full non-personal reservation identity."""
+    kind, identity = row.get("row_index"), row.get("identity_id")
+    if type(kind) is not int or kind not in (1, 2) or type(identity) is not int or not 1 <= identity < 2**64:
+        raise SnapshotError("invalid orphan baseline reservation identity")
+    return {"claimed_lineage": require_id(row.get("claimed_lineage"), "orphan claimed lineage"),
+            "claimed_epoch": require_id(row.get("claimed_epoch"), "orphan claimed epoch"),
+            "identity_kind": kind, "identity_id": identity}
+
+
 class Reconciler:
     def __init__(self, limit: int = 50):
         if not 0 <= limit <= MAX_OUTPUT_ROWS:
@@ -152,16 +163,16 @@ class Reconciler:
         if len(self.exceptions) < self.limit:
             safe = {}
             for field, value in ids.items():
-                if field in ("operation_id",) and isinstance(value, str) and HEX_ID.fullmatch(value):
+                if field in ("operation_id", "claimed_lineage", "claimed_epoch") and isinstance(value, str) and HEX_ID.fullmatch(value):
                     safe[field] = value
                 elif field == "account_key" and isinstance(value, str) and HEX_KEY.fullmatch(value):
                     safe[field] = value
                 elif field == "source_event" and isinstance(value, str) and re.fullmatch(r"[0-9a-f]{96}", value):
                     safe[field] = value
                 elif field in ("uid", "parent_uid", "child_index", "line_index", "source_slot",
-                               "net_copper", "ship_id", "guild_id") and type(value) is int:
+                               "net_copper", "ship_id", "guild_id", "identity_kind", "identity_id") and type(value) is int:
                     safe[field] = value
-                elif field == "table" and value in TABLES:
+                elif field == "table" and isinstance(value, str) and (value in TABLES or value in ORPHAN_EVIDENCE_SOURCES):
                     safe[field] = value
                 elif field == "scope" and value == "snapshot":
                     safe[field] = value
@@ -699,8 +710,12 @@ class Reconciler:
             if type(row.get("row_index")) is not int or not 0 <= row["row_index"] <= 65535:
                 raise SnapshotError("invalid orphan evidence index")
             counts[table] += 1
-            self.emit(ORPHAN_EVIDENCE_SOURCES[table][2], operation_id=operation_id,
-                      table=table, line_index=row["row_index"])
+            if table == "baseline_reservations":
+                self.emit(ORPHAN_EVIDENCE_SOURCES[table][2], operation_id=operation_id,
+                          table=table, **reservation_orphan_identity(row))
+            else:
+                self.emit(ORPHAN_EVIDENCE_SOURCES[table][2], operation_id=operation_id,
+                          table=table, line_index=row["row_index"])
         if (not isinstance(coverage, dict) or set(coverage) != {"scope", "table_counts"} or
                 coverage["scope"] != "database" or not isinstance(coverage["table_counts"], dict) or
                 set(coverage["table_counts"]) != set(counts) or
@@ -2234,6 +2249,8 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                     if row.get("table") not in ORPHAN_EVIDENCE_SOURCES:
                         raise SnapshotError("invalid orphan evidence table")
                     safe["table"] = row["table"]
+                    if row["table"] == "baseline_reservations":
+                        safe.update(reservation_orphan_identity(row))
                 rows.append(safe)
         order = {collection: index for index, collection in enumerate(record_counts)}
         rows.sort(key=lambda row: (order[row["record"]], next(
