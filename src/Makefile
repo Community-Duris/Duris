@@ -550,6 +550,7 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_world_runtime.o \
 				 redis/redis_world_store.o \
 				 economy/currency_transaction.o \
+				 economy/coin_physical_publication.o \
 				 player/player_revision_state.o \
 				 player/player_save_worker.o \
 				 player/player_save_journal.o \

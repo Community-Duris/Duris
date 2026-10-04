@@ -129,3 +129,34 @@ and a clean save census. Preserve deferred frames, original operation/generation
 ACK reservation and retained wakes. This is established missing source integration,
 not a tested failure or completed recovery feature. Keep healthy inactive paths
 and declined spell behavior unchanged until the full ownership handoff is ready.
+
+
+## October3 combined-candidate source integration follow-up
+
+Primary locally integrated Plan5 restore-evidence766784c53 and bounded exact-ID
+operator lookup6899caa2b in65e4f159. Their independent documented evidence is
+candidate-specific; combined-source qualification remains deferred. The notebook
+handoffs in those slices reported missing project context; primary source alias
+owns the normal overlay-curator workflow and supplies integrated findings there.
+
+Save preparation/start prerequisite3b91463bd preserves restored metadata while
+starting no persistence threads until explicit start. Existing comm boot continues
+using the compatible init wrapper pending complete durable census and
+apply/checkpoint/ACK/wake ownership. The current metadata diagnostics cannot be
+used as a durable-save census.
+
+Coin source6b6b7c10c is merged inaf900753; primary registers its production object.
+Exact component preparation and remaining native producer/cold replay gates are
+in Plan2 and October3 review. No tests/compiler/AST/SQL/gameplay runs or pushes
+were made for these new source slices. Future missing pool-retirement fixture
+doubles require explicit unavailable/real-owned boundaries, never synthetic
+success or weakened maintained cleanup oracles.
+
+Lifecycle V2 preparation receipt tmp/lifecycle-owned-release-prepared-v2.local.json
+is SHA-25699b85bb7c57cb9486d3a3bd757f5f879196d0859cc01e3b8cb0d323b78d8534d
+(LF1ec6ae59673ead3cfc22634d5bcb320705323b8269bb7384c714b0b05bb7f670).
+It pins551 inputs/26 production units and22groups, including the unchanged
+maintained cutover baseline. This remains PREPARED_UNEXECUTED. Native pooled
+COMMIT-row preservation is not actual critical/death adapter return and typed
+receipt-preservation proof; that gap remains required. Declared300/120 bounds
+are unmeasured proposals; the original maintained shell has no explicit deadline.

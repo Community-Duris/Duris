@@ -70,3 +70,32 @@ The plan exports typed money effects and documented source/sink policy to Plan 4
 It does not change item UID ownership or invent a finite NPC/keeper treasury.
 The independently testable deliverable is an inactive but fully evidenced set
 of money routes; whole-game activation waits for the other plans.
+
+
+### Ordinary room coin producer slice integrated; unqualified
+
+Local merge af900753 contains independent implementation6b6b7c10c and the
+optional post-ACK staging release contract96e2af83a. Active ordinary-room single-root
+coin drop and pickup now use a retained native publication adapter. Original UID,
+canonical before/after literal bytes, denominations, custody and exact result
+revisions must agree. Native materialization, amount updates and placement keep
+explicit started/returned states; uncertain effects remain held. Every ACK retry
+revalidates physical evidence and the current wallet body. Work is one attempt per
+pulse; notifications and bulk continuation follow durable ACK and owner extraction.
+Inactive/schema1 paths remain separate, unsupported active placements refuse and
+callback-free cold replay stays held. Production Makefile registration is primary-owned.
+
+Final BEFORE /opt/duris-accounting-coin-publication-before-final-18fbd004fc3e/source
+manifest SHA-25648792b5f103e286305ec1c4282b0e864ef494cd8d7566347311b2a41aa2235c7
+pins1238 files. Candidate /opt/duris-accounting-coin-publication-committed-3457636af08c/source
+manifest45432924e1c0b872d1f9eb3b4916ac93fc033706dfd74089fc145af6a10860ba pins1240.
+Prepared24physical+15owner cases per SQL-header/flat profile are unexecuted; BEFORE
+uses --scope owner, AFTER --scope all. Their native capture/codec/runtime custody
+plus controlled placement/render/materializer seams do not qualify actual actobj
+handlers, either database or flatfile recovery. Original300-second compile and
+30-second per-case bounds remain unmeasured. Four initial review findings were
+corrected; primary final-pin source review remains separate from qualification.
+
+Open: semantic writer/central owner registration, actual native producer and
+backend journeys, cold routing, actorless hydration and explicit uncertain native
+effect recovery. No source/fixture inventory is promoted to R1-R8 or route evidence.
