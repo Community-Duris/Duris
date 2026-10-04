@@ -17,18 +17,19 @@ It cannot activate when another plan's coverage is missing.
 
 ## Current source implementation cadence
 
-The user batches testing when each major plan is ready. This plan's source is
-ready and its existing qualification batch is underway. Preserve original sources
-and regression owners for failure/fix proof. Production source `9fabe54bb` passes
-both strict builds; focused components and worker/journal guards pass within
-their stated scopes, and real pooled bank passes both SQL engines. Remaining
-actual publication/recovery was the remaining gameplay gap. The ordinary single-root
-drop now passes real producer, guarded ACK and two full-world cold boots on both
-engines after the bounded equipment-census fix. All18 current-source
-recovery-session cases pass both engines with original assertions and limits.
-Maintain the executed regression and consolidate this plan's original independent
-acceptance next; other plans and complete writer/activation evidence remain open.
-Do not expand its independent acceptance or add optional gates.
+The original independent acceptance is complete on the source-bound evidence
+below, through production candidate `46e37a1fc` and the maintained regression.
+Both strict server builds, focused components, real pooled bank/coin/item,
+guarded lifecycle, flatfile bank/item replay and current-source recovery owners
+pass their recorded scopes. The maintained real ordinary-drop producer,
+guarded ACK and two complete native cold boots now pass on both SQL engines
+(113/154 seconds within the original 600 per engine), with original three-UID
+literal/custody proof, Redis disabled and verified owned cleanup.
+This completes this plan's independent deliverable, including incomplete-route
+activation refusal. Plans 2–4 writer integration, Plan5 combined qualification,
+production activation-owner integration and full R1–R8 remain required. Future
+shared changes must be qualified in their owning major-plan batch. Preserve
+inactive behavior and original limits; add no optional independent gates.
 
 Keep implementation within the group's R1–R8 contract and this plan's independent
 acceptance. Ordinary save projections do not need an additional economic receipt
@@ -139,6 +140,20 @@ SQL lifecycle runner for native database behavior.
   and recovery retain the original receipt and publication obligation.
 - Run focused coordinator/lifecycle tests and both server builds after code
   changes. Do not use a production database.
+
+### Independent acceptance evidence at this milestone
+
+| Original acceptance | Qualified evidence and scope |
+| --- | --- |
+| Real SQL coordinator/pool for bank, coin and item; replay, changed ID, rollback, lost reply and restart | Existing bank/coin/item native owners pass MariaDB10.11.14 and MySQL8.0.46; exact binaries/logs and faults are in the consolidated report. This is typed-owner qualification, not every writer. |
+| Staged boot and incomplete coverage refuse; disposable guarded cutover/pause | Maintained native lifecycle and owned-cutover owners pass both engines, preserving incomplete manifest/verifier/inbox/outbox and staged-boot refusal plus reversible pause. The new active-drop fixture uses only a disposable three-route synthetic manifest. |
+| Flatfile bank/item parity and original retained journal/publication | Existing actual flatfile authority/admission owners pass exact-ID one-effect replay, changed-ID refusal, shutdown/init receipt retention and explicit ACK retirement; coin remains refused until Plan2. |
+| Focused common-owner checks and both builds | Eleven focused owners,35 worker/journal cases per backend,22 checked-release,14 startup and18 recovery-session cases pass their frozen inputs. Current SQL/flat strict builds include the census correction. |
+| Actual ordinary-drop publication and two cold boots | Maintained three-file regression compiled against all1248 current production inputs; both-engine real `do_drop`, native full payload/custody and guarded ACK pass, with no reseeding between two full-world boots. |
+
+See [the consolidated source-bound report](../SAVE_RESIDENCE_INTEGRATION_2026-10-04.md)
+for exact inputs, earlier failures, native budgets and cleanup. This table does
+not mark registry rows qualified or authorize whole-game activation.
 
 ## Boundary and handoff
 

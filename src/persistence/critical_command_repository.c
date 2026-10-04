@@ -21,6 +21,7 @@
 #include "economy/auction_command.h"
 #include "economy/auction_repository.h"
 #include "economy/collector_command.h"
+#include "economy/collector_accounting.h"
 #include "economy/collector_repository.h"
 #include "economy/shop_trade_accounting.h"
 #include "economy/shop_trade_command.h"
@@ -3229,6 +3230,79 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 			     stored);
 }
 
+critical_apply_result
+critical_command_repository_verify_coin_in_transaction(MYSQL *connection,
+						       const critical_command &command) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	return { critical_apply_outcome::terminal_failure, 0, ENOTSUP };
+#else
+	try
+	{
+		last_statement_error = 0;
+		if (!connection || !command.publication_required ||
+		    !accounted_coin_envelope(command))
+			return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+		// This existing boolean validator also returns false on allocation
+		// failure. Unavailable accounting proof is not a durable rejection.
+		if (!coin_transfer_accounting_command_supported(command))
+			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+		if (!root_transaction_active(connection))
+			return { critical_apply_outcome::terminal_failure, 0, EBUSY };
+		unsigned long session = 0;
+		auto error = accounted_session_check(connection, &session, false);
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return { critical_apply_outcome::retryable_failure, 0, error };
+
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash{}, keys_hash{};
+		stored_operation stored{};
+		bool found = false;
+		if (!command_hashes(command, &command_hash, &keys_hash))
+			return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
+		// Native/current authority was locked by the caller first. Read the
+		// historical committed inbox without introducing a late inbox lock.
+		if (!read_operation(connection, command.operation_id, false, &stored, &found))
+			return { critical_apply_outcome::retryable_failure, 0,
+				 database_error(connection) ? database_error(connection) : EIO };
+		if (!found || stored.status != INBOX_COMMITTED)
+			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+		if (!identity_matches(stored, command, command_hash, keys_hash))
+			return { critical_apply_outcome::terminal_failure, 0, EEXIST };
+
+		// Reuse reconciliation's canonical success/stale/diagnostic rejection
+		// contract, including the exact source/destination failure stage.
+		error = coin_transfer_accounting_verify_retained(
+			connection, command, stored.result_code, stored.result_payload.data(),
+			stored.result_payload.size(),
+			static_cast<critical_failure_stage>(stored.failure_stage));
+		if (!error)
+			error = verify_accounted_root_outbox(connection, command,
+							     stored.result_code,
+							     stored.result_payload.data(),
+							     stored.result_payload.size());
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return { critical_apply_outcome::retryable_failure, 0, error };
+		return stored_result(stored.result_code ? critical_apply_outcome::terminal_failure :
+							  critical_apply_outcome::already_applied,
+				     stored);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
+	}
+	catch (...)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, EFAULT };
+	}
+#endif
+}
+
 critical_apply_result critical_command_repository_verify_ordinary_drop_in_transaction(
 	MYSQL *connection, const critical_command &command) noexcept
 {
@@ -3503,4 +3577,268 @@ bool critical_command_repository_finish_inbox(MYSQL *connection, const critical_
 
 	return finish_inbox(connection, command, durable_revision, result_code, payload,
 			    payload_size, failure_stage);
+}
+
+critical_apply_result critical_command_repository_verify_collector_purchase_in_transaction(
+	MYSQL *connection, const critical_command &command) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	return { critical_apply_outcome::retryable_failure, 0, ENOTSUP };
+#else
+	try
+	{
+		last_statement_error = 0;
+		collector_command_payload payload{};
+		if (!connection || !command.publication_required ||
+		    command.type != critical_command_type::collector ||
+		    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		    !collector_command_decode_payload(command, &payload) ||
+		    payload.action != collector_action::purchase || payload.item_count != 1 ||
+		    !root_transaction_active(connection))
+			return { critical_apply_outcome::retryable_failure, 0, EINVAL };
+		unsigned long session = 0;
+		auto error = accounted_session_check(connection, &session, false);
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return { critical_apply_outcome::retryable_failure, 0, error };
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash{}, keys_hash{};
+		stored_operation stored{};
+		bool found = false;
+		if (!command_hashes(command, &command_hash, &keys_hash) ||
+		    !read_operation(connection, command.operation_id, false, &stored, &found))
+			return { critical_apply_outcome::retryable_failure, 0,
+				 database_error(connection) ? database_error(connection) : ENOMEM };
+		if (!found || stored.status != INBOX_COMMITTED)
+			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+		if (!identity_matches(stored, command, command_hash, keys_hash))
+			return { critical_apply_outcome::retryable_failure, 0, EEXIST };
+		collector_command_result result{};
+		std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded{};
+		if (stored.failure_stage != static_cast<uint16_t>(critical_failure_stage::none) ||
+		    stored.result_payload.size() != encoded.size() ||
+		    !collector_command_decode_result(stored.result_payload.data(),
+						     stored.result_payload.size(), &result) ||
+		    !collector_command_encode_result(result, &encoded) ||
+		    !std::equal(encoded.begin(), encoded.end(), stored.result_payload.begin()) ||
+		    stored.durable_revision !=
+			    std::max({ result.catalog_revision, result.from_owner_revision,
+				       result.to_owner_revision, result.wallet_revision,
+				       result.bank_revision,
+				       result.record_present ? result.entry.item_revision :
+							       uint64_t{ 0 } }))
+			return { critical_apply_outcome::retryable_failure, 0, EILSEQ };
+		error = economic_sql_collector_verify_retained(connection, command,
+							       stored.result_code,
+							       stored.result_payload.data(),
+							       stored.result_payload.size());
+		if (!error)
+			error = verify_accounted_root_outbox(connection, command,
+							     stored.result_code,
+							     stored.result_payload.data(),
+							     stored.result_payload.size());
+		if (error)
+			return { critical_apply_outcome::retryable_failure, 0, error };
+		if (!stored.result_code)
+		{
+			economic_frozen_intent intent;
+			collector::record listing;
+			economic_account_key wallet, bank;
+			if (collector_purchase_accounting_decode(command, &intent, &payload,
+								 &listing, &wallet, &bank) !=
+				    economic_accounting_error::ok ||
+			    !result.catalog_revision)
+				return { critical_apply_outcome::retryable_failure, 0, EILSEQ };
+			char operation[CRITICAL_COMMAND_ID_HEX_SIZE]{};
+			if (!critical_operation_id_to_hex(command.operation_id, operation,
+							  sizeof(operation)))
+				return { critical_apply_outcome::retryable_failure, 0, EINVAL };
+			const std::string where =
+				"operation_id=UNHEX('" + std::string(operation) + "')";
+			const std::string query =
+				"SELECT LEFT(canonical_plan," +
+				std::to_string(ECONOMIC_ACCOUNTING_MAX_PLAN_BYTES + 1) +
+				"),OCTET_LENGTH(canonical_plan) FROM economic_accounting_operation WHERE " +
+				where;
+			if (!execute(connection, query.c_str()))
+				return { critical_apply_outcome::retryable_failure, 0,
+					 database_error(connection) };
+			std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+				mysql_store_result(connection), mysql_free_result);
+			MYSQL_ROW row = rows ? mysql_fetch_row(rows.get()) : nullptr;
+			const unsigned long *lengths = row ? mysql_fetch_lengths(rows.get()) :
+							     nullptr;
+			economic_accounting_plan retained_plan, expected_plan;
+			if (!row || mysql_num_rows(rows.get()) != 1 || !lengths || !row[0] ||
+			    lengths[0] > ECONOMIC_ACCOUNTING_MAX_PLAN_BYTES || !row[1] ||
+			    std::string(row[1]) != std::to_string(lengths[0]) ||
+			    economic_plan_decode(std::span<const uint8_t>(
+							 reinterpret_cast<const uint8_t *>(row[0]),
+							 lengths[0]),
+						 &retained_plan) != economic_accounting_error::ok)
+				return { critical_apply_outcome::retryable_failure, 0, EILSEQ };
+			collector_purchase_accounting_authority authority;
+			authority.epoch = intent.admission.metadata.epoch;
+			authority.wallet_account = wallet;
+			authority.bank_account = bank;
+			authority.listing_before = listing;
+			authority.catalog_revision_before = result.catalog_revision - 1;
+			authority.from_owner_revision_before = payload.expected_from_owner_revision;
+			authority.to_owner_revision_before = payload.expected_to_owner_revision;
+			authority.item_before = { payload.selected_item_uid,
+						  { payload.from_owner, payload.selected_item_uid,
+						    0, payload.items[0].expected_item_revision,
+						    item_custody_state::active } };
+			bool found_wallet = false, found_bank = false;
+			for (const auto &effect : retained_plan.accounts)
+			{
+				if (economic_account_key_equal(effect.key, wallet))
+				{
+					found_wallet = true;
+					authority.balances_before.wallet.amount = effect.before;
+					authority.balances_before.wallet_revision =
+						effect.before_revision;
+				}
+				if (economic_account_key_equal(effect.key, bank))
+				{
+					found_bank = true;
+					authority.balances_before.bank.amount = effect.before;
+					authority.balances_before.bank_revision =
+						effect.before_revision;
+				}
+			}
+			economic_digest retained_digest{}, expected_digest{};
+			if (!found_wallet || !found_bank ||
+			    collector_purchase_accounting_plan(command, intent, authority, result,
+							       &expected_plan) !=
+				    economic_accounting_error::ok ||
+			    economic_plan_digest(retained_plan, &retained_digest) !=
+				    economic_accounting_error::ok ||
+			    economic_plan_digest(expected_plan, &expected_digest) !=
+				    economic_accounting_error::ok ||
+			    retained_digest != expected_digest)
+				return { critical_apply_outcome::retryable_failure, 0, EILSEQ };
+			const auto number = [](auto value) { return std::to_string(value); };
+			const auto source = number(static_cast<unsigned>(command.source_site));
+			std::string collector_match =
+				where + " AND listing_id=" + number(payload.listing) +
+				" AND action=" +
+				number(static_cast<unsigned>(collector_action::purchase)) +
+				" AND catalog_revision=" + number(result.catalog_revision) +
+				" AND listing_revision=" + number(result.entry.revision) +
+				" AND actor_pid=" + number(payload.actor_pid) +
+				" AND item_uid=" + number(payload.selected_item_uid) +
+				" AND value_delta=-" + number(listing.price_value) +
+				" AND closed_reason=" +
+				number(static_cast<unsigned>(result.entry.closed_reason)) +
+				" AND source_site=" + source;
+			std::string item_match =
+				where + " AND event_index=0 AND item_uid=" +
+				number(payload.selected_item_uid) +
+				" AND root_item_uid=" + number(payload.selected_item_uid) +
+				" AND parent_item_uid IS NULL" + " AND from_owner_type=" +
+				number(static_cast<unsigned>(payload.from_owner.type)) +
+				" AND from_owner_id=" + number(payload.from_owner.id) +
+				" AND from_owner_context_id=" +
+				number(payload.from_owner.context_id) + " AND to_owner_type=" +
+				number(static_cast<unsigned>(payload.to_owner.type)) +
+				" AND to_owner_id=" + number(payload.to_owner.id) +
+				" AND to_owner_context_id=" + number(payload.to_owner.context_id) +
+				" AND item_revision=" + number(result.entry.item_revision) +
+				" AND from_owner_revision=" + number(result.from_owner_revision) +
+				" AND to_owner_revision=" + number(result.to_owner_revision) +
+				" AND reason_type=" +
+				number(static_cast<unsigned>(
+					item_transfer_reason::collector_buyback)) +
+				" AND reason_id=" + number(payload.listing) +
+				" AND source_site=" + source;
+			std::string money_match =
+				where + " AND pid=" + number(payload.actor_pid) +
+				" AND bank_id=(SELECT native_id FROM economic_account_mapping WHERE mapping_id=" +
+				number(bank.authority_id) + ")" +
+				" AND wallet_revision=" + number(result.wallet_revision) +
+				" AND bank_revision=" + number(result.bank_revision) +
+				" AND reason_type=" +
+				number(static_cast<unsigned>(
+					currency_reason_type::collector_purchase)) +
+				" AND reason_id=" + number(payload.listing) +
+				" AND source_site=" + source;
+			constexpr std::array<const char *, 4> denominations{ "copper", "silver",
+									     "gold", "platinum" };
+			for (size_t i = 0; i < denominations.size(); ++i)
+			{
+				const auto before = authority.balances_before.wallet.amount[i];
+				if (before < 0 || before > INT_MAX || result.wallet.amount[i] < 0 ||
+				    result.wallet.amount[i] > INT_MAX)
+					return { critical_apply_outcome::retryable_failure, 0,
+						 EILSEQ };
+				money_match +=
+					" AND wallet_delta_" + std::string(denominations[i]) + '=' +
+					number(result.wallet.amount[i] - before) +
+					" AND bank_delta_" + denominations[i] +
+					"=0 AND wallet_after_" + denominations[i] + '=' +
+					number(result.wallet.amount[i]) + " AND bank_after_" +
+					denominations[i] + '=' + number(result.bank.amount[i]);
+			}
+			const std::string native_query =
+				"SELECT (SELECT COUNT(*) FROM collector_ledger WHERE " + where +
+				")=1 AND (SELECT COUNT(*) FROM collector_ledger WHERE " +
+				collector_match +
+				")=1 AND (SELECT COUNT(*) FROM item_ownership_ledger WHERE " +
+				where +
+				")=1 AND (SELECT COUNT(*) FROM item_ownership_ledger WHERE " +
+				item_match +
+				")=1 AND (SELECT COUNT(*) FROM currency_ledger WHERE " + where +
+				")=1 AND (SELECT COUNT(*) FROM currency_ledger WHERE " +
+				money_match + ")=1";
+			rows.reset();
+			if (!execute(connection, native_query.c_str()))
+				return { critical_apply_outcome::retryable_failure, 0,
+					 database_error(connection) };
+			rows.reset(mysql_store_result(connection));
+			row = rows ? mysql_fetch_row(rows.get()) : nullptr;
+			if (!row || mysql_num_rows(rows.get()) != 1 || !row[0] ||
+			    strcmp(row[0], "1"))
+				return { critical_apply_outcome::retryable_failure, 0, EILSEQ };
+		}
+		if (stored.result_code)
+		{
+			char operation[CRITICAL_COMMAND_ID_HEX_SIZE]{};
+			if (!critical_operation_id_to_hex(command.operation_id, operation,
+							  sizeof(operation)))
+				return { critical_apply_outcome::retryable_failure, 0, EINVAL };
+			const std::string where =
+				" WHERE operation_id=UNHEX('" + std::string(operation) + "')";
+			const std::string query =
+				"SELECT (SELECT COUNT(*) FROM collector_ledger" + where +
+				")+(SELECT COUNT(*) FROM currency_ledger" + where +
+				")+(SELECT COUNT(*) FROM item_ownership_ledger" + where + ")";
+			if (!execute(connection, query.c_str()))
+				return { critical_apply_outcome::retryable_failure, 0,
+					 database_error(connection) };
+			std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+				mysql_store_result(connection), mysql_free_result);
+			MYSQL_ROW row = rows ? mysql_fetch_row(rows.get()) : nullptr;
+			if (!row || mysql_num_rows(rows.get()) != 1 || !row[0] ||
+			    strcmp(row[0], "0"))
+				return { critical_apply_outcome::retryable_failure, 0, EILSEQ };
+		}
+		error = accounted_session_check(connection, &session, true);
+		if (error)
+			return { critical_apply_outcome::retryable_failure, 0, error };
+		return stored_result(stored.result_code ? critical_apply_outcome::terminal_failure :
+							  critical_apply_outcome::already_applied,
+				     stored);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
+	}
+	catch (...)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, EIO };
+	}
+#endif
 }

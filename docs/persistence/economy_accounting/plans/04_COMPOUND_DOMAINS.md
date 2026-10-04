@@ -79,3 +79,16 @@ This plan may add a narrow domain-specific typed adapter at the existing
 repository owner but must keep common admission changes in Plan 1's interface.
 It exports durable route evidence to Plan 5. It can qualify one domain at a
 time; no domain success is a whole-game activation claim.
+
+### October4 collector/shared owner source milestone; unqualified
+
+The active SQL collector purchase now connects typed policy preparation, exact
+original domain retention, save hold/coordinator seal, complete native payload
+storage and guarded online/offline publication. Cold replay registers only the
+original command before execution; successful actorless projection cannot mint
+a UID, fabricate a receipt or invoke a physical effect with a null actor.
+Rejected missing cache and incomplete materialization retain their obligations.
+Schema1/inactive behavior is preserved by source review; flat collector stays
+unsupported. Source-only integration is not collector/player/restart acceptance.
+The original major-plan batch, other compound domains and full backend coverage
+remain required; see the consolidated report for the31-file input scope.
