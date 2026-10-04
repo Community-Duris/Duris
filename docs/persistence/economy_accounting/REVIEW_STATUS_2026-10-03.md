@@ -3005,3 +3005,23 @@ corrected; primary final-pin source review remains separate from qualification.
 Open: semantic writer/central owner registration, actual native producer and
 backend journeys, cold routing, actorless hydration and explicit uncertain native
 effect recovery. No source/fixture inventory is promoted to R1-R8 or route evidence.
+
+
+Validated active-journal observation prerequisite (source only): the new
+collect_retained API collects all validated active frames under the journal mutex,
+including exact original bytes/record identities and current quarantine/policy
+flags. A temporary result is published only after complete collection; allocation
+or scan failure returns an empty output without apply/checkpoint. Existing
+corruption scanning may archive evidence and latch the global fence. This is an
+observation that expires after unlocking, not an apply/checkpoint/ACK permit,
+hydration proof or complete archive census. Record ID alone is not exact identity.
+The inherited scanner treats a missing file as empty; future durable-absence
+claims must independently establish file/generation authority.
+
+BEFORE tmp/save-journal-census-before-v1.local/manifest.json is SHA-256
+75d98c2b4ef1a2d5b43c4ff0baac2ece6a3eea4ab2a43072e6c2367b3d6dac58,
+base38432876b. Read-only source review found no bounded-API blocker. Deferred
+cases: exact bytes/duplicate identities, allocation failure, quarantine/policy
+flags, mixed valid/corrupt records, missing-file and concurrent-mutation behavior.
+No compiler, native, SQL, gameplay or recovery checks ran. No production caller
+uses this prerequisite yet; the full ownership protocol remains open.

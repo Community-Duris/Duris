@@ -66,6 +66,26 @@ player_save_journal_result player_save_journal_append(const player_snapshot &sna
 player_save_journal_result player_save_journal_archive_quarantined(const player_snapshot &snapshot);
 player_save_journal_result player_save_journal_checkpoint(int pid,
 							  player_revision_t durable_revision);
+// A complete observation of validated frames still in the active journal.
+// Exact original bytes and record identity are retained, including valid frames
+// for quarantined PIDs. Archived-only evidence is not replay-eligible and is not
+// included. This is not an apply/checkpoint/ACK permit or a hydration proof;
+// callers must independently fence mutations across any later use.
+// The inherited scanner treats a missing file as empty. An empty observation
+// alone therefore cannot prove durable absence or authorize releasing a hold.
+struct player_save_journal_retained_frame
+{
+	player_snapshot snapshot;
+	std::vector<uint8_t> encoded_frame;
+	uint64_t record_id = 0;
+	bool quarantined = false;
+	bool policy_fenced = false;
+};
+// All-or-nothing collection under the journal mutex, without apply/checkpoint.
+// Failure leaves output empty. Existing corruption scanning may durably archive
+// corrupt bytes and latch the global fence; it never treats a partial cut as OK.
+player_save_journal_result
+player_save_journal_collect_retained(std::vector<player_save_journal_retained_frame> *output);
 // A deferred apply retains all frames for that PID, including earlier proofs
 // from this pass, and skips later same-PID callbacks. Other PIDs may checkpoint.
 // replay_deferred keeps the existing global replay/load gate closed. The caller
