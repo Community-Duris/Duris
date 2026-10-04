@@ -45,3 +45,25 @@ epoch proof, mutation census, critical ACK reservation, deferred wake and produc
 startup remain in the [recovery handoff](ORDINARY_DROP_RECOVERY_INTERFACE_2026-10-04.md).
 Qualification must retain original budgets and actual gameplay/persistence/recovery
 checks at the major-plan milestone. R1–R8 and release=BLOCKED remain.
+
+
+## Final private preparation receipt (unexecuted)
+
+`tmp/item-receipt-sealing-prepared-v1/` freezes116 consumed inputs per source.
+Only item_movement_transaction.c differs in selected BEFORE/AFTER closures;
+freeze HEAD fd5683abc6986537feace9828ea6c8aa6399f97d is candidate provenance,
+not an old exact-head qualification. Final manifest SHA-256:
+`1da1d79ffa16bbc04d5f7592b6d8f11eeab84087942fb32fc39f93fa289dc7c8`.
+Ordinary19-case fixture: `957dd769cc883ed6b1e779a5785455ae8a6b63cae2f4d7d5da27fb173e42edfe`.
+Unchanged30-case craft fixture: `c1f3f83295c599aa335c77f1576d9018fb7fdd734c6436d2ab5543163685e3ed`.
+
+The ordinary owner uses22 actual production units including real registry,
+coordinator and journal, with controlled executor/world/ACK leaves. It prepares
+both readiness-progress repairs, batch contradictions before effects, receipt
+bounds/enums, canonical repair, applied/already delivery equivalence, reentry and
+callback exceptions. Craft retains its existing controlled custody seams. Each
+source has49 cases/profile across SQL-header and flat policies, with original
+300-second compile/30-second case bounds. Expected semantic BEFORE failures,
+linkage and timings are uncalibrated. Schema1/inactive controlled publication is
+not active SQL authority, real gameplay handler or complete cold-recovery proof.
+No compiler, tests, AST, SQL or services ran.

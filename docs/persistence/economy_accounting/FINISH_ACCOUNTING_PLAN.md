@@ -1,6 +1,6 @@
 # Finish accounting implementation plan
 
-Updated: 2026-10-03. **Status: accounting activation and release remain blocked.**
+Updated: 2026-10-04. **Status: accounting activation and release remain blocked.**
 SQL is the first delivery target; flatfile parity follows. This plan tracks the
 current work. [Implementation history](FINISH_ACCOUNTING_IMPLEMENTATION_HISTORY.md)
 preserves the dated checkpoints and their original evidence.
@@ -51,23 +51,25 @@ backend limitations and the tested revision before checking off acceptance.
 
 ## Current source preparation checkpoint
 
-Local implementation now includes Plan5 bounded restore/lookup slices, retained
-ordinary-room coin producers, conservative checked-retirement fixture link leaves,
-and the phased save preparation/start API3b91463bd plus validated active-frame
-observationf4281e805. The latter APIs remain opt-in: production restored-save
-registration, checkpoint-spanning permits, ACK fences, wake retention and actorless
-native hydration still require one complete ownership handoff. Coin final source
-review found receipt-before-projection, immutable endpoint retry identity,
-reentrant conflict retention and opening-weight gaps; source corrections are now independently reviewed but unqualified.
-Current source is unqualified. No new compiler/native/SQL/gameplay/recovery tests
-or milestone push follows from this preparation checkpoint. Preserve original
-BEFORE sources, prepared owners and the major-plan test schedule. Current semantic
-writer/registry anchors and central executable evidence still require integration.
+The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
+remote histories and unqualified source milestones through fd5683abc. New source
+prerequisites cover allocation-safe publication cleanup, checkpoint-spanning save
+execution guards, bounded runtime UID-root census, authority-bound native baseline
+initialization markers and ordinary item receipt sealing with ACK-only conflict
+repair. Source review and frozen private fixtures do not complete these plans.
+
+Production restored-save/actorless publication ownership, complete mutation census,
+critical ACK reservation, reliable wake, inert native construction, lifecycle staged
+composition and Plan5 marker-v2 consumers remain pending. Native writer integration,
+current semantic registry/matrix anchors and executable route proof remain open.
+Testing stays deferred until each major plan is ready; no new source qualification
+or milestone push occurred. Preserve all original BEFORE sources, oracles and budgets.
 
 ## Current implementation and qualification
 
 Current integration and native qualification are recorded in the
-[October 3 review status](REVIEW_STATUS_2026-10-03.md), with earlier results in the
+[October 4 review status](REVIEW_STATUS_2026-10-04.md), with historical results in the
+[October 3 review status](REVIEW_STATUS_2026-10-03.md), the
 [October 2 review status](REVIEW_STATUS_2026-10-02.md) and
 [October 1 review status](REVIEW_STATUS_2026-10-01.md). Canonical, staging, and
 master-prefix histories at the last qualified 0055 snapshot retain 55 receipts, preserving published alchemy

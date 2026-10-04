@@ -170,3 +170,28 @@ it has not run. Historical source_commit/census and generated matrix are preserv
 until full current-source reanchoring at the major-plan integration batch. Pending
 source integration is explicit; these rows do not establish lexical completeness,
 executable route proof or any release/activation qualification.
+
+
+## October 4 source milestone handoff
+
+Primary integrated Plan5 through7a78bb065 in432db98be and experimental through
+f7d26eaa7 in a590fc662. New combined source remains unqualified; external input-tree
+reports do not qualify it. [Current checkpoint](REVIEW_STATUS_2026-10-04.md)
+records source commits and all still-open ownership boundaries.
+
+Native [marker-v2 format](BASELINE_INITIALIZATION_MARKER_INTERFACE_V2.md) is now
+implemented in0aa0bceeb; Plan5 owns independent reader enumeration, missing whole
+initialized book refusal, retained epoch checks and explicit unknown-history limits.
+Primary owns pending lifecycle staged-state composition. Do not deploy readers or
+supply a legacy marker from inferred history. [Plan5 review handoff](PLAN5_INTEGRATION_HANDOFF_2026-10-04.md)
+also retains predicted stake-retirement and retained-price conflict gaps. Actual
+snapshot-exception13/death-conflict4 supplied-binary adapters remain Plan5-owned;
+primary owns central scheduling/registration with the unchanged300/120 budgets,
+both engines, canonical0056 and disposable private target controls.
+
+The save execution guard, runtime root census and ordinary receipt sealing are
+prerequisites, not production cold recovery. [Recovery contract](ORDINARY_DROP_RECOVERY_INTERFACE_2026-10-04.md)
+still requires native graph/epoch proof, inert construction, complete mutation
+census, ACK reservation and retained wake before comm startup wiring. Testing is
+deferred until major-plan readiness. Current semantic registry anchors/matrix
+remain pending; no historical counts or private cases establish completion.

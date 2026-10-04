@@ -50,3 +50,15 @@ Preserve SELECT-only controls, both SQL engines, original budgets, populated
 upgrade/retention and full release gates. The snapshot-exception13 and
 save-death-conflict4 actual-native matrix adapters remain outstanding. No
 activation, production operation or full release readiness follows from this merge.
+
+
+## Native marker interface now ready for independent consumers
+
+Primary committed native marker-v2 storage in0aa0bceeb; see the exact
+[versioned record and compatibility handoff](BASELINE_INITIALIZATION_MARKER_INTERFACE_V2.md).
+Plan5 may implement independent catalog-v2 decoding/enumeration and book-loss/key/ID
+cross-checks against that contract. Legacy_unknown must remain explicitly unqualified;
+no inferred ID, missing-file-as-never or rewritten compatibility evidence.
+Primary retains lifecycle staged-state composition and native migration ownership.
+The native marker is source-reviewed, not executed or qualified. Defer new reader
+checks to the agreed major-plan batch, preserving actual BEFORE counterexamples.
