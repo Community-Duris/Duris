@@ -348,6 +348,7 @@ int real_room0(int)
 }
 void StartRegen(P_char, regen_resource) {}
 void song_broken(char_link_data *);
+void set_ward_bits(P_char, const affected_type *, bool);
 void do_wake(P_char character, char *, int)
 {
 	assert(!IS_AFFECTED(character, AFF_SLEEP));
@@ -3823,6 +3824,42 @@ void check_native_affect_mutations()
 	}
 	assert(telemetry_runtime_game_control_mask(&target) == 0U);
 	expected.emplace_back(255U, 0U);
+	// Restored ward banks may contain selected bits beyond the usual spell catalog.
+	// The maintained setter preserves an active overlapping cast/equipment source.
+	affected_type cast_ward{};
+	cast_ward.type = SPELL_GLOBE;
+	cast_ward.flags = AFFTYPE_SPELL_WARD;
+	cast_ward.ward_active = 1;
+	cast_ward.ward_capacity = 1;
+	cast_ward.ward_source_type = SPELL_WARD_SOURCE_CAST;
+	cast_ward.bitvector = gear.bitvector;
+	cast_ward.bitvector2 = gear.bitvector2;
+	affected_type equipment_ward = cast_ward;
+	equipment_ward.type = SPELL_MINOR_GLOBE;
+	equipment_ward.ward_source_type = SPELL_WARD_SOURCE_EQUIPMENT;
+	equipment_ward.ward_source_worn = 1;
+	cast_ward.next = &equipment_ward;
+	target.affected = &cast_ward;
+	set_ward_bits(&target, &cast_ward, true);
+	expected.emplace_back(0U, 255U);
+	set_ward_bits(&target, &equipment_ward, true);
+	set_ward_bits(&target, &cast_ward, false);
+	assert(telemetry_runtime_game_control_mask(&target) == 255U);
+	cast_ward.ward_active = 0;
+	set_ward_bits(&target, &equipment_ward, false);
+	expected.emplace_back(255U, 0U);
+	assert(telemetry_runtime_game_control_mask(&target) == 0U);
+	// An inactive partner cannot retain bits or expose a nested temporary rebuild.
+	equipment_ward.flags |= AFFTYPE_NOAPPLY;
+	{
+		telemetry_control_mutation_scope rebuild(&target);
+		set_ward_bits(&target, &cast_ward, true);
+		set_ward_bits(&target, &cast_ward, false);
+	}
+	assert(telemetry_runtime_game_control_mask(&target) == 0U);
+	set_ward_bits(nullptr, &cast_ward, true);
+	set_ward_bits(&target, nullptr, true);
+	target.affected = nullptr;
 	// This maintained rebuild can destroy its character; the scope finishes first.
 	auto *dead = new char_data{};
 	npc_only_data npc{};
@@ -3858,13 +3895,13 @@ void check_native_affect_mutations()
 			++transitions;
 		}
 	}
-	assert(transitions == expected.size() && transitions == 26U);
+	assert(transitions == expected.size() && transitions == 28U);
 	character_list = nullptr;
 	world = nullptr;
 	zone_table = nullptr;
 	top_of_world = top_of_zone_table = -1;
 	std::puts(
-		"PASS: maintained affect functions and direct cure/song callers conserve 26 final control transitions across all eight statuses, expiry, overlap, refresh, refused removal, NOAPPLY, equipment and save rebuilds; 10 timers canceled and teardown is ASan-safe; coverage remains partial");
+		"PASS: maintained affect/ward functions and direct cure/song callers conserve 28 final control transitions across all eight statuses, expiry, overlapping affects/wards, refresh, refused removal, NOAPPLY, equipment and save rebuilds; 10 timers canceled and teardown is ASan-safe; coverage remains partial");
 }
 #endif
 

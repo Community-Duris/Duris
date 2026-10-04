@@ -45,9 +45,11 @@ work. A future production deployment is a separate operational decision.
 The native control-state increment adds final mutation callbacks and nested
 remove/reapply suppression to the existing bounded accumulator. The callback
 fixture verifies 18 final transitions without build hashing or outside/inactive
-enrollment. The maintained-affect ASan/UBSan journey verifies 26 final transitions
+enrollment. The maintained-affect/ward ASan/UBSan journey verifies 28 final transitions
 across all eight selected states, expiry, overlap, refresh, refused unlink,
-`NOAPPLY`, equipment/save-style rebuilding and actual cure/broken-song callers;
+`NOAPPLY`, equipment/save-style rebuilding and actual cure/broken-song callers.
+The managed ward setter observes arbitrary restored banks, preserves active
+cast/equipment overlap and excludes inactive ward owners during removal;
 10 short timers are canceled and the scope finishes before character destruction.
 The full selected mutation/removal inventory, complete attempt denominators,
 qualified duration/action restrictions, retained definition-7 comparisons and

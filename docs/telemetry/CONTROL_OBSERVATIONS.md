@@ -82,6 +82,9 @@ already active battles. They refresh the existing association and reuse the
 fixed target accumulator without hashing equipment or learned epics. Direct
 binding, cure, wake, damage-release and NPC conversion boundaries are wired;
 timed affect insertion, removal, expiry and refresh use the generic affect paths.
+The managed ward bank setter is also observed. Restored cast/equipment ward banks
+can contain selected bits beyond the usual protection spell catalog; an active
+overlapping source retains its bits until the final source is removed.
 These callbacks do not enroll outside actors, resume inactive grace participants
 or manufacture an accepted application/caster attribution.
 
@@ -96,8 +99,9 @@ The callback fixture qualifies 18 ordered final transitions across all eight
 selected masks, nested suppression, outside/inactive exclusions and no build
 hashing. A separate ASan/UBSan journey executes the maintained affect aggregation,
 flag application, rebuild, insertion, removal, refresh and expiry bodies, plus
-the actual cure and broken-song callers. It checks 26 final transitions, overlapping
-owners, refused removal, `NOAPPLY`, equipment, save-style rebuilding, 10 canceled
+the managed ward setter and actual cure and broken-song callers. It checks 28
+final transitions, overlapping affect/ward owners, refused removal, `NOAPPLY`,
+equipment, save-style rebuilding, inactive ward exclusion, 10 canceled
 timers and character destruction after a completed scope. Scheduler, memory,
 UI and unrelated stat services are controlled fixture seams. This is not a
 running personal server or proof of every native producer/removal path.

@@ -52,6 +52,8 @@ def verify_control_mutation_hooks() -> None:
     assert pet_save.index("telemetry_control_mutation_scope control_state(ch);") < pet_save.index(
         "save_equip[i] = unequip_char(ch, i)")
     assert pet_save.index("all_affects(ch, TRUE)") < pet_save.index("control_state.finish();")
+    wards = (ROOT / "src/combat/spell_wards.c").read_text(encoding="utf-8")
+    assert "telemetry_control_mutation_scope control_state(ch);" in function(wards, "void set_ward_bits(")
 
 
 def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bool = False,
@@ -147,6 +149,7 @@ def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bo
             + function((ROOT / "src/core/utility.c").read_text(encoding="utf-8"),
                        "int flag2idx(int flag)") + "\n"
             + function(wards, "bool spell_ward_is_equipment(") + "\n"
+            + function(wards, "void set_ward_bits(") + "\n"
             + "\n".join(function(source, signature) for signature in (
                 "int apply_ac(", "void add_racial_stat_bonus(", "void apply_affs(",
                 "void affect_modify(", "void all_affects(", "char affect_total(",

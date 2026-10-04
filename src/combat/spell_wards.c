@@ -319,6 +319,7 @@ void set_ward_bits(P_char ch, const struct affected_type *af, bool enabled)
 {
 	if (!ch || !af)
 		return;
+	telemetry_control_mutation_scope control_state(ch);
 	if (enabled)
 	{
 		ch->specials.affected_by |= af->bitvector;
