@@ -72,3 +72,37 @@ Receipt callbacks' existing failure behavior still needs actual-owner qualificat
 This supplies no new gameplay policy, activation authority, complete writer
 coverage or full R1–R8 completion. Inactive behavior and the declined spell-path
 change remain preserved; no unqualified milestone was pushed.
+
+## Follow-on journal connection
+
+The journal replay owner now stages exact-PID tickets and reservations before
+native callbacks, then rereads active frames. Only successfully reserved PIDs
+can apply; busy, held, quarantined or newly observed unreserved PIDs retain their
+frames while available PIDs progress. Each apply/quarantine uses its individual
+scope; both early and final checkpoint exits use the preallocated aggregate
+scope after callback permits/scopes unwind. Reservations outlive checkpointing.
+
+Journal archive/quarantine/recovery mutation entries now borrow the enabled
+caller scope before mutation. Recovery resolution retains that permit across
+its unlocked verifier callback. Enabled init/shutdown refuse namespace replacement
+or clearing; serialization with epoch begin/end is still the lifecycle owner's
+required responsibility. No production epoch is enabled by this connection.
+
+Enabled corruption scans refuse without archiving unknown-PID bytes. Source
+review also found initialized-file disappearance could be accepted as an empty
+journal; enabled ENOENT now fails closed. Legacy disabled-epoch behavior remains.
+This is a source-established missing-namespace defect, not an observed test RED.
+
+Raw source pins: journal C
+`d5e0c25a3204f6e6c3b8c6ea5873e392956bd390418f2f4aa9eb1a2c2132b81a`,
+header `27c6109e8158708f83fbd90236db5af5cfa3ce253ea21ea674dbaafc3a21e7bb`.
+Private copies preserve the prior C/H at source base `c96fcb2f1`; they are not a
+compiler closure. Independent architect accepted the final source pins with no
+remaining blocker in this bounded slice. Formatting/diff hygiene only; no
+tests/compiler/native checks.
+Extend the maintained journal deferral/unresolved test owners at major-plan
+qualification for reservation races, fresh observation, both checkpoint exits,
+proof withdrawal, namespace loss/corruption and scoped recovery mutations.
+Checkpoint internals may still allocate: failure retains evidence, rather than
+establishing allocation-free completion after apply. Full native writer ownership,
+clean ACK census, actual revisit/startup and lifecycle completion remain open.
