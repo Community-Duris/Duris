@@ -1453,3 +1453,28 @@ return need distinct accepted evidence; water-flow text does not declare a
 current. Keep mixed-fee commissions/forge guarded with accounting active.
 All actual content repairs need separate fix commits and clear PR/news
 behavior/proof/limits; this example only records pending builder decisions.
+
+## Centaur Villages: identical halves and optional story history
+
+The [complete example](../design/zone-stories/CENTAUR_VILLAGES.md) maps seven
+exchanges to four stories and three supporting inspections/briefings. Two
+halves from different story routes are the same kind93313: require count2
+distinct loose roots, not two different named kinds or one reused item.
+Two final reward items remain one accepted quest outcome. Optional producer
+receipts explain the usual route; supplied/reset letters, horn, staff or
+halves may skip personal history. Earlier receipts never replenish spent items.
+
+Same-kind inspections do not promise identity preservation. A disappearing
+giver's accepted receipt does not prove its retirement, both reward items
+currently held, a new reset episode or daily renewal. Qualify those facts
+separately before authoring richer actor/ownership/reward stages.
+
+NOSHOW display and actual named selection differ: the shared list lookup
+allows hidden controls/containers by name. Audit real GET/PUSH dispatch and
+ownership before calling a source inaccessible or changing a flag. Likewise,
+actual currents and mountain falls need admitted movement/final survival
+evidence, while level guidance, grief, cure and title prose remain narrative.
+
+Six misleading direction clues were repaired separately in e456b3403 with
+original-fails/corrected-passes topology checks and a prominent news sentence.
+Keep actual native fixes distinct from journals and pending builder plans.

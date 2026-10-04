@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 87 authored journals.
+2668 distinct Q contracts; 88 authored journals.
 
 Regenerate with:
 
@@ -56,7 +56,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Twin Keeps of Devastated Tharnadia (`caertannad`) | 30 | 37 | 10 | Yes | [3 × a Bren'Shan harpy feather; 3 × a Straka harpy feather → a necklace of frost harpy feathers](../../areas/qst/caertannad.qst#L395) | caertannad_summon |
 | Quintaragon Castle (`castle`) | 2 | 2 | 0 | Fallback | [1 × a white bone studded with fine diamonds → the flaming orb of revenge](../../areas/qst/castle.qst#L31) | — |
 | Caves of Mt. Skelenak (`caves_skelenak`) | 9 | 8 | 0 | Fallback | [1 × a bronze scepter; 1 × an engraved bracelet of human bones → a copper mask](../../areas/qst/caves_skelenak.qst#L143) | guild_guard, piercer |
-| Centaur Villages (`centaur_zone`) | 7 | 4 | 2 | Fallback | [2 × a half amulet → a centaurian bracelet of honor, the centaurian legplates of honor](../../areas/qst/centaur_zone.qst#L152) | — |
+| Centaur Villages (`centaur_zone`) | 7 | 4 | 2 | Yes | [2 × a half amulet → a centaurian bracelet of honor, the centaurian legplates of honor](../../areas/qst/centaur_zone.qst#L152) | — |
 | Ceothia (`ceofutur`) | 1 | 1 | 0 | Fallback | [1 × a bluestone vial → a shard of bluestone](../../areas/qst/ceofutur.qst#L27) | — |
 | Ceothia (`ceopast`) | 6 | 8 | 1 | Fallback | [1 × a shard of bluestone; 1 × a lock of green hair; 1 × a blood red feather → a bluestone key, a bluestone vial](../../areas/qst/ceopast.qst#L104) | — |
 | Ceothia (`ceothia`) | 9 | 9 | 1 | Fallback | [1 × the badge of the jade wyrm thief guild; 1 × the badge of the red shadow thief guild; 1 × the badge of the violet death thief guild → a black leather eyepatch rimmed with platinum, the badge of the Ceothian thief guild](../../areas/qst/ceothia.qst#L20) | crew_shop_proc, inn, ogre_warlords_sword |

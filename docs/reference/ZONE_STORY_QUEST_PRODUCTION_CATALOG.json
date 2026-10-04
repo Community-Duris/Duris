@@ -118197,6 +118197,473 @@
     {
       "contacts": [
         {
+          "description": "Llewyn starts on island 93335 and asks about dragon, heart and amulet. His exact heart exchange produces a letter; a separate half-amulet inspection returns the same kind. His level guidance is separate from these exchanges, and the journal does not promise his age is cured.",
+          "keyword": "llewyn",
+          "mob_vnum": 93301,
+          "name": "Llewyn Nightshade",
+          "topics": [
+            "dragon",
+            "heart",
+            "amulet"
+          ]
+        },
+        {
+          "description": "The treant elder starts at clearing 93366 in the unicorn glen. Showing a letter alone explains the stolen horn; the letter and horn together produce one half amulet. Three treant guardians follow the elder. The elder can move within the zone; a starting room is a source lead rather than a permanent meeting guarantee.",
+          "keyword": "treant",
+          "mob_vnum": 93302,
+          "name": "Rrmzlbbrintkmmbor, the treant elder",
+          "topics": []
+        },
+        {
+          "description": "Tamilea starts in forest clearing 93386. Ask about learned, one, Banitoor or Vorsileez to hear the family history. Her corrected clue points to the eastern edge of Hateeu\u2019s plains. Questions explain the story without awarding separate keyword achievements or granting access.",
+          "keyword": "tamilea",
+          "mob_vnum": 93308,
+          "name": "Tamilea, centaur elder",
+          "topics": [
+            "learned",
+            "one",
+            "banitoor",
+            "vorsileez"
+          ]
+        },
+        {
+          "description": "Banitoor starts in cave 93399 east of plains room 93326. PUSH the jagged rock to clear the eastern route when blocked. Ask about amulet or show a half for optional guidance; return staff 93317 for a half. Her welcome, ancestry and prayers are not additional accepted quest outcomes.",
+          "keyword": "banitoor",
+          "mob_vnum": 93309,
+          "name": "Banitoor Vorsileez",
+          "topics": [
+            "amulet"
+          ]
+        },
+        {
+          "description": "Hateeu starts at plains room 93330 and can move within the zone. Offer two distinct loose half amulets together for bracelet 93314 and legplates 93330. The native completion removes him and any remaining possessions. Fresh giver availability and daily renewal are separate from your retained completion.",
+          "keyword": "hateeu",
+          "mob_vnum": 93310,
+          "name": "Hateeu, centaur elder",
+          "topics": []
+        },
+        {
+          "description": "Naergot starts in lair 93398, south of cave 93397 and west of incline 93305, carrying heart 93310. His static treasure container is scenery and does not itself issue a quest reward. Receiving the heart from another player satisfies the offering without proving a personal kill or first original acquisition.",
+          "keyword": "naergot",
+          "mob_vnum": 93300,
+          "name": "Naergot the Black",
+          "topics": []
+        },
+        {
+          "description": "Haornig starts at natural arch 93317 with a wolf follower, gear and backpack 93318 containing horn 93312. The hunter can wander beyond his starting room. The backpack reset finds a matching container by kind, rather than promising a particular physical source instance. No native personal-kill or theft condition is encoded for returning the horn.",
+          "keyword": "haornig",
+          "mob_vnum": 93304,
+          "name": "Haornig Mardigan",
+          "topics": []
+        },
+        {
+          "description": "Deiluus, the female unicorn, starts north of the treant clearing at 93367 with a guardian follower. The elder\u2019s story describes Gilandrimeel\u2019s death and her grief; no reviewed native widow-healing, burial or rescue exchange is implemented for her.",
+          "keyword": "deiluus",
+          "mob_vnum": 93317,
+          "name": "Deiluus",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the dragon-heart introduction, recover Gilandrimeel\u2019s horn and Banitoor\u2019s staff, and return two distinct half amulets for centaur honor. Optional briefings, supplied items and access guidance explain the entire chain without forcing personal kills or earlier producer history.",
+      "orientation": [
+        "Active, ready accounting is required for discovery, visible encounters, journals and new achievement/daily credit. Discovering Centaur Villages has its own achievement. All seven native exchanges are explained: four story outcomes and three optional inspection or briefing services. Actual item sources, offering/reward publication, fresh Hateeu availability and daily renewal remain unqualified.",
+        "The main story runs from Naergot\u2019s heart to Llewyn\u2019s letter, then the returned unicorn horn and a half amulet, followed by Banitoor\u2019s recovered staff and a second half, then Hateeu\u2019s two-item reward. The letter and amulet briefings explain the story without becoming mandatory personal history. Supplied exact items can enter at any offering stage.",
+        "Both amulet halves use the same kind 93313. Hateeu needs two separate loose carried items together; one half cannot count twice. Their different story sources do not create two different named kinds. The bracelet 93314, legplates 93330, unicorn pendant and oak ring are different items and cannot replace a half.",
+        "From Surface grassland 519684, go north to pass 93300. Northern Wilderness 12269 also has a northward entrance to that pass, but the pass\u2019s southern return leads to Surface. Follow the mountain path north through 93301\u201393304, climb through 93305 and 93306, and cross river rooms 93307\u201393308 to grotto 93310. The two incline rooms have real fall chances; arrival, protection and surviving return are separate from simply knowing the route.",
+        "Naergot\u2019s cave branches west from incline 93305 to 93397, then south to lair 93398. The granite slab is exit-description scenery; there is no local declared blocked/locked gate on this cave branch. The lair has no-recall and no-summon flags. Its treasure horde is a static container, without a reviewed native treasure-opening quest.",
+        "Llewyn\u2019s island is room 93335 amid the Lake of Elders. The lake and river have real water sectors. Four river rooms declare currents: 93337 and 93338 flow east, while 93341 and 93349 flow south. Currents can move you on arrival or before a requested command and can resist an upstream move. Flight or levitation affects admission; a water-room visit is not a safe-crossing achievement.",
+        "The treant elder starts in grove clearing 93366. From forest entrance 93357, the route through 93359\u201393360 reaches vine-blocked 93363 north to 93365, then west to the clearing. PUSH the local vines to clear the reciprocal route when blocked. A second vine-controlled approach connects 93377 north with 93375 south. The four controls are type-29 items, distinct from the staff container despite sharing the vines alias.",
+        "The horn is in Haornig\u2019s backpack at his starting arch 93317. The crooked staff is in the separate vine container at glen dead end 93370, south of intersection 93369 west of the treant clearing. The backpack and staff-container resets declare a kind, not a guaranteed UID. Move required contents into loose carried inventory before an offering. Possession does not establish the source or who recovered it.",
+        "Tamilea\u2019s forest clearing 93386 is reached from the paths west and east at 93385 and 93387. Ask her about the Learned One for Banitoor\u2019s history. Her clue now matches Banitoor\u2019s cave on the eastern edge of the plains: PUSH rock at 93326, then enter the eastern route to 93399. The rock clears the blocked eastern side and the reciprocal western side; her cave\u2019s return is separately reset open.",
+        "Llewyn resets carrying a recommendation letter; the treant elder and Banitoor each reset carrying the same half-amulet kind under its shared live cap of two. These are real source alternatives independent of your personal story receipts, whose actual retrieval and ownership still need qualification. Same-kind inspections consume and return a kind, without promising physical identity preservation.",
+        "Hateeu starts at plains room 93330 and retires after the accepted two-half completion. The recipe declares both bracelet and legplates as rewards; receipt credit, each published item, removal of Hateeu, reset reappearance and fresh material supply are distinct facts. A retained receipt does not prove both rewards are currently held or that the quest can immediately repeat.",
+        "The clearing at 93373 and Banitoor\u2019s cave have actual healing flags; neither is an inn. The treant and Llewyn offer separate class/level guidance. Guardian or wolf followers, grief, family history, a spell to cure age, a protector title, fruit trees, ponds and the conjured-water spring do not add accepted local quest outcomes. The journal records the existing exchanges without inventing those achievements."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "centaur_zone",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:93310;receive=I:93311;disappear=0",
+              "giver_vnum": 93301
+            }
+          ],
+          "id": "dragon-heart",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Naergot 93300 starts in lair 93398 carrying heart 93310, capped at one live copy. His cave branches west from incline 93305 through 93397; the incline has a real fall chance. The heart is a food item: eating it spends the offering. Current loose custody shows preparation, without proving first acquisition, personal kills or a source route. Worn or nested items are not loose carried inputs. Only an accepted offering completes the exchange.",
+              "id": "material-93310",
+              "item_vnums": [
+                93310
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Naergot\u2019s heart"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93310;receive=I:93311;disappear=0",
+                  "giver_vnum": 93301
+                }
+              ],
+              "hint": "Only accepted exact offering evidence records this outcome. Questions, visible items, movement and narration do not complete it. Personal kills, earlier exchanges and source route are not required by the native recipe. Daily candidacy does not qualify actual fresh supply, receipt/reward settlement or renewal.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Llewyn: bring Naergot\u2019s heart"
+            }
+          ],
+          "summary": "Offer Naergot\u2019s exact heart to Llewyn for a letter of recommendation. The heart starts on Naergot in the mountain lair; supplied exact hearts also satisfy the recipe. Llewyn acknowledges the possibility of a supplied heart. Neither a dragon kill nor a successful cure of his age is recorded by this offering.",
+          "title": "Llewyn: bring Naergot\u2019s heart"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:93313;receive=I:93313;disappear=0",
+              "giver_vnum": 93301
+            }
+          ],
+          "id": "llewyn-amulet-inspection",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93311,I:93312;receive=I:93313;disappear=0",
+                  "giver_vnum": 93302
+                }
+              ],
+              "hint": "This earlier exchange explains the normal story route. Exact supplied items skip personal producer or briefing history. Earlier receipts do not refill items that have been consumed, worn, nested or handed away.",
+              "id": "earlier-exchange-62",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: recover Gilandrimeel\u2019s horn"
+            },
+            {
+              "count": 1,
+              "hint": "Both halves use exact kind 93313. The treant\u2019s horn reward, Banitoor\u2019s staff reward and their reset inventories are reviewed sources; a supplied half skips earlier personal outcomes. Current loose custody shows preparation, without proving first acquisition, personal kills or a source route. Worn or nested items are not loose carried inputs. Only an accepted offering completes the exchange.",
+              "id": "material-93313",
+              "item_vnums": [
+                93313
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a half amulet"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93313;receive=I:93313;disappear=0",
+                  "giver_vnum": 93301
+                }
+              ],
+              "hint": "An accepted inspection or briefing records this supporting exchange, without a quest achievement or daily candidate. The same item kind is returned, but that does not promise the same physical item identity.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Llewyn: identify the half amulet"
+            }
+          ],
+          "summary": "Show Llewyn a half amulet for an inspection that returns the same item kind and directs you to Tamilea and the Learned One. This is optional guidance, without an achievement. The native recipe does not require a prior horn recovery or establish that the returned half is the same physical item.",
+          "title": "Llewyn: identify the half amulet"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:93311;receive=I:93311;disappear=0",
+              "giver_vnum": 93302
+            }
+          ],
+          "id": "treant-letter-briefing",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93310;receive=I:93311;disappear=0",
+                  "giver_vnum": 93301
+                }
+              ],
+              "hint": "This earlier exchange explains the normal story route. Exact supplied items skip personal producer or briefing history. Earlier receipts do not refill items that have been consumed, worn, nested or handed away.",
+              "id": "earlier-exchange-21",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: earn Llewyn\u2019s letter"
+            },
+            {
+              "count": 1,
+              "hint": "Llewyn\u2019s heart exchange produces letter 93311, and his island reset independently supplies one. Supplied letters skip a personal dragon or heart history. Current loose custody shows preparation, without proving first acquisition, personal kills or a source route. Worn or nested items are not loose carried inputs. Only an accepted offering completes the exchange.",
+              "id": "material-93311",
+              "item_vnums": [
+                93311
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Llewyn\u2019s recommendation letter"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93311;receive=I:93311;disappear=0",
+                  "giver_vnum": 93302
+                }
+              ],
+              "hint": "An accepted inspection or briefing records this supporting exchange, without a quest achievement or daily candidate. The same item kind is returned, but that does not promise the same physical item identity.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete The treant elder: learn about the stolen horn"
+            }
+          ],
+          "summary": "Offer Llewyn\u2019s letter to the treant elder for the story of Gilandrimeel\u2019s stolen horn; the letter kind is returned for your later offering. This optional briefing creates no quest achievement or daily candidate. If you already carry the letter and horn together, the completed two-item recipe takes priority.",
+          "title": "The treant elder: learn about the stolen horn"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:93311,I:93312;receive=I:93313;disappear=0",
+              "giver_vnum": 93302
+            }
+          ],
+          "id": "unicorn-horn",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93310;receive=I:93311;disappear=0",
+                  "giver_vnum": 93301
+                }
+              ],
+              "hint": "This earlier exchange explains the normal story route. Exact supplied items skip personal producer or briefing history. Earlier receipts do not refill items that have been consumed, worn, nested or handed away.",
+              "id": "earlier-exchange-21",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: earn Llewyn\u2019s letter"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93311;receive=I:93311;disappear=0",
+                  "giver_vnum": 93302
+                }
+              ],
+              "hint": "This earlier exchange explains the normal story route. Exact supplied items skip personal producer or briefing history. Earlier receipts do not refill items that have been consumed, worn, nested or handed away.",
+              "id": "earlier-exchange-46",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: hear the treant\u2019s request"
+            },
+            {
+              "count": 1,
+              "hint": "Letter 93311 comes from Llewyn\u2019s offering or island reset. A historical introduction does not restore a spent letter. Current loose custody shows preparation, without proving first acquisition, personal kills or a source route. Worn or nested items are not loose carried inputs. Only an accepted offering completes the exchange.",
+              "id": "material-93311",
+              "item_vnums": [
+                93311
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the recommendation letter"
+            },
+            {
+              "count": 1,
+              "hint": "Hunter Haornig 93304 starts under arch 93317 with backpack 93318; horn 93312 is placed inside that container. He can wander and has a wolf follower. Retrieve the exact horn into loose carried custody; a weapon of another kind, a worn horn or a container-held horn does not satisfy this input. Current loose custody shows preparation, without proving first acquisition, personal kills or a source route. Worn or nested items are not loose carried inputs. Only an accepted offering completes the exchange.",
+              "id": "material-93312",
+              "item_vnums": [
+                93312
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Gilandrimeel\u2019s horn"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93311,I:93312;receive=I:93313;disappear=0",
+                  "giver_vnum": 93302
+                }
+              ],
+              "hint": "Only accepted exact offering evidence records this outcome. Questions, visible items, movement and narration do not complete it. Personal kills, earlier exchanges and source route are not required by the native recipe. Daily candidacy does not qualify actual fresh supply, receipt/reward settlement or renewal.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete The treant elder: return Gilandrimeel\u2019s horn"
+            }
+          ],
+          "summary": "Bring the exact recommendation letter and Gilandrimeel\u2019s horn together to the treant elder for one half amulet. The two-item offering consumes both inputs. The briefing and Llewyn\u2019s heart exchange explain the usual route, but supplied exact items skip them. The story honors the horn\u2019s return; it does not prove a hunter kill, burial, widow healing or personal dragon slaying.",
+          "title": "The treant elder: return Gilandrimeel\u2019s horn"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:93313;receive=I:93313;disappear=0",
+              "giver_vnum": 93309
+            }
+          ],
+          "id": "banitoor-amulet-briefing",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93311,I:93312;receive=I:93313;disappear=0",
+                  "giver_vnum": 93302
+                }
+              ],
+              "hint": "This earlier exchange explains the normal story route. Exact supplied items skip personal producer or briefing history. Earlier receipts do not refill items that have been consumed, worn, nested or handed away.",
+              "id": "earlier-exchange-62",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: receive the grove\u2019s half"
+            },
+            {
+              "count": 1,
+              "hint": "Treant and Banitoor halves are the same kind 93313. An accepted same-kind return does not prove the original UID survived the exchange. Current loose custody shows preparation, without proving first acquisition, personal kills or a source route. Worn or nested items are not loose carried inputs. Only an accepted offering completes the exchange.",
+              "id": "material-93313",
+              "item_vnums": [
+                93313
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a half amulet"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93313;receive=I:93313;disappear=0",
+                  "giver_vnum": 93309
+                }
+              ],
+              "hint": "An accepted inspection or briefing records this supporting exchange, without a quest achievement or daily candidate. The same item kind is returned, but that does not promise the same physical item identity.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Banitoor: ask about the broken amulet"
+            }
+          ],
+          "summary": "Show Banitoor a half amulet for her account of Jer\u2019ard and the two halves. She returns the same kind and asks for her lost staff. This guidance is optional, with no quest or daily achievement; the staff recipe does not require an earlier inspection or personal horn recovery.",
+          "title": "Banitoor: ask about the broken amulet"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:93317;receive=I:93313;disappear=0",
+              "giver_vnum": 93309
+            }
+          ],
+          "id": "lost-staff",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93313;receive=I:93313;disappear=0",
+                  "giver_vnum": 93309
+                }
+              ],
+              "hint": "This earlier exchange explains the normal story route. Exact supplied items skip personal producer or briefing history. Earlier receipts do not refill items that have been consumed, worn, nested or handed away.",
+              "id": "earlier-exchange-126",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: hear Banitoor\u2019s request"
+            },
+            {
+              "count": 1,
+              "hint": "Staff 93317 resets inside container 93316 at glen dead end 93370, capped at one live copy. The container and controls share the vines alias but have different kinds and uses. Move the exact staff to loose inventory rather than keeping it worn or inside the container. Current loose custody shows preparation, without proving first acquisition, personal kills or a source route. Worn or nested items are not loose carried inputs. Only an accepted offering completes the exchange.",
+              "id": "material-93317",
+              "item_vnums": [
+                93317
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Banitoor\u2019s crooked old staff"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93317;receive=I:93313;disappear=0",
+                  "giver_vnum": 93309
+                }
+              ],
+              "hint": "Only accepted exact offering evidence records this outcome. Questions, visible items, movement and narration do not complete it. Personal kills, earlier exchanges and source route are not required by the native recipe. Daily candidacy does not qualify actual fresh supply, receipt/reward settlement or renewal.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Banitoor: recover her lost staff"
+            }
+          ],
+          "summary": "Return the exact crooked old staff to Banitoor for a half amulet. The staff is inside the stationary tangle-of-vines container in the unicorn glen, separate from the PUSH vine controls. A supplied staff skips personal searching, earlier amulet inspection and horn recovery. This creates one half; it does not consume or require another half.",
+          "title": "Banitoor: recover her lost staff"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:93313,I:93313;receive=I:93314,I:93330;disappear=1",
+              "giver_vnum": 93310
+            }
+          ],
+          "id": "centaur-honor",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93311,I:93312;receive=I:93313;disappear=0",
+                  "giver_vnum": 93302
+                }
+              ],
+              "hint": "This earlier exchange explains the normal story route. Exact supplied items skip personal producer or briefing history. Earlier receipts do not refill items that have been consumed, worn, nested or handed away.",
+              "id": "earlier-exchange-62",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: earn the grove\u2019s half"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93317;receive=I:93313;disappear=0",
+                  "giver_vnum": 93309
+                }
+              ],
+              "hint": "This earlier exchange explains the normal story route. Exact supplied items skip personal producer or briefing history. Earlier receipts do not refill items that have been consumed, worn, nested or handed away.",
+              "id": "earlier-exchange-139",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: earn Banitoor\u2019s half"
+            },
+            {
+              "count": 2,
+              "hint": "Two distinct loose carried roots of kind 93313 are required together. The treant elder and Banitoor independently reset with this kind under a shared cap of two live copies. Exact supplied halves skip the earlier personal route; wearing one or retaining only one is insufficient. Current loose custody shows preparation, without proving first acquisition, personal kills or a source route. Worn or nested items are not loose carried inputs. Only an accepted offering completes the exchange.",
+              "id": "material-93313",
+              "item_vnums": [
+                93313
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry two separate half amulets"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93313,I:93313;receive=I:93314,I:93330;disappear=1",
+                  "giver_vnum": 93310
+                }
+              ],
+              "hint": "Only accepted exact offering evidence records this outcome. Questions, visible items, movement and narration do not complete it. Personal kills, earlier exchanges and source route are not required by the native recipe. Daily candidacy does not qualify actual fresh supply, receipt/reward settlement or renewal.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Hateeu: return both amulet halves"
+            }
+          ],
+          "summary": "Bring two separate half-amulet items of kind 93313 to Hateeu for the bracelet and legplates of honor. The ordinary story brings one from the treant\u2019s horn exchange and one from Banitoor\u2019s staff exchange; their reset inventories are additional declared sources. Both halves have the same name and kind. One item cannot fill both input slots, and a past receipt cannot replace a spent half. Hateeu disappears after the native completion, so his fresh availability and a new day\u2019s supply require qualification.",
+          "title": "Hateeu: return both amulet halves"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Start with these conversation topics, then follow the requests below.",
           "keyword": "busy",
           "mob_vnum": 95508,

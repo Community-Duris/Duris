@@ -2313,7 +2313,7 @@ assert sum(d["daily_eligible"] for d in definitions.values())==9
 assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
 assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
-assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1618
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1615
 sources=collections.defaultdict(list);parent=None;room=None
 for reset in crakkaro["reset_commands"]:
     c,v=reset["command"],reset["arguments"]
@@ -3634,7 +3634,64 @@ guidance=' '.join(mapping['orientation']+[s['summary'] for s in mapping['stories
 for phrase in ('accounting','wand','PUNCH','TOUCH','reverse','990','pre-blessing','enhanced','Alatorin','fall','forge'):
     assert phrase in guidance,phrase
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves"):
+# Centaur Villages: identical halves, supplied progression and actual hidden-name dispatch.
+centaur=inventory_module.area_evidence(ROOT,'centaur_zone')
+mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='centaur_zone')
+assert (mapping['schema_version'],mapping['revision'],mapping['coverage'])==(3,1,'complete')
+assert len(mapping['stories'])==7 and len(mapping['contacts'])==8 and not mapping['exclusions']
+assert collections.Counter(s['category'] for s in mapping['stories'])=={'story':4,'service':3}
+assert collections.Counter(t['kind'] for s in mapping['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':8,'completion':8}
+raw=[b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/centaur_zone.qst']
+assert collections.Counter(b['kind'] for b in raw)=={'M':4,'Q':7} and len(centaur['dialogue'])==4
+by_line={b['line']:b for b in raw if 'binding' in b}
+for line,giver,inputs,outputs in ((21,93301,[('I',93310)],[('I',93311)]),(34,93301,[('I',93313)],[('I',93313)]),(46,93302,[('I',93311)],[('I',93311)]),(62,93302,[('I',93311),('I',93312)],[('I',93313)]),(126,93309,[('I',93313)],[('I',93313)]),(139,93309,[('I',93317)],[('I',93313)]),(152,93310,[('I',93313),('I',93313)],[('I',93314),('I',93330)])):
+    b=by_line[line]
+    assert (b['giver_vnum'],b['give'],b['receive'],b['disappear'])==(giver,inputs,outputs,line==152)
+    d=next(r['definition'] for r in centaur['requests'] if r['block']['line']==line)
+    assert d['zone_number']==933 and d['source_area']=='centaur_zone' and d['daily_eligible']==(line in (21,62,139,152))
+    assert d['daily_exclusion']==('Item exchange' if line in (34,46,126) else '')
+stories={s['id']:s for s in mapping['stories']}
+assert {tuple(c.items()) for s in stories.values() for c in s['contracts']}=={tuple(b['binding'].items()) for b in by_line.values()}
+assert all(s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional') for s in stories.values())
+assert [(t['item_vnums'],t['count']) for t in stories['centaur-honor']['steps'] if t['kind']=='carried_item']==[([93313],2)]
+assert [t['contracts'] for t in stories['centaur-honor']['steps'] if t.get('optional') and t['kind']=='completion']==[[by_line[62]['binding']],[by_line[139]['binding']]]
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==933]
+assert len(units)==7 and sum(u['achievement'] for u in units)==sum(u['daily_candidate'] for u in units)==4
+contacts={c['mob_vnum']:c for c in mapping['contacts']}
+assert contacts[93301]['topics']==['dragon','heart','amulet'] and contacts[93308]['topics']==['learned','one','banitoor','vorsileez'] and contacts[93309]['topics']==['amulet']
+assert sum(len(c['topics']) for c in contacts.values())==8 and not centaur['special_assignments']
+rooms=dawndale_bodies('centaur_zone','wld');objects=dawndale_bodies('centaur_zone','obj');mobiles=dawndale_bodies('centaur_zone','mob')
+assert (len(rooms),len(mobiles),len(objects),len(centaur['reset_commands']))==(100,29,31,199)
+assert (centaur['zone']['first_vnum'],centaur['zone']['last_vnum'],centaur['zone']['reset_mode'])==(93116,93399,2)
+assert collections.Counter(r['command'] for r in centaur['reset_commands'])=={'M':70,'P':71,'G':23,'O':21,'F':7,'D':6,'E':1}
+assert len({(r['command'],tuple(r['arguments'])) for r in centaur['reset_commands']})==117
+families=set();parent=leader=None
+for r in centaur['reset_commands']:
+    c,a=r['command'],r['arguments'];target=leader if c=='F' else parent if c in 'GE' else a[3] if c=='P' else None
+    families.add((c,tuple(a),target))
+    if c=='M':parent=leader=(a[1],a[3])
+    elif c=='F':parent=(a[1],a[3])
+assert len(families)==125
+for v,target,d,mode in ((93305,93377,0,1),(93306,93375,2,1),(93307,93363,0,1),(93308,93365,2,1),(93323,93326,1,0)):
+    values=objvalues(objects[v]);assert values[0]==29 and values[6]&2 and values[11:15]==[270,target,d,mode]
+assert objvalues(objects[93316])[0]==15 and objvalues(objects[93316])[6]&2
+resets={r['line']:r for r in centaur['reset_commands']}
+for line,c,args in ((53,'O',[0,93323,1,93326,100,0,0,0]),(118,'O',[0,93316,1,93370,100,0,0,0]),(119,'P',[1,93317,1,93316,100,0,0,0]),(125,'M',[0,93304,1,93317,100,0,0,0]),(128,'G',[1,93318,1,0,100,0,0,0]),(129,'P',[1,93312,1,93318,100,0,0,0]),(144,'M',[0,93310,1,93330,100,0,0,0]),(145,'M',[0,93301,1,93335,100,0,0,0]),(146,'G',[1,93311,1,0,100,0,0,0]),(173,'M',[0,93302,1,93366,100,0,0,0]),(174,'G',[1,93313,2,0,100,0,0,0]),(203,'M',[0,93308,1,93386,100,0,0,0]),(221,'M',[0,93300,1,93398,100,0,0,0]),(222,'G',[1,93310,1,0,100,0,0,0]),(223,'M',[0,93309,1,93399,100,0,0,0]),(225,'G',[1,93313,2,0,100,0,0,0])):
+    assert (resets[line]['command'],resets[line]['arguments'])==(c,args)
+falls={v:int(m[1]) for v,b in rooms.items() if (m:=re.search(r'^F\s*\n(\d+)',b,re.M))}
+currents={v:tuple(map(int,m.groups())) for v,b in rooms.items() if (m:=re.search(r'^C\s*\n(\d+)\s+(\d+)',b,re.M))}
+assert falls=={93305:38,93306:13} and currents=={93337:(5,1),93338:(6,1),93341:(7,2),93349:(8,2)}
+assert [(resets[line]['arguments'][1:4]) for line in (8,12,16,20,24,28)]==[[93326,1,8],[93399,3,0],[93363,0,8],[93365,2,8],[93375,2,8],[93377,0,8]]
+lookup=(ROOT/'src/world/handler.c').read_text(encoding='utf8')
+assert 'CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i)' in lookup and '(IS_NOSHOW(i) && OBJ_VNUM(i) != VNUM_TRACKS)' in lookup
+assert not (ROOT/'areas/shp/centaur_zone.shp').exists()
+import runpy
+runpy.run_path(str(ROOT/'tests/async/test_centaur_directions.py'))['check'](ROOT)
+guidance=' '.join(mapping['orientation']+[s['summary'] for s in mapping['stories']])
+for phrase in ('accounting','two separate','same kind','PUSH','eastern edge','current','fall','disappears','supplied'):
+    assert phrase in guidance,phrase
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

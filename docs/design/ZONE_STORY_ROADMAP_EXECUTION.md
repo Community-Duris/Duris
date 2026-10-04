@@ -61,6 +61,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | `0fff62e70` — Smoke vault key / Discontent targeting | Vault south return lock now uses rewarded key 139818; newly loaded Discontent accepts its own name while retaining old aliases. Actual production key/name regressions fail before and pass after; key settlement/live travel/existing-object migration remain unqualified. | **The Plane of Smoke's vault key now works from either side of the portcullis, and Discontent can be selected by its own name.** |
 | [5a2b93d6d](https://github.com/Community-Duris/Duris/commit/5a2b93d6d387e192ea501d6d6e5bbf71796e927b): Northern Lakes pile-of-bones clues | Cathedral clue now says east and pasture clue west at room75263, matching reciprocal D1/D3 routes. Exactly two native words change, in a separate fix commit with the focused regression. | **Northern Lakes' pile-of-bones exits now correctly point east to the cathedral and west to the pasture.** Both original clues fail; corrected source, reciprocal exits and exact native-byte scope pass. Live LOOK/traversal remains unqualified. |
 | [02788c573](https://github.com/Community-Duris/Duris/commit/02788c5738a11963647ceb9b4b344463f4f57704): Kobold temple guardians | Jkyl uses altar1481/pit1484, golems tomb1482, demon pit1484/ledge1483 and the actual room list. Seven native lines and the focused executable regression are isolated in the fix commit. | **Kobold Settlement's temple guardians now defend their actual altar, tomb and sacrificial pit, restoring the high priest's imp summoning and the pit demon's ledge attacks.** Original altar regression fails; repaired actual procedures, server build and formatting pass. Played combat/difficulty/movement remain unqualified. |
+| [e456b3403](https://github.com/Community-Duris/Duris/commit/e456b3403): Centaur quest/travel clues | Tamilea now points to Banitoor's eastern cave; grotto west exit, both forest approaches, forest east intersection and dead-end entrance now match actual directions. Exactly six native text lines, focused regression in a separate fix commit. | **Centaur Villages' quest and travel clues now point in the correct directions, including Tamilea's route to Banitoor's cave.** All six original clues fail; corrected source/destinations/reciprocal routes pass. Played ASK/LOOK/traversal remains unqualified. |
 
 ## Progress
 
@@ -132,9 +133,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 64 | Northern Lakes and Settlements | [Comprehensive dossier](zone-stories/NORTHERN_LAKES.md): all fourteen blocks/219 rooms/63 mobiles/82 objects/414 resets, both shops, five foreign boundaries, imported visage/consumer and shared quest/reset/current/fall/boat execution | Six independent stories, thirteen contacts/20 aliases/9 optional checks; courier stage receipts stay optional with supplied exact materials | Separate fix 5a2b93d6d corrects two exit clues. Distinct-source scales, overlapping recipient/supplier, typed actor/current/fall episodes, campaign all-stage display and actual daily renewal need qualification |
 | 65 | Kobold Settlement | [Comprehensive dossier](zone-stories/KOBOLD_SETTLEMENT.md): all seventeen blocks/147 rooms/58 mobiles/66 objects/303 resets/three shops; ten forge rows, guardian/death/switch/epic/inn/shared paths and foreign closure | One guarded story/three services; sixteen contacts/16 aliases/7 optional checks; supplied materials and historical support receipts remain independent | Separate guardian fix 02788c573 restores actual rooms and ledge targeting. Atomic fees/overlapping recipe order, admitted supply, custom death/access/forced travel and legacy forge/rod/inn intent remain pending |
 | 66 | Troll Caves | [Comprehensive dossier](zone-stories/TROLL_CAVES.md): all ten blocks/82 rooms/28 mobiles/37 objects/193 resets, 142 exact/152 parent families, computed smith/teacher/switch/teleport and foreign stock | One story/four services; eight contacts/9 aliases/8 optional checks; exact same-name kinds, supplied materials and producer history independent | No native repair. Atomic fees, wand mismatch, secret control returns, PUNCH sign/foreign copy, guarded forge and accepted source/travel/fall/survival/renewal qualification remain plans |
-| 67–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 67 | Centaur Villages | [Comprehensive dossier](zone-stories/CENTAUR_VILLAGES.md): all eleven blocks/100 rooms/29 mobiles/31 objects/199 resets,117 exact/125 parent families; dynamic switches/teachers, actual hidden-name lookup/current/fall/offer/retirement and foreign closure | Four stories/three services; eight contacts/8 aliases/16 optional checks; two distinct roots of one half kind, optional supplied and reset sources, independent current/history | Separate six-direction clue fix e456b3403. Active source/selection/movement/two-root/two-output settlement, Hateeu retirement/reappearance and renewal remain unqualified; new semantic access/knowledge/effect episodes require accepted proof |
+| 68–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Centaur Villages (`centaur_zone`).
+The next area is Enclave of the Opal Phoenix (`opalphoenix`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -3506,3 +3508,77 @@ fingerprint/revision two/registry and prior86 maps stay unchanged. Original
 queue:66/220 complete,154 pending; Centaur Villages next. Active, ready accounting
 is mandatory; frozen recovery stays separate. No DB/account/server operation,
 migration, deployment or merge.
+
+## Centaur Villages completed source map — October 4, 2026
+
+The [dossier](zone-stories/CENTAUR_VILLAGES.md) reviews all eleven blocks
+(seven Q/four M; four addressed families/eight aliases),100 rooms/100 prose
+groups/14 headers/19 metadata/71 numeric exit families/135 text-keyword pairs,
+29 mobiles,31 objects and199 resets/117 exact/125 parent-aware families.
+All raw properties, memberships, source caps/containers/gear/followers and
+full ordinary foreign boundary rooms are reviewed. Bounded global native
+producers/consumers/resets/shops/literal assignments/713 teleport prototypes
+and relevant custom/shared execution close the reviewed source dependencies.
+
+The [journal](../../areas/story/centaur_zone.story.json) maps four outcomes and
+three same-kind inspection/briefing services, eight contacts and sixteen
+optional checks (eight current materials/eight producer or guidance receipts).
+Heart→letter→returned unicorn horn→one half, staff→second half, then two
+separate half roots→bracelet and legplates. Both halves are kind93313; a single
+item cannot fill both slots. Supplied exact items skip personal kills,
+briefings and earlier production. Past receipts do not restore spent roots.
+
+Llewyn resets with letter93311cap1; the treant and Banitoor independently
+reset with half93313 under shared cap2. Heart and horn/staff sources have
+cap1; horn is inside hunter backpack93318, staff inside static vines93316.
+P resolves a matching container by kind; it does not certify an exact source
+UID. Roaming givers and the hunter require actual visible encounters.
+
+Five dynamically bound PUSH controls clear ordinary reciprocal routes.
+Four vine controls cover two grove approaches; jagged rock at93326 opens
+the eastern cave93399. Controls/staff container have NOSHOW, but actual named
+lookup permits that flag despite normal PC display rejecting it. This is not
+proof of an inaccessible source or inert switch, and no flag repair ships.
+Two mountain fall fields and four declared currents require selected control,
+pre/post bits, admitted movement, nested displacement, survival and return
+episodes. Level guidance, followers, fruit/pond/spring, age cure, grief,
+ancestry and protector-title prose do not create extra accepted objectives.
+
+**Actual native repair: separate fix commit[e456b3403](https://github.com/Community-Duris/Duris/commit/e456b3403).**
+Tamilea's cave hint now says eastern edge; grotto west exit, both western
+forest approaches, forest east intersection and dead-end eastern entrance
+match their actual directions. Exactly six native clue lines change; exits,
+flags, sources, caps, aliases, terms, outputs and retirement are preserved.
+The focused test fails all six original clues and passes corrected topology.
+News: **Centaur Villages' quest and travel clues now point in the correct
+directions, including Tamilea's route to Banitoor's cave.** Source proof does
+not qualify actual ASK/LOOK/traversal. Keep this fix prominent in PR/news,
+apart from journal additions and pending capability/wording work.
+
+All seven offerings are item-only. Hateeu's D1 finale consumes two distinct
+halves, declares two indexed outputs and removes the recipient. Accepted
+offering, output entitlements/publication, current reward custody, actual
+retirement and fresh reset reappearance remain distinct qualification facts.
+Do not infer two achievements, fresh supply or same-UID inspection continuity.
+Plans retain current/producer/source alternatives and add richer original-
+source/handoff, named-selection/learned-alias, control/travel/survival and
+recipient/reward/retirement episodes only after actual semantic proof.
+
+Production/source fixture and actual C++all88-map/schema/file-loader journeys
+cover exact/worn/wrong kinds, one-versus-two halves, supplied optional history,
+service exclusion, spent materials, read-only readiness, immutable zone owner,
+replay and cold recovery. Native direction regression, maintained build,
+changed/staged formatting, whitespace/native/catalog/prior-map/local-link
+preservation are checked at publication. Local/source/projection proofs do
+not qualify original/reset/handoff/GET, live offerings and both rewards,
+switches/currents/falls/death/survival, Hateeu's removal/reappearance,
+persistence or daily renewal. These are qualification gaps, without a claim
+that the reviewed zone is impossible or its hidden controls are broken.
+
+Catalog:88 maps/1615 achievements/1459 potential dailies/2207 rows. Three
+support units deliberately leave zone completion; four outcome candidates
+remain. All2668 native definitions/fingerprint/revision two/registry and
+prior87 maps stay unchanged. Original queue67/220 complete,153 pending;
+Enclave of the Opal Phoenix next. Active, ready accounting remains mandatory;
+frozen recovery stays separate. No DB/account/server operation, migration,
+deployment or merge.

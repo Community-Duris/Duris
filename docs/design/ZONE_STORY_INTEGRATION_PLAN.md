@@ -2424,3 +2424,24 @@ journals and achievement/daily credit; frozen recovery remains separate.
 Source map66 is comprehensive; actual gameplay qualification and all154 later
 roadmap entries remain. No new runtime API, event/schema, payment adapter,
 native recipe, placement, switch, command verb or effect ships in this checkpoint.
+
+## Centaur Villages: repeated roots, hidden selection and recipient retirement
+
+The [complete dossier](zone-stories/CENTAUR_VILLAGES.md) and
+[journal](../../areas/story/centaur_zone.story.json) reuse schema-three stories,
+services and optional current/history checks. Accounting must be active and
+ready for new discovery, encounters, journals and achievement/daily credit;
+frozen obligations remain recoverable independently.
+
+| Capability | Concrete requirement | Acceptance / implementation plan |
+| --- | --- | --- |
+| Parent story and supplied entry points | Four outcomes and three briefings; reset letters/halves permit shortcuts | Show full current and historical progression with exact-kind/count guidance. Do not force earlier producers, kills or briefing receipts when supplied items satisfy a native stage |
+| Identical kinds / same-kind returns | Hateeu needs two separate half roots; three briefings consume/return a kind | Qualify two distinct owned UIDs, one/worn/nested/wrong-kind rejection, immutable recipe, generated return and spent custody. Same kind is not proof of original UID continuity |
+| Source versus hidden display / named selection | NOSHOW controls and container are omitted from PC display, but explicit list lookup allows them | Record admitted source/container/root UID and acquisition reason; distinguish source/handoff, display, selected alias and accepted command. Do not repair a hidden flag based only on a visibility scan; qualify ordinary named GET/PUSH with actual actor/custody |
+| Multi-output reward / retirement / fresh receiver | D1 finale rewards bracelet and legplates and removes Hateeu | Qualify accepted batch offering, each indexed entitlement/output publication, actual NPC removal and reset reappearance. Cover partial/busy/rejected/replayed output, cold recovery with absent giver, retained receipt/current rewards and fresh-day supply separately |
+| Control / currents / fall / surviving return | Five ordinary reciprocal PUSH controls, four real currents, two fall fields | Capture selected actor/control/verb, pre/post bits/reset, movement admission, current-displaced final room, protection/injury/death/removal and surviving return. Existing journal readiness does not implement these semantic episodes |
+| Fair content review / news | Six direction clues contradicted actual topology; narrative cure/grief/title lack extra native effects | Separate shipped e456b3403 clue fix and its news/proof/limits from future spelling or builder effect decisions. Do not label deliberate lore or hidden direct-selection behavior as broken without execution evidence |
+
+Source map67 is comprehensive; actual source/offer/reward/travel/recipient/
+renewal qualification and153 later roadmap entries remain. This journal
+adds no runtime API, event/schema, payment adapter or new reward effect.

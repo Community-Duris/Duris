@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 87 &&
-				tracker.summary_for(7, 42).total == 1618,
+		require(catalog.story_mappings.size() == 88 &&
+				tracker.summary_for(7, 42).total == 1615,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -6645,6 +6645,125 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 313) &&
 					!recovered.has_discovered(7, 42, 352),
 				"Wharf cold recovery lost independent receipts or invented foreign discovery");
+		}
+
+		{
+			const auto &heart = story_for("centaur_zone", "dragon-heart");
+			const auto &inspection =
+				story_for("centaur_zone", "llewyn-amulet-inspection");
+			const auto &letter = story_for("centaur_zone", "treant-letter-briefing");
+			const auto &horn = story_for("centaur_zone", "unicorn-horn");
+			const auto &briefing =
+				story_for("centaur_zone", "banitoor-amulet-briefing");
+			const auto &staff = story_for("centaur_zone", "lost-staff");
+			const auto &honor = story_for("centaur_zone", "centaur-honor");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 933, 93300, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 933, 10, 1, 101, false, false)
+							.find(honor.title) == std::string::npos,
+				"Centaur discovery exposed an unseen receiver's finale");
+			for (const auto &actor : { std::pair<int, int>{ 93301, 93335 },
+						   { 93302, 93366 },
+						   { 93309, 93399 },
+						   { 93310, 93330 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 102) ==
+						result::applied,
+					"Centaur giver encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Centaur journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[93313] = 1;
+			supplies.equipped[2] = 93313;
+			supplies.equipped[18] = 93312;
+			supplies.carried[93314] = 1;
+			supplies.carried[93330] = 1;
+			supplies.carried[93326] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 933, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(honor).find("[Missing now] " + honor.steps[2].text) !=
+						std::string::npos &&
+					section(horn).find("[Missing now] " + horn.steps[3].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 933).completed == 0 &&
+					journey.progress_for_zone(7, 42, 933).total == 4 &&
+					journey.serialize_state() == before,
+				"Centaur one half, worn inputs, armor or pendant fabricated readiness or completion");
+			supplies.carried[93313] = 2;
+			supplies.carried[93311] = 1;
+			supplies.carried[93312] = 1;
+			supplies.carried[93317] = 1;
+			journal = journey.render_journal(7, 42, 933, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(honor).find("Next: " + honor.steps.back().text) !=
+						std::string::npos &&
+					section(horn).find("Next: " + horn.steps.back().text) !=
+						std::string::npos &&
+					section(staff).find("Next: " + staff.steps.back().text) !=
+						std::string::npos &&
+					section(honor).find("Turn-in currently unavailable") ==
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Centaur supplied exact items required personal history, guarded item-only terms or wrote state");
+			service supplied(catalog);
+			record(supplied, honor.contracts.front(), "centaur-supplied-finale", 933,
+			       93330);
+			require(supplied.progress_for_zone(7, 42, 933).completed == 1 &&
+					supplied.evidence_for(horn.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.evidence_for(staff.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Centaur supplied finale fabricated producer history or counted two rewards twice");
+			record(journey, inspection.contracts.front(), "centaur-inspection", 933,
+			       93335);
+			record(journey, letter.contracts.front(), "centaur-letter-briefing", 933,
+			       93366);
+			record(journey, briefing.contracts.front(), "centaur-amulet-briefing", 933,
+			       93399);
+			require(journey.progress_for_zone(7, 42, 933).completed == 0,
+				"Centaur same-kind inspection or briefing became a quest achievement");
+			record(journey, heart.contracts.front(), "centaur-heart", 933, 93335);
+			record(journey, horn.contracts.front(), "centaur-horn", 933, 93366);
+			record(journey, staff.contracts.front(), "centaur-staff", 933, 93399);
+			supplies.carried.erase(93313);
+			journal = journey.render_journal(7, 42, 933, 10, 1, 121, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 933).completed == 3 &&
+					section(honor).find("[Missing now] " +
+							    honor.steps[2].text) !=
+						std::string::npos &&
+					journey.evidence_for(honor.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Centaur earlier receipts restored spent halves or completed the finale");
+			auto wrong_owner =
+				completion(honor.contracts.front(), "centaur-wrong-owner", 122);
+			wrong_owner.transaction.zone_number = 969;
+			wrong_owner.transaction.room_vnum = 93330;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Centaur finale accepted a foreign zone owner");
+			record(journey, honor.contracts.front(), "centaur-honor", 933, 93330);
+			auto replay = completion(honor.contracts.front(), "centaur-honor", 120);
+			replay.transaction.zone_number = 933;
+			replay.transaction.room_vnum = 93330;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Centaur two-output finale replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 933).completed == 4 &&
+					recovered.progress_for_zone(7, 42, 933).total == 4 &&
+					recovered.evidence_for(briefing.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					!recovered.has_discovered(7, 42, 969),
+				"Centaur cold recovery lost receipts, counted services or invented foreign discovery");
 		}
 
 		{
