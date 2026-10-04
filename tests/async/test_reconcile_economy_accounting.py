@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from reconcile_economy_accounting import (MAX_INPUT_BYTES, MAX_ROWS, NATIVE_COVERAGE_EXCEPTIONS,
                                           ORPHAN_EVIDENCE_SOURCES,
                                           Reconciler, SnapshotError, account_key,
-                                          decode_source_event, view)  # noqa: E402
+                                          decode_source_event, source_kind_allowed, view)  # noqa: E402
 
 LINEAGE = "11" * 16
 EPOCH = "22" * 16
@@ -113,6 +113,12 @@ def clean_snapshot():
     }
 
 
+def set_operation_source(snapshot, kind):
+    source = source_identity(kind=kind)
+    snapshot["operations"][0]["source_event"] = source
+    snapshot["source_claims"][0]["source_event"] = source
+
+
 def creation_snapshot():
     snapshot = clean_snapshot()
     snapshot["item_origins"][0].update(origin="creation", revision=0, root=81,
@@ -171,6 +177,89 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(snapshot, before, "audit must leave its input untouched")
         self.assertEqual(sum(report["exception_counts"].values()), report["exception_count"])
         return set(report["exception_counts"])
+
+    def test_source_kind_policy_covers_optional_and_multi_kind_reasons(self):
+        for reason, allowed, denied in ((3, 16, 1), (5, 1, 3), (7, 7, 2),
+                                        (21, 12, 16), (21, 18, 1), (24, 17, 13),
+                                        (31, 17, 16), (38, 10, 15), (44, 19, 1)):
+            self.assertTrue(source_kind_allowed(reason, allowed))
+            self.assertFalse(source_kind_allowed(reason, denied))
+        for kind in range(1, 24):
+            self.assertTrue(source_kind_allowed(32, kind))
+        for reason in (None, True, False, "3", 0, 47, 65535):
+            self.assertFalse(source_kind_allowed(reason, 16))
+        for kind in (None, True, "16", 0, 24, 65535):
+            self.assertFalse(source_kind_allowed(3, kind))
+
+    def test_matching_source_kind_mismatch_refuses_and_absence_stays_optional(self):
+        snapshot = clean_snapshot()
+        set_operation_source(snapshot, 1)
+        self.assertEqual(self.codes(snapshot), {"unauthorized_source_kind", "unauthorized_source_claim"})
+        snapshot["operations"][0]["source_event"] = None
+        snapshot["source_claims"] = []
+        self.assertEqual(self.codes(snapshot), set())
+        snapshot = clean_snapshot()
+        snapshot["operations"][0]["reason"] = 5
+        set_operation_source(snapshot, 1)
+        self.assertEqual(self.codes(snapshot), set())
+        set_operation_source(snapshot, 3)
+        self.assertEqual(self.codes(snapshot), {"unauthorized_source_kind", "unauthorized_source_claim"})
+        snapshot["operations"][0]["source_event"] = None
+        snapshot["source_claims"] = []
+        self.assertIn("missing_source_event", self.codes(snapshot))
+
+    def test_prior_source_claim_policy_and_retained_uid_source_are_checked(self):
+        snapshot = clean_snapshot()
+        bad = source_identity(kind=1)
+        prior = {"lineage": LINEAGE, "source_event": bad, "operation_id": "77" * 16,
+                 "operation_lineage": LINEAGE, "operation_epoch": "88" * 16,
+                 "operation_source_event": bad, "operation_reason": 3,
+                 "operation_outcome": "committed", "operation_result_code": 0,
+                 "operation_inbox_receipt": {"status": 1, "result_code": 0,
+                                              "failure_stage": 0, "committed_at_present": True}}
+        snapshot["source_claims"].append(prior)
+        self.assertEqual(self.codes(snapshot), {"unauthorized_source_claim"})
+        for reason in (None, True, "3", 0, 47):
+            prior["operation_reason"] = reason
+            self.assertEqual(self.codes(snapshot), {"unknown_source_claim_policy"})
+        prior["operation_reason"] = 3
+        native = {"lineage_uid_references": [], "lineage_uid_reference_roots": [{
+            "operation_id": "77" * 16, "epoch": "88" * 16, "reason": 3,
+            "source_event": bad, "outcome": "committed", "item_event_count": 0,
+            "reference_count": 0}], "lineage_uid_reference_coverage": {"rows": 0, "root_rows": 1}}
+        before = copy.deepcopy(native)
+        reader = Reconciler()
+        reader.audit_lineage_uid_references(LINEAGE, EPOCH, "disposable", native, {})
+        self.assertEqual(reader.counts, {"unauthorized_lineage_uid_source": 1})
+        self.assertEqual(native, before)
+
+    def test_source_policy_operator_cli_retains_bounded_global_refusal(self):
+        snapshot = clean_snapshot()
+        set_operation_source(snapshot, 1)
+        snapshot["operations"][0]["personal_alias"] = "private-source-policy"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "source-policy.json"
+            payload = json.dumps(snapshot).encode()
+            path.write_bytes(payload)
+            for limit in (0, 1, 100):
+                result = subprocess.run([sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                         str(path), "--view", "operation", "--operation-id", OP,
+                                         "--limit", str(limit)], capture_output=True, text=True, timeout=30)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                output = json.loads(result.stdout)
+                self.assertEqual(output["coverage"]["exception_count"], 2)
+                self.assertLessEqual(len(output["rows"]), limit)
+                self.assertNotIn("private-source-policy", result.stdout)
+                self.assertEqual(path.read_bytes(), payload)
+
+    def test_selected_baseline_claim_and_boolean_reason_do_not_inherit_policy(self):
+        snapshot = clean_snapshot()
+        snapshot["operations"][0]["reason"] = 38
+        set_operation_source(snapshot, 10)
+        self.assertIn("baseline_source_claim", self.codes(snapshot))
+        snapshot["operations"][0]["reason"] = True
+        self.assertIn("unknown_policy_reason", self.codes(snapshot))
+        self.assertIn("unknown_source_claim_policy", self.codes(snapshot))
 
     def test_source_identity_version_kind_and_unsigned_bounds(self):
         for kind in range(1, 24):
@@ -792,7 +881,7 @@ class ReconciliationTests(unittest.TestCase):
         prior_source = source_identity(identity="66")
         prior = {"lineage": LINEAGE, "source_event": prior_source,
                  "operation_id": "77" * 16, "operation_lineage": LINEAGE,
-                 "operation_epoch": "88" * 16,
+                 "operation_epoch": "88" * 16, "operation_reason": 3,
                  "operation_source_event": prior_source,
                  "operation_outcome": "committed", "operation_result_code": 0,
                  "operation_inbox_receipt": {"status": 1, "result_code": 0,
@@ -892,6 +981,7 @@ class ReconciliationTests(unittest.TestCase):
         self.assertIn("unexpected_realized_price", self.codes(snapshot))
         snapshot = clean_snapshot()
         snapshot["operations"][0].update(reason=21, realized_price_copper=3)
+        set_operation_source(snapshot, 12)
         self.assertEqual(view(snapshot, Reconciler().audit(snapshot), "prices", 10)["count"], 1)
         snapshot["operations"][0].update(outcome="rejected", result_code=9)
         snapshot["receipts"][0].update(result_code=9)
@@ -899,6 +989,7 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(view(snapshot, Reconciler().audit(snapshot), "prices", 10)["count"], 0)
         snapshot = clean_snapshot()
         snapshot["operations"][0]["reason"] = 21
+        set_operation_source(snapshot, 12)
         snapshot["operations"][0]["realized_price_copper"] = True
         self.assertIn("invalid_realized_price", self.codes(snapshot))
         snapshot["operations"][0]["realized_price_copper"] = 2**63
@@ -910,6 +1001,7 @@ class ReconciliationTests(unittest.TestCase):
             with self.subTest(reason=reason):
                 snapshot = clean_snapshot()
                 snapshot["operations"][0].update(reason=reason, realized_price_copper=3000)
+                set_operation_source(snapshot, 17 if reason == 24 else 13)
                 snapshot["native"]["realized_price_coverage"] = {
                     "column_available": True, "candidate_rows": 1, "missing_price_rows": 0}
                 snapshot["native"]["lineage_realized_prices"] = [{
@@ -928,6 +1020,7 @@ class ReconciliationTests(unittest.TestCase):
     def test_realized_price_roots_require_durable_inbox_receipts(self):
         snapshot = clean_snapshot()
         snapshot["operations"][0].update(reason=24, realized_price_copper=3000)
+        set_operation_source(snapshot, 17)
         snapshot["native"]["realized_price_coverage"] = {
             "column_available": True, "candidate_rows": 1, "missing_price_rows": 0}
         snapshot["native"]["lineage_realized_prices"] = [{
@@ -1837,7 +1930,7 @@ def native_stake_sql():
     from test_persistence_backup_integration import sql
     read_evidence = exporter.read_evidence
     root = ROOT
-    work=root/'bin/tests/plan5-source-event-sql'
+    work=root/'bin/tests/plan5-source-policy-sql'
     work.mkdir(mode=0o700,parents=True,exist_ok=True)
     source=work/'probe.cpp'
     source.write_text('''#include "economy/economic_accounting_intent.h"
@@ -1852,6 +1945,19 @@ def native_stake_sql():
         economic_source_event decoded;
         const bool valid=economic_source_event_decode(raw,&decoded)==economic_accounting_error::ok;
         raw.insert(raw.begin(),uint8_t(valid)); output(raw);
+    }
+    void policy_case(economic_operation_metadata &meta,uint16_t reason,uint8_t kind) {
+        meta.reason=static_cast<economic_reason>(reason);
+        meta.actor_kind=reason>=38 && reason<=42 ? economic_actor_kind::operator_action : economic_actor_kind::domain;
+        if (!kind) meta.source_event.reset();
+        else {
+            economic_source_event event;
+            event.kind=static_cast<economic_source_kind>(kind);
+            event.source=id(0x71); event.generation=id(0x72); event.sequence=7; event.slot=0;
+            meta.source_event=event;
+        }
+        const bool valid=economic_operation_metadata_validate(meta)==economic_accounting_error::ok;
+        output({uint8_t(reason),uint8_t(reason>>8),kind,uint8_t(valid)});
     }
     int main() {
         economic_accounting_plan p;
@@ -1909,6 +2015,12 @@ def native_stake_sql():
         auto both=base; std::fill(both.begin()+4,both.begin()+36,0); source_case(both);
         auto short_raw=base; short_raw.pop_back(); source_case(short_raw);
         auto long_raw=base; long_raw.push_back(0); source_case(long_raw); source_case({});
+        economic_operation_metadata meta;
+        meta.lineage=id(0x11); meta.epoch=id(0x22); meta.operation_id=id(0x33);
+        meta.original_operation_id=id(0x44); meta.actor_id=7; meta.writer_id=1;
+        for (uint16_t reason=1;reason<=46;++reason)
+            for (uint8_t kind=0;kind<=23;++kind) policy_case(meta,reason,kind);
+        for (uint16_t reason : {uint16_t(0),uint16_t(47),uint16_t(UINT16_MAX)}) policy_case(meta,reason,16);
     }
     ''')
     sources=['src/economy/economic_accounting_plan.c','src/economy/economic_accounting_types.c',
@@ -1936,8 +2048,8 @@ def native_stake_sql():
     while offset<len(payload):
         size,=struct.unpack_from('<I',payload,offset); offset+=4
         blocks.append(payload[offset:offset+size]); offset+=size
-    assert len(blocks)==108 and offset==len(payload)
-    cases=blocks[4:]
+    assert len(blocks)==1215 and offset==len(payload)
+    cases=blocks[4:108]
     assert sum(case[0] for case in cases)==92
     for case in cases:
         try:
@@ -1950,6 +2062,20 @@ def native_stake_sql():
             assert decoded==(int.from_bytes(raw[:2],'little'),raw[4:20].hex(),raw[20:36].hex(),
                              int.from_bytes(raw[36:44],'little'),int.from_bytes(raw[44:48],'little'))
     print('NATIVE_SOURCE_GRAMMAR modes=2 cases=104 accepted=92 refused=12 agreement=True',flush=True)
+    checker=Reconciler()
+    decisions={}
+    for case in blocks[108:]:
+        assert len(case)==4 and case[3] in (0,1)
+        reason,kind,accepted=struct.unpack('<HBB',case)
+        assert (reason,kind) not in decisions
+        decisions[reason,kind]=bool(accepted)
+        if kind:
+            assert source_kind_allowed(reason,kind)==bool(accepted),(reason,kind,accepted)
+        else:
+            required=checker.reasons[reason]['source_event_required']
+            assert type(required) is bool and (not required)==bool(accepted),(reason,accepted)
+    assert len(decisions)==1107 and sum(decisions.values())==346
+    print('NATIVE_SOURCE_POLICY modes=2 decisions=1107 present=1058 absent=46 unknown=3 accepted=346 refused=761 agreement=True',flush=True)
     batches=list(zip(blocks[:4:2],blocks[1:4:2]))
     assert [b[1][:4] for b in batches]==[b'EAP1']*2
     for frozen,plan in batches:
@@ -2090,14 +2216,29 @@ def native_stake_sql():
                             audit(True,('invalid_source_event','invalid_source_claim'))
                         replace_source(plan[104:152])
                         audit(True)
+                        valid_by_kind={}
+                        for case in cases:
+                            if case[0]:
+                                kind=decode_source_event(case[1:].hex())[0]
+                                valid_by_kind.setdefault(kind,case[1:])
+                        assert set(valid_by_kind)==set(range(1,24))
+                        for kind,value in valid_by_kind.items():
+                            if kind==6:
+                                continue
+                            assert not decisions[19,kind]
+                            replace_source(value)
+                            audit(True,('unauthorized_source_kind','unauthorized_source_claim'))
+                        replace_source(plan[104:152])
+                        audit(True)
                         with owner.cursor() as cursor:
                             cursor.execute('SELECT active_epoch FROM economic_lineage_state'); assert cursor.fetchall()==[{'active_epoch':None}]
-                        assert captures==14,captures
-                        print('PASS stake-read-only '+engine+' captures=14 rollback=14 SQL-tables=7 unchanged inactive source-refusals=9',flush=True)
+                        assert captures==37,captures
+                        print('PASS stake-read-only '+engine+' captures=37 rollback=37 SQL-tables=7 unchanged inactive source-refusals=9 source-kind-refusals=22',flush=True)
                     finally: reader.close()
                 finally: owner.close()
     print('STAKE_SQL_QUALIFIED '+json.dumps({'engines':2,'native_modes':2,'plans':2,'intents':2,
-          'read_only_captures':28,'fault_captures':20,'source_fault_captures':18,'native_source_cases':104,
+          'read_only_captures':74,'fault_captures':64,'source_fault_captures':62,'source_kind_fault_captures':44,
+          'native_source_cases':104,'native_policy_cases':1107,
           'permission_denials':2,'full_mutation_or_gameplay':False},sort_keys=True),flush=True)
 
 

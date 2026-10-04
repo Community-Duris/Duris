@@ -542,6 +542,21 @@ try:
                         cursor.execute("SELECT * FROM " + table)
                         rows.append(sorted((repr(row) for row in cursor.fetchall())))
                     return rows
+            def source_fault_capture(additions):
+                before = source_rows()
+                connection = mock.Mock(wraps=audit)
+                cursor = mock.Mock(wraps=audit.cursor())
+                connection.cursor.return_value = cursor
+                corrupt = capture(connection, LINEAGE, EPOCH)
+                connection.rollback.assert_called_once_with()
+                cursor.close.assert_called_once_with()
+                assert all(call.args[0].upper().startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
+                           for call in cursor.execute.call_args_list)
+                assert source_rows() == before
+                original = json.dumps(corrupt, sort_keys=True)
+                fault = Reconciler().audit(corrupt)
+                assert fault["exception_counts"] == {**expected_exceptions, **additions}, fault
+                assert json.dumps(corrupt, sort_keys=True) == original
             captures = 0
             for source_root, valid_source, additions in (
                     (root, source, {"invalid_source_event": 1, "invalid_source_claim": 1}),
@@ -554,20 +569,7 @@ try:
                                        (invalid_source, source_root))
                         writer.execute("UPDATE economic_accounting_source_claim SET source_event=%s WHERE operation_id=%s",
                                        (invalid_source, source_root))
-                    before = source_rows()
-                    connection = mock.Mock(wraps=audit)
-                    cursor = mock.Mock(wraps=audit.cursor())
-                    connection.cursor.return_value = cursor
-                    corrupt = capture(connection, LINEAGE, EPOCH)
-                    connection.rollback.assert_called_once_with()
-                    cursor.close.assert_called_once_with()
-                    assert all(call.args[0].upper().startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
-                               for call in cursor.execute.call_args_list)
-                    assert source_rows() == before
-                    original = json.dumps(corrupt, sort_keys=True)
-                    fault = Reconciler().audit(corrupt)
-                    assert fault["exception_counts"] == {**expected_exceptions, **additions}, fault
-                    assert json.dumps(corrupt, sort_keys=True) == original
+                    source_fault_capture(additions)
                     captures += 1
                 with setup.cursor() as writer:
                     writer.execute("UPDATE economic_accounting_operation SET source_event=%s WHERE operation_id=%s",
@@ -577,6 +579,35 @@ try:
                 assert capture(audit, LINEAGE, EPOCH) == snapshot
             assert captures == 27
             print("SQL source grammar: 27 corrupt cuts, selected money/UID and prior epoch; all tables unchanged, rollback/close passed", flush=True)
+            policy_captures = 0
+            for source_root, original_reason, tested_reason, allowed_kind, valid_source, additions in (
+                    (root, 3, 3, 16, source, {"unauthorized_source_kind": 1, "unauthorized_source_claim": 1}),
+                    (creation_root, 33, 43, 18, creation_source_event, {"unauthorized_source_kind": 1,
+                        "unauthorized_source_claim": 1, "unauthorized_lineage_uid_source": 1}),
+                    (prior_root, 3, 3, 16, prior_source, {"unauthorized_source_claim": 1})):
+                with setup.cursor() as writer:
+                    writer.execute("UPDATE economic_accounting_operation SET reason=%s WHERE operation_id=%s",
+                                   (tested_reason, source_root))
+                assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == expected_exceptions
+                for kind in range(1, 24):
+                    if kind == allowed_kind:
+                        continue
+                    invalid_source = bytes.fromhex(source_identity(kind=kind, identity="da"))
+                    with setup.cursor() as writer:
+                        writer.execute("UPDATE economic_accounting_operation SET source_event=%s WHERE operation_id=%s",
+                                       (invalid_source, source_root))
+                        writer.execute("UPDATE economic_accounting_source_claim SET source_event=%s WHERE operation_id=%s",
+                                       (invalid_source, source_root))
+                    source_fault_capture(additions)
+                    policy_captures += 1
+                with setup.cursor() as writer:
+                    writer.execute("UPDATE economic_accounting_operation SET reason=%s,source_event=%s WHERE operation_id=%s",
+                                   (original_reason, valid_source, source_root))
+                    writer.execute("UPDATE economic_accounting_source_claim SET source_event=%s WHERE operation_id=%s",
+                                   (valid_source, source_root))
+                assert capture(audit, LINEAGE, EPOCH) == snapshot
+            assert policy_captures == 66
+            print("SQL source policy: 66 mismatched-kind cuts, selected money/UID and prior epoch; all tables unchanged, rollback/close passed", flush=True)
             # Root-scoped joins used to hide these real native-SQL corruptions.
             # A SELECT-only audit must expose every family without modifying it.
             orphan = bytes.fromhex("01" * 16)
@@ -1338,9 +1369,12 @@ try:
             assert cross_epoch["lineage_missing_required_source_event"] == 1
             for reason in (24, 27):
                 with setup.cursor() as cursor:
+                    priced_source = bytes.fromhex(source_identity(kind=17 if reason == 24 else 13, identity="bb"))
                     cursor.execute("UPDATE economic_accounting_operation "
-                                   "SET reason=%s,realized_price_copper=125 "
-                                   "WHERE operation_id=%s", (reason, root))
+                                   "SET reason=%s,source_event=%s,realized_price_copper=125 "
+                                   "WHERE operation_id=%s", (reason, priced_source, root))
+                    cursor.execute("UPDATE economic_accounting_source_claim SET source_event=%s WHERE operation_id=%s",
+                                   (priced_source, root))
                 priced_snapshot = capture(audit, LINEAGE, EPOCH)
                 assert priced_snapshot["native"]["realized_price_coverage"] == {
                     "column_available": True, "candidate_rows": 1,
