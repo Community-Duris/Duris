@@ -19,7 +19,8 @@ import sys
 MAX_INPUT_BYTES = 32 * 1024 * 1024
 MAX_ROWS = 100_000
 MAX_OUTPUT_ROWS = 100
-ORDINARY_KINDS = {1, 2, 3, 4, 5, 6}
+MAPPED_KINDS = {1, 2, 3, 4, 5, 6}
+ORDINARY_KINDS = MAPPED_KINDS | {11}
 UNITS = (1, 10, 100, 1000)
 HEX_ID = re.compile(r"[0-9a-f]{32}\Z")
 HEX_SOURCE_EVENT = re.compile(r"[0-9a-f]{96}\Z")
@@ -82,7 +83,7 @@ def account_key(value: object) -> tuple[str, int, int, int]:
     kind = int.from_bytes(raw[18:20], "little")
     identity = int.from_bytes(raw[20:28], "little")
     context = int.from_bytes(raw[28:36], "little")
-    if raw[16:18] != b"\x01\x00" or raw[36:] != bytes(4) or not 1 <= kind <= 10 or not identity:
+    if raw[16:18] != b"\x01\x00" or raw[36:] != bytes(4) or not 1 <= kind <= 11 or not identity:
         raise SnapshotError("invalid account key")
     return raw[:16].hex(), kind, identity, context
 
@@ -889,7 +890,7 @@ class Reconciler:
             creator_id = mapping.get("creating_operation_id")
             if (type(mapping_id) is not int or not 0 < mapping_id < 2**64 or
                     mapping_id in seen_mapping_ids or type(kind) is not int or
-                    kind not in ORDINARY_KINDS or type(context) is not int or
+                    kind not in MAPPED_KINDS or type(context) is not int or
                     not 0 <= context < 2**64 or
                     type(native_id) is not int or not 0 < native_id < 2**64 or
                     (active_native_id is not None and
@@ -1237,7 +1238,7 @@ class Reconciler:
             if (type(mapping_id) is not int or not 0 < mapping_id < 2**64 or
                     type(native_id) is not int or not 0 < native_id < 2**64 or
                     active_native_id is not None or identity != mapping_id or
-                    kind not in ORDINARY_KINDS or key_lineage != lineage or
+                    kind not in MAPPED_KINDS or key_lineage != lineage or
                     (operation_lineage is not None and
                      (not isinstance(operation_lineage, str) or
                       not HEX_ID.fullmatch(operation_lineage))) or
@@ -1313,7 +1314,8 @@ class Reconciler:
             raise SnapshotError("mapping retirement coverage mismatch")
         for (key,), origin in origins.items():
             operation_id = origin.get("retired_by")
-            if operation_id and (operation_id, key) not in current_epoch_retirements:
+            if (operation_id and account_key(key)[1] in MAPPED_KINDS and
+                    (operation_id, key) not in current_epoch_retirements):
                 if (operation_id,) in operations:
                     self.emit("missing_retired_mapping_evidence", operation_id=operation_id,
                               account_key=key)
