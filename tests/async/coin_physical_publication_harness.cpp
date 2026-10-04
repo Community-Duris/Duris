@@ -284,6 +284,8 @@ int main(int argc, char **argv)
 		result.piles[1].max_item_revision++;
 	if (scenario == "literal_conflict")
 		money.name = const_cast<char *>("changed literal");
+	if (scenario == "pickup_opening_weight")
+		++money.weight;
 	if (scenario == "object_cycle")
 		money.next = &money;
 	if (scenario == "duplicate_uid")
@@ -333,7 +335,7 @@ int main(int argc, char **argv)
 			     scenario == "wrong_actor" || scenario == "wrong_placement" ||
 			     scenario == "stale_item" || scenario == "masked_blob" ||
 			     scenario == "malformed_result" || scenario == "literal_conflict" ||
-			     scenario == "object_cycle";
+			     scenario == "object_cycle" || scenario == "pickup_opening_weight";
 	bool okay = check(first != refused, "first publication matches required retention");
 	if (scenario == "reentry")
 		okay &= check(
@@ -368,6 +370,17 @@ int main(int argc, char **argv)
 	if (refused && !uncertain)
 		okay &= check(!placements && !extractions && !materializations && !amounts,
 			      "admission proof failure preserves native effects");
+	if (scenario == "pickup_opening_weight")
+	{
+		item_ownership_runtime_entry opening = {};
+		okay &= check(
+			money.weight == 1 && money.value[0] == 4 &&
+				item_ownership_runtime_lookup(money.obj_uid, &opening) &&
+				opening.item_revision == 1 && opening.owner_revision == 1 &&
+				opening.state == item_custody_state::active &&
+				item_owner_identity_equal(opening.owner, room_owner),
+			"corrupt opening weight refuses before native denomination or custody mutation");
+	}
 	coin_physical_publication_release(id);
 	str_free(money.description);
 	str_free(money.short_description);
