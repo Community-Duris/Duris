@@ -27,6 +27,7 @@
 #include "sql/sql_telemetry_connection.h"
 #include "sql/sql_exclusion_guard.h"
 #include "sql/sql_economic_runtime.h"
+#include "player/player_save_replay_ownership.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "sql/sql_pool.h"
@@ -4868,6 +4869,9 @@ bool sql_verify_auction_engines(void)
 bool sql_pwipe(int code_verify)
 {
 	pwipe_crossed_boundary = false;
+	// Season reset must not erase player authority retained by recovery owners.
+	if (player_save_execution_guard::current_ownership_epoch())
+		return false;
 	logit(LOG_DEBUG, "sql_pwipe: STARTED!");
 	if (code_verify == 1723699)
 	{

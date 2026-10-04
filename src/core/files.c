@@ -2164,6 +2164,9 @@ character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)
 {
 	if (!ch || !GET_NAME(ch) || GET_PID(ch) <= 0)
 		return character_delete_result::refused;
+	// Deletion has no ownership handoff yet; do not discard a held save lifetime.
+	if (player_save_execution_guard::current_ownership_epoch())
+		return character_delete_result::refused;
 	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 	{
 		if (!bDeleteLocker)

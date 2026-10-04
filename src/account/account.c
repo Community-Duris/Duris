@@ -54,6 +54,7 @@
 #include "player/player_load_pipeline.h"
 #include "player/player_revision_state.h"
 #include "player/player_save_pipeline.h"
+#include "player/player_save_replay_ownership.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/critical_outbox.h"
 #include "persistence/locker_async.h"
@@ -3609,6 +3610,15 @@ void verify_delete_account(P_desc d, char *arg)
 	if (strcmp(arg, d->account->acct_name))
 	{
 		SEND_TO_Q("\r\nThe account name did not match exactly.\r\n", d);
+		display_account_deletion_confirmation(d, fenced);
+		return;
+	}
+	// Refuse before persisting an irreversible fence or closing other sessions.
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		SEND_TO_Q("\r\nAccount deletion is currently unavailable. Please retry later "
+			  "or contact an immortal.\r\n",
+			  d);
 		display_account_deletion_confirmation(d, fenced);
 		return;
 	}
