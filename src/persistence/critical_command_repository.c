@@ -13,6 +13,7 @@
 #include "economy/coin_transfer_accounting.h"
 #include "economy/item_transfer_accounting.h"
 #include "persistence/economic_sql_item_transfer_transaction.h"
+#include "persistence/sql_room_item_payload.h"
 #include "persistence/corpse_lifecycle_command.h"
 #include "persistence/corpse_lifecycle_repository.h"
 #include "persistence/critical_outbox.h"
@@ -3226,6 +3227,109 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 	return stored_result(stored.result_code ? critical_apply_outcome::terminal_failure :
 						  critical_apply_outcome::already_applied,
 			     stored);
+}
+
+critical_apply_result critical_command_repository_verify_ordinary_drop_in_transaction(
+	MYSQL *connection, const critical_command &command) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	return { critical_apply_outcome::terminal_failure, 0, ENOTSUP };
+#else
+	try
+	{
+		last_statement_error = 0;
+		item_transfer_payload payload{};
+		sql_room_item_payload_batch literals;
+		if (!connection || !command.publication_required ||
+		    command.type != critical_command_type::item_transfer ||
+		    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+			return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+		// This existing boolean validator also returns false on allocation
+		// failure. Do not turn an unproven classification into a durable reject.
+		if (!item_transfer_accounting_command_supported(command))
+			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+		if (!item_transfer_command_decode_payload(command, &payload))
+			return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+		// Nested codecs can flatten allocation failure to EBADMSG. Treat an
+		// opaque capture refusal as unavailable proof, never a durable reject.
+		if (!sql_room_item_payload_capture(payload, &literals))
+			return { critical_apply_outcome::retryable_failure, 0,
+				 errno ? static_cast<unsigned int>(errno) : EAGAIN };
+		if (!root_transaction_active(connection))
+			return { critical_apply_outcome::terminal_failure, 0, EBUSY };
+		unsigned long session = 0;
+		auto error = accounted_session_check(connection, &session, false);
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return { critical_apply_outcome::retryable_failure, 0, error };
+
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash{}, keys_hash{};
+		stored_operation stored{};
+		bool found = false;
+		if (!command_hashes(command, &command_hash, &keys_hash) ||
+		    !read_operation(connection, command.operation_id, false, &stored, &found))
+			return { critical_apply_outcome::retryable_failure, 0,
+				 database_error(connection) ? database_error(connection) : ENOMEM };
+		if (!found || stored.status != INBOX_COMMITTED)
+			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+		if (!identity_matches(stored, command, command_hash, keys_hash))
+			return { critical_apply_outcome::terminal_failure, 0, EEXIST };
+		if (stored.result_code ||
+		    stored.failure_stage != static_cast<uint16_t>(critical_failure_stage::none))
+			return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+
+		item_transfer_result result{};
+		if (!item_transfer_command_decode_result(stored.result_payload.data(),
+							 stored.result_payload.size(), &result) ||
+		    result.root_item_uid != payload.selected_item_uid ||
+		    result.item_count != payload.item_count || result.corpse_revision ||
+		    result.collector_catalog_changed ||
+		    payload.expected_from_revision == std::numeric_limits<uint64_t>::max() ||
+		    payload.expected_to_revision == std::numeric_limits<uint64_t>::max() ||
+		    result.from_owner_revision != payload.expected_from_revision + 1 ||
+		    result.to_owner_revision != payload.expected_to_revision + 1)
+			return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+		uint64_t maximum_revision = 0;
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const auto expected = payload.items[index].expected_item_revision;
+			if (expected == std::numeric_limits<uint64_t>::max())
+				return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+			maximum_revision = std::max(maximum_revision, expected + 1);
+		}
+		if (!maximum_revision || result.max_item_revision != maximum_revision ||
+		    stored.durable_revision !=
+			    std::max({ result.from_owner_revision, result.to_owner_revision,
+				       maximum_revision }))
+			return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+
+		// The caller has already locked current native authority in its native
+		// order. This adds historical payload proof without a late inbox lock.
+		error = economic_sql_item_transfer_verify_retained(connection, command, 0,
+								   stored.result_payload.data(),
+								   stored.result_payload.size());
+		if (!error)
+			error = verify_accounted_root_outbox(connection, command, 0,
+							     stored.result_payload.data(),
+							     stored.result_payload.size());
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return { critical_apply_outcome::retryable_failure, 0, error };
+		return stored_result(critical_apply_outcome::already_applied, stored);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
+	}
+	catch (...)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, EFAULT };
+	}
+#endif
 }
 
 critical_apply_result
