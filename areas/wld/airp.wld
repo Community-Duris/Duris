@@ -928,7 +928,7 @@ S
 ~
 1316 176197640 19 0
 D1
-&+C   A door made of mist and smoke obscures the way to the west.
+&+C   A door made of mist and smoke obscures the way to the east.
 ~
 mist door~
 1 0 131627
@@ -4987,7 +4987,7 @@ S
 #131740
 &+LA Prison of &+CForce~
 &+L   This large room looks to be the guards room to a prision. To the north
-&+Land west are to large cells that seem to have large bars of force that stop
+&+Land south are to large cells that seem to have large bars of force that stop
 &+Lanything from passing either way. A large keyhole is on both of them that
 &+Lwill open them. Besides the locks there is nothing excpet the smoke that
 &+Lis everywhere else. The visibility is better here but still limited to at most
