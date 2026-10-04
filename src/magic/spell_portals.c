@@ -21,8 +21,6 @@ int portal_id;
 struct portal_data
 {
 	int pid;
-	P_obj port1;
-	P_obj port2;
 	bool oneway;
 };
 
@@ -313,15 +311,6 @@ bool can_do_general_portal(int /*level*/, P_char ch, P_char victim,
 		return FALSE;
 	}
 
-	/* We are allowing non-raidable ppl to port again. - Lohrr 7/29/2012
-	  if((ch && !is_Raidable(ch, 0, 0)) ||
-	     (victim && !is_Raidable(victim, 0, 0)))
-	  {
-	    send_to_char("&+WYou or your target is not raidable. The spell fails!\r\n", ch);
-	    return false;
-	  }
-	*/
-
 	return TRUE;
 }
 
@@ -329,7 +318,6 @@ static void event_portal_owner_check(P_char /*ch*/, P_char /*vict*/, P_obj obj, 
 {
 	struct portal_data *pdata = (struct portal_data *)data;
 	P_char caster;
-	P_obj portal1, portal2;
 
 	if (!pdata)
 	{
@@ -338,21 +326,15 @@ static void event_portal_owner_check(P_char /*ch*/, P_char /*vict*/, P_obj obj, 
 	}
 
 	caster = find_player_by_pid(pdata->pid);
-	portal1 = pdata->port1;
-	portal2 = pdata->port2;
-
 	if (!caster)
 	{
 		Decay(obj);
 		return;
 	}
-	if (!pdata->oneway &&
-	    ((portal1->loc.room != caster->in_room) && (portal2->loc.room != caster->in_room)))
-	{
-		Decay(obj);
-		return;
-	}
-	if (pdata->oneway && (portal1->loc.room != caster->in_room))
+	// The event owns obj, but the opposite object may already have decayed.
+	// Its destination records the other end without dereferencing a stale pointer.
+	if (!OBJ_ROOM(obj) || (obj->loc.room != caster->in_room &&
+			       (pdata->oneway || real_room(obj->value[0]) != caster->in_room)))
 	{
 		Decay(obj);
 		return;
@@ -521,14 +503,12 @@ bool spell_general_portal(int /*level*/, P_char ch, P_char victim, struct portal
 	if (IS_PC(ch) && (settings->R_num != 752))
 	{
 		pdata.pid = GET_PID(ch);
-		pdata.port1 = portal1;
-		if (!isOneWay)
-			pdata.port2 = portal2;
 		pdata.oneway = isOneWay;
 		add_event(event_portal_owner_check, WAIT_SEC, 0, 0, portal1, 0, &pdata,
 			  sizeof(pdata));
-		add_event(event_portal_owner_check, WAIT_SEC, 0, 0, portal2, 0, &pdata,
-			  sizeof(pdata));
+		if (portal2)
+			add_event(event_portal_owner_check, WAIT_SEC, 0, 0, portal2, 0, &pdata,
+				  sizeof(pdata));
 	}
 
 	return TRUE;

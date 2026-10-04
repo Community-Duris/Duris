@@ -47,7 +47,7 @@ belongs to the wearer, so transferring an item does not transfer another
 character's cast or equipment affect history.
 
 Renewals replace the equipment pool every half of its full original duration,
-including an active weakened pool. Damage and manual casts never move this
+including an active weakened pool. Damage, dispels, and manual casts never move this
 deadline. A broken pool remains down until that deadline or an independent
 manual cast. Missed renewals produce a single fresh pool. Untouched equipment
 stays protective across renewals. The Vapor callback is treated as an equipment
@@ -57,9 +57,27 @@ Bard Protection retains its existing missing-effect reapplication rule and uses
 the same finite cast pool. NPC-native flags, including elite dispel suppression,
 retain their existing behavior. NPC attack selection can choose spells that wear
 down finite player wards; prediction queries do not mutate their state.
-Equipment affects cannot be removed through ordinary spell dispelling; cast
-affects remain dispellable. Existing spell-save bonuses and spirit partial
-reductions apply while their corresponding ward is active.
+Existing spell-save bonuses and spirit partial reductions apply while their
+corresponding ward is active.
+
+Dispel Magic checks each active cast and equipment ward separately. A successful
+check removes a cast ward or breaks an equipment ward immediately. The equipment
+pool keeps its original renewal deadline, so recalculating affects, swapping
+items, and item callbacks cannot restore it early. Broken and unequipped pools
+are skipped without saving throws or wear rolls.
+
+A ward that saves or resists its check still loses capacity and proportional
+remaining duration, using the same consumption calculation as intercepted spell
+damage. Each failed check rolls the base Burning Hands amount, the comparable
+second-circle spell: `4 * dice(5 + abs(level) / 10, 6)`, with level magnitude
+bounded to 1 through 255. At level 56 this averages 140 capacity per attempted
+ward. This wear can exhaust a ward but never spills over into hit-point damage.
+The caster, target, and room receive a message naming the ward and source and
+saying whether it was dispelled, weakened, or broken. Partial wear does not print
+the generic total-failure message. These rules apply to all four finite player
+ward kinds, including ordinary casts and Group Globe.
+See [Dispel Magic](DISPEL_MAGIC.md) for ordinary timed spells, magical barriers,
+and their balance rules.
 
 SQL saves, pfiles, and copyover retain capacity, source identity, broken state,
 and relative deadlines. Offline time is paused. Managed pfile durations use
