@@ -76,24 +76,28 @@ struct reader
 	critical_operation_id id() { return { fixed<16>() }; }
 	void done() { need(offset == data.size()); }
 };
-bytes envelope(const char *magic, const bytes &body)
+bytes envelope(const char *magic, const bytes &body, uint32_t version = 1)
 {
 	need(body.size() + 48 <= FLATFILE_ECONOMIC_METADATA_MAX_BYTES, ENOSPC);
 	bytes out;
 	raw(out, { reinterpret_cast<const uint8_t *>(magic), 8 });
-	number(out, 1, 4);
+	number(out, version, 4);
 	number(out, body.size(), 4);
 	raw(out, hash(body));
 	raw(out, body);
 	return out;
 }
-reader unwrap(const bytes &encoded, const char *magic)
+reader unwrap(const bytes &encoded, const char *magic, uint32_t *catalog_version = nullptr)
 {
 	need(encoded.size() >= 48 && encoded.size() <= FLATFILE_ECONOMIC_METADATA_MAX_BYTES);
 	reader in{ encoded };
 	auto prefix = in.take(8);
 	need(!memcmp(prefix.data(), magic, 8));
-	need(in.number(4) == 1 && in.number(4) == encoded.size() - 48);
+	const auto version = in.number(4);
+	need((version == 1 || (catalog_version && version == 2)) &&
+	     in.number(4) == encoded.size() - 48);
+	if (catalog_version)
+		*catalog_version = version;
 	auto digest = in.fixed<32>();
 	auto body = in.take(encoded.size() - 48);
 	need(digest == hash(body));
@@ -229,7 +233,7 @@ flatfile_economic_control decode_control(const bytes &encoded)
 	validate_control(value);
 	return value;
 }
-void validate_epochs(const epochs &values)
+void validate_epochs(const critical_operation_id &lineage, const epochs &values)
 {
 	need(values.size() <= FLATFILE_ECONOMIC_MAX_EPOCHS, ENOSPC);
 	std::set<std::array<uint8_t, 16>> identities;
@@ -241,12 +245,27 @@ void validate_epochs(const epochs &values)
 		     value.transition_kind && value.transition_digest != economic_digest{} &&
 		     value.ordinal == i + 1 && value.predecessor.bytes == previous.bytes &&
 		     identities.insert(value.epoch.bytes).second);
+		const auto state = value.baseline_initialization;
+		need(state == flatfile_baseline_initialization::legacy_unknown ||
+		     state == flatfile_baseline_initialization::never_initialized ||
+		     state == flatfile_baseline_initialization::initialized);
+		if (state == flatfile_baseline_initialization::initialized)
+			need(nonzero(value.baseline_initializing_operation) &&
+			     economic_account_key_valid(value.baseline_opening) &&
+			     value.baseline_opening.kind == economic_account_kind::opening &&
+			     value.baseline_opening.lineage.bytes == lineage.bytes);
+		else
+			need(!nonzero(value.baseline_initializing_operation) &&
+			     !nonzero(value.baseline_opening.lineage) &&
+			     value.baseline_opening.kind == economic_account_kind{} &&
+			     !value.baseline_opening.authority_id &&
+			     !value.baseline_opening.context_id);
 		previous = value.epoch;
 	}
 }
 bytes encode_epochs(const critical_operation_id &lineage, const epochs &values)
 {
-	validate_epochs(values);
+	validate_epochs(lineage, values);
 	bytes out;
 	raw(out, lineage.bytes);
 	number(out, values.size(), 4);
@@ -260,17 +279,27 @@ bytes encode_epochs(const critical_operation_id &lineage, const epochs &values)
 		number(out, 0, 6);
 		raw(out, value.transition_digest);
 		raw(out, value.creating_operation.bytes);
+		number(out, static_cast<uint8_t>(value.baseline_initialization), 1);
+		number(out, 0, 7);
+		raw(out, value.baseline_initializing_operation.bytes);
+		std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES> opening = {};
+		if (value.baseline_initialization == flatfile_baseline_initialization::initialized)
+			need(economic_account_key_encode(value.baseline_opening, &opening) ==
+			     economic_accounting_error::ok);
+		raw(out, opening);
 	}
-	return envelope("DURECE1", out);
+	return envelope("DURECE1", out, 2);
 }
 epochs load_epochs(const std::string &root, const flatfile_economic_control &control)
 {
 	auto encoded = read_file(root, "epochs.eae");
 	need(hash(encoded) == control.epochs_digest);
-	auto in = unwrap(encoded, "DURECE1");
+	uint32_t version = 0;
+	auto in = unwrap(encoded, "DURECE1", &version);
 	need(in.id().bytes == control.lineage.bytes);
 	auto count = in.number(4);
-	need(count == control.epoch_count && in.number(4) == 0);
+	need(count == control.epoch_count && count <= FLATFILE_ECONOMIC_MAX_EPOCHS &&
+	     in.number(4) == 0 && in.data.size() == 24 + count * (version == 1 ? 96 : 160));
 	epochs values;
 	values.reserve(count);
 	for (size_t i = 0; i < count; ++i)
@@ -283,10 +312,26 @@ epochs load_epochs(const std::string &root, const flatfile_economic_control &con
 		need(in.number(6) == 0);
 		value.transition_digest = in.fixed<32>();
 		value.creating_operation = in.id();
+		if (version == 2)
+		{
+			value.baseline_initialization =
+				static_cast<flatfile_baseline_initialization>(in.number(1));
+			need(in.number(7) == 0);
+			value.baseline_initializing_operation = in.id();
+			auto opening = in.take(ECONOMIC_ACCOUNT_KEY_BYTES);
+			if (value.baseline_initialization ==
+			    flatfile_baseline_initialization::initialized)
+				need(economic_account_key_decode(opening,
+								 &value.baseline_opening) ==
+				     economic_accounting_error::ok);
+			else
+				need(std::all_of(opening.begin(), opening.end(),
+						 [](uint8_t byte) { return byte == 0; }));
+		}
 		values.push_back(value);
 	}
 	in.done();
-	validate_epochs(values);
+	validate_epochs(control.lineage, values);
 	need(values.empty() || values.back().epoch.bytes == control.last_epoch.bytes);
 	return values;
 }
@@ -1112,11 +1157,57 @@ unsigned int flatfile_accounting_authority_storage::append_epoch(
 			changing(control, expected, epoch.creating_operation);
 			auto values = load_epochs(root, control);
 			need(values.size() < FLATFILE_ECONOMIC_MAX_EPOCHS, ENOSPC);
-			values.push_back(epoch);
+			// Callers cannot supply an initialized marker or invent its proof.
+			need(epoch.baseline_initialization ==
+					     flatfile_baseline_initialization::legacy_unknown &&
+				     !nonzero(epoch.baseline_initializing_operation) &&
+				     !nonzero(epoch.baseline_opening.lineage) &&
+				     epoch.baseline_opening.kind == economic_account_kind{} &&
+				     !epoch.baseline_opening.authority_id &&
+				     !epoch.baseline_opening.context_id,
+			     EINVAL);
+			auto appended = epoch;
+			appended.baseline_initialization =
+				flatfile_baseline_initialization::never_initialized;
+			values.push_back(appended);
 			auto encoded = encode_epochs(control.lineage, values);
 			control.epoch_count = values.size();
 			control.last_epoch = epoch.epoch;
 			control.active_epoch = {};
+			control.epochs_digest = hash(encoded);
+			finish(control, { { "epochs.eae", std::move(encoded) } }, out);
+		},
+		error);
+}
+unsigned int flatfile_accounting_authority_storage::stage_baseline_initialization(
+	const std::string &root, const flatfile_authority_lock &lock, uint64_t expected,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const economic_account_key &opening, const critical_operation_id &operation,
+	operations *out, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			recover(root, lock);
+			need(out && nonzero(lineage) && nonzero(epoch) &&
+				     economic_account_key_valid(opening) &&
+				     opening.kind == economic_account_kind::opening &&
+				     opening.lineage.bytes == lineage.bytes,
+			     EINVAL);
+			auto control = load_control(root);
+			need(control.lineage.bytes == lineage.bytes, ESTALE);
+			changing(control, expected, operation);
+			auto values = load_epochs(root, control);
+			auto at = std::find_if(values.begin(), values.end(), [&](const auto &value)
+					       { return value.epoch.bytes == epoch.bytes; });
+			need(at != values.end(), ENODATA);
+			need(at->baseline_initialization ==
+				     flatfile_baseline_initialization::never_initialized,
+			     EILSEQ);
+			at->baseline_initialization = flatfile_baseline_initialization::initialized;
+			at->baseline_initializing_operation = operation;
+			at->baseline_opening = opening;
+			auto encoded = encode_epochs(control.lineage, values);
 			control.epochs_digest = hash(encoded);
 			finish(control, { { "epochs.eae", std::move(encoded) } }, out);
 		},

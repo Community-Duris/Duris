@@ -166,19 +166,23 @@ bytes encode(const head &value)
 		raw(body, digest);
 	return envelope("DUREBC1", body);
 }
-void membership(const std::string &root, const flatfile_authority_lock &lock,
-		const critical_operation_id &lineage, const critical_operation_id &epoch)
+flatfile_economic_epoch membership(const std::string &root, const flatfile_authority_lock &lock,
+				   const critical_operation_id &lineage,
+				   const critical_operation_id &epoch)
 {
 	flatfile_economic_control control;
 	authority(flatfile_economic_control_read(root, lock, &control, nullptr));
 	need(control.lineage.bytes == lineage.bytes);
 	flatfile_economic_epoch retained;
 	authority(flatfile_economic_epoch_read(root, lock, lineage, epoch, &retained, nullptr));
+	return retained;
 }
 head load(const std::string &root, const flatfile_authority_lock &lock,
 	  const critical_operation_id &lineage, const critical_operation_id &epoch)
 {
-	membership(root, lock, lineage, epoch);
+	const auto retained = membership(root, lock, lineage, epoch);
+	need(retained.baseline_initialization !=
+	     flatfile_baseline_initialization::never_initialized);
 	auto encoded = read(root, prefix(lineage, epoch) + "head.ebc", 656);
 	auto in = unwrap(encoded, "DUREBC1");
 	head value;
@@ -194,6 +198,14 @@ head load(const std::string &root, const flatfile_authority_lock &lock,
 	     value.opening.kind == economic_account_kind::opening &&
 	     value.opening.lineage.bytes == lineage.bytes &&
 	     !critical_operation_id_is_zero(value.last_operation));
+	if (retained.baseline_initialization == flatfile_baseline_initialization::initialized)
+	{
+		need(economic_account_key_equal(value.opening, retained.baseline_opening));
+		if (!value.revision)
+			need(value.last_operation.bytes ==
+			     retained.baseline_initializing_operation.bytes);
+	}
+	// Legacy v1 may be read structurally; it cannot prove a new initialization.
 	return value;
 }
 struct reservation
@@ -404,11 +416,31 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::initialize(
 			     opening.kind == economic_account_kind::opening &&
 			     opening.lineage.bytes == lineage.bytes &&
 			     !critical_operation_id_is_zero(creating_operation));
+			const auto retained = membership(root, lock, lineage, epoch);
+			if (retained.baseline_initialization ==
+			    flatfile_baseline_initialization::initialized)
+			{
+				need(retained.baseline_initializing_operation.bytes ==
+						     creating_operation.bytes &&
+					     economic_account_key_equal(retained.baseline_opening,
+									opening),
+				     status::conflict);
+				const auto book = load(root, lock, lineage, epoch);
+				for (size_t slot = 0; slot < FLATFILE_BASELINE_BUCKETS; ++slot)
+				{
+					const auto entries = load(root, book, slot);
+					need(book.revision || entries.empty());
+				}
+				throw failure{ status::already_exists };
+			}
+			need(retained.baseline_initialization ==
+			     flatfile_baseline_initialization::never_initialized);
 			room(*ops);
-			need(ops->size() + FLATFILE_BASELINE_BUCKETS + 1 <=
+			need(ops->size() + FLATFILE_BASELINE_BUCKETS + 3 <=
 				     flatfile_authority_transaction_maximum_operations,
 			     status::capacity);
-			membership(root, lock, lineage, epoch);
+			flatfile_economic_control control;
+			authority(flatfile_economic_control_read(root, lock, &control, nullptr));
 			const auto base = prefix(lineage, epoch);
 			empty_namespace(root, base);
 			head book{ lineage, epoch, creating_operation, opening, 0, {} };
@@ -420,6 +452,11 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::initialize(
 				append(result, index_name(base, slot), std::move(encoded));
 			}
 			append(result, base + "head.ebc", encode(book));
+			// Marker, catalog hash and complete empty book publish atomically.
+			authority(
+				flatfile_accounting_authority_storage::stage_baseline_initialization(
+					root, lock, control.revision, lineage, epoch, opening,
+					creating_operation, &result, error));
 			room(result);
 			*ops = std::move(result);
 		},
@@ -445,6 +482,10 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::stage(
 			if (existing == status::ok)
 				throw failure{ status::already_exists };
 			need(existing == status::not_found, existing);
+			const auto retained_epoch =
+				membership(root, lock, plan.metadata.lineage, plan.metadata.epoch);
+			need(retained_epoch.baseline_initialization ==
+			     flatfile_baseline_initialization::initialized);
 			auto book = load(root, lock, plan.metadata.lineage, plan.metadata.epoch);
 			need(economic_account_key_equal(book.opening,
 							prepared.witness().opening_account));

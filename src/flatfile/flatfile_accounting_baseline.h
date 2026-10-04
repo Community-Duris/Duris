@@ -30,9 +30,11 @@ class flatfile_accounting_baseline_storage
 #ifdef DURIS_FLATFILE_ACCOUNTING_TEST
 	friend class flatfile_accounting_test_access;
 #endif
-	// Requires retained lineage/epoch membership and no files in this epoch's
-	// baseline namespace. Caller must prove never initialized; absence alone
-	// cannot establish that fact after an incomplete restore or deletion.
+	// Requires native catalog proof of never initialized and an empty epoch
+	// namespace. Stages all nineteen book/index/catalog/control after-images
+	// together. Exact initialized retry verifies retained identity and complete
+	// indexes and returns already_exists. Missing initialized files and unknown
+	// v1 history fail closed; absence alone is never initialization authority.
 	static flatfile_accounting_status
 	initialize(const std::string &, const flatfile_authority_lock &,
 		   const critical_operation_id &lineage, const critical_operation_id &epoch,
