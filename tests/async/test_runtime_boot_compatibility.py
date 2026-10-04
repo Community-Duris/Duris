@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from _paths import SRC
+from _paths import SRC, extract_function
 import json
 import re
 import subprocess
@@ -70,7 +70,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         """
         report = runtime.validate()
         # Includes death evidence/recovery, SQL lifecycle, and identity review tables.
-        self.assertEqual(report["current_table_count"], 262)
+        self.assertEqual(report["current_table_count"], 263)
         for table in ("player_death_disposition", "player_death_custody",
                       "player_death_conflict_evidence"):
             self.assertIn("'" + table + "'", self.header)
@@ -119,20 +119,26 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         import tempfile
         from unittest import mock
         value = runtime.load()
-        self.assertEqual(value["migration_head"]["sequence"], 67)
-        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 67)
+        self.assertEqual(value["migration_head"]["sequence"], 70)
+        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 70)
         self.assertEqual(value["staging_0045_migration_head"]["id"],
                          "0067_telemetry_typed_control")
         self.assertNotEqual(value["migration_head"]["history_checksum"],
                             value["staging_0045_migration_head"]["history_checksum"])
-        self.assertEqual(value["master_0031_migration_head"]["sequence"], 67)
+        self.assertEqual(value["master_0031_migration_head"]["sequence"], 70)
         self.assertEqual(value["master_0031_migration_head"]["id"],
                          "0067_telemetry_typed_control")
-        self.assertEqual(len({value[field]["history_checksum"] for field in (
-            "migration_head", "staging_0045_migration_head", "master_0031_migration_head")}), 3)
+        retained_telemetry = ("telemetry_0067_migration_head",
+            "telemetry_0067_staging_0045_migration_head", "telemetry_0067_master_0031_migration_head")
+        for field in retained_telemetry:
+            self.assertEqual(value[field]["sequence"], 70)
+            self.assertEqual(value[field]["id"], "0056_spell_ward_durability")
+        histories = ("migration_head", "staging_0045_migration_head",
+                     "master_0031_migration_head", *retained_telemetry)
+        self.assertEqual(len({value[field]["history_checksum"] for field in histories}), 6)
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "runtime.json"
-            for field in ("staging_0045_migration_head", "master_0031_migration_head",
+            for field in (*histories,
                           "migration_history_sql",
                           "extra_description_generation_sql"):
                 damaged = json.loads(json.dumps(value))
@@ -145,7 +151,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
                     with self.assertRaises(runtime.migration_runner.MigrationContractError):
                         runtime.validate()
             header = Path(directory) / "runtime.h"
-            for field in ("staging_0045_migration_head", "master_0031_migration_head"):
+            for field in histories:
                 header.write_text(self.header.replace(value[field]["history_checksum"], "0" * 64))
                 with mock.patch.object(runtime, "HEADER", header):
                     with self.assertRaises(runtime.migration_runner.MigrationContractError):
@@ -174,10 +180,14 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
                          "critical_command_coordinator_init", "game_loop(port, sslport)"):
             self.assertIn(boundary, game)
 
-        game_loop = self.comm[self.comm.index("static bool run_connection_phase"):
-                              self.comm.index("bool runtime_listener_address")]
-        self.assertIn("redis_load_world_state", game_loop)
-        self.assertIn("drain_new_connections", game_loop)
+        game_loop = extract_function("net/comm.c", "void game_loop(")
+        network = extract_function("net/comm.c", "static bool service_network_turn(")
+        self.assertLess(game_loop.index("redis_load_world_state"),
+                        game_loop.index("run_connection_phase(context)"))
+        connections = extract_function("net/comm.c", "static bool run_connection_phase(")
+        self.assertIn("transport_world_pump", connections)
+        for listener in ("ctx.telnet_listener", "ctx.ssl_listener", "ctx.websocket_listener"):
+            self.assertIn("drain_new_connections(" + listener, network)
 
     def test_schema_fingerprint_and_redacted_reason_ids_are_enforced(self):
         self.assertIn("sql_verify_metadata_fingerprint", self.sql)

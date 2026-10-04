@@ -1,5 +1,7 @@
 #include "economy/boon.h"
 #include "flatfile/flatfile_account_delete.h"
+#include "flatfile/flatfile_accounting_authority.h"
+#include "flatfile/flatfile_accounting_store.h"
 #include "flatfile/flatfile_account_repository.h"
 #include "flatfile/flatfile_boon_repository.h"
 #include "flatfile/flatfile_character_delete.h"
@@ -19,12 +21,16 @@
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "flatfile/flatfile_world_item_repository.h"
 #include "flatfile/flatfile_world_quest_history.h"
+#include "flatfile/flatfile_zone_story_quest_state.h"
 #include "player/player_snapshot_codec.h"
 
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
+#include <fstream>
+#include <iterator>
+#include <map>
 #include <string>
 
 namespace fs = std::filesystem;
@@ -114,6 +120,12 @@ static void establish(const fs::path &root, bool establish_boons, bool player_lo
 	require(flatfile_world_quest_record(root.string().c_str(), 1, 3001, 50, 1700000000,
 					    &error) == flatfile_world_quest_result::ok,
 		"world-quest history baseline failed: " + error);
+	require(flatfile_zone_story_quest_state_save(
+			root.string().c_str(), 1,
+			"ZSQF|1\nN|1|1|506c61796572|1\nN|7|1|4f6c64416c696173|1\n"
+			"N|1|2|5365636f6e64|1\nN|1|99|556e72656c61746564|1\n",
+			&error) == flatfile_zone_story_quest_result::ok,
+		"zone-story aliases baseline failed: " + error);
 	require(flatfile_artifact_establish(
 			root.string(),
 			{ { 3001, true, FLATFILE_ARTIFACT_ON_PLAYER, 1, 9999, 1, 100, 1, 8888, 1 },
@@ -401,6 +413,247 @@ static void establish_minimal_account(const fs::path &root, bool owns_empty_lock
 	save_account(root, 2);
 }
 
+// Only this native test executable can prepare accounting control metadata.
+class flatfile_accounting_test_access
+{
+    public:
+	static constexpr auto bootstrap = &flatfile_accounting_authority_storage::bootstrap;
+	static constexpr auto append_epoch = &flatfile_accounting_authority_storage::append_epoch;
+	static constexpr auto select_epoch = &flatfile_accounting_authority_storage::select_epoch;
+	static auto commit(const std::string &root, const flatfile_authority_lock &lock,
+			   const std::vector<flatfile_authority_operation> &operations,
+			   std::string *error)
+	{
+		return flatfile_accounting_storage::commit(root, lock, operations, error);
+	}
+};
+
+using deletion_inventory = std::map<std::string, std::vector<char>>;
+static deletion_inventory deletion_contents(const fs::path &root)
+{
+	deletion_inventory result;
+	for (const auto &entry : fs::recursive_directory_iterator(root))
+	{
+		if (entry.is_directory())
+			continue;
+		require(entry.is_regular_file(), "unexpected deletion fixture file");
+		std::ifstream input(entry.path(), std::ios::binary);
+		require(bool(input), "cannot read deletion fixture");
+		result[fs::relative(entry.path(), root).generic_string()] = {
+			std::istreambuf_iterator<char>(input), {}
+		};
+		require(!input.bad(), "deletion fixture read failed");
+	}
+	return result;
+}
+
+static critical_operation_id deletion_id(uint8_t value)
+{
+	critical_operation_id result = {};
+	result.bytes[0] = value;
+	return result;
+}
+
+static void deletion_select(const fs::path &root, bool initialize, bool active)
+{
+	for (const auto &directory : { root / "economic-evidence", root / "accounting" })
+	{
+		fs::create_directories(directory);
+		fs::permissions(directory, fs::perms::owner_all, fs::perm_options::replace);
+	}
+	flatfile_authority_lock lock;
+	std::string error;
+	require(lock.acquire(root.string(), &error), "deletion control lock failed: " + error);
+	std::vector<flatfile_authority_operation> changes;
+	const auto commit = [&]
+	{
+		require(flatfile_accounting_test_access::commit(root.string(), lock, changes,
+								&error) ==
+				flatfile_authority_transaction_result::ok,
+			"deletion control commit failed: " + error);
+		changes.clear();
+	};
+	const auto revision = [&]
+	{
+		flatfile_economic_control control;
+		require(flatfile_economic_control_read(root.string(), lock, &control, &error) == 0,
+			"deletion control read failed: " + error);
+		return control.revision;
+	};
+	if (initialize)
+	{
+		require(flatfile_accounting_test_access::bootstrap(root.string(), lock,
+								   deletion_id(1), deletion_id(2),
+								   &changes, &error) == 0,
+			"deletion bootstrap failed: " + error);
+		commit();
+		flatfile_economic_epoch epoch;
+		epoch.epoch = deletion_id(3);
+		epoch.ordinal = 1;
+		epoch.creating_operation = deletion_id(4);
+		epoch.transition_kind = 1;
+		epoch.transition_digest[0] = 42;
+		require(flatfile_accounting_test_access::append_epoch(
+				root.string(), lock, revision(), epoch, &changes, &error) == 0,
+			"deletion epoch failed: " + error);
+		commit();
+	}
+	require(flatfile_accounting_test_access::select_epoch(root.string(), lock, revision(),
+							      active, deletion_id(active ? 5 : 6),
+							      &changes, &error) == 0,
+		"deletion selection failed: " + error);
+	commit();
+}
+
+static void accounting_deletion_refusals(const fs::path &base)
+{
+	const auto root = base / "accounting-delete";
+	establish(root, true);
+	save_account(root, 2);
+	deletion_select(root, true, true);
+	const auto before = deletion_contents(root);
+	{
+		flatfile_authority_lock lock;
+		std::string error;
+		require(lock.acquire(root.string(), &error), "domain delete lock failed");
+		flatfile_authority_operation operation;
+		operation.filename = "untouched";
+		require(flatfile_player_domain_prepare_remove(root.string(), lock, 1, &operation,
+							      &error) ==
+				flatfile_player_domain_result::conflict,
+			"active accounting admitted native player-money deletion");
+		require(operation.filename == "untouched",
+			"refused player deletion changed output");
+		std::vector<flatfile_authority_operation> operations = { operation };
+		require(flatfile_player_domain_prepare_account_remove(
+				root.string(), lock, "Account", &operations, &error) ==
+				flatfile_player_domain_result::conflict,
+			"active accounting admitted shared-bank deletion");
+		require(operations.size() == 1 && operations[0].filename == "untouched",
+			"refused account deletion changed output");
+	}
+	std::string error;
+	require(flatfile_character_delete(root.string(), 1, "Player", &error) ==
+			flatfile_character_delete_result::conflict,
+		"active accounting admitted character deletion");
+	require(flatfile_account_delete(root.string(), "Account", &error) ==
+			flatfile_account_delete_result::conflict,
+		"active accounting admitted account deletion");
+	require(before == deletion_contents(root),
+		"active deletion refusal changed native authority");
+
+	// Reopening the authority and retrying must retain the same refusal and bytes.
+	require(flatfile_character_delete(root.string(), 1, "Player", &error) ==
+			flatfile_character_delete_result::conflict,
+		"reopened character deletion did not refuse");
+	require(before == deletion_contents(root), "reopened deletion changed authority");
+	const auto control_path = root / "economic-evidence/authority.eal";
+	const auto control = before.at("economic-evidence/authority.eal");
+	{
+		std::ofstream output(control_path, std::ios::binary | std::ios::trunc);
+		output << "corrupt";
+	}
+	const auto corrupt = deletion_contents(root);
+	require(flatfile_character_delete(root.string(), 1, "Player", &error) ==
+			flatfile_character_delete_result::invalid,
+		"corrupt accounting admitted character deletion");
+	require(flatfile_account_delete(root.string(), "Account", &error) ==
+			flatfile_account_delete_result::invalid,
+		"corrupt accounting admitted account deletion");
+	require(corrupt == deletion_contents(root), "corrupt deletion refusal changed authority");
+	{
+		std::ofstream output(control_path, std::ios::binary | std::ios::trunc);
+		output.write(control.data(), control.size());
+	}
+	deletion_select(root, false, false);
+	// The existing inactive/paused legacy contract remains unchanged.
+	require(flatfile_account_delete(root.string(), "Account", &error) ==
+			flatfile_account_delete_result::ok,
+		"paused legacy account deletion regressed: " + error);
+	require(flatfile_account_delete(root.string(), "Account", &error) ==
+			flatfile_account_delete_result::already_deleted,
+		"paused deletion retry regressed");
+
+	// Empty accounts must be fenced even when there is no custody helper to call.
+	const auto empty = base / "accounting-empty-account";
+	establish_minimal_account(empty, false);
+	deletion_select(empty, true, true);
+	const auto empty_before = deletion_contents(empty);
+	require(flatfile_account_delete(empty.string(), "Account", &error) ==
+			flatfile_account_delete_result::conflict,
+		"active accounting admitted empty-account deletion");
+	require(empty_before == deletion_contents(empty),
+		"empty account refusal changed authority");
+	deletion_select(empty, false, false);
+	require(flatfile_account_delete(empty.string(), "Account", &error) ==
+			flatfile_account_delete_result::ok,
+		"paused empty-account deletion regressed");
+}
+
+/* Personal aliases share every interruption boundary of the deletion journal. */
+static void zone_story_erasure_faults(const fs::path &base)
+{
+	const auto corrupt_root = base / "zone-story-corrupt";
+	establish(corrupt_root, true);
+	save_account(corrupt_root, 2);
+	const auto original = deletion_contents(corrupt_root);
+	const auto path = corrupt_root / "domains/zone-story-quests.state";
+	{
+		std::ofstream output(path, std::ios::binary | std::ios::trunc);
+		output << "corrupt";
+	}
+	const auto corrupt = deletion_contents(corrupt_root);
+	std::string error;
+	require(flatfile_account_delete(corrupt_root.string(), "Account", &error) ==
+			flatfile_account_delete_result::invalid,
+		"corrupt zone-story alias authority admitted account erasure");
+	require(deletion_contents(corrupt_root) == corrupt,
+		"alias refusal changed account, character or shared authority");
+	{
+		const auto &bytes = original.at("domains/zone-story-quests.state");
+		std::ofstream output(path, std::ios::binary | std::ios::trunc);
+		output.write(bytes.data(), bytes.size());
+	}
+	require(flatfile_account_delete(corrupt_root.string(), "Account", &error) ==
+			flatfile_account_delete_result::ok,
+		"repaired alias authority did not complete fenced account deletion");
+
+	// The maximal fixture stages 18 operations, including zone-story aliases.
+	for (unsigned boundary = 1; boundary <= 18; ++boundary)
+	{
+		const auto root = base / ("zone-story-boundary-" + std::to_string(boundary));
+		establish(root, true);
+		const auto index = std::to_string(boundary);
+		setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION", index.c_str(), 1);
+		require(flatfile_character_delete(root.string(), 1, "Player", &error) ==
+				flatfile_character_delete_result::io_error,
+			"zone-story deletion did not interrupt at a native operation");
+		unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION");
+		require(fs::exists(root / "domains/.critical-authority-transaction"),
+			"interrupted alias erasure lost its journal");
+		require(flatfile_character_delete(root.string(), 1, "Player", &error) ==
+				flatfile_character_delete_result::already_deleted,
+			"alias erasure recovery did not finish exactly once");
+		std::string state;
+		require(flatfile_zone_story_quest_state_load(root.string().c_str(), 1, &state,
+							     &error) ==
+					flatfile_zone_story_quest_result::ok &&
+				state.find("N|1|1|") == std::string::npos &&
+				state.find("N|7|1|") == std::string::npos &&
+				state.find("N|1|99|") != std::string::npos &&
+				!fs::exists(root / "players/1.snapshot") &&
+				!fs::exists(root / "domains/.critical-authority-transaction"),
+			"recovered deletion retained aliases, snapshot or journal, or erased another PID");
+		const auto recovered = deletion_contents(root);
+		require(flatfile_character_delete(root.string(), 1, "Player", &error) ==
+					flatfile_character_delete_result::already_deleted &&
+				deletion_contents(root) == recovered,
+			"completed alias deletion retry changed native authority");
+	}
+	std::cout
+		<< "zone-story erasure: corrupt refusal/repair and all 18 journal boundaries passed\n";
+}
+
 /* Exercise interruption recovery and atomic character/account erasure. */
 int main(int argc, char **argv)
 {
@@ -441,6 +694,8 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	require(argc == 2, "state root argument required");
+	accounting_deletion_refusals(fs::path(argv[1]));
+	zone_story_erasure_faults(fs::path(argv[1]));
 	const fs::path root = fs::path(argv[1]) / "recover";
 	establish(root, true);
 	std::string error;
@@ -472,6 +727,15 @@ int main(int argc, char **argv)
 	require(flatfile_player_domain_load(root.string(), 1, "Account", 0, &domain, &error) ==
 			flatfile_player_domain_result::not_found,
 		"recovered deletion retained player domain");
+	std::string quest_state;
+	require(flatfile_zone_story_quest_state_load(root.string().c_str(), 1, &quest_state,
+						     &error) ==
+				flatfile_zone_story_quest_result::ok &&
+			quest_state.find("N|1|1|") == std::string::npos &&
+			quest_state.find("N|7|1|") == std::string::npos &&
+			quest_state.find("N|1|2|") != std::string::npos &&
+			quest_state.find("N|1|99|") != std::string::npos,
+		"recovered deletion retained personal quest aliases or erased another PID");
 	std::vector<int32_t> values;
 	require(flatfile_recipe_list(root.string(), 1, &values, &error) ==
 				flatfile_recipe_result::ok &&
@@ -635,6 +899,14 @@ int main(int argc, char **argv)
 				flatfile_account_result::ok &&
 			!account_exists,
 		"account deletion retained the credential record");
+	require(flatfile_zone_story_quest_state_load(account.string().c_str(), 1, &quest_state,
+						     &error) ==
+				flatfile_zone_story_quest_result::ok &&
+			quest_state.find("N|1|1|") == std::string::npos &&
+			quest_state.find("N|7|1|") == std::string::npos &&
+			quest_state.find("N|1|2|") == std::string::npos &&
+			quest_state.find("N|1|99|") != std::string::npos,
+		"account deletion retained personal quest aliases or erased another PID");
 	for (int32_t pid : { 1, 2 })
 	{
 		require(flatfile_identity_lookup_pid(account.string(), pid, &identity, &error) ==

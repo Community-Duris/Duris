@@ -1671,15 +1671,62 @@ reviews, immutable old generations and exact schema restoration pass. The dated
 fixture preserves and restores the complete mixed receipt namespace. Owned
 temporary databases/reviewer users were removed and SQL fixtures stopped.
 
-The PR base has independently added alchemy publication, room item payload and
-ward durability migrations at sequences 54–56. PR #683 currently requires
-integration that preserves both immutable histories and qualifies their common
-runtime schema; the owned 67-step qualification does not establish that merged
-schema. Actual personal-server authentication/effect/save/readback and measured
-performance also remain required. All seven final #258 requirements remain open.
+Accounting's alchemy publication, room item payload and ward durability changes
+are integrated through base commit `f7d26eaa721cd3b675c0b0c65009a2535813f400`.
+All **144 sealed migration files** from both parents retain their original bytes.
+The three default histories preserve accounting's first 56 receipts and append
+14 telemetry steps. Three explicit telemetry histories preserve their first 67
+receipts and append the three accounting steps. Both database engines qualified
+all **six histories at 70 steps / 263 tables**, including reruns, retained data,
+native migration-session faults, compiled boot and restore selection, and
+rejection of altered receipts, mixed state and changed generated expressions.
+See [runtime compatibility](../persistence/RUNTIME_COMPATIBILITY.md) for the
+exact manifest selection and common schema contract.
 
-**Next executable expectation:** reconcile the current PR base and immutable
-migration lineages, complete the native selected-status mutation/removal
+The combined writer uses **portable copyover 19**. It reads accounting's portable
+18 format and telemetry's native 12–18 formats with their declared ABI checks.
+Version 19 preserves the telemetry-v2 ownership context alongside bounded world,
+descriptor and custody data. Portable golden bytes, framing/CRC/allocation
+faults, invalid optional ownership, deferred telemetry qualification, native
+custody recovery and save/exec failures pass focused ASan/UBSan fixtures.
+See [copyover format](../persistence/COPYOVER_FORMAT.md).
+
+Interactive account loading now carries a game-thread scope snapshot to the
+account worker. After its required account transaction commits, the shared
+lifetime/token allocator optionally runs on that worker's own connection. A
+committed token and scope enter the returned snapshot; unavailable preparation,
+exceptions and ambiguous commits retain unknown identity and the valid account
+snapshot. Dirty or failed worker handles are retired. The actual worker/session
+regressions pass ASan/UBSan, five scope/cache/client-free tests pass, and both
+70-step native SQL fixtures qualify owned connection use, deadlines, optional
+failure behavior, retries, ambiguity, rename, recreation and private grants.
+Token preparation supplies no authentication evidence. The maintained server
+build and changed-line formatting pass. See
+[interactive account loading](../persistence/ASYNC_ACCOUNT_LOAD.md).
+
+Both complete **70-step** common-schema storage, private repository and native
+runtime/queue/worker/writer/publication journeys pass. Native SQL readback retains
+**56 typed resolutions / 18 accepted / 12 rejection reasons**, all **76 control
+fields**, explicit partial duration coverage and rejected-target isolation.
+Storage checks retain all **455 payload columns**, independent schema-6 loss
+review, guarded reruns and exact trigger/operator-grouping drift refusal and
+restoration. Earlier **123 association facts / 38 packets / 28 links**, **112/112
+damage**, accepted-control **8/8 and 17/17**, and **20 build points / 110 fields**
+remain qualified, including private roles, bounded reports, retries, lost
+acknowledgements, corrected reviews and unchanged older generations. Temporary
+fixture databases/users were removed and SQL servers stopped.
+
+The common fresh/restored normalized metadata fingerprints are:
+
+| Engine | Fingerprint |
+| --- | --- |
+| MariaDB 10.11.14 | `5b2476e2551ea87a13adcf5d702412262a35fb9a987f73f3bfe851d09f069123` |
+| MySQL 8.0.46 | `752c4b0485fcd9b5daf796a32f4b7cfc4f7ce573c992b5f7abf7f9476f59060b` |
+
+Actual personal-server authentication/effect/save/readback and measured
+performance remain required. All seven final #258 requirements remain open.
+
+**Next executable expectation:** complete the native selected-status mutation/removal
 inventory and duration qualification, retain exact controls and publish reviewed
 comparisons under a new definition, then finish native prevention/faction,
 typed death/escape/objective evidence and complete battle reports. Distinct PvE

@@ -407,7 +407,8 @@ TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_reposi
 
 ## Copyover account context
 
-Outer copyover version 18 writes telemetry trailer version 2. The bounded handoff
+Portable outer copyover version 19 retains the ownership fields introduced by
+telemetry's native `COPY` version 18 / `TLMY` trailer version 2. The bounded handoff
 adds 24 bytes for the last observed account token, UTC label with an unknown sentinel,
 source and quality. It carries no monotonic timestamp or controller association.
 Only the old process's original session and prior producer establish continuity.
@@ -423,13 +424,17 @@ successful handoff; a failed worker durability barrier writes an absent handoff.
 A handoff cut earlier than its ownership sample refuses instead of moving that
 sample into the past. No ownership context supplies elapsed copyover downtime.
 
-The reader consumes the exact sealed telemetry-v1 layout for outer versions
-15–17 and imports its session/revision/counters/quality with absent ownership
-context. Versions 12–14 use the existing absent-handoff path. New framing cannot
-be accepted under an old outer version, and old framing cannot be accepted under
-version 18. Invalid ownership source/token/reserved/quality fields discard that
+The reader consumes the exact sealed telemetry-v1 layout for native `COPY`
+versions 15–17 and imports its session/revision/counters/quality with absent
+ownership context. Native versions 12–14 use the existing absent-handoff path.
+Portable `DCOF` version 18 also has absent ownership; magic distinguishes it
+from the independently produced native version 18 with ownership. New framing
+cannot be accepted under an older outer version. Invalid ownership
+source/token/reserved/quality fields discard that
 entry while preserving the next world section. Existing runtime validation
 handles other malformed continuity fields and falls back to an absent handoff.
+See [the copyover format contract](../persistence/COPYOVER_FORMAT.md) for exact
+portable widths, legacy ABIs and bounded full-file validation.
 
 The focused commands are:
 

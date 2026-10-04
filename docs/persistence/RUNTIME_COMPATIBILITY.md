@@ -16,22 +16,52 @@ python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-The migration manifest, compiled compatibility head, and runtime manifest now end
-at `0053_craft_progression`, with 225 expected runtime tables.
+The merged contract has **70 migration steps and 263 runtime tables**. The
+default manifests retain accounting's first 56 receipts and append telemetry's
+14 sealed steps. Their final ID is `0067_telemetry_typed_control` at sequence 70.
+Databases that already recorded telemetry through sequence 67 use the explicit
+telemetry manifests below; those append three accounting steps and finish at
+`0056_spell_ward_durability`, also at sequence 70. Migration IDs retain their
+original names; sequence numbers declare the application order.
+
+| Recorded history | Manifest for further upgrades | Preserved prefix | Appended steps |
+| --- | --- | ---: | ---: |
+| Canonical accounting | `migration_manifest.json` | 56 | 14 |
+| Accounting with staging's 0045 fork | `migration_manifest.staging_0045.json` | 56 | 14 |
+| Accounting with master's 0031 fork | `migration_manifest.master_0031.json` | 56 | 14 |
+| Canonical telemetry through 0067 | `migration_manifest.telemetry_0067.json` | 67 | 3 |
+| Telemetry with staging's 0045 fork | `migration_manifest.telemetry_0067_staging_0045.json` | 67 | 3 |
+| Telemetry with master's 0031 fork | `migration_manifest.telemetry_0067_master_0031.json` | 67 | 3 |
+
+For a previously recorded telemetry history, select its exact manifest with
+`--manifest migrations/<manifest-name>` on the existing runner. Keep that
+selection for retries. All six complete histories have distinct pinned checksums
+and target the same runtime schema. Wrong, partial, mixed or altered histories
+fail before gameplay can be published. No historical migration file or recorded
+receipt is rewritten to make these branches agree.
+
+Accounting's steps 0054–0056 add alchemy publication, protected SQL room-item
+payloads and spell-ward durability. Telemetry's steps 0054–0067 add reviewed loss,
+ownership/portfolio observations and retained battle/build evidence, ending with
+typed control observations. The complete table, column, index, foreign-key,
+selected signed/enum/check and telemetry-trigger metadata are pinned separately
+for MySQL 8.0.46 and MariaDB 10.11.14. Schema convergence does not complete the
+remaining gameplay balance reports or personal-server qualification.
+
 Migration 0051 preserves player item runtime state; master already applied the
 identical sealed SQL and verifier bytes as 0031. Migration 0053 adds durable
 craft progression receipts. Migration 0052 adds the
 nonunique `(reason_type, reason_id)` item-ledger index
 used by bounded quest reward recovery. It preserves duplicate evidence and
-refuses an existing index with a different shape. All three manifests append this
+refuses an existing index with a different shape. The historical manifests append this
 step without modifying older receipts or migration files.
 Migration 0050 replaces the description-prefix unique indexes with indexes over
 the complete description SHA-256. It preserves distinct long, case, and accent
 variants and refuses duplicate complete values before permanent DDL; it never
 deletes those conflicting rows. The metadata fingerprints were measured on
 disposable MySQL 8.0.46 and MariaDB 10.11 schemas using the real immutable runner.
-Canonical and staging histories through 0053 were qualified on both engines.
-The master-prefix upgrade through 0053 now passes on disposable MySQL 8.0.46 and
+The earlier canonical and staging histories through 0053 were qualified on both engines.
+The earlier master-prefix upgrade through 0053 passed on disposable MySQL 8.0.46 and
 MariaDB 10.11.14 targets: all 31 original receipts and retained item runtime
 payloads remain unchanged, 22 steps append, and reruns preserve every receipt.
 The fixture uses the sealed current baseline with the historical master prefix;
@@ -110,8 +140,10 @@ python3 scripts/migration_runner.py \
 | 53 | `0053_craft_progression` |
 
 The canonical manifest continues to reject this fork before any migration runs.
-The explicit manifest appends eight steps and produces a different
-history checksum from the canonical 53-step history. All supported completed checksums
+The table above documents the historical path through sequence 53. The explicit
+manifest continues with accounting steps 0054–0056 and the 14 telemetry steps,
+reaching sequence 70. It produces a different history checksum from the canonical
+history. All supported completed checksums
 are compiled into the boot gate; every historical row is recomputed and matched
 to its stored state. Partial histories and mixed head/state identities fail.
 
@@ -120,14 +152,14 @@ native mode for a caller-owned disposable MySQL 8.0 or MariaDB 10.11 server:
 
 ```sh
 # Supply explicit DB_USER, DB_PASSWD, and DB_PORT for the isolated test server.
-TEST_DB_DISPOSABLE=1 STAGING_FORK_DISPOSABLE_SERVER=1 DB_HOST=127.0.0.1 \
+ENVIRONMENT=test TEST_DB_DISPOSABLE=1 STAGING_FORK_DISPOSABLE_SERVER=1 DB_HOST=127.0.0.1 \
   python3 tests/async/test_staging_migration_fork_mysql.py \
   --disposable-loopback mysql8
 # Repeat with --disposable-loopback mariadb10_11 on that engine's test server.
 ```
 
-This mode creates uniquely named `duris_268_*test` databases and private
-temporary verifier files. The caller owns stopping and discarding the server.
+This mode creates and cleans up uniquely named `duris_268_*test` databases and
+private temporary verifier files. The caller owns stopping and discarding the server.
 Socket connections and unguarded targets are refused. On 2026-10-01, both
 native engines preserved all first 45 staging receipts, appended six receipts,
 converged on the canonical schema, and passed shell/compiled boot checks plus
@@ -157,8 +189,10 @@ are identical. It appends accounting migrations 0031 through 0050 at sequences
 32 through 51, then 0052 and 0053 at sequences 52 and 53. Immutable migration IDs
 retain their assigned names; the manifest
 sequence is the application order, as it already is for the staging fork.
-The completed head is therefore `0053_craft_progression`
-at **sequence 53**, targeting the same 225-table runtime schema as canonical accounting.
+That historical path reached `0053_craft_progression` at sequence 53. The current
+manifest appends accounting steps 0054–0056 and the 14 telemetry steps, reaching
+`0067_telemetry_typed_control` at **sequence 70** with the same 263-table runtime
+schema as canonical accounting.
 The already-applied runtime-state migration is not recorded again under 0051.
 
 Use the canonical manifest for a fresh baseline or a history matching canonical
@@ -170,10 +204,10 @@ or renumber an applied prefix to make a manifest fit. Unknown historical variant
 continue to fail closed and need separate clone qualification.
 
 The shell verifier, compiled boot gate, and isolated-restore qualifier accept
-only the three complete, pinned histories. They recompute every receipt and
+only the six complete, pinned histories. They recompute every receipt and
 match the actual full-history checksum to its stored count/checksum state.
 A database at master 0031 still cannot boot the accounting binary until all
-22 accounting steps are applied and verified. A successful replay appends no
+39 subsequent steps are applied and verified. A successful replay appends no
 receipts and preserves the original receipt timestamps and item runtime payloads.
 Schema compatibility does not activate economic accounting or resolve release
 qualification and custody holds.
@@ -202,10 +236,10 @@ constructor. Before any lookup write, item UID reservation, pool/worker startup,
 recovery replay, listener acceptance, or gameplay publication, it verifies:
 
 - the sealed baseline ID and table-name fingerprint;
-- the exact completed canonical, staging-fork, or master-upgrade history, including all seven
+- the exact completed history from the six declared paths, including all seven
   immutable receipt fields in sequence order, and its matching stored count and
   checksum; checking only the last row or the stored digest is insufficient;
-- all 225 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
+- all 263 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
 - normalized table, column, default, index, and foreign-key metadata against the
   checked-in MySQL 8.0 or MariaDB 10.11 fingerprint;
 - the exact normalized stored SHA-256 expressions on player and pet descriptions;

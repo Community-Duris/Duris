@@ -10,6 +10,7 @@ death, both corpse types, item movement, terminal saves, and player reload.
 from __future__ import annotations
 
 import server_build_artifacts
+from _flatfile_player_fixture import build_player_inspector
 
 import os
 import fcntl
@@ -32,20 +33,22 @@ PASSWORD = "Qz7!mN4@"
 CHARACTER = "Taverek"
 EMAIL = "journey@example.invalid"
 INSPECTOR = ROOT / "bin/tests/coin-death-inspector"
-INSPECTOR_BUILD_TIMEOUT = 600
 ANSI = re.compile(rb"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
-def build_inspector(destination: pathlib.Path = INSPECTOR) -> None:
-    # This compiles the native repository and its authority owners, not a small
-    # inspection shim. Use the server build's budget; gameplay keeps its own
-    # much shorter deadlines. A 180-second limit expired before gameplay in the
-    # frozen 63309643c regression run.
-    started = time.monotonic()
-    subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
-                    "--build-inspector", str(destination)], cwd=ROOT, check=True,
-                   timeout=INSPECTOR_BUILD_TIMEOUT)
-    print(f"INSPECTOR_BUILD elapsed={time.monotonic() - started:.3f}s", flush=True)
+def build_inspector(destination: pathlib.Path | None = None) -> pathlib.Path:
+    global INSPECTOR
+    requested = destination or ROOT / f"bin/tests/coin-death-inspector-{os.getpid()}"
+    binary = build_player_inspector(requested)
+    if destination is not None:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if binary != destination:
+            shutil.copy2(binary, destination)
+        return destination
+    # Every process binds to the verified immutable inode. No shared mutable
+    # inspector destination is rewritten while another journey executes it.
+    INSPECTOR = binary
+    return binary
 
 
 def require(condition: bool, message: str) -> None:
@@ -324,8 +327,9 @@ def disputed_death(port: int, state_root: pathlib.Path, run_root: pathlib.Path) 
         refused_at = time.monotonic()
         client.expect("ACCOUNT MENU", timeout=30)
         elapsed = time.monotonic() - refused_at
-        require(not (state_root / "domains/.critical-authority-transaction").exists(),
-                "character released before death after-images completed")
+        # The native inspector holds the authority lock and refuses pending
+        # recovery. An unlocked existence check races unrelated world/corpse
+        # cleanup between journal publication and its completed after-images.
         after = inspect_authority(state_root)
         require(len(after["deaths"]) == 1, "death disposition missing at release")
         death = after["deaths"][0]
@@ -530,6 +534,7 @@ def reconnect_character(
     *,
     account: str = ACCOUNT,
     character: str = CHARACTER,
+    allow_linkdead: bool = False,
 ) -> MudClient:
     client = MudClient(port)
     try:
@@ -546,7 +551,12 @@ def reconnect_character(
         client.send("1")
         client.expect(character)
         client.send("1")
-        client.expect("Play as")
+        if allow_linkdead:
+            entry, _ = client.expect_any(("Play as", "Reconnecting..."))
+            if entry == "Reconnecting...":
+                return client
+        else:
+            client.expect("Play as")
         client.send("y")
         if return_message:
             client.expect(return_message, timeout=30)

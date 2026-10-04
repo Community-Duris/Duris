@@ -2,10 +2,11 @@
 """Real worker/journal terminal failures fence admission before completion consumption.
 
 Repository results are synthetic; no DB or live service is accessed. Admission
-functions and hook registration come from production; the unrelated target-save
-fence lookup is empty in this isolated harness.
+functions, retained-scope/fence storage and lookups, and hook registration come
+from production. Fence classification is a component test, not SQL hydration.
 """
 from pathlib import Path
+import os
 import re
 import subprocess
 import tempfile
@@ -25,10 +26,22 @@ def function(source, signature):
 
 ADMISSION = function(LOAD, "bool player_load_pipeline_login_admit(int pid)") + "\n" + function(
     PIPELINE, "bool player_save_pipeline_save_admitted(int pid)"
-)
+) + "\n" + function(PIPELINE, "bool player_save_pipeline_authoritative_hydration_admitted(int pid)")
+literal_start = PIPELINE.index("struct literal_inventory_checkpoint")
+literal_end = PIPELINE.index("literal_inventory_checkpoints = {};", literal_start)
+literal_end += len("literal_inventory_checkpoints = {};")
+STORAGE = PIPELINE[literal_start:literal_end] + "\n"
+fence_start = PIPELINE.index("struct terminal_fence")
+fence_end = PIPELINE.index("target_save_login_fence *find_target_save_login_fence_locked(int pid);", fence_start)
+STORAGE += PIPELINE[fence_start:fence_end] + "\n"
+for signature in ("literal_inventory_checkpoint *find_literal_inventory_locked(int pid)",
+                  "terminal_fence *find_terminal_fence_locked(int pid)",
+                  "target_save_login_fence *find_target_save_login_fence_locked(int pid)\n{"):
+    STORAGE += function(PIPELINE, signature) + "\n"
 HARNESS = r'''
 #include "player/player_save_journal.h"
 #include "player/player_revision_state.h"
+#include "player/player_save_pipeline.h"
 #include <algorithm>
 #include <atomic>
 #include <cassert>
@@ -37,6 +50,7 @@ HARNESS = r'''
 #include <fstream>
 #include <iterator>
 #include <mutex>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <sys/stat.h>
@@ -44,9 +58,7 @@ HARNESS = r'''
 #include <vector>
 
 std::mutex pipeline_mutex;
-void *find_target_save_login_fence_locked(int) { return nullptr; }
-struct terminal_fence { bool death_pinned = false; };
-terminal_fence *find_terminal_fence_locked(int) { return nullptr; }
+@STORAGE@
 @ADMISSION@
 std::atomic<bool> fail_directory_sync{false};
 extern "C" int __real_fsync(int);
@@ -113,8 +125,20 @@ void run(const std::string &directory, result_state state, bool sync_failure) {
 
     // No game-thread completion has consumed the terminal result yet.
     assert(player_save_journal_pid_quarantined(9001));
+    const auto diagnosis = player_save_journal_diagnostic_copy(9001);
+    assert(diagnosis.available && !diagnosis.policy_fence);
+    assert(diagnosis.pid_fence == !sync_failure);
+    assert(diagnosis.global_fence == sync_failure);
+    assert(diagnosis.archived_frames == (sync_failure ? 0U : 1U));
+    assert(diagnosis.archived_bytes == (sync_failure ? 0U : failed_frame.size()));
+    assert(!diagnosis.recovery_prepared);
     assert(!player_load_pipeline_login_admit(9001));
     assert(!player_save_pipeline_save_admitted(9001));
+    auto &retained = literal_inventory_checkpoints[0];
+    retained.token.pid = 9001;
+    retained.held = retained.restored_sql_drop = true;
+    assert(!player_save_pipeline_authoritative_hydration_admitted(9001));
+    retained = {};
     player_revision_snapshot revision{};
     assert(player_revision_snapshot_copy(9001, &revision));
     assert(revision.acknowledged_revision == 0); // no fabricated receipt
@@ -122,9 +146,29 @@ void run(const std::string &directory, result_state state, bool sync_failure) {
     if (sync_failure) {
         assert(!player_load_pipeline_login_admit(9002));
         assert(!player_save_pipeline_save_admitted(9002));
+        assert(!player_save_pipeline_authoritative_hydration_admitted(9002));
         assert(bytes(directory + "/player-save.journal") == original);
     } else {
         assert(player_load_pipeline_login_admit(9002));
+        assert(player_save_pipeline_save_admitted(9002));
+        assert(player_save_pipeline_authoritative_hydration_admitted(9002));
+        retained.token.pid = 9002;
+        retained.held = true;
+        assert(!player_save_pipeline_save_admitted(9002));
+        assert(!player_save_pipeline_authoritative_hydration_admitted(9002));
+        retained.restored_sql_drop = true;
+        assert(!player_save_pipeline_save_admitted(9002));
+        assert(player_save_pipeline_authoritative_hydration_admitted(9002));
+        target_save_login_fences[0] = {9002, healthy.revision};
+        assert(!player_save_pipeline_authoritative_hydration_admitted(9002));
+        target_save_login_fences[0] = {};
+        assert(player_save_pipeline_authoritative_hydration_admitted(9002));
+        terminal_fences[0].pid = 9002;
+        terminal_fences[0].death_pinned = true;
+        assert(!player_save_pipeline_authoritative_hydration_admitted(9002));
+        terminal_fences[0] = {};
+        assert(player_save_pipeline_authoritative_hydration_admitted(9002));
+        retained = {};
         assert(player_save_pipeline_save_admitted(9002));
         assert(player_save_journal_health_copy().records == 0);
     }
@@ -136,7 +180,16 @@ void run(const std::string &directory, result_state state, bool sync_failure) {
     assert(player_save_journal_init(directory.c_str()));
     assert(!player_load_pipeline_login_admit(9001));
     assert(!player_save_pipeline_save_admitted(9001));
+    assert(!player_save_pipeline_authoritative_hydration_admitted(9001));
     assert(player_load_pipeline_login_admit(9002));
+    const auto restored_diagnosis = player_save_journal_diagnostic_copy(9001);
+    assert(restored_diagnosis.available && restored_diagnosis.pid_fence);
+    assert(restored_diagnosis.archived_frames >= 1);
+    assert(restored_diagnosis.archived_bytes >= failed_frame.size());
+    if (!sync_failure) {
+        assert(restored_diagnosis.archived_frames == diagnosis.archived_frames);
+        assert(restored_diagnosis.archived_bytes == diagnosis.archived_bytes);
+    }
     player_save_journal_shutdown();
 }
 int main(int argc, char **argv) {
@@ -149,7 +202,7 @@ int main(int argc, char **argv) {
     run(root + "/sync-failure", {EINVAL, false, false}, true);
     run(root + "/exhaustion", {1205, false, true}, false);
 }
-'''.replace("@ADMISSION@", ADMISSION).replace("@HOOKS@", HOOKS)
+'''.replace("@STORAGE@", STORAGE).replace("@ADMISSION@", ADMISSION).replace("@HOOKS@", HOOKS)
 
 with tempfile.TemporaryDirectory(prefix="duris-live-failure-quarantine-") as temp:
     source = Path(temp) / "probe.cpp"
@@ -162,9 +215,12 @@ with tempfile.TemporaryDirectory(prefix="duris-live-failure-quarantine-") as tem
         "src/player/player_snapshot_codec.c", "src/persistence/persistence_observability.c",
         "-Wl,--wrap=fsync", "-lmysqlclient", "-o", str(binary),
     ]
+    if os.environ.get("DURIS_TEST_SANITIZERS") == "1":
+        command[1:1] = ["-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie"]
     compiled = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
     if compiled.returncode:
         raise RuntimeError(compiled.stderr)
     subprocess.run([str(binary), temp], cwd=ROOT, check=True, timeout=40)
 print("[PASS] live terminal/exception/exhaustion failures fence login and save before completion; "
       "exact bytes survive restart, healthy PID proceeds, sync failure stays fail-closed")
+print("[PASS] authoritative hydration bypasses only restored holds; live holds, target/death fences and quarantine refuse")

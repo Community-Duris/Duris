@@ -23,6 +23,9 @@ FIELDS = {
     "connection", "lookup", "staging_0045_migration_head", "master_0031_migration_head",
     "migration_history_sql",
     "extra_description_generation_sql",
+    "telemetry_0067_migration_head",
+    "telemetry_0067_staging_0045_migration_head",
+    "telemetry_0067_master_0031_migration_head",
 }
 HEAD_FIELDS = {"id", "sequence", "apply_checksum", "verify_checksum",
                "history_checksum"}
@@ -152,7 +155,7 @@ def load() -> dict:
             "runtime compatibility manifest fields differ"
         )
     if value["manifest_version"] != 1 or value["baseline_table_count"] != 170 or \
-            value["current_table_count"] != 262:
+            value["current_table_count"] != 263:
         raise migration_runner.MigrationContractError("runtime manifest version/count drift")
     if not isinstance(value["runtime_table_sql_list"], str) or not re.fullmatch(
             r"'[A-Za-z0-9_]+'(?:,'[A-Za-z0-9_]+')*",
@@ -171,8 +174,7 @@ def load() -> dict:
         raise migration_runner.MigrationContractError(
             "runtime metadata fingerprints are invalid")
     if any(not isinstance(value[name], dict) or set(value[name]) != HEAD_FIELDS
-           for name in ("migration_head", "staging_0045_migration_head",
-                        "master_0031_migration_head")) or \
+           for name in ('migration_head', 'staging_0045_migration_head', 'master_0031_migration_head', 'telemetry_0067_migration_head', 'telemetry_0067_staging_0045_migration_head', 'telemetry_0067_master_0031_migration_head')) or \
             not isinstance(value["connection"], dict) or \
             set(value["connection"]) != CONNECTION_FIELDS or \
             value["connection"] != EXPECTED_CONNECTION or value["lookup"] != {
@@ -203,7 +205,7 @@ def validate() -> dict:
         raise migration_runner.MigrationContractError("runtime and migration baseline drift")
     staging = migration_runner.load_manifest(
         ROOT / "migrations/migration_manifest.staging_0045.json")
-    if len(migration.migrations) != 67 or len(staging.migrations) != 67 or \
+    if len(migration.migrations) != 70 or len(staging.migrations) != 70 or \
             staging.baseline_id != migration.baseline_id or \
             staging.required_tables != migration.required_tables or \
             staging.migrations[:44] != migration.migrations[:44] or \
@@ -220,7 +222,7 @@ def validate() -> dict:
         ROOT / "migrations/migration_manifest.master_0031.json")
     # Receipt IDs are immutable names; sequence is the declared application order.
     # Reuse 0051's identical SQL/verifier bytes without renaming master's receipt.
-    if len(master.migrations) != 67 or master.baseline_id != migration.baseline_id or \
+    if len(master.migrations) != 70 or master.baseline_id != migration.baseline_id or \
             master.required_tables != migration.required_tables or \
             master.migrations[:30] != migration.migrations[:30] or \
             master.migrations[30] != replace(migration.migrations[50], sequence=31,
@@ -231,10 +233,29 @@ def validate() -> dict:
                 for item in migration.migrations[30:50]) or \
             master.migrations[51:] != migration.migrations[51:]:
         raise migration_runner.MigrationContractError("master migration append drift")
+    contracts = [("migration_head", migration),
+                 ("staging_0045_migration_head", staging),
+                 ("master_0031_migration_head", master)]
+    for name, canonical, path in (
+            ("telemetry_0067_migration_head", migration,
+             "migration_manifest.telemetry_0067.json"),
+            ("telemetry_0067_staging_0045_migration_head", staging,
+             "migration_manifest.telemetry_0067_staging_0045.json"),
+            ("telemetry_0067_master_0031_migration_head", master,
+             "migration_manifest.telemetry_0067_master_0031.json")):
+        telemetry = migration_runner.load_manifest(ROOT / "migrations" / path)
+        # Keep the recorded 1–67 telemetry prefix; append only the other lineage.
+        if len(telemetry.migrations) != 70 or telemetry.baseline_id != canonical.baseline_id or \
+                telemetry.required_tables != canonical.required_tables or \
+                telemetry.migrations[:53] != canonical.migrations[:53] or \
+                telemetry.migrations[53:67] != tuple(replace(item, sequence=item.sequence - 3)
+                                                    for item in canonical.migrations[56:]) or \
+                telemetry.migrations[67:] != tuple(replace(item, sequence=item.sequence + 14)
+                                                  for item in canonical.migrations[53:56]):
+            raise migration_runner.MigrationContractError("recorded telemetry migration append drift")
+        contracts.append((name, telemetry))
     head = migration.migrations[-1]
-    for name, contract in (("migration_head", migration),
-                           ("staging_0045_migration_head", staging),
-                           ("master_0031_migration_head", master)):
+    for name, contract in contracts:
         final = contract.migrations[-1]
         applied = [migration_runner.AppliedMigration(
             item.migration_id, item.sequence, item.description, item.apply_checksum,
@@ -296,11 +317,7 @@ def validate() -> dict:
                           ("APPLY_CHECKSUM", "apply_checksum"),
                           ("VERIFY_CHECKSUM", "verify_checksum"),
                           ("HISTORY_CHECKSUM", "history_checksum")):
-        for prefix, name in (("RUNTIME_MIGRATION_", "migration_head"),
-                             ("RUNTIME_STAGING_0045_MIGRATION_",
-                              "staging_0045_migration_head"),
-                             ("RUNTIME_MASTER_0031_MIGRATION_",
-                              "master_0031_migration_head")):
+        for prefix, name in (('RUNTIME_MIGRATION_', 'migration_head'), ('RUNTIME_STAGING_0045_MIGRATION_', 'staging_0045_migration_head'), ('RUNTIME_MASTER_0031_MIGRATION_', 'master_0031_migration_head'), ('RUNTIME_TELEMETRY_0067_MIGRATION_', 'telemetry_0067_migration_head'), ('RUNTIME_TELEMETRY_0067_STAGING_0045_MIGRATION_', 'telemetry_0067_staging_0045_migration_head'), ('RUNTIME_TELEMETRY_0067_MASTER_0031_MIGRATION_', 'telemetry_0067_master_0031_migration_head')):
             match = re.search(rf'{prefix}{suffix}\s*=\s*("[^\"]*"|[0-9]+);', header)
             if match is None or json.loads(match.group(1)) != value[name][field]:
                 raise migration_runner.MigrationContractError("compiled runtime history drift")

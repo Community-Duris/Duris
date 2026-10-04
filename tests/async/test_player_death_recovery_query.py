@@ -42,6 +42,7 @@ class DeathRecoveryContracts(unittest.TestCase):
                     "src/player/player_death_recovery_query.c",
                     "src/persistence/persistence_observability.c",
                     *libs,
+                    "-lcrypto",
                     "-o",
                     str(binary),
                 ],

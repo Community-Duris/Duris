@@ -4037,6 +4037,22 @@ bool telemetry_runtime_game_battle_group_presence(
 	return true;
 }
 
+bool telemetry_runtime_account_scope(std::uint64_t &environment_id,
+				     std::uint64_t &season_id) noexcept
+{
+	environment_id = season_id = 0U;
+#ifndef __NO_MYSQL__
+	if (!R.initialized || !R.enabled || R.shutdown_pending || !R.session_scope_environment_id ||
+	    !R.session_scope_season_id)
+		return false;
+	environment_id = R.session_scope_environment_id;
+	season_id = R.session_scope_season_id;
+	return true;
+#else
+	return false;
+#endif
+}
+
 bool telemetry_runtime_account_prepare(struct acct_entry *account)
 {
 	if (!account)

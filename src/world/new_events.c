@@ -17,6 +17,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <algorithm>
+#include <array>
 #include <map>
 #include <new>
 #include <thread>
@@ -31,6 +32,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/character_maintenance.h"
 #include "world/event_names.h"
 #include "kingdom/kingdom.h"
 #include "cmd/interp.h"
@@ -132,6 +134,7 @@ struct nevent_pending_reschedule
 	unsigned long long due_tick;
 };
 static std::map<P_nevent, struct nevent_pending_reschedule> nevent_pending_reschedules;
+static unsigned int nevent_reschedule_batch_depth = 0;
 static std::thread::id nevent_game_thread;
 static bool nevent_game_thread_bound = false;
 static long nevent_last_pulse_total_us = 0;
@@ -407,6 +410,12 @@ static void nevent_detach_character(P_nevent event)
 		ch->world_activity_mundane_event = NULL;
 		ch->world_activity_mundane_event_sequence = 0;
 	}
+	if (ch->character_maintenance_event == event &&
+	    ch->character_maintenance_event_sequence == event->sequence)
+	{
+		ch->character_maintenance_event = NULL;
+		ch->character_maintenance_event_sequence = 0;
+	}
 	if (event->prev_char_nev)
 	{
 		if (event->prev_char_nev->next_char_nev != event)
@@ -654,6 +663,51 @@ static bool nevent_apply_pending_reschedule(P_nevent event)
 
 static void nevent_process_pending_reschedules()
 {
+	if (nevent_pending_reschedules.size() > 1)
+	{
+		std::array<std::vector<P_nevent>, PULSES_IN_TICK> batches;
+		bool collected = true;
+		try
+		{
+			for (const auto &[event, request] : nevent_pending_reschedules)
+				if (event->sequence == request.sequence &&
+				    event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE)
+					batches[nevent_bucket_for_tick(request.due_tick)].push_back(
+						event);
+		}
+		catch (const std::bad_alloc &)
+		{
+			collected = false; // Keep the individual, allocation-free fallback.
+		}
+		if (collected)
+		{
+			// Collect before mutating so allocation failure can retain the old path.
+			// Each changed event is detached once and each destination bucket is
+			// merged once, rather than repeatedly walking it for every early wake.
+			for (const auto &[event, request] : nevent_pending_reschedules)
+				if (event->sequence == request.sequence &&
+				    event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE)
+				{
+					nevent_unlink_schedule(event);
+					if (event->deferral_count > 0)
+					{
+						nevent_complete_deferred(event);
+						event->deferral_count = 0;
+					}
+					event->due_tick = request.due_tick;
+					event->element = nevent_bucket_for_tick(request.due_tick);
+				}
+			nevent_pending_reschedules.clear();
+			for (unsigned int loc = 0; loc < batches.size(); ++loc)
+				if (!batches[loc].empty())
+				{
+					std::sort(batches[loc].begin(), batches[loc].end(),
+						  nevent_sorts_before);
+					nevent_merge_sorted_batch(batches[loc], loc);
+				}
+			return;
+		}
+	}
 	while (!nevent_pending_reschedules.empty())
 	{
 		auto pending = nevent_pending_reschedules.begin();
@@ -664,6 +718,19 @@ static void nevent_process_pending_reschedules()
 		    event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE)
 			nevent_apply_reschedule(event, request.due_tick);
 	}
+}
+
+nevent_reschedule_batch::nevent_reschedule_batch()
+	: active(nevent_require_game_thread("nevent_reschedule_batch"))
+{
+	if (active)
+		++nevent_reschedule_batch_depth;
+}
+
+nevent_reschedule_batch::~nevent_reschedule_batch()
+{
+	if (active && --nevent_reschedule_batch_depth == 0 && !current_nevent)
+		nevent_process_pending_reschedules();
 }
 
 bool nevent_reschedule_at(nevent_handle handle, unsigned long long due_tick)
@@ -680,11 +747,20 @@ bool nevent_reschedule_at(nevent_handle handle, unsigned long long due_tick)
 	if (due_tick < first_eligible_tick)
 		due_tick = first_eligible_tick;
 
-	if (current_nevent)
+	if (current_nevent || nevent_reschedule_batch_depth)
 	{
 		if (event == current_nevent)
 			return FALSE;
-		nevent_pending_reschedules[event] = { event->sequence, due_tick };
+		try
+		{
+			nevent_pending_reschedules[event] = { event->sequence, due_tick };
+		}
+		catch (const std::bad_alloc &)
+		{
+			if (current_nevent)
+				return FALSE; // Do not mutate the active dispatch traversal.
+			nevent_apply_reschedule(event, due_tick);
+		}
 		return TRUE;
 	}
 
@@ -699,6 +775,15 @@ bool nevent_reschedule_after(nevent_handle handle, unsigned long long delay)
 	return nevent_reschedule_at(handle, nevent_add_ticks(ne_event_tick, delay));
 }
 
+static unsigned long long nevent_effective_due_tick(P_nevent event)
+{
+	const auto pending = nevent_pending_reschedules.find(event);
+	if (pending != nevent_pending_reschedules.end() &&
+	    pending->second.sequence == event->sequence)
+		return pending->second.due_tick;
+	return event->due_tick;
+}
+
 bool nevent_advance_by(nevent_handle handle, unsigned long long ticks)
 {
 	P_nevent event = handle.event;
@@ -707,7 +792,8 @@ bool nevent_advance_by(nevent_handle handle, unsigned long long ticks)
 		return FALSE;
 	if (!event || handle.sequence == 0 || event->sequence != handle.sequence)
 		return FALSE;
-	return nevent_reschedule_at(handle, ticks >= event->due_tick ? 0 : event->due_tick - ticks);
+	const auto due_tick = nevent_effective_due_tick(event);
+	return nevent_reschedule_at(handle, ticks >= due_tick ? 0 : due_tick - ticks);
 }
 
 // Returns true iff all the events in ch->nevents belong to ch.
@@ -949,7 +1035,8 @@ static nevent_schedule_result add_event_internal(event_func func, int delay, P_c
 
 	if (debug_event_list)
 	{
-		check_nevents();
+		// Constructors can schedule events before publishing their runtime ID.
+		check_nevents(false);
 	}
 
 	return { nevent_schedule_status::scheduled, nevent_handle_from_event(event) };
@@ -1031,9 +1118,14 @@ int ne_event_time(P_nevent e1)
 
 	if (!nevent_require_game_thread("ne_event_time"))
 		return 0;
-	if (!e1 || e1->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE || e1->due_tick <= ne_event_tick)
+	if (!e1 || e1->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE)
 		return 0;
-	time_left = e1->due_tick - ne_event_tick;
+	// A queued wake is already the effective deadline, even while physical
+	// bucket changes wait for the current callback or wake batch to finish.
+	const auto due_tick = nevent_effective_due_tick(e1);
+	if (due_tick <= ne_event_tick)
+		return 0;
+	time_left = due_tick - ne_event_tick;
 	return time_left > static_cast<unsigned long long>(INT_MAX) ? INT_MAX :
 								      static_cast<int>(time_left);
 }
@@ -1908,6 +2000,7 @@ void ne_init_event_pool(void)
 	nevent_deferred_due_counts.clear();
 	nevent_pending_cancellations.clear();
 	nevent_pending_reschedules.clear();
+	nevent_reschedule_batch_depth = 0;
 	nevent_periodic_reset();
 	memset(ne_schedule, 0, sizeof(ne_schedule));
 	memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));
@@ -1946,6 +2039,7 @@ void ne_init_events(void)
 
 	ne_init_event_pool();
 	community_spellup_reset_for_boot();
+	character_maintenance_init();
 
 	logit(LOG_STATUS, "assigning room specials events.");
 	for (j = 0; j < top_of_world; j++)
@@ -2022,10 +2116,6 @@ void ne_init_events(void)
 			  &j, sizeof(j));
 	}
 
-	/* miscellaneous character looping */
-	nevent_register_periodic_job("generic-character-sweep", generic_char_event, 20 * WAIT_SEC,
-				     5 * WAIT_SEC, nevent_periodic_policy::fixed_delay, true);
-
 	// Kingdom upkeep: charge each realm, and walk the arrears ladder when it
 	// cannot pay. Always registered; kingdom_upkeep_event() returns at once
 	// while the subsystem is disabled. The * WAIT_SEC factor is MANDATORY --
@@ -2094,10 +2184,8 @@ void zone_purge(int zone_number)
 		}
 		for (const uint64_t runtime_id : character_ids)
 		{
-			for (vict = world[k].people; vict; vict = vict->next_in_room)
-				if (vict->runtime_id == runtime_id)
-					break;
-			if (vict && IS_NPC(vict) && !IS_MORPH(vict))
+			vict = find_character_by_runtime_id(runtime_id);
+			if (vict && vict->in_room == k && IS_NPC(vict) && !IS_MORPH(vict))
 			{
 				extract_char(vict);
 				vict = NULL;
@@ -2425,11 +2513,15 @@ static nevent_integrity_report nevent_inspect_invariants(bool emit_summary)
 }
 
 // Expensive by design, but observation-only: diagnostics never sever or repair links.
-bool check_nevents()
+bool check_nevents(bool check_character_index)
 {
 	if (!nevent_require_game_thread("check_nevents"))
 		return false;
-	return nevent_inspect_invariants(true).errors == 0;
+	const bool characters_consistent = !check_character_index ||
+					   character_runtime_index_is_consistent();
+	if (!characters_consistent)
+		logit(LOG_EXIT, "character runtime index disagrees with character_list");
+	return characters_consistent && nevent_inspect_invariants(true).errors == 0;
 }
 
 void event_broken(struct char_link_data *cld)

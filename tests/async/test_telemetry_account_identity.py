@@ -35,7 +35,7 @@ def compile_run(source: str, *, flatfile: bool) -> None:
 
 
 class AccountIdentityTests(unittest.TestCase):
-    def test_account_load_is_the_only_preparation_call(self):
+    def test_account_load_boundaries_prepare_optional_identity(self):
         account = (ROOT / "src/account/account.c").read_text()
         read = function_body(account, r"\bint\s+read_account\s*\(")
         self.assertIsNotNone(read)
@@ -45,6 +45,14 @@ class AccountIdentityTests(unittest.TestCase):
         self.assertIn("(void)telemetry_runtime_account_prepare(acct);", read)
         self.assertEqual(RUNTIME.read_text().count("telemetry_runtime_account_prepare("), 1)
         self.assertEqual(account.count("telemetry_runtime_account_prepare("), 1)
+        asynchronous = (ROOT / "src/account/account_async.c").read_text()
+        self.assertIn("telemetry_runtime_account_scope(input.telemetry_environment_id", asynchronous)
+        self.assertNotIn("telemetry_runtime_account_prepare(", asynchronous)
+        loader = (ROOT / "src/account/account_load.c").read_text()
+        self.assertLess(loader.index('execute(connection, "COMMIT"'),
+                        loader.index("sql_prepare_telemetry_account_token_on("))
+        for field in ("telemetry_account_token", "telemetry_environment_id", "telemetry_season_id"):
+            self.assertIn(f"account->{field} = snapshot.{field};", asynchronous)
 
     def test_lifetime_schema_retains_retired_bindings(self):
         ddl = (ROOT / "migrations/immutable/0056_telemetry_account_identity.sql").read_text()
@@ -93,9 +101,49 @@ int main() {
 #include "sql/sql_telemetry_account_identity.h"
 #include <cassert>
 ''' + SQL.read_text() + '''
-int main() { std::uint64_t token = 91; assert(!sql_prepare_telemetry_account_token("fixture",1,1,&token)); assert(token == 0); assert(!sql_prepare_telemetry_account_token(nullptr,0,0,nullptr)); }
+int main() {
+    std::uint64_t token = 91;
+    assert(!sql_prepare_telemetry_account_token("fixture",1,1,&token)); assert(token == 0);
+    assert(!sql_prepare_telemetry_account_token(nullptr,0,0,nullptr));
+    token = 91;
+    assert(!sql_prepare_telemetry_account_token_on(nullptr,"fixture",1,1,1,&token)); assert(token == 0);
+    assert(!sql_prepare_telemetry_account_token_on(nullptr,nullptr,0,0,0,nullptr));
+}
 '''
         compile_run(source, flatfile=True)
+
+    def test_scope_snapshot_executes_actual_runtime_helper_without_sql(self):
+        body = function_body(RUNTIME.read_text(), r"\bbool\s+telemetry_runtime_account_scope\s*\(")
+        self.assertIsNotNone(body)
+        helper = "bool telemetry_runtime_account_scope(std::uint64_t &environment_id, std::uint64_t &season_id) noexcept\n" + body
+        source = '''
+#include "telemetry/telemetry_runtime.h"
+#include <cassert>
+struct { bool initialized, enabled, shutdown_pending; std::uint64_t session_scope_environment_id, session_scope_season_id; } R;
+''' + helper + '''
+int main() {
+    std::uint64_t environment = 81, season = 91;
+    assert(!telemetry_runtime_account_scope(environment,season)); assert(!environment && !season);
+    R = {true,true,false,7,11};
+#ifdef __NO_MYSQL__
+    assert(!telemetry_runtime_account_scope(environment,season)); assert(!environment && !season);
+#else
+    assert(telemetry_runtime_account_scope(environment,season)); assert(environment == 7 && season == 11);
+    for (int missing = 0; missing < 5; ++missing) {
+        R = {true,true,false,7,11};
+        if (missing == 0) R.initialized = false;
+        if (missing == 1) R.enabled = false;
+        if (missing == 2) R.shutdown_pending = true;
+        if (missing == 3) R.session_scope_environment_id = 0;
+        if (missing == 4) R.session_scope_season_id = 0;
+        environment = 81; season = 91;
+        assert(!telemetry_runtime_account_scope(environment,season)); assert(!environment && !season);
+    }
+#endif
+}
+'''
+        compile_run(source, flatfile=True)
+        compile_run(source, flatfile=False)
 
 
 def sql_fixture():
@@ -109,8 +157,10 @@ def sql_fixture():
     try:
         flags = shlex.split(subprocess.check_output(["mysql_config", "--cflags", "--libs"], text=True))
         subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-I", str(ROOT / "src"),
+                        "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
                         str(ROOT / "tests/async/telemetry_account_identity_sql.cc"), str(SQL),
-                        "-o", str(executable), *flags, "-lcrypto"], check=True)
+                        str(ROOT / "src/account/account_load.c"),
+                        "-o", str(executable), *flags, "-lcrypto", "-pthread"], check=True)
         admin = pymysql.connect(host=environment["TELEMETRY_REPOSITORY_HOST"],
                                 port=int(environment["TELEMETRY_REPOSITORY_PORT"]),
                                 user=environment["TELEMETRY_REPOSITORY_USER"],
@@ -216,6 +266,66 @@ def sql_fixture():
         quote_token = accepted(prepare("Quote'Fixture"))
         assert accepted(prepare("Quote'Fixture")) == quote_token
         assert not prepare("unknown' OR 1=1 -- ")["accepted"]
+        # The exact same allocator runs on an independent worker connection,
+        # without main-handle escaping, transactions or query-context access.
+        def worker(name, *, mode="normal", env=7, season=11, collision=0):
+            value = prepare(name, env=env, season=season, mode="worker_" + mode, collision=collision)
+            assert value["begins"] == value["commits"] == value["rollbacks"] == 0, value
+            return value
+        retried = worker("RenamedFixture")
+        assert retried["accepted"] and retried["token"] == replacement and retried["entropy_calls"] == 0
+        assert retried["owned_commits"] == 1 and not retried["outer_retained"]
+        assert worker("Quote'Fixture")["token"] == quote_token
+        before_worker = counts()
+        for mode in ("outer_transaction", "autocommit_off", "expired", "owner_lost"):
+            refused = worker("RenamedFixture", mode=mode)
+            assert not refused["accepted"] and refused["queries"] == 0 and counts() == before_worker, refused
+            assert refused["outer_retained"] == (mode == "outer_transaction"), refused
+        expired_after_begin = worker("RenamedFixture", mode="expire_after_begin")
+        assert not expired_after_begin["accepted"] and not expired_after_begin["outer_retained"]
+        assert expired_after_begin["queries"] <= 1 and counts() == before_worker
+        for mode in ("entropy_failure", "zero_entropy", "collision", "token_write_failure", "commit_failure", "allocation_failure"):
+            name = "WorkerFault" + mode
+            add_account(name)
+            refused = worker(name, mode=mode, collision=lifetime)
+            assert not refused["accepted"] and not refused["outer_retained"] and counts() == before_worker, refused
+        add_account("WorkerAmbiguous")
+        refused = worker("WorkerAmbiguous", mode="lost_commit_reply")
+        assert not refused["accepted"] and refused["owned_commits"] == 1 and not refused["outer_retained"]
+        assert counts() == (before_worker[0] + 1, before_worker[1] + 1)
+        recovered_worker = worker("WorkerAmbiguous")
+        assert recovered_worker["accepted"] and recovered_worker["entropy_calls"] == 0
+        assert worker("WorkerAmbiguous")["token"] == recovered_worker["token"]
+        # Execute the production account loader and optional preparation together.
+        # These are committed credential snapshots, not authentication events.
+        def add_async(name, blocked=0):
+            query("INSERT INTO accounts(account_name,blocked,email,password) VALUES (%s,%s,%s,%s)",
+                  (name, blocked, "async@example.invalid", "synthetic-worker-hash"))
+        def load(name, *, mode="normal", env=7, season=11):
+            value = prepare(name, env=env, season=season, mode="load_" + mode)
+            assert value["begins"] == value["commits"] == value["rollbacks"] == 0, value
+            assert value["loaded"] and not value["outer_retained"], value
+            return value
+        add_async("AsyncIdentityFixture")
+        prepared = load("AsyncIdentityFixture")
+        assert prepared["accepted"] and prepared["owned_commits"] == 1
+        assert load("AsyncIdentityFixture")["token"] == prepared["token"]
+        assert load("AsyncIdentityFixture", season=12)["token"] != prepared["token"]
+        for env, season in ((0, 11), (7, 0)):
+            unknown = load("AsyncIdentityFixture", env=env, season=season)
+            assert not unknown["accepted"] and unknown["queries"] == 0
+        before_async = counts()
+        for mode in ("entropy_failure", "zero_entropy", "token_write_failure", "commit_failure", "allocation_failure"):
+            name = "AsyncFault" + mode
+            add_async(name)
+            unknown = load(name, mode=mode)
+            assert not unknown["accepted"] and counts() == before_async, unknown
+        add_async("AsyncAmbiguous")
+        unknown = load("AsyncAmbiguous", mode="lost_commit_reply")
+        assert not unknown["accepted"] and counts() == (before_async[0] + 1, before_async[1] + 1)
+        assert load("AsyncAmbiguous")["accepted"]
+        add_async("AsyncDeletionFenced", blocked=2)
+        assert not load("AsyncDeletionFenced")["accepted"]
         for role, denied in ((owner, ["UPDATE telemetry_account_lifetime SET account_name=NULL", "DELETE FROM telemetry_account_token", "SELECT email FROM accounts", "INSERT INTO accounts(account_name) VALUES ('DeniedFixture')"]),
                              (report, ["SELECT * FROM accounts", "SELECT * FROM telemetry_account_lifetime", "SELECT * FROM telemetry_account_token"])):
             connection = pymysql.connect(host=environment["TELEMETRY_REPOSITORY_HOST"], port=int(environment["TELEMETRY_REPOSITORY_PORT"]), user=role, password=password, database=database, autocommit=True)
@@ -260,9 +370,10 @@ def sql_fixture():
             assert measured.returncode == 0, output
             fingerprint = runtime["normalized_metadata_fingerprints"][key]
         artifact = dict(status="passed", engine=engine, migration_head=runtime["migration_head"]["id"], normalized_metadata_fingerprint=fingerprint,
-                        qualification="native allocator, retry, scopes, rename, deletion/recreation, bounded entropy, rollback, lost commit reply, roles, constraints, verifier drift")
+                        qualification="native main and owned worker allocator, committed asynchronous account snapshots, optional preparation failures preserve login, retry, scopes, rename, deletion/recreation, bounded entropy, rollback, lost commit reply, roles, constraints, verifier drift")
         suffix = "mariadb" if key == "mariadb10_11" else "mysql"
-        (ROOT / f"bin/telemetry-account-identity-{suffix}.json").write_text(json.dumps(artifact, indent=2) + "\n")
+        target = Path(os.environ.get("TELEMETRY_ACCOUNT_IDENTITY_RESULT", ROOT / f"bin/telemetry-account-identity-{suffix}.json"))
+        target.write_text(json.dumps(artifact, indent=2) + "\n")
         print(json.dumps(artifact), flush=True)
     finally:
         if admin is not None:

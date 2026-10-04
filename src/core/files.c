@@ -31,6 +31,9 @@
 #include "item/item_ownership_runtime.h"
 #include "item/encumbrance_policy.h"
 #include "combat/justice.h"
+#ifndef _PFILE_
+#include "combat/spell_wards.h"
+#endif
 #include "core/mm.h"
 #include "classes/necromancy.h"
 #include "economy/account_bank_balances.h"
@@ -51,6 +54,7 @@
 #include "sql/sql_corpse.h"
 #include "sql/sql_locker.h"
 #include "sql/sql_player_deletion.h"
+#include "persistence/economic_sql_lifecycle_guard.h"
 #include "sql/sql_player.h"
 #include "sql/sql_player_identity.h"
 #include "sql/sql_saved_item.h"
@@ -536,6 +540,9 @@ int writeStatus(char *buf, P_char ch, bool updateTime)
 //   with the time left on the event.
 void updateShortAffects(P_char ch)
 {
+#ifndef _PFILE_
+	spell_ward_sync_timers(ch);
+#endif
 	affected_type *paf = ch->affected;
 	P_nevent pnev;
 
@@ -625,7 +632,8 @@ int writeAffects(char *buf, struct affected_type *af)
 		if (IS_SET(af->flags, AFFTYPE_SHORT))
 		{
 			// af->duration updated with updateShortAffects(ch), but we want secs to save not pulses.
-			ADD_INT(buf, af->duration / WAIT_SEC);
+			ADD_INT(buf,
+				spell_ward_is_managed(af) ? af->duration : af->duration / WAIT_SEC);
 		}
 		else
 		{
@@ -642,6 +650,18 @@ int writeAffects(char *buf, struct affected_type *af)
 		ADD_LONG(buf, af->bitvector5);
 		ADD_LONG(buf, 0); // af->bitvector6);
 		ADD_SHORT(buf, af->level);
+		ADD_ULL(buf, af->ward_source_uid);
+		ADD_INT(buf, af->ward_full_duration);
+		ADD_ULL(buf, af->ward_capacity > 0 ?
+				     static_cast<unsigned long long>(af->ward_capacity) :
+				     0);
+		ADD_ULL(buf, af->ward_capacity_max > 0 ?
+				     static_cast<unsigned long long>(af->ward_capacity_max) :
+				     0);
+		ADD_INT(buf, af->ward_refresh_remaining);
+		ADD_BYTE(buf, af->ward_source_type);
+		ADD_BYTE(buf, af->ward_source_worn);
+		ADD_BYTE(buf, af->ward_active);
 	}
 
 	return (int)(buf - start);
@@ -2040,15 +2060,19 @@ character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)
 		// Own the transaction: a later cleanup failure must leave the mapping and
 		// player loadable for retry. Never publish or kick/save the live character
 		// while this transaction can still roll back.
-		if (sql_in_transaction() || !sql_begin_transaction())
+		economic_sql_currency_writer_guard deletion_writer;
+		if (sql_in_transaction() ||
+		    economic_sql_currency_writer_guard::acquire(DB, &deletion_writer) ||
+		    !sql_begin_transaction())
 			return character_delete_result::refused;
-		const bool prepared =
-			sql_player_deletion_guard(GET_PID(ch)) &&
-			sql_soft_delete_character(GET_PID(ch)) && remove_all_artifacts_sql(ch) &&
-			remove_all_locker_access(ch) &&
-			(!GET_ASSOC(ch) || GET_ASSOC(ch)->save_without_member(ch)) &&
-			(!bDeleteLocker || sql_delete_locker(GET_PID(ch), 0)) &&
-			sql_delete_ship(GET_NAME(ch)) && sql_delete_player(GET_PID(ch), false);
+		const bool prepared = sql_player_deletion_guard(GET_PID(ch), deletion_writer) &&
+				      sql_soft_delete_character(GET_PID(ch)) &&
+				      remove_all_artifacts_sql(ch) &&
+				      remove_all_locker_access(ch) &&
+				      (!GET_ASSOC(ch) || GET_ASSOC(ch)->save_without_member(ch)) &&
+				      (!bDeleteLocker || sql_delete_locker(GET_PID(ch), 0)) &&
+				      sql_delete_ship(GET_NAME(ch)) &&
+				      sql_delete_player(GET_PID(ch), false, &deletion_writer);
 		if (!prepared)
 		{
 			const bool rolled_back = sql_rollback();
@@ -2632,6 +2656,10 @@ int restoreAffects(char *buf, P_char ch)
 	}
 	for (count = GET_SHORT(buf); count > 0; count--)
 	{
+		memset(&af, 0, sizeof(af));
+		custom_messages = 0;
+		wear_off_char = NULL;
+		wear_off_room = NULL;
 		if (aff_vers > 4)
 		{
 			if (aff_vers > 5)
@@ -2670,8 +2698,21 @@ int restoreAffects(char *buf, P_char ch)
 				af.level = GET_LEVEL(ch);
 			}
 
+			if (aff_vers > 8)
+			{
+				af.ward_source_uid = GET_ULL(buf);
+				af.ward_full_duration = GET_INTE(buf);
+				af.ward_capacity = static_cast<int64_t>(GET_ULL(buf));
+				af.ward_capacity_max = static_cast<int64_t>(GET_ULL(buf));
+				af.ward_refresh_remaining = GET_INTE(buf);
+				af.ward_source_type = GET_BYTE(buf);
+				af.ward_source_worn = GET_BYTE(buf);
+				af.ward_active = GET_BYTE(buf);
+			}
+
 			// Duration saved as seconds for short affects, but we want to store duration as pulses in game.
-			if (aff_vers > 6 && IS_SET(af.flags, AFFTYPE_SHORT))
+			if (aff_vers > 6 && IS_SET(af.flags, AFFTYPE_SHORT) &&
+			    !spell_ward_is_managed(&af))
 			{
 				af.duration *= WAIT_SEC;
 			}

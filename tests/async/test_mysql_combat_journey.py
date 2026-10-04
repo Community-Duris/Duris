@@ -149,7 +149,8 @@ def run(server, reset_coins=False, boons=False, *, require_unassisted_recovery=F
 
     def verify_wallet_conversion(before_rows, after_rows, player_id,
                                  wallet_before, revisions_before,
-                                 owner_revisions_unaffected_before, coin_rows_before):
+                                 owner_revisions_unaffected_before, coin_rows_before,
+                                 corpse_uid):
         # Death first converts the wallet through the ordinary coin-creation
         # transaction. Permit only that one append; all original source rows
         # (including disputed payload/custody) must remain byte-identical.
@@ -196,9 +197,20 @@ def run(server, reset_coins=False, boons=False, *, require_unassisted_recovery=F
         owner_revision_where = (
             f'NOT ((owner_type=7 AND owner_id=0 AND owner_context_id=0) OR '
             f'(owner_type=1 AND owner_id={player_id} AND owner_context_id=0))')
-        assert exact_rows('item_owner_revision', owner_revision_where) == \
-            owner_revisions_unaffected_before, \
-            'unrelated item-owner revision rows changed during wallet conversion'
+        # The same real death also allocates its captured corpse owner before
+        # the retained-conflict refusal. It may initialize that owner at zero;
+        # it must neither transfer custody nor mutate any pre-existing owner.
+        unaffected_after = exact_rows('item_owner_revision', owner_revision_where)
+        assert not (Counter(owner_revisions_unaffected_before)-Counter(unaffected_after)), \
+            'retained death mutated a pre-existing unrelated owner revision'
+        added_owner_rows = list((Counter(unaffected_after)-
+                                 Counter(owner_revisions_unaffected_before)).elements())
+        corpse_owner_where = (f'owner_type=4 AND owner_id={corpse_uid} '
+                              'AND owner_context_id=0 AND revision=0')
+        assert len(added_owner_rows) <= 1 and added_owner_rows == \
+            exact_rows('item_owner_revision', corpse_owner_where), \
+            ('retained death added an owner other than its uncommitted corpse: ' +
+             repr(added_owner_rows))
         revision_after = {
             'system': number(
                 'SELECT revision FROM item_owner_revision WHERE owner_type=7 '
@@ -255,6 +267,7 @@ def run(server, reset_coins=False, boons=False, *, require_unassisted_recovery=F
                 'player_items': added_player_items,
                 'item_current_owner': added_custody_rows,
                 'item_ownership_ledger': added_ledger_rows,
+                'item_owner_revision': added_owner_rows,
             },
         }
 
@@ -592,12 +605,14 @@ def run(server, reset_coins=False, boons=False, *, require_unassisted_recovery=F
                         record_state('retained_conflict_durable_ack')
 
                         state_at_ack = retained_state(pid)
+                        evidence['retained_state_after_ack'] = state_at_ack
                         assert len(state_at_ack['conflict_cases']) == 1
                         assert len(state_at_ack['death_dispositions']) == 1
                         wallet_conversion = verify_wallet_conversion(
                             source_rows_before_terminal, state_at_ack['source_rows'], pid,
                             wallet_before_terminal, owner_revisions_before,
-                            owner_revisions_unaffected_before, coin_rows_before)
+                            owner_revisions_unaffected_before, coin_rows_before,
+                            int(corpse_uid_text))
                         evidence['wallet_conversion_at_ack'] = wallet_conversion
                         record_event(
                             'wallet_conversion_accounted_at_durable_ack',

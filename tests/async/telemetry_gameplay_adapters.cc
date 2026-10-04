@@ -40,6 +40,11 @@ struct arena_data arena
 };
 thread_local bool fixture_track_crypto = false;
 thread_local std::uint64_t fixture_crypto_heap_calls = 0U;
+static const std::thread::id fixture_game_thread_id = std::this_thread::get_id();
+bool nevent_require_game_thread(const char *)
+{
+	return std::this_thread::get_id() == fixture_game_thread_id;
+}
 void *fixture_crypto_malloc(std::size_t bytes, const char *, int)
 {
 	fixture_crypto_heap_calls += fixture_track_crypto;

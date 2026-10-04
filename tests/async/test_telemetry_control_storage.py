@@ -249,7 +249,9 @@ def qualification():
         assert runtime_fingerprint(environment) == fingerprint
         assert query("SELECT * FROM telemetry_interval ORDER BY ingest_id") == saved
         proof = dict(engine=os.environ["TELEMETRY_REPOSITORY_DB_IMAGE"], status="passed",
-            migration_head=migration.stem, migration_count=67, normalized_metadata_fingerprint=fingerprint,
+            migration_head=migration.stem,
+            migration_count=int(environment["TELEMETRY_REPOSITORY_MIGRATION_COUNT"]),
+            normalized_metadata_fingerprint=fingerprint,
             exact_fields=76, wire_bytes=368, typed_resolutions=112, independent_incident_schema=6,
             sealed_versions_preserved=True, full_schema_rerun=True, schema_drift_refused=True,
             restored_metadata_fingerprint=True, verified_postfix_scope=True, private_review_role=True,

@@ -1462,3 +1462,10 @@ resolutions and separate target-state evidence while retaining these kind-11
 meanings. Live duration coverage, the complete producer inventory, retained
 control publication, prevention, faction exposure, typed outcomes and all seven
 final acceptance requirements retain unfinished portions under #258.
+
+The combined accounting/telemetry contract now preserves six immutable upgrade
+histories at **70 steps / 263 tables**. Both database engines qualified those
+histories, their unchanged prefixes and the shared runtime schema. See
+[runtime compatibility](../persistence/RUNTIME_COMPATIBILITY.md) and the latest
+[implementation status](IMPLEMENTATION_STATUS.md) for the integrated copyover,
+asynchronous identity and common-schema qualification boundaries.

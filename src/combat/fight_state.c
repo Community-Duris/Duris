@@ -1,5 +1,6 @@
 /* Combat engagement state and target management. */
 #include "core/prototypes.h"
+#include "world/character_maintenance.h"
 #include "core/structs.h"
 #include "core/utility.h"
 #include "core/utils.h"
@@ -791,6 +792,7 @@ void update_pos(P_char ch)
 	    ((ch->only.npc->default_pos & STAT_MASK) >= STAT_SLEEPING) &&
 	    (!HAS_MEMORY(ch) || !GET_MEMORY(ch)))
 		ch->specials.position = ch->only.npc->default_pos;
+	character_maintenance_changed(ch);
 }
 
 /*

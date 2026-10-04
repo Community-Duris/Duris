@@ -30,7 +30,7 @@ def quest_aliases(encoded):
     return aliases
 
 
-def run(server, inspector):
+def run(server, inspector, fence_fault=None):
     with tempfile.TemporaryDirectory(prefix="flatfile-deletion-") as temporary:
         root = Path(temporary)
         state, runtime = root / "state", root / "runtime"
@@ -54,6 +54,14 @@ def run(server, inspector):
             "DURIS_WEBSOCKET_LISTEN_ADDRESS": "127.0.0.1",
             "REDIS": "FALSE", "CHAOS_MUD": "FALSE",
         }
+        fault_marker = root / "fence-fault"
+        if fence_fault:
+            library = root / "fence-fault.so"
+            subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+                            "-shared", "-fPIC", str(Path(__file__).with_name("flatfile_account_fence_fault.cpp")),
+                            "-ldl", "-o", str(library)], check=True)
+            environment["LD_PRELOAD"] = str(library)
+            environment["DURIS_FLATFILE_FENCE_FAULT_MARKER"] = str(fault_marker)
         if "LD_LIBRARY_PATH" in os.environ:
             environment["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH"]
         output_path = runtime / "server.out"
@@ -101,6 +109,163 @@ def run(server, inspector):
                 original_quest_state = retained.read_bytes()
                 assert (1, journey.CHARACTER) in quest_aliases(original_quest_state), "quest alias was never retained"
                 original_snapshot = snapshot.read_bytes()
+
+                # The native account+membership authority must stay usable when
+                # accounting metadata refuses a new permanent deletion fence.
+                client.send("7")
+                client.expect("Re-enter your account password")
+                client.send(journey.PASSWORD)
+                client.expect("PERMANENT ACCOUNT DELETION", timeout=30)
+                client.expect("CANCEL:")
+                account_root = state / "identities/accounts"
+                def account_images():
+                    return {str(p.relative_to(state)): p.read_bytes()
+                            for p in account_root.rglob("*")
+                            if p.is_file() and not p.name.endswith(".lock")}
+                original_accounts = account_images()
+                assert original_accounts, "native account authority missing"
+                fault = state / "economic-evidence/corrupt-account-fence.fixture"
+                assert not fault.exists(), "owned admission fault already exists"
+                fault.write_bytes(b"synthetic corrupt accounting metadata")
+                fault.chmod(0o600)
+                try:
+                    client.send(journey.ACCOUNT)
+                    client.expect("Account deletion could not establish its durable fence;", timeout=30)
+                    client.expect("ACCOUNT MENU")
+                    assert account_images() == original_accounts, "admission refusal fenced native account/membership"
+                    assert snapshot.read_bytes() == original_snapshot, "account admission refusal changed player snapshot"
+                    assert retained.read_bytes() == original_quest_state, "account admission refusal erased quest alias"
+                finally:
+                    fault.unlink()
+                client.send("0")
+                client.close()
+                client = journey.reconnect_character(plain)
+                client.send("save")
+                client.expect("Save complete for " + journey.CHARACTER + ".", timeout=30)
+                client.send("quit")
+                client.expect("ACCOUNT MENU", timeout=30)
+                original_snapshot = snapshot.read_bytes()
+                original_quest_state = retained.read_bytes()
+                if fence_fault:
+                    client.send("7")
+                    client.expect("Re-enter your account password")
+                    client.send(journey.PASSWORD)
+                    client.expect("PERMANENT ACCOUNT DELETION", timeout=30)
+                    original_accounts = account_images()
+                    fault_marker.write_bytes(b"D" if fence_fault == "durable" else b"U")
+                    fault_marker.chmod(0o600)
+                    client.send(journey.ACCOUNT)
+                    fault_hit = fault_marker.with_name("fence-fault.hit")
+                    deadline = time.monotonic() + 30
+                    while not fault_hit.exists() and time.monotonic() < deadline:
+                        time.sleep(0.01)
+                    assert fault_hit.exists(), "native sync fault was not hit"
+                    assert (state / "domains/.critical-authority-transaction").exists()
+                    print(f"Native {fence_fault} fence fault hit; authority journal remains pending", flush=True)
+                    client.expect("fence publication is awaiting native recovery", timeout=30)
+                    client.expect("to retry completion:")
+                    assert (state / "domains/.critical-authority-transaction").exists()
+                    assert account_images() == original_accounts and snapshot.read_bytes() == original_snapshot
+                    assert retained.read_bytes() == original_quest_state
+                    client.send("cancel")
+                    client.expect("Deletion has already started and cannot be cancelled.", timeout=30)
+                    client.expect("to retry completion:")
+                    account_root.chmod(0o701)
+                    try:
+                        client.send(journey.ACCOUNT)
+                        client.expect("fence publication is awaiting native recovery", timeout=30)
+                        client.expect("to retry completion:")
+                        assert account_images() == original_accounts and snapshot.read_bytes() == original_snapshot
+                        assert (state / "domains/.critical-authority-transaction").exists()
+                        # Crash while publication is still pending and apply is
+                        # unavailable; only the next boot may replay its journal.
+                        process.kill()
+                        process.wait(timeout=30)
+                        process = None
+                    finally:
+                        account_root.chmod(0o700)
+                    client.close()
+                    client = None
+                    assert (state / "domains/.critical-authority-transaction").exists()
+                    process = boot()
+                    client = journey.MudClient(plain)
+                    client.expect("Please enter your account name:")
+                    client.send(journey.ACCOUNT)
+                    client.expect("Please enter your password:")
+                    client.send(journey.PASSWORD)
+                    client.expect("to retry completion:", timeout=30)
+                    assert snapshot.read_bytes() == original_snapshot
+                    assert retained.read_bytes() == original_quest_state
+                    assert not (state / "domains/.critical-authority-transaction").exists()
+                    # The deletion journal reads the state file under its
+                    # authority lock, not the runtime publisher's separate lock.
+                    # Unsafe state metadata must refuse native erasure without
+                    # changing its bytes or destroying the fenced identities.
+                    fenced_accounts = account_images()
+                    assert retained.is_file()
+                    original_mode = retained.stat().st_mode & 0o777
+                    assert original_mode == 0o600
+                    retained.chmod(0o601)
+                    try:
+                        client.send(journey.ACCOUNT)
+                        client.expect("Account deletion did not complete.", timeout=30)
+                        client.expect("to retry completion:")
+                        assert snapshot.read_bytes() == original_snapshot
+                        assert account_images() == fenced_accounts
+                        assert retained.read_bytes() == original_quest_state
+                        assert b"were permanently deleted." not in client.transcript
+                        client.send("cancel")
+                        client.expect("Deletion has already started and cannot be cancelled.", timeout=30)
+                        client.expect("to retry completion:")
+                    finally:
+                        retained.chmod(original_mode)
+                    client.close()
+                    client = None
+                    stop()
+                    process = boot()
+                    client = journey.MudClient(plain)
+                    client.expect("Please enter your account name:")
+                    client.send(journey.ACCOUNT)
+                    client.expect("Please enter your password:")
+                    client.send(journey.PASSWORD)
+                    client.expect("to retry completion:", timeout=30)
+                    assert snapshot.read_bytes() == original_snapshot
+                    assert account_images() == fenced_accounts
+                    assert retained.read_bytes() == original_quest_state
+                    print(f"Native {fence_fault} quest-state persistence refusal preserved retry identities and aliases across cold restart", flush=True)
+                    client.send(journey.ACCOUNT)
+                    client.expect("Your account and all of its characters were permanently deleted.", timeout=30)
+                    assert client.transcript.count(b"were permanently deleted.") == 1
+                    assert not snapshot.exists() and not account_images()
+                    assert (1, journey.CHARACTER) not in quest_aliases(retained.read_bytes())
+                    assert not (state / "domains/.critical-authority-transaction").exists()
+                    client.close()
+                    client = None
+                    # Force a new quest-state write in the same process. A stale
+                    # tracker would restore the erased account's old aliases.
+                    client = journey.MudClient(plain)
+                    journey.create_character(client, account="Eraseview", character="Observer")
+                    client.send("save")
+                    client.expect("Save complete for Observer.", timeout=30)
+                    client.send("quit")
+                    client.expect("ACCOUNT MENU", timeout=30)
+                    refreshed_aliases = quest_aliases(retained.read_bytes())
+                    assert (1, journey.CHARACTER) not in refreshed_aliases, "runtime cache restored an erased alias"
+                    observers = [pid for pid, name in refreshed_aliases if name == "Observer"]
+                    assert len(observers) == 1 and observers[0] != 1, "new quest identity was never published after cache refresh"
+                    client.close()
+                    client = None
+                    stop()
+                    process = boot()
+                    client = journey.MudClient(plain)
+                    client.expect("Please enter your account name:")
+                    client.send(journey.ACCOUNT)
+                    client.expect("is this correct?", timeout=30)
+                    assert not snapshot.exists() and not any((state / name).exists() for name in original_accounts)
+                    assert (1, journey.CHARACTER) not in quest_aliases(retained.read_bytes())
+                    stop()
+                    print(f"[PASS] real flatfile {fence_fault} fence publication, persistent recovery refusal, non-cancellable request, pending-journal crash/restart, exact deletion retry and second cold restart")
+                    return
                 summon_catalog = state / "domains/account_reward_summon_catalog"
                 held_catalog = root / "held-summon-catalog"
                 summon_catalog.rename(held_catalog)
@@ -150,7 +315,9 @@ def run(server, inspector):
                 # unrelated account/session captures into the regression output.
                 diagnostics = journey.runtime_logs(runtime) + output_path.read_text(errors="replace")
                 for line in diagnostics.splitlines():
-                    if "deleteCharacter()" in line:
+                    if any(marker in line for marker in ("deleteCharacter()", "deleteAccount()",
+                                                          "account deletion", "zone-story",
+                                                          "authority file metadata")):
                         print(line)
                 raise
             finally:
@@ -165,5 +332,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--server", type=Path, required=True)
     parser.add_argument("--inspector", type=Path, required=True)
+    parser.add_argument("--fence-fault", choices=("durable", "uncertain"))
     args = parser.parse_args()
-    run(args.server.resolve(strict=True), args.inspector.resolve(strict=True))
+    run(args.server.resolve(strict=True), args.inspector.resolve(strict=True), args.fence_fault)

@@ -11,30 +11,13 @@ import shlex
 import subprocess
 import tempfile
 import uuid
+from _sql_dispatch_sources import SQL_DISPATCH_SOURCES
 
 ROOT = Path(__file__).resolve().parents[2]
 COMMON = ['src/item/locker_receipt.c', 'src/flatfile/flatfile_store.c',
           'src/economy/currency_command.c', 'src/persistence/critical_command.c',
           'src/world/epic_command.c', 'src/combat/combat_outcome_command.c']
-SQL = ['src/item/item_transfer_command.c', "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", 'src/item/item_transfer_repository.c',
-       'src/economy/auction_command.c', 'src/economy/auction_repository.c',
-       'src/combat/combat_outcome_repository.c', 'src/guild/artifact_guild_command.c',
-       'src/guild/artifact_guild_repository.c', 'src/economy/boon_reward_command.c',
-       'src/economy/boon_reward_repository.c', 'src/world/zone_touch_command.c',
-       'src/world/zone_touch_repository.c', 'src/account/session_audit_command.c',
-       'src/account/session_audit_repository.c', 'src/economy/coin_transfer_command.c',
-       'src/economy/collector_command.c', 'src/economy/collector_codec.c',
-       'src/economy/collector_policy.c', 'src/economy/collector_repository.c',
-       'src/persistence/corpse_lifecycle_command.c',
-       'src/persistence/corpse_lifecycle_repository.c',
-       'src/persistence/player_death_restitution_command.c',
-       'src/persistence/player_death_restitution_repository.c',
-       'src/player/player_snapshot_codec.c', 'src/player/player_load_repository.c',
-       'src/player/player_save_journal.c',
-       'src/persistence/quest_reward_obligation_repository.c',
-       'src/player/player_death_recovery_query.c', 'src/player/player_death_conflict_repository.c',
-       'src/player/player_load_topology.c', 'src/persistence/persistence_observability.c',
-       'src/persistence/economic_accounting_repository.c','src/persistence/economic_sql_bank_transaction.c','src/economy/economic_currency_adapter.c','src/economy/economic_accounting_types.c','src/economy/economic_accounting_plan.c','src/economy/economic_accounting_intent.c','src/persistence/economic_sql_lifecycle_guard.c','src/persistence/critical_command_repository.c']
+
 
 
 def run_backend(temp, mysql=False):
@@ -46,9 +29,9 @@ def run_backend(temp, mysql=False):
     source.write_text((ROOT / 'tests/async/locker_receipt_harness.cpp').read_text().replace('// SERVICE_BODY', service))
     flags = shlex.split(subprocess.check_output(['mysql_config', '--cflags'], text=True)) if mysql else ['-D__NO_MYSQL__', '-Isrc/no_mysql']
     libraries = shlex.split(subprocess.check_output(['mysql_config', '--libs'], text=True)) if mysql else []
-    sources = SQL if mysql else ['src/flatfile/flatfile_player_domain_repository.c', 'src/flatfile/flatfile_authority_transaction.c']
+    sources = ['src/' + path for path in SQL_DISPATCH_SOURCES] if mysql else ['src/flatfile/flatfile_player_domain_repository.c', 'src/flatfile/flatfile_authority_transaction.c']
     binary = directory / 'harness'
-    section_flags = ['-ffunction-sections', '-fdata-sections', '-Wl,--gc-sections'] if mysql else []
+    section_flags = ['-ffunction-sections', '-fdata-sections', '-Wl,--gc-sections']
     subprocess.run(['g++', '-std=c++20', '-Wall', '-Wextra', '-Werror',
                     *section_flags, '-Isrc', *flags,
                     str(source), *COMMON, *sources, *libraries, '-lcrypto', '-pthread', '-o', str(binary)], cwd=ROOT, check=True)
@@ -73,7 +56,8 @@ with tempfile.TemporaryDirectory(prefix='locker-recovery-') as temporary:
         database = 'locker_receipt_test_' + uuid.uuid4().hex[:12]
         os.environ['LOCKER_TEST_DATABASE'] = database
         environment = dict(os.environ, MYSQL_PWD=os.environ['TEST_DB_PASSWORD'])
-        mysql = ['mysql', '--protocol=tcp', '-h', os.environ['TEST_DB_HOST'], '-u', os.environ['TEST_DB_USER']]
+        mysql = ['mysql', '--no-defaults', '--protocol=tcp', '-h', os.environ['TEST_DB_HOST'],
+                 '-P', os.environ.get('TEST_DB_PORT', '3306'), '-u', os.environ['TEST_DB_USER']]
         def sql(script, selected=False):
             subprocess.run(mysql + ([database] if selected else []), input=script, text=True, env=environment, check=True)
         sql('CREATE DATABASE ' + database)

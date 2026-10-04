@@ -710,8 +710,38 @@
       "verify_checksum": "aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a"
     },
     {
-      "id": "0054_telemetry_incident_coverage",
+      "id": "0054_alchemy_publication",
       "sequence": 54,
+      "description": "Retain poison Encrust and Harvester publication through player saves",
+      "apply": "immutable/0054_alchemy_publication.sql",
+      "verify": "immutable/0054_alchemy_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "da69352e3ac62cdece4bcce661caa2fa98ad0c8ba3a487e1eed8211fb2629692",
+      "verify_checksum": "2bac3a0afe31dcc4468f525297a708b30ec05dfaa2e5e94832e1205e506a9b31"
+    },
+    {
+      "id": "0055_sql_room_item_payload",
+      "sequence": 55,
+      "description": "Retain exact immutable payload and season provenance for admitted ordinary room drops",
+      "apply": "immutable/0055_sql_room_item_payload.sql",
+      "verify": "immutable/0055_sql_room_item_payload.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "47608d67ec12401d2de2f74174b7739cbce7d942153618f0dbc4b6287769b877",
+      "verify_checksum": "bf2a03adde513bd954ac07e552ceb0329d4c98a056a7e30d05868b96fa07ac67"
+    },
+    {
+      "id": "0056_spell_ward_durability",
+      "sequence": 56,
+      "description": "Persist finite spell ward capacity and equipment renewal deadlines",
+      "apply": "immutable/0056_spell_ward_durability.sql",
+      "verify": "immutable/0056_spell_ward_durability.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "e53e06ca7a5b482b6efee950a4db69fdb7d796b7ff71ed495e67bd3194133bb1",
+      "verify_checksum": "e3fbff0b062da55fc7231411beefe8be216341755df7fa088ba64b1f86653551"
+    },
+    {
+      "id": "0054_telemetry_incident_coverage",
+      "sequence": 57,
       "description": "Retain reviewed telemetry incidents and published coverage snapshots",
       "apply": "immutable/0054_telemetry_incident_coverage.sql",
       "verify": "immutable/0054_telemetry_incident_coverage.sh",
@@ -721,7 +751,7 @@
     },
     {
       "id": "0055_telemetry_observation_projections",
-      "sequence": 55,
+      "sequence": 58,
       "description": "Project collected progression encounter and combat observations at definition 2",
       "apply": "immutable/0055_telemetry_observation_projections.sql",
       "verify": "immutable/0055_telemetry_observation_projections.sh",
@@ -731,7 +761,7 @@
     },
     {
       "id": "0056_telemetry_account_identity",
-      "sequence": 56,
+      "sequence": 59,
       "description": "Retain private account lifetimes and scoped opaque telemetry account tokens",
       "apply": "immutable/0056_telemetry_account_identity.sql",
       "verify": "immutable/0056_telemetry_account_identity.sh",
@@ -741,7 +771,7 @@
     },
     {
       "id": "0057_telemetry_ownership_observations",
-      "sequence": 57,
+      "sequence": 60,
       "description": "Capture typed authenticated account ownership observations without adding effort",
       "apply": "immutable/0057_telemetry_ownership_observations.sql",
       "verify": "immutable/0057_telemetry_ownership_observations.sh",
@@ -751,7 +781,7 @@
     },
     {
       "id": "0058_telemetry_identity_review",
-      "sequence": 58,
+      "sequence": 61,
       "description": "Authenticate dated cross-account reviews and freeze generation identity versions",
       "apply": "immutable/0058_telemetry_identity_review.sql",
       "verify": "immutable/0058_telemetry_identity_review.sh",
@@ -761,7 +791,7 @@
     },
     {
       "id": "0059_telemetry_ownership_incident_coverage",
-      "sequence": 59,
+      "sequence": 62,
       "description": "Retain independent reviewed ownership-loss inventories for balance generations",
       "apply": "immutable/0059_telemetry_ownership_incident_coverage.sql",
       "verify": "immutable/0059_telemetry_ownership_incident_coverage.sh",
@@ -771,7 +801,7 @@
     },
     {
       "id": "0060_telemetry_identity_publication",
-      "sequence": 60,
+      "sequence": 63,
       "description": "Retain exact identity inputs and publish reviewed effort and XP portfolios atomically",
       "apply": "immutable/0060_telemetry_identity_publication.sql",
       "verify": "immutable/0060_telemetry_identity_publication.sh",
@@ -781,7 +811,7 @@
     },
     {
       "id": "0061_telemetry_shared_battle_facts",
-      "sequence": 61,
+      "sequence": 64,
       "description": "Persist shared battle facts with logical replay and independent incident schema 3",
       "apply": "immutable/0061_telemetry_shared_battle_facts.sql",
       "verify": "immutable/0061_telemetry_shared_battle_facts.sh",
@@ -791,7 +821,7 @@
     },
     {
       "id": "0062_telemetry_battle_contributions",
-      "sequence": 62,
+      "sequence": 65,
       "description": "Persist battle contributions with exact segment replay and independent incident schema 4",
       "apply": "immutable/0062_telemetry_battle_contributions.sql",
       "verify": "immutable/0062_telemetry_battle_contributions.sh",
@@ -801,7 +831,7 @@
     },
     {
       "id": "0063_telemetry_battle_source",
-      "sequence": 63,
+      "sequence": 66,
       "description": "Retain exact battle source with the generation cursor and immutable identity reservation",
       "apply": "immutable/0063_telemetry_battle_source.sql",
       "verify": "immutable/0063_telemetry_battle_source.sh",
@@ -811,7 +841,7 @@
     },
     {
       "id": "0064_telemetry_battle_publication",
-      "sequence": 64,
+      "sequence": 67,
       "description": "Atomically publish retained battle observations with dated presence and reserved identity attribution",
       "apply": "immutable/0064_telemetry_battle_publication.sql",
       "verify": "immutable/0064_telemetry_battle_publication.sh",
@@ -821,7 +851,7 @@
     },
     {
       "id": "0065_telemetry_battle_builds",
-      "sequence": 65,
+      "sequence": 68,
       "description": "Persist selected battle build point observations with exact replay and independent incident schema 5",
       "apply": "immutable/0065_telemetry_battle_builds.sql",
       "verify": "immutable/0065_telemetry_battle_builds.sh",
@@ -831,7 +861,7 @@
     },
     {
       "id": "0066_telemetry_build_publication",
-      "sequence": 66,
+      "sequence": 69,
       "description": "Retain and atomically publish exact build points under independent battle definition 6",
       "apply": "immutable/0066_telemetry_build_publication.sql",
       "verify": "immutable/0066_telemetry_build_publication.sh",
@@ -841,7 +871,7 @@
     },
     {
       "id": "0067_telemetry_typed_control",
-      "sequence": 67,
+      "sequence": 70,
       "description": "Persist typed control resolutions and target intervals with exact replay and independent incident schema 6",
       "apply": "immutable/0067_telemetry_typed_control.sql",
       "verify": "immutable/0067_telemetry_typed_control.sh",

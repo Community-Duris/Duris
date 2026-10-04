@@ -12,7 +12,9 @@ ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
 #define clock_gettime nevent_test_clock_gettime
 #include "world/new_events.c"
+#include "combat/spell_wards.h"
 #undef clock_gettime
+#include "account/character_identity.c"
 
 #include <algorithm>
 #include <chrono>
@@ -324,6 +326,7 @@ static void reset_scheduler()
 	nevent_deferred_due_counts.clear();
 	nevent_pending_cancellations.clear();
 	nevent_pending_reschedules.clear();
+	require(nevent_reschedule_batch_depth == 0, 49);
 	pulse = 0;
 	after_events_call = FALSE;
 	fake_clock_ns = 0;
@@ -520,6 +523,7 @@ static bool callback_reschedule_accepted = false;
 
 static void reschedule_other_callback(P_char, P_char, P_obj, void *)
 {
+	nevent_reschedule_batch batch;
 	callback_reschedule_accepted = nevent_reschedule_after(callback_reschedule_target, 10);
 }
 
@@ -544,6 +548,67 @@ static void test_callback_reschedule()
 	while (ne_event_counter > 0)
 		run_one_heartbeat();
 	require(fired.size() == 1 && fired[0].first == 4500 && fired[0].second == 10, 248);
+}
+
+static void test_reschedule_batches(bool player_priority)
+{
+	reset_scheduler();
+	char_data player = {};
+	player.specials.position = STAT_NORMAL | POS_STANDING;
+	std::vector<nevent_handle> handles;
+	for (int i = 0; i < 3; ++i)
+	{
+		record_payload record = { 9000 + i, 4 };
+		handles.push_back(add_event(record_callback, 600 + i * 300, nullptr,
+					   nullptr, nullptr, 0, &record, sizeof(record)).handle);
+	}
+	add_record(9003, 4, 4);
+	add_player_record(&player, event_wait, 9004, 600);
+	const auto player_handle = nevent_handle_from_event(player.nevents);
+	record_payload doomed_record = { 9005, ULLONG_MAX };
+	const auto doomed = add_event(record_callback, 900, nullptr, nullptr, nullptr,
+				      0, &doomed_record, sizeof(doomed_record)).handle;
+	{
+		nevent_reschedule_batch outer;
+		require(nevent_reschedule_at(handles[2], 4), 450);
+		require(nevent_reschedule_at(handles[0], 6), 451);
+		{
+			nevent_reschedule_batch inner;
+			require(nevent_reschedule_at(handles[1], 4), 452);
+			require(nevent_reschedule_at(player_handle, 4), 453);
+			require(nevent_reschedule_at(doomed, 4), 454);
+			require(nevent_cancel(doomed) == nevent_cancel_result::canceled, 455);
+			record_payload replacement_record = { 9006, 604 };
+			const auto replacement = add_event(record_callback, 604, nullptr, nullptr,
+							  nullptr, 0, &replacement_record,
+							  sizeof(replacement_record)).handle;
+			require(!nevent_reschedule_at({ replacement.event, doomed.sequence }, 4), 456);
+		}
+		require(handles[0].event->due_tick == 600, 457);
+		require(nevent_pending_reschedules.size() == 4, 458);
+		require(ne_event_time(handles[0].event) == 6, 470);
+		require(nevent_advance_by(handles[0], 1), 471);
+		require(ne_event_time(handles[0].event) == 5, 472);
+		require(nevent_advance_by(handles[0], 1), 473);
+		require(ne_event_time(handles[0].event) == 4, 474);
+		require(nevent_reschedule_at(handles[0], 4), 459);
+	}
+	require(nevent_pending_reschedules.empty() && nevent_reschedule_batch_depth == 0, 460);
+	for (auto handle : handles)
+		require(handle.event->due_tick == 4 && handle.event->sequence == handle.sequence, 461);
+	require(player_handle.event->due_tick == 4 && check_ch_nevents(&player), 462);
+	require_balanced(463);
+	for (int i = 0; i <= 4; ++i)
+		run_one_heartbeat();
+	const std::vector<int> expected = player_priority ?
+		std::vector<int>{ 9004, 9000, 9001, 9002, 9003 } :
+		std::vector<int>{ 9000, 9001, 9002, 9003, 9004 };
+	require(fired_this_tick == expected, 466);
+	require(player.nevents == nullptr && player.nevents_tail == nullptr, 467);
+	while (ne_event_counter)
+		run_one_heartbeat();
+	require(fired.back() == std::pair<int, unsigned long long>{ 9006, 604 }, 468);
+	require_balanced(469);
 }
 
 static void test_priority_order(bool enabled)
@@ -756,6 +821,12 @@ static void test_integrity_and_owner_links()
 	player.runtime_id = 10001;
 	player.specials.position = STAT_NORMAL | POS_STANDING;
 	character_list = &player;
+	require(!check_nevents(), 397);
+	require(check_nevents(false), 398); // In-constructor scheduling diagnostic.
+	register_character_runtime_id(&player);
+	player.next = &player;
+	require(!check_nevents(), 396); // Do not pass a corrupt list to deeper diagnostics.
+	player.next = nullptr;
 	record_payload payload = { 9100, ULLONG_MAX };
 	auto first = add_event(record_callback, 10, &player, nullptr, nullptr, 0, &payload,
 			       sizeof(payload));
@@ -795,6 +866,7 @@ static void test_integrity_and_owner_links()
 	require(check_nevents(), 208);
 	cancel_all_events();
 	require(player.nevents == nullptr && player.nevents_tail == nullptr, 209);
+	unregister_character_runtime_id(&player);
 	character_list = nullptr;
 
 	reset_scheduler();
@@ -846,6 +918,8 @@ static void test_integrity_and_owner_links()
 	victim.specials.position = STAT_NORMAL | POS_STANDING;
 	owner.next = &victim;
 	character_list = &owner;
+	register_character_runtime_id(&owner);
+	register_character_runtime_id(&victim);
 	auto victim_event =
 		add_event(noop_callback, 10, &owner, &victim, nullptr, 0, nullptr, 0);
 	require(victim_event.was_scheduled() && victim_event.handle.event->cld != nullptr, 225);
@@ -862,6 +936,8 @@ static void test_integrity_and_owner_links()
 	require(owner.nevents == nullptr && owner.nevents_tail == nullptr &&
 			owner.linking == nullptr && victim.linked == nullptr,
 		231);
+	unregister_character_runtime_id(&owner);
+	unregister_character_runtime_id(&victim);
 	character_list = nullptr;
 	require_balanced(232);
 }
@@ -1088,6 +1164,19 @@ void affect_remove(P_char ch, affected_type *af)
 }
 
 // Production callback, with only a list-visit counter injected by Python.
+// This fixture constructs ordinary short affects. The maintained ward runtime
+// regression qualifies managed ward expiry; reject an accidental ward here.
+bool spell_ward_is_managed(const struct affected_type *af)
+{
+	require(!af || !IS_SET(af->flags, AFFTYPE_SPELL_WARD), 470);
+	return false;
+}
+
+void spell_ward_expire(P_char, struct affected_type *)
+{
+	require(false, 471);
+}
+
 /* SHORT_AFFECT_CALLBACK */
 
 static void short_affect_schedule(P_char ch, affected_type *af, int delay = 1)
@@ -1244,6 +1333,54 @@ static void test_short_affect()
 	std::puts("short-affect expiry, PC fallback, cancellation, reuse, and zero NPC scans passed");
 }
 
+struct runtime_target_payload { uint64_t runtime_id; P_char expected; };
+static int live_runtime_callbacks;
+static int stale_runtime_callbacks;
+static void runtime_target_callback(P_char, P_char, P_obj, void *data)
+{
+	auto *target = static_cast<runtime_target_payload *>(data);
+	P_char live = find_character_by_runtime_id(target->runtime_id);
+	if (live && live == target->expected)
+		++live_runtime_callbacks;
+	else
+		++stale_runtime_callbacks;
+}
+
+static void test_runtime_target_retirement()
+{
+	reset_scheduler();
+	live_runtime_callbacks = stale_runtime_callbacks = 0;
+	auto *target = new char_data{};
+	target->runtime_id = allocate_character_runtime_id();
+	character_list = target;
+	register_character_runtime_id(target);
+	runtime_target_payload payload{target->runtime_id, target};
+	// Unowned deferred work may outlive its target; only the index resolves it.
+	add_event(runtime_target_callback, 1, nullptr, nullptr, nullptr, 0, &payload, sizeof(payload));
+	while (ne_event_counter) run_one_heartbeat();
+	require(live_runtime_callbacks == 1 && stale_runtime_callbacks == 0, 400);
+	add_event(runtime_target_callback, 1, nullptr, nullptr, nullptr, 0, &payload, sizeof(payload));
+	// The extraction hook retires identity before recursive teardown can call back.
+	unregister_character_runtime_id(target);
+	while (ne_event_counter) run_one_heartbeat();
+	require(live_runtime_callbacks == 1 && stale_runtime_callbacks == 1, 401);
+	// Actual same-address replacement cannot revive the old deferred reference.
+	target->runtime_id = allocate_character_runtime_id();
+	register_character_runtime_id(target);
+	add_event(runtime_target_callback, 1, nullptr, nullptr, nullptr, 0, &payload, sizeof(payload));
+	while (ne_event_counter) run_one_heartbeat();
+	require(live_runtime_callbacks == 1 && stale_runtime_callbacks == 2, 402);
+	payload.runtime_id = target->runtime_id;
+	add_event(runtime_target_callback, 1, nullptr, nullptr, nullptr, 0, &payload, sizeof(payload));
+	unregister_character_runtime_id(target);
+	character_list = nullptr;
+	delete target;
+	while (ne_event_counter) run_one_heartbeat(); // ASan guards stale-pointer dereferences.
+	require(live_runtime_callbacks == 1 && stale_runtime_callbacks == 3, 403);
+	require(check_nevents(), 404);
+	require_balanced(405);
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, 160);
@@ -1254,14 +1391,21 @@ int main(int argc, char **argv)
 		test_shared_bucket_revolutions();
 		test_reschedule_apis();
 		test_callback_reschedule();
+		test_reschedule_batches(false);
 		test_randomized_oracle();
 	}
 	else if (std::strcmp(argv[1], "short-affect") == 0)
 		test_short_affect();
 	else if (std::strcmp(argv[1], "priority-off") == 0)
+	{
 		test_priority_order(false);
+		test_reschedule_batches(false);
+	}
 	else if (std::strcmp(argv[1], "priority-on") == 0)
+	{
 		test_priority_order(true);
+		test_reschedule_batches(true);
+	}
 	else if (std::strcmp(argv[1], "aging") == 0)
 		test_bounded_normal_aging();
 	else if (std::strcmp(argv[1], "catchup") == 0)
@@ -1280,6 +1424,7 @@ int main(int argc, char **argv)
 	{
 		test_integrity_and_owner_links();
 		test_thread_ownership();
+		test_runtime_target_retirement();
 	}
 	else
 		require(false, 161);

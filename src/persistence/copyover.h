@@ -12,9 +12,10 @@
 const char *copyover_state_file();
 #define COPYOVER_FILE copyover_state_file()
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 18 // telemetry identity handoff; reads versions 12-17 too
+#define COPYOVER_VERSION \
+	19 // portable ownership handoff; reads portable v18 and compatible native v12-v18
 
-// copyover file header
+// In-memory state and legacy ABI declarations. Never write these structures to a file.
 struct copyover_header
 {
 	char magic[4];

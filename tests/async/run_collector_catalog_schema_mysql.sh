@@ -8,10 +8,11 @@ NAME="duris-collector-catalog-$$-$RANDOM"
 PASSWORD="collector-catalog-$$-$RANDOM"
 FRESH_DB=collector_catalog_fresh
 UPGRADE_DB=collector_catalog_upgrade
-cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
+SQL_FIXTURE_CONTAINER_ID=
+cleanup() { [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -f "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then SECRET=MARIADB_ROOT_PASSWORD; else SECRET=MYSQL_ROOT_PASSWORD; fi
-docker run -d --name "$NAME" -e "$SECRET=$PASSWORD" "$IMAGE" >/dev/null
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" -e "$SECRET=$PASSWORD" "$IMAGE" --innodb-use-native-aio=OFF)
 ready=0
 for _ in $(seq 1 90); do
     if docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -e 'SELECT 1' >/dev/null 2>&1; then
@@ -92,27 +93,8 @@ fresh_shape=$("${MYSQL[@]}" "$FRESH_DB" -e "$metadata_query")
 upgrade_shape=$("${MYSQL[@]}" "$UPGRADE_DB" -e "$metadata_query")
 [[ "$fresh_shape" == "$upgrade_shape" ]] || { echo 'FAILED: fresh and upgraded collector metadata differ' >&2; exit 1; }
 
-runtime_manifest="$ROOT/migrations/runtime_compatibility_manifest.json"
-# Runtime compatibility is measured after the complete immutable history, not
-# merely against the convenience bootstrap snapshot.
-mapfile -t runtime_migrations < <(python3 -c 'import json,sys; [print(item["apply"]) for item in json.load(open(sys.argv[1]))["migrations"]]' "$ROOT/migrations/migration_manifest.json")
-for history_replay in 1 2; do
-    for migration in "${runtime_migrations[@]}"; do
-        target="/tmp/$(basename "$migration")"
-        docker cp "$ROOT/migrations/$migration" "$NAME:$target" >/dev/null
-        docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
-            "mysql -h127.0.0.1 -uroot '$FRESH_DB' < '$target'" >/dev/null
-    done
-done
-runtime_tables=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["runtime_table_sql_list"])' "$runtime_manifest")
-if [[ "$IMAGE" == mariadb:* ]]; then fingerprint_key=mariadb10_11; else fingerprint_key=mysql8; fi
-expected_fingerprint=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["normalized_metadata_fingerprints"][sys.argv[2]])' "$runtime_manifest" "$fingerprint_key")
-runtime_query="SELECT CONCAT('T',CHAR(9),table_name,CHAR(9),engine,CHAR(9),table_collation) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE' AND table_name IN ($runtime_tables) UNION ALL SELECT CONCAT('C',CHAR(9),c.table_name,CHAR(9),c.column_name,CHAR(9),c.ordinal_position,CHAR(9),c.data_type,CHAR(9),c.is_nullable,CHAR(9),COALESCE(c.character_maximum_length,0),CHAR(9),COALESCE(c.numeric_precision,0),CHAR(9),COALESCE(c.numeric_scale,0),CHAR(9),COALESCE(c.datetime_precision,0),CHAR(9),CASE WHEN c.column_default IS NULL THEN '<NULL>' WHEN UPPER(c.column_default) LIKE 'CURRENT_TIMESTAMP%' THEN 'CURRENT_TIMESTAMP' ELSE TRIM(BOTH '\'' FROM c.column_default) END,CHAR(9),CONCAT(IF(LOWER(c.extra) LIKE '%auto_increment%','A',''),IF(LOWER(c.extra) LIKE '%on update%','U',''),IF(LOWER(c.extra) LIKE '%generated%','G',''))) FROM information_schema.columns c JOIN information_schema.tables t ON t.table_schema=c.table_schema AND t.table_name=c.table_name AND t.table_type='BASE TABLE' WHERE c.table_schema=DATABASE() AND c.table_name IN ($runtime_tables) UNION ALL SELECT CONCAT('I',CHAR(9),table_name,CHAR(9),index_name,CHAR(9),non_unique,CHAR(9),seq_in_index,CHAR(9),column_name,CHAR(9),COALESCE(sub_part,0)) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name IN ($runtime_tables) UNION ALL SELECT CONCAT('F',CHAR(9),k.table_name,CHAR(9),k.constraint_name,CHAR(9),k.column_name,CHAR(9),k.referenced_table_name,CHAR(9),k.referenced_column_name,CHAR(9),k.ordinal_position,CHAR(9),r.update_rule,CHAR(9),r.delete_rule) FROM information_schema.key_column_usage k JOIN information_schema.referential_constraints r ON r.constraint_schema=k.constraint_schema AND r.constraint_name=k.constraint_name WHERE k.constraint_schema=DATABASE() AND (k.table_name IN ($runtime_tables) OR k.referenced_table_name IN ($runtime_tables)) AND k.referenced_table_name IS NOT NULL ORDER BY 1;"
-actual_fingerprint=$("${MYSQL[@]}" "$FRESH_DB" -e "$runtime_query" | sha256sum | cut -d' ' -f1)
-[[ "$actual_fingerprint" == "$expected_fingerprint" ]] || {
-    printf 'FAILED: %s runtime metadata fingerprint differs: expected=%s actual=%s\n' \
-        "$fingerprint_key" "$expected_fingerprint" "$actual_fingerprint" >&2
-    exit 1
-}
+# The dedicated runtime compatibility owner qualifies the complete migration
+# history and fingerprint on both engines. This fixture keeps its collector
+# fresh/upgrade/replay and corruption assertions independent of that history.
 
 printf 'collector catalog fresh/upgrade/replay and corruption guards (%s): ok\n' "$IMAGE"

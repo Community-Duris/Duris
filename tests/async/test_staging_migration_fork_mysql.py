@@ -140,11 +140,24 @@ def migrate(engine: schema.Engine, manifest_name: str, success: bool = True) -> 
     return result.stdout + result.stderr
 
 
-def history(engine: schema.Engine, limit: int = 53) -> str:
+def migrate_prefix(engine: schema.Engine, manifest_name: str, count: int) -> None:
+    """Create an actual immutable prefix, retaining the runner's receipts."""
+    result = qa(engine, ["python3", "-c",
+        "import sys; from dataclasses import replace; sys.path.insert(0,'scripts'); "
+        "import migration_runner as m; "
+        "manifest=m.load_manifest(m.ROOT/'migrations'/sys.argv[1]); "
+        "prefix=replace(manifest,migrations=manifest.migrations[:int(sys.argv[2])]); "
+        "print(m.run_pending(prefix,m.MysqlExecutor(prefix)))", manifest_name, str(count)])
+    check(result.returncode == 0,
+          "immutable prefix failed: " + result.stdout + result.stderr)
+
+
+def history(engine: schema.Engine, limit: int | None = None) -> str:
+    suffix = f" LIMIT {limit}" if limit is not None else ""
     return engine.sql("SELECT HEX(CONCAT(migration_id,CHAR(0),sequence_number,CHAR(0),"
                       "description,CHAR(0),HEX(apply_checksum),CHAR(0),HEX(verify_checksum),"
                       "CHAR(0),compatibility,CHAR(0),runner_version,CHAR(0),applied_at)) "
-                      f"FROM mud_schema_history ORDER BY sequence_number LIMIT {limit};",
+                      "FROM mud_schema_history ORDER BY sequence_number" + suffix + ";",
                       database=engine.database)
 
 
@@ -358,6 +371,13 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
     canonical = runner.load_manifest()
     staging = runner.load_manifest(ROOT / "migrations/migration_manifest.staging_0045.json")
     master = runner.load_manifest(ROOT / "migrations/migration_manifest.master_0031.json")
+    retained_telemetry = (
+        ("telemetry_0067_migration_head", "migration_manifest.telemetry_0067.json"),
+        ("telemetry_0067_staging_0045_migration_head",
+         "migration_manifest.telemetry_0067_staging_0045.json"),
+        ("telemetry_0067_master_0031_migration_head",
+         "migration_manifest.telemetry_0067_master_0031.json"),
+    )
     unique_description_step = next(step for step in canonical.migrations
                                    if step.migration_id ==
                                    "0050_item_extra_description_fulltext_unique")
@@ -404,7 +424,12 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             from_master = engine_factory(label, name, password, f"duris_268_{token}_mastertest")
             print(f"{label}: building canonical history with the real runner", flush=True)
             setup(normal, canonical)
+            migrate_prefix(normal, "migration_manifest.json", 56)
+            canonical_prefix = history(normal)
+            boot(normal, False)
             migrate(normal, "migration_manifest.json")
+            check(canonical_prefix == history(normal, 56),
+                  "canonical append rewrote the recorded accounting prefix")
             snapshot = history(normal)
             migrate(normal, "migration_manifest.json")
             check(snapshot == history(normal), "canonical rerun rewrote migration receipts")
@@ -428,14 +453,19 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             refusal = migrate(fork, "migration_manifest.json", False)
             check("edited or reordered" in refusal, "canonical did not reject the staging fork")
             check(before == history(fork, 45), "refusal altered staging receipts")
+            migrate_prefix(fork, "migration_manifest.staging_0045.json", 56)
+            staging_prefix = history(fork)
+            boot(fork, False)
             migrate(fork, "migration_manifest.staging_0045.json")
+            check(staging_prefix == history(fork, 56),
+                  "staging append rewrote the recorded accounting prefix")
             check(before == history(fork, 45), "transition rewrote staging receipts")
             check(rows == description_rows(fork), "transition changed protected descriptions")
             after = history(fork)
             migrate(fork, "migration_manifest.staging_0045.json")
             check(after == history(fork), "staging rerun rewrote migration receipts")
             check(fork.sql("SELECT COUNT(*) FROM mud_schema_history;", database=fork.database)
-                  == "53", "staging transition did not append exactly eight receipts")
+                  == str(len(staging.migrations)), "staging transition has an incomplete history")
 
             print(f"{label}: upgrading immutable master prefix through 0031", flush=True)
             setup(from_master, master, master_bootstrap)
@@ -457,7 +487,11 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             refusal = migrate(from_master, "migration_manifest.json", False)
             check("edited or reordered" in refusal, "canonical accepted master history")
             check(master_before == history(from_master, 31), "refusal altered master receipts")
+            migrate_prefix(from_master, "migration_manifest.master_0031.json", 56)
+            master_prefix = history(from_master)
             migrate(from_master, "migration_manifest.master_0031.json")
+            check(master_prefix == history(from_master, 56),
+                  "master append rewrote the recorded accounting prefix")
             check(master_before == history(from_master, 31), "upgrade rewrote master receipts")
             check(payload_before == from_master.sql(payload_query, database=from_master.database),
                   "master upgrade changed retained item runtime payloads")
@@ -465,14 +499,44 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             migrate(from_master, "migration_manifest.master_0031.json")
             check(master_after == history(from_master), "master rerun rewrote migration receipts")
             check(from_master.sql("SELECT COUNT(*) FROM mud_schema_history;",
-                                  database=from_master.database) == "53",
-                  "master transition did not append exactly twenty-two receipts")
+                                  database=from_master.database) == str(len(master.migrations)),
+                  "master transition has an incomplete history")
             check(payload_before == from_master.sql(payload_query, database=from_master.database),
                   "master rerun changed retained item runtime payloads")
             runtime = json.loads(schema.RUNTIME_MANIFEST.read_text())
-            for current, key in ((normal, "migration_head"),
-                                 (fork, "staging_0045_migration_head"),
-                                 (from_master, "master_0031_migration_head")):
+            current_histories = [(normal, "migration_head"),
+                                (fork, "staging_0045_migration_head"),
+                                (from_master, "master_0031_migration_head")]
+            preserved_prefixes = {}
+            for number, (key, manifest_name) in enumerate(retained_telemetry):
+                print(f"{label}: appending accounting changes to recorded {key}", flush=True)
+                telemetry_manifest = runner.load_manifest(ROOT / "migrations" / manifest_name)
+                current = engine_factory(label, name, password,
+                    f"duris_268_{token}_telemetry{number}test")
+                setup(current, telemetry_manifest)
+                migrate_prefix(current, manifest_name, 67)
+                old_prefix = history(current)
+                boot(current, False)
+                refusal = migrate(current, "migration_manifest.json", False)
+                check("edited or reordered" in refusal,
+                      "canonical accepted a divergent recorded telemetry history")
+                check(old_prefix == history(current), "refusal changed telemetry receipts")
+                migrate(current, manifest_name)
+                check(old_prefix == history(current, 67),
+                      "append rewrote the recorded telemetry prefix")
+                complete = history(current)
+                migrate(current, manifest_name)
+                check(complete == history(current), "telemetry rerun rewrote receipts")
+                check(current.sql("SELECT COUNT(*) FROM mud_schema_history;",
+                                  database=current.database) == str(len(telemetry_manifest.migrations)),
+                      "telemetry append has an incomplete history")
+                preserved_prefixes[key] = {
+                    "prefix_count": 67, "append_count": len(telemetry_manifest.migrations) - 67,
+                    "prefix_sha256": hashlib.sha256(old_prefix.encode()).hexdigest(),
+                    "rerun_preserved_receipts": True,
+                }
+                current_histories.append((current, key))
+            for current, key in current_histories:
                 serialized = current.sql(runtime["migration_history_sql"],
                                          database=current.database)
                 digest = hashlib.sha256(b"".join(bytes.fromhex(line)
@@ -484,19 +548,24 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
                 check(digest == state_digest == runtime[key]["history_checksum"],
                       "SQL serialization and pinned history state differ")
             measured = schema.measure_fingerprint(normal, runtime)
-            check(schema.measure_fingerprint(fork, runtime) == measured,
-                  "canonical and staging schema metadata differ")
-            check(schema.measure_fingerprint(from_master, runtime) == measured,
-                  "canonical and upgraded master schema metadata differ")
+            for current, key in current_histories[1:]:
+                check(schema.measure_fingerprint(current, runtime) == measured,
+                      f"canonical and {key} schema metadata differ")
             report[label] = {"server_version": normal.server_version,
                              "fingerprint": measured, "staging_prefix_preserved": True,
                              "first_45_receipt_sha256": hashlib.sha256(before.encode()).hexdigest(),
-                             "staging_append_count": 8, "reruns_preserved_receipts": True,
+                             "staging_append_count": len(canonical.migrations) - 45, "reruns_preserved_receipts": True,
                              "description_rows_preserved": True,
-                             "master_prefix_preserved": True, "master_append_count": 22,
+                             "master_prefix_preserved": True, "master_append_count": len(canonical.migrations) - 31,
                              "first_31_receipt_sha256": hashlib.sha256(master_before.encode()).hexdigest(),
                              "master_runtime_payload_preserved": True,
-                             "master_bootstrap": "supplied" if master_bootstrap else "current"}
+                             "master_bootstrap": "supplied" if master_bootstrap else "current",
+                             "accounting_56_prefixes_preserved": True,
+                             "accounting_append_count": len(canonical.migrations) - 56,
+                             "retained_telemetry_histories": preserved_prefixes,
+                             "converged_history_count": len(current_histories),
+                             "complete_sequence_count": len(canonical.migrations),
+                             "runtime_table_count": runtime["current_table_count"]}
             duplicate_guard(engine_factory(label, name, password,
                                           f"duris_268_{token}_duplicatetest"),
                             unique_description_step)
@@ -510,8 +579,8 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
                   "native lock/receipt fault test failed: " + lock_result.stdout + lock_result.stderr)
             report[label]["native_migration_session"] = json.loads(lock_result.stdout)
             print(f"{label}: native lock/session/receipt faults passed", flush=True)
-            engines.append((label, normal, fork, from_master))
-            print(f"{label}: canonical, staging and master converge at {measured}", flush=True)
+            engines.append((label, current_histories))
+            print(f"{label}: six complete histories converge at {measured}", flush=True)
         if update:
             value = json.loads(schema.RUNTIME_MANIFEST.read_text())
             header_path = ROOT / "src/core/runtime_compatibility_contract.h"
@@ -519,13 +588,16 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             for label in report:
                 old = value["normalized_metadata_fingerprints"][label]
                 new = report[label]["fingerprint"]
-                check(header.count(old) == 1, "compiled fingerprint is ambiguous")
-                header = header.replace(old, new)
+                constant = {"mysql8": "RUNTIME_MYSQL8_METADATA_FINGERPRINT",
+                            "mariadb10_11": "RUNTIME_MARIADB10_11_METADATA_FINGERPRINT"}[label]
+                expression = re.compile(r"(" + constant + r'\s*=\s*")' + old + r'(")')
+                header, replacements = expression.subn(lambda match: match[1] + new + match[2], header)
+                check(replacements == 1, "compiled fingerprint is ambiguous")
                 value["normalized_metadata_fingerprints"][label] = new
             schema.RUNTIME_MANIFEST.write_text(json.dumps(value, indent=2) + "\n", newline="\n")
             header_path.write_text(header, newline="\n")
-        for label, normal, fork, from_master in engines:
-            for engine in (normal, fork, from_master):
+        for label, current_histories in engines:
+            for engine, key in current_histories:
                 print(f"{label}/{engine.database.rsplit('_', 1)[-1]}: {boot(engine)}", flush=True)
                 # An old row tampered while the head/state remain unchanged must
                 # fail in the shell and the actual compiled boot predicate.
@@ -536,7 +608,7 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
                            "CHAR_LENGTH(description)-1) WHERE sequence_number=3;",
                            database=engine.database)
                 other = json.loads(schema.RUNTIME_MANIFEST.read_text())[
-                    "staging_0045_migration_head" if engine is normal else "migration_head"][
+                    "staging_0045_migration_head" if key == "migration_head" else "migration_head"][
                         "history_checksum"]
                 state = engine.sql("SELECT HEX(history_checksum) FROM mud_schema_migration_state "
                                    "WHERE state_id=1;", database=engine.database)
@@ -560,6 +632,7 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
         return report
     finally:
         for engine in native_engines:
+            engine.drop_database()
             engine.directory.cleanup()
         for name in containers:
             check(name.startswith(f"duris-staging-fork-{token}-"), "unexpected cleanup target")

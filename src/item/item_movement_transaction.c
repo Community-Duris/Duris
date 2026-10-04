@@ -505,12 +505,8 @@ P_char find_live_player(uint32_t pid)
 
 P_char find_live_mobile(uint64_t runtime_id)
 {
-	if (!runtime_id)
-		return NULL;
-	for (P_char character = character_list; character; character = character->next)
-		if (IS_NPC(character) && character->runtime_id == runtime_id)
-			return character;
-	return NULL;
+	P_char character = find_character_by_runtime_id(runtime_id);
+	return character && IS_NPC(character) ? character : NULL;
 }
 
 bool trusted_steal_live_ready(P_char actor, uint64_t item_uid)
@@ -955,13 +951,9 @@ void note_creation_grant_publication_failure(P_char actor, creation_grant_queue 
 			  kind, item_uid, vnum, recipient_pid, loc_p, carrier_pid, wearer_pid,
 			  static_cast<unsigned long long>(container_uid), room);
 	if (actor)
-		send_to_char(
-			queue.batch_submission ?
-				"The ownership authority committed, but your item grant batch "
-				"needs live publication repair. Please wait or reconnect.\r\n" :
-				"The ownership authority committed, but the granted item needs "
-				"live publication repair. Please wait or reconnect.\r\n",
-			actor);
+		send_to_char("Your items are safe but are still being delivered.\r\n"
+			     "Please wait a moment or reconnect; do not request them again.\r\n",
+			     actor);
 }
 
 bool reconcile_creation_grant_batch(P_char actor, pending_movement &entry,
@@ -1751,6 +1743,15 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		if (!entry.craft_notified)
 		{
 			entry.craft_notified = true;
+			if (entry.payload.continuation.kind ==
+				    item_transfer_continuation_kind::craft_recipe &&
+			    craft_progression_hooks.notify)
+			{
+				craft_recipe_continuation terms;
+				if (craft_recipe_continuation_decode(
+					    entry.payload.continuation.data, &terms))
+					craft_progression_hooks.notify(actor, committed, terms);
+			}
 			const auto context = entry.context;
 			const size_t context_size = entry.context_size;
 			if (entry.completion)
@@ -2553,11 +2554,13 @@ bool item_movement_transaction_submit_craft(
 			      pouch_usage || pouch_usage_count) ||
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context))
 		return reject_with(reject, item_movement_reject::invalid_request);
-	if (recipe &&
-	    (!craft_progression_hooks.publish || output_count != 1 || !outputs[0] ||
-	     recipe->player_pid != static_cast<uint32_t>(GET_PID(actor)) ||
-	     recipe->recipe_vnum != recipe_id || recipe->output_uid != outputs[0]->obj_uid ||
-	     !recipe->pouch_mutation.empty()))
+	if (recipe && (!craft_progression_hooks.publish ||
+		       (craft_recipe_is_alchemy(recipe->discipline) ?
+				recipe->output_count != output_count :
+				output_count != 1 || !outputs[0] ||
+					recipe->output_uid != outputs[0]->obj_uid) ||
+		       recipe->player_pid != static_cast<uint32_t>(GET_PID(actor)) ||
+		       recipe->recipe_vnum != recipe_id || !recipe->pouch_mutation.empty()))
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
 		return reject_with(reject, item_movement_reject::queue_saturated);
@@ -2704,6 +2707,9 @@ bool item_movement_transaction_submit_craft(
 		try
 		{
 			craft_recipe_continuation terms = *recipe;
+			if (craft_recipe_is_alchemy(terms.discipline))
+				terms.output_uid = output_count ? outputs[0]->obj_uid :
+								  consumed_selected_uid;
 			terms.pouch_mutation = std::move(pouch_continuation.data);
 			if (!craft_recipe_continuation_encode(terms, &pouch_continuation.data))
 				return reject_with(reject,

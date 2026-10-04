@@ -74,6 +74,7 @@ struct group_list {
 struct object;
 using P_char = character *;
 using P_obj = object *;
+void ADD_MONEY(P_char, int, const char *committed_message = nullptr);
 
 #define IS_PC(ch) ((ch)->is_pc)
 #define GET_PID(ch) ((ch)->pid)
@@ -482,7 +483,7 @@ int main()
 
 
 if __name__ == "__main__":
-    utility = extract_function(SRC / "core/utility.c", "void ADD_MONEY(P_char ch, int amount)")
+    utility = extract_function(SRC / "core/utility.c", "void ADD_MONEY(P_char ch, int amount,")
     split_source = (SRC / "cmd/actoth.c").read_text()
     helpers_start = split_source.index("namespace\n{\nstruct money_split_recipient")
     helpers_end = split_source.index("} // namespace", helpers_start) + len("} // namespace")

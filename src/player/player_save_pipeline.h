@@ -71,6 +71,14 @@ struct player_save_pipeline_health
 	bool replay_blocked;
 };
 
+// Resident coordinator metadata only; journal/worker/revision observations are separate.
+struct player_save_pipeline_diagnostic
+{
+	player_save_pipeline_health health = {};
+	bool available = false, pid_admission_open = false, retained_save = false;
+};
+player_save_pipeline_diagnostic player_save_pipeline_diagnostic_copy(int pid);
+
 // Publishes startup replay readiness to normal player-load callers. False
 // covers not-started, in-progress, failed, and stopped pipeline states.
 class player_save_pipeline_replay_gate
@@ -99,6 +107,51 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 player_save_pipeline_result player_save_pipeline_request(P_char ch,
 							 player_component_mask_t components,
 							 int save_intent, int room_vnum);
+// An opt-in SQL ordinary-drop checkpoint retains literal capture policy through
+// newer saves and coalescing. Database acknowledgment is separate from the
+// physical source proof required by the eventual transfer transaction.
+struct player_literal_inventory_token
+{
+	int32_t pid = 0;
+	uint64_t actor_runtime_id = 0;
+	uint64_t root_uid = 0;
+	uint64_t generation = 0;
+	bool operator==(const player_literal_inventory_token &) const = default;
+};
+
+enum class player_literal_inventory_state : uint8_t
+{
+	pending,
+	database_acknowledged,
+	refused,
+};
+
+player_literal_inventory_state
+player_save_pipeline_literal_inventory_begin(P_char actor, P_obj root, int room_vnum,
+					     player_literal_inventory_token *token_out);
+player_literal_inventory_state
+player_save_pipeline_literal_inventory_poll(const player_literal_inventory_token &token,
+					    P_char actor);
+// Hold blocks inventory capture, while dirty marks continue advancing normally.
+// Release requires the bound original operation ID; pre-admission cancel cannot
+// release an operation's publication obligation.
+bool player_save_pipeline_literal_inventory_hold(const player_literal_inventory_token &token,
+						 const critical_operation_id &operation_id);
+bool player_save_pipeline_literal_inventory_release(const player_literal_inventory_token &token,
+						    const critical_operation_id &operation_id);
+bool player_save_pipeline_literal_inventory_cancel(const player_literal_inventory_token &token);
+// Critical replay restores a SQL ordinary-drop obligation without inventing a
+// live runtime token or checkpoint revision. Identical immutable commands are
+// idempotent; conflicting identity or capacity refuses before admission.
+bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &command);
+// A restored drop may hydrate authoritative state while saves/lifecycle remain
+// held. All other recovery, target-login and pinned-death fences still refuse.
+bool player_save_pipeline_authoritative_hydration_admitted(int pid);
+// Called only after the coordinator has durably acknowledged publication. This
+// original-ID release needs no live actor and cannot allocate or fail afterward.
+void player_save_pipeline_sql_drop_publication_acknowledged(
+	const critical_operation_id &operation_id) noexcept;
+
 // Capture progression and its quest reward identities in one save-journal frame.
 // SQL applies the experience snapshot and receipt mask in the same transaction.
 player_save_pipeline_result

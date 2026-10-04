@@ -1,3 +1,4 @@
+#include "account/account_load.h"
 // sql_player.c
 // player save/load functions for mysql storage
 // part of pfile-to-db migration
@@ -12,6 +13,10 @@
 #include "sql/sql_corpse.h"
 #include "sql/sql_guild.h"
 #include "sql/sql_player_deletion.h"
+#include "sql/zone_story_quest_state_repository.h"
+#include "world/zone_story_quest_production.h"
+#include "world/zone_story_quest_runtime.h"
+#include "persistence/economic_sql_lifecycle_guard.h"
 #include "sql/sql_player.h"
 #include "sql/sql_player_migration.h"
 #include "sql/sql_saved_item.h"
@@ -61,6 +66,7 @@
 #include "ships/ships.h"
 #include "redis/redis_ship_legacy.h"
 #include "magic/spells.h"
+#include "combat/spell_wards.h"
 #include "sql/sql.h"
 #include "player/player_name.h"
 #include "account/password_hash.h"
@@ -70,6 +76,9 @@
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "item/item_transfer_command.h"
 #include "item/item_transfer_repository.h"
+#include "item/item_ownership_runtime.h"
+#include "persistence/sql_room_item_payload.h"
+#include "player/player_snapshot_capture.h"
 
 // external tables
 extern P_index obj_index;
@@ -269,11 +278,12 @@ bool sql_load_player_pets(P_char ch)
 	return false;
 }
 
-bool sql_delete_player(int pid, bool forget_revision)
+bool sql_delete_player(int pid, bool forget_revision,
+		       const economic_sql_currency_writer_guard *writer)
 {
 	return false;
 }
-bool sql_player_deletion_guard(int pid)
+bool sql_player_deletion_guard(int pid, const economic_sql_currency_writer_guard &writer)
 {
 	return false;
 }
@@ -334,7 +344,8 @@ bool sql_locker_owner_can_access(const char *locker_name, int owner_pid, int rac
 		return false;
 	/* Locate the one case-insensitive locker name supplied by the caller. */
 	auto locker =
-		std::find_if(lockers.begin(), lockers.end(), [locker_name](const auto &entry)
+		std::find_if(lockers.begin(), lockers.end(),
+			     [locker_name](const auto &entry)
 			     { return strcasecmp(entry.locker_name.c_str(), locker_name) == 0; });
 	if (locker == lockers.end() || locker->owner_pid != owner_pid || locker->owner_assoc_id ||
 	    locker->racewar != racewar)
@@ -1193,9 +1204,9 @@ static bool sql_try_get_player_pid(const char *name, int *pid_out)
 
 // player delete
 
-bool sql_player_deletion_guard(int pid)
+bool sql_player_deletion_guard(int pid, const economic_sql_currency_writer_guard &writer)
 {
-	if (!DB || pid <= 0 || !sql_in_transaction())
+	if (!DB || pid <= 0 || !sql_in_transaction() || !writer.is_valid_for(DB))
 		return false;
 	if (character_deletion_guard_pid)
 		return character_deletion_guard_pid == pid;
@@ -1240,27 +1251,31 @@ bool sql_player_deletion_guard(int pid)
 	return true;
 }
 
-bool sql_delete_player(int pid, bool forget_revision)
+bool sql_delete_player(int pid, bool forget_revision,
+		       const economic_sql_currency_writer_guard *writer)
 {
 	if (!DB || pid <= 0 || player_save_journal_pid_quarantined(pid))
 		return false;
 
+	economic_sql_currency_writer_guard own_writer;
 	bool own_txn = false;
 	if (!sql_in_transaction())
 	{
-		if (!sql_begin_transaction())
+		if (writer || economic_sql_currency_writer_guard::acquire(DB, &own_writer) ||
+		    !sql_begin_transaction())
 			return false;
 		own_txn = true;
+		writer = &own_writer;
 	}
 	if (own_txn)
 	{
-		if (!sql_player_deletion_guard(pid))
+		if (!sql_player_deletion_guard(pid, *writer))
 		{
 			sql_rollback();
 			return false;
 		}
 	}
-	else if (character_deletion_guard_pid != pid)
+	else if (!writer || !writer->is_valid_for(DB) || character_deletion_guard_pid != pid)
 		return false;
 
 	char query[128];
@@ -2167,6 +2182,7 @@ static bool sql_save_player_affects(P_char ch)
 	if (!ch || !IS_PC(ch) || !DB ||
 	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 		return false;
+	spell_ward_sync_timers(ch);
 
 	// Start own transaction if not already in one
 	bool own_txn = false;
@@ -2207,7 +2223,10 @@ static bool sql_save_player_affects(P_char ch)
 	int pos = snprintf(
 		batch, 32768,
 		"REPLACE INTO player_affects (pid, type, duration, flags, modifier, location, level, "
-		"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, custom_msg_char, custom_msg_room) VALUES ");
+		"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, custom_msg_char, "
+		"custom_msg_room, ward_source_uid, ward_full_duration, ward_capacity, "
+		"ward_capacity_max, ward_refresh_remaining, ward_source_type, ward_source_worn, "
+		"ward_active) VALUES ");
 
 	bool has_affects = false;
 	for (struct affected_type *af = ch->affected; af; af = af->next)
@@ -2250,13 +2269,22 @@ static bool sql_save_player_affects(P_char ch)
 		else
 			strcpy(wear_off_room_sql, "NULL");
 
-		int new_pos = batch_append(batch, pos, 32768,
-					   "%s(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu,%s,%s)",
-					   has_affects ? "," : "", pid, af->type, af->duration,
-					   af->flags, af->modifier, af->location, af->level,
-					   af->bitvector, af->bitvector2, af->bitvector3,
-					   af->bitvector4, af->bitvector5, wear_off_char_sql,
-					   wear_off_room_sql);
+		int new_pos = batch_append(
+			batch, pos, 32768,
+			"%s(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu,%s,%s,%llu,%d,%llu,%llu,%d,%u,%u,%u)",
+			has_affects ? "," : "", pid, af->type, af->duration, af->flags,
+			af->modifier, af->location, af->level, af->bitvector, af->bitvector2,
+			af->bitvector3, af->bitvector4, af->bitvector5, wear_off_char_sql,
+			wear_off_room_sql, static_cast<unsigned long long>(af->ward_source_uid),
+			af->ward_full_duration,
+			af->ward_capacity > 0 ? static_cast<unsigned long long>(af->ward_capacity) :
+						0ULL,
+			af->ward_capacity_max > 0 ?
+				static_cast<unsigned long long>(af->ward_capacity_max) :
+				0ULL,
+			af->ward_refresh_remaining, static_cast<unsigned int>(af->ward_source_type),
+			static_cast<unsigned int>(af->ward_source_worn),
+			static_cast<unsigned int>(af->ward_active));
 		free(esc_wear_off_char);
 		free(esc_wear_off_room);
 		if (new_pos < 0)
@@ -4103,6 +4131,11 @@ static unsigned long sql_row_ulong(MYSQL_ROW row, int idx, unsigned long def)
 	return (row && row[idx]) ? strtoul(row[idx], NULL, 10) : def;
 }
 
+static unsigned long long sql_row_ull(MYSQL_ROW row, int idx, unsigned long long def)
+{
+	return (row && row[idx]) ? strtoull(row[idx], NULL, 10) : def;
+}
+
 static bool sql_row_revision(MYSQL_ROW row, int idx, player_revision_t *revision_out)
 {
 	if (!row || !row[idx] || !revision_out)
@@ -4521,7 +4554,9 @@ bool sql_load_player_affects(P_char ch)
 	snprintf(query, sizeof(query),
 		 "SELECT type, duration, flags, modifier, location, level, "
 		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-		 "custom_msg_char, custom_msg_room "
+		 "custom_msg_char, custom_msg_room, ward_source_uid, ward_full_duration, "
+		 "ward_capacity, ward_capacity_max, ward_refresh_remaining, ward_source_type, "
+		 "ward_source_worn, ward_active "
 		 "FROM player_affects WHERE pid=%d",
 		 pid);
 
@@ -4548,6 +4583,15 @@ bool sql_load_player_affects(P_char ch)
 		af.bitvector5 = sql_row_ulong(row, 10, 0);
 		char *wear_off_char = sql_row_str(row, 11);
 		char *wear_off_room = sql_row_str(row, 12);
+		af.ward_source_uid = sql_row_ull(row, 13, 0);
+		af.ward_full_duration = sql_row_int(row, 14, 0);
+		af.ward_capacity = static_cast<int64_t>(sql_row_ull(row, 15, 0));
+		af.ward_capacity_max = static_cast<int64_t>(sql_row_ull(row, 16, 0));
+		af.ward_refresh_remaining = sql_row_int(row, 17, 0);
+		af.ward_source_type = static_cast<::byte>(sql_row_int(row, 18, 0));
+		af.ward_source_worn = static_cast<::byte>(sql_row_int(row, 19, 0));
+		af.ward_active = static_cast<::byte>(sql_row_int(row, 20, 0));
+		af.ward_last_tick = 0;
 		if (af.type == SKILL_DIAMOND_SOUL && af.location == APPLY_SAVING_PARA)
 			af.wear_off_message_index = 1;
 
@@ -5246,97 +5290,7 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 /* Repair selectable account mappings only after safe opening baselines exist. */
 int sql_repair_account_character_projection(const char *account_name)
 {
-	if (!DB || !account_name || !account_name[0])
-		return -1;
-
-	char *escaped_account = sql_escape_string(account_name);
-	if (!escaped_account)
-		return -1;
-
-	char query[4096];
-	char eligibility[1024];
-	const int eligibility_written = snprintf(
-		eligibility, sizeof(eligibility),
-		"pd.active=1 AND LOWER(pd.account_name)=LOWER('%s') AND NOT EXISTS ("
-		"SELECT 1 FROM account_characters tombstone WHERE tombstone.deleted_at IS NOT NULL "
-		"AND (tombstone.pid=pd.pid OR LOWER(tombstone.char_name)=LOWER(pd.name)))",
-		escaped_account);
-	if (eligibility_written < 0 ||
-	    static_cast<size_t>(eligibility_written) >= sizeof(eligibility))
-	{
-		free(escaped_account);
-		return -1;
-	}
-	int written = snprintf(
-		query, sizeof(query),
-		"INSERT INTO currency_wallet_baseline(pid,opening_copper,opening_silver,"
-		"opening_gold,opening_platinum,opening_revision) "
-		"SELECT pd.pid,pd.copper,pd.silver,pd.gold,pd.platinum,pd.wallet_revision "
-		"FROM player_data pd WHERE %s AND pd.wallet_revision=0 "
-		"AND NOT EXISTS (SELECT 1 FROM currency_ledger ledger WHERE ledger.pid=pd.pid) "
-		"AND NOT EXISTS (SELECT 1 FROM currency_wallet_baseline baseline "
-		"WHERE baseline.pid=pd.pid)",
-		eligibility);
-	if (written < 0 || static_cast<size_t>(written) >= sizeof(query) || !sql_run_query(query))
-	{
-		free(escaped_account);
-		return -1;
-	}
-	written = snprintf(
-		query, sizeof(query),
-		"INSERT INTO epic_balance_baseline(pid,opening_balance,opening_revision) "
-		"SELECT pd.pid,pd.epics,pd.epic_revision FROM player_data pd WHERE %s "
-		"AND pd.epic_revision=0 AND NOT EXISTS (SELECT 1 FROM epic_ledger ledger "
-		"WHERE ledger.pid=pd.pid) AND NOT EXISTS (SELECT 1 FROM epic_balance_baseline "
-		"baseline WHERE baseline.pid=pd.pid)",
-		eligibility);
-	if (written < 0 || static_cast<size_t>(written) >= sizeof(query) || !sql_run_query(query))
-	{
-		free(escaped_account);
-		return -1;
-	}
-	written = snprintf(
-		query, sizeof(query),
-		"INSERT INTO combat_frag_baseline(pid,opening_frags,opening_revision) "
-		"SELECT pd.pid,pd.frags,pd.frag_revision FROM player_data pd WHERE %s "
-		"AND pd.frag_revision=0 AND NOT EXISTS (SELECT 1 FROM combat_frag_ledger ledger "
-		"WHERE ledger.pid=pd.pid) AND NOT EXISTS (SELECT 1 FROM combat_frag_baseline "
-		"baseline WHERE baseline.pid=pd.pid)",
-		eligibility);
-	if (written < 0 || static_cast<size_t>(written) >= sizeof(query) || !sql_run_query(query))
-	{
-		free(escaped_account);
-		return -1;
-	}
-
-	written =
-		snprintf(query, sizeof(query),
-			 "INSERT INTO account_characters "
-			 "(id, account_name, pid, char_name, created_at, deleted_at) "
-			 "SELECT active_mapping.id, pd.account_name, pd.pid, pd.name, NOW(), NULL "
-			 "FROM player_data pd "
-			 "LEFT JOIN account_characters active_mapping "
-			 "ON active_mapping.pid=pd.pid AND active_mapping.deleted_at IS NULL "
-			 "JOIN currency_wallet_baseline wallet ON wallet.pid=pd.pid "
-			 "JOIN epic_balance_baseline epic ON epic.pid=pd.pid "
-			 "JOIN combat_frag_baseline combat ON combat.pid=pd.pid "
-			 "WHERE pd.active=1 AND LOWER(pd.account_name)=LOWER('%s') "
-			 "AND NOT EXISTS ("
-			 "SELECT 1 FROM account_characters tombstone "
-			 "WHERE tombstone.deleted_at IS NOT NULL "
-			 "AND (tombstone.pid=pd.pid OR LOWER(tombstone.char_name)=LOWER(pd.name))) "
-			 "ON DUPLICATE KEY UPDATE "
-			 "account_name=VALUES(account_name), pid=VALUES(pid), "
-			 "char_name=VALUES(char_name), deleted_at=NULL",
-			 escaped_account);
-	free(escaped_account);
-	if (written < 0 || static_cast<size_t>(written) >= sizeof(query))
-		return -1;
-	if (!sql_run_query(query))
-		return -1;
-
-	const my_ulonglong affected = mysql_affected_rows(DB);
-	return affected > static_cast<my_ulonglong>(INT_MAX) ? INT_MAX : static_cast<int>(affected);
+	return account_load_repair(DB, account_name);
 }
 
 struct acct_entry *sql_load_account(const char *name)
@@ -5582,7 +5536,9 @@ bool sql_delete_account(const char *name)
 		return false;
 	}
 	std::vector<std::pair<int, std::string>> identities;
-	if (!sql_begin_transaction())
+	economic_sql_currency_writer_guard deletion_writer;
+	if (economic_sql_currency_writer_guard::acquire(DB, &deletion_writer) ||
+	    !sql_begin_transaction())
 	{
 		free(escaped_account);
 		return false;
@@ -5666,6 +5622,31 @@ bool sql_delete_account(const char *name)
 		}
 	}
 	mysql_free_result(result);
+
+	{
+		std::vector<uint32_t> pids;
+		try
+		{
+			pids.reserve(identities.size());
+			for (const auto &identity : identities)
+				pids.push_back(static_cast<uint32_t>(identity.first));
+		}
+		catch (const std::bad_alloc &)
+		{
+			goto fail;
+		}
+		if (!pids.empty())
+		{
+			const auto erased = sql_zone_story_quest_state_remove_player_aliases(
+				zone_story_quest_production::
+					ZONE_STORY_QUEST_PRODUCTION_CONTENT_REVISION,
+				zone_story_quest_runtime::current_season_id(), pids,
+				zone_story_quest_production::runtime_catalog());
+			if (erased != sql_zone_story_quest_state_result::ok &&
+			    erased != sql_zone_story_quest_state_result::not_found)
+				goto fail;
+		}
+	}
 
 	{
 		/* Snapshot persistence never writes custody authority. Resolve the exact
@@ -11078,6 +11059,256 @@ done:
 	return true;
 }
 
+// Exact room payload restoration never adopts or rewrites a legacy source.
+// Staging has no artifact/corpse writes; original UIDs publish only after the
+// complete graph is checked against the immutable bytes and current custody.
+extern bool updateArtis;
+
+static void sql_room_item_clear_uids(P_obj object)
+{
+	if (!object)
+		return;
+	object->obj_uid = 0;
+	for (P_obj child = object->contains; child; child = child->next_content)
+		sql_room_item_clear_uids(child);
+}
+
+static bool sql_room_item_can_place_restored(P_obj object, int room)
+{
+	return object && world && room >= 0 && room <= top_of_world && OBJ_NOWHERE(object) &&
+	       !object->next_content && object->type != ITEM_MONEY && object->type != ITEM_CORPSE &&
+	       !IS_ARTIFACT(object);
+}
+
+static void sql_room_item_place_restored(P_obj object, int room) noexcept
+{
+	// A verified cold restore installs the retained placement. Replaying a drop
+	// here would add decay, redirect water objects, merge coins or start falling
+	// after the payload/custody proof. No economic write or gameplay hook runs.
+	// The admitted graph contains no corpses, so world-activity corpse counters
+	// cannot change. Recompute only the room's derived lighting cache.
+	object->loc_p = LOC_ROOM;
+	object->loc.room = room;
+	object->next_content = world[room].contents;
+	world[room].contents = object;
+	if (IS_SET(object->extra_flags, ITEM_LIT) ||
+	    (object->type == ITEM_LIGHT && object->value[2] == -1))
+		room_light(room, REAL);
+}
+
+class sql_room_item_stage_guard
+{
+    public:
+	sql_room_item_stage_guard()
+		: corpse(skip_corpse_save)
+		, artifact(updateArtis)
+	{
+		skip_corpse_save = 1;
+		updateArtis = false;
+	}
+	~sql_room_item_stage_guard()
+	{
+		for (P_obj root : roots)
+		{
+			sql_room_item_clear_uids(root);
+			extract_obj(root, FALSE);
+		}
+		skip_corpse_save = corpse;
+		updateArtis = artifact;
+	}
+	std::vector<P_obj> roots;
+
+    private:
+	int corpse;
+	bool artifact;
+};
+
+static bool sql_room_item_publish(const sql_room_item_graph &graph,
+				  std::unordered_set<uint64_t> *published)
+{
+	if (!published || graph.items.empty() || graph.items.size() != graph.identities.size())
+		return false;
+	const int room = real_room(static_cast<int>(graph.owner.id));
+	if (room == NOWHERE)
+		return false;
+	std::unordered_map<uint64_t, size_t> expected;
+	for (size_t index = 0; index < graph.items.size(); ++index)
+		if (!expected.emplace(graph.items[index].object_uid, index).second ||
+		    published->count(graph.items[index].object_uid))
+			return false;
+	for (P_obj live = object_list; live; live = live->next)
+		if (expected.count(live->obj_uid))
+			return false;
+	sql_room_item_stage_guard stage;
+	player_load_item_materialize_metrics metrics;
+	if (!player_load_item_graph_materialize_detached(graph.items, graph.identities, graph.owner,
+							 graph.owner_revision, false, true,
+							 &stage.roots, &metrics) ||
+	    stage.roots.size() != 1)
+	{
+#ifdef DURIS_SQL_ROOM_ITEM_RECOVERY_TEST
+		printf("ROOM_ITEM_PAYLOAD_REFUSAL stage=materialize outcome=%u roots=%zu\n",
+		       static_cast<unsigned int>(metrics.outcome), stage.roots.size());
+#endif
+		return false;
+	}
+	// Detached materialization recalculates container weight using prototype
+	// shells. Exact persisted weights remain authoritative for this graph.
+	for (P_obj live = object_list; live; live = live->next)
+	{
+		const auto found = expected.find(live->obj_uid);
+		if (found != expected.end())
+			live->weight = graph.items[found->second].weight;
+	}
+	std::vector<player_item_snapshot> captured;
+	size_t estimated = 0;
+	if (player_item_snapshot_tree_capture(stage.roots[0], &captured, &estimated) !=
+		    player_snapshot_capture_result::ok ||
+	    captured.size() != graph.items.size())
+		return false;
+	std::unordered_set<uint64_t> seen;
+	for (size_t index = 0; index < captured.size(); ++index)
+	{
+		auto item = captured[index];
+		const auto found = expected.find(item.object_uid);
+		if (found == expected.end() || !seen.insert(item.object_uid).second)
+			return false;
+		const auto &identity = graph.identities[found->second];
+		if (item.parent_index < -1 || item.parent_index >= static_cast<int32_t>(index) ||
+		    identity.parent_item_uid !=
+			    (item.parent_index < 0 ? 0 : captured[item.parent_index].object_uid))
+			return false;
+		auto durable = graph.items[found->second];
+		item.parent_index = durable.parent_index = -1;
+		item.equipment_slot = durable.equipment_slot = 0;
+		std::vector<uint8_t> actual, expected_bytes;
+		if (player_item_snapshot_list_encode({ item }, &actual) !=
+			    player_snapshot_codec_result::ok ||
+		    player_item_snapshot_list_encode({ durable }, &expected_bytes) !=
+			    player_snapshot_codec_result::ok ||
+		    actual != expected_bytes)
+		{
+#ifdef DURIS_SQL_ROOM_ITEM_RECOVERY_TEST
+			printf("ROOM_ITEM_PAYLOAD_REFUSAL stage=byte_compare uid=%llu extra2=%llu/%llu dynamic=%zu/%zu size=%zu/%zu\n",
+			       static_cast<unsigned long long>(item.object_uid),
+			       static_cast<unsigned long long>(item.extra2_flags),
+			       static_cast<unsigned long long>(durable.extra2_flags),
+			       item.dynamic_affects.size(), durable.dynamic_affects.size(),
+			       actual.size(), expected_bytes.size());
+#endif
+			return false;
+		}
+	}
+	std::unordered_set<P_obj> staged_objects;
+	for (P_obj live = object_list; live; live = live->next)
+		if (expected.count(live->obj_uid))
+		{
+			// Each staged UID must occur exactly once in the native global list.
+			if (!seen.erase(live->obj_uid))
+				return false;
+			staged_objects.insert(live);
+			live->db_item_id = 0;
+		}
+	if (!seen.empty() || staged_objects.size() != graph.items.size())
+		return false;
+	std::vector<item_ownership_runtime_entry> ownership;
+	for (size_t index = 0; index < graph.items.size(); ++index)
+	{
+		const auto &identity = graph.identities[index];
+		ownership.push_back({ identity.item_uid, identity.root_item_uid,
+				      identity.parent_item_uid, identity.owner,
+				      identity.item_revision, identity.owner_revision,
+				      graph.items[index].vnum, identity.state });
+	}
+	// Reserve all bookkeeping before publishing any root.
+	auto next_published = *published;
+	for (const auto &entry : ownership)
+		next_published.insert(entry.item_uid);
+	if (!sql_room_item_can_place_restored(stage.roots[0], room) ||
+	    !item_ownership_runtime_hydrate_many_atomic(ownership.data(), ownership.size()))
+		return false;
+	sql_room_item_place_restored(stage.roots[0], room);
+	published->swap(next_published);
+#ifdef DURIS_SQL_ROOM_ITEM_RECOVERY_TEST
+	// Qualification observer reads the published native graph and runtime custody.
+	// It supplies no expected fields and bypasses no admission or startup guard.
+	std::vector<player_item_snapshot> observed;
+	std::vector<uint8_t> observed_bytes;
+	size_t observed_size = 0;
+	if (player_item_snapshot_tree_capture(stage.roots[0], &observed, &observed_size) ==
+		    player_snapshot_capture_result::ok &&
+	    player_item_snapshot_list_encode(observed, &observed_bytes) ==
+		    player_snapshot_codec_result::ok)
+	{
+		printf("ROOM_ITEM_PAYLOAD_RECOVERY uid=%llu payload=",
+		       static_cast<unsigned long long>(stage.roots[0]->obj_uid));
+		for (uint8_t byte : observed_bytes)
+			printf("%02x", static_cast<unsigned int>(byte));
+		printf("\n");
+		for (const auto &item : observed)
+		{
+			item_ownership_runtime_entry entry{};
+			if (!item_ownership_runtime_lookup(item.object_uid, &entry))
+				continue;
+			printf("ROOM_ITEM_PAYLOAD_CUSTODY uid=%llu root=%llu parent=%llu owner=%u room=%llu revision=%llu owner_revision=%llu vnum=%d state=%u\n",
+			       static_cast<unsigned long long>(entry.item_uid),
+			       static_cast<unsigned long long>(entry.root_item_uid),
+			       static_cast<unsigned long long>(entry.parent_item_uid),
+			       static_cast<unsigned int>(entry.owner.type),
+			       static_cast<unsigned long long>(entry.owner.id),
+			       static_cast<unsigned long long>(entry.item_revision),
+			       static_cast<unsigned long long>(entry.owner_revision), entry.vnum,
+			       static_cast<unsigned int>(entry.state));
+		}
+		fflush(stdout);
+	}
+#endif
+	stage.roots.clear();
+	return true;
+}
+
+static bool sql_restore_exact_room_items(std::unordered_set<uint64_t> *published, bool *available)
+{
+	if (sql_in_transaction() || !sql_room_item_payload_available(DB, available))
+		return false;
+	if (!*available)
+		return true;
+	std::vector<uint64_t> roots;
+	if (!sql_begin_transaction())
+		return false;
+	const bool enumerated = sql_room_item_payload_roots(DB, &roots);
+	const bool released = sql_rollback();
+	if (!enumerated || !released)
+		return false;
+	for (uint64_t uid : roots)
+	{
+		if (!sql_begin_transaction())
+			return false;
+		bool restored = false;
+		try
+		{
+			sql_room_item_graph graph;
+			const bool payload_read = sql_room_item_payload_read(DB, uid, &graph);
+#ifdef DURIS_SQL_ROOM_ITEM_RECOVERY_TEST
+			printf("ROOM_ITEM_PAYLOAD_STAGE stage=read ok=%u uid=%llu\n",
+			       static_cast<unsigned int>(payload_read),
+			       static_cast<unsigned long long>(uid));
+#endif
+			restored = payload_read && sql_room_item_publish(graph, published);
+		}
+		catch (const std::bad_alloc &)
+		{
+			restored = false;
+		}
+		if (!sql_rollback())
+			return false;
+		if (!restored)
+			logit(LOG_SYS,
+			      "sql_restore_saved_items: exact room graph refused; immutable payload and custody retained");
+	}
+	return true;
+}
+
 void sql_restore_saved_items(void)
 {
 	if (!DB)
@@ -11091,6 +11322,13 @@ void sql_restore_saved_items(void)
 		return;
 	}
 	std::unordered_set<uint64_t> published_uids;
+	bool exact_available = false;
+	if (!sql_restore_exact_room_items(&published_uids, &exact_available))
+	{
+		logit(LOG_SYS,
+		      "sql_restore_saved_items: exact payload schema/lifetime unavailable; source rows retained");
+		return;
+	}
 
 	MYSQL_RES *result =
 		db_query("SELECT item_key, room_vnum, id, vnum, weight, cost, timer, extra_flags, "
@@ -11117,6 +11355,42 @@ void sql_restore_saved_items(void)
 		int item_id = atoi(row[2]);
 		int vnum = atoi(row[3]);
 		const uint64_t saved_uid = row[28] ? strtoull(row[28], NULL, 10) : 0;
+		if (exact_available)
+		{
+			char *escaped = sql_escape_string(item_key);
+			if (!escaped)
+				continue;
+			MYSQL_RES *overlap = db_query(
+				"SELECT obj_uid FROM saved_items WHERE item_key='%s' ORDER BY id LIMIT 3001",
+				escaped);
+			free(escaped);
+			if (!overlap)
+				continue;
+			bool retained_exact = mysql_num_rows(overlap) > ITEM_TRANSFER_MAX_ITEMS;
+			MYSQL_ROW saved;
+			while (!retained_exact && (saved = mysql_fetch_row(overlap)))
+			{
+				uint64_t uid = 0;
+				if (saved[0] &&
+				    [&]()
+				    {
+					    const char *end = saved[0] + strlen(saved[0]);
+					    const auto parsed = std::from_chars(saved[0], end, uid);
+					    return parsed.ec != std::errc{} || parsed.ptr != end;
+				    }())
+				{
+					retained_exact = true;
+					break;
+				}
+				bool enrolled = false;
+				if (uid && (!sql_room_item_payload_present(DB, uid, &enrolled) ||
+					    enrolled))
+					retained_exact = true;
+			}
+			mysql_free_result(overlap);
+			if (retained_exact)
+				continue;
+		}
 		int destination_root_id = 0;
 		int source_count = 0;
 		bool retired = false;
@@ -11339,7 +11613,8 @@ void sql_restore_saved_items(void)
 		std::unordered_set<P_obj> tree_objects;
 		if (!sql_saved_item_custody_matches(obj, obj->obj_uid, 0, room_vnum, &tree_uids,
 						    &tree_objects) ||
-		    std::any_of(tree_uids.begin(), tree_uids.end(), [&published_uids](uint64_t uid)
+		    std::any_of(tree_uids.begin(), tree_uids.end(),
+				[&published_uids](uint64_t uid)
 				{ return published_uids.find(uid) != published_uids.end(); }) ||
 		    [&]()
 		    {

@@ -98,7 +98,8 @@ Insert and update validation triggers enforce eight rules without exceeding
 MariaDB's table-definition metadata limit. Their exact bodies are verified;
 runtime metadata fingerprints include trigger definitions, timing, event, order
 and SQL mode. Guarded reruns preserve an existing definition so drift fails
-verification. Migrations 1–66 are unchanged. `CREATE TRIGGER IF NOT EXISTS`
+verification. All sealed telemetry migration files through 0066 are unchanged.
+`CREATE TRIGGER IF NOT EXISTS`
 requires MySQL 8.0.29 or later; qualification targets MySQL 8.0.46 and MariaDB
 10.11.14. See the [MySQL statement documentation](https://dev.mysql.com/doc/refman/8.0/en/create-trigger.html).
 
@@ -157,6 +158,15 @@ remain qualified. The 164-test focused Python suite, fresh ASan/UBSan pure and
 gameplay runs, lifecycle/outage/exhaustion, header contracts, formatting and the
 maintained server build pass. TSan remains unsupported from its earlier probe.
 
-The PR base has independently advanced its migrations. Integrating both sealed
-histories and qualifying their common runtime schema remains required before
-merge; the owned 67-step proof does not establish that merged schema.
+The combined accounting/telemetry contract preserves both sealed histories.
+Both database engines qualify all six upgrade paths at **70 steps / 263 tables**,
+preserving accounting's first 56 receipts or telemetry's first 67 receipts and
+appending the other branch's steps. The original 67-step proof above remains a
+historical qualification. Both complete 70-step storage, private repository and
+native runtime/queue/worker/writer/publication journeys also pass on the combined
+schema. They preserve all 76 control fields, all 455 tagged payload columns,
+56 native resolutions / 18 accepted / 12 rejection reasons, earlier battle/build
+values and immutable reports. Reviewed loss, private roles, rollback, lost
+acknowledgements, corrected reviews, drift refusal and exact restoration remain
+qualified. Temporary databases/users were removed and SQL fixtures stopped. See
+[runtime compatibility](../persistence/RUNTIME_COMPATIBILITY.md).

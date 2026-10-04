@@ -1,6 +1,7 @@
 /* Special procedures for the Neverwinter area. */
 
 #include "core/prototypes.h"
+#include "world/world_activity.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -1040,24 +1041,32 @@ void nw_reset_maze(int room)
 		other_room = real_room0(world[room].number + 29);
 		world[room].dir_option[3]->to_room = other_room;
 		world[other_room].dir_option[1]->to_room = room;
+		world_activity_room_exits_changed(room);
+		world_activity_room_exits_changed(other_room);
 	}
 	else if (world[room].number == BOUNDED(99231, world[room].number, 99235))
 	{
 		other_room = real_room0(world[room].number - 29);
 		world[room].dir_option[1]->to_room = other_room;
 		world[other_room].dir_option[3]->to_room = room;
+		world_activity_room_exits_changed(room);
+		world_activity_room_exits_changed(other_room);
 	}
 	else if (world[room].number == 99201)
 	{
 		other_room = real_room0(99236);
 		world[room].dir_option[1]->to_room = other_room;
 		world[other_room].dir_option[3]->to_room = room;
+		world_activity_room_exits_changed(room);
+		world_activity_room_exits_changed(other_room);
 	}
 	else if (world[room].number == 99236)
 	{
 		other_room = real_room0(99201);
 		world[room].dir_option[1]->to_room = other_room;
 		world[other_room].dir_option[3]->to_room = room;
+		world_activity_room_exits_changed(room);
+		world_activity_room_exits_changed(other_room);
 	}
 }
 

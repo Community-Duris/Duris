@@ -138,6 +138,15 @@ class PolicyTests(Fixture):
                         resume_published=False, blocked_retry_seconds=3600)
         self.assertEqual(loaded, expected)
 
+    def test_restore_database_engine_is_explicit_and_bounded(self):
+        self.assertEqual(self.load().get("restore_database_engine", "mariadb"), "mariadb")
+        for engine in ("mariadb", "mysql"):
+            self.assertEqual(self.load(restore_database_engine=engine)["restore_database_engine"], engine)
+        for engine in ("", "mysql8", "postgres", True, None, 1, []):
+            with self.subTest(engine=engine), self.assertRaisesRegex(
+                    backup.BackupError, "invalid_restore_database_engine"):
+                self.load(restore_database_engine=engine)
+
     def test_recovery_policy_is_opt_in_and_retry_window_is_bounded(self):
         self.assertFalse(self.load()["resume_published"])
         self.assertTrue(self.load(resume_published=True)["resume_published"])

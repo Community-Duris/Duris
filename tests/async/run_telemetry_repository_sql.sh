@@ -16,8 +16,8 @@ case "${1:-}" in
     *) printf 'usage: run_telemetry_repository_sql.sh [--incidents|--observations|--identity|--identity-review|--identity-publication|--battle-storage|--battle-runtime|--contribution-storage|--build-storage]\n' >&2; exit 2 ;;
 esac
 IMAGE="${TELEMETRY_REPOSITORY_DB_IMAGE:-mariadb:10.11.14}"
-case "$IMAGE" in
-    mysql:8.0.46|mariadb:10.11.14) ;;
+case "${IMAGE%%@*}" in
+    mysql:8.0.46|mariadb:10.11.14|mariadb:10.11.19) ;;
     *) printf 'unsupported telemetry SQL fixture image: %s\n' "$IMAGE" >&2; exit 2 ;;
 esac
 
@@ -37,21 +37,24 @@ else
 fi
 proxy_pid=
 ready_file=
+SQL_FIXTURE_CONTAINER_ID=
 cleanup() {
     if [[ -n "$ready_file" ]]; then rm -f -- "$ready_file"; fi
     if [[ -n "$proxy_pid" ]]; then kill "$proxy_pid" >/dev/null 2>&1 || true; fi
-    docker rm -f "$name" >/dev/null 2>&1 || true
+    [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -f "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
-docker run -d --name "$name" \
+source "$ROOT/tests/async/_sql_fixture_network.sh"
+sql_fixture_network
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$name" \
     -e "$password_name=$password" -e "$host_name=%" \
-    -p 127.0.0.1::3306 "$IMAGE" >/dev/null
+    "${SQL_FIXTURE_NETWORK[@]}" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}")
 
 ready=0
 for _ in $(seq 1 120); do
     if docker exec -e MYSQL_PWD="$password" "$name" \
-        "$container_client" --protocol=tcp -h127.0.0.1 -uroot -N -B -e 'SELECT 1' >/dev/null 2>&1; then
+        "$container_client" --protocol=tcp -h127.0.0.1 -P"${SQL_FIXTURE_PRIVATE_PORT:-3306}" -uroot -N -B -e 'SELECT 1' >/dev/null 2>&1; then
         ready=1
         break
     fi
@@ -63,7 +66,7 @@ if [[ "$ready" != 1 ]]; then
     exit 1
 fi
 
-binding=$(docker port "$name" 3306/tcp)
+binding=$(sql_fixture_mapping "$name")
 port=${binding##*:}
 if [[ ! "$port" =~ ^[0-9]+$ ]]; then
     printf 'could not resolve telemetry SQL fixture port: %s\n' "$binding" >&2

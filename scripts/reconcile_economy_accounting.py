@@ -28,6 +28,12 @@ TABLES = (
     "operations", "effects", "postings", "children", "item_references",
     "ownership_events", "source_claims", "account_origins", "item_origins", "receipts",
 )
+ORPHAN_EVIDENCE_SOURCES = {
+    "effects": ("economic_accounting_account_effect", "account_index", "orphan_account_effect"),
+    "postings": ("economic_accounting_coin_posting", "line_index", "orphan_coin_posting"),
+    "children": ("economic_accounting_child", "child_index", "orphan_accounting_child"),
+    "item_references": ("economic_accounting_item_reference", "event_index", "orphan_item_reference"),
+}
 NATIVE_MAPPING_KINDS = (
     "wallet", "bank", "pile", "auction_escrow", "pending_claim", "treasury",
 )
@@ -55,7 +61,11 @@ def vector(value: object) -> tuple[int, int, int, int]:
     if (not isinstance(value, list) or len(value) != 4 or
             any(type(part) is not int or not -(2**63) <= part < 2**63 for part in value)):
         raise SnapshotError("invalid denomination vector")
-    return tuple(value)
+    checked = tuple(value)
+    # Matching native/opening/effect vectors can still exceed the native money
+    # range. Validate their weighted value, not only each denomination field.
+    copper(checked)
+    return checked
 
 
 def copper(value: tuple[int, int, int, int]) -> int:
@@ -75,6 +85,14 @@ def account_key(value: object) -> tuple[str, int, int, int]:
     if raw[16:18] != b"\x01\x00" or raw[36:] != bytes(4) or not 1 <= kind <= 10 or not identity:
         raise SnapshotError("invalid account key")
     return raw[:16].hex(), kind, identity, context
+
+
+def unsigned_revision(value: object) -> bool:
+    return type(value) is int and 0 <= value < 2**64
+
+
+def item_revision_transition(before: object, after: object) -> bool:
+    return unsigned_revision(before) and unsigned_revision(after) and after == before + 1
 
 
 def require_id(value: object, label: str) -> str:
@@ -109,7 +127,7 @@ class Reconciler:
                 elif field == "source_event" and isinstance(value, str) and re.fullmatch(r"[0-9a-f]{96}", value):
                     safe[field] = value
                 elif field in ("uid", "parent_uid", "child_index", "line_index", "source_slot",
-                               "net_copper") and type(value) is int:
+                               "net_copper", "ship_id", "guild_id") and type(value) is int:
                     safe[field] = value
                 elif field == "table" and value in TABLES:
                     safe[field] = value
@@ -148,9 +166,12 @@ class Reconciler:
         if snapshot.get("quiescent") is not True:
             self.emit("unfenced_snapshot", scope="snapshot")
         tables = {name: self.table(snapshot, name) for name in TABLES}
+        self.audit_orphan_evidence(snapshot)
         native = snapshot.get("native")
         if not isinstance(native, dict):
             raise SnapshotError("missing native authority")
+        self.audit_ship_coffers(snapshot.get("backend"), native)
+        self.audit_guild_treasuries(snapshot.get("backend"), native)
         holdings = self.table(native, "holdings")
         items = self.table(native, "items")
         unreferenced_uid_events = native.get("unreferenced_uid_events")
@@ -183,8 +204,7 @@ class Reconciler:
                 owner = event.get("owner")
                 if (type(event_index) is not int or not 0 <= event_index <= 65535 or
                         type(uid) is not int or not 0 < uid < 2**64 or
-                        type(before_revision) is not int or not 0 <= before_revision < 2**63 or
-                        type(revision) is not int or revision != before_revision + 1 or
+                        not item_revision_transition(before_revision, revision) or
                         type(root_uid) is not int or not 0 < root_uid < 2**64 or
                         (parent_uid is not None and
                          (type(parent_uid) is not int or not 0 < parent_uid < 2**64)) or
@@ -413,6 +433,9 @@ class Reconciler:
 
         by_account: dict[str, list[dict]] = defaultdict(list)
         for row in effects.values():
+            if (not unsigned_revision(row.get("before_revision")) or
+                    not unsigned_revision(row.get("after_revision"))):
+                raise SnapshotError("invalid account effect revision")
             key = row.get("account_key")
             account_key(key)
             by_account[key].append(row)
@@ -577,8 +600,101 @@ class Reconciler:
                 "checked": {name: len(tables[name]) for name in TABLES} |
                            {"native_holdings": len(holdings), "native_items": len(items)}}
 
+    def audit_orphan_evidence(self, snapshot: dict) -> None:
+        rows = snapshot.get("orphan_evidence")
+        coverage = snapshot.get("orphan_evidence_coverage")
+        if rows is None and coverage is None:
+            if snapshot.get("backend") == "sql_partial":
+                self.emit("missing_orphan_evidence_coverage", scope="snapshot")
+            return
+        rows = self.table(snapshot, "orphan_evidence")
+        counts = dict.fromkeys(ORPHAN_EVIDENCE_SOURCES, 0)
+        for row in rows:
+            table = row.get("table")
+            if not isinstance(table, str) or table not in ORPHAN_EVIDENCE_SOURCES:
+                raise SnapshotError("invalid orphan evidence table")
+            operation_id = require_id(row.get("operation_id"), "orphan operation ID")
+            if type(row.get("row_index")) is not int or not 0 <= row["row_index"] <= 65535:
+                raise SnapshotError("invalid orphan evidence index")
+            counts[table] += 1
+            self.emit(ORPHAN_EVIDENCE_SOURCES[table][2], operation_id=operation_id,
+                      table=table, line_index=row["row_index"])
+        if (not isinstance(coverage, dict) or set(coverage) != {"scope", "table_counts"} or
+                coverage["scope"] != "database" or not isinstance(coverage["table_counts"], dict) or
+                set(coverage["table_counts"]) != set(counts) or
+                any(type(value) is not int or value < 0
+                    for value in coverage["table_counts"].values()) or
+                coverage["table_counts"] != counts):
+            raise SnapshotError("invalid orphan evidence coverage")
+
+    def audit_ship_coffers(self, backend: object, native: dict) -> None:
+        rows, coverage = native.get("ship_coffers"), native.get("ship_coffer_coverage")
+        if rows is None and coverage is None:
+            if backend == "sql_partial":
+                self.emit("missing_ship_coffer_coverage", scope="snapshot")
+            return
+        rows = self.table(native, "ship_coffers")
+        expected = dict(rows=len(rows), positive_rows=0, zero_rows=0,
+                        unknown_rows=0, invalid_rows=0, missing_revision_rows=len(rows))
+        if (not isinstance(coverage, dict) or set(coverage) != set(expected) or
+                any(type(value) is not int or not 0 <= value <= MAX_ROWS
+                    for value in coverage.values())):
+            raise SnapshotError("invalid ship coffer coverage")
+        seen = set()
+        for row in rows:
+            identity, amount = row.get("ship_id"), row.get("copper")
+            if (set(row) != {"ship_id", "copper"} or type(identity) is not int or
+                    not 1 <= identity < 2**31 or identity in seen or
+                    (amount is not None and
+                     (type(amount) is not int or not -(2**31) <= amount < 2**31))):
+                raise SnapshotError("invalid native ship coffer")
+            seen.add(identity)
+            bucket = ("unknown_rows" if amount is None else "invalid_rows" if amount < 0
+                      else "zero_rows" if amount == 0 else "positive_rows")
+            expected[bucket] += 1
+            self.emit("unsupported_native_ship_coffer", ship_id=identity)
+            self.emit("missing_ship_coffer_revision", ship_id=identity)
+            if amount is None:
+                self.emit("unknown_native_ship_coffer", ship_id=identity)
+            elif amount < 0:
+                self.emit("invalid_native_ship_coffer", ship_id=identity)
+        if coverage != expected:
+            raise SnapshotError("ship coffer coverage count mismatch")
+
+    def audit_guild_treasuries(self, backend: object, native: dict) -> None:
+        rows = native.get("guild_treasuries")
+        coverage = native.get("guild_treasury_coverage")
+        if rows is None and coverage is None:
+            if backend == "sql_partial":
+                self.emit("missing_guild_treasury_coverage", scope="snapshot")
+            return
+        rows = self.table(native, "guild_treasuries")
+        expected = dict(rows=len(rows), positive_rows=0, zero_rows=0,
+                        missing_revision_rows=len(rows))
+        if (not isinstance(coverage, dict) or set(coverage) != set(expected) or
+                any(type(value) is not int or not 0 <= value <= MAX_ROWS
+                    for value in coverage.values())):
+            raise SnapshotError("invalid guild treasury coverage")
+        seen = set()
+        for row in rows:
+            identity, balance = row.get("guild_id"), row.get("balance")
+            if (set(row) != {"guild_id", "balance"} or type(identity) is not int or
+                    not 1 <= identity < 2**32 or identity in seen or
+                    not isinstance(balance, list) or len(balance) != 4 or
+                    any(type(amount) is not int or not 0 <= amount < 2**32 for amount in balance)):
+                raise SnapshotError("invalid native guild treasury")
+            seen.add(identity)
+            expected["positive_rows" if any(balance) else "zero_rows"] += 1
+            self.emit("unsupported_native_guild_treasury", guild_id=identity)
+            self.emit("missing_guild_money_revision", guild_id=identity)
+        if coverage != expected:
+            raise SnapshotError("guild treasury coverage count mismatch")
+
     def audit_accounts(self, lineage: str, operations: dict, by_account: dict, origins: dict, native: dict,
                        deltas: dict) -> None:
+        for holding in native.values():
+            if not unsigned_revision(holding.get("revision")):
+                raise SnapshotError("invalid native holding revision")
         for key in set(by_account) | {row[0] for row in origins} | {row[0] for row in native}:
             key_lineage, kind, _, _ = account_key(key)
             if key_lineage != lineage:
@@ -615,7 +731,7 @@ class Reconciler:
                 continue
             expected = vector(origin.get("balance"))
             revision = origin.get("revision")
-            if type(revision) is not int or revision < 0:
+            if not unsigned_revision(revision):
                 raise SnapshotError("invalid account origin revision")
             if origin["origin"] == "creation" and (expected != (0, 0, 0, 0) or revision != 0):
                 self.emit("invalid_account_creation_origin", account_key=key)
@@ -827,8 +943,8 @@ class Reconciler:
                 self.emit("unauthorized_mapping_creation", operation_id=creator_id,
                           account_key=key)
             effect = matching_effects[0]
-            if (type(effect.get("before_revision")) is not int or
-                    type(effect.get("after_revision")) is not int or
+            if (not unsigned_revision(effect.get("before_revision")) or
+                    not unsigned_revision(effect.get("after_revision")) or
                     effect["after_revision"] <= effect["before_revision"] or
                     ((origin is None or origin.get("origin") == "creation") and
                      (effect.get("before") != [0, 0, 0, 0] or
@@ -1044,9 +1160,9 @@ class Reconciler:
                 if (type(account_index) is not int or not 0 <= account_index < 3072 or
                         account_index in effects_by_index or key in effects_by_key or
                         (root_lineage is not None and key_lineage != root_lineage) or
-                        type(before_revision) is not int or not 0 <= before_revision < 2**63 or
-                        type(after_revision) is not int or after_revision <= before_revision or
-                        after_revision >= 2**63):
+                        not unsigned_revision(before_revision) or
+                        not unsigned_revision(after_revision) or
+                        after_revision <= before_revision):
                     raise SnapshotError("invalid retirement root effect")
                 effects_by_index[account_index] = effect
                 effects_by_key[key] = effect
@@ -1284,8 +1400,7 @@ class Reconciler:
             if (type(event_index) is not int or not 0 <= event_index <= 65535 or
                     type(uid) is not int or not 0 < uid < 2**64 or
                     type(child_index) is not int or not 0 <= child_index <= 64 or
-                    type(before_revision) is not int or not 0 <= before_revision < 2**63 or
-                    type(after_revision) is not int or after_revision != before_revision + 1 or
+                    not item_revision_transition(before_revision, after_revision) or
                     type(legacy_event_index) is not int or not 0 <= legacy_event_index <= 65535 or
                     not isinstance(operation_epoch, str) or not HEX_ID.fullmatch(operation_epoch) or
                     root is None or root.get("epoch") != operation_epoch or
@@ -1402,8 +1517,7 @@ class Reconciler:
                 self.emit("invalid_uid_history_root", operation_id=operation_id, uid=uid)
             if (type(event_index) is not int or not 0 <= event_index <= 65535 or
                     type(uid) is not int or not 0 < uid < 2**64 or
-                    type(before) is not int or before < 0 or
-                    type(revision) is not int or revision != before + 1 or
+                    not item_revision_transition(before, revision) or
                     type(row.get("referenced")) is not bool or
                     type(row.get("root")) is not int or not 0 < row["root"] < 2**64 or
                     (row.get("parent") is not None and
@@ -1521,8 +1635,7 @@ class Reconciler:
             parent = row.get("parent")
             if (type(event_index) is not int or not 0 <= event_index <= 65535 or
                     type(uid) is not int or not 0 < uid < 2**64 or
-                    type(before) is not int or before < 0 or
-                    type(revision) is not int or revision != before + 1 or
+                    not item_revision_transition(before, revision) or
                     type(root) is not int or not 0 < root < 2**64 or
                     (parent is not None and (type(parent) is not int or not 0 < parent < 2**64)) or
                     not isinstance(owner, list) or len(owner) != 3 or
@@ -1607,7 +1720,7 @@ class Reconciler:
             balance = vector(mapping.get("balance"))
             revision = mapping.get("revision")
             holding = holdings.get((key,))
-            if (type(revision) is not int or not 0 <= revision < 2**63 or
+            if (not unsigned_revision(revision) or
                     holding is None or holding.get("balance") != list(balance) or
                     holding.get("revision") != revision or pile is None or
                     pile.get("amounts") != list(balance) or pile.get("revision") != revision):
@@ -1802,6 +1915,9 @@ class Reconciler:
                 if created:
                     self.emit("duplicate_uid", uid=uid, operation_id=event.get("operation_id"))
                 created = True
+            if retired and action == "destroy":
+                self.emit("duplicate_item_retirement", uid=uid,
+                          operation_id=event.get("operation_id"))
             if retired and event.get("state") == "live":
                 self.emit("resurrected_item_uid", uid=uid, operation_id=event.get("operation_id"))
             retired = retired or action == "destroy" or event.get("state") == "tombstone"
@@ -1810,8 +1926,14 @@ class Reconciler:
 
     def audit_items(self, ownership: dict, references: dict, origins: dict, native: dict,
                     lineage_history_uids: set[int] | None = None) -> None:
+        for row in list(origins.values()) + list(native.values()):
+            if not unsigned_revision(row.get("revision")):
+                raise SnapshotError("invalid item origin or native revision")
         referenced = set()
         for ref in references.values():
+            if (not unsigned_revision(ref.get("before_revision")) or
+                    not unsigned_revision(ref.get("after_revision"))):
+                raise SnapshotError("invalid item reference revision")
             legacy_key = (ref.get("legacy_operation_id"), ref.get("legacy_event_index"))
             event = ownership.get(legacy_key)
             uid = ref.get("uid")
@@ -1825,6 +1947,9 @@ class Reconciler:
                 referenced.add(legacy_key)
         by_uid: dict[int, list[dict]] = defaultdict(list)
         for key, event in ownership.items():
+            if (not unsigned_revision(event.get("before_revision")) or
+                    not unsigned_revision(event.get("revision"))):
+                raise SnapshotError("invalid ownership event revision")
             uid = event.get("uid")
             by_uid[uid].append(event)
             if key not in referenced:
@@ -1910,7 +2035,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
         rows = [{"account_key": row["account_key"], "kind": account_key(row["account_key"])[1],
                  "balance": vector(row["balance"]), "revision": row["revision"]}
                 for row in snapshot["native"]["holdings"]]
-        if any(type(row["revision"]) is not int or row["revision"] < 0 for row in rows):
+        if any(not unsigned_revision(row["revision"]) for row in rows):
             raise SnapshotError("invalid native holding revision")
     elif name == "provenance":
         if uid is None:

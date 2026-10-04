@@ -49,6 +49,7 @@
 #include "combat/justice.h"
 #include "world/map.h"
 #include "net/mccp.h"
+#include "net/transport.h"
 #include "player/player_save_pipeline.h"
 #include "redis/redis_presence_runtime.h"
 #include "ships/ships.h"
@@ -6070,7 +6071,7 @@ void do_protocol(P_char ch, char * /*arg*/, int /*cmd*/)
 	{
 		conn_type = "WebSocket";
 	}
-	else if (d->sslses)
+	else if (d->sslses || transport_descriptor_tls(d))
 	{
 		conn_type = "SSL/TLS";
 	}

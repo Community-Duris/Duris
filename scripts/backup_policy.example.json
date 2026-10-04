@@ -6,6 +6,7 @@
   "rpo_seconds": 7200,
   "resume_published": false,
   "blocked_retry_seconds": 3600,
+  "restore_database_engine": "mariadb",
   "hourly": 48,
   "daily": 14,
   "weekly": 8,

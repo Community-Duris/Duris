@@ -1,6 +1,7 @@
 #ifndef CRITICAL_COMMAND_COMPLETION_H
 #define CRITICAL_COMMAND_COMPLETION_H
 
+#include "net/network_wakeup.h"
 #include "persistence/critical_command.h"
 
 #include <array>
@@ -45,6 +46,8 @@ struct critical_completion
 	critical_failure_stage failure_stage = critical_failure_stage::none;
 	uint16_t result_size = 0;
 	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result_payload = {};
+	// Reconstructed from durable command entity keys after restart; diagnostics only.
+	std::array<char, 33> recovery_correlation = {};
 };
 
 // Completion delivery is serialized by the coordinator mutex. It owns bounded
@@ -81,6 +84,7 @@ class critical_completion_delivery
 		try
 		{
 			queue(channel).push_back(completion);
+			network_wakeup_notify();
 			return true;
 		}
 		catch (const std::bad_alloc &)
@@ -95,6 +99,7 @@ class critical_completion_delivery
 	void enqueue(critical_completion_channel channel, const critical_completion &completion)
 	{
 		queue(channel).push_back(completion);
+		network_wakeup_notify();
 	}
 
 	const critical_completion *front(critical_completion_channel channel) const noexcept

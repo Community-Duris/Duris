@@ -1,3 +1,4 @@
+#include "net/network_wakeup.h"
 #include "persistence/quest_reward_obligation_pipeline.h"
 
 #include "flatfile/flatfile_item_repository.h"
@@ -152,6 +153,7 @@ void worker_main()
 		try
 		{
 			completions.push_back(completion);
+			network_wakeup_notify();
 		}
 		catch (...)
 		{

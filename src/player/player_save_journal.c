@@ -375,7 +375,7 @@ bool archive_recovery_frames(int pid, std::vector<player_snapshot> *frames,
 					   bytes.size() - JOURNAL_HEADER_SIZE,
 					   &snapshot) != player_snapshot_codec_result::ok ||
 		    !ordinary_recovery_snapshot(snapshot) || snapshot.pid != pid ||
-		    snapshot.schema_version != get_u32(bytes.data(), 44) ||
+		    get_u32(bytes.data() + JOURNAL_HEADER_SIZE, 0) != get_u32(bytes.data(), 44) ||
 		    snapshot.revision != get_u64(bytes.data(), 48) ||
 		    snapshot.components != get_u64(bytes.data(), 56))
 			return false;
@@ -816,7 +816,8 @@ bool build_frame(const player_snapshot &snapshot, journal_frame &frame)
 	put_u64(frame.bytes, 24, frame.record_id);
 	put_u64(frame.bytes, 32, frame.created_msec);
 	put_u32(frame.bytes, 40, static_cast<uint32_t>(snapshot.pid));
-	put_u32(frame.bytes, 44, snapshot.schema_version);
+	// Pin the encoded wire, including ward envelopes, rather than its normalized schema.
+	put_u32(frame.bytes, 44, get_u32(payload.data(), 0));
 	put_u64(frame.bytes, 48, snapshot.revision);
 	put_u64(frame.bytes, 56, snapshot.components);
 	put_u32(frame.bytes, 64, payload.size());
@@ -1298,6 +1299,34 @@ bool player_save_journal_pid_quarantined(int pid)
 	return quarantine_state_failed || (quarantine_state_ready && quarantined_pids.count(pid));
 }
 
+player_save_journal_diagnostic player_save_journal_diagnostic_copy(int pid)
+{
+	player_save_journal_diagnostic result;
+	std::unique_lock<std::mutex> lock(journal_mutex, std::try_to_lock);
+	if (!lock.owns_lock())
+		return result;
+	result.available = true;
+	result.health = health;
+	result.global_fence = quarantine_state_failed;
+	result.pid_fence = quarantined_pids.count(pid);
+	result.policy_fence = policy_pids.count(pid);
+	for (const auto &record : archive_records)
+		if (record.pid == pid)
+		{
+			++result.archived_frames;
+			result.archived_bytes += record.bytes.size();
+		}
+	for (const auto &stored : recovery_records)
+		if (stored.record.replacement.pid == pid)
+		{
+			result.recovery_prepared = true;
+			result.recovery_resolved = stored.resolved;
+			result.recovery_revoked = stored.revoked;
+			result.replacement_revision = stored.record.replacement.revision;
+		}
+	return result;
+}
+
 player_save_journal_result player_save_journal_append(const player_snapshot &snapshot)
 {
 	std::lock_guard<std::mutex> lock(journal_mutex);
@@ -1583,9 +1612,13 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 	std::map<int, player_revision_t> acknowledged;
 	std::vector<operation_record_proof> proven_operations;
 	std::set<int> runtime_quarantined_pids;
-	auto quarantine_failed_pid = [&](int pid)
+	auto quarantine_failed_pid = [&](persistence_trace_event trace)
 	{
+		const int pid = trace.pid;
 		const player_save_journal_result quarantined = quarantine_runtime_pid(pid);
+		trace.stage = persistence_trace_stage::save_replay_fence;
+		trace.incident = true;
+		persistence_trace_record(trace);
 		if (quarantined != player_save_journal_result::ok)
 			return quarantined;
 		runtime_quarantined_pids.insert(pid);
@@ -1643,6 +1676,12 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 				continue;
 			}
 			same_identity.push_back(&frame);
+			persistence_trace_event trace;
+			trace.stage = persistence_trace_stage::save_replay_apply;
+			trace.pid = frame.snapshot.pid;
+			trace.revision = frame.snapshot.revision;
+			trace.components = frame.snapshot.components;
+			persistence_trace_record(trace);
 			player_save_apply_result applied = {};
 			try
 			{
@@ -1650,12 +1689,27 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 			}
 			catch (...)
 			{
+				trace.stage = persistence_trace_stage::save_replay_result;
+				trace.outcome = static_cast<uint32_t>(
+					player_save_apply_outcome::terminal_failure);
+				trace.error = EFAULT;
+				trace.incident = true;
+				persistence_trace_record(trace);
 				const player_save_journal_result quarantined =
-					quarantine_failed_pid(frame.snapshot.pid);
+					quarantine_failed_pid(trace);
 				if (quarantined != player_save_journal_result::ok)
 					return quarantined;
 				continue;
 			}
+			trace.stage = persistence_trace_stage::save_replay_result;
+			trace.outcome = static_cast<uint32_t>(applied.outcome);
+			trace.error = applied.error_code;
+			trace.diagnosis = static_cast<uint32_t>(applied.custody_diagnosis);
+			trace.witness = applied.custody_witness;
+			trace.durable_revision = applied.durable_revision;
+			trace.incident = applied.outcome ==
+					 player_save_apply_outcome::terminal_failure;
+			persistence_trace_record(trace);
 			if (applied.outcome == player_save_apply_outcome::retryable_failure ||
 			    applied.outcome == player_save_apply_outcome::ambiguous_commit)
 			{
@@ -1674,7 +1728,7 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 					++health.backpressure;
 				}
 				const player_save_journal_result quarantined =
-					quarantine_failed_pid(frame.snapshot.pid);
+					quarantine_failed_pid(trace);
 				if (quarantined != player_save_journal_result::ok)
 					return quarantined;
 				continue;
@@ -1696,8 +1750,11 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 									      applied) &&
 				    !verified_obsolete_operations)
 				{
+					trace.outcome = static_cast<uint32_t>(
+						player_save_apply_outcome::terminal_failure);
+					trace.error = ESTALE;
 					const player_save_journal_result quarantined =
-						quarantine_failed_pid(frame.snapshot.pid);
+						quarantine_failed_pid(trace);
 					if (quarantined != player_save_journal_result::ok)
 						return quarantined;
 					continue;
@@ -1816,7 +1873,8 @@ bool recovery_generation_matches(const player_save_recovery_record &record)
 	if (!archive_recovery_frames(record.replacement.pid, &frames, &digest) ||
 	    digest != record.archive_digest || policy_pids.count(record.replacement.pid))
 		return false;
-	return std::all_of(frames.begin(), frames.end(), [&](const player_snapshot &frame)
+	return std::all_of(frames.begin(), frames.end(),
+			   [&](const player_snapshot &frame)
 			   { return frame.revision < record.replacement.revision; });
 }
 } // namespace

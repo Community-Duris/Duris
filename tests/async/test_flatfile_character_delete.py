@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from _paths import rel
+import os
 import pathlib
 import shutil
 import subprocess
@@ -46,6 +47,10 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
         rel("flatfile_ship_repository.c"),
         rel("flatfile_world_item_repository.c"),
         rel("flatfile_world_quest_history.c"),
+        rel("flatfile_zone_story_quest_state.c"),
+        "src/world/zone_story_quest_feature.c",
+        "src/world/zone_story_quest_tracking.c",
+        "src/world/zone_story_quest_catalog.c",
         rel("flatfile_authority_transaction.c"),
         rel("flatfile_item_accounting_reference.c"),
         rel("flatfile_accounting_authority.c"),
@@ -78,6 +83,13 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
         rel("persistence_observability.c"),
         rel("persistence_mode.c"),
     ]
+    sanitizers = os.environ.get("DURIS_TEST_SANITIZERS") == "1"
+    sanitizer_flags = ["-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
+                       "-fno-pie", "-no-pie"] if sanitizers else []
+    environment = dict(os.environ)
+    if sanitizers:
+        environment.update(ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
+                           UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
     compile_result = subprocess.run(
         [
             "g++",
@@ -86,9 +98,11 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
             "-Wextra",
             "-Wpedantic",
             "-Werror",
+            *sanitizer_flags,
             "-D__NO_MYSQL__",
             "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
             "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
+            "-DDURIS_FLATFILE_ACCOUNTING_TEST",
             "-Isrc",
             "-Isrc/no_mysql",
             *sources,
@@ -107,6 +121,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
 
     run_result = subprocess.run(
         [str(binary), str(temporary_path / "state")],
+        env=environment,
         cwd=ROOT,
         text=True,
         stdout=subprocess.PIPE,
@@ -116,10 +131,10 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
         raise SystemExit(run_result.stdout)
     seed_root = temporary_path / "journey-seed"
     (seed_root / "domains").mkdir(parents=True, mode=0o700)
-    subprocess.run([str(binary), str(seed_root), "seed-empty-deletion"], check=True)
+    subprocess.run([str(binary), str(seed_root), "seed-empty-deletion"], check=True, env=environment)
     before = {path.relative_to(seed_root): path.read_bytes()
               for path in seed_root.rglob("*") if path.is_file()}
-    retry = subprocess.run([str(binary), str(seed_root), "seed-empty-deletion"],
+    retry = subprocess.run([str(binary), str(seed_root), "seed-empty-deletion"], env=environment,
                            text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     assert retry.returncode != 0 and "fresh owned state directory" in retry.stdout
     assert before == {path.relative_to(seed_root): path.read_bytes()

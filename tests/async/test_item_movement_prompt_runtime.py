@@ -12,7 +12,7 @@ from _paths import ROOT, SRC, extract_function
 
 
 PRELUDE = r'''
-#include "core/prototypes.h"
+#include "character_identity_test_fixture.h"
 #include "player/output_preferences.h"
 #include "core/utils.h"
 #include "net/comm.h"
@@ -149,6 +149,7 @@ extern "C" ssize_t __wrap_write(int, const void *p, size_t n)
 }
 extern "C" ssize_t gnutls_record_send(gnutls_session_t, const void *, size_t) { abort(); }
 extern "C" const char *gnutls_strerror(int) { return "fixture"; }
+extern "C" int gnutls_record_get_direction(gnutls_session_t) { abort(); }
 int websocket_send_text(P_desc, const char *text) { frames.emplace_back(text); return 0; }
 void write_to_q(const char *text, struct txt_q *q, const int)
 {
@@ -156,6 +157,8 @@ void write_to_q(const char *text, struct txt_q *q, const int)
     block->text = strdup(text);
     if (q->tail) q->tail->next = block; else q->head = block;
     q->tail = block;
+    q->bytes += strlen(text) + 1;
+    ++q->entries;
 }
 '''
 
@@ -219,6 +222,8 @@ static std::string run(bool delayed, bool websocket, int flags, bool two_line,
     item_ownership_runtime_reset();
     pc.pid = 42;
     character_list = &actor;
+    fixture_character_registration actor_registration(&actor);
+    fixture_character_registration body_registration(&body);
     obj_data items[2]{}, container{};
     const bool in_container = strstr(message, "from") != nullptr;
     indexes[0].virtual_number = 100;
@@ -361,6 +366,7 @@ static std::string run(bool delayed, bool websocket, int flags, bool two_line,
 }
 int main()
 {
+    fixture_check_runtime_identity_retirement();
     for (bool ws : {false, true})
     for (bool compact : {false, true})
     for (unsigned smart : {0u, PLR_SMARTPROMPT, PLR_OLDSMARTP, PLR_SMARTPROMPT | PLR_OLDSMARTP})
@@ -416,15 +422,16 @@ def main():
         binary = Path(directory) / 'harness'
         source.write_text('\n'.join([PRELUDE,
             extract_function('comm.c', 'int get_from_q(struct txt_q *queue, char *dest)'),
+            extract_function('comm.c', 'static void report_input_queue_overflow('),
             extract_function('comm.c', 'int process_output(P_desc t)'), DRIVER]))
         # Keep both sanitizers; this functional fixture does not need optimized dependencies.
         subprocess.run(['g++', '-std=c++20', '-g', '-O0', '-ffunction-sections', '-fdata-sections',
-                        '-fsanitize=address,undefined', '-Isrc', str(source),
+                        '-fsanitize=address,undefined', '-fno-pie', '-no-pie', '-pthread', '-Isrc', '-Itests/async', str(source),
                         *[str(SRC / name) for name in ['output_profiles.c', 'output_style.c', 'prompt.c', 'ansi.c', 'mccp.c', 'unicode.c', 'json_utils.c', 'safe_format.c',
                             'item_movement_transaction.c', 'item_ownership_runtime.c',
                             'item_transfer_command.c', "craft_pouch_mutation.c", "chaos_pouch_ledger.c", 'critical_command.c',
-                            'player_snapshot_capture.c', 'player_snapshot_codec.c']],
-                        '-Wl,--gc-sections', '-Wl,--wrap=write', '-lz', '-lcrypto', '-lcjson', '-o', str(binary)],
+                            'player_snapshot_capture.c', 'player_snapshot_codec.c', 'character_identity.c']],
+                        '-Wl,--gc-sections', '-Wl,--wrap=write', '-lz', '-lcrypto', '-lcjson', '-lbsd', '-o', str(binary)],
                        cwd=ROOT, check=True, timeout=300)
         subprocess.run([str(binary)], check=True, timeout=30)
 

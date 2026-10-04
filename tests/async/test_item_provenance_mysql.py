@@ -35,13 +35,19 @@ class ItemProvenanceMysqlTest(unittest.TestCase):
             binary = Path(directory) / "item_provenance_mysql"
             subprocess.run([
                 *shlex.split(os.environ.get("CXX", "g++")), "-std=c++20", "-Wall",
-                "-Wextra", "-Wpedantic", "-Werror", "-pthread", "-Isrc", *cflags,
-                "tests/async/item_provenance_mysql_harness.cpp", *sources,
+                "-Wextra", "-Wpedantic", "-Werror", "-pthread",
+                "-ffunction-sections", "-fdata-sections", "-Isrc", *cflags,
+                "tests/async/item_provenance_mysql_harness.cpp",
+                "tests/async/item_extra_descr_codec_sql_escape_stub.cpp", *sources,
+                "-Wl,--gc-sections", "-Wl,--wrap=mysql_real_query,--wrap=mysql_errno",
                 *libs, "-lcrypto", "-lz", "-o", str(binary),
             ], cwd=ROOT, check=True, timeout=300)
             environment = dict(os.environ,
                                ITEM_TRANSFER_TEST_DB_NAME=os.environ["DB_NAME"])
-            subprocess.run([str(binary)], cwd=ROOT, env=environment,
+            # Match the maintained native SQL driver: the bounded payloads in
+            # this harness require more than the usual 8 MiB process stack.
+            subprocess.run(["bash", "-c", 'ulimit -s 65536 && exec "$1"',
+                            "item-provenance", str(binary)], cwd=ROOT, env=environment,
                            check=True, timeout=120)
 
 

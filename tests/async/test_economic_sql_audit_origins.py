@@ -8,9 +8,11 @@ from pathlib import Path
 import struct
 import sys
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
+import economic_sql_audit_snapshot as snapshot_exporter
 from economic_sql_audit_origins import OriginError, capture, decode_witness  # noqa: E402
 from economic_sql_audit_snapshot import (native_source_count,
                                          read_lineage_realized_prices)  # noqa: E402
@@ -88,7 +90,85 @@ class Connection:
         self.rollbacks += 1
 
 
+class ItemRevisionTests(unittest.TestCase):
+    @staticmethod
+    def event(uid, revision, owner_revision):
+        return {"operation_id": OP, "event_index": 0, "item_uid": uid,
+                "root_item_uid": uid, "parent_item_uid": None,
+                "to_owner_type": 1, "to_owner_id": 7, "to_owner_context_id": 0,
+                "item_revision": revision, "from_owner_revision": owner_revision,
+                "reason_type": 1, "operation_epoch": EPOCH, "operation_outcome": 1}
+
+    def census(self, origins, events, unattributed=False):
+        ownership = [{"item_uid": row["item_uid"],
+                      "lineage": None if unattributed else LINEAGE} for row in events]
+        rows = [ownership, [], events] if unattributed else [ownership, events]
+        with mock.patch.object(snapshot_exporter, "bounded", side_effect=rows):
+            return snapshot_exporter.read_uid_event_census(
+                None, LINEAGE, origins, {"item_references": []}, [], [])
+
+    def test_item_history_cut_uses_uid_revision_not_owner_revision(self):
+        origins = [{"uid": 81, "revision": 3}]
+        # Old event must be excluded despite a high aggregate counter; the
+        # event after the witness must survive despite a lower owner counter.
+        result = self.census(origins, [self.event(81, 3, 99), self.event(81, 4, 1)])
+        self.assertEqual([(row["before_revision"], row["revision"])
+                          for row in result[0]], [(3, 4)])
+        self.assertEqual(result[2]["ledger_events"], 1)
+        self.assertEqual(result[1], result[0])
+
+    def test_unattributed_history_uses_uid_revision(self):
+        result = self.census([{"uid": 81, "revision": 3}],
+                             [self.event(81, 3, 99), self.event(81, 4, 1)], True)
+        self.assertEqual([(row["before_revision"], row["revision"])
+                          for row in result[6]], [(3, 4)])
+        self.assertEqual(result[7], {"uids": 1, "events": 1})
+
+    def test_lineage_reference_uses_individual_item_revision(self):
+        row = {**self.event(81, 4, 99), "child_index": 0,
+               "before_revision": 3, "after_revision": 4,
+               "legacy_operation_id": OP, "legacy_event_index": 0,
+               "epoch": EPOCH, "outcome": 1, "item_event_count": 1,
+               "ledger_uid": 81}
+        with mock.patch.object(snapshot_exporter, "bounded", side_effect=[[row], []]):
+            references, _, _ = snapshot_exporter.read_lineage_uid_references(None, LINEAGE)
+        self.assertEqual(references[0]["ledger_before_revision"], 3)
+        row["ledger_uid"] = None
+        row["item_revision"] = None
+        with mock.patch.object(snapshot_exporter, "bounded", side_effect=[[row], []]):
+            references, _, _ = snapshot_exporter.read_lineage_uid_references(None, LINEAGE)
+        self.assertIsNone(references[0]["ledger_before_revision"])
+
+    def test_zero_item_revision_refuses_before_history_filter(self):
+        for unattributed in (False, True):
+            with self.subTest(unattributed=unattributed):
+                with self.assertRaisesRegex(snapshot_exporter.ExportError,
+                                            "invalid native item ledger revision"):
+                    self.census([{"uid": 81, "revision": 3}],
+                                [self.event(81, 0, 99)], unattributed)
+
+
 class OriginTests(unittest.TestCase):
+    def test_orphan_export_is_bounded_and_does_not_invent_a_lineage(self):
+        cursor = mock.Mock()
+        cursor.fetchall.side_effect = [[{"operation_id": OP, "row_index": 3}], [], [], []]
+        rows, coverage = snapshot_exporter.read_orphan_evidence(cursor)
+        self.assertEqual(rows, [{"table": "effects", "operation_id": OP.hex(), "row_index": 3}])
+        self.assertEqual(coverage, {"scope": "database", "table_counts": {
+            "effects": 1, "postings": 0, "children": 0, "item_references": 0}})
+        for call in cursor.execute.call_args_list:
+            sql, params = call.args
+            self.assertTrue(sql.startswith("SELECT "))
+            self.assertIn("WHERE o.operation_id IS NULL", sql)
+            self.assertNotIn("lineage=", sql)
+            self.assertIn("LIMIT %s", sql)
+            self.assertEqual(params, (snapshot_exporter.MAX_ROWS + 1,))
+        cursor.fetchall.side_effect = [[{"operation_id": OP, "row_index": 0}],
+                                      [{"operation_id": OP, "row_index": 1}]]
+        with mock.patch.object(snapshot_exporter, "MAX_ROWS", 1):
+            with self.assertRaisesRegex(snapshot_exporter.ExportError, "orphan evidence collection"):
+                snapshot_exporter.read_orphan_evidence(cursor)
+
     def test_native_mapping_coverage_is_scoped_to_selected_lineage(self):
         class Cursor:
             query = None

@@ -5,6 +5,8 @@
 //
 
 #include "core/prototypes.h"
+#include "world/world_activity.h"
+#include "world/character_maintenance.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -259,6 +261,7 @@ int check_outpost_death(P_char ch, P_char killer)
 	ch->specials.conditions[POISON_TYPE] = 0;
 
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
+	character_maintenance_changed(ch);
 
 	if (IS_NPC(ch) && (ch->specials.act & ACT_SPEC_DIE) && (ch->specials.act & ACT_SPEC))
 	{
@@ -527,6 +530,7 @@ int Building::unload()
 			FREE(room->dir_option[j]);
 			room->dir_option[j] = NULL;
 		}
+		world_activity_room_exits_changed(real_room(room->number));
 
 		// dump players outside
 		P_char tch, tch_next;
@@ -602,6 +606,7 @@ int outpost_generate(Building *building)
 
 	room->dir_option[DIR_DOWN]->to_room = building->location();
 	room->dir_option[DIR_DOWN]->exit_info = 0;
+	world_activity_room_exits_changed(real_room(room->number));
 
 	room->funct = outpost_inside;
 

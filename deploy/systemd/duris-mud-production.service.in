@@ -12,6 +12,9 @@ WorkingDirectory=@DURIS_ROOT@
 ExecStart="@DURIS_ROOT@/scripts/cycle_mud.sh" --production
 Restart=always
 RestartSec=10s
+# cycle_mud.sh observes the game child, including copyover, with explicit
+# completed-loop and lifecycle deadlines. A boot that never progresses stops.
+RestartPreventExitStatus=78
 KillMode=control-group
 TimeoutStopSec=90s
 UMask=0077

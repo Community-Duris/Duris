@@ -333,6 +333,9 @@ bool telemetry_runtime_now(telemetry_monotonic_usec *monotonic_usec,
  * account persistence boundary, before capture. Unknown identity never gates
  * authentication; capture uses the cached values and never calls this helper. */
 bool telemetry_runtime_account_prepare(struct acct_entry *account);
+/* Game-thread scope snapshot for an owned account-load job; no SQL or allocation. */
+bool telemetry_runtime_account_scope(std::uint64_t &environment_id,
+				     std::uint64_t &season_id) noexcept;
 
 /*
  * Value-only server-boundary adapters.  They keep gameplay hooks free of

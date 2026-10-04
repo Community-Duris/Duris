@@ -12,6 +12,11 @@ fight = (ROOT / 'src/combat/fight.c').read_text()
 severity = re.search(r'enum class persistence_severity\s*\{.*?\};', header, re.S).group()
 reporter = utility[utility.index('static int persistence_alert_format_is_numeric('):
                    utility.index('unsigned long long persistence_next_item_uid(')]
+pipeline = (ROOT / 'src/player/player_save_pipeline.c').read_text()
+call_start = pipeline.index('"custody_payload_mismatch_rejected"')
+call_end = pipeline.index('custody_mismatches[index].pid', call_start)
+caller_format = ''.join(re.findall(r'"([^"]*)"', pipeline[call_start:call_end])[1:])
+assert '%s' not in caller_format
 harness = r'''
 #include <cassert>
 #include <cctype>
@@ -92,6 +97,13 @@ int main() {
     verify("alert", true);
     assert(logs[0].text.find("detail=retry=1") != std::string::npos);
 
+
+    logs.clear(); broadcasts.clear();
+    persistence_alert(57, "player_save", "redacted", "none", "none", "custody_payload_mismatch_rejected",
+                      @CUSTODY_FORMAT@, 9001, 42ULL, 3ULL, 6U, 0);
+    assert(logs[0].text.find("custody_diagnosis_code=6") != std::string::npos);
+    assert(logs[0].text.find("revision=42") != std::string::npos);
+    assert(logs[0].text.find("item_uid=") == std::string::npos);
     logs.clear(); broadcasts.clear();
     persistence_alert(57, "corpse", "corpse_owner", "none", "rate_event",
                       "rate_limit_action", "retry=%d", 1);
@@ -108,6 +120,7 @@ int main() {
     assert(broadcasts.size() == 3); // distinct failure key remains visible
 }
 '''
+harness = harness.replace('@CUSTODY_FORMAT@', '"' + caller_format + '"')
 with tempfile.TemporaryDirectory(prefix='persistence-severity-') as temp:
     source = Path(temp) / 'reporter.cpp'
     binary = Path(temp) / 'reporter'
@@ -119,14 +132,16 @@ print('[PASS] production reporter routing, fallback severity, legacy alerts, for
 # Pin branch classifications, including failures sharing a progress call site.
 from contract_text import contains
 for snippet in [
-    'persistence_report(persistence_severity::ok, AVATAR, "player_save", "death", "none", "none", outcome,',
-    'persistence_report(durable ? persistence_severity::ok : persistence_severity::alert,',
-    'persistence_report(corpse_transfer_disputed(ch) ? persistence_severity::alert : persistence_severity::info,',
+    'death_recovery_report(ch, persistence_severity::ok, outcome,',
+    'death_recovery_report(ch, durable ? persistence_severity::ok : persistence_severity::alert,',
+    'death_recovery_report(ch, corpse_transfer_disputed(ch) ? persistence_severity::alert : persistence_severity::info,',
 ]:
     assert contains(fight, snippet), snippet
-assert len(re.findall(r'persistence_report\(\s*submitted\s*\?\s*persistence_severity::info\s*:\s*persistence_severity::alert', fight)) == 2
+assert contains(fight, 'submitted ? persistence_severity::info : persistence_severity::alert')
+assert contains(fight, 'death_recovery_report(ch, wallet_severity, "death_recovery_restarting_wallet",')
+assert re.search(r'death_recovery_report\(\s*ch,\s*submitted\s*\?\s*persistence_severity::info\s*:\s*persistence_severity::alert', fight)
 for action in ['death_recovery_schedule_failed', 'terminal_save_failed', 'death_recovery_retry']:
-    assert re.search(r'persistence_alert\(AVATAR,\s*"player_save",\s*"death",\s*"none",\s*"none",\s*"' + action + '"', fight)
+    assert re.search(r'death_recovery_report\(\s*ch,\s*persistence_severity::alert,\s*"' + action + '"', fight)
 print('[PASS] successful death completion/progress are quiet; disputes, refused submissions and save failures alert')
 
 for file, snippet in [

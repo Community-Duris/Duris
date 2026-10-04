@@ -26,9 +26,11 @@ UPDATE = section('void update_depth_locked()', '/** Replay the journal')
 DISPATCH = section('void dispatcher_main()', '/** Check retained queues for an exact')
 SHUTDOWN = section('void player_save_pipeline_shutdown(void)', '/** Mark player components dirty')
 HARNESS = r'''
+#include "core/defines.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_save_journal.h"
 #include "player/player_snapshot_codec.h"
+#include "net/network_wakeup.h"
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -42,6 +44,7 @@ HARNESS = r'''
 #include <memory>
 #include <mutex>
 #include <new>
+#include <poll.h>
 #include <set>
 #include <string>
 #include <sys/stat.h>
@@ -110,6 +113,8 @@ player_snapshot snapshot(int pid, unsigned revision) {
     return s;
 }
 void run(const std::string &directory, bool inject_sync_failure, bool inject_requeue_failure=false) {
+    assert(network_wakeup_fd() >= 0);
+    network_wakeup_drain();
     stop_requested=false; health={};
     observed_requeue_failures=0;
     assert(player_save_journal_init(directory.c_str()));
@@ -139,6 +144,11 @@ void run(const std::string &directory, bool inject_sync_failure, bool inject_req
     // The former implementation requeues the rejected first entry forever and
     // hangs this production join. The subprocess timeout makes that observable.
     player_save_pipeline_shutdown();
+    pollfd wakeup{network_wakeup_fd(), POLLIN, 0};
+    assert(poll(&wakeup, 1, 0) == 1 && (wakeup.revents & POLLIN));
+    network_wakeup_drain();
+    wakeup.revents = 0;
+    assert(poll(&wakeup, 1, 0) == 0);
     assert(observed_requeue_failures==(inject_requeue_failure ? 1U : 0U));
     assert(retained_bytes==0 && pending_append.empty());
     const auto archive=bytes(directory+"/player-save.journal.quarantine.archive");
@@ -167,7 +177,8 @@ with tempfile.TemporaryDirectory(prefix='duris-quarantined-dispatcher-') as temp
     source = Path(temp) / 'probe.cpp'
     binary = Path(temp) / 'probe'
     source.write_text(HARNESS)
-    result = subprocess.run(['g++','-std=c++20','-O2','-Wall','-Wextra','-Werror','-pthread',
+    result = subprocess.run(['g++','-std=c++20','-g','-Og','-Wall','-Wextra','-Werror','-pthread',
+                             '-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie','-no-pie',
                              '-D__NO_MYSQL__','-Isrc',str(source),
                              'src/player/player_save_journal.c','src/player/player_snapshot_codec.c',
                              '-Wl,--wrap=fsync','-Wl,--wrap=fdatasync','-o',str(binary)],

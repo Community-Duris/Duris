@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import pwd
+import re
 import secrets
 import shutil
 import signal
@@ -55,22 +56,49 @@ def tombstone_preflight(path, p, captured):
 
 
 @contextlib.contextmanager
-def private_database(candidate):
-    datadir = candidate / "mysql"
-    datadir.mkdir(mode=0o700)
+def private_database(candidate, engine="mariadb"):
+    backup.require(type(engine) is str and engine in ("mariadb", "mysql"),
+                   "invalid_restore_database_engine")
+    socket = candidate / "mysql.sock"
+    # Linux sockaddr_un reserves one byte for the terminating NUL. Refuse
+    # before creating/initializing a database that cannot bind its socket.
+    backup.require(len(os.fsencode(socket)) <= 107,
+                   "isolated_database_socket_path_too_long")
     env = clean_environment(candidate)
     user = pwd.getpwuid(os.getuid()).pw_name
-    backup.run(["mariadb-install-db", "--no-defaults", "--datadir=" + str(datadir),
-                "--auth-root-authentication-method=normal", "--skip-test-db", "--user=" + user],
-               env=env)
+    server = "mariadbd"
+    basedir = None
+    if engine == "mysql":
+        executable = shutil.which("mysqld", path=env["PATH"])
+        backup.require(executable is not None, "mysql_restore_executable_required")
+        server = str(Path(executable).resolve())
+        version = backup.run([server, "--no-defaults", "--version"], env=env)
+        backup.require(b"MariaDB" not in version and re.search(rb"\bVer 8\.0\.", version),
+                       "mysql_restore_version_unsupported")
+        basedir = str(Path(server).parent.parent)
+    datadir = candidate / "mysql"
+    datadir.mkdir(mode=0o700)
+    # Qualification daemons must not reserve the host's shared kernel AIO pool.
+    # Both instances can coexist while the source dump is restored and verified.
+    private_io = ["--innodb-use-native-aio=OFF"]
+    if engine == "mysql":
+        backup.run([server, "--no-defaults", "--initialize-insecure", "--basedir=" + basedir,
+                    "--datadir=" + str(datadir), "--user=" + user, "--mysqlx=OFF",
+                    *private_io], env=env)
+    else:
+        backup.run(["mariadb-install-db", "--no-defaults", "--datadir=" + str(datadir),
+                    "--auth-root-authentication-method=normal", "--skip-test-db", "--user=" + user,
+                    *private_io],
+                   env=env)
     exports = candidate / "exports"
     exports.mkdir(mode=0o700)
-    socket = candidate / "mysql.sock"
-    args = ["mariadbd", "--no-defaults", "--datadir=" + str(datadir),
+    args = [server, "--no-defaults", "--datadir=" + str(datadir),
             "--socket=" + str(socket), "--pid-file=" + str(candidate / "mysql.pid"),
             "--skip-networking", "--skip-log-bin", "--event-scheduler=OFF",
             "--local-infile=0", "--secure-file-priv=" + str(exports),
-            "--tmpdir=" + env["TMPDIR"], "--user=" + user]
+            "--tmpdir=" + env["TMPDIR"], "--user=" + user, *private_io]
+    if basedir is not None:
+        args.extend(["--basedir=" + basedir, "--mysqlx=OFF"])
     with (candidate / "database.log").open("wb") as log:
         process = subprocess.Popen(args, env=env, stdout=log, stderr=log)
         try:
@@ -222,10 +250,11 @@ def restore(p, generation_name, tombstones, drill=False):
                 backup.run([qualifier, "--journals-drained", str(candidate)], env=env)
                 aggregates = json.loads(backup.run([qualifier, str(candidate / "state")], env=env))
             else:
-                with private_database(candidate) as env:
+                with private_database(candidate, p.get("restore_database_engine", "mariadb")) as env:
                     database_import(generation, env)
                     database_qualify(env)
-                    aggregates = {"schema_history_and_value_reconciliation": "ok"}
+                    aggregates = {"schema_history_and_value_reconciliation": "ok",
+                                  "database_engine": p.get("restore_database_engine", "mariadb")}
                     service_load(candidate, meta["mode"], env)
                     backup.run([qualifier, "--journals-drained", str(candidate)], env=env)
                     database_qualify(env)

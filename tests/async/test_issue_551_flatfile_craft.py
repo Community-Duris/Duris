@@ -4,6 +4,8 @@ from _paths import rel
 import pathlib
 import subprocess
 import tempfile
+import os
+import shutil
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
@@ -70,6 +72,10 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-craft-test-") as temporary:
   )
   if compile_result.returncode:
     raise SystemExit(compile_result.stdout)
+  if os.environ.get("ISSUE551_RETAIN_FIXTURE_BINARY") == "1":
+    retained = ROOT / "bin/tests/issue551-flatfile-fixture"
+    retained.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(binary, retained)
   state_root = temporary_path / "state"
   run_result = subprocess.run(
     [str(binary), str(state_root)], cwd=ROOT, text=True,

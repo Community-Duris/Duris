@@ -40,6 +40,8 @@ typedef struct
 } latency_section;
 
 #define LATENCY_MAX_SECTIONS 32
+/* The normal report contains 300 pulses. Keep exact, bounded loop samples. */
+#define LATENCY_LOOP_SAMPLE_CAPACITY 512
 
 typedef struct
 {
@@ -56,6 +58,9 @@ typedef struct
 	uint64_t window_start_mono_us;
 	uint64_t window_end_mono_us;
 	char boot_id[LATENCY_TRACE_BOOT_ID_LENGTH];
+	uint64_t loop_samples[LATENCY_LOOP_SAMPLE_CAPACITY];
+	unsigned int loop_sample_count;
+	uint64_t dropped_loop_samples;
 } latency_trace_snapshot;
 
 void latency_trace_init(void);

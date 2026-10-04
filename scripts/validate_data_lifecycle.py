@@ -56,6 +56,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0065_telemetry_battle_builds.sql",
     ROOT / "migrations" / "immutable" / "0066_telemetry_build_publication.sql",
     ROOT / "migrations" / "immutable" / "0067_telemetry_typed_control.sql",
+    ROOT / "migrations" / "immutable" / "0055_sql_room_item_payload.sql",
 )
 
 ROOT_FIELDS = {
@@ -183,6 +184,7 @@ NATIVE_FLATFILE_AUTHORITY_STORES = {
     "file:flatfile-item-uid-initialization",
 }
 CORE_TRANSACTION_RECOVERY_STORES = {
+	"database:sql_room_item_payload",
     "database:item_uid_allocator",
     "database:critical_operation_inbox",
     "database:critical_outbox",

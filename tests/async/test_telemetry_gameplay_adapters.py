@@ -34,13 +34,20 @@ def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bo
     # Execute the maintained helper bodies with the game-service seams in the
     # existing harness; the actual runtime/worker/writer remain linked below.
     source = (ROOT / "src/magic/affects.c").read_text()
+    wards = (ROOT / "src/combat/spell_wards.c").read_text()
     status_control = (ROOT / "src/magic/spell_status_control.c").read_text()
     control_helpers = executable.parent / "telemetry-control-helpers.cc"
     control_helpers.write_text(
         '#include "core/prototypes.h"\n#include "core/utils.h"\n'
-        '#include "magic/spells.h"\n#include "world/graph.h"\n#include "telemetry/telemetry_runtime.h"\n'
+        '#include "magic/spells.h"\n#include "combat/spell_wards.h"\n'
+        '#include "world/graph.h"\n#include "telemetry/telemetry_runtime.h"\n'
         + function((ROOT / "src/core/utility.c").read_text(), "int BOUNDED(int a, int b, int c)") + "\n"
         + function((ROOT / "src/core/utility.c").read_text(), "int GET_CLASS(P_char ch, uint m_class)") + "\n"
+        + wards[wards.index("enum ward_kind\n"):wards.index("\n\nstruct ward_source")] + "\n"
+        + wards[wards.index("const int ward_spells["):wards.index("\n\nconst unsigned int ward_flags")] + "\n"
+        + function(wards, "bool is_ward_spell(int spell)") + "\n"
+        + function(wards, "bool spell_ward_is_managed(") + "\n"
+        + function(wards, "bool spell_ward_is_active(") + "\n"
         + function(source, "bool affected_by_spell(P_char ch, int skill)") + "\n"
         + function(source, "bool blind(P_char ch, P_char victim, int duration)") + "\n"
         + function(source, "void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)") + "\n"

@@ -2,8 +2,10 @@
 #include "core/structs.h"
 #include "core/utils.h"
 #include "net/mccp.h"
+#include "net/comm.h"
 #include <errno.h>
 #include <gnutls/gnutls.h>
+#include <poll.h>
 #include <stdlib.h>
 #include <string>
 #include <string.h>
@@ -16,6 +18,7 @@
 #include "net/ttype.h"
 #include "net/unicode.h"
 #include "net/websocket.h"
+#include "net/transport.h"
 
 /* external variables used by this module */
 extern P_desc descriptor_list;
@@ -90,6 +93,8 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 	case DO:
 		if (buflen < 3)
 			return 0;
+		if (!admit_session_oob(player, 3))
+			return 3;
 		switch (*(p + 2))
 		{
 		case TELOPT_COMPRESS:
@@ -109,6 +114,8 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 	case DONT:
 		if (buflen < 3)
 			return 0;
+		if (!admit_session_oob(player, 3))
+			return 3;
 		switch (*(p + 2))
 		{
 		case TELOPT_GMCP:
@@ -122,12 +129,16 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 	case WILL:
 		if (buflen < 3)
 			return 0;
+		if (!admit_session_oob(player, 3))
+			return 3;
 		if (*(p + 2) == TELOPT_TTYPE)
 			ttype_handle_negotiation(player, WILL);
 		return 3;
 	case WONT:
 		if (buflen < 3)
 			return 0;
+		if (!admit_session_oob(player, 3))
+			return 3;
 		if (*(p + 2) == TELOPT_TTYPE)
 			ttype_handle_negotiation(player, WONT);
 		return 3;
@@ -137,19 +148,40 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 			return 0;
 		int len = 3;
 		while (len + 1 < buflen && !(p[len] == IAC && p[len + 1] == SE))
-			len++;
+		{
+			/* IAC IAC is an escaped payload byte, not a possible IAC SE. */
+			if (p[len] == IAC && p[len + 1] == IAC)
+				len += 2;
+			else
+				len++;
+		}
 
 		/* incomplete, wait for more */
 		if (len + 1 >= buflen)
 			return 0;
 
 		len += 2; /* include IAC SE */
+		if (!admit_session_oob(player, len))
+			return len;
+		int payload_len = len - 5;
+		if (p[2] == TELOPT_TTYPE || p[2] == TELOPT_GMCP)
+		{
+			/* Remove Telnet's doubled-IAC quoting before protocol dispatch. */
+			int unescaped_len = 0;
+			for (int i = 0; i < payload_len; i++)
+			{
+				if (p[3 + i] == IAC && i + 1 < payload_len && p[4 + i] == IAC)
+					i++;
+				p[3 + unescaped_len++] = p[3 + i];
+			}
+			payload_len = unescaped_len;
+		}
 
 		if (p[2] == TELOPT_TTYPE)
 		{
 			if (p[3] == TELQUAL_IS)
 			{
-				ttype_handle_subnegotiation(player, p + 3, len - 5);
+				ttype_handle_subnegotiation(player, p + 3, payload_len);
 			}
 			else
 			{
@@ -160,7 +192,7 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 		/* If GMCP subnegotiation, pass data to handler */
 		else if (p[2] == TELOPT_GMCP && len > 5)
 		{
-			gmcp_handle_input(player, (const char *)(p + 3), len - 5);
+			gmcp_handle_input(player, (const char *)(p + 3), payload_len);
 		}
 		return len;
 	}
@@ -263,6 +295,8 @@ int write_to_descriptor(P_desc player, const char *txt)
 {
 	if (!player || !txt)
 		return -1;
+	if (player->transport_session && transport_world_active())
+		return transport_world_output(player, 1, txt, strlen(txt));
 	if (player->write_failed)
 		return -1;
 
@@ -339,35 +373,44 @@ void telnet_free_output(P_desc d)
 	d->telnet_output_len = 0;
 	d->telnet_output_offset = 0;
 	d->telnet_tls_retry = 0;
+	d->tls_write_interest = 0;
 }
 
 int telnet_flush_output(P_desc d)
 {
 	if (d->write_failed)
 		return -1;
+	constexpr size_t flush_budget = 16384;
+	size_t flushed = 0;
 	while (d->telnet_output_offset < d->telnet_output_len)
 	{
+		if (flushed >= flush_budget)
+			return 0;
 		const unsigned char *data = d->telnet_output_buffer + d->telnet_output_offset;
 		size_t remaining = d->telnet_output_len - d->telnet_output_offset;
+		const size_t send_size = MIN(remaining, flush_budget - flushed);
 		ssize_t written;
 		if (d->sslses)
 		{
 			/* GnuTLS owns the interrupted record; resume it before sending new bytes. */
 			written = gnutls_record_send(d->sslses, d->telnet_tls_retry ? NULL : data,
-						     d->telnet_tls_retry ? 0 : remaining);
+						     d->telnet_tls_retry ? 0 : send_size);
 			if (written == GNUTLS_E_AGAIN || written == GNUTLS_E_INTERRUPTED)
 			{
 				d->telnet_tls_retry = 1;
+				d->tls_write_interest =
+					gnutls_record_get_direction(d->sslses) ? POLLOUT : POLLIN;
 				return 0;
 			}
 			d->telnet_tls_retry = 0;
+			d->tls_write_interest = 0;
 			if (written < 0)
 				logit(LOG_COMM, "Write to SSL socket error: %s (ret=%zd)",
 				      gnutls_strerror(written), written);
 		}
 		else
 		{
-			written = write(d->descriptor, data, remaining);
+			written = write(d->descriptor, data, send_size);
 			if (written < 0 && (errno == EAGAIN || errno == EINTR
 #if EWOULDBLOCK != EAGAIN
 					    || errno == EWOULDBLOCK
@@ -386,6 +429,7 @@ int telnet_flush_output(P_desc d)
 		if (written == 0)
 			return 0;
 		d->telnet_output_offset += written;
+		flushed += written;
 		sentbytes += written;
 		if (d->character && !IS_NPC(d->character))
 			d->character->only.pc->send_data += written;
@@ -437,6 +481,8 @@ int write_to_descriptor_binary(P_desc player, const unsigned char *data, size_t 
 
 	if (!player || !data || len == 0)
 		return 0;
+	if (player->transport_session && transport_world_active())
+		return transport_world_output(player, 2, data, len);
 	if (player->websocket)
 		return 0; /* WebSocket output must always use framed send APIs. */
 
