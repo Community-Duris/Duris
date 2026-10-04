@@ -59,6 +59,7 @@ Primary committed native marker-v2 storage in0aa0bceeb; see the exact
 Plan5 may implement independent catalog-v2 decoding/enumeration and book-loss/key/ID
 cross-checks against that contract. Legacy_unknown must remain explicitly unqualified;
 no inferred ID, missing-file-as-never or rewritten compatibility evidence.
-Primary retains lifecycle staged-state composition and native migration ownership.
+Primary added source-only lifecycle staged composition in2b4591c21 and retains
+native boundary/census, activation and legacy migration ownership.
 The native marker is source-reviewed, not executed or qualified. Defer new reader
 checks to the agreed major-plan batch, preserving actual BEFORE counterexamples.
