@@ -119,6 +119,24 @@ def set_operation_source(snapshot, kind):
     snapshot["source_claims"][0]["source_event"] = source
 
 
+def price_snapshot():
+    snapshot = clean_snapshot()
+    snapshot["operations"][0].update(reason=21, realized_price_copper=3000)
+    set_operation_source(snapshot, 12)
+    snapshot["native"]["lineage_realized_prices"] = [
+        {"operation_id": operation, "lineage": LINEAGE, "epoch": epoch,
+         "reason": reason, "outcome": "committed", "result_code": 0,
+         "inbox_receipt": {"status": 1, "result_code": 0, "failure_stage": 0,
+                           "committed_at_present": True},
+         "realized_price_copper": price, "personal_alias": "private-price-alias"}
+        for operation, epoch, reason, price in (
+            (OP, EPOCH, 21, 3000), ("44" * 16, "77" * 16, 22, 125),
+            ("55" * 16, "77" * 16, 24, 0), ("66" * 16, "77" * 16, 27, 2**63 - 1))]
+    snapshot["native"]["realized_price_coverage"] = {
+        "column_available": True, "candidate_rows": 4, "missing_price_rows": 0}
+    return snapshot
+
+
 def creation_snapshot():
     snapshot = clean_snapshot()
     snapshot["item_origins"][0].update(origin="creation", revision=0, root=81,
@@ -228,12 +246,12 @@ def near_limit_mapping_snapshot():
     return mapping_creation_snapshot(low)
 
 
-def measure_audit_cli(path, limit):
+def measure_audit_cli(path, limit, name="exceptions"):
     # A fresh wrapper has exactly one child, so its RUSAGE_CHILDREN peak is
     # this CLI's peak rather than a prior native compiler/test process's peak.
     probe = """import json,resource,subprocess,sys,time
 start=time.perf_counter()
-p=subprocess.run([sys.executable,sys.argv[1],sys.argv[2],'--limit',sys.argv[3]],capture_output=True,text=True,timeout=35)
+p=subprocess.run([sys.executable,sys.argv[1],sys.argv[2],'--limit',sys.argv[3],'--view',sys.argv[4]],capture_output=True,text=True,timeout=35)
 result={'exit_code':p.returncode,'elapsed_seconds':time.perf_counter()-start,
         'peak_bytes':resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss*1024,
         'stderr':p.stderr,'report':json.loads(p.stdout)}
@@ -241,7 +259,7 @@ print(json.dumps(result,separators=(',',':')))
 """
     return json.loads(subprocess.check_output([
         sys.executable, "-c", probe, str(ROOT / "scripts/reconcile_economy_accounting.py"),
-        str(path), str(limit)]))
+        str(path), str(limit), name]))
 
 
 class ReconciliationTests(unittest.TestCase):
@@ -1234,6 +1252,117 @@ class ReconciliationTests(unittest.TestCase):
         self.assertIn("invalid_realized_price", self.codes(snapshot))
         self.assertEqual(view(snapshot, Reconciler().audit(snapshot), "prices", 10)["count"], 0)
 
+    def test_prices_include_lineage_history_and_preserve_conflicts(self):
+        for conflict in (False, True):
+            snapshot = price_snapshot()
+            if conflict:
+                snapshot["native"]["lineage_realized_prices"][0]["realized_price_copper"] = 3001
+            original = copy.deepcopy(snapshot)
+            report = Reconciler().audit(snapshot)
+            self.assertEqual(report["exception_counts"],
+                             {"realized_price_scope_mismatch": 1} if conflict else {})
+            expected = sorted({(row["epoch"], row["operation_id"], row["reason"],
+                                row["realized_price_copper"])
+                               for row in (snapshot["operations"] +
+                                           snapshot["native"]["lineage_realized_prices"])})
+            for limit in (0, 1, 100):
+                with self.subTest(conflict=conflict, limit=limit):
+                    output = view(snapshot, report, "prices", limit)
+                    self.assertEqual(output["count"], 5 if conflict else 4)
+                    self.assertEqual(output["rows"], [
+                        {"epoch": epoch, "operation_id": operation, "reason": reason,
+                         "price_copper": price}
+                        for epoch, operation, reason, price in expected[:limit]])
+                    self.assertEqual(output["truncated"], len(expected) > limit)
+                    self.assertTrue(output["coverage"]["lineage_history_available"])
+                    self.assertEqual(output["coverage"]["realized_price_coverage"],
+                                     snapshot["native"]["realized_price_coverage"])
+                    self.assertEqual(output["coverage"]["exception_count"], int(conflict))
+                    self.assertNotIn("alias", json.dumps(output))
+                    self.assertEqual(snapshot, original)
+
+    def test_price_cli_preserves_history_coverage_and_input(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "prices.json"
+            cases = 0
+            for partial in (False, True):
+                for conflict in (False, True):
+                    snapshot = price_snapshot()
+                    snapshot.update(complete=not partial, quiescent=not partial)
+                    if conflict:
+                        snapshot["native"]["lineage_realized_prices"][0]["realized_price_copper"] = 3001
+                    report = Reconciler().audit(snapshot)
+                    path.write_text(json.dumps(snapshot))
+                    original = path.read_bytes()
+                    for limit in (0, 1, 100):
+                        result = subprocess.run([
+                            sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                            str(path), "--view", "prices", "--limit", str(limit)],
+                            capture_output=True, text=True, timeout=30)
+                        with self.subTest(partial=partial, conflict=conflict, limit=limit):
+                            self.assertEqual(result.returncode, int(report["exception_count"] != 0), result.stderr)
+                            self.assertEqual(result.stderr, "")
+                            output = json.loads(result.stdout)
+                            self.assertEqual(output, view(snapshot, report, "prices", limit))
+                            self.assertEqual(output["count"], 5 if conflict else 4)
+                            self.assertEqual(output["coverage"]["complete"], not partial)
+                            self.assertEqual(output["coverage"]["quiescent"], not partial)
+                            self.assertEqual(output["coverage"]["exception_count"], 2 * int(partial) + int(conflict))
+                            self.assertEqual(path.read_bytes(), original)
+                            cases += 1
+            self.assertEqual(cases, 12)
+
+    def test_prices_exclude_noncommitted_invalid_and_missing_values(self):
+        snapshot = price_snapshot()
+        retained = snapshot["native"]["lineage_realized_prices"]
+        for identity, outcome, price in (("88", "rejected", 9), ("89", "unknown", None),
+                                         ("90", "committed", True), ("91", "committed", -1),
+                                         ("92", "committed", 2**63), ("93", "committed", None)):
+            row = copy.deepcopy(retained[1])
+            row.update(operation_id=identity * 16, outcome=outcome, realized_price_copper=price,
+                       result_code=0 if outcome == "committed" else 9)
+            row["inbox_receipt"]["result_code"] = row["result_code"]
+            retained.append(row)
+        snapshot["native"]["realized_price_coverage"].update(candidate_rows=10, missing_price_rows=2)
+        original = copy.deepcopy(snapshot)
+        report = Reconciler().audit(snapshot)
+        self.assertEqual(report["exception_counts"], {
+            "rejected_realized_price": 1, "unknown_outcome": 1,
+            "invalid_realized_price": 3, "missing_realized_trade_price": 1})
+        output = view(snapshot, report, "prices", 100)
+        self.assertEqual(output["count"], 4)
+        self.assertEqual({row["operation_id"] for row in output["rows"]}, {OP, "44" * 16, "55" * 16, "66" * 16})
+        self.assertEqual(output["coverage"]["exception_count"], 6)
+        self.assertEqual(output["coverage"]["realized_price_coverage"]["missing_price_rows"], 2)
+        self.assertEqual(snapshot, original)
+
+    def test_prices_distinguish_unavailable_empty_and_missing_column_history(self):
+        for available, column in ((False, None), (True, True), (True, False)):
+            snapshot = clean_snapshot()
+            if available:
+                snapshot["native"].update(lineage_realized_prices=[], realized_price_coverage={
+                    "column_available": column, "candidate_rows": 0, "missing_price_rows": 0})
+            report = Reconciler().audit(snapshot)
+            for limit in (0, 1, 100):
+                with self.subTest(available=available, column=column, limit=limit):
+                    output = view(snapshot, report, "prices", limit)
+                    self.assertEqual(output["count"], 0)
+                    self.assertEqual(output["rows"], [])
+                    self.assertFalse(output["truncated"])
+                    self.assertEqual(output["coverage"]["lineage_history_available"], available)
+                    self.assertEqual(output["coverage"]["realized_price_coverage"],
+                                     snapshot["native"].get("realized_price_coverage"))
+                    self.assertEqual(output["coverage"]["exception_count"], int(column is False))
+        snapshot = price_snapshot()
+        del snapshot["native"]["realized_price_coverage"]
+        snapshot["backend"] = "sql_partial"
+        report = Reconciler().audit(snapshot)
+        output = view(snapshot, report, "prices", 100)
+        self.assertEqual(output["count"], 1)
+        self.assertFalse(output["coverage"]["lineage_history_available"])
+        self.assertIsNone(output["coverage"]["realized_price_coverage"])
+        self.assertIn("missing_realized_price_coverage", report["exception_counts"])
+
     def test_domain_purchase_realized_price_matches_current_lineage_root(self):
         for reason in (24, 27):
             with self.subTest(reason=reason):
@@ -2168,7 +2297,7 @@ def native_stake_sql():
     from test_persistence_backup_integration import sql
     read_evidence = exporter.read_evidence
     root = ROOT
-    work=root/'bin/tests/plan5-operator-coverage-sql'
+    work=root/'bin/tests/plan5-price-view-sql'
     work.mkdir(mode=0o700,parents=True,exist_ok=True)
     source=work/'probe.cpp'
     source.write_text('''#include "economy/economic_accounting_intent.h"
@@ -2269,6 +2398,28 @@ def native_stake_sql():
                 output({uint8_t(reason),uint8_t(reason>>8),original,uint8_t(accepted)});
             }
         }
+        // Structural, zero-effect roots for read-only price capture. Prices
+        // live beside the immutable plan in SQL; this is no producer proof.
+        for (uint16_t reason : {uint16_t(21),uint16_t(22),uint16_t(24),uint16_t(27)}) {
+            economic_accounting_plan price_plan;
+            auto &price_meta=price_plan.metadata;
+            price_meta.lineage=id(0x11); price_meta.epoch=id(reason==21 ? 0x22 : 0x77);
+            price_meta.operation_id=id(uint8_t(reason)); price_meta.actor_kind=economic_actor_kind::domain;
+            price_meta.actor_id=7; price_meta.writer_id=1; price_meta.reason=static_cast<economic_reason>(reason);
+            const auto kind=reason==24 ? economic_source_kind::service :
+                            reason==27 ? economic_source_kind::auction : economic_source_kind::shop_stock;
+            price_meta.source_event={kind,id(uint8_t(reason)),id(0x72),7,0};
+            economic_frozen_intent intent;
+            intent.admission.metadata=price_meta; intent.command_binding[0]=21; intent.domain_digest[0]=22;
+            std::vector<uint8_t> frozen,encoded;
+            assert(economic_intent_encode(intent,&frozen)==economic_accounting_error::ok);
+            assert(economic_intent_digest(intent,&price_meta.intent_digest)==economic_accounting_error::ok);
+            price_meta.domain_digest=intent.domain_digest;
+            assert(economic_plan_encode(price_plan,&encoded)==economic_accounting_error::ok);
+            economic_accounting_plan decoded;
+            assert(economic_plan_decode(encoded,&decoded)==economic_accounting_error::ok);
+            output(frozen); output(encoded);
+        }
     }
     ''')
     sources=['src/economy/economic_accounting_plan.c','src/economy/economic_accounting_types.c',
@@ -2296,7 +2447,7 @@ def native_stake_sql():
     while offset<len(payload):
         size,=struct.unpack_from('<I',payload,offset); offset+=4
         blocks.append(payload[offset:offset+size]); offset+=size
-    assert len(blocks)==1221 and offset==len(payload)
+    assert len(blocks)==1229 and offset==len(payload)
     cases=blocks[4:108]
     assert sum(case[0] for case in cases)==92
     for case in cases:
@@ -2325,7 +2476,7 @@ def native_stake_sql():
     assert len(decisions)==1107 and sum(decisions.values())==346
     print('NATIVE_SOURCE_POLICY modes=2 decisions=1107 present=1058 absent=46 unknown=3 accepted=346 refused=761 agreement=True',flush=True)
     original_decisions={}
-    for case in blocks[1215:]:
+    for case in blocks[1215:1221]:
         reason,variant,accepted=struct.unpack('<HBB',case)
         assert (reason,variant) not in original_decisions and accepted in (0,1)
         original_decisions[reason,variant]=bool(accepted)
@@ -2344,6 +2495,13 @@ def native_stake_sql():
     for frozen,plan in batches:
         assert frozen[:4]==b'EAI1' and plan[152:184]==hashlib.sha256(b'DURIS-ECONOMIC-INTENT-V1\0'+frozen).digest()
         assert account_key(plan[376:416].hex())==(LINEAGE,11,700,7)
+    price_batches=list(zip(blocks[1221::2],blocks[1222::2]))
+    assert len(price_batches)==4
+    for frozen,plan in price_batches:
+        assert frozen[:4]==b'EAI1' and plan[:4]==b'EAP1' and len(plan)==256
+        assert plan[152:184]==hashlib.sha256(b'DURIS-ECONOMIC-INTENT-V1\0'+frozen).digest()
+    assert [struct.unpack_from('<H',plan,96)[0] for _,plan in price_batches]==[21,22,24,27]
+    print('NATIVE_PRICE_ROOTS modes=2 roots=4 epochs=2 zero_effect_structural_only=True',flush=True)
 
     with tempfile.TemporaryDirectory(prefix='duris-stake-audit-sql-') as directory:
         base=Path(directory)
@@ -2368,7 +2526,7 @@ def native_stake_sql():
                     creator=bytes([7])*16
                     insert('critical_operation_inbox',dict(operation_id=creator,command_hash=bytes([1])*32,
                            keys_hash=bytes([2])*32,command_type=1,schema_version=1,payload_version=1,status=1,result_payload=b''))
-                    insert('economic_epoch',dict(lineage=bytes.fromhex(LINEAGE),epoch=bytes.fromhex(EPOCH),ordinal=1,
+                    insert('economic_epoch',dict(lineage=bytes.fromhex(LINEAGE),epoch=bytes.fromhex(EPOCH),ordinal=2,
                            transition_kind=1,transition_digest=bytes([3])*32,creating_operation_id=creator))
                     insert('economic_lineage_state',dict(lineage=bytes.fromhex(LINEAGE),active_epoch=None))
                     with owner.cursor() as cursor:
@@ -2390,7 +2548,7 @@ def native_stake_sql():
                                     cursor.execute('SELECT * FROM '+table+' ORDER BY 1,2'); result.append(cursor.fetchall())
                                 return result
                         captures=0
-                        def audit(terminal,expected=()):
+                        def audit(terminal,expected=(),prices=False):
                             nonlocal captures
                             captures+=1
                             before=rows(); oracle=stake_snapshot(terminal)
@@ -2401,6 +2559,9 @@ def native_stake_sql():
                                 cursor.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
                                 cursor.execute('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY')
                                 cut=read_evidence(cursor,bytes.fromhex(LINEAGE),bytes.fromhex(EPOCH),True)
+                                if prices:
+                                    price_rows,price_coverage=exporter.read_lineage_realized_prices(
+                                        cursor,bytes.fromhex(LINEAGE),True)
                             finally:
                                 connection.rollback(); cursor.close()
                             connection.rollback.assert_called_once_with(); cursor.close.assert_called_once_with()
@@ -2408,10 +2569,41 @@ def native_stake_sql():
                                        for call in cursor.execute.call_args_list)
                             assert rows()==before and oracle==original
                             snapshot=oracle|{k:v for k,v in cut.items() if k not in ('account_origins','item_origins')}
+                            if prices:
+                                snapshot['native'].update(lineage_realized_prices=price_rows,
+                                                          realized_price_coverage=price_coverage)
                             snapshot_before=copy.deepcopy(snapshot)
                             report=Reconciler().audit(snapshot)
                             assert set(report['exception_counts'])==set(expected),report
                             assert snapshot==snapshot_before
+                            if prices:
+                                assert price_coverage['column_available'] and price_coverage['candidate_rows']==4
+                                assert len(price_rows)==4 and {row['epoch'] for row in price_rows}=={EPOCH,'77'*16}
+                                assert price_coverage['missing_price_rows']==int('missing_realized_trade_price' in expected)
+                                expected_count=4-int(bool(expected))
+                                path=work/('captured-prices-'+engine+'.json')
+                                path.write_text(json.dumps(snapshot))
+                                original_bytes=path.read_bytes()
+                                for limit in (0,1,100):
+                                    output=view(snapshot,report,'prices',limit)
+                                    assert output['count']==expected_count and output['truncated']==(expected_count>limit)
+                                    assert output['coverage']['lineage_history_available']
+                                    assert output['coverage']['realized_price_coverage']==price_coverage
+                                    assert output['coverage']['exception_count']==int(bool(expected))
+                                    result=subprocess.run([sys.executable,str(root/'scripts/reconcile_economy_accounting.py'),
+                                                           str(path),'--view','prices','--limit',str(limit)],
+                                                          capture_output=True,text=True,timeout=30)
+                                    assert result.returncode==int(bool(expected)) and not result.stderr,result.stderr
+                                    assert json.loads(result.stdout)==output
+                                    assert path.read_bytes()==original_bytes and snapshot==snapshot_before
+                                if not expected:
+                                    snapshot.update(complete=False,quiescent=False)
+                                    partial=Reconciler().audit(snapshot)
+                                    for limit in (0,1,100):
+                                        output=view(snapshot,partial,'prices',limit)
+                                        assert output['count']==4 and output['coverage']['exception_count']==2
+                                        assert not output['coverage']['complete'] and not output['coverage']['quiescent']
+                                    assert snapshot==snapshot_before|{'complete':False,'quiescent':False}
                             if not terminal and not expected:
                                 snapshot['complete']=False
                                 partial=Reconciler().audit(snapshot)
@@ -2515,14 +2707,64 @@ def native_stake_sql():
                                 cursor.execute('UPDATE economic_accounting_operation SET original_operation_id=%s WHERE operation_id=%s',
                                                (None if original_op!=op else plan[56:72],original_op))
                             audit(True)
+                        price_creator=bytes([8])*16
+                        insert('critical_operation_inbox',dict(operation_id=price_creator,command_hash=bytes([1])*32,
+                               keys_hash=bytes([2])*32,command_type=1,schema_version=1,payload_version=1,status=1,result_payload=b''))
+                        insert('economic_epoch',dict(lineage=bytes.fromhex(LINEAGE),epoch=bytes.fromhex('77'*16),ordinal=1,
+                               transition_kind=1,transition_digest=bytes([3])*32,creating_operation_id=price_creator))
+                        for index,(frozen,price_plan) in enumerate(price_batches):
+                            price_op=price_plan[40:56]
+                            insert('critical_operation_inbox',dict(operation_id=price_op,command_hash=bytes([4])*32,
+                                   keys_hash=bytes([5])*32,command_type=3,schema_version=2,payload_version=1,status=1,
+                                   result_code=0,durable_revision=index+1,result_payload=b''))
+                            with owner.cursor() as cursor:
+                                cursor.execute('UPDATE critical_operation_inbox SET committed_at=CURRENT_TIMESTAMP(6) WHERE operation_id=%s',
+                                               (price_op,))
+                            insert('economic_accounting_operation',dict(operation_id=price_op,lineage=price_plan[8:24],
+                                   epoch=price_plan[24:40],accounting_version=1,writer_id=1,policy_version=1,compiler_version=1,
+                                   actor_kind=price_plan[72],actor_id=7,reason=struct.unpack_from('<H',price_plan,96)[0],
+                                   source_event=price_plan[104:152],intent_digest=price_plan[152:184],domain_digest=price_plan[184:216],
+                                   plan_digest=hashlib.sha256(price_plan).digest(),canonical_intent=frozen,canonical_plan=price_plan,
+                                   outcome=1,result_code=0,account_count=0,posting_count=0,child_count=0,item_event_count=0,
+                                   before_witness_count=0,after_witness_count=0,realized_price_copper=(3000,125,0,2**63-1)[index]))
+                            insert('economic_accounting_source_claim',dict(lineage=price_plan[8:24],source_event=price_plan[104:152],
+                                   operation_id=price_op,outcome=1))
+                        audit(True,prices=True)
+                        historical_price_op=price_batches[1][1][40:56]
+                        with owner.cursor() as cursor:
+                            cursor.execute('UPDATE economic_accounting_operation SET realized_price_copper=NULL WHERE operation_id=%s',
+                                           (historical_price_op,))
+                        audit(True,('missing_realized_trade_price',),prices=True)
+                        owner.begin()
+                        with owner.cursor() as cursor:
+                            # Canonical rejection has no committed plan or
+                            # successful source claim. Keep FK/CHECKs enabled.
+                            cursor.execute('DELETE FROM economic_accounting_source_claim WHERE operation_id=%s',(historical_price_op,))
+                            cursor.execute('UPDATE economic_accounting_operation SET outcome=2,result_code=9,realized_price_copper=125,plan_digest=NULL,canonical_plan=NULL WHERE operation_id=%s',
+                                           (historical_price_op,))
+                            cursor.execute('UPDATE critical_operation_inbox SET result_code=9 WHERE operation_id=%s',(historical_price_op,))
+                        owner.commit()
+                        audit(True,('rejected_realized_price',),prices=True)
+                        owner.begin()
+                        with owner.cursor() as cursor:
+                            retained_plan=price_batches[1][1]
+                            cursor.execute('UPDATE economic_accounting_operation SET outcome=1,result_code=0,plan_digest=%s,canonical_plan=%s WHERE operation_id=%s',
+                                           (hashlib.sha256(retained_plan).digest(),retained_plan,historical_price_op))
+                            cursor.execute('UPDATE critical_operation_inbox SET result_code=0 WHERE operation_id=%s',(historical_price_op,))
+                            cursor.execute('INSERT INTO economic_accounting_source_claim (lineage,source_event,operation_id,outcome) VALUES (%s,%s,%s,1)',
+                                           (retained_plan[8:24],retained_plan[104:152],historical_price_op))
+                        owner.commit()
+                        audit(True,prices=True)
+                        print('PASS price-read-only '+engine+' captures=4 rollback=4 SQL-tables=7 unchanged inactive native-roots=4 epochs=2 CLI-cases=12 limits=0,1,100',flush=True)
                         with owner.cursor() as cursor:
                             cursor.execute('SELECT active_epoch FROM economic_lineage_state'); assert cursor.fetchall()==[{'active_epoch':None}]
-                        assert captures==41,captures
-                        print('PASS stake-read-only '+engine+' captures=41 rollback=41 SQL-tables=7 unchanged inactive source-refusals=9 source-kind-refusals=22 original-self-refusals=2',flush=True)
+                        assert captures==45,captures
+                        print('PASS stake-read-only '+engine+' captures=45 rollback=45 SQL-tables=7 unchanged inactive source-refusals=9 source-kind-refusals=22 original-self-refusals=2',flush=True)
                     finally: reader.close()
                 finally: owner.close()
     print('STAKE_SQL_QUALIFIED '+json.dumps({'engines':2,'native_modes':2,'plans':2,'intents':2,
-          'read_only_captures':82,'fault_captures':68,'source_fault_captures':62,'source_kind_fault_captures':44,
+          'read_only_captures':90,'fault_captures':72,'source_fault_captures':62,'source_kind_fault_captures':44,
+          'price_roots':4,'price_epochs':2,'price_captures':8,'price_CLI_cases':24,
           'original_link_fault_captures':4,'native_original_link_cases':6,
           'native_source_cases':104,'native_policy_cases':1107,
           'permission_denials':2,'full_mutation_or_gameplay':False},sort_keys=True),flush=True)
@@ -2538,6 +2780,56 @@ class NativeStakeSQLTests(unittest.TestCase):
 @unittest.skipUnless(os.environ.get("DURIS_RUN_AUDIT_BUDGET") == "1" and sys.platform == "linux",
                      "requires explicit Linux audit budget invocation")
 class AuditBudgetTests(unittest.TestCase):
+    def test_near_limit_price_view_cli_budget_and_limit_invariance(self):
+        import hashlib
+        snapshot = price_snapshot()
+        current, historical = snapshot["native"]["lineage_realized_prices"][:2]
+        for row in (current, historical):
+            del row["personal_alias"]
+        snapshot["native"]["lineage_realized_prices"] = [current]
+        coverage = snapshot["native"]["realized_price_coverage"]
+        coverage["candidate_rows"] = 1
+        base_size = len(json.dumps(snapshot, separators=(",", ":")).encode())
+        row_size = len(json.dumps(historical, separators=(",", ":")).encode()) + 1
+        count = min(MAX_ROWS - 1, (MAX_INPUT_BYTES - 2048 - base_size) // row_size)
+        snapshot["native"]["lineage_realized_prices"].extend(
+            {**historical, "operation_id": index.to_bytes(16, "little").hex()}
+            for index in range(1, count + 1))
+        coverage["candidate_rows"] = count + 1
+        with tempfile.TemporaryDirectory(prefix="duris-price-budget-") as directory:
+            path = Path(directory) / "prices.json"
+            for conflict in (False, True):
+                if conflict:
+                    current["realized_price_copper"] = 3001
+                payload = json.dumps(snapshot, separators=(",", ":")).encode()
+                # Compact prices reach the per-collection row bound first.
+                # Valid trailing JSON whitespace also exercises the byte bound.
+                payload += b" " * (MAX_INPUT_BYTES - 2048 - len(payload))
+                self.assertTrue(MAX_INPUT_BYTES - 4000 <= len(payload) <= MAX_INPUT_BYTES - 1024)
+                path.write_bytes(payload)
+                for limit in (0, 1, 100):
+                    result = measure_audit_cli(path, limit, "prices")
+                    self.assertEqual(result["exit_code"], int(conflict), result)
+                    self.assertEqual(result["stderr"], "")
+                    output = result["report"]
+                    self.assertEqual(output["count"], count + 1 + int(conflict))
+                    self.assertEqual(len(output["rows"]), limit)
+                    self.assertTrue(output["truncated"])
+                    self.assertEqual(output["coverage"]["exception_count"], int(conflict))
+                    self.assertTrue(output["coverage"]["lineage_history_available"])
+                    self.assertEqual(output["coverage"]["realized_price_coverage"], coverage)
+                    self.assertLessEqual(result["elapsed_seconds"], 30)
+                    self.assertLessEqual(result["peak_bytes"], 256 * 1024 * 1024)
+                    self.assertEqual(path.read_bytes(), payload)
+                    print("PRICE_VIEW_BUDGET " + json.dumps({
+                        "captured_price_roots": count + 1, "view_count": output["count"],
+                        "bytes": len(payload), "input_sha256": hashlib.sha256(payload).hexdigest(),
+                        "conflict": conflict, "limit": limit,
+                        "exception_count": output["coverage"]["exception_count"],
+                        "elapsed_seconds": result["elapsed_seconds"], "peak_bytes": result["peak_bytes"],
+                        "input_unchanged": True, "synthetic_component": True,
+                        "release_host_qualified": False}, sort_keys=True), flush=True)
+
     def test_near_limit_mapping_snapshot_cli_budget_and_limit_invariance(self):
         import hashlib
         snapshot = near_limit_mapping_snapshot()

@@ -2234,13 +2234,25 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
         rows = [{"account_kind": kind, "reason": reason, "net_copper": total}
                 for (kind, reason), total in sorted(totals.items())]
     elif name == "prices":
-        rows = [{"operation_id": row["operation_id"], "reason": row.get("reason"),
+        history = snapshot["native"].get("lineage_realized_prices")
+        price_coverage = snapshot["native"].get("realized_price_coverage")
+        history_available = isinstance(history, list) and isinstance(price_coverage, dict)
+        rows = [{"operation_id": row["operation_id"], "epoch": row["epoch"],
+                 "reason": row["reason"],
                  "price_copper": row["realized_price_copper"]}
-                for row in snapshot["operations"]
+                for row in snapshot["operations"] + (history if history_available else [])
                 if isinstance(row.get("operation_id"), str) and HEX_ID.fullmatch(row["operation_id"])
+                and isinstance(row.get("epoch"), str) and HEX_ID.fullmatch(row["epoch"])
                 and row.get("outcome") == "committed"
                 and type(row.get("reason")) is int and type(row.get("realized_price_copper")) is int
                 and 0 <= row["realized_price_copper"] < 2**63]
+        # Selected-epoch roots overlap captured lineage prices. Preserve
+        # conflicting projections instead of choosing either price as truth.
+        unique = {(row["epoch"], row["operation_id"], row["reason"], row["price_copper"]): row
+                  for row in rows}
+        rows = [unique[key] for key in sorted(unique)]
+        coverage.update(lineage_history_available=history_available,
+                        realized_price_coverage=dict(price_coverage) if history_available else None)
     elif name == "routes":
         matrix = json.loads((Path(__file__).resolve().parents[1] /
                              "docs/persistence/economy_accounting/writer_coverage_matrix.json").read_text())
