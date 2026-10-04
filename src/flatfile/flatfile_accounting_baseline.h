@@ -24,6 +24,7 @@ flatfile_accounting_baseline_lookup(const std::string &, const flatfile_authorit
 // No production caller exists yet. All operations use the existing shared
 // journal; no native balances/custody are changed here. Keep account lifetimes
 // and item UIDs unique within the epoch, including across preparation IDs.
+class flatfile_accounting_staging_view;
 class flatfile_accounting_baseline_storage
 {
 	friend class flatfile_accounting_lifecycle_transaction;
@@ -41,6 +42,12 @@ class flatfile_accounting_baseline_storage
 		   const economic_account_key &opening,
 		   const critical_operation_id &creating_operation,
 		   std::vector<flatfile_authority_operation> *, std::string *);
+	static flatfile_accounting_status
+	initialize_staged(const std::string &, const flatfile_authority_lock &,
+			  const critical_operation_id &, const critical_operation_id &,
+			  const economic_account_key &, const critical_operation_id &,
+			  std::vector<flatfile_authority_operation> *, std::string *,
+			  flatfile_accounting_staging_view *);
 	// Append witness, exact receipt, reservation buckets and book head together.
 	// Refuses duplicate account/UID openings, conflicting command IDs, orphan
 	// witnesses and missing/corrupt indexes. An exact retained retry returns
@@ -49,5 +56,10 @@ class flatfile_accounting_baseline_storage
 	stage(const std::string &, const flatfile_authority_lock &, const critical_command &,
 	      const economic_prepared_baseline &, std::vector<flatfile_authority_operation> *,
 	      std::string *);
+	static flatfile_accounting_status
+	stage_staged(const std::string &, const flatfile_authority_lock &, const critical_command &,
+		     const economic_prepared_baseline &,
+		     std::vector<flatfile_authority_operation> *, std::string *,
+		     flatfile_accounting_staging_view *, uint64_t *verified_revision);
 };
 #endif
