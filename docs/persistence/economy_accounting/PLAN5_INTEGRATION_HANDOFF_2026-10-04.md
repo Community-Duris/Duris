@@ -159,3 +159,18 @@ case, timeout relaxation or primary qualification execution was added.
 There is no new native schema or shared interface request. Full native capture,
 authority-bound initialization, world holdings/items and combined release evidence
 remain separate required work.
+
+## SQL baseline projection integration
+
+Peer `a5d26b658247e5c843c9c03b7e6d3bac94b6a711` is integrated in `cd0fbebb6`.
+[Its report](PLAN5_SQL_BASELINE_PROJECTION_SLICE_2026-10-04.md) independently
+compares persisted baseline account effects, coin postings and UID/lifetime
+reservations with the verified canonical opening record. Missing, extra or
+changed rows refuse capture or retain a baseline-source diagnostic. Existing
+read-only consistent cuts, row/byte bounds and central native registrations remain.
+The peer records the actual missing-posting RED and both-engine GREEN, including
+121 damage cuts per engine. These results apply to the peer's consumed inputs;
+the intact fixture still lacks native world holdings/items and remains partial
+and inactive. Primary reviewed and integrated source only. No primary test batch,
+new native schema, shared interface, budget change or qualified push occurred.
+Combined qualification and all remaining R7/release requirements stay open.

@@ -7,6 +7,12 @@ preparation status, not its bounded historical test evidence.
 
 ## Integrated candidate and ownership
 
+Latest Plan5 slice `a5d26b658` is imported as `cd0fbebb6`; see
+[its projection report](PLAN5_SQL_BASELINE_PROJECTION_SLICE_2026-10-04.md).
+Independent baseline effects/postings/reservations now cross-check the canonical
+opening record. Peer both-engine results remain input-specific; primary performed
+source review/integration only, with combined qualification still deferred.
+
 Primary integrated experimental-accounting through
 `f7d26eaa721cd3b675c0b0c65009a2535813f400` in `a590fc662` (news only), and
 Plan5 through `7a78bb065a7979b8dc8ad2ec49295629d6713906` in `432db98be`.
