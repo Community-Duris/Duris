@@ -924,5 +924,10 @@ checkpoint, held native publication and separate ACK/release; maintenance slice
 root-binding slice `45c895ff4` is integrated in `24766ebff`, with independent
 evidence restricted to peer inputs. All remain subject to combined qualification;
 no new primary compiler/tests/native journeys ran or unqualified push occurred.
-Supported core metadata ownership and clean lifecycle closure are next. Preserve
-the group's scope and independent Plan 1 acceptance without additional work.
+Direct core metadata ownership is source-integrated in `1192d08c5`, and clean
+owned lifecycle drain/close in `480f20ce3`. Both are independently source-reviewed,
+with qualification deferred. Ownership enable, remaining rejected recovery/graph
+coverage, stopped-runtime maintenance connection, flatfile parity and major-plan
+qualification remain. The existing lifecycle harness composes independent
+install/refusal/activate/pause/reactivate acceptance; an online handover or new
+baseline format is unnecessary. Preserve the group's scope without additional work.

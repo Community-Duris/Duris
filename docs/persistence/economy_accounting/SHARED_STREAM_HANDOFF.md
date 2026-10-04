@@ -303,3 +303,10 @@ integrated in `24766ebff`; its engine evidence remains specific to peer inputs.
 The existing native registration covers that updated owner without a new gate.
 Major-plan testing remains deferred; primary next owns core metadata and clean
 lifecycle closure. No full-plan completion, activation or release is claimed.
+
+Primary `1192d08c5` now integrates direct core metadata ownership/early rename
+refusal; `480f20ce3` adds owned lifecycle drain/close using existing journal controls
+and exact epoch ownership. No Plan5 native formats or root binding change. Both
+remain unqualified, ownership disabled and release blocked. Independent Plan 1
+can qualify the existing lifecycle composition without an online handover or
+all Plans 2–4 writers; final actual activation/full release retains every gate.

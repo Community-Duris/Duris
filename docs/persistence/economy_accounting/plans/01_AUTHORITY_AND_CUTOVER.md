@@ -35,9 +35,14 @@ ordering case. Prioritize connecting existing owners into the production path.
 deletion and pwipe. `1d6043f57` connects the actual single-root ordinary SQL drop
 to its literal checkpoint and native publication owner before generic registry
 application. Source review passed; tests remain deferred and ownership disabled.
-Next production connections are supported native core metadata ownership and
-clean serialized closure of retained saves/workers/publications, followed by
-authentic baseline/cutover/pause and existing flatfile bank/item parity. Keep
+`1192d08c5` now owns direct core metadata and refuses enabled rename before
+native/filesystem mutation. `480f20ce3` connects full owned lifecycle drain/close,
+retaining the original timeout and closed admission after exact epoch end.
+The existing native lifecycle harness already composes install/refusal/activate/
+pause/reactivate; no online handover is needed for independent acceptance.
+Next are ownership enable under the selected active authority, remaining rejected
+recovery/graph behavior, the stopped-runtime maintenance caller and existing
+flatfile bank/item parity, followed by major-plan qualification. Keep
 these within independent Plan 1 acceptance; add no optional frameworks or gates.
 
 Recovery-session cleanup is implemented in `7dc837e29`: original-session rollback
