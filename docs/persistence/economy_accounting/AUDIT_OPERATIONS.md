@@ -19,6 +19,29 @@ history before that opening and absent stores are not reconstructed. An empty
 result does not prove a UID never existed. Output remains ID-only and bounded;
 `--limit 0` retains the full count and coverage while omitting row details.
 
+Use `--view operation --operation-id <32 lowercase hex digits>` to inspect an
+exact root ID in an existing export. The bounded, ID-only records include root
+metadata, account effects, postings, child IDs, item references, receipts,
+captured source claims and matching database-wide orphan-detail markers.
+`count` counts all matching records; `record_counts` reports each collection
+before truncation, including zero roots and duplicate roots. The limit applies
+to the entire record list, with root metadata first. Aliases, command/result
+payloads and canonical blobs are omitted. Duplicate evidence remains visible.
+The coverage object carries the selected lineage/epoch, input completeness and
+quiescence, and whole-audit exception count. Root capture is selected-epoch
+scope; source claims and orphan markers may come from wider captured scopes.
+A zero or rootless result does not prove the operation is absent outside this
+export. Use another consistent cut for the relevant epoch when needed.
+
+Use `--view holdings --account-key <80 lowercase hex digits>` to select one
+exact version-1 account key from captured native holdings. Its coverage names
+that key and the captured-native-holdings scope. An absent holding is not proof
+that the account never existed or that its retained effects can be discarded.
+An invalid operation ID/account key, either filter used with an inappropriate
+view, or a limit outside 0..100 refuses with status 2. Both queries preserve the whole audit status:
+filtering does not turn an incomplete cut or an unrelated discrepancy into an
+all-clear. `--limit 0` preserves counts and coverage without detail rows.
+
 ## Snapshot contract, version 1
 
 Supply a UTF-8 JSON file of at most 32 MiB. Set `complete: true` only after
