@@ -30,8 +30,13 @@ is integrated in `ad504f5c0`; see
 Native exact replay/claim reconciliation and damage cuts qualify its consumed
 inputs only; fixture holdings/items remain absent and export remains partial.
 Shared native case registration is committed in `4e5faf66a`, unexecuted.
+Plan5 root binding `45c895ff472cc9023d4211bd140a0b0568ab2d5c` is integrated
+in `24766ebff`; [its report](PLAN5_SQL_BASELINE_ROOT_BINDING_SLICE_2026-10-04.md)
+records a rehashed-witness RED and independent committed-root binding, with
+both-engine evidence restricted to its own inputs. Existing native case
+registration covers the updated owner; combined qualification remains deferred.
 
-The source milestone candidate through `e99468f93` includes the twenty-four slices
+The source milestone candidate through `1192d08c5` includes the twenty-seven slices
 below, plus the local Plan5 integrations described above. Plan5's reports remain evidence of
 its own inputs, not of this combined source candidate. Root checkout WIP is preserved.
 
@@ -68,6 +73,9 @@ Parallel specialists use bounded file ownership; primary integrates and reviews.
 | `bef2f797f` | [Positive-PID synchronous save owner](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#positive-pid-synchronous-save-owner): claims/scopes span pre-save mutations, SQL, exact-session cleanup and restoration/posthooks; pet participant borrows. | Source only; PID-zero, caller-owned transactions, direct migration/independent writers and native qualification remain open. |
 | `6d42ad788` | [Restored ordinary-drop production integration](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#restored-ordinary-drop-production-integration): phased SQL startup, actor-independent movement dispatch, fresh journal/control census, original-slot reserved native publication and coordinator-guarded ACK/hold clear/wake/revisit. | Ownership disabled; complete writer/shutdown integration, legitimate overlapping-save/rejected-outcome disposition, full graph/live-producer coverage and qualification remain open. |
 | `e99468f93` | [Covered ordinary-save ordering](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#covered-ordinary-save-ordering): native locked save revision and confirmed session cleanup permit exact-original retirement of already-obsolete receipt-free frames under the held publication reservation. | No new economic receipt/schema/gate; uncovered and operation-bearing frames retain existing recovery requirements. Ownership, complete production route and major-plan qualification remain open. |
+| `c542a2642` | [Unsupported maintenance refusal](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#unsupported-maintenance-refusal): enabled character/account deletion and pwipe refuse before native mutation; account confirmation refuses before its fence/session closure. | Plan 1 unsupported-route behavior only; complete R8 deletion/reset integration and qualification remain open. |
+| `1d6043f57` | [Live ordinary-drop producer integration](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#live-ordinary-drop-producer-integration): actual single-root SQL drop consumes literal checkpoint, retains the canonical command/hold, verifies native custody before existing physical handlers, atomically publishes runtime custody and separates ACK from release/notification. | Source review only; ownership remains disabled. Native/player/restart qualification, lifecycle closure, remaining metadata ownership and Plan 1 acceptance remain open. |
+| `1192d08c5` | [Direct login metadata ownership](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#direct-login-metadata-ownership): direct core saves retain PID residence/scope/permit through main-session cleanup; enabled cross-PID deactivation is skipped and rename refuses before filesystem/native mutation. | Source review only; enabled PID-zero/caller-owned transactions remain unsupported. Lifecycle closure, production ownership enable and major-plan qualification remain open. |
 
 Source reviewers found no remaining blocker in each slice's stated narrow scope.
 This is source review, not native/build/gameplay/persistence/recovery acceptance.
@@ -109,9 +117,10 @@ Follow the [ordinary drop recovery interface](ORDINARY_DROP_RECOVERY_INTERFACE_2
 prepare closed; restore original holds; start guarded execution; independently prove
 native epoch/payload/graph; materialize without economic side effects; establish a
 clean mutation census and ACK reservation; checkpoint critical publication; clear
-only the exact original hold; retain wake across parking. Production comm still
-uses immediate save init before critical replay; the new APIs alone do not repair
-that production sequence. No login bypass, blind resume or quarantine bypass.
+only the exact original hold; retain wake across parking. Production SQL startup
+now prepares save metadata, restores critical holds and then starts saves. The
+source remains unqualified and ownership remains disabled pending writer/lifecycle
+completion. No login bypass, blind resume or quarantine bypass.
 
 The [Plan5 handoff](PLAN5_INTEGRATION_HANDOFF_2026-10-04.md) records source-traced
 stake retirement and retained-price metadata gaps, native marker-v2 reader contract,

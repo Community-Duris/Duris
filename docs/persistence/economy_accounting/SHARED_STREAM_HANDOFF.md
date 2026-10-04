@@ -294,3 +294,12 @@ operation-bearing originals retain existing requirements. Source review and
 format/diff checks passed; no new qualification or milestone push. This adds no
 Plan5 native economic evidence input. Keep implementation within the group's
 R1–R8 and the five plans' stated acceptance.
+
+Primary `1d6043f57` additionally connects the live ordinary SQL drop producer;
+`c542a2642` refuses enabled unsupported maintenance before mutation. Both are
+source-reviewed and unqualified. Neither adds native economic evidence formats
+or changes Plan5's interfaces. Plan5 committed-root binding `45c895ff4` is now
+integrated in `24766ebff`; its engine evidence remains specific to peer inputs.
+The existing native registration covers that updated owner without a new gate.
+Major-plan testing remains deferred; primary next owns core metadata and clean
+lifecycle closure. No full-plan completion, activation or release is claimed.

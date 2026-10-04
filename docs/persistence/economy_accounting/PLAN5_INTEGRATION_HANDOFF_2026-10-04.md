@@ -146,3 +146,16 @@ the existing harness. Each new row uses 900 seconds; no existing budget changes.
 The release host must provide the peer report's native compiler/client/daemon
 prerequisites. This is registration only: no case, build, compiler, SQL service or
 qualification was executed by primary; the major-plan test batch remains deferred.
+
+## SQL baseline root binding integration
+
+Peer `45c895ff472cc9023d4211bd140a0b0568ab2d5c` is integrated in `24766ebff`.
+[Its report](PLAN5_SQL_BASELINE_ROOT_BINDING_SLICE_2026-10-04.md) binds complete
+opening-witness bytes to committed canonical EAI1/EAP1 roots and native baseline
+receipt metadata using independent readers. Its native RED and both-engine GREEN
+results remain evidence for its consumed inputs only. The unchanged central
+claim/origin registrations already select the affected native cases; no extra
+case, timeout relaxation or primary qualification execution was added.
+There is no new native schema or shared interface request. Full native capture,
+authority-bound initialization, world holdings/items and combined release evidence
+remain separate required work.

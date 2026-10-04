@@ -917,3 +917,12 @@ Source prerequisites241e54162 and5766555f8 now supply the replay ownership leaf
 and full indexed SQL boot prototype catalog. Reconstruction consumes the latter.
 Neither closes production ownership/ACK/replay or current-candidate qualification.
 No defensible remaining duration or completion percentage has been measured.
+
+Current source `1d6043f57` connects the actual ordinary SQL drop producer to
+checkpoint, held native publication and separate ACK/release; maintenance slice
+`c542a2642` refuses unsupported enabled deletion/reset before mutation. Plan5
+root-binding slice `45c895ff4` is integrated in `24766ebff`, with independent
+evidence restricted to peer inputs. All remain subject to combined qualification;
+no new primary compiler/tests/native journeys ran or unqualified push occurred.
+Supported core metadata ownership and clean lifecycle closure are next. Preserve
+the group's scope and independent Plan 1 acceptance without additional work.
