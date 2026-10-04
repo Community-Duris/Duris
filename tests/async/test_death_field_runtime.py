@@ -18,6 +18,7 @@ PRELUDE = r'''
 #include "world/events.h"
 #include "magic/spells.h"
 #include "combat/damage.h"
+#include "combat/spell_wards.h"
 #include "combat/dam_mods.h"
 #include "combat/grapple.h"
 #include "combat/guard.h"
@@ -70,6 +71,13 @@ static std::mt19937 rng(12345);
 static std::map<P_char, int> damaged;
 static std::map<P_char, std::string> transcript;
 static bool resist = false, evasion = false;
+static int ward_stage_calls;
+// Death Field is above the circle wards. Execute its real earlier defenses
+// with an inert circle-ward service; finite absorption is tested separately.
+spell_ward_absorb_result spell_ward_absorb(P_char, P_char, double dam, unsigned int) {
+    ++ward_stage_calls;
+    return {dam, 0.0, false};
+}
 static float minimum = 60;
 static int announcements;
 /* utility.c's file-static area-cast depth. cast_as_damage_area() is lifted into
@@ -236,7 +244,7 @@ int main()
     caster.next_in_room = targets;
     world[0].people = &caster;
     auto cast = [&](P_char explicit_target) {
-        damaged.clear(); transcript.clear(); announcements = 0;
+        damaged.clear(); transcript.clear(); announcements = 0; ward_stage_calls = 0;
         for (auto &target : targets) target.points.hit = 10000;
         assert(MobCastSpell(&caster, explicit_target, nullptr, SPELL_DEATH_FIELD, 50));
         int pulses = 0;
@@ -287,6 +295,7 @@ int main()
     targets[0].next_in_room = nullptr;
     targets[0].points.ward = 10000;
     cast(targets); assert(!damaged[targets] && targets[0].points.ward < 10000);
+    assert(ward_stage_calls == 0);
     assert(transcript[targets].find("ward around you") != std::string::npos);
     targets[0].points.ward = 0;
     resist = true;

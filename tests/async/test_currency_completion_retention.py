@@ -11,12 +11,15 @@ import shlex
 import subprocess
 import tempfile
 
-from _paths import ROOT, rel
+from _paths import ROOT, rel, source
 
 
 HARNESS = r'''
 #include "core/utils.h"
 #include "economy/account_bank_balances.h"
+#include "core/prototypes.h"
+#include "persistence/persistence_checkpoint.h"
+#include "economy/auction_houses.h"
 #include "economy/currency_transaction.h"
 #include "economy/economic_currency_adapter.h"
 #include "economy/economic_gameplay_authority.h"
@@ -33,11 +36,26 @@ HARNESS = r'''
 #include <cstring>
 #include <string>
 #include <utility>
+#include <vector>
 
 static P_char online = nullptr, online_other = nullptr;
 P_desc descriptor_list = nullptr;
 P_char character_list = nullptr;
 static critical_command submitted;
+static critical_submit_result admission = critical_submit_result::accepted;
+static bool pickup_available = false;
+static int pickups = 0, vitals = 0;
+static std::vector<std::string> credit_messages;
+static std::vector<int> published_platinum;
+static bool success_seen = false;
+bool insert_money_pickup(int pid, int amount)
+{
+    assert(pid == 42 && amount == 10000000);
+    ++pickups;
+    return pickup_available;
+}
+void mark_player_dirty_components(int, player_component_mask_t) {}
+
 static int submissions = 0, callbacks = 0, alerts = 0, bank_publications = 0;
 static AccountBankBalances last_bank_balances = {};
 static int held_submissions = 0, publication_acks = 0;
@@ -90,7 +108,7 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
     command.accepted_at_usec = 1; // assigned by the actual coordinator at admission
     submitted = std::move(command);
     ++submissions;
-    return critical_submit_result::accepted;
+    return admission;
 }
 critical_submit_result critical_command_coordinator_submit_for_publication(critical_command command)
 {
@@ -109,8 +127,21 @@ bool critical_command_coordinator_get_completed(const critical_operation_id &, c
 {
     return false;
 }
-void gmcp_char_vitals(P_char) {}
-void send_to_char(const char *, P_char) {}
+void gmcp_char_vitals(P_char ch)
+{
+    ++vitals;
+    published_platinum.push_back(GET_PLATINUM(ch));
+}
+void send_to_char(const char *message, P_char ch)
+{
+    credit_messages.emplace_back(message);
+    if (credit_messages.back().find("Here's") != std::string::npos)
+    {
+        assert(ch && GET_PLATINUM(ch) == 10000);
+        assert(vitals > 0 && published_platinum.back() == 10000);
+        success_seen = true;
+    }
+}
 void logit(const char *, const char *, ...) {}
 void persistence_alert(int, const char *, const char *, const char *operation, const char *,
                        const char *, const char *, ...)
@@ -191,6 +222,11 @@ int main(int argc, char **argv)
     GET_COPPER(&actor) = 5;
     online = &actor;
     currency_transaction_reset_for_tests();
+    if (scenario.starts_with("platinum_"))
+    {
+        platinum_scenario(scenario, &actor);
+        return 0;
+    }
     if (scenario == "exact_morph_coin")
     {
         critical_operation_id lineage = {}, epoch = {}, activation = {};
@@ -995,10 +1031,167 @@ int main(int argc, char **argv)
 '''
 
 
+
+def credit_acknowledgement_functions():
+    """Compile the production helper, callback, and exact platinum branch."""
+    utility = source("utility.c").read_text(encoding="utf-8")
+    chaos = source("chaos.c").read_text(encoding="utf-8")
+
+    def function(text, signature):
+        start = text.rindex(signature)
+        depth = 0
+        for end in range(text.index("{", start), len(text)):
+            depth += (text[end] == "{") - (text[end] == "}")
+            if not depth:
+                return text[start:end + 1]
+        raise AssertionError(signature)
+
+    platinum = function(chaos, 'if (is_abbrev(buff, "platinum")')
+    return "\n".join([
+        function(utility, "static void currency_adjustment_committed("),
+        function(utility, "void ADD_MONEY("),
+        # The authorization boundary is covered by test_chaos_authorization.py.
+        'bool is_abbrev(const char *a, const char *b) { return !strncmp(a, b, strlen(a)); }',
+        'void platinum_command(P_char ch, const char *buff) {', platinum, '}',
+        PLATINUM_SCENARIOS,
+    ])
+
+
+PLATINUM_SCENARIOS = r"""
+void platinum_scenario(const std::string &scenario, P_char actor)
+{
+    if (scenario == "platinum_active_persistent" || scenario == "platinum_active_local")
+    {
+        critical_operation_id lineage = {}, epoch = {}, activation = {};
+        lineage.bytes[0] = 1;
+        epoch.bytes[0] = 2;
+        activation.bytes[0] = 3;
+        economic_gameplay_authority_test_access::install(lineage, epoch, activation);
+        if (scenario == "platinum_active_local") actor->only.pc->pid = 0;
+        platinum_command(actor, "plats");
+        assert(!success_seen && submissions == 0 && held_submissions == 0 && pickups == 0);
+        assert(GET_PLATINUM(actor) == 0 && vitals == 0);
+        assert(credit_messages.size() == (scenario == "platinum_active_local" ? 0 : 1));
+        if (!credit_messages.empty())
+            assert(credit_messages[0].find("active accounting") != std::string::npos);
+        return;
+    }
+    if (scenario == "platinum_local")
+    {
+        actor->only.pc->pid = 0;
+        platinum_command(actor, "plats");
+        assert(success_seen && submissions == 0 && pickups == 0);
+        assert(credit_messages.size() == 1 && vitals == 1);
+        return;
+    }
+    if (scenario == "platinum_refused_pickup" || scenario == "platinum_refused_review")
+    {
+        admission = critical_submit_result::unavailable;
+        pickup_available = scenario == "platinum_refused_pickup";
+        platinum_command(actor, "platinum");
+        assert(!success_seen && GET_PLATINUM(actor) == 0 && vitals == 0);
+        assert(submissions == 1 && pickups == 1 && credit_messages.size() == 1);
+        assert(credit_messages[0].find(pickup_available ? "auction house" : "staff review") !=
+               std::string::npos);
+        assert(currency_transaction_health_copy().pending == 0);
+        return;
+    }
+    if (scenario == "platinum_awaiting_durability")
+        admission = critical_submit_result::awaiting_durability;
+    if (scenario == "platinum_uncertain_admission")
+        admission = critical_submit_result::journal_uncertain;
+    platinum_command(actor, "plats");
+    assert(submissions == 1 && pickups == 0 && !success_seen && vitals == 0);
+    assert(credit_messages.size() == 1 && credit_messages[0].find("pending confirmation") != std::string::npos);
+    assert(GET_COPPER(actor) == 5 && GET_PLATINUM(actor) == 0);
+    currency_command_payload payload = {};
+    assert(currency_command_decode_payload(submitted, &payload));
+    assert(payload.reason == currency_reason_type::wallet_reward && payload.reason_id == 0);
+    assert((payload.wallet_delta.amount == std::array<int64_t, 4>{0, 0, 0, 10000}));
+    assert((payload.bank_delta.amount == std::array<int64_t, 4>{0, 0, 0, 0}));
+    assert(submitted.source_site == critical_source_site::command);
+    assert(submitted.deadline_class == critical_deadline_class::interactive);
+    const critical_operation_id original_id = submitted.operation_id;
+    if (scenario == "platinum_awaiting_durability" || scenario == "platinum_uncertain_admission")
+    {
+        currency_transaction_handle_completions(nullptr, 0);
+        assert(!success_seen && vitals == 0 && submissions == 1 && pickups == 0);
+        assert(currency_transaction_health_copy().pending == 1);
+        return;
+    }
+    currency_command_result result = {};
+    result.wallet.amount = {5, 0, 0, 10000};
+    result.wallet_revision = 2;
+    result.bank_revision = 1;
+    std::array<uint8_t, CURRENCY_RESULT_PAYLOAD_BYTES> bytes = {};
+    assert(currency_command_encode_result(result, &bytes));
+    critical_completion receipt = {};
+    receipt.operation_id = original_id;
+    receipt.outcome = scenario == "platinum_replay" ? critical_apply_outcome::already_applied :
+                                                     critical_apply_outcome::applied;
+    receipt.result_size = bytes.size();
+    std::copy(bytes.begin(), bytes.end(), receipt.result_payload.begin());
+    if (scenario == "platinum_failure" || scenario == "platinum_stale")
+    {
+        receipt.outcome = critical_apply_outcome::terminal_failure;
+        receipt.error_code = scenario == "platinum_stale" ? ESTALE : EINVAL;
+        receipt.result_size = 0;
+        currency_transaction_handle_completions(&receipt, 1);
+        assert(!success_seen && GET_PLATINUM(actor) == 0 && vitals == 0);
+        assert(credit_messages.size() == 2 && credit_messages[1].find("could not be completed") != std::string::npos);
+        assert(submissions == 1 && pickups == 0 && currency_transaction_health_copy().pending == 0);
+        currency_transaction_handle_completions(&receipt, 1);
+        assert(credit_messages.size() == 2);
+        return;
+    }
+    if (scenario == "platinum_ambiguous" || scenario == "platinum_malformed")
+    {
+        if (scenario == "platinum_ambiguous")
+            receipt.outcome = critical_apply_outcome::ambiguous_commit;
+        else
+            receipt.result_size = 1;
+        currency_transaction_handle_completions(&receipt, 1);
+        currency_transaction_handle_completions(&receipt, 1);
+        assert(!success_seen && credit_messages.size() == 1 && vitals == 0 && pickups == 0);
+        assert(submissions == 1 && currency_transaction_health_copy().publication_blocked == 1);
+        receipt.outcome = critical_apply_outcome::already_applied;
+        receipt.result_size = bytes.size();
+    }
+    if (scenario == "platinum_offline")
+    {
+        online = nullptr;
+        currency_transaction_handle_completions(&receipt, 1);
+        assert(!success_seen && credit_messages.size() == 1 && vitals == 0);
+        assert(currency_transaction_health_copy().retained_offline == 1);
+        online = actor;
+        currency_transaction_player_ready(actor);
+    }
+    else
+        currency_transaction_handle_completions(&receipt, 1);
+    assert(success_seen && credit_messages.size() == 2 && GET_PLATINUM(actor) == 10000);
+    assert(actor->only.pc->wallet_revision == 2 && vitals >= 1 && bank_publications == 1);
+    assert(submissions == 1 && pickups == 0 && currency_transaction_health_copy().pending == 0);
+    assert(critical_operation_id_equal(submitted.operation_id, original_id));
+    const int committed_publications = vitals;
+    assert(std::all_of(published_platinum.begin(), published_platinum.end(),
+                       [](int value) { return value == 10000; }));
+    currency_transaction_handle_completions(&receipt, 1);
+    currency_transaction_player_ready(actor);
+    assert(GET_PLATINUM(actor) == 10000 && credit_messages.size() == 2 &&
+           vitals == committed_publications);
+}
+"""
+
+
 def main():
     failures = []
     cflags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
     scenarios = (
+        "platinum_active_persistent", "platinum_active_local",
+        "platinum_refused_pickup", "platinum_refused_review", "platinum_success",
+        "platinum_failure", "platinum_stale", "platinum_replay", "platinum_offline",
+        "platinum_awaiting_durability", "platinum_uncertain_admission",
+        "platinum_ambiguous", "platinum_malformed", "platinum_local",
         "malformed", "already_applied", "wallet_range", "bank_range", "ambiguous",
         "ambiguous_with_payload", "exhausted_retry", "offline", "rejected",
         "rejected_without_payload", "callback_chain", "callback_rehash", "active_rebasable",
@@ -1026,9 +1219,12 @@ def main():
         "coin_retained_morph_stale", "coin_retained_unloaded_commit",
 
     )
-    with tempfile.TemporaryDirectory(prefix="currency-retention-") as directory:
+    artifacts = ROOT / "bin" / "tests"
+    artifacts.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="currency-retention-", dir=artifacts) as directory:
         source = Path(directory) / "retention.cpp"
-        source.write_text(HARNESS, encoding="utf-8")
+        source.write_text(HARNESS.replace("int main(", credit_acknowledgement_functions() + "\nint main(", 1),
+                          encoding="utf-8")
         compiler = shlex.split(os.environ.get("CXX", "g++"))
         for flatfile in (False, True):
             backend = "flatfile" if flatfile else "mysql"

@@ -219,6 +219,8 @@ int main() {
     assert(metadata.available && !metadata.pid_admission_open && metadata.retained_save);
     has_terminal = false;
     literal_inventory_checkpoints[0].token.pid = 9001;
+    metadata = player_save_pipeline_diagnostic_copy(9001);
+    assert(metadata.available && metadata.pid_admission_open && metadata.retained_save);
     literal_inventory_checkpoints[0].held = true;
     metadata = player_save_pipeline_diagnostic_copy(9001);
     assert(metadata.available && !metadata.pid_admission_open && metadata.retained_save);
@@ -228,6 +230,8 @@ int main() {
     metadata = player_save_pipeline_diagnostic_copy(9001);
     assert(metadata.available && metadata.pid_admission_open && metadata.retained_save);
     literal_inventory_checkpoints[0] = {};
+    metadata = player_save_pipeline_diagnostic_copy(9001);
+    assert(metadata.available && metadata.pid_admission_open && !metadata.retained_save);
     {
         std::lock_guard<std::mutex> held(pipeline_mutex);
         std::thread reader([] { assert(!player_save_pipeline_diagnostic_copy(9001).available); });

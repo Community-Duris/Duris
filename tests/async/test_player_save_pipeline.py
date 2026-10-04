@@ -311,7 +311,7 @@ terminal_preamble = r'''
 #include <array>
 bool player_save_journal_pid_quarantined(int) { return false; }
 struct char_data { int pid; unsigned int runtime_flags = 0; };
-struct obj_data { int uid; };
+struct obj_data { int uid; int value[8] = {}; };
 #define IS_SET(flag, bit) ((flag) & (bit))
 player_snapshot_capture_result death_capture_result = player_snapshot_capture_result::ok;
 int death_enqueued = 0;
@@ -357,6 +357,8 @@ terminal_fence *allocate_terminal_fence_locked(int pid) { if (fence.pid && fence
 bool trace_player_saves() { return true; }
 bool snapshot_is_journaled_locked(const player_revision_snapshot &) { return true; }
 uint64_t persistence_observability_now_usec() { return 0; }
+#define CORPSE_SAVEID 6
+void death_recovery_correlation(uint64_t, char *output) { output[0] = 0; }
 void logit(int, const char *, ...) {}
 player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int intent, int room) {
     player_revision_snapshot current = {};

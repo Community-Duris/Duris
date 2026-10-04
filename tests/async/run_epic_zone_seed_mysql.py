@@ -20,8 +20,10 @@ spec.loader.exec_module(seed)
 def run(image: str) -> None:
     name = f"duris-epic-seed-qa-{uuid.uuid4().hex}"
     client = "mariadb" if image.startswith("mariadb:") else "mysql"
+    empty_password = ("MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1" if image.startswith("mariadb:")
+                      else "MYSQL_ALLOW_EMPTY_PASSWORD=yes")
     subprocess.run(["docker", "run", "--detach", "--name", name, "--network", "none",
-                    "--env", "MYSQL_ALLOW_EMPTY_PASSWORD=yes", image], check=True,
+                    "--env", empty_password, image, "--innodb-use-native-aio=OFF"], check=True,
                    capture_output=True, text=True)
     try:
         def query(sql: str, *, database: str | None = "epic_seed_qa", ok: bool = True):
@@ -151,5 +153,8 @@ def run(image: str) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--image", choices=["mysql:8.0", "mariadb:11.4"], default="mysql:8.0")
-    run(parser.parse_args().image)
+    parser.add_argument("--image", default="mysql:8.0")
+    image = parser.parse_args().image
+    if not re.fullmatch(r"(?:mysql:8\.0(?:\.\d+)?|mariadb:(?:10\.11|11\.4)(?:\.\d+)?)(?:@sha256:[0-9a-f]{64})?", image):
+        parser.error("use a reviewed MySQL 8.0 or MariaDB 10.11/11.4 image")
+    run(image)

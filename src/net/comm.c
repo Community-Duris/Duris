@@ -1,3 +1,4 @@
+#include "persistence/death_recovery_visibility.h"
 #include "account/password_async.h"
 #include "account/account_async.h"
 /*
@@ -2168,12 +2169,32 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 		artifact_guild_transaction_publish_outbox();
 		for (size_t index = 0; index < critical_completion_count; ++index)
 			if (critical_completions[index].outcome ==
-			    critical_apply_outcome::terminal_failure)
+				    critical_apply_outcome::terminal_failure ||
+			    ((critical_completions[index].outcome ==
+				      critical_apply_outcome::retryable_failure ||
+			      critical_completions[index].outcome ==
+				      critical_apply_outcome::ambiguous_commit) &&
+			     critical_completions[index].attempt >
+				     CRITICAL_COORDINATOR_MAX_RETRIES))
+			{
+				char summary[256] = {};
+				snprintf(summary, sizeof(summary),
+					 "correlation=%s error=%u refusal=%s attempts=%u",
+					 critical_completions[index].recovery_correlation[0] ?
+						 critical_completions[index]
+							 .recovery_correlation.data() :
+						 "none",
+					 critical_completions[index].error_code,
+					 death_recovery_refusal_name(
+						 critical_completions[index].error_code),
+					 critical_completions[index].attempt);
 				persistence_alert(
 					AVATAR, "critical_command", "completion", "none",
 					critical_failure_stage_name(
 						critical_completions[index].failure_stage),
-					"integrity_failure", "operation metadata redacted");
+					"integrity_failure",
+					death_recovery_literal_detail(summary));
+			}
 		player_save_pipeline_pulse();
 		quest_reward_recovery_pulse();
 		persistence_pulse_character_saves();
@@ -2413,6 +2434,7 @@ static void run_pulse_reset_phase(game_loop_pulse_context &ctx)
 	latency_trace_record("total_tick", loop_us, loop_tick);
 	if (!(tics % 300))
 	{
+		world_activity_log_diagnostics();
 		latency_trace_snapshot snapshot = {};
 		latency_trace_snapshot_take_and_reset(&snapshot);
 		FILE *_ltf = fopen("logs/latency_trace.log", "a");
@@ -3180,9 +3202,11 @@ void flush_queues(P_desc d)
 	char str[MAX_STRING_LENGTH];
 
 	while (get_from_q(&d->output, str))
-		;
+	{
+	}
 	while (get_from_q(&d->input, str))
-		;
+	{
+	}
 	d->output = {};
 	d->input = {};
 	d->oob_input_tick = 0;

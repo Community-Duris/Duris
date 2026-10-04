@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 from pathlib import Path
 import re
 import sys
 import unittest
+from _paths import extract_function
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -16,6 +18,45 @@ MATRIX = ROOT / "docs/persistence/economy_accounting/writer_coverage_matrix.json
 
 
 class SplitEconomyActivationContract(unittest.TestCase):
+    def test_incoming_semantic_paths_do_not_inherit_lexical_coverage_qualification(self):
+        ids = ("repair.player_item_payload", "spell.dispel_object_state",
+               "spell.dispel_portal_lifecycle", "spell.dispel_anchor_lifecycle")
+        registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
+        rows = {row["id"]: row for row in registry["writers"]}
+        for route_id in ids:
+            row, route = rows[route_id], self.routes[route_id]
+            self.assertEqual(row["sites"], [])
+            self.assertEqual(row["evidence"], [])
+            self.assertTrue(all(backend["status"] == "unverified" and not backend["evidence"]
+                                for backend in row["backends"].values()))
+            self.assertFalse(route["double_entry_evidence"]["unified_operation_postings_observed"])
+            self.assertFalse(route["current_critical_command_schema"]["schema_2_gameplay_producer_connected"])
+            self.assertTrue(route["source"]["definition_lines"])
+        repair = self.routes[ids[0]]
+        self.assertEqual(repair["disposition"], "offline_operational_writer")
+        self.assertFalse(repair["counts_as_runtime_writer"])
+        self.assertEqual(repair["blocking_policy_after_activation"]["decision"],
+                         "maintenance_only_no_live_admission")
+        self.assertIn("No wallet or bank mutation", repair["native_effects"]["holding_effect"])
+        self.assertIn("player_item_runtime_state", " ".join(repair["native_effects"]["native_state_targets"]))
+        for route_id in ids[1:]:
+            self.assertEqual(self.routes[route_id]["disposition"], "runtime_mutation_route")
+            self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]["must_block_on_activation"])
+        self.assertFalse(self.artifact["coverage_complete"])
+        self.assertEqual(self.artifact["playable_release_status"], "BLOCKED")
+
+    def source_site(self, path, signature, family, expression=None):
+        """Locate the reviewed operation by its owner and code, independent of spacing above it."""
+        source = (ROOT / path).read_text(encoding="utf-8")
+        if expression is None:
+            self.assertEqual(source.count(signature), 1, "review ambiguous source declaration")
+            offset = source.index(signature)
+        else:
+            body = extract_function(Path(path).name, signature)
+            self.assertEqual(body.count(expression), 1, "review changed or ambiguous source operation")
+            offset = source.index(body) + body.index(expression)
+        return path, source[:offset].count("\n") + 1, family
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.artifact = json.loads(MATRIX.read_text(encoding="utf-8"))
@@ -114,10 +155,13 @@ class SplitEconomyActivationContract(unittest.TestCase):
             ("src/cmd/actobj.c", 768): "item.pet_give_publication",
             ("src/cmd/actobj.c", 1336): "item.legacy_get",
             ("src/cmd/actobj.c", 6278): "item.legacy_give",
-            ("src/cmd/actobj.c", 7842): "item.equipment_remove",
-            ("src/world/handler.c", 1740): "item.obj_to_char_admission",
-            ("src/world/handler.c", 1913): "item.obj_to_char_admission",
-            ("src/world/handler.h", 15): "macro.checked_item_publication_declaration",
+            ("src/cmd/actobj.c", 7908): "item.equipment_remove",
+            self.source_site("src/world/handler.c", "obj_to_char_result obj_to_char_checked(",
+                             "item_publication")[:2]: "item.obj_to_char_admission",
+            self.source_site("src/world/handler.c", "void obj_to_char(", "item_publication",
+                             "(void)obj_to_char_checked(object, ch);")[:2]: "item.obj_to_char_admission",
+            self.source_site("src/world/handler.h", "obj_to_char_result obj_to_char_checked(",
+                             "item_publication")[:2]: "macro.checked_item_publication_declaration",
         }
         for row in checked:
             site = (row["path"], row["line"], row["family"])
@@ -457,20 +501,39 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_legacy_restore_cash_has_explicit_source_and_publication_gates(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         sites = {row["id"]: row["sites"] for row in registry["writers"]}
+        coins = ("COPPER", "SILVER", "GOLD", "PLATINUM")
+        # Match the actual assignments, including multiplicity, rather than
+        # their line numbers. Unrelated source insertions must not break this
+        # policy check; missing, additional, or altered writers still do.
         expected = {
-            "world.mobile_template": ("src/world/db.c", {2299, 2300, 2301, 2302, 2690, 2691, 2692, 2693}),
-            "player.flatfile_baseline_projection": ("src/core/files.c", {1873, 1874, 1875, 1876, 1878, 1879, 1880, 1881}),
-            "player.legacy_flatfile_load": ("src/core/files.c", {2431, 2432, 2433, 2434}),
-            "recovery.pet_cash_discard": ("src/core/files.c", {4696, 4697, 4698, 4699, 4701, 4702, 4703, 4704}),
-            "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", {1519, 2053}),
+            "world.mobile_template": ("src/world/db.c", [
+                f"GET_{coin}(mob) = tmp{index};" for index, coin in enumerate(coins, 1)
+            ] * 2),
+            "player.flatfile_baseline_projection": ("src/core/files.c", [
+                f"GET_BALANCE_{coin}(ch) = balances.{coin.lower()};" for coin in coins
+            ] + [f"GET_{coin}(ch) = domains.domains.wallet[{index}];"
+                 for index, coin in enumerate(coins)]),
+            "player.legacy_flatfile_load": ("src/core/files.c", [
+                f"GET_{coin}(ch) = GET_INTE(buf);" for coin in coins
+            ]),
+            "recovery.pet_cash_discard": ("src/core/files.c", [
+                f"GET_{coin}(ch) = GET_INTE(buf);" for coin in coins
+            ] + [f"GET_{coin}(ch) = 0;" for coin in coins]),
+            "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", [
+                "GET_GOLD(mob) = mob_entry.gold;"
+            ] * 2),
         }
         current = {(row["path"], row["line"], row["family"])
                    for row in self.census}
-        for route_id, (path, lines) in expected.items():
-            self.assertEqual({tuple(site) for site in sites[route_id]
-                              if site[2] == "coin_assignment"},
-                             {(path, line, "coin_assignment") for line in lines})
+        excerpts = {(row["path"], row["line"], row["family"]): row["excerpt"]
+                    for row in self.census}
+        for route_id, (path, assignments) in expected.items():
             self.assertTrue(all(tuple(site) in current for site in sites[route_id]))
+            coin_sites = [tuple(site) for site in sites[route_id] if site[2] == "coin_assignment"]
+            self.assertTrue(all(site[0] == path for site in coin_sites))
+            normalized = [re.sub(r"/\*.*?\*/", "", excerpts[site]).strip()
+                          for site in coin_sites]
+            self.assertEqual(Counter(normalized), Counter(assignments), route_id)
         for route_id in ("world.mobile_template", "recovery.pet_cash_discard"):
             route = self.routes[route_id]
             self.assertEqual(route["disposition"], "runtime_mutation_route")
@@ -814,11 +877,15 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new handler item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/world/handler.c", 3269, "item_lifecycle")],
+        self.assertEqual(owners[self.source_site("src/world/handler.c", "void extract_obj(",
+                                                "item_lifecycle")],
                          {"item.extraction"})
-        self.assertEqual(owners[("src/world/handler.c", 3883, "item_publication")],
+        self.assertEqual(owners[self.source_site("src/world/handler.c", "void publish_corpse_release(",
+                                                "item_publication", "obj_to_room(compact_pile, room);")],
                          {"death.corpse_compaction_bone_grant"})
-        self.assertEqual(owners[("src/world/handler.c", 4252, "item_lifecycle")],
+        self.assertEqual(owners[self.source_site("src/world/handler.c", "void publish_corpse_resurrection(",
+                                                "item_lifecycle",
+                                                "P_obj money = create_money(payload.money[0], payload.money[1], payload.money[2],")],
                          {"death.resurrection_money_pile"})
         for route_id in ("item.prototype_weight_probe", "item.creation_candidate_reject",
                          "coin.wallet_pile_stage_cleanup", "death.corpse_compaction_stage_cleanup"):
@@ -1057,9 +1124,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new random-zone item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/world/random.zone.c", 426, "item_publication")],
+        self.assertEqual(owners[("src/world/random.zone.c", 427, "item_publication")],
                          {"world.random_chest_coin_issue"})
-        self.assertEqual(owners[("src/world/random.zone.c", 1427, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/random.zone.c", 1428, "item_lifecycle")],
                          {"world.lab_reset_destroy"})
         for route_id in ("world.random_sigil_factory", "world.lab_relic_probe",
                          "world.lab_relic_stage_reject"):
@@ -1199,13 +1266,13 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new legacy file item calls")
         shared_finish = {("src/core/files.c", line, "item_lifecycle")
-                         for line in (1745, 1751)}
+                         for line in (1764, 1770)}
         self.assertTrue(all(len(owners[site]) == (2 if site in shared_finish else 1)
                             for site in current))
         for site in shared_finish:
             self.assertEqual(owners[site], {"player.flat_terminal_inventory_unload",
                                             "player.sql_terminal_inventory_unload"})
-        self.assertEqual(owners[("src/core/files.c", 3695, "item_publication")],
+        self.assertEqual(owners[("src/core/files.c", 3731, "item_publication")],
                          {"recovery.legacy_object_restore"})
         for route_id in ("player.object_save_template_probe",
                          "player.single_item_save_template_probe",

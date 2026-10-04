@@ -76,7 +76,7 @@ VALUES
  (51002,'player_death_custody',51002,331,'issue331 disputed weapon custody'),
  (51003,'player_death_custody',51003,331,'issue331 disputed unique artifact custody'),
  (51006,'player_death_custody',51006,331,'issue331 disputed currency custody'),
- (51005,'player_death_custody',51005,331,'issue331 custody-only item');
+ (51005,'player_death_custody',51005,331,'issue331 disputed spellbook custody');
 
 INSERT INTO artifact_domain_state
  (vnum,owned,loc_type,location,timer_epoch,artifact_type,bind_owner_pid,
