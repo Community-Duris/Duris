@@ -1174,3 +1174,39 @@ terminals. Copied object wording and river current direction remain pending
 builder-reviewed proposals. The separate two-word direction repair b07b560cc
 has original-fails/repaired-passes and exact native-byte evidence, plus ready
 news wording. Keep any future actual repair equally clear in the PR/register.
+
+### Brass: collectible coins, duplicate rewards and unfinished branches
+
+The [dossier](../design/zone-stories/PLANE_OF_FIRE_BRASS.md) and
+[journal](../../areas/story/brass.story.json) classify four story outcomes,
+one equipment service and two exclusions. The collector’s two coins are
+exact I item kinds, unlike normal C wallet fees. Herl’s C is a currency
+reward. Separate these semantics before deciding whether an offering needs
+unsupported coin-input settlement.
+
+Yodono’s three heads yield two same-kind vials under one accepted outcome.
+The spy’s six-head request competes for two of those head kinds: allocate
+fresh physical objects rather than reuse prior history. Duplicate grants
+need separate source ordinals and recoverable roots, without double story
+credit. Supplied input does not prove original source or personal combat.
+
+Trace both entrance golems, actual EX_BLOCKED transition, open and surviving
+arrival separately. Front/rear door resets and distinct same-name keys can
+provide different access routes; a key receipt is not mandatory history for
+every route. The outward-only rare-load room may intentionally disperse
+non-sentinel actors. Qualify actual admitted placement, wandering/perception
+and renewability; do not add an entrance or force spawns from a birth-room
+label. Fire-ward labels do not establish survival.
+
+Keep the two-scale/7500-platinum bracer guarded until mixed-fee settlement is
+atomic. Its lesser scale/fee return is a refusal, not a prerequisite. The
+dying djinn’s empty recipe has no active placement or meaningful endpoint;
+exclude named credit until a builder specifies its rescue/second-task intent.
+Cold-blue-flame vials are elemental-form potions, not proved healing items.
+Yodono’s missing ambient interval and copied direction/body/shop descriptions
+are separate pending repairs, as are unverified foreign notes.
+
+Actual fix d18758098 changes one Imix Avenue exit-description word and has
+original-fail/repaired-pass, reciprocal-route and exact-byte evidence. Its
+news sentence is prominent in the PR/register; any future native fix should
+be reported separately from journal additions and these proposals.

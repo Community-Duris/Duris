@@ -56,6 +56,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [348eccdf3](https://github.com/Community-Duris/Duris/commit/348eccdf3261e62aa8984ac0868b98adfa815a06): Halfcut struck-player warning | The crossbow's direct warning uses TO_CHAR for its player actor/recipient, so the shared audience filter delivers it. Previously TO_VICT suppressed that message; the room warning and four-bolt damage remain unchanged. | Player-facing addition: “The Halfcut Hills crossbow warning now reaches each struck player.” Audience regression fails the preceding procedure and passes with the fix; maintained build/format pass. This is a separate actual repair from journal authoring. |
 | [f8090481d](https://github.com/Community-Duris/Duris/commit/f8090481df837bb4e1a675c901488f13090657d1): Tribal Forest exit clues | Inspecting west at 42204 and 42231 now says west; inspecting south at 42261 now says south. Exactly three description words change, preserving reciprocal routes and all other native bytes. | Player-facing: “Tribal Forest's two western forest exits and the southern village exit now describe their actual directions.” All three original clues fail the focused regression; repaired source/exact-byte scope pass. Live LOOK/traversal remains unqualified. |
 | [b07b560cc](https://github.com/Community-Duris/Duris/commit/b07b560ccf2d3b7bbcb61227cfa5423dd6fa6924): Ironstar exit clues | Inspecting west at 138903 now says west; inspecting south at 138957 now says south. Exactly two native description words change, preserving reciprocal routes and all other native bytes. | Player-facing: “Ironstar's western valley exit and southern Fairlocke exit now describe their actual directions.” Both original color-normalized clues fail the focused regression; repaired source/exact-byte scope pass. Live LOOK/traversal remains unqualified. |
+| [d18758098](https://github.com/Community-Duris/Duris/commit/d18758098083b28463279c130a3e7ec24bb48b24): Brass Imix Avenue exit | Inspecting east at 139017 now says east, matching D1 to 139016 and reciprocal D3. Exactly one native word changes. | Player-facing: “Brass's eastern Imix Avenue exit now describes its actual direction.” Original color-normalized clue fails; repaired source/exact native bytes pass. Live LOOK/traversal remains unqualified. |
 
 ## Progress
 
@@ -119,9 +120,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 56 | The Caverns of Armageddon | [Comprehensive dossier](zone-stories/CAVERNS_OF_ARMAGEDDON.md): all 33 blocks/149 rooms/94 mobs/69 objects/393 resets; imported procs/shared execution and foreign follow-ups | Eighteen independent outcomes, 40 contacts/27 optional checks; exact heads/tags/parts/amulets and supplied acceptance | Roland placement; admitted supply, custody/source, successful access/key/trap, actor/ALL and allocation events; boundary/key/prose/effect intent pending. No native repair ships here |
 | 57 | Tribal Forest | [Comprehensive dossier](zone-stories/TRIBAL_FOREST.md): all 25 blocks/175 rooms/67 mobs/103 objects/377 resets; shop/orb/shared execution and source ownership | Nine outcomes/one refusal exclusion; seventeen contacts/21 optional checks; exact grain/clothing/crystal/parts/egg progression | Admitted staged supply, recovery/transfer/replacement, reused key/control/travel/HP/actor events; trap/text/grove/shop-audit intent pending. Separate three-word native direction fix/news ships |
 | 58 | The Ancient Halls of Ironstar | [Comprehensive dossier](zone-stories/THE_ANCIENT_HALLS_OF_IRONSTAR.md): all 22 blocks/100 rooms/34 mobs/66 objects/198 resets; native/shared source and effective access | Four stories/three services; fifteen contacts/fourteen optional checks; exact rings/crown/paid key/three locks and independent equipment routes | Guarded atomic fees, reset door state, source/transfer/allocation and retiring supply; river/prose/lore/epic concerns pending. Separate two-word native direction fix/news ships |
-| 59–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 59 | Plane of Fire, Brass | [Comprehensive dossier](zone-stories/PLANE_OF_FIRE_BRASS.md): all 20 blocks/357 rooms/147 mobs/170 objects/18 shops/779 resets; native/shared source and effective access | Four stories/one service/two exclusions; 25 contacts/18 optional checks; collectible coins, quantity-two vials, competing heads and guarded bracer | Actor/barrier/access episodes, duplicate reward/proof allocation, rare wandering/perception and atomic fees; builder-selected djinn/ambient/prose/topology proposals. Separate one-word native exit fix/news ships |
+| 60–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Plane of Fire, Brass (`brass`).
+The next area is The Tower of Darkness (`lortower`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -2966,3 +2968,60 @@ definitions/rows and daily candidates remain. Native fingerprint/revision two/
 registry and prior 78 maps stay unchanged. Original queue: 58/220 complete,
 162 pending; Plane of Fire, Brass (`brass`) next. Active, ready accounting
 is mandatory. No DB/account/server operation, migration, deployment or merge.
+
+## Plane of Fire, Brass completed source map — October 4, 2026
+
+The [comprehensive dossier](zone-stories/PLANE_OF_FIRE_BRASS.md) reviews all
+20 native blocks (12 M/1 MA/6 Q/1 QA), 357 rooms, 147 mobiles, 170 objects,
+eighteen valid new-format shops and 779 resets/452 families; bounded global
+sources/consumers, reciprocal Plane of Fire boundary and imported/shared
+execution. No local teacher or literal local mobile procedure adds a quest
+terminal. M/F/R supply, equipment replacement, effective doors and actual
+assigned combat/hide/inn behavior remain distinct from native receipt credit.
+
+The [journal](../../areas/story/brass.story.json) adds four stories, one
+equipment service and two exclusions, with 25 contacts/eighteen optional
+carried checks. Herl’s blood request yields currency; the collector wants
+four exact collectibles, including two item-kind coins rather than wallet
+payment. Yodono consumes three heads and awards two same-kind vials under
+one outcome. The spy consumes six distinct heads, sharing two with Yodono,
+and departs. The full two-scale/7500-platinum bracer is a guarded service;
+the smaller scale/fee return is a refusal. The empty, unplaced dying-djinn
+recipe has no verified rescue/second-task endpoint and loses named credit.
+
+Entrance golem 25400 guards north; death of 25401 separately clears EX_BLOCKED
+through its foreign quest-control family. Opening and arrival are separate.
+Palace key issuance is not access; effective reset doors and asymmetric
+reverse routes prevent false self-key cycles. Two same-name blue-fire keys
+have different kinds. The rare outward-only room’s non-sentinel actors may
+wander into the palace, while spy M10 and pyrohydra M60 need admitted initial/
+forced presence and supply qualification. Fire-ward labels do not certify
+safe travel, and external adventure notes need destination verification.
+
+Expand accepted actor/barrier/access episodes and provenance, one-use UID
+allocation across requests, duplicate reward identity/recovery, exact I versus
+C semantics, atomic mixed-fee service settlement and rare hidden/wandering
+recipient renewal. Builder intent must define dying-djinn placement/outcome,
+Yodono’s second task and missing ambient interval. Copied body/shop/direction
+text and road topology remain balanced proposals. No forced spawns, invented
+healing, fee bypass or new unsupported objective credit ships.
+
+**Actual native repair:** separate [fix d18758098](https://github.com/Community-Duris/Duris/commit/d18758098083b28463279c130a3e7ec24bb48b24)
+changes one word in room 139017’s east exit clue from west to east, matching
+D1 to 139016 and reciprocal D3. Original color-normalized clue fails; repaired
+source and exact native bytes pass. Live LOOK/traversal remains unqualified.
+News: “Brass's eastern Imix Avenue exit now describes its actual direction.”
+Journal/classification changes and pending proposals are separate. All earlier
+native repair/news entries remain.
+
+Focused source and actual C++ fixtures cover collectible coin versus C reward/
+fee, quantities, competing heads, worn versus loose preparation, guarded service
+guidance, exclusions, replay and cold recovery. Live generation, perception,
+wandering, source/handoff, barriers/access/heat, fee settlement, retirement,
+renewal and played persistence remain pending. Catalog: 80 maps/1630
+achievement units/1463 potential dailies/2208 rows; two excluded generic
+outcomes and one equipment achievement are removed, with one fewer potential
+daily from the empty djinn. Native definitions/fingerprint/revision two/registry
+and prior 79 maps remain. Original queue: 59/220 complete, 161 pending; The
+Tower of Darkness (`lortower`) next. Active, ready accounting remains
+mandatory. No DB/account/server operation, migration, deployment or merge.

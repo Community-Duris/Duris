@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 79 authored journals, accounting-gated player surfaces, starter/town
+**Status: 80 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -2096,3 +2096,69 @@ is mandatory. No DB/account/server operation, migration, deployment or merge.
 | Competing source and spent outputs | Crown produces axe consumed for key; two molds require new copies of shared cap-one scroll and broken blade; intact blade is different | Trace committed UID/root/parent/NPC ownership, transfer and source recovery; allocate each offering once with reward-to-input lineage. Preserve independent supplied receipt semantics and optional history. |
 | Encounter and renewable supply | Robert’s 75-percent M and D1; apprentice’s 80-percent M; unused random-room lore; item generation guard | Qualify admitted initial/forced M, actual wandering/presence, retirement/reset episode and source replenishment before daily assignment; no guaranteed placement claim from static prose. |
 | Builder-selected native intent | Unrecorded reunion/clan/title/teaching/read/letter endpoints; copied item descriptions and river bend mismatch | Specify actual scoped objective events and terminals. Confirm text/current intent, then separate native fix commits with source/behavior proof and prominent news; do not repair lore into an invented rule. |
+
+## Plane of Fire, Brass completed source map — October 4, 2026
+
+The [comprehensive dossier](zone-stories/PLANE_OF_FIRE_BRASS.md) reviews all
+20 native blocks (12 M/1 MA/6 Q/1 QA), 357 rooms, 147 mobiles, 170 objects,
+eighteen valid new-format shops and 779 resets/452 families; bounded global
+sources/consumers, reciprocal Plane of Fire boundary and imported/shared
+execution. No local teacher or literal local mobile procedure adds a quest
+terminal. M/F/R supply, equipment replacement, effective doors and actual
+assigned combat/hide/inn behavior remain distinct from native receipt credit.
+
+The [journal](../../areas/story/brass.story.json) adds four stories, one
+equipment service and two exclusions, with 25 contacts/eighteen optional
+carried checks. Herl’s blood request yields currency; the collector wants
+four exact collectibles, including two item-kind coins rather than wallet
+payment. Yodono consumes three heads and awards two same-kind vials under
+one outcome. The spy consumes six distinct heads, sharing two with Yodono,
+and departs. The full two-scale/7500-platinum bracer is a guarded service;
+the smaller scale/fee return is a refusal. The empty, unplaced dying-djinn
+recipe has no verified rescue/second-task endpoint and loses named credit.
+
+Entrance golem 25400 guards north; death of 25401 separately clears EX_BLOCKED
+through its foreign quest-control family. Opening and arrival are separate.
+Palace key issuance is not access; effective reset doors and asymmetric
+reverse routes prevent false self-key cycles. Two same-name blue-fire keys
+have different kinds. The rare outward-only room’s non-sentinel actors may
+wander into the palace, while spy M10 and pyrohydra M60 need admitted initial/
+forced presence and supply qualification. Fire-ward labels do not certify
+safe travel, and external adventure notes need destination verification.
+
+Expand accepted actor/barrier/access episodes and provenance, one-use UID
+allocation across requests, duplicate reward identity/recovery, exact I versus
+C semantics, atomic mixed-fee service settlement and rare hidden/wandering
+recipient renewal. Builder intent must define dying-djinn placement/outcome,
+Yodono’s second task and missing ambient interval. Copied body/shop/direction
+text and road topology remain balanced proposals. No forced spawns, invented
+healing, fee bypass or new unsupported objective credit ships.
+
+**Actual native repair:** separate [fix d18758098](https://github.com/Community-Duris/Duris/commit/d18758098083b28463279c130a3e7ec24bb48b24)
+changes one word in room 139017’s east exit clue from west to east, matching
+D1 to 139016 and reciprocal D3. Original color-normalized clue fails; repaired
+source and exact native bytes pass. Live LOOK/traversal remains unqualified.
+News: “Brass's eastern Imix Avenue exit now describes its actual direction.”
+Journal/classification changes and pending proposals are separate. All earlier
+native repair/news entries remain.
+
+Focused source and actual C++ fixtures cover collectible coin versus C reward/
+fee, quantities, competing heads, worn versus loose preparation, guarded service
+guidance, exclusions, replay and cold recovery. Live generation, perception,
+wandering, source/handoff, barriers/access/heat, fee settlement, retirement,
+renewal and played persistence remain pending. Catalog: 80 maps/1630
+achievement units/1463 potential dailies/2208 rows; two excluded generic
+outcomes and one equipment achievement are removed, with one fewer potential
+daily from the empty djinn. Native definitions/fingerprint/revision two/registry
+and prior 79 maps remain. Original queue: 59/220 complete, 161 pending; The
+Tower of Darkness (`lortower`) next. Active, ready accounting remains
+mandatory. No DB/account/server operation, migration, deployment or merge.
+
+| Brass capability | Verified requirement | Planned implementation and acceptance |
+| --- | --- | --- |
+| Actor and shared gate controls | One entrance golem guards north while another death clears EX_BLOCKED; opening/arrival remain separate | Committed target/actor attribution, barrier transition and reset episode, successful open and surviving passage; separate personal and shared/group state |
+| Collectible coins and cash rewards | Two special I coins in a four-object key request; Herl’s currency reward; armorer’s actual C fee | Allocate exact item roots, preserve source/handoff identity and quantity, support currency reward recovery independently of fee input; do not invent wallet costs |
+| Competing proof and duplicate grants | Three/six head requests share two kinds; Yodono yields two vials under one outcome | Reserve each UID once; freeze per-copy reward source and duplicate ordinal, replay/interrupted recovery, supplied-versus-personal history and spent proof |
+| Rare/hidden/holding-room supply | Spy M10/D1, outward-only rare room with pyrohydra M60 and roaming dragons; item generation guard | Qualify admitted initial/forced placement, actual allowed wandering/perception, encounter/retirement episodes and repeatable replenishment before daily assignment |
+| Fee service and unfinished branches | Bracer needs two scale kinds/C7500000; smaller recipe refuses; empty unplaced djinn; incomplete qc_action | Keep fee guard pending atomic allocation/debit/reward recovery. Builder defines meaningful rescue/second task/ambient interval before separate native fixes and actual procedure fixtures |
+| Real routes and attributed lore | Front/rear/one-way reset locks, distinct same-name keys, key breakage, heat and external note claims | Effective door/shared state and key-use/open/arrival events, actual survival predicates, source/version attribution and destination-zone verification without fabricated completion |

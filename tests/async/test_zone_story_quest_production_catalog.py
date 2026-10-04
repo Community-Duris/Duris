@@ -2313,7 +2313,7 @@ assert sum(d["daily_eligible"] for d in definitions.values())==9
 assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
 assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
-assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1633
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1630
 sources=collections.defaultdict(list);parent=None;room=None
 for reset in crakkaro["reset_commands"]:
     c,v=reset["command"],reset["arguments"]
@@ -2997,7 +2997,94 @@ assert re.search(r'\bD0\s+[^~]*~[^~]*~\s*0 0 512296\b',rooms[138978],re.S)
 triggers=ROOT/'areas/world.trg'
 assert not triggers.exists() or not re.search(r'^#1389\d\d\b',triggers.read_text(encoding='utf8',errors='replace'),re.M)
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro"):
+# Brass: collectible currency kinds, duplicate rewards, competing proof and unfinished branches.
+brass=inventory_module.area_evidence(ROOT,'brass')
+brass_map=next(m for m in catalog['story_mappings'] if m['source_area']=='brass')
+assert (brass_map['schema_version'],brass_map['revision'],brass_map['coverage'])==(3,1,'complete')
+assert len(brass_map['stories'])==5 and len(brass_map['exclusions'])==2 and len(brass_map['contacts'])==25
+assert collections.Counter(s['category'] for s in brass_map['stories'])=={'story':4,'service':1}
+assert collections.Counter(t['kind'] for s in brass_map['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':18}
+raw=[b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/brass.qst']
+assert collections.Counter(b['kind'] for b in raw)=={'M':12,'MA':1,'Q':6,'QA':1}
+by_line={r['block']['line']:r['block'] for r in brass['requests']}
+for line,giver,inputs,outputs,retire in (
+    (22,139083,[('I',139128)],[('C',1000000)],0),
+    (33,139110,[('I',139018)],[],0),
+    (89,139119,[('I',139028),('I',139031),('I',139026),('I',139033)],[('I',139070)],0),
+    (118,139121,[('I',139127),('C',7500000)],[('I',139127),('C',7500000)],0),
+    (131,139121,[('C',7500000),('I',139127),('I',139142)],[('I',139137)],0),
+    (159,139124,[('I',139011),('I',139016),('I',139017)],[('I',139018),('I',139018)],0),
+    (182,139132,[('I',139144),('I',139016),('I',139017),('I',139139),('I',139140),('I',139141)],[('I',139143)],1)):
+    b=by_line[line]
+    assert b['giver_vnum']==giver and b['give']==inputs and b['receive']==outputs
+    assert b['binding']['completion_key'].endswith('disappear='+str(retire))
+stories={s['id']:s for s in brass_map['stories']}
+assert {tuple(c.items()) for s in brass_map['stories']+brass_map['exclusions'] for c in s['contracts']}=={tuple(b['binding'].items()) for b in by_line.values()}
+assert {tuple(e['contracts'][0].items()) for e in brass_map['exclusions']}=={tuple(by_line[line]['binding'].items()) for line in (33,118)}
+for id,inputs in (
+    ('herl-exotic-blood',[139128]),
+    ('tax-palace-key',[139028,139031,139026,139033]),
+    ('yodono-three-heads',[139070,139011,139016,139017]),
+    ('spy-six-heads',[139070,139144,139016,139017,139139,139140,139141]),
+    ('armorer-pyrohydra-bracer',[139127,139142])):
+    s=stories[id]
+    assert [t['item_vnums'][0] for t in s['steps'] if t['kind']=='carried_item']==inputs
+    assert len(s['contracts'])==1 and s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional')
+    assert not any(t['kind']=='completion' for t in s['steps'][:-1])
+assert set(by_line[159]['give']) & set(by_line[182]['give'])=={('I',139016),('I',139017)}
+defs={r['block']['line']:r['definition'] for r in brass['requests']}
+assert {line for line,d in defs.items() if d['daily_eligible']}=={22,33,89,159,182}
+assert defs[131]['daily_exclusion']=='Unsupported durable offering'
+assert defs[118]['daily_exclusion']=='Item exchange'
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==1390]
+assert len(units)==5 and sum(u['achievement'] for u in units)==4 and sum(u['daily_candidate'] for u in units)==4
+contacts={c['mob_vnum']:c for c in brass_map['contacts']}
+assert {v for v,c in contacts.items() if c['topics']}=={139072,139083,139110,139119,139121,139124,139132}
+for v,c in contacts.items():
+    assert set(c['topics'])=={t for b in brass['dialogue'] if b['giver_vnum']==v for t in b['body'][0].rstrip('~').split()}
+assert 'qc_action' not in contacts[139124]['topics']
+assert len(brass['mobs'])==147 and len(brass['items'])==170 and len(brass['reset_commands'])==779
+assert collections.Counter(r['command'] for r in brass['reset_commands'])=={'M':408,'G':133,'D':112,'E':78,'F':25,'O':13,'R':9,'P':1}
+objects=dawndale_bodies('brass','obj');rooms=dawndale_bodies('brass','wld');mobs=dawndale_bodies('brass','mob')
+assert set(rooms)==set(range(139000,139358))-{139248}
+assert not any(int(b.split('~')[4].split()[0])&32768 for b in mobs.values())
+assert len(re.findall(r'^#\d+~$',(ROOT/'areas/shp/brass.shp').read_text(encoding='utf8'),re.M))==18
+for v in (139028,139031,139033,139127,139128,139142):assert objvalues(objects[v])[0]==8
+assert objvalues(objects[139018])[0]==10 and objvalues(objects[139018])[11:15]==[55,267,0,0]
+assert objvalues(objects[139070])[0]==18 and objvalues(objects[139070])[12]==100
+commands=brass['reset_commands'];sources=collections.defaultdict(list);owner=None;where=None
+for r in commands:
+    c,v=r['command'],r['arguments']
+    if c in 'MF':owner,where=v[1],v[3]
+    if c in 'GE':sources[v[1]].append((c,owner,where,v[2],v[3],v[4]))
+for item,mob,room in ((139128,139144,139091),(139028,139038,139178),(139031,139045,139246),(139011,139118,139041),
+    (139016,139009,139299),(139017,139000,139292),(139144,139010,139286),(139139,139012,139330),
+    (139140,139089,139336),(139141,139092,139344),(139142,139102,139247)):
+    assert sources[item]==[('G',mob,room,1,0,100)]
+assert sources[139127]==[('G',139145,139085,1,0,80)]
+assert sources[139026]==[('E',139036,139192,1,18,100)]
+assert sources[139025]==[('E',139036,139192,1,18,100)]
+assert [r['arguments'][2:5] for r in commands if r['command']=='O' and r['arguments'][1]==139033]==[[1,139241,100]]
+for mob,room,chance in ((139119,139020,100),(139121,139024,100),(139124,139217,100),(139132,139238,10),(139102,139247,60)):
+    assert [r['arguments'][2:5] for r in commands if r['command']=='M' and r['arguments'][1]==mob]==[[1,room,chance]]
+assert not any(r['command'] in 'MFR' and r['arguments'][1]==139110 for r in commands)
+assert not int(mobs[139102].split('~')[4].split()[0])&2
+assert not any(re.search(r'\bD\d+\s+[^~]*~[^~]*~\s*-?\d+ -?\d+ 139247\b',b,re.S) for b in rooms.values())
+for room,direction,state in ((139000,0,9),(139001,2,1),(139140,0,2),(139249,2,1),
+    (139283,0,2),(139290,2,1),(139284,1,2),(139285,3,1),(139291,1,2),(139292,3,2),
+    (139311,0,2),(139357,2,1),(139357,0,2),(139312,2,1),(139312,0,2),(139313,2,2)):
+    assert [r['arguments'][3] for r in commands if r['command']=='D' and r['arguments'][1:3]==[room,direction]]==[state]
+for room,direction,kind,key,target in ((139140,0,3,139070,139249),(139249,2,1,0,139140),
+    (139284,1,2,139130,139285),(139291,1,2,139129,139292),(139311,0,3,139021,139357),
+    (139357,0,3,139022,139312),(139312,0,3,139023,139313)):
+    assert re.search(r'\bD'+str(direction)+r'\s+[^~]*~[^~]*~\s*'+str(kind)+' '+str(key)+' '+str(target)+r'\b',rooms[room],re.S)
+assert objvalues(objects[139134])[12:14]==[29,139135]
+assert [r['arguments'][2:5] for r in commands if r['command']=='P' and r['arguments'][1]==67244]==[[1,139134,100]]
+assert 'qc_unblock 139000 north' in (ROOT/'areas/qst/plane_fire_one.qst').read_text(encoding='utf8')
+assert re.search(r'\bD2\s+[^~]*~[^~]*~\s*0 0 25455\b',rooms[139000],re.S)
+
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

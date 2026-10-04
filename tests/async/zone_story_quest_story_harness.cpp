@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 79 &&
-				tracker.summary_for(7, 42).total == 1633,
+		require(catalog.story_mappings.size() == 80 &&
+				tracker.summary_for(7, 42).total == 1630,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -5989,6 +5989,155 @@ int main(int argc, char **argv)
 					recovered.evidence_for(hammer.contracts.front(), 2)
 							.successful_attempts == 1,
 				"Ironstar cold recovery lost receipts, counted services or invented a campaign finale");
+		}
+
+		{
+			const auto &map = *std::find_if(catalog.story_mappings.begin(),
+							catalog.story_mappings.end(),
+							[](const auto &m)
+							{ return m.source_area == "brass"; });
+			const auto &herl = story_for("brass", "herl-exotic-blood");
+			const auto &tax = story_for("brass", "tax-palace-key");
+			const auto &yodono = story_for("brass", "yodono-three-heads");
+			const auto &spy = story_for("brass", "spy-six-heads");
+			const auto &bracer = story_for("brass", "armorer-pyrohydra-bracer");
+			const auto yodono_definition = std::find_if(
+				catalog.definitions.begin(), catalog.definitions.end(),
+				[&](const auto &definition)
+				{ return definition.definition_id == yodono.contracts.front(); });
+			require(yodono_definition != catalog.definitions.end() &&
+					yodono_definition->completion_key.find(
+						"726563656976653d493a3133393031382c493a3133393031383b") !=
+						std::string::npos,
+				"Brass two-vial reward quantity collapsed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1390, 139000, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 1390, 10, 1, 101, false,
+							       false)
+							.find("] " + spy.title + "\r\n") ==
+						std::string::npos,
+				"Brass discovery exposed an unmet rare recipient");
+			for (const auto &contact : map.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 139000, 102) ==
+						result::applied,
+					"Brass model encounter failed");
+			std::string brass_journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = brass_journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Brass journal section missing");
+				const auto end = brass_journal.find("\r\n  [", start + 3);
+				return brass_journal.substr(
+					start, end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[139020] = 1;
+			supplies.carried[139136] = 1;
+			supplies.carried[139031] = 2;
+			supplies.equipped[18] = 139026;
+			supplies.carried[139033] = 1;
+			supplies.carried[139127] = 2;
+			const auto before = journey.serialize_state();
+			brass_journal = journey.render_journal(7, 42, 1390, 10, 1, 103, false,
+							       false, &supplies);
+			require(section(tax).find("[Missing now] " + tax.steps[0].text) !=
+						std::string::npos &&
+					section(tax).find("[Ready now] " + tax.steps[1].text) !=
+						std::string::npos &&
+					section(tax).find("[Missing now] " + tax.steps[2].text) !=
+						std::string::npos &&
+					section(bracer).find("[Ready now] " +
+							     bracer.steps[0].text) !=
+						std::string::npos &&
+					section(bracer).find("[Missing now] " +
+							     bracer.steps[1].text) !=
+						std::string::npos &&
+					section(bracer).find("7500000 copper") !=
+						std::string::npos &&
+					section(bracer).find("Turn-in currently unavailable") !=
+						std::string::npos &&
+					section(tax).find("Turn-in currently unavailable") ==
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 1390).completed == 0,
+				"Brass wallet piles, duplicate kinds, worn quill or reading invented readiness/credit");
+			supplies = {};
+			for (int v : { 139128, 139028, 139031, 139026, 139033, 139011, 139016,
+				       139017, 139144, 139139, 139140, 139141, 139127, 139142 })
+				supplies.carried[v] = 1;
+			brass_journal = journey.render_journal(7, 42, 1390, 10, 1, 104, false,
+							       false, &supplies);
+			require(section(yodono).find("[Missing now] " + yodono.steps[0].text) !=
+						std::string::npos &&
+					section(yodono).find("[Ready now] " +
+							     yodono.steps[2].text) !=
+						std::string::npos &&
+					section(spy).find("[Ready now] " + spy.steps[2].text) !=
+						std::string::npos &&
+					section(yodono).find("Next: " + yodono.steps.back().text) !=
+						std::string::npos &&
+					section(spy).find("Next: " + spy.steps.back().text) !=
+						std::string::npos &&
+					section(bracer).find("Turn-in currently unavailable") !=
+						std::string::npos,
+				"Brass supplied heads required a key/history or unguarded a paid commission");
+			service supplied(catalog);
+			record(supplied, spy.contracts.front(), "brass-supplied-six", 1390, 139238);
+			require(supplied.progress_for_zone(7, 42, 1390).completed == 1 &&
+					supplied.evidence_for(yodono.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.evidence_for(tax.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Brass supplied six-head acceptance fabricated Yodono or palace history");
+			record(journey, yodono.contracts.front(), "brass-three-heads", 1390,
+			       139217);
+			supplies.carried.erase(139011);
+			supplies.carried.erase(139016);
+			supplies.carried.erase(139017);
+			brass_journal = journey.render_journal(7, 42, 1390, 10, 1, 121, false,
+							       false, &supplies);
+			require(journey.progress_for_zone(7, 42, 1390).completed == 1 &&
+					journey.evidence_for(yodono.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					journey.evidence_for(spy.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					section(spy).find("[Missing now] " + spy.steps[2].text) !=
+						std::string::npos &&
+					section(spy).find("[Missing now] " + spy.steps[3].text) !=
+						std::string::npos,
+				"Brass two rewards doubled credit, restored spent shared heads or completed the spy");
+			record(journey, bracer.contracts.front(), "brass-historical-bracer", 1390,
+			       139024);
+			for (const auto &[id, reason] : map.exclusions)
+				record(journey, id, id.c_str(), 1390, 139024);
+			require(journey.progress_for_zone(7, 42, 1390).completed == 1 &&
+					journey.progress_for_zone(7, 42, 1390).total == 4 &&
+					journey.evidence_for(bracer.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Brass bracer, refusal or empty djinn became a story achievement");
+			record(journey, tax.contracts.front(), "brass-tax", 1390, 139020);
+			record(journey, herl.contracts.front(), "brass-herl", 1390, 139181);
+			record(journey, spy.contracts.front(), "brass-spy", 1390, 139238);
+			auto replay =
+				completion(yodono.contracts.front(), "brass-three-heads", 120);
+			replay.transaction.zone_number = 1390;
+			replay.transaction.room_vnum = 139217;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Brass duplicate-vial receipt replay was not idempotent");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 1390).completed == 4 &&
+					recovered.progress_for_zone(7, 42, 1390).total == 4 &&
+					recovered.evidence_for(yodono.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(bracer.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Brass cold recovery lost quantity/outcome identity or counted services/exclusions");
+			for (const auto &[id, reason] : map.exclusions)
+				require(recovered.evidence_for(id, 2).successful_attempts == 1,
+					"Brass cold recovery lost excluded native settlement evidence");
 		}
 
 		std::cout

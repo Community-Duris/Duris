@@ -122826,6 +122826,604 @@
     {
       "contacts": [
         {
+          "description": "The Unquenchable palace gate guards start at 139140. Their hi/hello MA response is room-visible context; it does not accept the palace key, prove emissary status or award an achievement.",
+          "keyword": "unquenchable",
+          "mob_vnum": 139072,
+          "name": "an Unquenchable",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Herl starts at trophy market 139181 and requests chimaera blood for 1000 platinum. He also has an ordinary shop; the specific rare-beast request and regular commerce are distinct.",
+          "keyword": "herl",
+          "mob_vnum": 139083,
+          "name": "Herl the ranger lord",
+          "topics": [
+            "hi",
+            "hello",
+            "hey",
+            "rare",
+            "chimaera",
+            "drop",
+            "exotic"
+          ]
+        },
+        {
+          "description": "The dying djinn prototype has an empty greeting and a vial-consuming native recipe without response, reward or disappearance. No active M/F/R placement was found. Its intended second-task or rescue endpoint needs builder design; do not offer a vial on the assumption it heals him.",
+          "keyword": "dying",
+          "mob_vnum": 139110,
+          "name": "a dying djinn",
+          "topics": [
+            "hi",
+            "hello",
+            "hey",
+            "howdy"
+          ]
+        },
+        {
+          "description": "The tax collector starts at office 139020, not the temple room sharing his VNUM. His four collectible inputs yield the palace key. Topics explain the zoo, docks, lake, markets and slave trade without granting completed objectives.",
+          "keyword": "efreeti",
+          "mob_vnum": 139119,
+          "name": "the efreeti tax collector",
+          "topics": [
+            "hi",
+            "hello",
+            "hey",
+            "quest",
+            "key",
+            "palace",
+            "slave",
+            "slavery",
+            "slaver",
+            "shop",
+            "shops",
+            "shopping",
+            "stores",
+            "explore",
+            "explorer",
+            "explorers",
+            "wander",
+            "wanderers"
+          ]
+        },
+        {
+          "description": "The armorer starts at shop 139024. The complete two-scale/7500-platinum commission is a guarded equipment service. The lesser one-scale/fee exchange is a refusal; returned prototype kind is not proof of identical physical UID.",
+          "keyword": "efreeti",
+          "mob_vnum": 139121,
+          "name": "an efreeti armorer",
+          "topics": [
+            "hydra",
+            "pyrohydra",
+            "scales",
+            "scale"
+          ]
+        },
+        {
+          "description": "Yodono starts at magic-device market 139217. Three exact heads yield two vials of cold blue flames. His qc_action family lacks the interval expected by the ambient routine and is not a player topic. The narrated second task has no verified completed endpoint.",
+          "keyword": "efreeti",
+          "mob_vnum": 139124,
+          "name": "Yodono the efreeti magi shop owner",
+          "topics": [
+            "hi",
+            "hello",
+            "hey",
+            "howdy"
+          ]
+        },
+        {
+          "description": "The hidden spy is declared at Magma Lake 139238 with ten-percent placement. \u201cNearby steam spout\u201d is dialogue imagery, not a dedicated steam-spout room. Six exact heads yield the airy sash, then the spy departs.",
+          "keyword": "hidden",
+          "mob_vnum": 139132,
+          "name": "a hidden djinni spy",
+          "topics": [
+            "hi",
+            "hello",
+            "hey",
+            "quest"
+          ]
+        },
+        {
+          "description": "The imported first iron golem starts at city entrance 139000. Its guild_guard procedure blocks north for ordinary players while it remains at its birth room. It does not clear the gate\u2019s blocked flag.",
+          "keyword": "golem",
+          "mob_vnum": 25400,
+          "name": "an iron golem",
+          "topics": []
+        },
+        {
+          "description": "The imported second iron golem also starts at 139000. Its unblock_on_death procedure reads qc_unblock 139000 north from plane_fire_one.qst and removes EX_BLOCKED on death. Opening the remaining closed door and clearing the other guard are separate.",
+          "keyword": "golem",
+          "mob_vnum": 25401,
+          "name": "an iron golem",
+          "topics": []
+        },
+        {
+          "description": "Caltoon starts at the grand magi chamber 139041 and carries his head for Yodono. He is a separate actor from the palace arch-magi.",
+          "keyword": "caltoon",
+          "mob_vnum": 139118,
+          "name": "Caltoon the efreeti magi master",
+          "topics": []
+        },
+        {
+          "description": "The palace arch-magi starts in laboratory 139299 carrying his head and imported lightning rod. Both Yodono and the spy require a separate copy of his head.",
+          "keyword": "efreeti",
+          "mob_vnum": 139009,
+          "name": "a padashaw arch-magi",
+          "topics": []
+        },
+        {
+          "description": "Ornon Kasoon starts in main chamber 139292 carrying his head and purple-fire key. His head is shared by two independent requests; the hall has a separate rear approach.",
+          "keyword": "efreeti",
+          "mob_vnum": 139000,
+          "name": "the efreeti padashaw Ornon Kasoon",
+          "topics": []
+        },
+        {
+          "description": "Artoon Branan starts in 139286 carrying his head for the spy. The green-fire front lock does not prove all approaches require that key.",
+          "keyword": "padashaw",
+          "mob_vnum": 139010,
+          "name": "the efreeti padashaw Artoon Branan",
+          "topics": []
+        },
+        {
+          "description": "The palace high priest starts in 139330 carrying his head. El\u2019Quilan in the city temple is a distinct cleric.",
+          "keyword": "priest",
+          "mob_vnum": 139012,
+          "name": "a padashaw high priest",
+          "topics": []
+        },
+        {
+          "description": "Wrinyen Otis starts in training room 139336 carrying his head and brass armory key. Several forward slave-quarter doors and the armory use that key, with different reverse reset states.",
+          "keyword": "efreeti",
+          "mob_vnum": 139089,
+          "name": "the efreeti padashaw Wrinyen Otis",
+          "topics": []
+        },
+        {
+          "description": "Hakim Okewonaku starts in flying mount pen 139344 carrying his head for the spy. Mounted and following creatures do not own that proof.",
+          "keyword": "efreeti",
+          "mob_vnum": 139092,
+          "name": "the efreeti padashaw Hakim Okewonaku",
+          "topics": []
+        },
+        {
+          "description": "The Surtr priest starts at shrine 139178 with the Surtr collectible coin. His following and neighboring priests are different owners.",
+          "keyword": "fire",
+          "mob_vnum": 139038,
+          "name": "a fire giant priest",
+          "topics": []
+        },
+        {
+          "description": "The Imix priest starts at shrine 139246 with the Imix collectible coin. The nearby flame and priests are not that exact coin\u2019s source.",
+          "keyword": "imix",
+          "mob_vnum": 139045,
+          "name": "an Imix priest",
+          "topics": []
+        },
+        {
+          "description": "The dock master starts at 139192 and declares the flaming quill equipped in slot 18. The preceding same-slot brass dagger is moved to carried inventory if both resets are admitted.",
+          "keyword": "dockmaster",
+          "mob_vnum": 139036,
+          "name": "a dockmaster",
+          "topics": []
+        },
+        {
+          "description": "The ancient chimaera starts in zoo cage 139091 with the blood for Herl. Its \u201cgrey bird\u201d room text conflicts with the grey-bearded lion body description and remains a pending wording proposal.",
+          "keyword": "ancient",
+          "mob_vnum": 139144,
+          "name": "an ancient chimaera",
+          "topics": []
+        },
+        {
+          "description": "The elder hydra starts in zoo cage 139085 and declares the elder scales with eighty-percent item chance. Its six heads and the ten-headed pyrohydra are distinct creatures.",
+          "keyword": "hydra",
+          "mob_vnum": 139145,
+          "name": "an elder hydra",
+          "topics": []
+        },
+        {
+          "description": "The ten-headed pyrohydra is declared in rare-load room 139247 with sixty-percent placement and may wander through its outward exits. It carries ancient scales for the guarded bracer service; source presence is not guaranteed.",
+          "keyword": "ten",
+          "mob_vnum": 139102,
+          "name": "a ten-headed pyrohydra",
+          "topics": []
+        },
+        {
+          "description": "Shanaanaa starts at information emporium 139215. Nine external-zone note kinds are configured shop stock; Transparent Tower notes are carried-only reset stock. Buying or reading clues does not verify the described foreign quest mechanics.",
+          "keyword": "shanaanaa",
+          "mob_vnum": 139081,
+          "name": "Shanaanaa",
+          "topics": []
+        },
+        {
+          "description": "Sultan Shadam Quilen starts in throne room 139312 carrying the treasury key, holy flamberge and epic monolith. The two distinct blue-fire keys lead through separate throne doors. His defeat and treasury access have no native named request receipt.",
+          "keyword": "sultan",
+          "mob_vnum": 139011,
+          "name": "Shadam Quilen, the Efreeti Sultan",
+          "topics": []
+        },
+        {
+          "description": "The chief of the guard starts in 139351 carrying the flaming skeleton key for the locked armory armoire. The armoire contains imported band of emerald flames; recovering it is separate from the spy and native turn-ins.",
+          "keyword": "chief",
+          "mob_vnum": 139013,
+          "name": "the chief efreeti guard",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [
+        {
+          "contracts": [
+            {
+              "completion_key": "give=C:7500000,I:139127;receive=C:7500000,I:139127;disappear=0",
+              "giver_vnum": 139121
+            }
+          ],
+          "reason": "The armorer\u2019s smaller elder-scales-plus-7500-platinum recipe is a narrated refusal returning the same item kind and fee. It is not a prerequisite, successful commission, achievement or daily. Preserve native settlement evidence and the existing coin guard; replacement kind does not prove identical physical UID."
+        },
+        {
+          "contracts": [
+            {
+              "completion_key": "give=I:139018;receive=;disappear=0",
+              "giver_vnum": 139110
+            }
+          ],
+          "reason": "The dying djinn consumes one cold-blue-flame vial in a native recipe with empty response, no reward, no disappearance and no reviewed active placement. No rescue or second-task endpoint is established. Preserve native binding/recovery evidence but exclude it from named story, achievement and daily credit until a builder specifies its intended outcome."
+        }
+      ],
+      "introduction": "Explore the City of Brass, its shrines, zoo, harbor and palace. Gather the tax collector\u2019s four collectibles for palace access, fulfill Herl\u2019s blood request and Yodono\u2019s three-head request, find the hidden spy\u2019s six-head mission, and understand the separate guarded bracer commission and unfinished djinn branch.",
+      "orientation": [
+        "Active, ready accounting is required for discovery, visible encounters, journals and new achievement/daily credit. Discovering Brass has its own achievement. Asking aliases, reading notes, carried preparation, kills and attempted access do not record accepted quest outcomes.",
+        "Enter from Plane of Fire room 25455 at city entrance 139000. The first golem guards north; death of the second golem clears the separately blocked north gate. A closed door still needs opening. Actor defeat, barrier clearing and surviving passage are distinct facts.",
+        "Most of Brass is fire-plane terrain. Shared heat behavior can remove ordinary fire-protection spells; a fire-ward potion alone does not establish safe travel. Account for actual protection, survival, perception, door state and placement. The Flaming Dragon Inn at 139078 is a real assigned rental service.",
+        "The tax collector at office 139020 wants four exact collectibles, including two special coin objects rather than wallet payment. The Surtr and Imix shrines, dock master and magma lake supply the declared inputs. One accepted QA exchange yields the palace key; key possession is not palace arrival.",
+        "The Palace Gate Key opens the forward north gate at 139140 and has a one-hundred-percent break value. Reverse palace door state differs. Trace the actual door reset and current shared state before treating a configured key as a mandatory historical prerequisite.",
+        "Yodono at 139217 accepts three distinct heads and yields two identical-kind cold-blue-flame vials. The potion\u2019s spell is elemental form, not healing. His narrated second task and the unplaced dying djinn\u2019s empty vial recipe have no verified rescue endpoint; that empty exchange is excluded from named progress.",
+        "The hidden spy starts in Magma Lake 139238 with nominal ten-percent placement, accepts six distinct heads for an airy sash and departs. Two heads overlap Yodono\u2019s request; spend a new copy for each accepted request. Actual visible encounter and renewable recipient supply require qualification.",
+        "The armorer\u2019s bracer needs both elder and ancient pyrohydra scales plus 7500 platinum. This mixed fee remains guarded under durable accounting. The smaller elder-scales-plus-fee exchange returns the same kind and fee as a refusal and earns no achievement or daily.",
+        "The ten-headed pyrohydra is declared in rare room 139247 with sixty-percent placement. Its non-sentinel movement may bring it into the palace via outward exits; there is no reviewed ordinary incoming exit into that birth room. Normal unforced active-accounting resets skip lower-chance M commands, and legacy item resets require admitted generation.",
+        "The palace has distinct front/rear routes, green and purple-fire side keys, two different blue-fire throne keys, a treasury key, armory/slave-quarter key and a locked armoire\u2019s skeleton key. Alternate entry and asymmetric reverse states matter. No local switch or portal prototype implements a new access quest.",
+        "Shanaanaa sells external-zone notes. Their narratives can help future mapping, but buying/reading them does not dynamically prove those gates, passwords, quests or routes. Nine note kinds are configured stock; Transparent Tower notes require actual carried-stock availability. Imported artifact/stat-pool/epic effects remain separate interactions.",
+        "The city bank, shops, shrine imagery, guild titles, floating pools, prisoner lore and Sultan battle do not add accepted native story terminals. Builders can select successful access, rescue, dialogue, source or campaign events later. Preserve current acceptance and exclusions while recording missing capabilities and balanced repair proposals."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "brass",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:139128;receive=C:1000000;disappear=0",
+              "giver_vnum": 139083
+            }
+          ],
+          "id": "herl-exotic-blood",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Ancient chimaera 139144 starts in zoo cage 139091 and declares this blood as G inventory, nominal chance one hundred percent and cap one. The mob\u2019s copied \u201cgrey bird\u201d wording does not create a different source. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139128",
+              "item_vnums": [
+                139128
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a drop of chimaera blood"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139128;receive=C:1000000;disappear=0",
+                  "giver_vnum": 139083
+                }
+              ],
+              "hint": "Offer all exact native inputs together to the actual recipient from loose carried inventory. This receipt records this exchange only. Preparation is optional guidance; reading, asking topics and carrying supplies award no quest credit. The armorer\u2019s coin recipe remains unavailable until durable coin offering is supported.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted Herl\u2019s exotic blood request exchange"
+            }
+          ],
+          "summary": "Herl asks for one drop of chimaera blood and pays 1000 platinum (1000000 copper). The ancient chimaera starts in zoo cage 139091 with the declared blood. This is a named rare-beast delivery with a currency reward; ordinary buying and selling are separate services. Supplied exact blood fits without a personal kill or recovery history.",
+          "title": "Herl\u2019s exotic blood request"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:139026,I:139028,I:139031,I:139033;receive=I:139070;disappear=0",
+              "giver_vnum": 139119
+            }
+          ],
+          "id": "tax-palace-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The fire giant priest of Surtr 139038 at shrine 139178 carries this special coin. It is an ITEM_TREASURE object, not an amount of ordinary money. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139028",
+              "item_vnums": [
+                139028
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a golden Surtr coin"
+            },
+            {
+              "count": 1,
+              "hint": "The fire giant priest of Imix 139045 at shrine 139246 carries this different special coin. Normal wallet coins and the Surtr coin cannot substitute. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139031",
+              "item_vnums": [
+                139031
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a flaming Imix coin"
+            },
+            {
+              "count": 1,
+              "hint": "Dock master 139036 starts at harbor room 139192. The flaming quill is declared equipped in slot 18 after his brass dagger in that same slot. The equipment loader moves the previous object into carrying before equipping the quill; it is not a missing-quill defect. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139026",
+              "item_vnums": [
+                139026
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a flaming quill"
+            },
+            {
+              "count": 1,
+              "hint": "The quartz crystal is ground-declared at Magma Lake room 139241. Other quartz equipment and gems cannot substitute; the magma surface is fire-plane terrain. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139033",
+              "item_vnums": [
+                139033
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a quartz crystal"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139026,I:139028,I:139031,I:139033;receive=I:139070;disappear=0",
+                  "giver_vnum": 139119
+                }
+              ],
+              "hint": "Offer all exact native inputs together to the actual recipient from loose carried inventory. This receipt records this exchange only. Preparation is optional guidance; reading, asking topics and carrying supplies award no quest credit. The armorer\u2019s coin recipe remains unavailable until durable coin offering is supported.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted The tax collector\u2019s palace key exchange"
+            }
+          ],
+          "summary": "Collect the Surtr priest\u2019s special coin, the Imix priest\u2019s special coin, the dock master\u2019s flaming quill and a quartz crystal for Palace Gate Key. Both coins are exact collectible item kinds, not wallet payment. The four-source request is one accepted exchange. Its QA response goes to the room; delivery does not record personal recovery or opening the palace gate.",
+          "title": "The tax collector\u2019s palace key"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:139011,I:139016,I:139017;receive=I:139018,I:139018;disappear=0",
+              "giver_vnum": 139124
+            }
+          ],
+          "id": "yodono-three-heads",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The tax collector at office 139020 produces Palace Gate Key 139070 for four collectible objects. It opens the forward north palace gate at 139140; the key has a one-hundred-percent break value. This is route preparation, not an extra offered input or required prior receipt. Palace entry and surviving passage need actual qualification. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139070",
+              "item_vnums": [
+                139070
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry The City of Brass Palace Gate Key"
+            },
+            {
+              "count": 1,
+              "hint": "Caltoon 139118 at magi master chamber 139041 carries this head. He is distinct from palace arch-magi 139009. A similarly named or different efreeti head cannot substitute. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139011",
+              "item_vnums": [
+                139011
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the flaming head of Caltoon"
+            },
+            {
+              "count": 1,
+              "hint": "Palace arch-magi 139009 at laboratory 139299 carries this head. Yodono and the spy consume separate copies; a prior receipt does not replenish it. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139016",
+              "item_vnums": [
+                139016
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the flaming head of the arch-magi"
+            },
+            {
+              "count": 1,
+              "hint": "Ornon Kasoon 139000 at main chamber 139292 carries this head and the purple-fire key. The palace front and rear hall routes have different door states. This head is also consumed by the spy\u2019s independent request. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139017",
+              "item_vnums": [
+                139017
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the flaming head of Ornon Kasoon"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139011,I:139016,I:139017;receive=I:139018,I:139018;disappear=0",
+                  "giver_vnum": 139124
+                }
+              ],
+              "hint": "Offer all exact native inputs together to the actual recipient from loose carried inventory. This receipt records this exchange only. Preparation is optional guidance; reading, asking topics and carrying supplies award no quest credit. The armorer\u2019s coin recipe remains unavailable until durable coin offering is supported.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted Yodono\u2019s three imposters exchange"
+            }
+          ],
+          "summary": "Bring Caltoon\u2019s head, the arch-magi\u2019s head and Ornon Kasoon\u2019s head to Yodono at the magic-device marketplace 139217. He rewards two separate vials of cold blue flames of the same kind. One accepted request yields both vials; it does not finish a second narrated task or rescue a djinn. Two heads overlap the spy\u2019s separate request and must be obtained again after spending them.",
+          "title": "Yodono\u2019s three imposters"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:139016,I:139017,I:139139,I:139140,I:139141,I:139144;receive=I:139143;disappear=1",
+              "giver_vnum": 139132
+            }
+          ],
+          "id": "spy-six-heads",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The tax collector at office 139020 produces Palace Gate Key 139070 for four collectible objects. It opens the forward north palace gate at 139140; the key has a one-hundred-percent break value. This is route preparation, not an extra offered input or required prior receipt. Palace entry and surviving passage need actual qualification. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139070",
+              "item_vnums": [
+                139070
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry The City of Brass Palace Gate Key"
+            },
+            {
+              "count": 1,
+              "hint": "Artoon Branan 139010 at 139286 carries this exact head. The green-fire key opens the front approach from 139284, but the connected rear route through guard/harem rooms differs; do not invent a universal key prerequisite. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139144",
+              "item_vnums": [
+                139144
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the flaming head of Artoon Branan"
+            },
+            {
+              "count": 1,
+              "hint": "The palace arch-magi at 139299 carries this head. Yodono consumes this same kind in his three-head request; neither earlier history nor one already-spent copy covers both requests. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139016",
+              "item_vnums": [
+                139016
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the flaming head of the arch-magi"
+            },
+            {
+              "count": 1,
+              "hint": "Ornon at 139292 carries this head. The same kind is shared with Yodono, requiring a new physical offering for a second request. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139017",
+              "item_vnums": [
+                139017
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the flaming head of Ornon Kasoon"
+            },
+            {
+              "count": 1,
+              "hint": "High priest 139012 at prayer tower chamber 139330 carries this head. The city\u2019s supreme cleric El\u2019Quilan 139004 is a different actor and is not this source. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139139",
+              "item_vnums": [
+                139139
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the flaming head of the high priest"
+            },
+            {
+              "count": 1,
+              "hint": "Wrinyen Otis 139089 at royal training room 139336 carries this head and the brass armory key. The armory key opens distinct armory and slave-quarter doors but is not offered to the spy. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139140",
+              "item_vnums": [
+                139140
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the flaming head of Wrinyen Otis"
+            },
+            {
+              "count": 1,
+              "hint": "Hakim Okewonaku 139092 at flying mount pen 139344 carries this head. Following or mounted creatures are separate actors; their remains cannot replace Hakim\u2019s proof. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139141",
+              "item_vnums": [
+                139141
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the flaming head of Hakim Okewonaku"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139016,I:139017,I:139139,I:139140,I:139141,I:139144;receive=I:139143;disappear=1",
+                  "giver_vnum": 139132
+                }
+              ],
+              "hint": "Offer all exact native inputs together to the actual recipient from loose carried inventory. This receipt records this exchange only. Preparation is optional guidance; reading, asking topics and carrying supplies award no quest credit. The armorer\u2019s coin recipe remains unavailable until durable coin offering is supported.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted The hidden spy\u2019s six palace heads exchange"
+            }
+          ],
+          "summary": "Find the hidden djinni spy, declared in Magma Lake room 139238 with nominal ten-percent placement. Offer six distinct heads: Artoon, the arch-magi, Ornon, the high priest, Wrinyen Otis and Hakim Okewonaku. He grants a vortex-of-air sash and departs. Head acceptance is one outcome, separate from your own combat, secrecy, infiltration or all-city campaign completion. Actual placement, perception and renewal need qualification.",
+          "title": "The hidden spy\u2019s six palace heads"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:7500000,I:139127,I:139142;receive=I:139137;disappear=0",
+              "giver_vnum": 139121
+            }
+          ],
+          "id": "armorer-pyrohydra-bracer",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Elder hydra 139145 in zoo cage 139085 declares these scales with nominal eighty-percent item chance and cap one. They are different from ancient pyrohydra scales. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139127",
+              "item_vnums": [
+                139127
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pile of elder hydra scales"
+            },
+            {
+              "count": 1,
+              "hint": "Ten-headed pyrohydra 139102 is declared at rare-load room 139247 with nominal sixty-percent M placement and carries these scales. That room has outward exits but no reviewed ordinary incoming exit; the non-sentinel beast may wander into the palace. Qualify admitted placement, actual movement and supply rather than instructing a mandatory visit to its birth room. Recover the exact kind into loose carried inventory. Supplied matching material fits. Current possession does not record original source, first recovery, a personal kill, unlocking or arrival.",
+              "id": "material-139142",
+              "item_vnums": [
+                139142
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pile of ancient pyrohydra scales"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:7500000,I:139127,I:139142;receive=I:139137;disappear=0",
+                  "giver_vnum": 139121
+                }
+              ],
+              "hint": "Offer all exact native inputs together to the actual recipient from loose carried inventory. This receipt records this exchange only. Preparation is optional guidance; reading, asking topics and carrying supplies award no quest credit. The armorer\u2019s coin recipe remains unavailable until durable coin offering is supported.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted The armorer\u2019s pyrohydra bracer exchange"
+            }
+          ],
+          "summary": "The armorer at 139024 commissions a shimmering pyrohydra scaled bracer for elder hydra scales, ancient pyrohydra scales and 7500 platinum (7500000 copper). The mixed coin recipe is currently unavailable under the durable offering guard. His smaller elder-scales-plus-fee recipe returns the same kind and fee as a refusal, not a prerequisite or an achievement. Keep both exact piles and the fee for the complete commission.",
+          "title": "The armorer\u2019s pyrohydra bracer"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Warthehr narrates the shattered-sword expedition, exchanges three original fragments for replacements, provides meaningful returned-piece guidance and accepts the exact dragon skin. His intended Tharnadia placement has not been implemented in the reviewed ordinary resets.",
           "keyword": "warthehr",
           "mob_vnum": 142215,

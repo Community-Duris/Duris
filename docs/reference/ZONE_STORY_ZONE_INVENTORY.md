@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 79 authored journals.
+2668 distinct Q contracts; 80 authored journals.
 
 Regenerate with:
 
@@ -48,7 +48,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Black Pearl (`blackpearl`) | 31 | 14 | 19 | Yes | [1 × a sword fragment; 1 × a sword fragment; 1 × a sword fragment; other required items → a thick broadsword named 'dragonslayer'](../../areas/qst/blackpearl.qst#L214) | — |
 | Braddistock Mansion (`brad`) | 5 | 9 | 1 | Yes | [1 × the first piece of the Star Stone; 1 × the second piece of the Star Stone; 1 × the third piece of the Star Stone; other required items → the Star Key](../../areas/qst/lortower.qst#L266) | braddistock |
 | Braddistock Mansion (`braddistock`) | 2 | 1 | 1 | Yes | [1 × a collar with an inscription, "Slippers" → the remains of Lord Braddistock](../../areas/qst/braddistock.qst#L30) | jet_black_maul |
-| Plane of Fire, Brass (`brass`) | 7 | 12 | 2 | Fallback | [1 × the flaming head of Artoon Branan; 1 × the flaming head of the arch-magi; 1 × the flaming head of Ornon Kasoon; other required items → a vortex of air forming a sash](../../areas/qst/brass.qst#L182) | artifact_hide, holy_mace, inn |
+| Plane of Fire, Brass (`brass`) | 7 | 12 | 2 | Yes | [1 × the flaming head of Artoon Branan; 1 × the flaming head of the arch-magi; 1 × the flaming head of Ornon Kasoon; other required items → a vortex of air forming a sash](../../areas/qst/brass.qst#L182) | artifact_hide, holy_mace, inn |
 | The Town of Breale (`breale`) | 6 | 6 | 0 | Yes | [2 × a red mushroom; 1 × some ash; 2 × a tiny pile of wood → the amulet of the triad of witches](../../areas/qst/breale.qst#L72) | breale_townsfolk |
 | The BrimStone Forge (`brimeforge`) | 2 | 1 | 0 | Fallback | [1 × the locket of the first; 1 × the locket of the second; 1 × the locket of the third → a wand of fiery power, an ethereal key](../../areas/qst/brimeforge.qst#L8) | — |
 | Bloodstone Keep (`bs`) | 65 | 74 | 35 | Yes | [1 × the essence of Ogremoch; 1 × the essence of Imix; 1 × the essence of Yan-c-bin; other required items → the elixir of power](../../areas/qst/bs.qst#L1082) | bs_baron, bs_barons_mistress, bs_boar, bs_boss, bs_brat, bs_citizen |
