@@ -5585,6 +5585,8 @@ bool sql_delete_account(const char *name)
 {
 	if (!DB || !name || !name[0])
 		return false;
+	if (player_save_execution_guard::current_ownership_epoch())
+		return false;
 
 	char *escaped_account = sql_escape_string(name);
 	if (!escaped_account)
