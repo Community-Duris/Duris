@@ -467,3 +467,14 @@ Earlier failed attempts remain intact. These results qualify the combined source
 bytes for compilation, not intermediate Git heads or native gameplay/release.
 Other diagnosed compile corrections are recorded separately below. Plan 1's
 native, publication, persistence and recovery qualification continues.
+
+## Plan 1 qualification: live drop projection field correction
+
+The SQL build reproduced a nonexistent `vnum` access on the custody identity
+record in live publication. Runtime projection now takes it from the corresponding
+already-verified durable literal, matching the existing enrollment owner. The
+preceding graph comparison proves equal bounded cardinalities and identity/literal
+ordering before this indexed access. No identity, revision or publication rule changes.
+Original source remains in `tmp/plan1-live-projection-before-20261004.local.c`.
+The V4 combined-source strict builds above pass; actual native publication/restart
+qualification remains open. This commit records only this diagnosed compile issue.
