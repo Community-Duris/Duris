@@ -2724,7 +2724,97 @@ assert len(wisp)==1 and set(wisp[0]['receive'])=={('I',v) for v in range(55550,5
 cloak=[b for b in blocks if b['giver_vnum']==138545 and b['give']==[('I',138514)]]
 assert len(cloak)==1 and cloak[0]['receive']==[('I',138515)] and cloak[0]['binding']['completion_key'].endswith('disappear=1')
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp"):
+# Caverns of Armageddon: loaded proof, salvage, independent bounties and consumed amulets.
+hunt=inventory_module.area_evidence(ROOT,'hunt')
+hunt_map=next(m for m in catalog['story_mappings'] if m['source_area']=='hunt')
+assert hunt_map['schema_version']==3 and hunt_map['revision']==1 and hunt_map['coverage']=='complete'
+assert len(hunt_map['contacts'])==40 and len(hunt_map['stories'])==18 and not hunt_map['exclusions']
+assert all(s['category']=='story' and len(s['contracts'])==1 for s in hunt_map['stories'])
+assert collections.Counter(t['kind'] for s in hunt_map['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':26,'completion':1}
+raw=[b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/hunt.qst']
+assert collections.Counter(b['kind'] for b in raw)=={'Q':18,'M':15}
+by_line={r['block']['line']:r['block'] for r in hunt['requests']}
+for line,giver,inputs,rewards,disappear in (
+    (10,13300,[13354],[13333],0),(28,13301,[13355],[13334],0),
+    (47,13302,[13347],[13317],0),(67,13303,[13346],[13319],0),
+    (84,13304,[76613],[13368],0),(98,13305,[13343],[13351],0),
+    (114,13308,[13345],[13344],0),(133,13309,[13357],[13320,13321,13321,13321,13321],0),
+    (158,13310,[13342],[13326],0),(174,13311,[13352],[13309],0),
+    (194,13312,[13358],[13337],0),(208,13313,[13318,13303],[13361],0),
+    (223,13317,[13356],[13327],0),(242,13318,[13353],[13332],0),
+    (262,13321,[13348],[13316],0),(282,13322,[13362],[13315],0),
+    (294,13351,[13359,13330],[13329],0),
+    (310,13364,[13335,13349,13350,13336],[13303,13318],1)):
+    b=by_line[line]
+    assert b['giver_vnum']==giver and b['give']==[('I',v) for v in inputs] and b['receive']==[('I',v) for v in rewards]
+    assert b['binding']['completion_key'].endswith('disappear='+str(disappear))
+stories={s['id']:s for s in hunt_map['stories']}
+assert {tuple(s['contracts'][0].items()) for s in hunt_map['stories']}=={tuple(b['binding'].items()) for b in by_line.values()}
+for s in hunt_map['stories']:
+    assert s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional')
+assert [t['item_vnums'][0] for t in stories['maveriss-maverick']['steps'][:-1]]==[13314,13313,13312,13352]
+assert [t['item_vnums'][0] for t in stories['prisoner-two-company-tags']['steps'][:-1]]==[13359,13330]
+assert {t['item_vnums'][0] for t in stories['blicatch-four-creature-parts']['steps'][:-1]}=={13335,13336,13349,13350}
+queen=stories['dragon-queen-cosmos-amulet']
+assert queen['steps'][0]['contracts']==[by_line[310]['binding']] and queen['steps'][0]['optional']
+assert [t['item_vnums'][0] for t in queen['steps'][1:-1]]==[13303,13318]
+assert hunt['zone']['reset_mode']==1 and all(r['definition']['daily_eligible'] for r in hunt['requests'])
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==133]
+assert len(units)==18 and all(u['achievement'] and u['daily_candidate'] for u in units)
+contacts={c['mob_vnum']:c for c in hunt_map['contacts']}
+assert {c['mob_vnum'] for c in hunt_map['contacts'] if c['topics']}=={b['giver_vnum'] for b in raw if b['kind']=='M'}
+assert all(set(contacts[b['giver_vnum']]['topics'])=={'orc','orcs'} for b in raw if b['kind']=='M')
+assert not contacts[13337]['topics'] and not any(b['giver_vnum']==13337 for b in raw)
+assert 'no active declared reset placement' in contacts[13309]['description']
+assert 'no active declared reset placement' in stories['roland-maximas']['summary']
+assert collections.Counter(r['command'] for r in hunt['reset_commands'])=={'M':270,'D':36,'O':26,'E':23,'G':23,'R':7,'P':5,'F':3}
+assert len(hunt['mobs'])==94 and len(hunt['items'])==69 and not hunt['special_assignments']
+objects=dawndale_bodies('hunt','obj');rooms=dawndale_bodies('hunt','wld');mobs=dawndale_bodies('hunt','mob')
+assert set(rooms)==set(range(13300,13449)) and not (ROOT/'areas/shp/hunt.shp').exists()
+assert all(not int(b.split('~')[4].split()[0])&32768 for b in mobs.values())
+sources=collections.defaultdict(list);owner=None;room=None
+for r in hunt['reset_commands']:
+    c,v=r['command'],r['arguments']
+    if c in 'MFR':owner,room=v[1],v[3]
+    if c in 'GE':sources[v[1]].append((c,owner,room,v[2],v[3],v[4]))
+for item,mob,where in ((13342,13361,13377),(13348,13368,13379),(13354,13349,13380),
+    (13362,13386,13381),(13343,13374,13382),(13356,13362,13393),(13345,13347,13396),
+    (13355,13342,13412),(13358,13357,13414),(13346,13365,13418),(13347,13328,13426),
+    (13352,13326,13431),(13357,13378,13437),(13353,13382,13438),(13335,13343,13446),
+    (13336,13355,13415),(13349,13344,13416),(13350,13345,13414),
+    (13314,13370,13375),(13312,13390,13406),(13311,13327,13431),(13366,13327,13431)):
+    assert sources[item]==[('G',mob,where,1,0,100)]
+loaded={r['arguments'][1] for r in hunt['reset_commands'] if r['command'] in 'MFR'}
+assert set(mobs)-loaded=={13309,13360}
+for area in [r['zone']['source_area'] for r in inventory_module.inventory(ROOT)[0]]:
+    assert not re.search(r'^[MFR]\s+\d+\s+(?:13309|13360)\s', (ROOT/f'areas/zon/{area}.zon').read_text(encoding='utf8',errors='replace'),re.M)
+for key,breakage in ((13314,0),(13313,0),(13312,0),(13311,100)):
+    assert objvalues(objects[key])[0]==18 and objvalues(objects[key])[12]==breakage
+for v in (13323,13325,13338,13340):assert objvalues(objects[v])[0]==15 and objvalues(objects[v])[12]==5
+assert objvalues(objects[13306])[0]==15 and objvalues(objects[13306])[12:14]==[29,13311]
+assert objvalues(objects[13364])[0]==8 and objvalues(objects[13365])[0]==8
+assert re.search(r'\bT\s+2\s+0\s+1\s+50\b',objects[13335])
+for portal,target in ((13302,13350),(13339,13429),(13363,82627)):
+    assert objvalues(objects[portal])[0]==25 and objvalues(objects[portal])[11:15]==[target,7,-1,0]
+for room,direction,flags,key,target in ((13368,2,7,13311,13371),(13375,5,2,13314,13376),
+    (13396,1,3,13313,13397),(13419,1,3,13312,13420),(13418,5,0,13312,13419),
+    (13431,4,4,0,13439),(13439,5,8,0,13431),(13445,5,0,0,13355),
+    (13307,3,0,0,649693),(13307,2,0,0,650096)):
+    assert re.search(r'\bD'+str(direction)+r'\s+[^~]*~[^~]*~\s*'+str(flags)+' '+str(key)+' '+str(target)+r'\b',rooms[room],re.S)
+assert [(r['arguments'][1:5]) for r in hunt['reset_commands'] if r['command']=='P']==[[13308,1,13306,100],[13359,2,13340,100],[13313,1,13325,100],[13330,1,13323,100],[13359,2,13338,100]]
+assert [(r['arguments'][3]) for r in hunt['reset_commands'] if r['command']=='O' and r['arguments'][1]==13364]==[13442,13442,13444,13444]
+blocks=inventory_module.native_blocks(ROOT)
+foreign=[b for b in blocks if b['kind'] in ('Q','QA') and b['source']!='areas/qst/hunt.qst' and any(('I',v) in b['give'] for v in (13364,13365,13366))]
+assert {b['giver_vnum'] for b in foreign}=={82515,82516,82522,82537,82543,76243}
+assert next(b for b in foreign if b['giver_vnum']==82537)['receive']==[('I',13318)]
+assert next(b for b in foreign if b['giver_vnum']==82543)['receive']==[('C',20000)]
+assert next(b for b in foreign if b['giver_vnum']==76243)['receive']==[('I',76243)]
+triggers=ROOT/'areas/world.trg'
+if triggers.exists():
+    assert not any(13300<=int(v)<=13448 for v in re.findall(r'^#(\d+)\s+[MOR]\b',triggers.read_text(encoding='utf8'),re.M))
+
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

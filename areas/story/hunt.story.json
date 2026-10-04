@@ -1,0 +1,1122 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "hunt",
+  "coverage": "complete",
+  "introduction": "Discover the Caverns of Armageddon, meet the Hunters and follow fifteen independent bounties, the prisoner’s two companies, Blicatch’s four creature parts and the Dragon Queen’s two-amulet upgrade. Source clues explain actual locks, containers, secret routes and foreign follow-ups; accepted named exchanges remain separate from the wider campaign.",
+  "orientation": [
+    "Active, ready accounting is required for discovery, visible NPC encounters, journals and new achievement/daily credit. First discovery is its own achievement. Reading hints and current material checks award no credit.",
+    "The forest connects to the Jade Empire surface. Xavier’s forest portal reaches the Myrabolus observatory backroom; its destination still has a sealed door. The native west forest boundary is not reciprocal with the inbound surface edge, so a return route must be qualified separately.",
+    "The mercenary camp’s fifteen bounties are independent. Ask each actual recipient orc or orcs for lore; keyword questions do not themselves record achievements. Most recipients are fixed, but Clond and Redana can move. Roland has a valid bounty recipe but no active declared reset placement in the scanned world; resolve his availability before assigning the Maximas bounty as a daily. Starting-room clues are not evidence of a current actor.",
+    "The ordinary shaft entrance requires the steel key carried by its elite orc. Graiven’s closed blood basin contains the chipped rock key for the locked east steps beyond Veannan. The guard captain has the stone key for the general cavern’s locked east entrance. These keys have zero normal-unlock break chance; current possession is optional route guidance, not proof of opening or arrival.",
+    "Proofs are loaded NPC inventory objects, not automatically severed heads or generated death callbacks. Scralack’s head comes from the Jade Empire’s strike-force general. Exact loose-carried kinds are required; equipped, held, nested or merely similar proof does not satisfy the native offering search. Supplied proof is accepted without a personal kill or original-source history.",
+    "Open the wounded Myrabolan soldier, dying Soldier of Fortune or dying Wild Card container as appropriate to recover two different company-tag kinds. These are object containers, not wounded NPC healing or escort missions. The prisoner exchange has no native disappearance command even though its prose describes leaving.",
+    "Blicatch’s secret stone entrance leads into a chamber whose northern return is blocked; continue south into the ogre station for the ordinary route. Archangel wings have a one-charge GET/PUT sleep trap; an attempted pickup can trigger sleep without recovering the wings. A wyvern wing is not a substitute.",
+    "The archangel, behemoth, beholder and Krazzi’s following fire elemental supply Blicatch’s four different parts. His accepted reward gives both amulets and retires him. Reset mode one permits native repeatable classification but does not prove a currently admitted NPC or replacement materials.",
+    "The Dragon Queen combines one kilospanatis amulet and one hazy blue amulet into the cosmos amulet. Her native acceptance does not require your Blicatch history. Alexis in Myrabolus can supply the hazy blue amulet for a treasure chest. Earlier receipts do not recreate consumed amulets.",
+    "Argophel’s lair is below the secret grate at the golem intersection. Maximas is below the secret waterfall passage. The general’s rift uses ENTER and reaches the downward spiral; no ordinary reverse portal is declared there. Defeating Endosa is lore and a bounty source, not an enforced receipt prerequisite for entering.",
+    "Maverick and Abbadon share the throne room. The secret rescue ladder goes up to the Sunweaver; the reverse descent into the throne room is blocked. From the airship’s other ladder descend to the forest, with no ordinary ascent back. These static routes do not certify rescuing actors or winning a campaign.",
+    "Abbadon’s cosmos key opens both the secret temple vault wall and the locked, pickproof statue in Ajax’s part of the forest. Its normal-unlock break chance is one hundred percent. One successful use can consume a key, so do not assume the same physical key opens both locks; renewed or shared supply requires qualification. The Soulsword is in the vault; the ring of abnormal power is in the statue. Neither is a local accepted quest terminal.",
+    "The Sunweaver has four treasure-chest object placements in two rooms, subject to their shared cap. They are quest objects, not openable containers. Myrabolus recipients Rico, Random, Decker and Alexis accept chests for separate rewards. The lost monkey atop the redwood goes to Myrabolus’s monkey hunter; Abbadon’s heart goes to the Sky City of Ultarium’s dwarven trapper. Foreign receipts remain credited to their real zones.",
+    "Imported epic rune and memory objects in the general’s rift chamber use their existing systems. The magical fountain in the throne room uses a rotating spell pool on DRINK; it is not an escape portal or accepted quest. Existing settlement and effects need committed outcome integration, not another payout or invented keyword credit.",
+    "All eighteen native exchanges remain separate named outcomes. All retain native daily shape, including Blicatch under reset mode one. Actual difficulty, source-generation admission, current stock, secret access, traps, group eligibility and renewal still need qualification before daily assignment. Active accounting refuses legacy item resets without admitted generation.",
+    "The sources contain broader claims about exorcising Maverick, immortal Hunters, army defeat, delayed rescue and using the Soulsword against gods. No local assigned procedure or shipped trigger establishes those campaign transitions. Record these as future builder-selected objectives, with committed events and clear scope, before claiming a completed campaign."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 13300,
+      "name": "Wicks",
+      "keyword": "wicks",
+      "description": "Wicks accepts the severed head of Grue for the spiked blackened earring. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13349,
+      "name": "Grue, the slave master",
+      "keyword": "slave",
+      "description": "Grue, the slave master starts in the Slave Master’s Office, carrying the severed head of Grue. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13301,
+      "name": "Valquin",
+      "keyword": "valquin",
+      "description": "Valquin accepts the severed head of Chowza for the taut wyvernskin band. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13342,
+      "name": "Chowza, an orc wyvern trainer",
+      "keyword": "orc",
+      "description": "Chowza, an orc wyvern trainer starts in the Wyvern’s Lair, carrying the severed head of Chowza. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13302,
+      "name": "Shix",
+      "keyword": "shix",
+      "description": "Shix accepts the severed head of Endosa for the bone crested tower shield. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13328,
+      "name": "Endosa",
+      "keyword": "endosa",
+      "description": "Endosa starts in the rift chamber, carrying the severed head of Endosa. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13303,
+      "name": "Mastiff",
+      "keyword": "mastiff",
+      "description": "Mastiff accepts the severed head of Greeef for the blackstone warclub. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13365,
+      "name": "Greeef, the ogre battlelord",
+      "keyword": "greeef",
+      "description": "Greeef, the ogre battlelord starts in the Ogre Unit Station, carrying the severed head of Greeef. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13304,
+      "name": "Clond",
+      "keyword": "clond",
+      "description": "Clond accepts the severed head of Scralack for the cresent moon medallion. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13305,
+      "name": "Drimble",
+      "keyword": "drimble",
+      "description": "Drimble accepts the severed head of Jigoog for the totem of the windmasters. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13374,
+      "name": "Jigoog, the windmaster",
+      "keyword": "jigoog",
+      "description": "Jigoog, the windmaster starts in the large cavern above the golem intersection, carrying the severed head of Jigoog. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13308,
+      "name": "Kantara",
+      "keyword": "kantara",
+      "description": "Kantara accepts the severed head of Veannan for the electrum shard. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13347,
+      "name": "Veannan, the orc thief lord",
+      "keyword": "thief",
+      "description": "Veannan, the orc thief lord starts in the Thief Lord’s Chamber, carrying the severed head of Veannan. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13309,
+      "name": "Roland",
+      "keyword": "roland",
+      "description": "Roland accepts the severed head of Maximas for the masters longbow and four masters arrows. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient. Roland has no active declared reset placement in the scanned world. Resolve this availability before daily assignment.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13378,
+      "name": "Maximas, the dark knight",
+      "keyword": "maximas",
+      "description": "Maximas, the dark knight starts in the hidden Chamber of Maximas, carrying the severed head of Maximas. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13310,
+      "name": "Captain Engleton",
+      "keyword": "captain",
+      "description": "Engleton accepts the severed head of Renatta for the Starlight morningstar. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13361,
+      "name": "Renatta, the orc lieutenant",
+      "keyword": "lieutenant",
+      "description": "Renatta, the orc lieutenant starts in the War Room, carrying the severed head of Renatta. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13311,
+      "name": "Maveriss",
+      "keyword": "maveriss",
+      "description": "Maveriss accepts the severed head of Maverick for the eyepatch of immortality. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13326,
+      "name": "Maverick",
+      "keyword": "maverick",
+      "description": "Maverick starts in the Throne Room beyond the rift and spiral, carrying the severed head of Maverick. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13312,
+      "name": "Xavier",
+      "keyword": "xavier",
+      "description": "Xavier accepts the severed head of Krazzi for the robes of cosmocy. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13357,
+      "name": "Krazzi",
+      "keyword": "krazzi",
+      "description": "Krazzi starts in the first magically forged tunnel, carrying the severed head of Krazzi. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13317,
+      "name": "Ajax",
+      "keyword": "ajax",
+      "description": "Ajax accepts the severed head of Graiven for the royal crested bracelet. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13362,
+      "name": "Graiven, the orcish high priest",
+      "keyword": "orc",
+      "description": "Graiven, the orcish high priest starts in the central Hall of Altars, carrying the severed head of Graiven. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13318,
+      "name": "Berelain",
+      "keyword": "berelain",
+      "description": "Berelain accepts the severed head of Argophel for the crimson cloak of nosferatu. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13382,
+      "name": "Argophel, the necromancer",
+      "keyword": "argophel",
+      "description": "Argophel, the necromancer starts in the Hidden Lair below the golem intersection’s grate, carrying the severed head of Argophel. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13321,
+      "name": "Redana",
+      "keyword": "redana",
+      "description": "Redana accepts the severed head of Zeelnar for the cosmic silver collar. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13368,
+      "name": "Zeelnar",
+      "keyword": "zeelnar",
+      "description": "Zeelnar starts in the Battle-Mage Station, carrying the severed head of Zeelnar. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13322,
+      "name": "Rudamuse",
+      "keyword": "rudamuse",
+      "description": "Rudamuse accepts the severed head of Hackzen for the combat boots of balance. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
+      "topics": [
+        "orc",
+        "orcs"
+      ]
+    },
+    {
+      "mob_vnum": 13386,
+      "name": "Hackzen, the troll ragelord",
+      "keyword": "hackzen",
+      "description": "Hackzen, the troll ragelord starts in the Troll Unit Station, carrying the severed head of Hackzen. This material’s eventual acceptance is separate from personal defeat, first recovery and the army’s fate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13313,
+      "name": "the Dragon Queen",
+      "keyword": "dragon",
+      "description": "The Dragon Queen starts with Xavier in the forest. Two exact loose amulets yield the cosmos amulet; a supplied pair fits without your personal Blicatch receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13351,
+      "name": "a mercenary prisoner of war",
+      "keyword": "prisoner",
+      "description": "The prisoner starts in the slave compound and can move. Two different company-tag kinds yield the cloak. Native acceptance does not retire, escort or heal this actor.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13364,
+      "name": "Blicatch",
+      "keyword": "blicatch",
+      "description": "Blicatch starts in the peaceful interlude off a secret stone entrance. Four exact creature parts yield two amulets before he departs. His northern return is blocked; the southern route continues into the ogre station.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13343,
+      "name": "an archangel",
+      "keyword": "arch",
+      "description": "The archangel is the battle-mage’s F-loaded follower in the final forged tunnel, carrying the trapped wings. It has no assigned local quest procedure; wings are a loaded proof, not an invented kill transformation.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13345,
+      "name": "an enslaved fire elemental",
+      "keyword": "enslaved",
+      "description": "The enslaved fire elemental follows Krazzi and carries the flame tendril. It is a separate source actor from its leader.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13355,
+      "name": "a behemoth",
+      "keyword": "behemoth",
+      "description": "The behemoth starts in the second forged tunnel and carries the twisted tooth.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13344,
+      "name": "a small beholder",
+      "keyword": "beholder",
+      "description": "The small beholder starts in the next forged tunnel and carries the eyestalk.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13370,
+      "name": "an elite orc soldier",
+      "keyword": "orc",
+      "description": "The elite orc starts before the downward shaft with the steel key for its locked entrance.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13390,
+      "name": "the captain of the guard",
+      "keyword": "captain",
+      "description": "The captain of the guard starts in his barracks quarters with the stone key for the general cavern’s east entrance.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13327,
+      "name": "Abbadon",
+      "keyword": "abbadon",
+      "description": "Abbadon starts beside Maverick, carrying his heart and the key of the cosmos. The key can break on each successful normal unlock. The heart’s accepted reward belongs to the dwarven trapper in the Sky City of Ultarium.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13337,
+      "name": "Markam",
+      "keyword": "high",
+      "description": "Markam starts at the Sunweaver bridge. The rescue ladder and airship are static routes; his empty native quest block has no delivery or dialogue endpoint.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "wicks-grue",
+      "title": "Wicks: Grue",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Grue, the slave master and offer it to Wicks for the spiked blackened earring. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 13300,
+          "completion_key": "give=I:13354;receive=I:13333;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13354",
+          "text": "Carry the severed head of Grue",
+          "kind": "carried_item",
+          "item_vnums": [
+            13354
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Grue, the slave master starts in the Slave Master’s Office and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Wicks: Grue exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13300,
+              "completion_key": "give=I:13354;receive=I:13333;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "valquin-chowza",
+      "title": "Valquin: Chowza",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Chowza, an orc wyvern trainer and offer it to Valquin for the taut wyvernskin band. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 13301,
+          "completion_key": "give=I:13355;receive=I:13334;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13355",
+          "text": "Carry the severed head of Chowza",
+          "kind": "carried_item",
+          "item_vnums": [
+            13355
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Chowza, an orc wyvern trainer starts in the Wyvern’s Lair and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Valquin: Chowza exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13301,
+              "completion_key": "give=I:13355;receive=I:13334;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "shix-endosa",
+      "title": "Shix: Endosa",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Endosa and offer it to Shix for the bone crested tower shield. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 13302,
+          "completion_key": "give=I:13347;receive=I:13317;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13347",
+          "text": "Carry the severed head of Endosa",
+          "kind": "carried_item",
+          "item_vnums": [
+            13347
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Endosa starts in the rift chamber and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Shix: Endosa exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13302,
+              "completion_key": "give=I:13347;receive=I:13317;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "mastiff-greeef",
+      "title": "Mastiff: Greeef",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Greeef, the ogre battlelord and offer it to Mastiff for the blackstone warclub. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 13303,
+          "completion_key": "give=I:13346;receive=I:13319;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13346",
+          "text": "Carry the severed head of Greeef",
+          "kind": "carried_item",
+          "item_vnums": [
+            13346
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Greeef, the ogre battlelord starts in the Ogre Unit Station and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Mastiff: Greeef exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13303,
+              "completion_key": "give=I:13346;receive=I:13319;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "clond-scralack",
+      "title": "Clond: Scralack",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Scralack and offer it to Clond for the cresent moon medallion. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 13304,
+          "completion_key": "give=I:76613;receive=I:13368;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-76613",
+          "text": "Carry the severed head of Scralack",
+          "kind": "carried_item",
+          "item_vnums": [
+            76613
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Scralack starts in the Jade Empire staging room and carries this exact severed-head proof. This is a foreign Jade Empire source, not a different local orc head. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Clond: Scralack exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13304,
+              "completion_key": "give=I:76613;receive=I:13368;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "drimble-jigoog",
+      "title": "Drimble: Jigoog",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Jigoog, the windmaster and offer it to Drimble for the totem of the windmasters. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 13305,
+          "completion_key": "give=I:13343;receive=I:13351;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13343",
+          "text": "Carry the severed head of Jigoog",
+          "kind": "carried_item",
+          "item_vnums": [
+            13343
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Jigoog, the windmaster starts in the large cavern above the golem intersection and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Drimble: Jigoog exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13305,
+              "completion_key": "give=I:13343;receive=I:13351;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "kantara-veannan",
+      "title": "Kantara: Veannan",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Veannan, the orc thief lord and offer it to Kantara for the electrum shard. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 13308,
+          "completion_key": "give=I:13345;receive=I:13344;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13345",
+          "text": "Carry the severed head of Veannan",
+          "kind": "carried_item",
+          "item_vnums": [
+            13345
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Veannan, the orc thief lord starts in the Thief Lord’s Chamber and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Kantara: Veannan exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13308,
+              "completion_key": "give=I:13345;receive=I:13344;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "roland-maximas",
+      "title": "Roland: Maximas",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Maximas, the dark knight and offer it to Roland for the masters longbow and four masters arrows. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign. Roland has a native recipe but no active declared reset placement in the scanned world; resolve actual encounter and delivery availability before assigning this as a daily.",
+      "contracts": [
+        {
+          "giver_vnum": 13309,
+          "completion_key": "give=I:13357;receive=I:13320,I:13321,I:13321,I:13321,I:13321;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13357",
+          "text": "Carry the severed head of Maximas",
+          "kind": "carried_item",
+          "item_vnums": [
+            13357
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Maximas, the dark knight starts in the hidden Chamber of Maximas and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Roland: Maximas exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13309,
+              "completion_key": "give=I:13357;receive=I:13320,I:13321,I:13321,I:13321,I:13321;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "engleton-renatta",
+      "title": "Engleton: Renatta",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Renatta, the orc lieutenant and offer it to Engleton for the Starlight morningstar. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 13310,
+          "completion_key": "give=I:13342;receive=I:13326;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13342",
+          "text": "Carry the severed head of Renatta",
+          "kind": "carried_item",
+          "item_vnums": [
+            13342
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Renatta, the orc lieutenant starts in the War Room and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Engleton: Renatta exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13310,
+              "completion_key": "give=I:13342;receive=I:13326;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "maveriss-maverick",
+      "title": "Maveriss: Maverick",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Maverick and offer it to Maveriss for the eyepatch of immortality. Follow the ordinary shaft, Veannan steps and general-cavern locks before entering the rift to the downward spiral. The rescue ladder is a static secret exit; this receipt does not trigger an army collapse, exorcism, divine restoration or immortality.",
+      "contracts": [
+        {
+          "giver_vnum": 13311,
+          "completion_key": "give=I:13352;receive=I:13309;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13314",
+          "text": "Carry a key of steel",
+          "kind": "carried_item",
+          "item_vnums": [
+            13314
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The elite orc in the shaft entrance carries the steel key for the locked downward shaft. Normal unlocking does not break it. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "material-13313",
+          "text": "Carry a chipped key of rock",
+          "kind": "carried_item",
+          "item_vnums": [
+            13313
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Open Graiven’s blood basin in the Hall of Altars and recover the chipped rock key. It fits the locked east door beyond Veannan; normal unlocking does not break it. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "material-13312",
+          "text": "Carry a stone key",
+          "kind": "carried_item",
+          "item_vnums": [
+            13312
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The captain of the guard in his barracks quarters carries the stone key. It fits the locked east entrance to the general’s huge cavern; the downward steps list the key but are not themselves a locked door. Normal unlocking does not break it. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "material-13352",
+          "text": "Carry the severed head of Maverick",
+          "kind": "carried_item",
+          "item_vnums": [
+            13352
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Maverick starts in the Throne Room beyond the rift and spiral and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Maveriss: Maverick exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13311,
+              "completion_key": "give=I:13352;receive=I:13309;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "xavier-krazzi",
+      "title": "Xavier: Krazzi",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Krazzi and offer it to Xavier for the robes of cosmocy. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 13312,
+          "completion_key": "give=I:13358;receive=I:13337;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13358",
+          "text": "Carry the severed head of Krazzi",
+          "kind": "carried_item",
+          "item_vnums": [
+            13358
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Krazzi starts in the first magically forged tunnel and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Xavier: Krazzi exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13312,
+              "completion_key": "give=I:13358;receive=I:13337;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "ajax-graiven",
+      "title": "Ajax: Graiven",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Graiven, the orcish high priest and offer it to Ajax for the royal crested bracelet. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 13317,
+          "completion_key": "give=I:13356;receive=I:13327;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13356",
+          "text": "Carry the severed head of Graiven",
+          "kind": "carried_item",
+          "item_vnums": [
+            13356
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Graiven, the orcish high priest starts in the central Hall of Altars and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Ajax: Graiven exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13317,
+              "completion_key": "give=I:13356;receive=I:13327;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "berelain-argophel",
+      "title": "Berelain: Argophel",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Argophel, the necromancer and offer it to Berelain for the crimson cloak of nosferatu. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 13318,
+          "completion_key": "give=I:13353;receive=I:13332;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13353",
+          "text": "Carry the severed head of Argophel",
+          "kind": "carried_item",
+          "item_vnums": [
+            13353
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Argophel, the necromancer starts in the Hidden Lair below the golem intersection’s grate and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Berelain: Argophel exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13318,
+              "completion_key": "give=I:13353;receive=I:13332;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "redana-zeelnar",
+      "title": "Redana: Zeelnar",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Zeelnar and offer it to Redana for the cosmic silver collar. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 13321,
+          "completion_key": "give=I:13348;receive=I:13316;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13348",
+          "text": "Carry the severed head of Zeelnar",
+          "kind": "carried_item",
+          "item_vnums": [
+            13348
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Zeelnar starts in the Battle-Mage Station and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Redana: Zeelnar exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13321,
+              "completion_key": "give=I:13348;receive=I:13316;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "rudamuse-hackzen",
+      "title": "Rudamuse: Hackzen",
+      "category": "story",
+      "summary": "Recover the exact proof associated with Hackzen, the troll ragelord and offer it to Rudamuse for the combat boots of balance. The named exchange is independent of the other bounties. Its accepted receipt does not certify personal defeat or the wider campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 13322,
+          "completion_key": "give=I:13362;receive=I:13315;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13362",
+          "text": "Carry the severed head of Hackzen",
+          "kind": "carried_item",
+          "item_vnums": [
+            13362
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Hackzen, the troll ragelord starts in the Troll Unit Station and carries this exact severed-head proof. The proof is declared on the NPC inventory; no separate severing command or personal-kill condition is specified by the recipe. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Rudamuse: Hackzen exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13322,
+              "completion_key": "give=I:13362;receive=I:13315;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "prisoner-two-company-tags",
+      "title": "The prisoner’s two companies",
+      "category": "story",
+      "summary": "Recover one Myrabolan guard tag and one Wild Card tag from the closed container objects representing wounded or dying soldiers. Bring both kinds together to the prisoner in the slave compound for the fur-lined cloak of balance. The native receipt leaves the prisoner in place; rescue and returning to comrades are narration, not a recorded escort.",
+      "contracts": [
+        {
+          "giver_vnum": 13351,
+          "completion_key": "give=I:13330,I:13359;receive=I:13329;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13359",
+          "text": "Carry the tags of the Myrabolan guard",
+          "kind": "carried_item",
+          "item_vnums": [
+            13359
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Open the wounded Myrabolan soldier in the first open cavern, or the dying Soldier of Fortune beyond Veannan’s locked east door. Both containers declare this same Myrabolan guard-tag kind; two copies cannot replace the Wild Card tag. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "material-13330",
+          "text": "Carry the tags of a Wild Card",
+          "kind": "carried_item",
+          "item_vnums": [
+            13330
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Open the dying Wild Card mercenary near Veannan’s chamber and recover the Wild Card tags. These are secret quest objects and need actual perception; healing a mobile is not the producer. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted The prisoner’s two companies exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13351,
+              "completion_key": "give=I:13330,I:13359;receive=I:13329;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "blicatch-four-creature-parts",
+      "title": "Blicatch’s four creature parts",
+      "category": "story",
+      "summary": "Reach Blicatch through the secret stone entrance off the magically forged tunnels. Recover the archangel wings, behemoth tooth, beholder eyestalk and fire-elemental tendril: four different kinds. Offer all four for two amulets and Blicatch’s departure. Reset mode one retains native repeatable shape, but actual renewal and admitted supply need qualification.",
+      "contracts": [
+        {
+          "giver_vnum": 13364,
+          "completion_key": "give=I:13335,I:13336,I:13349,I:13350;receive=I:13303,I:13318;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13335",
+          "text": "Carry a pair archangel wings",
+          "kind": "carried_item",
+          "item_vnums": [
+            13335
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The archangel following a battle-mage in the final magically forged tunnel carries these wings. They have a one-charge level-50 GET/PUT sleep trap: triggering it prevents that attempted pickup. The adult wyvern’s wing is a different kind. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "material-13336",
+          "text": "Carry a twisted behemoth tooth",
+          "kind": "carried_item",
+          "item_vnums": [
+            13336
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The behemoth in the second magically forged tunnel carries the twisted tooth. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "material-13349",
+          "text": "Carry a beholder eyestalk",
+          "kind": "carried_item",
+          "item_vnums": [
+            13349
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The small beholder in the next magically forged tunnel carries this eyestalk. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "material-13350",
+          "text": "Carry a wispy tendril of flame",
+          "kind": "carried_item",
+          "item_vnums": [
+            13350
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Krazzi’s following enslaved fire elemental carries the wispy tendril. F switches reset ownership to the elemental; it is not Krazzi’s own proof. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted Blicatch’s four creature parts exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13364,
+              "completion_key": "give=I:13335,I:13336,I:13349,I:13350;receive=I:13303,I:13318;disappear=1"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    },
+    {
+      "id": "dragon-queen-cosmos-amulet",
+      "title": "The Dragon Queen’s cosmos amulet",
+      "category": "story",
+      "summary": "Offer the amulet of kilospanatis and a hazy, blue amulet together to the Dragon Queen for the amulet of the cosmos. Blicatch produces both; Alexis in Myrabolus can also give the hazy blue amulet for a Sunweaver treasure chest. Supplied amulets fit without a personal Blicatch receipt. Both inputs are consumed; earlier acceptance does not restore them.",
+      "contracts": [
+        {
+          "giver_vnum": 13313,
+          "completion_key": "give=I:13303,I:13318;receive=I:13361;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-blicatch",
+          "text": "Earlier Blicatch exchange recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13364,
+              "completion_key": "give=I:13335,I:13336,I:13349,I:13350;receive=I:13303,I:13318;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal receipt for the two-amulet producer. Supplied matching amulets fit without it. The receipt does not prove the current pair’s source or replenish spent objects."
+        },
+        {
+          "id": "material-13303",
+          "text": "Carry the amulet of kilospanatis",
+          "kind": "carried_item",
+          "item_vnums": [
+            13303
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Blicatch gives this amulet of kilospanatis with the hazy blue amulet for four creature parts. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "material-13318",
+          "text": "Carry a hazy, blue amulet",
+          "kind": "carried_item",
+          "item_vnums": [
+            13318
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Blicatch gives this hazy blue amulet; Alexis in Myrabolus also accepts a treasure chest for it. It differs from kilospanatis and the final cosmos amulet. Remove worn amulets before offering them. Recover this exact kind into loose carried inventory. Supplied matching proof fits; this check does not record first recovery, a kill, original source or successful access."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted The Dragon Queen’s cosmos amulet exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13313,
+              "completion_key": "give=I:13303,I:13318;receive=I:13361;disappear=0"
+            }
+          ],
+          "hint": "Offer the complete exact bundle together to the actual recipient from loose carried inventory. This accepted receipt records only this named exchange, separately from optional preparation, original acquisition, combat, travel, actor rescue and the whole campaign."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

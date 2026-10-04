@@ -1055,3 +1055,52 @@ The two actual Tempest direction corrections ship in separate fix dc586e34c,
 with original-fails/repaired-passes proof and exact two-word scope. News wording
 and remaining live LOOK/traversal limits are explicit in the dossier/register.
 Do not advertise pending proposals or journal hints as shipped native repairs.
+
+### Caverns of Armageddon: loaded proofs, salvage containers and optional producers
+
+The [dossier](../design/zone-stories/CAVERNS_OF_ARMAGEDDON.md) and
+[journal](../../areas/story/hunt.story.json) map eighteen independent outcomes,
+40 contacts and 27 optional checks. Native acceptance and actual availability
+are different: Roland's bounty is defined but the global reset scan finds no
+declared recipient spawn. Preserve the recipe, flag the blocker and choose a
+builder location/lifecycle before a separate placement fix and daily admission.
+
+The heads and creature parts are G-loaded objects, not automatically generated
+sever-on-death achievements. F changes their owner: the fire elemental carries
+the tendril and the following archangel carries the wings. Soldier salvage
+uses closed, unlocked object containers. Recover one Myrabolan and one Wild
+Card tag; do not present this as healing live NPCs. The prisoner's D0 receipt
+does not implement the departure described in its prose.
+
+Keep ordinary shaft/Veannan/general locks, hidden waterfall/grate and one-way
+rift/ladder/disembark routes explicit. A key number on a flag-zero exit is not
+a locked gate. Three route keys persist on normal unlock; Abbadon's cosmos
+key has a 100-percent break chance and fits two pickproof locks. Qualify the
+actual committed unlock, key destruction, shared-door state and arrival before
+awarding access. Current carried preparation remains optional and read-only.
+
+Archangel wings trigger GET/PUT sleep and reject that attempted pickup. Trap
+activation, charge mutation and later successful recovery need separate
+committed evidence. An unrelated wyvern wing never substitutes. Active
+accounting refuses legacy reset issuance without admitted generation; reset
+chance/cap declarations do not promise renewable daily proof or stock.
+
+Blicatch's four exact parts yield two different amulets; the Dragon Queen
+consumes both. Her acceptance permits supplied proofs without a personal
+Blicatch receipt. Alexis in Myrabolus is an alternate producer of only the hazy
+blue kind. Earlier history neither restores consumed objects nor reserves a
+current pair. Treasure chests are quest objects rather than containers, and
+their Myrabolus receipts, the lost-monkey reward and the foreign demon-heart
+exchange remain owned by their real recipient zones.
+
+Campaign restoration, immortal Hunters, exorcism, actor rescue and timed
+Sunweaver arrival need builder-selected scoped objectives and accepted events.
+Use existing committed epic settlement and verified effect application before
+claiming those milestones; questions alone do not award keyword achievements.
+Review target routing for the imported rotating spell pool with a native
+dispatcher fixture. Do not mistake race/class/size fields for proc IDs.
+
+This checkpoint ships no native repair. Mixed-company salvage, actor narration,
+Roland placement, boundary direction and cosmos-key lifetime are documented
+pending intent/qualification. Actual repairs need separate fix commits and
+prominent PR/news before-after evidence; journal authoring is a distinct addition.

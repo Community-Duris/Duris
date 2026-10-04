@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 76 authored journals, accounting-gated player surfaces, starter/town
+**Status: 77 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -1907,3 +1907,59 @@ mandatory. No migration, DB/account/server operation, deployment or merge.
 | Zone checkpoint | Revision | Native classification | Source map | Daily policy | Required qualification |
 | --- | --- | --- | --- | --- | --- |
 | The Tempest Court | 1 | Seven outcomes; eight exact bindings, equivalent Al'Hajib recipients | [Comprehensive dossier](zone-stories/TEMPEST_COURT.md); 21 contacts/28 optional checks | Five native-shaped candidates; disappearing-recipient rescue/Cloudseeker remain story-only | Admitted reset supply, exact source/access/arrival/allocation/actor/epic events; upgrade/portal/trap/staging intent; separate two-word native direction repair |
+
+## Caverns of Armageddon completed source map — October 4, 2026
+
+The [comprehensive dossier](zone-stories/CAVERNS_OF_ARMAGEDDON.md) reviews all
+33 native blocks (eighteen Q/fifteen M), 149 rooms, 94 mobiles, 69 objects,
+393 resets/187 families, the imported epic rune and spell pool, relevant shared
+execution and bounded foreign producers/consumers. The [journal](../../areas/story/hunt.story.json)
+adds eighteen independent outcomes, 40 contacts and 27 optional checks
+(26 carried, one producer receipt). All eighteen retain native daily shape;
+classification does not certify current supply, difficulty or renewal. Native
+definitions/fingerprint/revision two/registry and prior 76 maps stay unchanged.
+
+Progression covers fourteen local heads and foreign Scralack; two different
+tags from closed soldier container objects; four distinct creature parts from
+the archangel, behemoth, beholder and Krazzi's following fire elemental; and
+two consumed amulets for the Dragon Queen. Blicatch produces the pair; Alexis
+in Myrabolus can also produce the hazy blue kind. Optional producer history
+does not restore spent material or become a hidden acceptance prerequisite.
+Roland's longbow/four-arrow reward is one receipt. Treasure chests, lost monkey
+and Abbadon's heart have foreign recipients, without duplicate local credit.
+
+Trace the elite orc's shaft key, blood-basin chipped key and guard captain's
+stone key; distinguish the latter's actual east lock from key metadata on open
+steps. Secret waterfall/grate, Blicatch's blocked return, ENTER rift and static
+one-way rescue/disembark routes are actual access clues. Wings have a one-charge
+GET/PUT sleep trap that rejects the triggering pickup. Abbadon's cosmos key
+breaks on normal unlock and serves two pickproof locks; supply/shared-door
+policy must be qualified before promising both treasures from one key.
+
+Expand admitted reset generation/current stock, UID/corpse/container custody,
+first recovery versus transfer, accepted access/key-break/arrival and trap
+mutation/recovery events, branch allocation, actor/escort/scoped ALL and existing
+committed epic/effect integration. Preserve active-accounting reset guards.
+Roland has a recipe but no declared active world spawn: choose builder placement
+and lifecycle before a separate repair/daily admission. Prisoner departure
+narration, mixed-company tags, nonreciprocal surface edge, key lifetime and
+spell-pool target routing have balanced intent/qualification plans. The unused
+cave viper alone is not an unfinished quest. **No native repair ships here.**
+
+Keep actual repairs in separate fix commits and prominent PR/news records,
+with zone/interaction/trigger/before-after/proof/live limits and news wording.
+Earlier Tempest, Moonhollow, Desolate, Shadow of Sin and Halfcut fixes remain
+visible. Journal additions and these pending proposals are not shipped repairs.
+
+Focused source and actual C++ fixtures cover exact bundles, loose versus worn
+proof, optional route/history checks, supplied amulets, consumed pairs versus
+producer receipts, independent outcomes, read-only rendering, replay and cold
+recovery. Live source/perception/container/trap/key/portal/combat/retirement,
+group epic and played persistence remain unqualified. Catalog: 77 maps/1637
+achievement units/1464 potential dailies/2211 rows. Original order: 56/220
+complete, 164 pending; Tribal Forest (`tribal`) next. Active, ready accounting
+is mandatory. No DB/account/server operation, migration, deployment or merge.
+
+| Zone checkpoint | Revision | Native classification | Source map | Daily policy | Required qualification |
+| --- | --- | --- | --- | --- | --- |
+| The Caverns of Armageddon | 1 | Eighteen named exchanges; fifteen independent bounties, tags, creature parts and consumed amulet pair | [Comprehensive dossier](zone-stories/CAVERNS_OF_ARMAGEDDON.md); 40 contacts/27 optional checks | Eighteen native-shaped candidates, subject to actual recipient/source admission and suitability | Roland placement; key break/access/trap/custody/branch/actor/ALL/effect events and actual renewable supply; native repair proposals pending |

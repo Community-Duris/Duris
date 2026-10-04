@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 76 &&
+		require(catalog.story_mappings.size() == 77 &&
 				tracker.summary_for(7, 42).total == 1637,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -5605,6 +5605,120 @@ int main(int argc, char **argv)
 					recovered.progress_for_zone(7, 42, 1316).completed == 7 &&
 					recovered.progress_for_zone(7, 42, 1316).total == 7,
 				"Tempest cold recovery changed seven outcomes or added access, god or upgrade credit");
+		}
+
+		{
+			const auto &map = *std::find_if(catalog.story_mappings.begin(),
+							catalog.story_mappings.end(),
+							[](const auto &m)
+							{ return m.source_area == "hunt"; });
+			const auto &prisoner = story_for("hunt", "prisoner-two-company-tags");
+			const auto &blicatch = story_for("hunt", "blicatch-four-creature-parts");
+			const auto &queen = story_for("hunt", "dragon-queen-cosmos-amulet");
+			const auto &maverick = story_for("hunt", "maveriss-maverick");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 133, 13307, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 133, 10, 1, 101, false, false)
+							.find("] " + queen.title + "\r\n") ==
+						std::string::npos,
+				"Caverns discovery exposed an unmet recipient");
+			for (const auto &contact : map.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 13307, 102) ==
+						result::applied,
+					"Caverns model encounter failed");
+			std::string hunt_journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = hunt_journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Caverns journal section missing");
+				const auto end = hunt_journal.find("\r\n[", start + 3);
+				return hunt_journal.substr(
+					start, end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[13359] = 2;
+			supplies.carried[13336] = 4;
+			supplies.equipped[18] = 13303;
+			const auto before = journey.serialize_state();
+			hunt_journal = journey.render_journal(7, 42, 133, 10, 1, 103, false, false,
+							      &supplies);
+			require(section(prisoner).find("[Ready now] " + prisoner.steps[0].text) !=
+						std::string::npos &&
+					section(prisoner).find("[Missing now] " +
+							       prisoner.steps[1].text) !=
+						std::string::npos &&
+					section(blicatch).find("[Missing now] " +
+							       blicatch.steps[0].text) !=
+						std::string::npos &&
+					section(queen).find("[Missing now] " +
+							    queen.steps[1].text) !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 133).completed == 0,
+				"Caverns duplicate tag/part, worn amulet or reading invented readiness or credit");
+			supplies = {};
+			for (int v :
+			     { 13359, 13330, 13335, 13336, 13349, 13350, 13303, 13318, 13352 })
+				supplies.carried[v] = 1;
+			hunt_journal = journey.render_journal(7, 42, 133, 10, 1, 104, false, false,
+							      &supplies);
+			for (const auto &entry : { prisoner, blicatch })
+				for (size_t i = 0; i + 1 < entry.steps.size(); ++i)
+					require(section(entry).find("[Ready now] " +
+								    entry.steps[i].text) !=
+							std::string::npos,
+						"Caverns exact tag/part kind was not ready");
+			require(section(queen).find("[Ready now] " + queen.steps[1].text) !=
+						std::string::npos &&
+					section(queen).find("[Ready now] " + queen.steps[2].text) !=
+						std::string::npos &&
+					section(queen).find("Next: " + queen.steps.back().text) !=
+						std::string::npos &&
+					section(maverick).find("[Missing now] " +
+							       maverick.steps[0].text) !=
+						std::string::npos &&
+					section(maverick).find("Next: " +
+							       maverick.steps.back().text) !=
+						std::string::npos,
+				"Caverns supplied proof acquired hidden key or producer-history prerequisites");
+			service supplied(catalog);
+			record(supplied, queen.contracts.front(), "caverns-supplied-pair", 133,
+			       13341);
+			require(supplied.progress_for_zone(7, 42, 133).completed == 1 &&
+					supplied.evidence_for(blicatch.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Caverns supplied amulets fabricated the personal Blicatch receipt");
+			record(journey, blicatch.contracts.front(), "caverns-blicatch", 133, 13349);
+			supplies = {};
+			hunt_journal = journey.render_journal(7, 42, 133, 10, 1, 121, false, false,
+							      &supplies);
+			require(section(queen).find("[Recorded] " + queen.steps[0].text) !=
+						std::string::npos &&
+					section(queen).find("[Missing now] " +
+							    queen.steps[1].text) !=
+						std::string::npos &&
+					section(queen).find("[Missing now] " +
+							    queen.steps[2].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 133).completed == 1,
+				"Caverns producer history restored spent amulets or completed the queen");
+			record(journey, queen.contracts.front(), "caverns-queen", 133, 13341);
+			for (const auto &entry : map.stories)
+				if (entry.id != queen.id && entry.id != blicatch.id)
+					record(journey, entry.contracts.front(), entry.id.c_str(),
+					       133, 13307);
+			auto replay = completion(queen.contracts.front(), "caverns-queen", 120);
+			replay.transaction.zone_number = 133;
+			replay.transaction.room_vnum = 13341;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Caverns accepted receipt replay was not idempotent");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 133).completed == 18 &&
+					recovered.progress_for_zone(7, 42, 133).total == 18,
+				"Caverns recovery changed eighteen independent outcomes or added campaign credit");
 		}
 
 		std::cout
