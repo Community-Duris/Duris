@@ -40,7 +40,8 @@ static critical_operation_id id(uint64_t value)
 		result.bytes[i] = static_cast<uint8_t>(value >> (8 * i));
 	return result;
 }
-static flatfile_accounting_record record(uint32_t sequence, bool large, bool source = false)
+static flatfile_accounting_record record(uint32_t sequence, bool large, bool source = false,
+					 int32_t pid = 11)
 {
 	flatfile_accounting_record value;
 	critical_operation_id operation = {};
@@ -48,7 +49,7 @@ static flatfile_accounting_record record(uint32_t sequence, bool large, bool sou
 	for (size_t i = 0; i < 4; ++i)
 		operation.bytes[15 - i] = static_cast<uint8_t>(sequence >> (8 * i));
 	currency_command_payload payload = {};
-	payload.pid = 11;
+	payload.pid = pid;
 	payload.racewar = 1;
 	payload.reason = source ? currency_reason_type::wallet_reward :
 				  currency_reason_type::atm_deposit;
@@ -150,8 +151,9 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	assert(mode == "lifetimes" || mode == "records" || mode == "source-claims" ||
-	       mode == "baseline" || mode == "baseline-empty" || mode == "baseline-rich" ||
-	       mode == "baseline-maximum" || mode == "baseline-full-index");
+	       mode == "retention" || mode == "baseline" || mode == "baseline-empty" ||
+	       mode == "baseline-rich" || mode == "baseline-maximum" ||
+	       mode == "baseline-full-index");
 	for (size_t bucket = 0; bucket < 256; ++bucket)
 	{
 		assert(access::initialize_native_bucket(root, lock, control().revision, bucket,
@@ -167,7 +169,9 @@ int main(int argc, char **argv)
 		commit();
 		return value;
 	};
-	auto wallet = create(economic_account_kind::wallet, 0, { 1, 11, {} });
+	const int32_t pid = mode == "retention" ? 1 : 11;
+	auto wallet =
+		create(economic_account_kind::wallet, 0, { 1, static_cast<uint64_t>(pid), {} });
 	auto bank = create(economic_account_kind::bank, 1, { 2, 0, "synthetic" });
 	assert(access::rename_bank(root, lock, control().revision, bank.account, bank.revision,
 				   "renamed", id(5), &operations, &error) == 0);
@@ -176,7 +180,7 @@ int main(int argc, char **argv)
 				      wallet.revision, id(6), &operations, &error) == 0);
 	commit();
 	// A recreated native identity gets a new lifetime; the retired one remains.
-	create(economic_account_kind::wallet, 0, { 1, 11, {} });
+	create(economic_account_kind::wallet, 0, { 1, static_cast<uint64_t>(pid), {} });
 	create(economic_account_kind::auction_escrow, 0, { 4, UINT32_MAX, {} });
 	create(economic_account_kind::pending_claim, 0, { 5, INT32_MAX, {} });
 	create(economic_account_kind::treasury, 0, { 6, uint64_t{ UINT32_MAX } + 1, {} });
@@ -343,8 +347,9 @@ int main(int argc, char **argv)
 		assert(critical_operation_id_is_zero(control().active_epoch));
 		return 0;
 	}
-	if (mode == "records" || mode == "source-claims")
+	if (mode == "records" || mode == "source-claims" || mode == "retention")
 	{
+		const bool source = mode != "records";
 		for (size_t bucket : { 1, 2 })
 		{
 			assert(access::initialize_evidence_bucket(root, lock, control().revision,
@@ -356,9 +361,9 @@ int main(int argc, char **argv)
 		// claims and two claimless rejections. No native domain effect is applied.
 		for (uint32_t sequence = 1; sequence <= (mode == "records" ? 23u : 4u); ++sequence)
 		{
-			auto value = record(sequence, mode == "records" && sequence != 1,
-					    mode == "source-claims");
-			if (mode == "source-claims" && sequence >= 3)
+			auto value =
+				record(sequence, mode == "records" && sequence != 1, source, pid);
+			if (source && sequence >= 3)
 			{
 				value.plan.clear();
 				value.result_code = EEXIST;
@@ -370,7 +375,7 @@ int main(int argc, char **argv)
 						       value.command.accounting_intent, &intent) ==
 					       economic_accounting_error::ok);
 					assert(economic_intent_decode(
-						       record(1, false, true)
+						       record(1, false, true, pid)
 							       .command.accounting_intent,
 						       &original) == economic_accounting_error::ok);
 					intent.admission.metadata.source_event =

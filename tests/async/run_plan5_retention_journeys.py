@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Inactive native SQL deletion preserves seeded non-personal economic evidence.
+"""Inactive native deletion preserves seeded non-personal economic evidence.
 
-Requires the explicit disposable Linux gate and an existing SQL server binary.
+Requires the explicit disposable Linux gate and an existing server binary.
 The existing menu journeys own their behavior. A test observer seeds structurally
 native-compatible zero-effect history and reads it without changing that behavior.
 This does not qualify active typed erasure, writer authority or complete capture.
@@ -347,7 +347,155 @@ def run(server: Path) -> None:
           "full_R8_qualified": False}, sort_keys=True), flush=True)
 
 
+def run_flatfile(server: Path, inspector: Path) -> None:
+    if os.environ.get("DURIS_RUN_PLAN5_RETENTION_INTEGRATION") != "1" or sys.platform != "linux":
+        raise RuntimeError("requires explicit disposable Linux retention invocation")
+    for binary in (server, inspector):
+        if not binary.is_file() or not binary.is_relative_to(ROOT / "bin"):
+            raise RuntimeError("select existing workspace/bin flatfile binaries")
+    import builtins
+    import fcntl
+    import stat
+    import time
+    import run_flatfile_deletion_journey as deletion
+    import test_flatfile_combat_journey as journey
+    from test_flatfile_restore_economic_authority import build_fixture
+
+    work = ROOT / "bin/tests/plan5-flat-retention-native"
+    work.mkdir(mode=0o700, parents=True, exist_ok=True)
+    fixture = build_fixture(work / "fixture")
+    source = work / "audit.cpp"
+    source.write_text('''#include "qualify_flatfile_economic_records.h"
+#include <iostream>
+int main(int argc, char **argv) {
+    if (argc != 2) return 2;
+    try { restore_economic_records::checker(argv[1]).run(); return 0; }
+    catch (...) { std::cerr << "native_restore_qualification_failed\\n"; return 1; }
+}
+''')
+    audit = work / "audit"
+    subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+                    "-O1", "-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
+                    "-fno-pie", "-no-pie", "-I" + str(ROOT / "scripts"), str(source),
+                    "-lcrypto", "-o", str(audit)], check=True)
+    environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
+                       UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
+    real_popen, real_reconnect, real_print = subprocess.Popen, journey.reconnect_character, builtins.print
+    summaries = []
+    for name in ("character", "durable", "uncertain"):
+        state = {"seeded": False, "captures": 0, "cold_restarts": 0, "verified": False}
+
+        def capture(label):
+            root = state["root"]
+            descriptor = os.open(root / "domains/.critical-authority.lock", os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+            try:
+                lock = os.fstat(descriptor)
+                assert stat.S_ISREG(lock.st_mode) and lock.st_nlink == 1 and lock.st_uid == os.geteuid()
+                assert not lock.st_mode & 0o077
+                deadline = time.monotonic() + 30
+                while True:
+                    try:
+                        fcntl.flock(descriptor, fcntl.LOCK_SH | fcntl.LOCK_NB)
+                        break
+                    except BlockingIOError:
+                        if time.monotonic() >= deadline:
+                            raise RuntimeError("native retention authority lock deadline")
+                        time.sleep(0.01)
+                directory = root / "economic-evidence"
+                def inventory():
+                    rows = {}
+                    for path in sorted(directory.iterdir()):
+                        info = path.lstat()
+                        assert stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and info.st_uid == os.geteuid()
+                        assert not info.st_mode & 0o077
+                        rows[path.name] = (info.st_mode, info.st_nlink, path.read_bytes())
+                    return rows
+                before = inventory()
+                result = subprocess.run([str(audit), str(root)], env=environment, text=True,
+                                        capture_output=True, timeout=30)
+                assert result.returncode == 0 and not result.stdout and not result.stderr, result.stderr
+                assert inventory() == before, "independent reader changed retained evidence"
+                control = before["authority.eal"][2]
+                assert control[:8] == b"DURECA1\0" and len(control) == 16600
+                assert control[48 + 64:48 + 80] == b"\0" * 16, "accounting became active"
+                assert struct.unpack_from("<I", control, 48 + 96)[0] == 2
+                assert sum(key.startswith("source-claim-") for key in before) == 2
+                if state["seeded"]:
+                    assert before == state["retained"], label + ": retained evidence changed"
+                state["retained"] = before
+                state["captures"] += 1
+                pending = (root / "domains/.critical-authority-transaction").exists()
+                manifest = {key: {"mode": mode, "links": links, "bytes": len(value),
+                                 "sha256": hashlib.sha256(value).hexdigest()}
+                            for key, (mode, links, value) in before.items()}
+                (work / (name + "-cut-" + str(state["captures"]) + ".json")).write_text(json.dumps(manifest, sort_keys=True))
+                real_print("FLAT_RETENTION_CAPTURE " + json.dumps({"journey": name, "label": label,
+                           "files": len(before), "claims": 2, "epochs": 2, "inactive": True,
+                           "shared_lock": True, "reader_unchanged": True, "prior_bytes_unchanged": True,
+                           "native_pending_journal": pending}), flush=True)
+            finally:
+                os.close(descriptor)
+
+        def observe_popen(args, *positional, **kwargs):
+            if args and str(args[0]) == str(server):
+                root = Path(kwargs["env"]["FLATFILE_STATE_DIR"]).resolve()
+                assert root.name == "state" and root.parent.name.startswith("flatfile-deletion-")
+                assert root.is_relative_to(Path(tempfile.gettempdir()).resolve())
+                if "root" in state:
+                    assert root == state["root"]
+                state["root"] = root
+                if state["seeded"]:
+                    capture("before-cold-restart")
+                    state["cold_restarts"] += 1
+            return real_popen(args, *positional, **kwargs)
+
+        def observe_reconnect(*args, **kwargs):
+            client = real_reconnect(*args, **kwargs)
+            # The existing initial absent-store fault uses a stray marker. Seed
+            # only after that refusal has passed and its marker was removed.
+            if not state["seeded"]:
+                assert (state["root"] / "players/1.snapshot").is_file()
+                subprocess.run([str(fixture), str(state["root"]), "retention"], env=environment, check=True)
+                capture("before-deletion")
+                state["seeded"] = True
+            return client
+
+        def observe_print(*args, **kwargs):
+            if args and isinstance(args[0], str) and args[0].startswith("[PASS]"):
+                assert state["seeded"] and not state["verified"]
+                capture("after-deletion-and-restart")
+                assert not (state["root"] / "players/1.snapshot").exists()
+                state["verified"] = True
+            real_print(*args, **kwargs)
+
+        with mock.patch.object(subprocess, "Popen", side_effect=observe_popen), \
+                mock.patch.object(journey, "reconnect_character", side_effect=observe_reconnect), \
+                mock.patch.object(builtins, "print", side_effect=observe_print):
+            deletion.run(server, inspector, None if name == "character" else name)
+        assert state["seeded"] and state["verified"]
+        assert state["cold_restarts"] == (1 if name == "character" else 3)
+        row = {"journey": name, "captures": state["captures"], "cold_restarts": state["cold_restarts"],
+               "retained_roots": 4, "claims": 2, "epochs": 2, "inactive": True,
+               "actual_native_menu": True, "seeded_history": True, "full_R8_qualified": False}
+        summaries.append(row)
+        real_print("FLAT_RETENTION_JOURNEY " + json.dumps(row, sort_keys=True), flush=True)
+    real_print("PLAN5_FLAT_RETENTION_QUALIFIED " + json.dumps({"journeys": summaries,
+               "server_sha256": hashlib.sha256(server.read_bytes()).hexdigest(),
+               "inspector_sha256": hashlib.sha256(inspector.read_bytes()).hexdigest(),
+               "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
+               "audit_sha256": hashlib.sha256(audit.read_bytes()).hexdigest(),
+               "accounting_activated": False, "full_R8_qualified": False}, sort_keys=True), flush=True)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--server", type=Path, required=True)
-    run(parser.parse_args().server.resolve())
+    parser.add_argument("--backend", choices=("sql", "flatfile"), default="sql")
+    parser.add_argument("--inspector", type=Path)
+    arguments = parser.parse_args()
+    if arguments.backend == "flatfile":
+        if arguments.inspector is None:
+            parser.error("flatfile requires --inspector")
+        run_flatfile(arguments.server.resolve(), arguments.inspector.resolve())
+    else:
+        run(arguments.server.resolve())
