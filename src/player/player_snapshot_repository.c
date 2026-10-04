@@ -16,6 +16,7 @@
 #include <array>
 #include <algorithm>
 #include <cerrno>
+#include <charconv>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -2479,6 +2480,94 @@ player_save_apply_result read_durable_revision(MYSQL *connection, const player_s
 	return { player_save_apply_outcome::already_applied, revision, 0 };
 }
 } // namespace
+
+bool player_snapshot_repository_observe_covered_revision(
+	int pid, const player_save_execution_guard::held_publication_reservation &reservation,
+	player_save_covered_revision *proof) noexcept
+{
+	if (!proof)
+		return false;
+	proof->pid_ = 0;
+	proof->revision_ = 0;
+	proof->reservation_ = nullptr;
+#ifdef __NO_MYSQL__
+	(void)pid;
+	(void)reservation;
+	(void)proof;
+	return false;
+#else
+	if (!reservation.matches_pid(pid))
+		return false;
+	try
+	{
+		player_sql_pool_lease lease(sql_pool_acquire());
+		if (!lease.get())
+			return false;
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup owner(lease.get(), cleanup);
+		if (player_sql_idle_error(lease.get()))
+			return false;
+		try
+		{
+			owner.starting();
+			auto query = execute(lease.get(), "START TRANSACTION");
+			if (!query.ok || !owner.same_session() ||
+			    !(lease.get()->server_status & SERVER_STATUS_IN_TRANS))
+			{
+				owner.finish();
+				lease.reuse(cleanup);
+				return false;
+			}
+			query = execute(lease.get(),
+					"SELECT save_revision FROM player_data WHERE pid=" +
+						std::to_string(pid) + " LIMIT 2 FOR UPDATE");
+			std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+				query.ok ? mysql_store_result(lease.get()) : nullptr,
+				mysql_free_result);
+			player_revision_t revision = 0;
+			bool valid = rows && mysql_num_rows(rows.get()) == 1 &&
+				     mysql_num_fields(rows.get()) == 1;
+			if (valid)
+			{
+				const auto row = mysql_fetch_row(rows.get());
+				const auto lengths = mysql_fetch_lengths(rows.get());
+				valid = row && row[0] && lengths && lengths[0];
+				if (valid)
+				{
+					const auto parsed = std::from_chars(
+						row[0], row[0] + lengths[0], revision);
+					valid = parsed.ec == std::errc() &&
+						parsed.ptr == row[0] + lengths[0];
+				}
+			}
+			rows.reset();
+			valid = valid && owner.same_session() &&
+				(lease.get()->server_status & SERVER_STATUS_IN_TRANS) &&
+				reservation.matches_pid(pid);
+			owner.finish();
+			lease.reuse(cleanup);
+			if (!valid || !cleanup.rollback_confirmed || cleanup.cleanup_error ||
+			    cleanup.disposition != player_sql_cleanup_disposition::idle_verified ||
+			    !reservation.matches_pid(pid))
+				return false;
+			proof->pid_ = pid;
+			proof->revision_ = revision;
+			proof->reservation_ = &reservation;
+			return true;
+		}
+		catch (...)
+		{
+			owner.finish();
+			lease.reuse(cleanup);
+			return false;
+		}
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
 
 bool player_snapshot_repository_write_pets(MYSQL *connection, const player_snapshot &snapshot)
 {
