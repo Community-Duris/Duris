@@ -13,9 +13,14 @@ component owners now have passing source-bound results; seven stale fixture
 closures/oracles were repaired without removing original cases or limits.
 The 35 prepared actual worker/journal guard cases pass in both backend modes.
 Real pooled bank reply-loss/retained-ACK qualification passes on MySQL 8.0.46
-and MariaDB 10.11.14. Coin session cleanliness, item topology expectation and
-lifecycle fixture closure require targeted reruns. The prepared native SQL
-startup/guard and checked-release owners compile; execution remains pending.
+and MariaDB 10.11.14. The item topology expectation and maintained lifecycle
+link closure are solved in fdd27c681 and 1dc242ed5, each passing both engines.
+Coin fixture lifetime is solved in80565e8a7; all original native coin cases pass
+both engines with clean pooled sessions checked before the deliberate legacy kill.
+All22 prepared checked-release cases now pass on both engines after correcting
+only the explicit-resume fixture expectation. The startup owner preserves closed
+pre-start mutation checks; stale post-start registration and ID-only hold-release
+expectations are repaired privately and recompiling. Original failures remain.
 These results do not complete Plan 1 or qualify actual active ordinary-drop
 publication/restart. See the consolidated report for exact inputs and logs.
 
