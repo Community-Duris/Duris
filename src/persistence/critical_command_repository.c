@@ -4,6 +4,7 @@
 #include "persistence/economic_sql_shop_trade_transaction.h"
 #include "persistence/economic_sql_lifecycle_guard.h"
 #include "sql/sql_thread_init.h"
+#include "player/player_sql_transaction_cleanup.h"
 
 #include "economy/currency_command.h"
 #include "economy/currency_repository.h"
@@ -12,6 +13,7 @@
 #include "economy/coin_transfer_accounting.h"
 #include "economy/item_transfer_accounting.h"
 #include "persistence/economic_sql_item_transfer_transaction.h"
+#include "persistence/sql_room_item_payload.h"
 #include "persistence/corpse_lifecycle_command.h"
 #include "persistence/corpse_lifecycle_repository.h"
 #include "persistence/critical_outbox.h"
@@ -1551,8 +1553,8 @@ bool currency_repository_execute(MYSQL *connection, const critical_command &comm
 				      false);
 }
 
-critical_apply_result critical_command_repository_apply(MYSQL *connection,
-							const critical_command &command)
+static critical_apply_result apply_with_writer(MYSQL *connection, const critical_command &command,
+					       economic_sql_currency_writer_guard *pooled_writer)
 {
 	last_statement_error = 0;
 	const bool accounted_bank = accounted_bank_envelope(command);
@@ -1648,7 +1650,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	// These schema-v1 producers have no accounting admission. Serialize their
 	// whole transaction with maintenance, and refuse staged/active accounting.
 	// Keep the guard in this root scope through every commit/rollback and replay.
-	economic_sql_currency_writer_guard legacy_writer;
+	economic_sql_currency_writer_guard borrowed_writer;
+	auto &legacy_writer = pooled_writer ? *pooled_writer : borrowed_writer;
 	if ((item_command || coin_command || auction_command || collector_command ||
 	     corpse_command || restitution_command) &&
 	    !accounted_coin && !accounted_item && !accounted_collector && !accounted_shop)
@@ -2971,6 +2974,12 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	return applied;
 }
 
+critical_apply_result critical_command_repository_apply(MYSQL *connection,
+							const critical_command &command)
+{
+	return apply_with_writer(connection, command, nullptr);
+}
+
 bool critical_command_repository_begin_inbox_in_transaction(MYSQL *connection,
 							    const critical_command &command)
 {
@@ -3018,15 +3027,81 @@ critical_apply_result critical_command_repository_apply_from_pool(const critical
 		mysql_thread_end();
 		return { critical_apply_outcome::retryable_failure, 0, ETIMEDOUT };
 	}
-	critical_apply_result applied = critical_command_repository_apply(connection, command);
-	if (applied.outcome == critical_apply_outcome::ambiguous_commit ||
-	    connection_error(applied.error_code))
+	critical_apply_result applied{};
+	bool clean_transaction = false;
+	{
+		economic_sql_currency_writer_guard writer;
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup transaction_owner(connection, cleanup);
+		const auto idle_error = player_sql_idle_error(connection);
+		if (idle_error)
+			applied = { critical_apply_outcome::retryable_failure, 0, idle_error };
+		else
+		{
+			transaction_owner.starting();
+			try
+			{
+				applied = apply_with_writer(connection, command, &writer);
+			}
+			catch (const std::bad_alloc &)
+			{
+				// An exception may follow a sent COMMIT. Reconcile the original ID.
+				applied = { critical_apply_outcome::ambiguous_commit, 0, ENOMEM };
+			}
+			catch (...)
+			{
+				applied = { critical_apply_outcome::ambiguous_commit, 0, EIO };
+			}
+			transaction_owner.finish();
+			clean_transaction = cleanup.disposition ==
+						    player_sql_cleanup_disposition::idle_verified &&
+					    !cleanup.cleanup_error;
+		}
+		if (!writer.release())
+		{
+			if (writer.retire_pooled_session())
+				connection = nullptr;
+			else
+				sql_pool_discard_connection(connection);
+		}
+		// Both owners unwind while the handle is still alive. A failed exact
+		// retirement cannot leave a guard dereferencing a released pool handle.
+	}
+	if (connection && !clean_transaction)
+		sql_pool_discard_connection(connection);
+	if (connection && (applied.outcome == critical_apply_outcome::ambiguous_commit ||
+			   connection_error(applied.error_code)))
 	{
 		MYSQL *replacement = sql_pool_replace_connection(connection);
 		connection = replacement;
 	}
+	if (applied.outcome == critical_apply_outcome::ambiguous_commit && !connection)
+		connection = sql_pool_acquire();
 	if (applied.outcome == critical_apply_outcome::ambiguous_commit && connection)
-		applied = critical_command_repository_reconcile(connection, command);
+	{
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup owner(connection, cleanup);
+		if (!player_sql_idle_error(connection))
+		{
+			owner.starting();
+			try
+			{
+				const auto reconciled =
+					critical_command_repository_reconcile(connection, command);
+				if (reconciled.outcome == critical_apply_outcome::already_applied ||
+				    reconciled.outcome == critical_apply_outcome::applied ||
+				    reconciled.outcome == critical_apply_outcome::terminal_failure)
+					applied = reconciled;
+			}
+			catch (...)
+			{ /* Preserve the original uncertain outcome. */
+			}
+			owner.finish();
+		}
+		if (cleanup.disposition != player_sql_cleanup_disposition::idle_verified ||
+		    cleanup.cleanup_error)
+			sql_pool_discard_connection(connection);
+	}
 	sql_pool_release(connection);
 	mysql_thread_end();
 	return applied;
@@ -3152,6 +3227,164 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 	return stored_result(stored.result_code ? critical_apply_outcome::terminal_failure :
 						  critical_apply_outcome::already_applied,
 			     stored);
+}
+
+critical_apply_result critical_command_repository_verify_ordinary_drop_in_transaction(
+	MYSQL *connection, const critical_command &command) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	return { critical_apply_outcome::terminal_failure, 0, ENOTSUP };
+#else
+	try
+	{
+		last_statement_error = 0;
+		item_transfer_payload payload{};
+		sql_room_item_payload_batch literals;
+		if (!connection || !command.publication_required ||
+		    command.type != critical_command_type::item_transfer ||
+		    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+			return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+		// This existing boolean validator also returns false on allocation
+		// failure. Do not turn an unproven classification into a durable reject.
+		if (!item_transfer_accounting_command_supported(command))
+			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+		if (!item_transfer_command_decode_payload(command, &payload))
+			return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+		// Nested codecs can flatten allocation failure to EBADMSG. Treat an
+		// opaque capture refusal as unavailable proof, never a durable reject.
+		if (!sql_room_item_payload_capture(payload, &literals))
+			return { critical_apply_outcome::retryable_failure, 0,
+				 errno ? static_cast<unsigned int>(errno) : EAGAIN };
+		if (!root_transaction_active(connection))
+			return { critical_apply_outcome::terminal_failure, 0, EBUSY };
+		unsigned long session = 0;
+		auto error = accounted_session_check(connection, &session, false);
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return { critical_apply_outcome::retryable_failure, 0, error };
+
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash{}, keys_hash{};
+		stored_operation stored{};
+		bool found = false;
+		if (!command_hashes(command, &command_hash, &keys_hash) ||
+		    !read_operation(connection, command.operation_id, false, &stored, &found))
+			return { critical_apply_outcome::retryable_failure, 0,
+				 database_error(connection) ? database_error(connection) : ENOMEM };
+		if (!found || stored.status != INBOX_COMMITTED)
+			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+		if (!identity_matches(stored, command, command_hash, keys_hash))
+			return { critical_apply_outcome::terminal_failure, 0, EEXIST };
+		if (stored.failure_stage != static_cast<uint16_t>(critical_failure_stage::none))
+			return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+		if (stored.result_code)
+		{
+			item_transfer_result rejected{};
+			std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> canonical{};
+			if (!item_transfer_command_decode_result(stored.result_payload.data(),
+								 stored.result_payload.size(),
+								 &rejected) ||
+			    !item_transfer_command_encode_result(rejected, &canonical) ||
+			    stored.result_payload.size() != canonical.size() ||
+			    !std::equal(canonical.begin(), canonical.end(),
+					stored.result_payload.begin()))
+				return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+			error = economic_sql_item_transfer_verify_retained(
+				connection, command, stored.result_code,
+				stored.result_payload.data(), stored.result_payload.size());
+			if (!error)
+				error = verify_accounted_root_outbox(connection, command,
+								     stored.result_code,
+								     stored.result_payload.data(),
+								     stored.result_payload.size());
+			if (error)
+				return { critical_apply_outcome::retryable_failure, 0, error };
+			// A rejected ordinary drop has neither native movement history nor
+			// retained room literals. Do not infer their absence from root counts.
+			char operation[CRITICAL_COMMAND_ID_HEX_SIZE]{};
+			char query[384]{};
+			if (!critical_operation_id_to_hex(command.operation_id, operation,
+							  sizeof(operation)))
+				return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+			const int length = snprintf(
+				query, sizeof(query),
+				"SELECT (SELECT COUNT(*) FROM item_ownership_ledger WHERE operation_id=UNHEX('%s'))+"
+				"(SELECT COUNT(*) FROM sql_room_item_payload WHERE operation_id=UNHEX('%s'))",
+				operation, operation);
+			if (length < 0 || static_cast<size_t>(length) >= sizeof(query))
+				return { critical_apply_outcome::retryable_failure, 0, EOVERFLOW };
+			if (!execute(connection, query))
+				return { critical_apply_outcome::retryable_failure, 0,
+					 database_error(connection) };
+			std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+				mysql_store_result(connection), mysql_free_result);
+			if (!rows)
+				return { critical_apply_outcome::retryable_failure, 0,
+					 database_error(connection) ? database_error(connection) :
+								      EIO };
+			const MYSQL_ROW row = mysql_fetch_row(rows.get());
+			if (mysql_num_rows(rows.get()) != 1 || mysql_num_fields(rows.get()) != 1 ||
+			    !row || !row[0] || strcmp(row[0], "0") != 0)
+				return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+			error = accounted_session_check(connection, &session, true);
+			if (error)
+				return { critical_apply_outcome::retryable_failure, 0, error };
+			// Preserve the exact observed preflight revisions/body. The caller
+			// compares this original result before acknowledging a no-effect root.
+			return stored_result(critical_apply_outcome::terminal_failure, stored);
+		}
+
+		item_transfer_result result{};
+		if (!item_transfer_command_decode_result(stored.result_payload.data(),
+							 stored.result_payload.size(), &result) ||
+		    result.root_item_uid != payload.selected_item_uid ||
+		    result.item_count != payload.item_count || result.corpse_revision ||
+		    result.collector_catalog_changed ||
+		    payload.expected_from_revision == std::numeric_limits<uint64_t>::max() ||
+		    payload.expected_to_revision == std::numeric_limits<uint64_t>::max() ||
+		    result.from_owner_revision != payload.expected_from_revision + 1 ||
+		    result.to_owner_revision != payload.expected_to_revision + 1)
+			return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+		uint64_t maximum_revision = 0;
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const auto expected = payload.items[index].expected_item_revision;
+			if (expected == std::numeric_limits<uint64_t>::max())
+				return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+			maximum_revision = std::max(maximum_revision, expected + 1);
+		}
+		if (!maximum_revision || result.max_item_revision != maximum_revision ||
+		    stored.durable_revision !=
+			    std::max({ result.from_owner_revision, result.to_owner_revision,
+				       maximum_revision }))
+			return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+
+		// The caller has already locked current native authority in its native
+		// order. This adds historical payload proof without a late inbox lock.
+		error = economic_sql_item_transfer_verify_retained(connection, command, 0,
+								   stored.result_payload.data(),
+								   stored.result_payload.size());
+		if (!error)
+			error = verify_accounted_root_outbox(connection, command, 0,
+							     stored.result_payload.data(),
+							     stored.result_payload.size());
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return { critical_apply_outcome::retryable_failure, 0, error };
+		return stored_result(critical_apply_outcome::already_applied, stored);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
+	}
+	catch (...)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, EFAULT };
+	}
+#endif
 }
 
 critical_apply_result

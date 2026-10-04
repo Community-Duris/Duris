@@ -5,10 +5,17 @@ The R1-R8 requirement contract below remains the feature checklist;
 conservation rules. The evidence table and counts below are the historical
 2026-09-27 assessment at add-double-entry HEAD `49af585c4`. Use the
 [active completion plan](FINISH_ACCOUNTING_PLAN.md) and
-[latest review status](REVIEW_STATUS_2026-10-03.md) for current implementation
+[latest review status](REVIEW_STATUS_2026-10-04.md) for current implementation
 and qualification status. The older continuation retains historical evidence. The [delivery plan](DELIVERY_PLAN.md) links five
 executable work plans. A component test or source reference is not a qualified
 player journey.
+
+Plan 1's major qualification batch is underway on production source `9fabe54bb`.
+Both strict builds, focused components, worker/journal guard cases and both-engine
+bank/coin/item coordinator/pool checks plus maintained lifecycle,22 checked-release,
+14 startup and18 recovery-session cases pass within their stated scopes on both
+engines. Native production publication/recovery remains open. No R1–R8 or
+major-plan acceptance gate is waived or marked complete by these partial results.
 
 ## Product boundary
 

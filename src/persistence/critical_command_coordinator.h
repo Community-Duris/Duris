@@ -9,6 +9,7 @@
 
 class economic_sql_lifecycle_guard;
 class economic_sql_cutover_transaction_owner;
+class player_save_restored_publication_owner;
 
 // Private coordinator-side lease operations used only by the SQL lifecycle
 // owner. They expose no readiness boolean or lease identity to public callers.
@@ -19,7 +20,7 @@ class critical_command_coordinator_owner final
 	static bool acquire_cutover_lease(uint64_t timeout_msec, uint64_t *generation,
 					  uint64_t *lease_id);
 	static bool validate_cutover_lease(uint64_t generation, uint64_t lease_id);
-	static void release_cutover_lease(uint64_t generation, uint64_t lease_id);
+	static bool release_cutover_lease(uint64_t generation, uint64_t lease_id);
 	static bool begin_cutover_transaction(uint64_t generation, uint64_t lease_id,
 					      const void *connection, unsigned long session);
 	static bool validate_cutover_transaction(uint64_t generation, uint64_t lease_id,
@@ -131,6 +132,7 @@ bool critical_command_coordinator_init(
 // owner untouched. Keep the guard through shutdown/copyover dependencies, then
 // release it if the lifecycle operation is cancelled or after SQL teardown.
 bool critical_command_coordinator_try_acquire_lifecycle_guard(void);
+bool critical_command_coordinator_lifecycle_guard_held_by_current_thread(void);
 void critical_command_coordinator_release_lifecycle_guard(void);
 // Returns false without changing coordinator lifetime when an owner is issuing
 // or holds a cutover. Retry only after that owner reaches a terminal boundary.
@@ -151,6 +153,9 @@ bool critical_command_coordinator_get_completed(const critical_operation_id &ope
 // Release a publication-held operation only after the live callback succeeded and
 // the journal checkpoint was durable. A false result leaves the operation fenced.
 bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id);
+// Only the original restored save owner can supply this nonconstructible proof.
+bool critical_command_coordinator_acknowledge_publication(
+	player_save_restored_publication_owner &owner);
 size_t critical_command_coordinator_pulse(critical_completion *completions, size_t capacity);
 bool critical_command_coordinator_is_fenced(const critical_entity_key &key,
 					    critical_operation_id *operation_id);

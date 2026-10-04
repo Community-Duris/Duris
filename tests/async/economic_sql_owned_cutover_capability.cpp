@@ -22,6 +22,12 @@
 #include <unistd.h>
 
 static int close_fault = 0;
+
+extern "C" bool sql_pool_retire_owned_connection(MYSQL *)
+{
+	// This composed direct-session owner does not instantiate a SQL pool.
+	return false;
+}
 static std::atomic<unsigned int> commit_attempts = 0;
 static std::atomic<unsigned int> rollback_attempts = 0;
 static std::atomic<unsigned int> release_lock_query_attempts = 0;

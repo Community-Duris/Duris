@@ -33,6 +33,15 @@ struct critical_apply_result
 	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result_payload = {};
 };
 
+// In-process delivery authority only; this is not part of a command, journal
+// frame or stored receipt. Only proven admission refusal may bypass publication
+// ACK. Uncertain append and every executed/replayed result remain execution.
+enum class critical_completion_disposition : uint8_t
+{
+	execution = 0,
+	never_admitted,
+};
+
 struct critical_completion
 {
 	critical_operation_id operation_id;
@@ -48,7 +57,23 @@ struct critical_completion
 	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result_payload = {};
 	// Reconstructed from durable command entity keys after restart; diagnostics only.
 	std::array<char, 33> recovery_correlation = {};
+	critical_completion_disposition disposition = critical_completion_disposition::execution;
 };
+
+inline bool critical_completion_disposition_valid(const critical_completion &completion) noexcept
+{
+	if (completion.disposition == critical_completion_disposition::execution)
+		return true;
+	if (completion.disposition != critical_completion_disposition::never_admitted ||
+	    completion.outcome != critical_apply_outcome::terminal_failure ||
+	    !completion.error_code || completion.durable_revision || completion.started_at_usec ||
+	    completion.failure_stage != critical_failure_stage::none || completion.result_size)
+		return false;
+	for (uint8_t byte : completion.result_payload)
+		if (byte)
+			return false;
+	return true;
+}
 
 // Completion delivery is serialized by the coordinator mutex. It owns bounded
 // retention and queue operations, but it does not decide whether an operation

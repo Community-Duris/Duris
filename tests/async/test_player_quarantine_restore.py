@@ -157,8 +157,16 @@ with tempfile.TemporaryDirectory(prefix="duris-quarantine-restore-") as temporar
         assert refused.returncode != 0 and protected_archive.read_bytes() == original
 
     pipeline = (ROOT / "src/player/player_save_pipeline.c").read_text()
-    boot = pipeline[pipeline.index("bool player_save_pipeline_init("):]
-    assert boot.index("player_save_journal_init(") < boot.index("verify_resolved_recovery();") < boot.index("player_save_worker_init(")
+    prepare = pipeline[pipeline.index("bool player_save_pipeline_prepare("):
+                       pipeline.index("bool player_save_pipeline_start(")]
+    start = pipeline[pipeline.index("bool player_save_pipeline_start("):
+                     pipeline.index("bool player_save_pipeline_init(")]
+    boot = pipeline[pipeline.index("bool player_save_pipeline_init("):
+                    pipeline.index("void player_save_pipeline_shutdown(")]
+    assert prepare.index("player_save_journal_init(") < prepare.index("verify_resolved_recovery();")
+    assert "player_save_worker_init(" not in prepare and "std::thread(" not in prepare
+    assert start.index("player_save_worker_init(") < start.index("std::thread(dispatcher_main)")
+    assert boot.index("player_save_pipeline_prepare(") < boot.index("player_save_pipeline_start(")
     assert "player_quarantine_recovery_revalidate_selected" in (ROOT / "src/net/comm.c").read_text()
 
 print("[PASS] native v1/v2 restore preserves original component frames, verifies later-save commit proof, refuses mixed generations/missing proof and damaged/unsafe evidence; boot verification precedes ordinary replay")

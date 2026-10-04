@@ -20,6 +20,7 @@ HARNESS = r'''
 #include <set>
 
 static std::atomic<unsigned int> attempts{0};
+static std::atomic<unsigned int> apply_calls{0};
 static std::atomic<bool> release_last{false};
 static critical_apply_outcome exhausted_outcome;
 
@@ -47,6 +48,7 @@ static critical_command command(unsigned int tag) {
     return result;
 }
 static critical_apply_result apply(const critical_command &cmd, void *) {
+    ++apply_calls;
     if (cmd.payload[0] == 200 || cmd.payload[0] == 202) {
         critical_apply_result result = {cmd.payload[0] == 200 ? critical_apply_outcome::applied :
                                        critical_apply_outcome::already_applied, 73, 0};
@@ -98,6 +100,7 @@ static void capacity_case(const std::string &directory, size_t capacity,
         for (size_t i = 0; i < count; ++i) {
             const auto id = operation_key(delivered[i].operation_id);
             assert(expected.at(id) == delivered[i].outcome);
+            assert(delivered[i].disposition == critical_completion_disposition::execution);
             assert(seen.insert(id).second);
         }
     };
@@ -130,6 +133,65 @@ static void capacity_case(const std::string &directory, size_t capacity,
            capacity, unsigned(outcome), seen.size());
     critical_command_coordinator_shutdown();
 }
+static void admission_capacity_case(const std::string &directory, bool full_delivery) {
+    apply_calls = 0;
+    assert(critical_command_coordinator_init(directory.c_str(), apply, nullptr, 1));
+    // No commands exist yet. The real journal's one-byte quota refuses before
+    // append; only the private delivery queue is controlled to exercise fallback.
+    critical_command_journal_shutdown();
+    assert(critical_command_journal_init(directory.c_str(), 1));
+    const auto fill_delivery = [] {
+        std::lock_guard<std::mutex> lock(coordinator_mutex);
+        while (completion_delivery.has_capacity()) {
+            critical_completion stale = {};
+            completion_delivery.enqueue(critical_completion_channel::execution, stale);
+        }
+    };
+    if (full_delivery)
+        fill_delivery();
+    const auto failed = command(199);
+    assert(critical_command_coordinator_submit_for_publication(failed) ==
+           critical_submit_result::awaiting_durability);
+    wait_for([&] {
+        return critical_command_coordinator_durability(failed.operation_id) ==
+               critical_command_durability::failed;
+    });
+    {
+        std::lock_guard<std::mutex> lock(coordinator_mutex);
+        const auto &state = *operations.at(operation_key(failed.operation_id));
+        assert(state.admission_failure_queued == !full_delivery);
+        assert(critical_completion_disposition_valid(state.admission_failure_completion));
+        assert(state.admission_failure_completion.disposition ==
+               critical_completion_disposition::never_admitted);
+    }
+    for (int n = 0; n < 3; ++n) {
+        if (full_delivery && n)
+            fill_delivery();
+        assert(critical_command_coordinator_pulse(nullptr, 0) == 0);
+        assert(critical_command_coordinator_is_fenced(failed.keys[0], nullptr));
+        assert(critical_command_coordinator_durability(failed.operation_id) ==
+               critical_command_durability::failed);
+        std::lock_guard<std::mutex> lock(coordinator_mutex);
+        assert(operations.at(operation_key(failed.operation_id))->admission_failure_queued ==
+               !full_delivery);
+    }
+    // Keep enqueue unavailable at the start of the final pulse. Its stale
+    // execution entries are discarded, then the real unqueued failure is delivered.
+    if (full_delivery)
+        fill_delivery();
+    critical_completion delivered = {};
+    assert(critical_command_coordinator_pulse(&delivered, 1) == 1);
+    assert(critical_operation_id_equal(delivered.operation_id, failed.operation_id));
+    assert(delivered.disposition == critical_completion_disposition::never_admitted);
+    assert(critical_completion_disposition_valid(delivered));
+    assert(!critical_command_coordinator_is_fenced(failed.keys[0], nullptr));
+    assert(critical_command_journal_health_copy().records == 0 && apply_calls == 0);
+    assert(!critical_command_coordinator_acknowledge_publication(failed.operation_id));
+    assert(critical_command_coordinator_pulse(&delivered, 1) == 0);
+    assert(critical_command_coordinator_shutdown());
+    printf("admission delivery full=%u: zero-capacity hold and exact-once never-admitted disposition\n",
+           unsigned(full_delivery));
+}
 static void large_result_case(const std::string &directory) {
     assert(critical_command_coordinator_init(directory.c_str(), apply, nullptr, 2));
     for (unsigned int tag : {200, 202}) {
@@ -154,6 +216,8 @@ static void large_result_case(const std::string &directory) {
 }
 int main(int argc, char **argv) {
     assert(argc == 2);
+    admission_capacity_case(std::string(argv[1]) + "/admission-queued", false);
+    admission_capacity_case(std::string(argv[1]) + "/admission-fallback", true);
     large_result_case(std::string(argv[1]) + "/large");
     for (auto outcome : {critical_apply_outcome::retryable_failure, critical_apply_outcome::ambiguous_commit})
         for (size_t capacity : {0, 1, 64})

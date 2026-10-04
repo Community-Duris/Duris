@@ -1,6 +1,7 @@
 #include "persistence/death_recovery_visibility.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/persistence_diagnostics.h"
+#include "player/player_save_pipeline.h"
 
 #include <algorithm>
 #include <chrono>
@@ -11,6 +12,7 @@
 #include <mutex>
 #include <new>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
@@ -64,12 +66,21 @@ std::condition_variable result_available;
 std::condition_variable admission_available;
 std::condition_variable publication_checkpoint_finished;
 size_t publication_checkpoints_inflight = 0;
+size_t guarded_publications_inflight = 0;
 std::unordered_map<std::string, std::unique_ptr<operation_state>> operations;
 std::deque<std::string> pending;
 std::deque<std::string> pending_admission;
 critical_completion_delivery completion_delivery;
-std::unordered_map<std::string, std::string> active_keys;
-std::unordered_map<std::string, std::deque<std::string>> fences;
+struct entity_key_hash
+{
+	using is_transparent = void;
+	size_t operator()(std::string_view key) const noexcept
+	{
+		return std::hash<std::string_view>{}(key);
+	}
+};
+std::unordered_map<std::string, std::string, entity_key_hash, std::equal_to<>> active_keys;
+std::unordered_map<std::string, std::deque<std::string>, entity_key_hash, std::equal_to<>> fences;
 std::unordered_map<std::string, completed_state> completed_cache;
 std::deque<std::string> completed_order;
 size_t completed_cache_bytes = 0;
@@ -178,13 +189,19 @@ std::string operation_key(const critical_operation_id &operation_id)
 			   operation_id.bytes.size());
 }
 
-std::string entity_key(const critical_entity_key &key)
+std::array<char, 9> entity_key_bytes(const critical_entity_key &key) noexcept
 {
-	std::string encoded(9, '\0');
+	std::array<char, 9> encoded = {};
 	encoded[0] = static_cast<char>(key.type);
 	for (unsigned int index = 0; index < 8; ++index)
 		encoded[index + 1] = static_cast<char>(key.id >> (index * 8));
 	return encoded;
+}
+
+std::string entity_key(const critical_entity_key &key)
+{
+	const auto encoded = entity_key_bytes(key);
+	return std::string(encoded.data(), encoded.size());
 }
 
 bool operation_is_queued(const operation_state &state)
@@ -247,7 +264,8 @@ void release_keys(const std::string &identity, const critical_command &command)
 {
 	for (const critical_entity_key &key : command.keys)
 	{
-		auto found = active_keys.find(entity_key(key));
+		const auto encoded = entity_key_bytes(key);
+		auto found = active_keys.find(std::string_view(encoded.data(), encoded.size()));
 		if (found != active_keys.end() && found->second == identity)
 			active_keys.erase(found);
 	}
@@ -264,7 +282,10 @@ void remove_fences(const std::string &identity, const critical_command &command)
 {
 	for (const critical_entity_key &key : command.keys)
 	{
-		auto found = fences.find(entity_key(key));
+		// On the publication ACK path the durable frame is already retired.
+		// Lookup must not depend on a temporary string's allocation or SSO.
+		const auto encoded = entity_key_bytes(key);
+		auto found = fences.find(std::string_view(encoded.data(), encoded.size()));
 		if (found == fences.end())
 			continue;
 		auto &identities = found->second;
@@ -319,39 +340,56 @@ void update_depth()
 }
 
 void remember_completed(const std::string &identity, const critical_command &command,
-			const critical_completion &completion)
+			const critical_completion &completion) noexcept
 {
-	std::vector<uint8_t> encoded;
-	if (critical_command_encode(command, &encoded) != critical_command_codec_result::ok)
-		return;
-	const size_t retained_size = encoded.size() + sizeof(critical_completion);
-	if (encoded.size() > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES ||
-	    retained_size < encoded.size() ||
-	    retained_size > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES)
-		return;
-	while (!completed_order.empty() &&
-	       (completed_cache.size() >= CRITICAL_COORDINATOR_COMPLETED_CACHE_MAX ||
-		completed_cache_bytes > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES - retained_size))
-	{
-		auto found = completed_cache.find(completed_order.front());
-		if (found != completed_cache.end())
-		{
-			completed_cache_bytes -= found->second.encoded_size;
-			completed_cache.erase(found);
-		}
-		completed_order.pop_front();
-	}
+	// This bounded cache is an optimization, never durable authority. Every
+	// fallible cache preparation belongs inside the exception boundary; ACK
+	// cleanup must finish even if the original frame is already checkpointed.
 	try
 	{
-		completed_cache.emplace(identity, completed_state{ .command = command,
-								   .completion = completion,
-								   .encoded_size = retained_size });
-		completed_order.push_back(identity);
+		std::vector<uint8_t> encoded;
+		if (critical_command_encode(command, &encoded) != critical_command_codec_result::ok)
+			return;
+		const size_t retained_size = encoded.size() + sizeof(critical_completion);
+		if (encoded.size() > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES ||
+		    retained_size < encoded.size() ||
+		    retained_size > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES)
+			return;
+		while (!completed_order.empty() &&
+		       (completed_cache.size() >= CRITICAL_COORDINATOR_COMPLETED_CACHE_MAX ||
+			completed_cache_bytes >
+				CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES - retained_size))
+		{
+			auto found = completed_cache.find(completed_order.front());
+			if (found != completed_cache.end())
+			{
+				completed_cache_bytes -= found->second.encoded_size;
+				completed_cache.erase(found);
+			}
+			completed_order.pop_front();
+		}
+		auto inserted = completed_cache.emplace(
+			identity, completed_state{ .command = command,
+						   .completion = completion,
+						   .encoded_size = retained_size });
+		if (!inserted.second)
+			return;
+		try
+		{
+			completed_order.push_back(identity);
+		}
+		catch (...)
+		{
+			// Insertion succeeded but FIFO admission failed. Roll back only
+			// this new entry before charging its retained bytes.
+			completed_cache.erase(inserted.first);
+			return;
+		}
 		completed_cache_bytes += retained_size;
 	}
-	catch (const std::bad_alloc &)
+	catch (...)
 	{
-		completed_cache.erase(identity);
+		// No cache failure may strand a completed publication obligation.
 	}
 }
 
@@ -511,16 +549,19 @@ unsigned int journal_failure_error(critical_command_journal_result result)
 void retain_admission_failure_locked(operation_state &state, unsigned int error_code)
 {
 	state.phase = critical_operation_phase::admission_failed;
-	state.admission_failure_completion = { .operation_id = state.command.operation_id,
-					       .outcome = critical_apply_outcome::terminal_failure,
-					       .durable_revision = 0,
-					       .error_code = error_code,
-					       .attempt = state.attempt,
-					       .queued_at_usec = state.queued_at_usec,
-					       .started_at_usec = 0,
-					       .completed_at_usec = now_usec(),
-					       .result_size = 0,
-					       .result_payload = {} };
+	state.admission_failure_completion = {
+		.operation_id = state.command.operation_id,
+		.outcome = critical_apply_outcome::terminal_failure,
+		.durable_revision = 0,
+		.error_code = error_code,
+		.attempt = state.attempt,
+		.queued_at_usec = state.queued_at_usec,
+		.started_at_usec = 0,
+		.completed_at_usec = now_usec(),
+		.result_size = 0,
+		.result_payload = {},
+		.disposition = critical_completion_disposition::never_admitted
+	};
 	if (!state.admission_failure_queued)
 	{
 		state.admission_failure_queued = completion_delivery.try_enqueue(
@@ -924,8 +965,8 @@ bool cutover_ready_locked()
 {
 	update_depth();
 	if (lifecycle_guard_active || !health.initialized || !health.running || health.accepting ||
-	    stop_requested || health.queued || health.inflight || health.blocked ||
-	    health.publication_pending || health.awaiting_durability ||
+	    stop_requested || guarded_publications_inflight || health.queued || health.inflight ||
+	    health.blocked || health.publication_pending || health.awaiting_durability ||
 	    health.admission_queue_bytes || health.append_inflight || health.fenced_keys ||
 	    !operations.empty() || !pending.empty() || !pending_admission.empty() ||
 	    pending_admission_bytes || admission_inflight_bytes || !active_keys.empty() ||
@@ -1021,13 +1062,20 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 bool critical_command_coordinator_try_acquire_lifecycle_guard(void)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
-	if (lifecycle_guard_active || active_cutover_phase != cutover_owner_phase::none)
+	if (lifecycle_guard_active || active_cutover_phase != cutover_owner_phase::none ||
+	    guarded_publications_inflight)
 		return false;
 	lifecycle_guard_active = true;
 	lifecycle_guard_was_accepting = health.accepting;
 	lifecycle_guard_thread = std::this_thread::get_id();
 	health.accepting = false;
 	return true;
+}
+
+bool critical_command_coordinator_lifecycle_guard_held_by_current_thread(void)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	return lifecycle_guard_active && lifecycle_guard_thread == std::this_thread::get_id();
 }
 
 void critical_command_coordinator_release_lifecycle_guard(void)
@@ -1047,7 +1095,8 @@ bool critical_command_coordinator_shutdown(void)
 {
 	{
 		std::lock_guard<std::mutex> lock(coordinator_mutex);
-		if (active_cutover_phase != cutover_owner_phase::none)
+		if (active_cutover_phase != cutover_owner_phase::none ||
+		    guarded_publications_inflight)
 		{
 			health.shutdown_refused = true;
 			health.accepting = false;
@@ -1292,13 +1341,22 @@ bool critical_command_coordinator_acknowledge_publication(const critical_operati
 {
 	if (critical_operation_id_is_zero(operation_id))
 		return false;
-	const std::string identity = operation_key(operation_id);
+	std::string identity;
+	try
+	{
+		identity = operation_key(operation_id);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 	{
 		std::lock_guard<std::mutex> lock(coordinator_mutex);
 		auto found = operations.find(identity);
 		if (found == operations.end() ||
 		    !operation_is_publication_pending(*found->second) ||
-		    found->second->publication_checkpointing)
+		    found->second->publication_checkpointing ||
+		    player_save_execution_guard::publication_operation_held(operation_id))
 			return false;
 		found->second->publication_checkpointing = true;
 		++publication_checkpoints_inflight;
@@ -1335,6 +1393,112 @@ bool critical_command_coordinator_acknowledge_publication(const critical_operati
 	update_depth();
 	work_available.notify_all();
 	return true;
+}
+
+bool critical_command_coordinator_acknowledge_publication(
+	player_save_restored_publication_owner &owner)
+{
+	if (!owner.publication_proven_ || owner.acknowledged_ || !owner.reservation_.valid())
+		return false;
+	std::string identity;
+	try
+	{
+		identity = operation_key(owner.completion_.operation_id);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		auto found = operations.find(identity);
+		if (found == operations.end() ||
+		    !operation_is_publication_pending(*found->second) ||
+		    found->second->publication_checkpointing || !coordinator_generation ||
+		    coordinator_generation_exhausted || !health.initialized || stop_requested ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    !owner.reservation_.valid())
+			return false;
+		const auto &state = *found->second;
+		const auto &receipt = state.publication_completion;
+		const auto success = [](critical_apply_outcome outcome)
+		{
+			return outcome == critical_apply_outcome::applied ||
+			       outcome == critical_apply_outcome::already_applied;
+		};
+		const bool same_outcome =
+			(success(receipt.outcome) && success(owner.completion_.outcome)) ||
+			(receipt.outcome == critical_apply_outcome::terminal_failure &&
+			 owner.completion_.outcome == critical_apply_outcome::terminal_failure &&
+			 receipt.error_code && owner.completion_.error_code &&
+			 receipt.disposition == critical_completion_disposition::execution &&
+			 owner.completion_.disposition ==
+				 critical_completion_disposition::execution &&
+			 receipt.failure_stage == critical_failure_stage::none &&
+			 owner.completion_.failure_stage == critical_failure_stage::none);
+		std::vector<uint8_t> frozen;
+		if (critical_command_encode(state.command, &frozen) !=
+			    critical_command_codec_result::ok ||
+		    frozen != owner.frozen_ ||
+		    receipt.operation_id.bytes != owner.completion_.operation_id.bytes ||
+		    !same_outcome || receipt.disposition != owner.completion_.disposition ||
+		    receipt.durable_revision != owner.completion_.durable_revision ||
+		    receipt.error_code != owner.completion_.error_code ||
+		    receipt.failure_stage != owner.completion_.failure_stage ||
+		    receipt.result_size != owner.completion_.result_size ||
+		    receipt.result_payload != owner.completion_.result_payload)
+			return false;
+		owner.coordinator_generation_ = coordinator_generation;
+		found->second->publication_checkpointing = true;
+		++publication_checkpoints_inflight;
+		++guarded_publications_inflight;
+	}
+	catch (...)
+	{
+		return false;
+	}
+	critical_command_journal_result checkpoint = critical_command_journal_result::io_failure;
+	try
+	{
+		checkpoint = critical_command_journal_checkpoint(owner.completion_.operation_id);
+	}
+	catch (...)
+	{
+	}
+	std::unique_lock<std::mutex> lock(coordinator_mutex);
+	const auto finish_guarded = [&]()
+	{
+		--guarded_publications_inflight;
+		--publication_checkpoints_inflight;
+		publication_checkpoint_finished.notify_all();
+	};
+	auto found = operations.find(identity);
+	if (found == operations.end() || !operation_is_publication_pending(*found->second) ||
+	    coordinator_generation != owner.coordinator_generation_)
+	{
+		finish_guarded();
+		return false;
+	}
+	auto &state = *found->second;
+	state.publication_checkpointing = false;
+	auto trace =
+		persistence_command_trace(state.command, persistence_trace_stage::publication_ack);
+	trace.outcome = static_cast<uint32_t>(checkpoint);
+	persistence_trace_record(trace);
+	if (checkpoint != critical_command_journal_result::ok)
+	{
+		finish_guarded();
+		return false;
+	}
+	remove_fences(identity, state.command);
+	remember_completed(identity, state.command, state.publication_completion);
+	operations.erase(found);
+	++health.completed;
+	owner.acknowledged_ = true;
+	update_depth();
+	work_available.notify_all();
+	lock.unlock();
+	// Do not acquire the pipeline owner under coordinator_mutex. Keep lifecycle
+	// exclusion until exact-generation consumption and its release notice finish.
+	const bool consumed = owner.consume_acknowledged_hold();
+	lock.lock();
+	finish_guarded();
+	return consumed;
 }
 
 void queue_unqueued_admission_failures_locked()
@@ -1514,7 +1678,8 @@ bool critical_command_coordinator_drain(uint64_t timeout_msec)
 			std::lock_guard<std::mutex> lock(coordinator_mutex);
 			observer = drain_observer;
 		}
-		if (completed && observer)
+		if (observer &&
+		    (completed || player_save_execution_guard::current_ownership_epoch()))
 			observer(completions, completed);
 		const critical_coordinator_health snapshot =
 			critical_command_coordinator_health_copy();
@@ -1545,7 +1710,8 @@ bool critical_command_coordinator_owner::acquire_cutover_lease(uint64_t timeout_
 	{
 		std::lock_guard<std::mutex> lock(coordinator_mutex);
 		if (!health.initialized || !health.running || stop_requested ||
-		    lifecycle_guard_active || active_cutover_phase != cutover_owner_phase::none)
+		    lifecycle_guard_active || guarded_publications_inflight ||
+		    active_cutover_phase != cutover_owner_phase::none)
 			return false;
 		cutover_was_accepting = health.accepting;
 		cutover_reopen_allowed = health.accepting;
@@ -1610,7 +1776,7 @@ bool critical_command_coordinator_owner::validate_cutover_lease(uint64_t generat
 	return cutover_ready_locked();
 }
 
-void critical_command_coordinator_owner::release_cutover_lease(uint64_t generation,
+bool critical_command_coordinator_owner::release_cutover_lease(uint64_t generation,
 							       uint64_t lease_id)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
@@ -1618,9 +1784,10 @@ void critical_command_coordinator_owner::release_cutover_lease(uint64_t generati
 	    lease_id != active_cutover_lease_id ||
 	    active_cutover_phase != cutover_owner_phase::lease_idle ||
 	    active_cutover_thread != std::this_thread::get_id())
-		return;
+		return false;
 	invalidate_active_cutover_lease();
 	update_depth();
+	return true;
 }
 
 bool critical_command_coordinator_owner::begin_cutover_transaction(uint64_t generation,

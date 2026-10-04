@@ -486,14 +486,23 @@
       "id": "spell_ward_persistence_journey",
       "path": "tests/async/run_spell_ward_persistence_journey.py",
       "provider": "sql",
-      "engines": ["mysql", "mariadb"],
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
       "mode": "script",
-      "required_cases": ["script"],
-      "arguments": ["{sql_binary}"],
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "{sql_binary}"
+      ],
       "environment": {},
       "timeout_seconds": 900,
       "covers": [],
-      "required_markers": ["weakened capacity, pulse lifetime, broken source UID and paused renewal survived SQL save, restart and exec copyover"]
+      "required_markers": [
+        "weakened capacity, pulse lifetime, broken source UID and paused renewal survived SQL save, restart and exec copyover"
+      ]
     },
     {
       "id": "mysql_combat_journey",
@@ -1966,6 +1975,57 @@
       "required_markers": [
         "[PASS] protected SQL status, durable-only child, restart, pagination, pending verification, delivery loss and successful reconciliation"
       ]
+    },
+    {
+      "id": "native_sql_baseline_claim_audit",
+      "path": "tests/async/test_native_sql_baseline_audit.py",
+      "provider": "self-sql",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "NativeBaselineAuditTests.test_native_baseline_claims_both_canonical_engines"
+      ],
+      "arguments": [
+        "NativeBaselineAuditTests",
+        "-v"
+      ],
+      "environment": {
+        "DURIS_RUN_NATIVE_BASELINE_AUDIT": "1"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_native_sql_baseline_audit.py"
+      ],
+      "required_markers": [
+        "NATIVE_BASELINE_AUDIT_QUALIFIED"
+      ]
+    },
+    {
+      "id": "native_sql_baseline_origin_audit",
+      "path": "tests/async/test_economic_sql_audit_origins.py",
+      "provider": "self-sql",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "NativeSQLOriginTests.test_native_origins_mysql_8",
+        "NativeSQLOriginTests.test_native_origins_mariadb"
+      ],
+      "arguments": [
+        "NativeSQLOriginTests",
+        "-v"
+      ],
+      "environment": {
+        "DURIS_RUN_ECONOMIC_ORIGIN_INTEGRATION": "1"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_sql_audit_origins.py"
+      ],
+      "required_markers": []
     }
   ]
 }

@@ -58,6 +58,11 @@ extern "C"
  * caller owns the lease; repeated marks before release are harmless. */
 	void sql_pool_discard_connection(MYSQL *conn);
 
+	/* Close and consume this exact currently borrowed slot now. Returns false
+	 * for foreign/unborrowed handles without modifying them. Used after all
+	 * transaction owners have unwound, before releasing local writer exclusion. */
+	bool sql_pool_retire_owned_connection(MYSQL *conn);
+
 	/* Return a connection to the pool so another thread can use it.
  * A connection marked for discard is closed and its slot retired instead.
  * Signals one waiting acquirer.  No-op when conn is NULL. */

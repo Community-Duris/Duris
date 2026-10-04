@@ -5,6 +5,10 @@
 #include "player/player_save_worker.h"
 #include <mysql/mysql.h>
 
+// Include player/player_sql_transaction_cleanup.h when constructing or
+// inspecting cleanup evidence. Callers using pointers need no helper definition.
+struct player_sql_cleanup;
+
 // A retained observation is NOT an applied death, an inventory, an ownership
 // grant, or permission to release a character. No gameplay caller is enabled
 // until the terminal transaction and player-visible recovery route are joined.
@@ -47,6 +51,9 @@ constexpr size_t PLAYER_DEATH_CONFLICT_LIST_LIMIT = 25;
 // never changed. An ambiguous COMMIT must be resolved by replay, not a new ID.
 player_death_conflict_result player_death_conflict_retain(MYSQL *connection,
 							  const player_snapshot &request) noexcept;
+player_death_conflict_result player_death_conflict_retain(MYSQL *connection,
+							  const player_snapshot &request,
+							  player_sql_cleanup *cleanup) noexcept;
 
 // DB-only save owner. Normal saves retain their existing repository behavior.
 // Only a format-8 terminal death rejected for the exact custody/payload mismatch
@@ -56,6 +63,9 @@ player_death_conflict_result player_death_conflict_retain(MYSQL *connection,
 // These entry points do not instantiate or deliver any retained object.
 player_save_apply_result player_death_conflict_apply(MYSQL *connection,
 						     const player_snapshot &request) noexcept;
+player_save_apply_result player_death_conflict_apply(MYSQL *connection,
+						     const player_snapshot &request,
+						     player_sql_cleanup *cleanup) noexcept;
 player_save_apply_result player_death_conflict_apply_from_pool(const player_snapshot &request,
 							       void *context);
 

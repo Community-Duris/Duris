@@ -14,7 +14,7 @@ ENV = r'''
 #include <string>
 #include <vector>
 struct MYSQL { int id = 1; };
-extern bool fail_open, fail_acquire, fail_bind, fail_recover, fail_constructor, locked;
+extern bool fail_open, fail_acquire, fail_bind, fail_recover, fail_constructor, fail_release, locked;
 extern int opened, closed, acquired, released, bound, recovered;
 extern std::vector<std::string> events;
 void mysql_close(MYSQL *);
@@ -28,8 +28,13 @@ class economic_sql_lifecycle_guard {
     bool held = false;
 public:
     economic_sql_lifecycle_guard() { if (fail_constructor) throw std::bad_alloc(); }
-    ~economic_sql_lifecycle_guard() {
-        if (held) { assert(locked); locked = false; ++released; events.push_back("release"); }
+    ~economic_sql_lifecycle_guard() { (void)release(); }
+    bool release() noexcept {
+        if (!held) return true;
+        assert(locked);
+        if (fail_release) return false;
+        held = false; locked = false; ++released; events.push_back("release");
+        return true;
     }
     static unsigned int acquire_runtime(MYSQL *conn, economic_sql_lifecycle_guard *out) noexcept {
         assert(conn && conn->id == 1 && !locked); ++acquired; events.push_back("acquire");
@@ -72,7 +77,7 @@ DRIVER = r'''
 #include <sys/wait.h>
 #include <unistd.h>
 bool fail_open = false, fail_acquire = false, fail_bind = false, fail_recover = false,
-     fail_constructor = false, locked = false;
+     fail_constructor = false, fail_release = false, locked = false;
 int opened = 0, closed = 0, acquired = 0, released = 0, bound = 0, recovered = 0;
 std::vector<std::string> events;
 MYSQL *sql_open_configured_connection(unsigned long flags) {
@@ -84,7 +89,7 @@ void mysql_close(MYSQL *conn) {
 }
 void reset() {
     sql_economic_runtime_shutdown(); assert(!locked);
-    fail_open = fail_acquire = fail_bind = fail_recover = fail_constructor = false;
+    fail_open = fail_acquire = fail_bind = fail_recover = fail_constructor = fail_release = false;
     opened = closed = acquired = released = bound = recovered = 0; events.clear();
 }
 int main() {
@@ -103,6 +108,17 @@ int main() {
     reset(); fail_constructor = true;
     assert(!sql_economic_runtime_start());
     assert(opened == 1 && acquired == 0 && closed == 1 && !locked);
+    reset(); assert(sql_economic_runtime_start());
+    fail_release = true;
+    sql_economic_runtime_shutdown();
+    assert(locked && released == 0 && closed == 0);
+    assert(!sql_economic_runtime_start());
+    assert(opened == 1 && acquired == 1 && bound == 1 && recovered == 1);
+    fail_release = false;
+    sql_economic_runtime_shutdown();
+    assert(!locked && released == 1 && closed == 1);
+    assert((events == std::vector<std::string>{"open", "acquire", "bind", "release", "close"}));
+    sql_economic_runtime_shutdown(); assert(released == 1 && closed == 1);
     reset(); assert(sql_economic_runtime_start());
     assert(locked && opened == 1 && acquired == 1 && bound == 1 && recovered == 1 && closed == 0);
     assert(!sql_economic_runtime_start());

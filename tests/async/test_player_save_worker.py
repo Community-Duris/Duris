@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 WORKER = (SRC / "player_save_worker.c").read_text()
 WORKER_HEADER = (SRC / "player_save_worker.h").read_text()
 REPOSITORY = (SRC / "player_snapshot_repository.c").read_text()
+SQL_LEASE = (ROOT / "src/player/player_sql_transaction_cleanup.h").read_text()
 DIAGNOSTICS = (SRC / "actinf.c").read_text()
 
 assert "std::unordered_set<std::string> description_keys" in REPOSITORY
@@ -386,6 +387,7 @@ void verify_ack_before_retained_submission()
                                  PLAYER_COMPONENT_AFFECTS | PLAYER_COMPONENT_TROPHIES;
     auto retained = next_snapshot(74, progression);
     assert(retained.components == (progression | PLAYER_COMPONENT_INVENTORY));
+    const auto sealed_components = retained.components;
     retained.schema_version = PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
     player_craft_receipt_snapshot receipt = {};
     receipt.operation_id.bytes[0] = 0xc6;
@@ -413,7 +415,9 @@ void verify_ack_before_retained_submission()
            player_save_submit_result::revision_state_mismatch);
     assert(player_save_worker_submit_retained(&retained) == player_save_submit_result::accepted);
     wait_until([&] { return player_save_worker_pulse(&completion, 1) == 1; });
-    assert(completion.components == progression);
+    // Receipt-bearing captures keep their persisted identity; only the revision
+    // obligation narrows after the older inventory ACK.
+    assert(completion.components == sealed_components);
     assert(completion.craft_receipts.size() == 1 &&
            completion.craft_receipts[0].operation_id.bytes[0] == 0xc6);
     assert(player_revision_snapshot_copy(74, &state));
@@ -675,12 +679,16 @@ for contract in (
     "mysql_affected_rows(connection) != 1",
     "ambiguous_commit",
     "read_durable_revision",
-    "sql_pool_replace_connection",
 ):
     assert contract in REPOSITORY
 assert REPOSITORY.index("durable >= snapshot.revision") < REPOSITORY.index(
     "apply_components(connection, snapshot)"
 )
+assert "player_sql_pool_lease lease(sql_pool_acquire())" in REPOSITORY
+assert "lease.replace()" in REPOSITORY
+assert "connection_ = old ? sql_pool_replace_connection(old) : sql_pool_acquire();" in SQL_LEASE
+replacement = SQL_LEASE[SQL_LEASE.index("bool replace()") :]
+assert replacement.index("connection_ = nullptr") < replacement.index("sql_pool_replace_connection(old)")
 print("[PASS] repository locks revision before components and reconciles ambiguous commits")
 
 for component in (

@@ -1,6 +1,6 @@
 # Finish accounting implementation plan
 
-Updated: 2026-10-03. **Status: accounting activation and release remain blocked.**
+Updated: 2026-10-04. **Status: accounting activation and release remain blocked.**
 SQL is the first delivery target; flatfile parity follows. This plan tracks the
 current work. [Implementation history](FINISH_ACCOUNTING_IMPLEMENTATION_HISTORY.md)
 preserves the dated checkpoints and their original evidence.
@@ -49,19 +49,81 @@ their closed state is not evidence of qualified coverage. Link focused PRs and
 current proof to the appropriate #490 section, preserving file-owner handoffs,
 backend limitations and the tested revision before checking off acceptance.
 
+## Current implementation and qualification checkpoint
+
+The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
+remote histories and primary production source through `9fabe54bb`. Both strict
+server builds pass, as do the existing focused components and 35 worker/journal
+guard cases per backend. Real bank coordinator/pool qualification passes on both
+SQL engines. Coin/item/lifecycle reruns and actual production publication/recovery
+acceptance remain open; no major-plan completion is claimed. The
+[consolidated save/recovery report](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md)
+retains the exact slices, source-established gaps and evidence limits.
+
+Save residence, native synchronous/core ownership, reserved journal replay and
+restored ordinary-drop guarded publication are connected. Covered ordinary frames
+reuse locked native save revision; no additional snapshot receipt ledger or gate
+is required. `1d6043f57` adds the live literal-checkpoint drop producer;
+`480f20ce3` adds full owned lifecycle drain/close. `2078eb7d0` enables the existing
+ownership epoch only after verified selected active SQL authority and preparation,
+before critical replay and save workers. `cec4bd369` settles exact definitive
+rejections without moving or reconstructing inventory. Unsupported enabled
+maintenance, rename and copyover retain pre-mutation refusal; inactive behavior
+and the declined spell path are preserved. No production accounting was activated.
+
+`97fef7a09` aligns ordinary-graph admission with existing recovery eligibility
+before mutation. Independent source review found no remaining production blocker
+to starting Plan 1's existing qualification batch. Existing flatfile bank/item
+parity, real SQL coordinator/pool and guarded lifecycle checks now enter that batch.
+The existing native lifecycle APIs and stopped/disposable harness compose guarded
+install, incomplete-manifest refusal, activation, pause and reactivation; a new
+production CLI or all Plans2–4 writers are not independent Plan 1 test gates.
+Real production activation-owner/verifier integration still belongs to full-release
+R6 and cannot select an epoch before every plan supplies complete evidence.
+
+Plan5 projection audit `a5d26b658` is imported as `cd0fbebb6`, after its claim/root
+binding slices. Existing central native registrations cover those updated owners.
+Zero-effect and orphan-reservation slices `e694798f6`/`bbb72ecff` are integrated
+as `47aa60de0`/`4fdbb7033`. Orphan coverage now requires the fifth reservation
+count; existing four-count snapshots must be recaptured by the updated exporter.
+Peer evidence qualifies its own consumed inputs; intact native world holdings/items
+remain absent and exports partial. Marker-v2 and mandatory `.elr` independent
+inventory/restore/export/lifecycle consumers, command-preimage binding and full
+release qualification remain Plan5 handoffs. Primary retains native formats,
+cutover/complete-source authority and all remaining Plans1–4 writer integration.
+
+The combined primary implementation remains unqualified as a major plan.
+Historical semantic registry/matrix anchors remain unpromoted. Testing stays
+deferred until each major plan is ready; Plan 1's batch is now running with the
+partial passing results stated above. No qualified milestone push has been made.
+Preserve original BEFORE sources, oracles, budgets and
+all applicable R1–R8 requirements, including day-one routes and full backend parity.
+
 ## Current implementation and qualification
 
 Current integration and native qualification are recorded in the
-[October 3 review status](REVIEW_STATUS_2026-10-03.md), with earlier results in the
+[October 4 review status](REVIEW_STATUS_2026-10-04.md), with historical results in the
+[October 3 review status](REVIEW_STATUS_2026-10-03.md), the
 [October 2 review status](REVIEW_STATUS_2026-10-02.md) and
 [October 1 review status](REVIEW_STATUS_2026-10-01.md). Canonical, staging, and
-master-prefix histories now retain 55 receipts, preserving published alchemy
+master-prefix histories at the last qualified 0055 snapshot retain 55 receipts, preserving published alchemy
 migration 0054 and adding exact room-item payload migration 0055. The staging
 fork preserves its first 45 and appends ten; the master fork preserves its first
 31 and appends 24, retaining existing runtime-state payloads. All three converge
 on the pinned 226-table schema on disposable MySQL 8.0.46 and MariaDB 10.11.14 targets.
-The writer inventory covers 868 routes, 2,817 occurrences and 2,758 unique sites
-with zero unmapped sites. These counts do not replace route qualification.
+The current local integration includes incoming migration 0056 spell-ward durability;
+its combined native, migration and player qualification remains pending. The writer
+inventory now classifies 872 routes, 2,818 occurrences and 2,759 unique sites with
+zero unmapped lexical sites. Four added semantic rows separately classify offline
+payload repair and dispel object/timer changes outside the lexical scan. Their
+backend status remains unverified. These counts do not replace route qualification.
+The shared ownership and pending Plan 5 qualification interface are recorded in
+[the stream handoff](SHARED_STREAM_HANDOFF.md).
+The user's current execution cadence batches tests when each major plan is ready.
+Continue implementation and code review, preserve immutable BEFORE sources and
+regression fixtures, and defer new test runs until those milestones. Mark written
+changes as implemented but unqualified until the required checks pass. Retain all
+R1-R8, native/gameplay/persistence/recovery and final candidate acceptance gates.
 
 Restored SQL ordinary-drop obligation registration and clean authoritative
 hydration now have bounded component qualification on both engines. Original
@@ -69,8 +131,61 @@ operation release is actor independent and allocation-free, but production
 critical replay/publication ACK callers remain unwired. Current strict inactive
 flatfile creation/save/restart/relog journeys pass; initial production build
 deadline failures and component fixture setup failures remain preserved. The
-October 3 review status pins this milestone and its limits. Complete ordinary-drop
-producer/replay/copyover, historical receipt proof and all R1-R8 gates remain open.
+October 3 review status pins this milestone and its limits.
+
+Successful historical ordinary-drop receipt verification now checks immutable
+full-literal payload and native ledger/reference proof. Both engines pass actual
+repository/pool corruption refusal, retained coordinator fences/journal through
+retry exhaustion, exact repair/restart and later native movement/season history.
+Strict production backends and current inactive creation journeys pass; the
+original 300-second native compile gate passes in 287.557 seconds with the
+same binary used for both-engine fault/recovery checks. These source-specific
+results exclude incoming remote changes (then-current remote b84693f96). Local
+history integration was blocked at that checkpoint by the retained no-merge
+instruction and automatic approval review. The user subsequently authorized this
+local merge; current combined-source qualification and normal publication remain
+pending.
+Complete ordinary-drop producer/replay/copyover and all R1-R8 gates remain open.
+The bounded coin physical-publication/ACK and null-replay retention repair below
+is qualified separately; production native reconstruction remains open.
+
+Coin publication/ACK retention has a locally qualified bounded safety repair:
+missing typed physical proof retains replay and refuses new schema-2 pile
+admission; physical success and the original receipt survive ACK retry and
+partial projection exceptions. The inactive composite path remains unchanged.
+The native publisher/reconstructor and gameplay/replay/save/copyover gates remain
+open. The qualified definite-admission repair is described below. See the October
+3 review status for before failures, intermediate evidence and final checks.
+Fourteen native cases per mode, both strict builds, 106 currency retention cases,
+both queue modes and actual inactive creation/restart/three pickup journeys pass.
+This is not full active accounting, native replay or current-remote qualification.
+
+Definite admission refusal now has an explicit in-process disposition. Only
+proven never-admitted commands bypass the impossible publication ACK; uncertainty,
+ordinary ACK failure, malformed receipts and contradictory dispositions stay held.
+The actual journal/coordinator and currency/item/craft owners pass 140 sanitizer
+scenarios across both backend modes. Existing admission/capacity/fault/recovery,
+106 currency retention, both queue, item publication, progression/restore and
+14 coin-retention cases per mode pass. Both strict production builds pass their
+original 600-second budgets, with all 1,232 source inputs verified. Actual inactive
+creation/save/coldrestart/relog and three area pickup commands pass unchanged
+budgets. Exact pins and preserved setup/driver failures are in the October 3
+review. This bounded cleanup issue is solved locally; publication still awaits
+local Git integration authorization and combined-source qualification. Separate
+craft ACK-retry completion/progression cleanup is also solved locally. The
+original ACK now precedes independent cleanup and business notifications; effects
+and the original authoritative receipt survive retries without duplicate work.
+Thirty valid before-source semantic failures become60 native passes across both
+backend modes, with1990 assertions and16 supplied-artifact guards. Sixty-eight
+existing admission cases, eight maintained owner suites and both strict
+production builds pass. Actual inactive mortal Craft/Forge preserves pouch,
+material/tool UIDs and exact XP through copyover and two cold restarts; inactive
+creation/relog and three area-pickup controls also pass. These bounded results do
+not qualify injected saved() hooks as SQL persistence completion, arbitrary
+pre-ACK progression-hook throw/reentry, active gameplay, combined remote source
+or a full route. Ordinary-drop replay/save integration and every full R1-R8 gate
+remain open. Exact pins and preserved invalid fixture attempts are in October3
+review; local Git integration authorization still blocks publication.
 
 Independent reconciliation now checks every native item's parent edge even when
 lineage history replaces its epoch-local history or its opening origin is
@@ -609,3 +724,205 @@ creation/network follow-ups pass with unchanged runtime/build assertions and
 verified artifact reuse. The failed broad report remains unchanged, intermittent
 starter-kit readiness and current-head integrated qualification remain open,
 and no R1-R8 release gate is promoted. See October 3 status for exact proof pins.
+
+The legacy partial SQL item-save dependency now has measured before-source proof
+on both supported engines: eight semantic failures per engine, with existing
+full/legacy, valid equipment replacement and two true postwrite rollback controls
+passing. The complete partial forest/deletion-boundary/restitution guard is being
+implemented and remains unqualified. Real pooled ordinary-drop and barrier-driven
+save/drop/FK serialization checks are separate from the direct-client fixture;
+none of these partial results completes a route or opens accounting. October3
+review pins actual before evidence and preserved fixture/permission setup failures.
+
+The partial-save prerequisite now has paired actual native qualification on both
+engines:34 direct contracts/51 allocation ordinals and six real pooled-drop/direct
+save serialization cases per engine pass. Selected-root custody/native closure,
+guarded physical deletion and partial restitution scope preserve opposite payload
+and legacy placement; new allocation failures roll back through query results.
+Both strict production builds and the maintained inactive SQL save/death/crash/
+restart/copyover journey pass. Exact declaration71055b7b and source/test pins are
+in October3 review. Captured-journal inputs, full-save/pool-allocation coverage,
+ordinary-drop native publication/replay/restored-save integration, broad current
+source and full R1-R8 acceptance remain open. Inventory evidence is not promoted.
+
+The next restored-save prerequisite follows Plan1's admission/release contract:
+opt-in restoration census before startup replay, per-PID apply ownership, explicit
+worker parking and selective exact-frame replay, affected-PID hydration fences,
+and publication ACK only after clean save ownership or durable recovery handoff.
+The worker-only parking/resume primitive is qualified: seven paired before-source
+semantic failures and one real ACK-repair control become eight passing cases per
+SQL-header and flatfile mode. Both strict builds and unchanged inactive SQL
+save/death/crash/copyover plus flatfile creation/save/reload journeys pass. Final
+declaration c1b7d3fc and October3 review retain exact pins and failed setup attempts.
+The new protocol uses a controlled repository callback; normal pipeline callbacks
+do not return deferral. Selective journal replay now has bounded paired native
+qualification:16 before-source semantic failures and three controls become19
+passes per backend mode. Held PIDs retain exact frames and lose earlier proofs;
+unrelated PIDs checkpoint, and replay_deferred retains the global load fence.
+Preapply collection allocation failure also refuses without losing frames. Both
+strict production builds and unchanged inactive SQL save/death/crash/copyover
+plus flatfile creation/save/coldrestart/relog journeys pass. Final declaration
+5b86b898 and October3 review pin source, artifact and owned-teardown evidence.
+Startup/registration, checkpoint-owned permits, affected-PID hydration, retained
+wakes, independent ACK/checkpoint fencing and original publication release remain
+pending. A per-pass marker does not establish a resident or cold-restart hold.
+Worker allocation gaps are separate work; the later admission milestone below
+closes retained submission only. Retry/promotion/result delivery remain open.
+Unresolved callback proof withdrawal and bad_alloc classification now have
+bounded paired qualification:19 before failures/four terminal controls become23
+passes per mode; unchanged19-case deferral owners also pass per mode. Both strict
+incremental builds, nine maintained owners,14 validations/30 contracts and actual
+inactive MariaDB/MySQL plus flatfile restart/relog journeys pass. Final declaration
+9ef8c4b2 pins exact source, native cases, gameplay and owned service teardown.
+Ordinary SQL transaction/pool-lease exception cleanup, general postcallback
+allocation safety and worker retry/promotion/completion allocation remain
+separate; retained admission is closed by the later bounded milestone below. A newly confirmed typed snapshot-mask/exact-journal identity
+race also remains open; native custody and stale-frame safety must be preserved. See Plan1 and October3 review for exact scope.
+This does not authorize ordinary-drop wiring, active accounting or gate promotion.
+
+The retained-admission allocation prerequisite now has paired component evidence:
+16 native before failures/four controls become20 after passes per SQL-header and
+flatfile mode. Empty owners and cancelable readiness are staged before moves or
+revision claims; newer uncaptured marks refuse before replacing original state.
+Eight unchanged parking regressions also pass per mode. Both strict incremental
+builds and nine maintained owners,14 validations/30 contracts and nonmutating
+matrix pass. Declarationfd0e36bf retains exact native inputs and case artifacts.
+Actual inactive MariaDB/MySQL journeys and native follow-ups pass, as does
+flatfile creation/save/cold restart/relog in131.800 seconds. Final declaration
+20a99f56 reverifies native inputs, component cases, strict binaries/logs, gameplay
+and owned schema/server teardown/port rebind. This bounded admission prerequisite
+is solved locally. Scheduling/retry/promotion, result delivery, typed mask identity,
+SQL lease cleanup and restored-save integration remain separate. Fresh remote
+3dbb8bc83 adds ward0056; combined-source qualification and history integration
+are pending under the no-merge restriction. No R1-R8 or coverage gate is promoted.
+
+Worker retry/pending promotion now has paired component qualification separate
+from admission:11 before failures/four controls become15 passes per backend mode.
+Queue growth is staged before consuming results or mutating retries, revisions,
+receipts or counters; allocation refusal retains the original front. The same
+frozen cases assert exact later delivery and real journal ACK. Unchanged20-case
+admission/eight-case parking owners also pass per mode (86 AFTER cases overall).
+Component declaration36ec8996 and source manifest2576febf pin artifacts and all
+1,232 production inputs, with only worker.c changed. Both strict incremental
+server builds, nine maintained owners,14 validations/30 contracts and nonmutating
+matrix pass. Actual inactive MariaDB/MySQL save/death/crash/copyover journeys and
+native follow-ups pass; flatfile creation/save/restart/relog passes133.956 seconds.
+Final declaration1c6b2a43 pins exact source, binaries, logs, cases and owned SQL
+teardown/port rebind. This bounded scheduling issue is solved locally.
+Results-push allocation, typed exact journal identity, SQL
+transaction/lease cleanup, restored-save integration and current-remote/broad
+qualification remain open. No R1-R8 requirement is marked complete.
+
+Ordinary SQL cleanup now has actual paired BEFORE evidence:13 cases on each
+private MariaDB/MySQL engine reproduce12 genuine failures/one consumed-null
+replacement control. Unsafe borrowed settings are admitted; rollback/lease and
+resource ownership fail at measured allocation seams. Failed conflict cleanup
+loses original custody evidence and reuses an unsafe pool session, while its
+existing idle gate prevents a second transaction. Declaration8e986daf and October3
+review retain immutable source/owner/binary/case/teardown evidence and the first
+strict fixture compile failure. Implementation/AFTER checks remain pending; this
+does not complete any R1-R8 gate or qualify incoming0056 integration.
+
+Worker completion delivery after a real exact journal ACK is now solved locally.
+The allocating result deque is replaced by a fixed 256-entry FIFO under the same
+mutex, capacity/backpressure and receipt ownership. Nothrow moves preserve
+completion delivery when allocation is unavailable after the journal frame is
+removed. Five proven BEFORE aborts/seven controls become twelve AFTER passes per
+backend, including FIFO wrap, partial/full capacity, shutdown/reopen, exact typed
+receipts, real ACK failure/repair and unrelated-PID progress. Unchanged scheduling,
+admission and parking owners contribute another 86 AFTER passes (110 total).
+Both strict incremental server builds, nine maintained owners,14 validations/30
+contracts and nonmutating matrix pass. Actual inactive MariaDB/MySQL save, death,
+crash and copyover journeys plus native follow-ups pass; flatfile creation/save/
+cold restart/relog passes. Final declaration edd75c103ad576d8d8b0c994696a0108b09914e0533725db536a8cfeec4d9678 verifies all1,232 production
+inputs, component artifacts, binaries/logs and owned SQL teardown/port rebind.
+Preserved fixture failures remain evidence, not production failures. Ordinary SQL
+cleanup, typed exact journal identity, restored-save integration, incoming0056 and
+broad qualification remain open. No R1-R8 gate or coverage status is promoted.
+
+### SQL cleanup candidate integration and native qualification
+
+The reviewed five-file SQL cleanup candidate is integrated after committed worker
+completion milestone dfc879598. Borrowed idle/autocommit/reconnect-disabled
+sessions report original-session cleanup proof; pooled owners retire unconfirmed
+connections, preserve consumed replacement ownership and ambiguous COMMIT, and
+retain original custody evidence when rollback is unconfirmed. Separate retained
+transaction cleanup precedes writer-fence release. Native buffer/result ownership
+is scoped by RAII. Recovery_apply and sustained lifecycle lock allocation remain
+separate work.
+
+Manifest `tmp/sql-cleanup-production-inputs.local.json`, SHA-256
+`efcb65d1faa86b6bd95eac6c576cf3b336033d26a01d0a16b5f46b475425de52`,
+freezes1,233 source inputs: four changed repository source/headers and one new
+SQL-only helper. All actual dependency-recorded header consumers are forced:
+47 SQL/46 flatfile objects. Source preparation first refused Windows path
+separator mismatch, then src-relative dependency parsing; both failed setup
+attempts are archived before source/native object mutation. Corrected setup
+matches exact dependency tokens and retains every consumer check.
+
+Unchanged ordinary13 and retained4 owners are registered as explicit manual SQL
+probes. Frozen AFTER drivers preserve original300/120 bounds, canonical0055
+schema settings, all source/binary/owner/case pins, three rejection guards and
+owned teardown/identity/port rebind. Strict builds and native AFTER qualification
+are pending. Source integration is not a solved SQL issue or R1-R8 acceptance.
+
+The user has now explicitly authorized the local Git merge needed to integrate
+experimental-accounting. Finish the current bounded SQL cleanup qualification
+and commit before integration; qualify the combined source before a normal push.
+GitHub PR merge, deployment and production activation remain unauthorized.
+
+Bounded ordinary/retained SQL transaction cleanup, original-session retirement,
+replacement lease ownership and native buffer/result lifetime are solved locally.
+The corrected source passes both native builds,34 actual engine fault cases,18
+maintained terminal invocations,14 maintained owners, both inactive SQL journeys
+and flat creation/save/restart. Final declaration0a0b5c5a is pinned in October3
+review. Recovery proof/lease and lifecycle exclusion/release remain open.
+
+Current two-stream ownership: primary owns Plans1-4 and shared coordinator,
+contracts, producer integration, writer registry/matrix and activation owner.
+The second user-coordinated agent owns Plan5 independent reconciliation, audit
+tooling, backup/restore evidence and release qualification. Integrate separately
+committed slices through narrow interface handoffs on one tested candidate.
+
+## October 4 delivery priority
+
+Complete Plan 1's documented independent authority/cutover acceptance first,
+with Plans 2–4 progressing on independent producer work. Plan 1 need not wait
+for every writer or flatfile coin implementation; guarded activation must still
+refuse incomplete coverage, and actual activation/full release remains gated
+on every plan. Prioritize production SQL recovery integration over further
+isolated helper layers, followed by native baseline/cutover/pause and existing
+flatfile bank/item parity. Testing stays deferred until the major plan is ready.
+
+Source prerequisites241e54162 and5766555f8 now supply the replay ownership leaf
+and full indexed SQL boot prototype catalog. Reconstruction consumes the latter.
+Neither closes production ownership/ACK/replay or current-candidate qualification.
+No defensible remaining duration or completion percentage has been measured.
+
+Current source `1d6043f57` connects the actual ordinary SQL drop producer to
+checkpoint, held native publication and separate ACK/release; maintenance slice
+`c542a2642` refuses unsupported enabled deletion/reset before mutation. Plan5
+root-binding slice `45c895ff4` is integrated in `24766ebff`, with independent
+evidence restricted to peer inputs. All remain subject to combined qualification;
+no new primary compiler/tests/native journeys ran or unqualified push occurred.
+Direct core metadata ownership is source-integrated in `1192d08c5`, and clean
+owned lifecycle drain/close in `480f20ce3`. Both are independently source-reviewed,
+with qualification deferred. Ownership enable, remaining rejected recovery/graph
+coverage, stopped-runtime maintenance connection, flatfile parity and major-plan
+qualification remain. The existing lifecycle harness composes independent
+install/refusal/activate/pause/reactivate acceptance; an online handover or new
+baseline format is unnecessary. Preserve the group's scope without additional work.
+
+Production source9fabe54bb now passes both strict builds, all eleven maintained
+component owners, 35 worker/journal guard cases per backend, real pooled bank,
+coin and item matrices and maintained SQL lifecycle/cutover checks on both engines.
+Solved fixture issues fdd27c681,1dc242ed5,80565e8a7 preserve all original cases,
+limits and production behavior. All22 prepared checked-release cases also pass
+both engines; all14 prepared startup/held-save cases also pass both engines.
+All18 current-source recovery-session cases now pass both native SQL engines;
+actual active ordinary-drop publication/two cold boots remain open.
+Existing guarded lifecycle APIs suffice
+for the permitted disposable synthetic-coverage fixture; no new production CLI
+or Plan5 waiver is needed. Plan1 remains incomplete. Continue original Plans2-4
+producer work in parallel; private collector and inert-money proposals remain
+unintegrated/unqualified and do not promote writer coverage or release readiness.

@@ -5010,9 +5010,9 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "Wallet-to-pile transfer, including actual pile UID creation or merge; neither issuance nor expense. Current debit precedes live publication.",
+      "classification": "Active ordinary-room single-root drop prepares one typed wallet/pile root and retains physical publication through durable ACK. Inactive legacy debit/refund remains; unsupported active placement refuses. Source implemented, actual producer/backend/recovery qualification pending.",
       "authority_boundary": "Bind committed debit to pile effects and recoverable publication; allocation/publication failure must not strand value.",
-      "current_support": "Existing behavior only; accounting integration unverified",
+      "current_support": "Implemented source only; no current native/gameplay/persistence/recovery qualification",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -5027,7 +5027,9 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_coin_physical_publication.py"
+      ],
       "sites": [
         [
           "src/cmd/actobj.c",
@@ -5143,9 +5145,9 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "Partial/full pile pickup; unknown pile first admitted separately.",
+      "classification": "Active ordinary-room single-root full/partial pickup prepares one typed pile/wallet root and retains exact literal/native result publication through ACK. Containers and unsupported active placement remain refused; inactive legacy behavior remains. Source implemented, actual backend/cold recovery qualification pending.",
       "authority_boundary": "Compound transfer plus admission boundary",
-      "current_support": "Existing behavior only; accounting integration unverified",
+      "current_support": "Implemented source only; no current native/gameplay/persistence/recovery qualification",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -5161,7 +5163,8 @@
         }
       },
       "test_candidates": [
-        "tests/async/test_coin_get_completion.py"
+        "tests/async/test_coin_get_completion.py",
+        "tests/async/test_coin_physical_publication.py"
       ],
       "sites": [
         [
@@ -5287,9 +5290,9 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "Coin dispatch builds wallet and pile commands; one root must cover money and UID payload.",
+      "classification": "Schema-2 physical coin dispatch validates immutable command/result terms before projection, retains original receipt conflicts and revalidates body/account/race and physical proof for every ACK attempt. Generic owner does not link native world publication. Source-only; complete active producer and recovery journeys unqualified.",
       "authority_boundary": "Accepted currency_transaction_submit_coin source event, selected backend, expected native revisions and receipt before publication.",
-      "current_support": "Typed submission exists; complete accounting, backend parity and playable refusal unverified.",
+      "current_support": "Implemented source only; no current native/gameplay/persistence/recovery qualification",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -5304,21 +5307,25 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_coin_physical_publication.py",
+        "tests/async/test_coin_publication_ack_retention.py",
+        "tests/async/test_currency_completion_retention.py"
+      ],
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          613,
+          782,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          640,
+          809,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          652,
+          821,
           "economic_submit"
         ]
       ],
@@ -5922,32 +5929,32 @@
       "sites": [
         [
           "src/combat/fight.c",
-          2185,
-          "item_lifecycle"
-        ],
-        [
-          "src/combat/fight.c",
           2186,
-          "item_publication"
+          "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          2199,
-          "item_lifecycle"
+          2187,
+          "item_publication"
         ],
         [
           "src/combat/fight.c",
           2200,
+          "item_lifecycle"
+        ],
+        [
+          "src/combat/fight.c",
+          2201,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          2245,
+          2246,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          2256,
+          2257,
           "item_publication"
         ]
       ],
@@ -6146,12 +6153,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          4803,
+          4829,
           "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          4814,
+          4840,
           "item_publication"
         ]
       ],
@@ -6472,12 +6479,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          5221,
+          5247,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          5228,
+          5254,
           "item_publication"
         ]
       ],
@@ -7978,11 +7985,6 @@
       "sites": [
         [
           "src/core/utility.c",
-          3259,
-          "coin_assignment"
-        ],
-        [
-          "src/core/utility.c",
           3260,
           "coin_assignment"
         ],
@@ -7997,23 +7999,28 @@
           "coin_assignment"
         ],
         [
-          "src/economy/currency_transaction.c",
-          134,
+          "src/core/utility.c",
+          3263,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          135,
+          141,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          136,
+          142,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          137,
+          143,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/currency_transaction.c",
+          144,
           "coin_assignment"
         ]
       ],
@@ -8051,17 +8058,17 @@
       "sites": [
         [
           "src/core/utility.c",
-          3292,
+          3293,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          995,
+          1169,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          1005,
+          1179,
           "economic_submit"
         ]
       ],
@@ -8098,12 +8105,12 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          905,
+          1079,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          914,
+          1088,
           "economic_submit"
         ]
       ],
@@ -8140,22 +8147,22 @@
       "sites": [
         [
           "src/core/utility.c",
-          3217,
+          3218,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3220,
+          3221,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3223,
+          3224,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3226,
+          3227,
           "coin_assignment"
         ]
       ],
@@ -8330,22 +8337,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12504,
+          12536,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12691,
+          12723,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12772,
+          12804,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12870,
+          12902,
           "sql_economy"
         ]
       ],
@@ -8380,7 +8387,7 @@
       "sites": [
         [
           "src/core/utility.c",
-          3151,
+          3152,
           "money_helper"
         ]
       ],
@@ -8494,7 +8501,7 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          980,
+          1154,
           "economic_submit"
         ]
       ],
@@ -8771,32 +8778,32 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          714,
+          888,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          723,
+          897,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          729,
+          903,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          769,
+          943,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          777,
+          951,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          781,
+          955,
           "economic_submit"
         ]
       ],
@@ -8842,32 +8849,32 @@
       "sites": [
         [
           "src/core/utility.c",
-          3115,
+          3116,
           "money_helper"
         ],
         [
           "src/core/utility.c",
-          3144,
+          3145,
           "economic_submit"
         ],
         [
           "src/core/utility.c",
-          3167,
+          3168,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3173,
+          3174,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3179,
+          3180,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3183,
+          3184,
           "coin_assignment"
         ]
       ],
@@ -8905,57 +8912,57 @@
       "sites": [
         [
           "src/core/utility.c",
-          3300,
+          3301,
           "money_helper"
         ],
         [
           "src/core/utility.c",
-          3313,
+          3314,
           "economic_submit"
         ],
         [
           "src/core/utility.c",
-          3323,
+          3324,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3327,
+          3328,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3340,
+          3341,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3345,
+          3346,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3355,
+          3356,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3360,
+          3361,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3370,
+          3371,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3375,
+          3376,
           "coin_assignment"
         ],
         [
           "src/core/utility.c",
-          3380,
+          3381,
           "money_helper"
         ]
       ],
@@ -8995,22 +9002,22 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          467,
+          636,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          468,
+          637,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          469,
+          638,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          470,
+          639,
           "coin_assignment"
         ]
       ],
@@ -9104,27 +9111,27 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          876,
+          1050,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          886,
+          1060,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          891,
+          1065,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          899,
+          1073,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.h",
-          77,
+          101,
           "economic_submit"
         ]
       ],
@@ -9435,12 +9442,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          783,
+          784,
           "economic_submit"
         ],
         [
           "src/combat/fight.c",
-          788,
+          789,
           "economic_submit"
         ]
       ],
@@ -9523,12 +9530,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          1056,
+          1057,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          1057,
+          1058,
           "item_lifecycle"
         ]
       ],
@@ -9574,12 +9581,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          698,
+          699,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          699,
+          700,
           "item_publication"
         ]
       ],
@@ -9625,37 +9632,37 @@
       "sites": [
         [
           "src/combat/fight.c",
-          813,
+          814,
           "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          949,
+          950,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          953,
+          954,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          958,
+          959,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          971,
+          972,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          975,
+          976,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          979,
+          980,
           "item_lifecycle"
         ]
       ],
@@ -11705,12 +11712,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          1607,
+          1608,
           "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          1620,
+          1621,
           "item_lifecycle"
         ]
       ],
@@ -12130,42 +12137,42 @@
       "sites": [
         [
           "src/world/buildings.c",
-          547,
+          549,
           "item_publication"
         ],
         [
           "src/world/buildings.c",
-          548,
+          550,
           "item_publication"
         ],
         [
           "src/world/buildings.c",
-          687,
+          690,
           "item_lifecycle"
         ],
         [
           "src/world/buildings.c",
-          692,
+          695,
           "item_lifecycle"
         ],
         [
           "src/world/buildings.c",
-          769,
+          772,
           "item_lifecycle"
-        ],
-        [
-          "src/world/buildings.c",
-          775,
-          "item_publication"
         ],
         [
           "src/world/buildings.c",
           778,
+          "item_publication"
+        ],
+        [
+          "src/world/buildings.c",
+          781,
           "item_lifecycle"
         ],
         [
           "src/world/buildings.c",
-          785,
+          788,
           "item_publication"
         ]
       ],
@@ -14591,42 +14598,42 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1372,
+          1388,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1390,
+          1406,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2872,
+          3001,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2880,
+          3009,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2892,
+          3021,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3018,
+          3147,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3036,
+          3165,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3094,
+          3223,
           "economic_submit"
         ],
         [
@@ -14695,7 +14702,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1307,
+          1323,
           "item_publication"
         ]
       ],
@@ -14738,7 +14745,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1203,
+          1219,
           "item_lifecycle"
         ]
       ],
@@ -14858,7 +14865,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1058,
+          1074,
           "item_lifecycle"
         ]
       ],
@@ -15972,7 +15979,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          898,
+          914,
           "item_lifecycle"
         ]
       ],
@@ -16009,7 +16016,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          911,
+          927,
           "item_lifecycle"
         ]
       ],
@@ -17326,7 +17333,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          3145,
+          3274,
           "item_lifecycle"
         ]
       ],
@@ -17363,7 +17370,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2996,
+          3125,
           "item_lifecycle"
         ]
       ],
@@ -18247,37 +18254,37 @@
         ],
         [
           "src/item/item_movement_transaction.c",
-          1956,
+          2085,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2023,
+          2152,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2171,
+          2300,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2244,
+          2373,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2449,
+          2578,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2522,
+          2651,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2530,
+          2659,
           "economic_submit"
         ],
         [
@@ -18833,12 +18840,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1555,
+          1571,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1556,
+          1572,
           "item_publication"
         ]
       ],
@@ -18881,22 +18888,22 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1115,
+          1131,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1152,
+          1168,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1158,
+          1174,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1162,
+          1178,
           "item_publication"
         ]
       ],
@@ -19130,7 +19137,7 @@
       "sites": [
         [
           "src/item/objmisc.c",
-          206,
+          209,
           "item_lifecycle"
         ]
       ],
@@ -19221,7 +19228,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1007,
+          1023,
           "item_publication"
         ]
       ],
@@ -21882,7 +21889,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          5872,
+          5903,
           "sql_economy"
         ]
       ],
@@ -22004,22 +22011,22 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          2719,
+          2723,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          2720,
+          2724,
           "item_lifecycle"
         ],
         [
           "src/item/storage_lockers.c",
-          2726,
+          2730,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          2727,
+          2731,
           "item_lifecycle"
         ]
       ],
@@ -22062,12 +22069,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          3543,
+          3548,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          3544,
+          3549,
           "item_publication"
         ]
       ],
@@ -22114,12 +22121,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          1589,
+          1593,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          1590,
+          1594,
           "item_publication"
         ]
       ],
@@ -22161,7 +22168,7 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          3940,
+          3945,
           "money_helper"
         ]
       ],
@@ -22209,12 +22216,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          1592,
+          1596,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          1593,
+          1597,
           "item_lifecycle"
         ]
       ],
@@ -22260,7 +22267,7 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          721,
+          725,
           "item_publication"
         ]
       ],
@@ -22350,12 +22357,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          428,
+          429,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          429,
+          430,
           "item_publication"
         ]
       ],
@@ -22402,12 +22409,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          1652,
+          1656,
           "item_lifecycle"
         ],
         [
           "src/item/storage_lockers.c",
-          2914,
+          2918,
           "item_publication"
         ]
       ],
@@ -22453,12 +22460,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          1474,
+          1478,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          1528,
+          1532,
           "item_lifecycle"
         ]
       ],
@@ -22504,12 +22511,12 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          3514,
+          3519,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          3521,
+          3526,
           "item_publication"
         ]
       ],
@@ -22555,22 +22562,22 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          3481,
+          3486,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          3482,
+          3487,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          3494,
+          3499,
           "item_publication"
         ],
         [
           "src/item/storage_lockers.c",
-          3495,
+          3500,
           "item_publication"
         ]
       ],
@@ -22616,7 +22623,7 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          2950,
+          2954,
           "item_lifecycle"
         ]
       ],
@@ -22658,7 +22665,7 @@
       "sites": [
         [
           "src/item/storage_lockers.c",
-          2002,
+          2006,
           "money_helper"
         ]
       ],
@@ -22866,17 +22873,7 @@
         ],
         [
           "src/economy/currency_transaction.h",
-          56,
-          "economic_submit"
-        ],
-        [
-          "src/economy/currency_transaction.h",
-          65,
-          "economic_submit"
-        ],
-        [
-          "src/economy/currency_transaction.h",
-          71,
+          79,
           "economic_submit"
         ],
         [
@@ -22886,17 +22883,27 @@
         ],
         [
           "src/economy/currency_transaction.h",
-          92,
+          95,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.h",
-          98,
+          113,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.h",
-          104,
+          116,
+          "economic_submit"
+        ],
+        [
+          "src/economy/currency_transaction.h",
+          122,
+          "economic_submit"
+        ],
+        [
+          "src/economy/currency_transaction.h",
+          128,
           "economic_submit"
         ],
         [
@@ -23098,7 +23105,7 @@
         ],
         [
           "src/ships/ship_base.c",
-          127,
+          128,
           "money_helper"
         ]
       ],
@@ -23201,12 +23208,12 @@
       "sites": [
         [
           "src/magic/affects.c",
-          3821,
+          3865,
           "item_publication"
         ],
         [
           "src/magic/affects.c",
-          3823,
+          3867,
           "item_publication"
         ]
       ],
@@ -23243,52 +23250,52 @@
       "sites": [
         [
           "src/magic/affects.c",
-          3461,
+          3504,
           "item_lifecycle"
         ],
         [
           "src/magic/affects.c",
-          3475,
+          3518,
           "item_publication"
         ],
         [
           "src/magic/affects.c",
-          3478,
+          3521,
           "item_lifecycle"
         ],
         [
           "src/magic/affects.c",
-          3484,
+          3527,
           "item_publication"
         ],
         [
           "src/magic/affects.c",
-          3503,
+          3546,
           "item_publication"
         ],
         [
           "src/magic/affects.c",
-          3506,
+          3549,
           "item_lifecycle"
         ],
         [
           "src/magic/affects.c",
-          3512,
+          3555,
           "item_publication"
         ],
         [
           "src/magic/affects.c",
-          3530,
+          3573,
           "item_publication"
         ],
         [
           "src/magic/affects.c",
-          3533,
+          3576,
           "item_lifecycle"
         ],
         [
           "src/magic/affects.c",
-          3539,
+          3582,
           "item_publication"
         ]
       ],
@@ -23550,12 +23557,12 @@
       "sites": [
         [
           "src/magic/smagic.c",
-          1284,
+          1285,
           "item_lifecycle"
         ],
         [
           "src/magic/smagic.c",
-          1290,
+          1291,
           "item_publication"
         ]
       ],
@@ -24194,27 +24201,27 @@
       "sites": [
         [
           "src/magic/spell_portals.c",
-          436,
+          418,
           "item_lifecycle"
         ],
         [
           "src/magic/spell_portals.c",
-          446,
+          428,
           "item_lifecycle"
         ],
         [
           "src/magic/spell_portals.c",
-          455,
+          437,
           "item_lifecycle"
         ],
         [
           "src/magic/spell_portals.c",
-          517,
+          499,
           "item_publication"
         ],
         [
           "src/magic/spell_portals.c",
-          519,
+          501,
           "item_publication"
         ]
       ],
@@ -24251,17 +24258,17 @@
       "sites": [
         [
           "src/magic/spell_portals.c",
-          233,
+          231,
           "item_lifecycle"
         ],
         [
           "src/magic/spell_portals.c",
-          248,
+          246,
           "item_lifecycle"
         ],
         [
           "src/magic/spell_portals.c",
-          270,
+          268,
           "item_publication"
         ]
       ],
@@ -25479,27 +25486,27 @@
       "sites": [
         [
           "src/mob/studioproc.c",
-          1146,
-          "item_lifecycle"
-        ],
-        [
-          "src/mob/studioproc.c",
           1147,
-          "item_publication"
-        ],
-        [
-          "src/mob/studioproc.c",
-          1151,
           "item_lifecycle"
         ],
         [
           "src/mob/studioproc.c",
-          1153,
+          1148,
           "item_publication"
         ],
         [
           "src/mob/studioproc.c",
-          1357,
+          1152,
+          "item_lifecycle"
+        ],
+        [
+          "src/mob/studioproc.c",
+          1154,
+          "item_publication"
+        ],
+        [
+          "src/mob/studioproc.c",
+          1361,
           "item_lifecycle"
         ]
       ],
@@ -26758,7 +26765,7 @@
       "sites": [
         [
           "src/player/player_load_repository.c",
-          642,
+          655,
           "direct_cash_assignment"
         ]
       ],
@@ -26937,12 +26944,12 @@
       "sites": [
         [
           "src/core/files.c",
-          4147,
+          4183,
           "item_lifecycle"
         ],
         [
           "src/core/files.c",
-          4155,
+          4191,
           "item_lifecycle"
         ]
       ],
@@ -26987,12 +26994,12 @@
       "sites": [
         [
           "src/core/files.c",
-          4128,
+          4164,
           "item_publication"
         ],
         [
           "src/core/files.c",
-          4129,
+          4165,
           "item_publication"
         ]
       ],
@@ -27037,22 +27044,22 @@
       "sites": [
         [
           "src/core/files.c",
-          4085,
+          4121,
           "item_publication"
         ],
         [
           "src/core/files.c",
-          4086,
+          4122,
           "item_publication"
         ],
         [
           "src/core/files.c",
-          4090,
+          4126,
           "item_lifecycle"
         ],
         [
           "src/core/files.c",
-          4133,
+          4169,
           "item_lifecycle"
         ]
       ],
@@ -27099,7 +27106,7 @@
       "sites": [
         [
           "src/player/player_snapshot_repository.c",
-          1938,
+          2330,
           "sql_economy"
         ]
       ],
@@ -27135,17 +27142,17 @@
       "sites": [
         [
           "src/core/files.c",
-          1745,
+          1764,
           "item_lifecycle"
         ],
         [
           "src/core/files.c",
-          1751,
+          1770,
           "item_lifecycle"
         ],
         [
           "src/core/files.c",
-          1900,
+          1919,
           "item_publication"
         ]
       ],
@@ -27192,42 +27199,42 @@
       "sites": [
         [
           "src/core/files.c",
-          1873,
+          1892,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          1874,
+          1893,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          1875,
+          1894,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          1876,
+          1895,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          1878,
+          1897,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          1879,
+          1898,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          1880,
+          1899,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          1881,
+          1900,
           "coin_assignment"
         ]
       ],
@@ -27265,22 +27272,22 @@
       "sites": [
         [
           "src/core/files.c",
-          2431,
+          2450,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          2432,
+          2451,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          2433,
+          2452,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          2434,
+          2453,
           "coin_assignment"
         ]
       ],
@@ -27442,17 +27449,17 @@
       "sites": [
         [
           "src/core/files.c",
-          846,
+          865,
           "item_lifecycle"
         ],
         [
           "src/core/files.c",
-          850,
+          869,
           "item_lifecycle"
         ],
         [
           "src/core/files.c",
-          1005,
+          1024,
           "item_lifecycle"
         ]
       ],
@@ -27497,17 +27504,17 @@
       "sites": [
         [
           "src/core/files.c",
-          1224,
+          1243,
           "item_lifecycle"
         ],
         [
           "src/core/files.c",
-          1230,
+          1249,
           "item_lifecycle"
         ],
         [
           "src/core/files.c",
-          1259,
+          1278,
           "item_lifecycle"
         ]
       ],
@@ -27593,22 +27600,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12528,
+          12560,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12529,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          12530,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          12531,
+          12561,
           "coin_assignment"
         ],
         [
@@ -27623,12 +27620,22 @@
         ],
         [
           "src/sql/sql_player.c",
-          12564,
+          12594,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12565,
+          12595,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          12596,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          12597,
           "coin_assignment"
         ]
       ],
@@ -27666,42 +27673,42 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          4270,
+          4290,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4271,
+          4291,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4272,
+          4292,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4273,
+          4293,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4278,
+          4298,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4279,
+          4299,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4280,
+          4300,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4281,
+          4301,
           "coin_assignment"
         ]
       ],
@@ -27737,22 +27744,22 @@
       "sites": [
         [
           "src/core/files.c",
-          1736,
+          1755,
           "item_publication"
         ],
         [
           "src/core/files.c",
-          1745,
+          1764,
           "item_lifecycle"
         ],
         [
           "src/core/files.c",
-          1751,
+          1770,
           "item_lifecycle"
         ],
         [
           "src/core/files.c",
-          1934,
+          1953,
           "item_publication"
         ]
       ],
@@ -28100,7 +28107,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          3026,
+          3155,
           "economic_submit"
         ],
         [
@@ -29093,27 +29100,27 @@
       "sites": [
         [
           "src/core/files.c",
-          3369,
+          3405,
           "item_lifecycle"
         ],
         [
           "src/core/files.c",
-          3672,
+          3708,
           "item_publication"
         ],
         [
           "src/core/files.c",
-          3692,
+          3728,
           "item_publication"
         ],
         [
           "src/core/files.c",
-          3695,
+          3731,
           "item_publication"
         ],
         [
           "src/core/files.c",
-          3703,
+          3739,
           "item_lifecycle"
         ]
       ],
@@ -29160,42 +29167,42 @@
       "sites": [
         [
           "src/core/files.c",
-          4696,
+          4732,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          4697,
+          4733,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          4698,
+          4734,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          4699,
+          4735,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          4701,
+          4737,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          4702,
+          4738,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          4703,
+          4739,
           "coin_assignment"
         ],
         [
           "src/core/files.c",
-          4704,
+          4740,
           "coin_assignment"
         ]
       ],
@@ -29231,12 +29238,12 @@
       "sites": [
         [
           "src/core/files.c",
-          4492,
+          4528,
           "item_lifecycle"
         ],
         [
           "src/core/files.c",
-          4498,
+          4534,
           "item_lifecycle"
         ]
       ],
@@ -29315,12 +29322,12 @@
       "sites": [
         [
           "src/core/files.c",
-          4476,
+          4512,
           "item_publication"
         ],
         [
           "src/core/files.c",
-          4505,
+          4541,
           "item_publication"
         ]
       ],
@@ -29520,7 +29527,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          10932,
+          10963,
           "sql_economy"
         ]
       ],
@@ -29558,7 +29565,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9511,
+          9542,
           "sql_economy"
         ]
       ],
@@ -29596,12 +29603,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9394,
+          9425,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          9474,
+          9505,
           "sql_economy"
         ]
       ],
@@ -29637,7 +29644,7 @@
       "sites": [
         [
           "src/core/files.c",
-          3762,
+          3798,
           "item_lifecycle"
         ]
       ],
@@ -29682,32 +29689,32 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          8499,
+          8530,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          8514,
+          8545,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          8553,
+          8584,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8615,
+          8646,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8790,
+          8821,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          8803,
+          8834,
           "item_publication"
         ]
       ],
@@ -29752,27 +29759,27 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          8495,
+          8526,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8510,
+          8541,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8695,
+          8726,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8786,
+          8817,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8799,
+          8830,
           "item_lifecycle"
         ]
       ],
@@ -29817,12 +29824,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          927,
+          929,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          980,
+          982,
           "item_lifecycle"
         ]
       ],
@@ -29869,7 +29876,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          6441,
+          6472,
           "item_lifecycle"
         ]
       ],
@@ -29916,27 +29923,27 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          4672,
+          4703,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          4917,
+          4948,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          4943,
+          4974,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          4947,
+          4978,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          4953,
+          4984,
           "item_publication"
         ]
       ],
@@ -29983,12 +29990,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          7260,
+          7291,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          7319,
+          7350,
           "item_publication"
         ]
       ],
@@ -30033,22 +30040,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          10362,
+          10393,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10434,
+          10465,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11462,
+          11493,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11607,
+          11639,
           "item_publication"
         ]
       ],
@@ -30093,27 +30100,27 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11531,
+          11562,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11578,
+          11609,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11596,
+          11628,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11602,
+          11634,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11610,
+          11642,
           "item_lifecycle"
         ]
       ],
@@ -30161,22 +30168,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9694,
+          9725,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          9696,
+          9727,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          9698,
+          9729,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          9699,
+          9730,
           "coin_assignment"
         ]
       ],
@@ -30221,17 +30228,17 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9800,
+          9831,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10136,
+          10167,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10174,
+          10205,
           "item_publication"
         ]
       ],
@@ -30278,42 +30285,42 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9554,
+          9585,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9560,
+          9591,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9570,
+          9601,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9812,
+          9843,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9883,
+          9914,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9931,
+          9962,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9941,
+          9972,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9951,
+          9982,
           "item_lifecycle"
         ]
       ],
@@ -30358,22 +30365,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          7371,
+          7402,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          7372,
+          7403,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          7381,
+          7412,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          7382,
+          7413,
           "item_lifecycle"
         ]
       ],
@@ -31006,12 +31013,12 @@
       "sites": [
         [
           "src/ships/ship_base.c",
-          2911,
+          2915,
           "item_publication"
         ],
         [
           "src/ships/ship_base.c",
-          2912,
+          2916,
           "item_publication"
         ]
       ],
@@ -31266,7 +31273,7 @@
       "sites": [
         [
           "src/ships/ship_base.c",
-          491,
+          492,
           "ship_coffer_assignment"
         ]
       ],
@@ -31303,32 +31310,32 @@
       "sites": [
         [
           "src/ships/ship_base.c",
-          161,
+          162,
           "money_helper"
         ],
         [
           "src/ships/ship_base.c",
-          3046,
+          3050,
           "economic_submit"
         ],
         [
           "src/ships/ship_base.c",
-          3059,
+          3063,
           "money_helper"
         ],
         [
           "src/ships/ship_base.c",
-          3064,
+          3068,
           "ship_coffer_assignment"
         ],
         [
           "src/ships/ship_base.c",
-          3090,
+          3094,
           "item_publication"
         ],
         [
           "src/ships/ship_base.c",
-          3091,
+          3095,
           "item_publication"
         ]
       ],
@@ -31469,12 +31476,12 @@
       "sites": [
         [
           "src/ships/ship_base.c",
-          1123,
+          1124,
           "item_publication"
         ],
         [
           "src/ships/ship_base.c",
-          1134,
+          1135,
           "item_publication"
         ]
       ],
@@ -31698,12 +31705,12 @@
       "sites": [
         [
           "src/ships/ship_base.c",
-          2734,
+          2738,
           "item_publication"
         ],
         [
           "src/ships/ship_base.c",
-          2735,
+          2739,
           "item_publication"
         ]
       ],
@@ -32067,12 +32074,12 @@
       "sites": [
         [
           "src/ships/ship_base.c",
-          1754,
+          1758,
           "item_publication"
         ],
         [
           "src/ships/ship_base.c",
-          1759,
+          1763,
           "item_publication"
         ]
       ],
@@ -32117,22 +32124,22 @@
       "sites": [
         [
           "src/ships/ship_base.c",
-          1214,
-          "item_publication"
-        ],
-        [
-          "src/ships/ship_base.c",
           1215,
           "item_publication"
         ],
         [
           "src/ships/ship_base.c",
           1216,
-          "item_lifecycle"
+          "item_publication"
         ],
         [
           "src/ships/ship_base.c",
           1217,
+          "item_lifecycle"
+        ],
+        [
+          "src/ships/ship_base.c",
+          1218,
           "item_lifecycle"
         ]
       ],
@@ -32178,12 +32185,12 @@
       "sites": [
         [
           "src/ships/ship_base.c",
-          645,
+          646,
           "item_publication"
         ],
         [
           "src/ships/ship_base.c",
-          646,
+          647,
           "item_publication"
         ]
       ],
@@ -32281,7 +32288,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12111,
+          12143,
           "sql_economy"
         ]
       ],
@@ -32319,7 +32326,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12032,
+          12064,
           "ship_coffer_assignment"
         ]
       ],
@@ -32356,12 +32363,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11776,
+          11808,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          11831,
+          11863,
           "sql_economy"
         ]
       ],
@@ -32401,12 +32408,12 @@
       "sites": [
         [
           "src/ships/ship_base.c",
-          3130,
+          3134,
           "item_publication"
         ],
         [
           "src/ships/ship_base.c",
-          3131,
+          3135,
           "item_publication"
         ]
       ],
@@ -32671,17 +32678,17 @@
       "sites": [
         [
           "src/ships/ship_base.c",
-          708,
+          709,
           "item_lifecycle"
         ],
         [
           "src/ships/ship_base.c",
-          719,
+          720,
           "item_lifecycle"
         ],
         [
           "src/ships/ship_base.c",
-          733,
+          734,
           "ship_coffer_assignment"
         ]
       ],
@@ -38137,12 +38144,7 @@
       "sites": [
         [
           "src/specs/specs.unique.c",
-          424,
-          "item_publication"
-        ],
-        [
-          "src/specs/specs.unique.c",
-          480,
+          425,
           "item_publication"
         ],
         [
@@ -38152,22 +38154,27 @@
         ],
         [
           "src/specs/specs.unique.c",
-          495,
+          482,
           "item_publication"
         ],
         [
           "src/specs/specs.unique.c",
-          529,
+          496,
           "item_publication"
         ],
         [
           "src/specs/specs.unique.c",
-          531,
+          530,
           "item_publication"
         ],
         [
           "src/specs/specs.unique.c",
-          533,
+          532,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.unique.c",
+          534,
           "item_publication"
         ]
       ],
@@ -38204,17 +38211,17 @@
       "sites": [
         [
           "src/specs/specs.unique.c",
-          708,
-          "item_publication"
-        ],
-        [
-          "src/specs/specs.unique.c",
           710,
           "item_publication"
         ],
         [
           "src/specs/specs.unique.c",
-          711,
+          712,
+          "item_publication"
+        ],
+        [
+          "src/specs/specs.unique.c",
+          713,
           "item_publication"
         ]
       ],
@@ -39342,11 +39349,6 @@
       "sites": [
         [
           "src/magic/smagic.c",
-          3440,
-          "coin_assignment"
-        ],
-        [
-          "src/magic/smagic.c",
           3441,
           "coin_assignment"
         ],
@@ -39358,6 +39360,11 @@
         [
           "src/magic/smagic.c",
           3443,
+          "coin_assignment"
+        ],
+        [
+          "src/magic/smagic.c",
+          3444,
           "coin_assignment"
         ]
       ],
@@ -39447,27 +39454,27 @@
       "sites": [
         [
           "src/magic/smagic.c",
-          1923,
-          "item_publication"
-        ],
-        [
-          "src/magic/smagic.c",
           1924,
           "item_publication"
         ],
         [
           "src/magic/smagic.c",
-          1931,
+          1925,
           "item_publication"
         ],
         [
           "src/magic/smagic.c",
-          1937,
+          1932,
+          "item_publication"
+        ],
+        [
+          "src/magic/smagic.c",
+          1938,
           "item_lifecycle"
         ],
         [
           "src/magic/smagic.c",
-          1939,
+          1940,
           "item_publication"
         ]
       ],
@@ -40239,12 +40246,12 @@
       "sites": [
         [
           "src/cmd/actinf.c",
-          5223,
+          5226,
           "item_lifecycle"
         ],
         [
           "src/cmd/actinf.c",
-          5231,
+          5234,
           "item_lifecycle"
         ]
       ],
@@ -42959,7 +42966,7 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          1589,
+          1592,
           "item_publication"
         ]
       ],
@@ -43004,17 +43011,17 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          1492,
+          1494,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          1498,
+          1500,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          1504,
+          1506,
           "item_lifecycle"
         ]
       ],
@@ -43059,12 +43066,12 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          1577,
+          1580,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          1583,
+          1586,
           "item_lifecycle"
         ]
       ],
@@ -43109,7 +43116,7 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          1427,
+          1428,
           "item_lifecycle"
         ]
       ],
@@ -43154,12 +43161,12 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          1433,
+          1434,
           "item_publication"
         ],
         [
           "src/world/random.zone.c",
-          1434,
+          1435,
           "item_publication"
         ]
       ],
@@ -43637,12 +43644,12 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          422,
+          423,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          426,
+          427,
           "item_publication"
         ]
       ],
@@ -43687,12 +43694,12 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          430,
+          431,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          433,
+          434,
           "item_publication"
         ]
       ],
@@ -43737,12 +43744,12 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          503,
+          504,
           "item_publication"
         ],
         [
           "src/world/random.zone.c",
-          504,
+          505,
           "item_publication"
         ]
       ],
@@ -43787,12 +43794,12 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          394,
+          395,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          402,
+          403,
           "item_publication"
         ]
       ],
@@ -43837,37 +43844,37 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          447,
+          448,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          453,
+          454,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          458,
+          459,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          463,
+          464,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          468,
+          469,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          473,
+          474,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          480,
+          481,
           "item_publication"
         ]
       ],
@@ -43912,12 +43919,12 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          255,
+          256,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          263,
+          264,
           "item_publication"
         ]
       ],
@@ -43962,12 +43969,12 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          511,
+          512,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          527,
+          528,
           "item_publication"
         ]
       ],
@@ -44012,12 +44019,12 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          406,
+          407,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          414,
+          415,
           "item_publication"
         ]
       ],
@@ -44113,17 +44120,17 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          1230,
+          1231,
           "item_publication"
         ],
         [
           "src/world/random.zone.c",
-          1238,
+          1239,
           "item_publication"
         ],
         [
           "src/world/random.zone.c",
-          1243,
+          1244,
           "item_publication"
         ]
       ],
@@ -44168,12 +44175,12 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          1195,
+          1196,
           "item_publication"
         ],
         [
           "src/world/random.zone.c",
-          1196,
+          1197,
           "item_lifecycle"
         ]
       ],
@@ -44218,37 +44225,37 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          945,
+          946,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          949,
+          950,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          952,
+          953,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          955,
+          956,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          958,
+          959,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          961,
+          962,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          966,
+          967,
           "item_publication"
         ]
       ],
@@ -44293,7 +44300,7 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          1334,
+          1335,
           "item_lifecycle"
         ]
       ],
@@ -44338,7 +44345,7 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          580,
+          581,
           "item_publication"
         ]
       ],
@@ -44383,12 +44390,12 @@
       "sites": [
         [
           "src/world/random.zone.c",
-          546,
+          547,
           "item_lifecycle"
         ],
         [
           "src/world/random.zone.c",
-          572,
+          573,
           "item_publication"
         ]
       ],
@@ -44813,7 +44820,7 @@
       "sites": [
         [
           "src/world/new_events.c",
-          2128,
+          2213,
           "item_lifecycle"
         ]
       ],
@@ -45566,12 +45573,12 @@
       "sites": [
         [
           "src/item/objmisc.c",
-          253,
+          256,
           "item_publication"
         ],
         [
           "src/item/objmisc.c",
-          255,
+          258,
           "item_publication"
         ]
       ],
@@ -45681,12 +45688,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2537,
+          2666,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2749,
+          2878,
           "economic_submit"
         ]
       ],
@@ -45749,12 +45756,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          729,
+          745,
           "item_lifecycle"
         ],
         [
           "src/item/item_movement_transaction.c",
-          737,
+          753,
           "item_publication"
         ]
       ],
@@ -45811,7 +45818,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          756,
+          772,
           "item_lifecycle"
         ]
       ],
@@ -45913,12 +45920,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          4752,
+          4783,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          4754,
+          4785,
           "item_lifecycle"
         ]
       ],
@@ -46030,7 +46037,7 @@
       "sites": [
         [
           "src/persistence/sql_room_item_payload.c",
-          586,
+          587,
           "sql_economy"
         ]
       ],
@@ -46156,7 +46163,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11083,
+          11114,
           "item_lifecycle"
         ]
       ],
@@ -46169,6 +46176,502 @@
           "this attempt detached P_obj tree only"
         ]
       }
+    },
+    {
+      "id": "repair.player_item_payload",
+      "path": "scripts/player_item_payload_repair.py",
+      "symbol": "build_sql",
+      "reason": "correction",
+      "integration_issue": 489,
+      "owner": "primary / shared producer integration",
+      "coverage": "legacy",
+      "classification": "Offline reconstruction of a missing physical payload for an existing player UID preserves selected custody, root, parent, revision and supply. Separate payload_repair audit receipts do not create an accounting correction or issuance root.",
+      "authority_boundary": "Approved evidence-bound plan, original exact UID/topology observations, SERIALIZABLE transaction and runtime exclusion; refuse occupied projections, pending journals/death/rewards, coins, equipment and invalid ancestry.",
+      "current_support": "Source classification only; combined native, recovery, active-epoch and backend qualification remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/player_item_payload_repair_mysql.py"
+      ],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "The offline CLI calls build_sql for guarded repair application and verified status advancement; it has no gameplay admission caller.",
+      "native_effects": {
+        "holding_effect": "No direct coin balance change.",
+        "custody_effect": "Offline reconstruction of a missing physical payload for an existing player UID preserves selected custody, root, parent, revision and supply. Separate payload_repair audit receipts do not create an accounting correction or issuance root.",
+        "native_state_targets": [
+          "player_items",
+          "player_item_runtime_state",
+          "player_item_affects",
+          "player_item_extra_descr",
+          "player_death_restitution_receipt",
+          "player_death_restitution_item"
+        ]
+      }
+    },
+    {
+      "id": "spell.dispel_object_state",
+      "path": "src/magic/spell_dispel_magic.c",
+      "symbol": "spell_dispel_magic",
+      "reason": "item_destroy",
+      "integration_issue": 480,
+      "owner": "primary / shared producer integration",
+      "coverage": "legacy",
+      "classification": "Dispel can weaken paired wall strength/duration, delegate special-object handling, retire objects through Decay, or remove ordinary ITEM2_MAGIC and two enchantment affects. Metadata changes are distinct from retirement and require retained selected payload proof.",
+      "authority_boundary": "Bind selected UID, native owner/revision, exact payload, paired-object identities and spell occurrence before metadata publication or delegated retirement; artifact refusal is preserved.",
+      "current_support": "Source classification only; combined native, recovery, active-epoch and backend qualification remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_spell_ward_durability.py"
+      ],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "cast_dispel_magic and spell command dispatch call spell_dispel_magic; its object branch handles walls, ordinary enchantments and custom objects.",
+      "native_effects": {
+        "holding_effect": "No direct coin balance change.",
+        "custody_effect": "Dispel can weaken paired wall strength/duration, delegate special-object handling, retire objects through Decay, or remove ordinary ITEM2_MAGIC and two enchantment affects. Metadata changes are distinct from retirement and require retained selected payload proof.",
+        "native_state_targets": [
+          "P_obj.extra2_flags",
+          "P_obj.affected[0..1]",
+          "paired wall P_obj.value[2] and decay event deadlines",
+          "delegated Decay retirement"
+        ]
+      }
+    },
+    {
+      "id": "spell.dispel_portal_lifecycle",
+      "path": "src/magic/spell_dispel_magic.c",
+      "symbol": "dispel_portal",
+      "reason": "item_destroy",
+      "integration_issue": 480,
+      "owner": "primary / shared producer integration",
+      "coverage": "legacy",
+      "classification": "Custom portal dispel checks an unambiguous counterpart, then either shortens both decay timers or delegates both object retirements to Decay. Pair validation alone is not an accounting root.",
+      "authority_boundary": "Bind both selected UIDs, owners/revisions, remaining durations and one spell source before paired metadata publication or retirement.",
+      "current_support": "Source classification only; combined native, recovery, active-epoch and backend qualification remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_spell_ward_durability.py"
+      ],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "dispel_custom_object calls dispel_portal for portal_door, portal_wormhole and portal_etherportal; rejection does not fall through to ordinary destruction.",
+      "native_effects": {
+        "holding_effect": "No direct coin balance change.",
+        "custody_effect": "Custom portal dispel checks an unambiguous counterpart, then either shortens both decay timers or delegates both object retirements to Decay. Pair validation alone is not an accounting root.",
+        "native_state_targets": [
+          "paired portal decay event deadlines",
+          "delegated Decay retirement"
+        ]
+      }
+    },
+    {
+      "id": "spell.dispel_anchor_lifecycle",
+      "path": "src/magic/spell_dispel_magic.c",
+      "symbol": "dispel_stone_anchor",
+      "reason": "item_destroy",
+      "integration_issue": 480,
+      "owner": "primary / shared producer integration",
+      "coverage": "legacy",
+      "classification": "Moonstone anchor dispel repairs a missing finite decay timer, shortens its deadline, or delegates exhausted retirement to Decay. Surviving anchors can also continue into ordinary enchantment removal.",
+      "authority_boundary": "Bind exact selected UID, owner/revision, retained lifetime and spell source before timer repair or shortening and delegated retirement.",
+      "current_support": "Source classification only; combined native, recovery, active-epoch and backend qualification remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_spell_ward_durability.py"
+      ],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "dispel_custom_object calls dispel_stone_anchor for moonstone objects 419 and 433 and returns continue_enchantment for surviving anchors.",
+      "native_effects": {
+        "holding_effect": "No direct coin balance change.",
+        "custody_effect": "Moonstone anchor dispel repairs a missing finite decay timer, shortens its deadline, or delegates exhausted retirement to Decay. Surviving anchors can also continue into ordinary enchantment removal.",
+        "native_state_targets": [
+          "anchor TAG_OBJ_DECAY affect and event deadline",
+          "delegated Decay retirement",
+          "ordinary enchantment continuation"
+        ]
+      }
+    },
+    {
+      "id": "coin.retained_pile_rendering",
+      "path": "src/economy/coin_physical_publication.c",
+      "symbol": "source_matches",
+      "reason": "coin_transfer",
+      "integration_issue": 490,
+      "owner": "primary / #490",
+      "coverage": "legacy",
+      "classification": "Stack-local zero-add native coin renderer compares canonical opening/after text and weight. It neither admits a UID nor changes a native holding; the separate retained projection owns live changes.",
+      "authority_boundary": "Original committed command/result and retained native publication; no new accounting root or live-bank authority is inferred.",
+      "current_support": "Source classification only; prepared component cases unexecuted and full backend/recovery proof pending.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_coin_physical_publication.py"
+      ],
+      "sites": [
+        [
+          "src/economy/coin_physical_publication.c",
+          115,
+          "coin_bulk_mutation"
+        ],
+        [
+          "src/economy/coin_physical_publication.c",
+          124,
+          "coin_bulk_mutation"
+        ]
+      ],
+      "evidence": []
+    },
+    {
+      "id": "coin.retained_room_projection",
+      "path": "src/economy/coin_physical_publication.c",
+      "symbol": "coin_physical_publication_publish",
+      "reason": "coin_transfer",
+      "integration_issue": 490,
+      "owner": "primary / #490",
+      "coverage": "legacy",
+      "classification": "Runtime projection of a committed original-UID ordinary-room pile. Literal bytes, denomination/custody and result identity must agree; uncertain materialization/handler stages remain held and post-ACK notifications are separate.",
+      "authority_boundary": "Original committed command/result and retained native publication; no new accounting root or live-bank authority is inferred.",
+      "current_support": "Source classification only; prepared component cases unexecuted and full backend/recovery proof pending.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_coin_physical_publication.py"
+      ],
+      "sites": [
+        [
+          "src/economy/coin_physical_publication.c",
+          359,
+          "coin_bulk_mutation"
+        ],
+        [
+          "src/economy/coin_physical_publication.c",
+          366,
+          "item_publication"
+        ],
+        [
+          "src/economy/coin_physical_publication.c",
+          368,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": []
+    },
+    {
+      "id": "recovery.inert_literal_staging",
+      "path": "src/player/inert_item_stage.c",
+      "symbol": "prepare_inert_item_stage",
+      "reason": "item_create",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Allocates a private discard-only object from a complete retained SQL literal. Assigns the supplied existing UID without issuance, registry admission, global lists/counts, native holdings or custody effects. Prepared prototype identity is a caller prerequisite; unsupported behavior refuses before acquisition.",
+      "authority_boundary": "Private memory projection only; current SQL epoch/custody/literal authority, full physical graph proof and final enrollment require a separate owner. No new accounting root.",
+      "current_support": "Source-only opt-in prerequisite without production caller or ownership-release API; native fixtures unexecuted, backend/gameplay/recovery qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Prepared new module has no in-tree production caller. Final enrollment/publication is not implemented. Semantic classification is pending current-source census/site reanchoring."
+    },
+    {
+      "id": "recovery.inert_literal_cleanup",
+      "path": "src/player/inert_item_stage.c",
+      "symbol": "inert_item_stage::reset",
+      "reason": "item_destroy",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Returns private unpublished pooled memory and owned strings/description nodes. No extraction, normal object/effect/procedure/event callback or runtime/native custody retirement occurs.",
+      "authority_boundary": "Private memory projection only; current SQL epoch/custody/literal authority, full physical graph proof and final enrollment require a separate owner. No new accounting root.",
+      "current_support": "Source-only opt-in prerequisite without production caller or ownership-release API; native fixtures unexecuted, backend/gameplay/recovery qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Prepared new module has no in-tree production caller. Final enrollment/publication is not implemented. Semantic classification is pending current-source census/site reanchoring."
+    },
+    {
+      "id": "recovery.sql_ordinary_drop_receipt_observation",
+      "path": "src/persistence/critical_command_repository.c",
+      "symbol": "critical_command_repository_verify_ordinary_drop_in_transaction",
+      "reason": "item_move",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Reads exact committed inbox, historical economic root/payload and outbox inside caller-owned native locks; no native mutation, missing-command apply or transaction/ACK ownership.",
+      "authority_boundary": "Read-only observation, never a native mutation or ACK capability. Production publication, clean save census and ACK reservation remain separate owners.",
+      "current_support": "Source-only recovery prerequisite; native/backend/gameplay/recovery qualification unverified. New graph observation supports SQL only; flatfile refuses.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Opt-in graph owner consumes shared observation seams; no production dispatcher/ACK integration. Current-source semantic census and executable route reanchoring remain pending."
+    },
+    {
+      "id": "recovery.runtime_owner_revision_observation",
+      "path": "src/item/item_ownership_runtime.c",
+      "symbol": "item_ownership_runtime_peek_owner_revision",
+      "reason": "item_move",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Reads only an existing serialized owner-cache revision without inserting or hydrating missing metadata; no native custody or economic effect.",
+      "authority_boundary": "Read-only observation, never a native mutation or ACK capability. Production publication, clean save census and ACK reservation remain separate owners.",
+      "current_support": "Backend-neutral serialized cache read only; source-reviewed but native qualification unverified. No native authority, allocation, hydration or production ACK integration.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Opt-in graph owner consumes shared observation seams; no production dispatcher/ACK integration. Current-source semantic census and executable route reanchoring remain pending."
+    },
+    {
+      "id": "recovery.ordinary_drop_graph_observation",
+      "path": "src/item/ordinary_drop_recovery.c",
+      "symbol": "ordinary_drop_recovery_observe_existing",
+      "reason": "item_move",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Observes exact original SQL-drop receipt and current epoch/season/custody/literal graph together with complete physical/runtime placement; no construction, repair, enrollment, issuance/destruction or publication ACK.",
+      "authority_boundary": "Read-only observation, never a native mutation or ACK capability. Production publication, clean save census and ACK reservation remain separate owners.",
+      "current_support": "Source-only recovery prerequisite; native/backend/gameplay/recovery qualification unverified. New graph observation supports SQL only; flatfile refuses.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Opt-in graph owner consumes shared observation seams; no production dispatcher/ACK integration. Current-source semantic census and executable route reanchoring remain pending."
+    },
+    {
+      "id": "recovery.inert_literal_eligibility",
+      "path": "src/player/inert_item_stage.c",
+      "symbol": "inert_item_stage_eligibility",
+      "reason": "item_move",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Pure bounded classification of literal/prototype eligibility; no allocation, pool access, hydration, native mutation or enrollment permission.",
+      "authority_boundary": "Classification only; trusted prototype provenance and native SQL authority belong to integrated enrollment owner.",
+      "current_support": "Source-reviewed, UNQUALIFIED; backend-neutral classifier with no economic effects.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Opt-in source implementation has no production integration. Current-source semantic census/site reanchoring and executable qualification remain pending."
+    },
+    {
+      "id": "recovery.ordinary_drop_graph_reconstruction",
+      "path": "src/item/ordinary_drop_recovery.c",
+      "symbol": "ordinary_drop_recovery_publish",
+      "reason": "item_move",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Reconstructs only an entirely absent graph from exact original receipt/current SQL authority using retained UIDs and literals. Projection enrollment changes global/index/room/runtime caches without economic issuance, destruction or ACK.",
+      "authority_boundary": "Internally reacquired original-epoch/session/custody authority, full absence, private inert ownership, atomic registry hydration and nonthrowing native enrollment; uncertain cleanup retains graph/obligation.",
+      "current_support": "Source-reviewed cache-only SQL subset, UNQUALIFIED. General prototype coverage/activity bookkeeping, production save census/reservation/ACK/startup and full ordinary-route qualification remain required; flatfile unsupported.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Opt-in source implementation has no production integration. Current-source semantic census/site reanchoring and executable qualification remain pending."
+    },
+    {
+      "id": "lifecycle.flatfile_activation_install",
+      "path": "src/flatfile/flatfile_accounting_lifecycle_transaction.c",
+      "symbol": "flatfile_accounting_lifecycle_transaction::install",
+      "reason": "baseline",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Stages native mapping lifetimes, baseline opening evidence/reservations, immutable lifecycle receipt and epoch selection in one existing shared authority bundle.",
+      "authority_boundary": "Fresh-install boundary/virgin booleans remain assertions; authentic native exclusion/census and complete holding/item coverage must precede activation. Exact retry verifies original immutable sources/baseline/epoch without new images or native recapture.",
+      "current_support": "Native flatfile source owner UNQUALIFIED and unwired. Mandatory .elr restore/export/erasure/retention consumers and migration policy remain with independent Plan5 stream; no activation authorization.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Opt-in source implementation has no production integration. Current-source semantic census/site reanchoring and executable qualification remain pending."
     }
   ],
   "census": [
@@ -47476,13 +47979,13 @@
     },
     {
       "path": "src/cmd/actinf.c",
-      "line": 5223,
+      "line": 5226,
       "family": "item_lifecycle",
       "excerpt": "if ((t_obj = read_object(obj_index[i].virtual_number, VIRTUAL)))"
     },
     {
       "path": "src/cmd/actinf.c",
-      "line": 5231,
+      "line": 5234,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj, FALSE);"
     },
@@ -50068,151 +50571,151 @@
     },
     {
       "path": "src/combat/fight.c",
-      "line": 783,
+      "line": 784,
       "family": "economic_submit",
       "excerpt": "item_movement_transaction_submit("
     },
     {
       "path": "src/combat/fight.c",
-      "line": 788,
+      "line": 789,
       "family": "economic_submit",
       "excerpt": "item_movement_transaction_submit_batch("
     },
     {
       "path": "src/combat/fight.c",
-      "line": 813,
+      "line": 814,
       "family": "item_lifecycle",
       "excerpt": "corpse = read_object(2, VIRTUAL);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 979,
+      "line": 980,
       "family": "item_lifecycle",
       "excerpt": "extract_obj("
     },
     {
       "path": "src/combat/fight.c",
-      "line": 1057,
+      "line": 1058,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(corpse);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 1607,
+      "line": 1608,
       "family": "item_lifecycle",
       "excerpt": "wallet_pile = create_money(GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch),"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 1620,
+      "line": 1621,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(wallet_pile, FALSE);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2185,
+      "line": 2186,
       "family": "item_lifecycle",
       "excerpt": "P_obj dragon_scale = read_object(VOBJ_DRAGON_SCALE, VIRTUAL);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2199,
+      "line": 2200,
       "family": "item_lifecycle",
       "excerpt": "P_obj teobj = read_object(400230, VIRTUAL);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 4803,
+      "line": 4829,
       "family": "item_lifecycle",
       "excerpt": "P_obj portal = read_object(400220, VIRTUAL);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 698,
+      "line": 699,
       "family": "item_publication",
       "excerpt": "obj_from_char(item);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 699,
+      "line": 700,
       "family": "item_publication",
       "excerpt": "obj_to_obj(item, corpse);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 949,
+      "line": 950,
       "family": "item_publication",
       "excerpt": "obj_to_room(corpse, real_room(ch->specials.was_in_room));"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 953,
+      "line": 954,
       "family": "item_publication",
       "excerpt": "obj_to_room(corpse, real_room(CORPSE_STORAGE_II));"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 958,
+      "line": 959,
       "family": "item_publication",
       "excerpt": "obj_to_room(corpse, ch->in_room);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 971,
+      "line": 972,
       "family": "item_publication",
       "excerpt": "obj_from_obj(o);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 975,
+      "line": 976,
       "family": "item_publication",
       "excerpt": "obj_to_room(o, corpse->loc.room);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 1056,
+      "line": 1057,
       "family": "item_publication",
       "excerpt": "obj_from_room(corpse);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2186,
+      "line": 2187,
       "family": "item_publication",
       "excerpt": "obj_to_char(dragon_scale, ch);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2200,
+      "line": 2201,
       "family": "item_publication",
       "excerpt": "obj_to_char(teobj, ch);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2245,
+      "line": 2246,
       "family": "item_publication",
       "excerpt": "obj_to_char(tempobj, ch);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2256,
+      "line": 2257,
       "family": "item_publication",
       "excerpt": "obj_to_char(tempobj, ch);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 4814,
+      "line": 4840,
       "family": "item_publication",
       "excerpt": "obj_to_room(portal, real_room(400000));"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 5221,
+      "line": 5247,
       "family": "item_publication",
       "excerpt": "P_obj weap = pos < MAX_WEAR ? unequip_char(ch, pos) : NULL;"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 5228,
+      "line": 5254,
       "family": "item_publication",
       "excerpt": "obj_to_char(weap, ch);"
     },
@@ -50458,295 +50961,295 @@
     },
     {
       "path": "src/core/files.c",
-      "line": 1873,
+      "line": 1892,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = balances.copper;"
     },
     {
       "path": "src/core/files.c",
-      "line": 1874,
+      "line": 1893,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = balances.silver;"
     },
     {
       "path": "src/core/files.c",
-      "line": 1875,
+      "line": 1894,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = balances.gold;"
     },
     {
       "path": "src/core/files.c",
-      "line": 1876,
+      "line": 1895,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = balances.platinum;"
     },
     {
       "path": "src/core/files.c",
-      "line": 1878,
+      "line": 1897,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(ch) = domains.domains.wallet[0];"
     },
     {
       "path": "src/core/files.c",
-      "line": 1879,
+      "line": 1898,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(ch) = domains.domains.wallet[1];"
     },
     {
       "path": "src/core/files.c",
-      "line": 1880,
+      "line": 1899,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(ch) = domains.domains.wallet[2];"
     },
     {
       "path": "src/core/files.c",
-      "line": 1881,
+      "line": 1900,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(ch) = domains.domains.wallet[3];"
     },
     {
       "path": "src/core/files.c",
-      "line": 2431,
+      "line": 2450,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(ch) = GET_INTE(buf);"
     },
     {
       "path": "src/core/files.c",
-      "line": 2432,
+      "line": 2451,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(ch) = GET_INTE(buf);"
     },
     {
       "path": "src/core/files.c",
-      "line": 2433,
+      "line": 2452,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(ch) = GET_INTE(buf);"
     },
     {
       "path": "src/core/files.c",
-      "line": 2434,
+      "line": 2453,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(ch) = GET_INTE(buf);"
     },
     {
       "path": "src/core/files.c",
-      "line": 4696,
+      "line": 4732,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(ch) = GET_INTE(buf);"
     },
     {
       "path": "src/core/files.c",
-      "line": 4697,
+      "line": 4733,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(ch) = GET_INTE(buf);"
     },
     {
       "path": "src/core/files.c",
-      "line": 4698,
+      "line": 4734,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(ch) = GET_INTE(buf);"
     },
     {
       "path": "src/core/files.c",
-      "line": 4699,
+      "line": 4735,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(ch) = GET_INTE(buf);"
     },
     {
       "path": "src/core/files.c",
-      "line": 4701,
+      "line": 4737,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(ch) = 0;"
     },
     {
       "path": "src/core/files.c",
-      "line": 4702,
+      "line": 4738,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(ch) = 0;"
     },
     {
       "path": "src/core/files.c",
-      "line": 4703,
+      "line": 4739,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(ch) = 0;"
     },
     {
       "path": "src/core/files.c",
-      "line": 4704,
+      "line": 4740,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(ch) = 0;"
     },
     {
       "path": "src/core/files.c",
-      "line": 846,
+      "line": 865,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj);"
     },
     {
       "path": "src/core/files.c",
-      "line": 850,
+      "line": 869,
       "family": "item_lifecycle",
       "excerpt": "if (!(t_obj = read_object(w_obj->R_num, REAL)))"
     },
     {
       "path": "src/core/files.c",
-      "line": 1005,
+      "line": 1024,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj);"
     },
     {
       "path": "src/core/files.c",
-      "line": 1224,
+      "line": 1243,
       "family": "item_lifecycle",
       "excerpt": "P_obj t_obj = read_object(obj->R_num, REAL);"
     },
     {
       "path": "src/core/files.c",
-      "line": 1230,
+      "line": 1249,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj);"
     },
     {
       "path": "src/core/files.c",
-      "line": 1259,
+      "line": 1278,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj);"
     },
     {
       "path": "src/core/files.c",
-      "line": 1745,
+      "line": 1764,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(save_equip[i]);"
     },
     {
       "path": "src/core/files.c",
-      "line": 1751,
+      "line": 1770,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/core/files.c",
-      "line": 3369,
+      "line": 3405,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(V_num, VIRTUAL);"
     },
     {
       "path": "src/core/files.c",
-      "line": 3703,
+      "line": 3739,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(V_num, VIRTUAL);"
     },
     {
       "path": "src/core/files.c",
-      "line": 3762,
+      "line": 3798,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(V_num, VIRTUAL);"
     },
     {
       "path": "src/core/files.c",
-      "line": 4090,
+      "line": 4126,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cobj, TRUE); // If arti is confiscated.. ouch."
     },
     {
       "path": "src/core/files.c",
-      "line": 4133,
+      "line": 4169,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cobj, TRUE); // If arti is confiscated.. ouch."
     },
     {
       "path": "src/core/files.c",
-      "line": 4147,
+      "line": 4183,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(ch->equipment[i], TRUE); // If arti is confiscated.. ouch!"
     },
     {
       "path": "src/core/files.c",
-      "line": 4155,
+      "line": 4191,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // If arti is confiscated.. ouch!"
     },
     {
       "path": "src/core/files.c",
-      "line": 4492,
+      "line": 4528,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(save_equip[i]);"
     },
     {
       "path": "src/core/files.c",
-      "line": 4498,
+      "line": 4534,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/core/files.c",
-      "line": 1736,
+      "line": 1755,
       "family": "item_publication",
       "excerpt": "equip_char(ch, save_equip[i], i, 9);"
     },
     {
       "path": "src/core/files.c",
-      "line": 1900,
+      "line": 1919,
       "family": "item_publication",
       "excerpt": "save_equip[i] = ch->equipment[i] ? unequip_char(ch, i, TRUE) : NULL;"
     },
     {
       "path": "src/core/files.c",
-      "line": 1934,
+      "line": 1953,
       "family": "item_publication",
       "excerpt": "save_equip[i] = unequip_char(ch, i, TRUE);"
     },
     {
       "path": "src/core/files.c",
-      "line": 3672,
+      "line": 3708,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, ch);"
     },
     {
       "path": "src/core/files.c",
-      "line": 3692,
+      "line": 3728,
       "family": "item_publication",
       "excerpt": "obj_to_char_at_end(obj, ch);"
     },
     {
       "path": "src/core/files.c",
-      "line": 3695,
+      "line": 3731,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, corpse_room);"
     },
     {
       "path": "src/core/files.c",
-      "line": 4085,
+      "line": 4121,
       "family": "item_publication",
       "excerpt": "obj_from_obj(obj);"
     },
     {
       "path": "src/core/files.c",
-      "line": 4086,
+      "line": 4122,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, ch);"
     },
     {
       "path": "src/core/files.c",
-      "line": 4128,
+      "line": 4164,
       "family": "item_publication",
       "excerpt": "obj_from_obj(obj);"
     },
     {
       "path": "src/core/files.c",
-      "line": 4129,
+      "line": 4165,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, ch);"
     },
     {
       "path": "src/core/files.c",
-      "line": 4476,
+      "line": 4512,
       "family": "item_publication",
       "excerpt": "save_equip[i] = unequip_char(ch, i);"
     },
     {
       "path": "src/core/files.c",
-      "line": 4505,
+      "line": 4541,
       "family": "item_publication",
       "excerpt": "equip_char(ch, save_equip[i], i, 1);"
     },
@@ -50878,163 +51381,163 @@
     },
     {
       "path": "src/core/utility.c",
-      "line": 3115,
+      "line": 3116,
       "family": "money_helper",
       "excerpt": "void ADD_MONEY(P_char ch, int amount, const char *committed_message)"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3151,
+      "line": 3152,
       "family": "money_helper",
       "excerpt": "if (insert_money_pickup(GET_PID(ch), amount))"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3300,
+      "line": 3301,
       "family": "money_helper",
       "excerpt": "int SUB_MONEY(P_char ch, int amount, int mode)"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3380,
+      "line": 3381,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, -(amount));"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3144,
+      "line": 3145,
       "family": "economic_submit",
       "excerpt": "if (!currency_transaction_submit_wallet_value("
     },
     {
       "path": "src/core/utility.c",
-      "line": 3292,
+      "line": 3293,
       "family": "economic_submit",
       "excerpt": "if (!currency_transaction_submit_bank_payment("
     },
     {
       "path": "src/core/utility.c",
-      "line": 3313,
+      "line": 3314,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit_wallet_value("
     },
     {
       "path": "src/core/utility.c",
-      "line": 3167,
+      "line": 3168,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(ch) += t;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3173,
+      "line": 3174,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(ch) += t;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3179,
+      "line": 3180,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(ch) += t;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3183,
+      "line": 3184,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(ch) += amount;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3217,
+      "line": 3218,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(target) = balance;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3220,
+      "line": 3221,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(target) = balance;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3223,
+      "line": 3224,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(target) = balance;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3226,
+      "line": 3227,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(target) = balance;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3259,
+      "line": 3260,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(target) = balances->copper;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3260,
+      "line": 3261,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(target) = balances->silver;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3261,
+      "line": 3262,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(target) = balances->gold;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3262,
+      "line": 3263,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(target) = balances->platinum;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3323,
+      "line": 3324,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(ch) = 0;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3327,
+      "line": 3328,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(ch) -= amount;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3340,
+      "line": 3341,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(ch) = 0;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3345,
+      "line": 3346,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(ch) -= t;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3355,
+      "line": 3356,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(ch) = 0;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3360,
+      "line": 3361,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(ch) -= t;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3370,
+      "line": 3371,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(ch) = 0;"
     },
     {
       "path": "src/core/utility.c",
-      "line": 3375,
+      "line": 3376,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(ch) -= t;"
     },
@@ -52042,205 +52545,205 @@
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 613,
+      "line": 782,
       "family": "economic_submit",
       "excerpt": "!currency_command_build("
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 640,
+      "line": 809,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload &payload,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 652,
+      "line": 821,
       "family": "economic_submit",
       "excerpt": "if (!coin_transfer_command_build(&command, id, payload, critical_source_site::command,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 714,
+      "line": 888,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit(P_char character, const currency_vector &wallet_delta,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 723,
+      "line": 897,
       "family": "economic_submit",
       "excerpt": "currency_transaction_submit_identified(character, operation_id, wallet_delta,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 729,
+      "line": 903,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_identified("
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 769,
+      "line": 943,
       "family": "economic_submit",
       "excerpt": "if (!currency_command_build(&command, operation_id, payload, expected_wallet_revision,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 777,
+      "line": 951,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit_prepared(character, command, completion, context,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 781,
+      "line": 955,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_prepared(P_char character, const critical_command &command,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 876,
+      "line": 1050,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_wallet_value(P_char character, int64_t value_delta,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 886,
+      "line": 1060,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit(character, wallet_delta, {}, reason, reason_id,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 891,
+      "line": 1065,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_wallet_value_identified("
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 899,
+      "line": 1073,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit_identified(character, operation_id,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 905,
+      "line": 1079,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_bank_reward(P_char character, int64_t value,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 914,
+      "line": 1088,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit(character, {}, canonical_value(value), reason, reason_id,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 980,
+      "line": 1154,
       "family": "economic_submit",
       "excerpt": "!currency_command_build(command, id, payload, character->only.pc->wallet_revision,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 995,
+      "line": 1169,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_bank_payment(P_char character, int64_t value,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 1005,
+      "line": 1179,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit(character, wallet_delta, bank_delta, reason, reason_id,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 134,
+      "line": 141,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(character) = balances.copper;"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 135,
+      "line": 142,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(character) = balances.silver;"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 136,
+      "line": 143,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(character) = balances.gold;"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 137,
+      "line": 144,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(character) = balances.platinum;"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 467,
+      "line": 636,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(character) = static_cast<int>(wallet.amount[0]);"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 468,
+      "line": 637,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(character) = static_cast<int>(wallet.amount[1]);"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 469,
+      "line": 638,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(character) = static_cast<int>(wallet.amount[2]);"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 470,
+      "line": 639,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(character) = static_cast<int>(wallet.amount[3]);"
     },
     {
       "path": "src/economy/currency_transaction.h",
-      "line": 56,
+      "line": 79,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload &payload,"
     },
     {
       "path": "src/economy/currency_transaction.h",
-      "line": 65,
+      "line": 89,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit(P_char character, const currency_vector &wallet_delta,"
     },
     {
       "path": "src/economy/currency_transaction.h",
-      "line": 71,
+      "line": 95,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_identified("
     },
     {
       "path": "src/economy/currency_transaction.h",
-      "line": 77,
+      "line": 101,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_wallet_value_identified("
     },
     {
       "path": "src/economy/currency_transaction.h",
-      "line": 89,
+      "line": 113,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_prepared(P_char character, const critical_command &command,"
     },
     {
       "path": "src/economy/currency_transaction.h",
-      "line": 92,
+      "line": 116,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_wallet_value(P_char character, int64_t value_delta,"
     },
     {
       "path": "src/economy/currency_transaction.h",
-      "line": 98,
+      "line": 122,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_bank_reward(P_char character, int64_t value,"
     },
     {
       "path": "src/economy/currency_transaction.h",
-      "line": 104,
+      "line": 128,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_bank_payment(P_char character, int64_t value,"
     },
@@ -54184,211 +54687,211 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1372,
+      "line": 1388,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1390,
+      "line": 1406,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1956,
+      "line": 2085,
       "family": "economic_submit",
       "excerpt": "!item_movement_transaction_submit(actor, root, target_parent, source,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2023,
+      "line": 2152,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2171,
+      "line": 2300,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2244,
+      "line": 2373,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2449,
+      "line": 2578,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2522,
+      "line": 2651,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2530,
+      "line": 2659,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit_batch(actor, roots, root_count, target_container,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2537,
+      "line": 2666,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_craft("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2749,
+      "line": 2878,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2872,
+      "line": 3001,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2880,
+      "line": 3009,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2892,
+      "line": 3021,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3018,
+      "line": 3147,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3026,
+      "line": 3155,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3036,
+      "line": 3165,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3094,
+      "line": 3223,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 729,
+      "line": 745,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 756,
+      "line": 772,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 898,
+      "line": 914,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(root, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 911,
+      "line": 927,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(entry.object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1058,
+      "line": 1074,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1203,
+      "line": 1219,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2996,
+      "line": 3125,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3145,
+      "line": 3274,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 737,
+      "line": 753,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1007,
+      "line": 1023,
       "family": "item_publication",
       "excerpt": "obj_to_char(root, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1115,
+      "line": 1131,
       "family": "item_publication",
       "excerpt": "obj_to_room(object, request.room);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1152,
+      "line": 1168,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, recipient);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1158,
+      "line": 1174,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1162,
+      "line": 1178,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, container);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1307,
+      "line": 1323,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1555,
+      "line": 1571,
       "family": "item_publication",
       "excerpt": "obj_from_char(root);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1556,
+      "line": 1572,
       "family": "item_publication",
       "excerpt": "obj_to_obj(root, corpse);"
     },
@@ -54580,19 +55083,19 @@
     },
     {
       "path": "src/item/objmisc.c",
-      "line": 206,
+      "line": 209,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/objmisc.c",
-      "line": 253,
+      "line": 256,
       "family": "item_publication",
       "excerpt": "obj = unequip_char(actor, slot, FALSE);"
     },
     {
       "path": "src/item/objmisc.c",
-      "line": 255,
+      "line": 258,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, actor);"
     },
@@ -54766,157 +55269,157 @@
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 2002,
+      "line": 2006,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, temp, 0);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3940,
+      "line": 3945,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(actor, chest_cost, 0);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1528,
+      "line": 1532,
       "family": "item_lifecycle",
       "excerpt": "m_pChestObject = read_object(m_chestVnum, VIRTUAL);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1593,
+      "line": 1597,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(m_pChestObject, TRUE); // Not an arti, but 'in game.'"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1652,
+      "line": 1656,
       "family": "item_lifecycle",
       "excerpt": "m_pChestObject = read_object(m_chestVnum, VIRTUAL);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 2720,
+      "line": 2724,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 2727,
+      "line": 2731,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 2950,
+      "line": 2954,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tmp_object);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 428,
+      "line": 429,
       "family": "item_publication",
       "excerpt": "obj_from_room(tmp_obj);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 429,
+      "line": 430,
       "family": "item_publication",
       "excerpt": "obj_to_room(tmp_obj, locker_exit_room(ch, room));"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 721,
+      "line": 725,
       "family": "item_publication",
       "excerpt": "obj_to_obj(obj, p->GetChestObj());"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1474,
+      "line": 1478,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, m_realRoom);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1589,
+      "line": 1593,
       "family": "item_publication",
       "excerpt": "obj_from_obj(content);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1590,
+      "line": 1594,
       "family": "item_publication",
       "excerpt": "obj_to_room(content, room);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 1592,
+      "line": 1596,
       "family": "item_publication",
       "excerpt": "obj_from_room(m_pChestObject);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 2719,
+      "line": 2723,
       "family": "item_publication",
       "excerpt": "P_obj obj = unequip_char(vict, i);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 2726,
+      "line": 2730,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 2914,
+      "line": 2918,
       "family": "item_publication",
       "excerpt": "obj_to_room(chest_obj, realRoom);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3481,
+      "line": 3486,
       "family": "item_publication",
       "excerpt": "obj_from_obj(innerObj);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3482,
+      "line": 3487,
       "family": "item_publication",
       "excerpt": "obj_to_char(innerObj, m_chLocker);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3494,
+      "line": 3499,
       "family": "item_publication",
       "excerpt": "obj_from_room(tmp_object);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3495,
+      "line": 3500,
       "family": "item_publication",
       "excerpt": "obj_to_char(tmp_object, m_chLocker);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3514,
+      "line": 3519,
       "family": "item_publication",
       "excerpt": "obj_from_char(tmp_object);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3521,
+      "line": 3526,
       "family": "item_publication",
       "excerpt": "obj_to_room(tmp_object, m_realRoom);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3543,
+      "line": 3548,
       "family": "item_publication",
       "excerpt": "obj_from_room(tmp_object);"
     },
     {
       "path": "src/item/storage_lockers.c",
-      "line": 3544,
+      "line": 3549,
       "family": "item_publication",
       "excerpt": "obj_to_char(tmp_object, ch);"
     },
@@ -55114,73 +55617,73 @@
     },
     {
       "path": "src/magic/affects.c",
-      "line": 3461,
+      "line": 3504,
       "family": "item_lifecycle",
       "excerpt": "(number(0, 1000) == 42) && (load = read_object(51, VIRTUAL)))"
     },
     {
       "path": "src/magic/affects.c",
-      "line": 3478,
+      "line": 3521,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(load);"
     },
     {
       "path": "src/magic/affects.c",
-      "line": 3506,
+      "line": 3549,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(load);"
     },
     {
       "path": "src/magic/affects.c",
-      "line": 3533,
+      "line": 3576,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(load);"
     },
     {
       "path": "src/magic/affects.c",
-      "line": 3475,
+      "line": 3518,
       "family": "item_publication",
       "excerpt": "obj_to_room(load, real_room(ch->specials.was_in_room));"
     },
     {
       "path": "src/magic/affects.c",
-      "line": 3484,
+      "line": 3527,
       "family": "item_publication",
       "excerpt": "obj_to_room(load, ch->in_room);"
     },
     {
       "path": "src/magic/affects.c",
-      "line": 3503,
+      "line": 3546,
       "family": "item_publication",
       "excerpt": "obj_to_room(load, real_room(ch->specials.was_in_room));"
     },
     {
       "path": "src/magic/affects.c",
-      "line": 3512,
+      "line": 3555,
       "family": "item_publication",
       "excerpt": "obj_to_room(load, ch->in_room);"
     },
     {
       "path": "src/magic/affects.c",
-      "line": 3530,
+      "line": 3573,
       "family": "item_publication",
       "excerpt": "obj_to_room(load, real_room(ch->specials.was_in_room));"
     },
     {
       "path": "src/magic/affects.c",
-      "line": 3539,
+      "line": 3582,
       "family": "item_publication",
       "excerpt": "obj_to_room(load, ch->in_room);"
     },
     {
       "path": "src/magic/affects.c",
-      "line": 3821,
+      "line": 3865,
       "family": "item_publication",
       "excerpt": "obj_from_room(obj);"
     },
     {
       "path": "src/magic/affects.c",
-      "line": 3823,
+      "line": 3867,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, new_room);"
     },
@@ -55270,73 +55773,73 @@
     },
     {
       "path": "src/magic/smagic.c",
-      "line": 3440,
+      "line": 3441,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(mob) = 0;"
     },
     {
       "path": "src/magic/smagic.c",
-      "line": 3441,
+      "line": 3442,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(mob) = 0;"
     },
     {
       "path": "src/magic/smagic.c",
-      "line": 3442,
+      "line": 3443,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(mob) = 0;"
     },
     {
       "path": "src/magic/smagic.c",
-      "line": 3443,
+      "line": 3444,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(mob) = 0;"
     },
     {
       "path": "src/magic/smagic.c",
-      "line": 1284,
+      "line": 1285,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(50, VIRTUAL);"
     },
     {
       "path": "src/magic/smagic.c",
-      "line": 1937,
+      "line": 1938,
       "family": "item_lifecycle",
       "excerpt": "money = create_money(GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch),"
     },
     {
       "path": "src/magic/smagic.c",
-      "line": 1290,
+      "line": 1291,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, room);"
     },
     {
       "path": "src/magic/smagic.c",
-      "line": 1923,
+      "line": 1924,
       "family": "item_publication",
       "excerpt": "obj_from_char(t_obj);"
     },
     {
       "path": "src/magic/smagic.c",
-      "line": 1924,
+      "line": 1925,
       "family": "item_publication",
       "excerpt": "obj_to_room(t_obj, room);"
     },
     {
       "path": "src/magic/smagic.c",
-      "line": 1931,
+      "line": 1932,
       "family": "item_publication",
       "excerpt": "obj_to_room(unequip_char(ch, pos), room);"
     },
     {
       "path": "src/magic/smagic.c",
-      "line": 1931,
+      "line": 1932,
       "family": "item_publication",
       "excerpt": "obj_to_room(unequip_char(ch, pos), room);"
     },
     {
       "path": "src/magic/smagic.c",
-      "line": 1939,
+      "line": 1940,
       "family": "item_publication",
       "excerpt": "obj_to_room(money, room);"
     },
@@ -55918,49 +56421,49 @@
     },
     {
       "path": "src/magic/spell_portals.c",
-      "line": 233,
+      "line": 231,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(moonstone);"
     },
     {
       "path": "src/magic/spell_portals.c",
-      "line": 248,
+      "line": 246,
       "family": "item_lifecycle",
       "excerpt": "moonstone = read_object(real_object(419), REAL);"
     },
     {
       "path": "src/magic/spell_portals.c",
-      "line": 436,
+      "line": 418,
       "family": "item_lifecycle",
       "excerpt": "portal1 = read_object(settings->R_num, VIRTUAL);"
     },
     {
       "path": "src/magic/spell_portals.c",
-      "line": 446,
+      "line": 428,
       "family": "item_lifecycle",
       "excerpt": "portal2 = read_object(settings->R_num, VIRTUAL);"
     },
     {
       "path": "src/magic/spell_portals.c",
-      "line": 455,
+      "line": 437,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(portal1);"
     },
     {
       "path": "src/magic/spell_portals.c",
-      "line": 270,
+      "line": 268,
       "family": "item_publication",
       "excerpt": "obj_to_room(moonstone, ch->in_room);"
     },
     {
       "path": "src/magic/spell_portals.c",
-      "line": 517,
+      "line": 499,
       "family": "item_publication",
       "excerpt": "obj_to_room(portal1, ch->in_room);"
     },
     {
       "path": "src/magic/spell_portals.c",
-      "line": 519,
+      "line": 501,
       "family": "item_publication",
       "excerpt": "obj_to_room(portal2, to_room);"
     },
@@ -56464,31 +56967,31 @@
     },
     {
       "path": "src/mob/studioproc.c",
-      "line": 1146,
+      "line": 1147,
       "family": "item_lifecycle",
       "excerpt": "if (real_object(a->num) >= 0 && (o = read_object(a->num, VIRTUAL)) != NULL)"
     },
     {
       "path": "src/mob/studioproc.c",
-      "line": 1151,
+      "line": 1152,
       "family": "item_lifecycle",
       "excerpt": "if (real_object(a->num) >= 0 && (o = read_object(a->num, VIRTUAL)) != NULL)"
     },
     {
       "path": "src/mob/studioproc.c",
-      "line": 1357,
+      "line": 1361,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cx->self_obj, TRUE);"
     },
     {
       "path": "src/mob/studioproc.c",
-      "line": 1147,
+      "line": 1148,
       "family": "item_publication",
       "excerpt": "obj_to_room(o, room);"
     },
     {
       "path": "src/mob/studioproc.c",
-      "line": 1153,
+      "line": 1154,
       "family": "item_publication",
       "excerpt": "obj_to_char(o, actor);"
     },
@@ -56674,7 +57177,7 @@
     },
     {
       "path": "src/persistence/sql_room_item_payload.c",
-      "line": 586,
+      "line": 587,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO sql_room_item_payload(item_uid,item_revision,payload_version,operation_id,season_epoch,payload) VALUES(\" +"
     },
@@ -56758,175 +57261,175 @@
     },
     {
       "path": "src/player/player_load_repository.c",
-      "line": 642,
+      "line": 655,
       "family": "direct_cash_assignment",
       "excerpt": "result->domains.bank[index] = unsigned_value(row[index]);"
     },
     {
       "path": "src/player/player_snapshot_repository.c",
-      "line": 1938,
+      "line": 2330,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner AS current_item SET item_revision=item_revision+1,state=\" +"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 127,
+      "line": 128,
       "family": "money_helper",
       "excerpt": "extern bool insert_money_pickup(int pid, int money);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 161,
+      "line": 162,
       "family": "money_helper",
       "excerpt": "if (!insert_money_pickup(context.pid, context.platinum * 1000))"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 3059,
+      "line": 3063,
       "family": "money_helper",
       "excerpt": "if (!insert_money_pickup(get_player_pid_from_name(SHIP_OWNER(ship)),"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 3046,
+      "line": 3050,
       "family": "economic_submit",
       "excerpt": "insurance_deposited = currency_transaction_submit_bank_reward("
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 491,
+      "line": 492,
       "family": "ship_coffer_assignment",
       "excerpt": "ship->money = record.money;"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 733,
+      "line": 734,
       "family": "ship_coffer_assignment",
       "excerpt": "ship->money = 0;"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 3064,
+      "line": 3068,
       "family": "ship_coffer_assignment",
       "excerpt": "ship->money += insurance;"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 708,
+      "line": 709,
       "family": "item_lifecycle",
       "excerpt": "ship->shipobj = read_object(VOBJ_ALL_SHIPS, VIRTUAL);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 719,
+      "line": 720,
       "family": "item_lifecycle",
       "excerpt": "ship->panel = read_object(VOBJ_PANEL, VIRTUAL);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 1216,
+      "line": 1217,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(ship->panel, TRUE);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 1217,
+      "line": 1218,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(ship->shipobj, TRUE);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 645,
+      "line": 646,
       "family": "item_publication",
       "excerpt": "obj_from_room(obj);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 646,
+      "line": 647,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, real_room0(ship->anchor));"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 1123,
+      "line": 1124,
       "family": "item_publication",
       "excerpt": "obj_to_room(ship->panel, real_room0(ship->bridge));"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 1134,
+      "line": 1135,
       "family": "item_publication",
       "excerpt": "obj_to_room(SHIP_OBJ(ship), to_room);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 1214,
+      "line": 1215,
       "family": "item_publication",
       "excerpt": "obj_from_room(ship->panel);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 1215,
+      "line": 1216,
       "family": "item_publication",
       "excerpt": "obj_from_room(ship->shipobj);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 1754,
+      "line": 1758,
       "family": "item_publication",
       "excerpt": "obj_from_room(ship->panel);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 1759,
+      "line": 1763,
       "family": "item_publication",
       "excerpt": "obj_to_room(ship->panel, real_room0(ship->bridge));"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 2734,
+      "line": 2738,
       "family": "item_publication",
       "excerpt": "obj_from_room(SHIP_OBJ(ship));"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 2735,
+      "line": 2739,
       "family": "item_publication",
       "excerpt": "obj_to_room(SHIP_OBJ(ship), loc);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 2911,
+      "line": 2915,
       "family": "item_publication",
       "excerpt": "obj_from_room(ship->shipobj);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 2912,
+      "line": 2916,
       "family": "item_publication",
       "excerpt": "obj_to_room(ship->shipobj, ship->location);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 3090,
+      "line": 3094,
       "family": "item_publication",
       "excerpt": "obj_from_room(ship->shipobj);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 3091,
+      "line": 3095,
       "family": "item_publication",
       "excerpt": "obj_to_room(ship->shipobj, davy_jones_locker_rnum);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 3130,
+      "line": 3134,
       "family": "item_publication",
       "excerpt": "obj_from_room(ship->shipobj);"
     },
     {
       "path": "src/ships/ship_base.c",
-      "line": 3131,
+      "line": 3135,
       "family": "item_publication",
       "excerpt": "obj_to_room(ship->shipobj, to_room);"
     },
@@ -59524,73 +60027,67 @@
     },
     {
       "path": "src/specs/specs.unique.c",
-      "line": 424,
+      "line": 425,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, plasm_slot), ch);"
     },
     {
       "path": "src/specs/specs.unique.c",
-      "line": 424,
+      "line": 425,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, plasm_slot), ch);"
-    },
-    {
-      "path": "src/specs/specs.unique.c",
-      "line": 480,
-      "family": "item_publication",
-      "excerpt": "obj_from_room(obj);"
     },
     {
       "path": "src/specs/specs.unique.c",
       "line": 481,
       "family": "item_publication",
+      "excerpt": "obj_from_room(obj);"
+    },
+    {
+      "path": "src/specs/specs.unique.c",
+      "line": 482,
+      "family": "item_publication",
       "excerpt": "obj_to_char(obj, i);"
     },
     {
       "path": "src/specs/specs.unique.c",
-      "line": 495,
+      "line": 496,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, HOLD), ch);"
     },
     {
       "path": "src/specs/specs.unique.c",
-      "line": 495,
+      "line": 496,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, HOLD), ch);"
     },
     {
       "path": "src/specs/specs.unique.c",
-      "line": 529,
+      "line": 530,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, slot), ch);"
     },
     {
       "path": "src/specs/specs.unique.c",
-      "line": 529,
+      "line": 530,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, slot), ch);"
     },
     {
       "path": "src/specs/specs.unique.c",
-      "line": 531,
+      "line": 532,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/specs/specs.unique.c",
-      "line": 533,
+      "line": 534,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj, slot, FALSE);"
     },
     {
       "path": "src/specs/specs.unique.c",
-      "line": 708,
-      "family": "item_publication",
-      "excerpt": "obj_to_char(unequip_char(ch, slot), ch);"
-    },
-    {
-      "path": "src/specs/specs.unique.c",
-      "line": 708,
+      "line": 710,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, slot), ch);"
     },
@@ -59598,11 +60095,17 @@
       "path": "src/specs/specs.unique.c",
       "line": 710,
       "family": "item_publication",
+      "excerpt": "obj_to_char(unequip_char(ch, slot), ch);"
+    },
+    {
+      "path": "src/specs/specs.unique.c",
+      "line": 712,
+      "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/specs/specs.unique.c",
-      "line": 711,
+      "line": 713,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj, slot, FALSE);"
     },
@@ -60418,487 +60921,487 @@
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4270,
+      "line": 4290,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4271,
+      "line": 4291,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4272,
+      "line": 4292,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4273,
+      "line": 4293,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4278,
+      "line": 4298,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4279,
+      "line": 4299,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4280,
+      "line": 4300,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4281,
+      "line": 4301,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9694,
+      "line": 9725,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(mob) = remaining / 1000;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9696,
+      "line": 9727,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(mob) = remaining / 100;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9698,
+      "line": 9729,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(mob) = remaining / 10;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9699,
+      "line": 9730,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(mob) = remaining % 10;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12528,
+      "line": 12560,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12529,
+      "line": 12561,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12530,
+      "line": 12562,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12531,
+      "line": 12563,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12562,
+      "line": 12594,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = parsed.copper;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12563,
+      "line": 12595,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = parsed.silver;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12564,
+      "line": 12596,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = parsed.gold;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12565,
+      "line": 12597,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = parsed.platinum;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12032,
+      "line": 12064,
       "family": "ship_coffer_assignment",
       "excerpt": "ship->money = atoi(row[8]);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 927,
+      "line": 929,
       "family": "item_lifecycle",
       "excerpt": "P_obj proto = read_object(obj->R_num, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 980,
+      "line": 982,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(proto);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4672,
+      "line": 4703,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4752,
+      "line": 4783,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4754,
+      "line": 4785,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(items[loaded], FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 6441,
+      "line": 6472,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7260,
+      "line": 7291,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7372,
+      "line": 7403,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7382,
+      "line": 7413,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8495,
+      "line": 8526,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8510,
+      "line": 8541,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8553,
+      "line": 8584,
       "family": "item_lifecycle",
       "excerpt": "cur_corpse = read_object(corpse_rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8615,
+      "line": 8646,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8695,
+      "line": 8726,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8786,
+      "line": 8817,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8799,
+      "line": 8830,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9554,
+      "line": 9585,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9560,
+      "line": 9591,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9570,
+      "line": 9601,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item->obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9800,
+      "line": 9831,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9812,
+      "line": 9843,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9883,
+      "line": 9914,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9931,
+      "line": 9962,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9941,
+      "line": 9972,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9951,
+      "line": 9982,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10136,
+      "line": 10167,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10362,
+      "line": 10393,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10434,
+      "line": 10465,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11083,
+      "line": 11114,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(root, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11462,
+      "line": 11493,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11531,
+      "line": 11562,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11578,
+      "line": 11609,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11596,
+      "line": 11628,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11602,
+      "line": 11634,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11610,
+      "line": 11642,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4917,
+      "line": 4948,
       "family": "item_publication",
       "excerpt": "obj_to_obj(items[i], items[j]);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4943,
+      "line": 4974,
       "family": "item_publication",
       "excerpt": "equip_char(ch, items[i], slot, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4947,
+      "line": 4978,
       "family": "item_publication",
       "excerpt": "obj_to_char(items[i], ch);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4953,
+      "line": 4984,
       "family": "item_publication",
       "excerpt": "obj_to_char(items[i], ch);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7319,
+      "line": 7350,
       "family": "item_publication",
       "excerpt": "obj_to_obj(obj, chest_obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7371,
+      "line": 7402,
       "family": "item_publication",
       "excerpt": "P_obj obj = unequip_char(ch, i);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7381,
+      "line": 7412,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8499,
+      "line": 8530,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8514,
+      "line": 8545,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8790,
+      "line": 8821,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8803,
+      "line": 8834,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10174,
+      "line": 10205,
       "family": "item_publication",
       "excerpt": "equip_char(k->mob, k->equipment[slot], slot, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11607,
+      "line": 11639,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 5872,
+      "line": 5903,
       "family": "sql_economy",
       "excerpt": "\"DELETE FROM ships WHERE LOWER(owner_name)=LOWER('%s')\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9394,
+      "line": 9425,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO saved_items (\""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9474,
+      "line": 9505,
       "family": "sql_economy",
       "excerpt": "snprintf(del_query, sizeof(del_query), \"DELETE FROM saved_items WHERE item_key='%s'\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9511,
+      "line": 9542,
       "family": "sql_economy",
       "excerpt": "snprintf(query, sizeof(query), \"DELETE FROM saved_items WHERE item_key='%s'\", esc_key);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10932,
+      "line": 10963,
       "family": "sql_economy",
       "excerpt": "\"DELETE FROM saved_items WHERE id=%d AND item_key='%s'\", source_root_id,"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11776,
+      "line": 11808,
       "family": "sql_economy",
       "excerpt": "\"insert into ships (owner_name, ship_name, ship_class, frags, anchor_room, time_played, mainsail, race, money, flags) \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11831,
+      "line": 11863,
       "family": "sql_economy",
       "excerpt": "\"update ships set owner_name='%s', ship_name='%s', ship_class=%d, frags=%d, anchor_room=%d, time_played=%d, mainsail=%d, race=%d, money=%d, flags=%lu \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12111,
+      "line": 12143,
       "family": "sql_economy",
       "excerpt": "snprintf(query, sizeof(query), \"delete from ships where owner_name='%s'\", esc_owner);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12504,
+      "line": 12536,
       "family": "sql_economy",
       "excerpt": "\"insert ignore into account_banks (account_name, racewar) values ('%s', %d)\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12691,
+      "line": 12723,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set bank_copper=bank_copper+%d, \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12772,
+      "line": 12804,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set %s = %s - %d where account_name='%s' and racewar=%d and %s >= %d\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12870,
+      "line": 12902,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set bank_copper=bank_copper-%d, \""
     },
@@ -60964,49 +61467,49 @@
     },
     {
       "path": "src/world/buildings.c",
-      "line": 687,
+      "line": 690,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(portal_op);"
     },
     {
       "path": "src/world/buildings.c",
-      "line": 692,
+      "line": 695,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(portal_gh);"
     },
     {
       "path": "src/world/buildings.c",
-      "line": 769,
+      "line": 772,
       "family": "item_lifecycle",
       "excerpt": "if ((portal_op = read_object(BUILDING_PORTAL, VIRTUAL)))"
     },
     {
       "path": "src/world/buildings.c",
-      "line": 778,
+      "line": 781,
       "family": "item_lifecycle",
       "excerpt": "if ((portal_gh = read_object(BUILDING_PORTAL, VIRTUAL)))"
     },
     {
       "path": "src/world/buildings.c",
-      "line": 547,
+      "line": 549,
       "family": "item_publication",
       "excerpt": "obj_from_room(tobj);"
     },
     {
       "path": "src/world/buildings.c",
-      "line": 548,
+      "line": 550,
       "family": "item_publication",
       "excerpt": "obj_to_room(tobj, location());"
     },
     {
       "path": "src/world/buildings.c",
-      "line": 775,
+      "line": 778,
       "family": "item_publication",
       "excerpt": "obj_to_room(portal_op, gate_room());"
     },
     {
       "path": "src/world/buildings.c",
-      "line": 785,
+      "line": 788,
       "family": "item_publication",
       "excerpt": "obj_to_room(portal_gh, real_room0(guildhall_room));"
     },
@@ -62260,7 +62763,7 @@
     },
     {
       "path": "src/world/new_events.c",
-      "line": 2128,
+      "line": 2213,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Does not include artis."
     },
@@ -62500,277 +63003,277 @@
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 255,
+      "line": 256,
       "family": "item_lifecycle",
       "excerpt": "tomb = read_object(real_object(theme_entrance_obj[theme]), REAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 394,
+      "line": 395,
       "family": "item_lifecycle",
       "excerpt": "chest_obj = read_object(real_object(19508), REAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 406,
+      "line": 407,
       "family": "item_lifecycle",
       "excerpt": "key_obj = read_object(real_object(19509), REAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 422,
+      "line": 423,
       "family": "item_lifecycle",
       "excerpt": "random_zone_obj = read_object(real_object(3), REAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 430,
+      "line": 431,
       "family": "item_lifecycle",
       "excerpt": "random_zone_obj = read_object("
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 447,
+      "line": 448,
       "family": "item_lifecycle",
       "excerpt": "random_zone_obj = read_object(51004, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 453,
+      "line": 454,
       "family": "item_lifecycle",
       "excerpt": "random_zone_obj = read_object(25106, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 458,
+      "line": 459,
       "family": "item_lifecycle",
       "excerpt": "random_zone_obj = read_object(80831, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 463,
+      "line": 464,
       "family": "item_lifecycle",
       "excerpt": "random_zone_obj = read_object(26661, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 468,
+      "line": 469,
       "family": "item_lifecycle",
       "excerpt": "random_zone_obj = read_object(25759, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 473,
+      "line": 474,
       "family": "item_lifecycle",
       "excerpt": "random_zone_obj = read_object(45534, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 511,
+      "line": 512,
       "family": "item_lifecycle",
       "excerpt": "P_obj epic_stone_obj = read_object("
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 546,
+      "line": 547,
       "family": "item_lifecycle",
       "excerpt": "sign = read_object(real_object(19510), REAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 945,
+      "line": 946,
       "family": "item_lifecycle",
       "excerpt": "potion = read_object(51004, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 949,
+      "line": 950,
       "family": "item_lifecycle",
       "excerpt": "potion = read_object(25106, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 952,
+      "line": 953,
       "family": "item_lifecycle",
       "excerpt": "potion = read_object(80831, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 955,
+      "line": 956,
       "family": "item_lifecycle",
       "excerpt": "potion = read_object(26661, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 958,
+      "line": 959,
       "family": "item_lifecycle",
       "excerpt": "potion = read_object(25759, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 961,
+      "line": 962,
       "family": "item_lifecycle",
       "excerpt": "potion = read_object(45534, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 1196,
+      "line": 1197,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 1334,
+      "line": 1335,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(VOBJ_RANDOM_ARMOR, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 1427,
+      "line": 1428,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 1492,
+      "line": 1494,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(RELIC, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 1498,
+      "line": 1500,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 1504,
+      "line": 1506,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 1577,
+      "line": 1580,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(RELIC, VIRTUAL);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 1583,
+      "line": 1586,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 263,
+      "line": 264,
       "family": "item_publication",
       "excerpt": "obj_to_room(tomb, map_room);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 402,
+      "line": 403,
       "family": "item_publication",
       "excerpt": "obj_to_room(chest_obj,"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 414,
+      "line": 415,
       "family": "item_publication",
       "excerpt": "obj_to_room("
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 426,
+      "line": 427,
       "family": "item_publication",
       "excerpt": "obj_to_obj(random_zone_obj, chest_obj);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 433,
+      "line": 434,
       "family": "item_publication",
       "excerpt": "obj_to_obj(random_zone_obj, chest_obj);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 480,
+      "line": 481,
       "family": "item_publication",
       "excerpt": "obj_to_obj(random_zone_obj, chest_obj);"
-    },
-    {
-      "path": "src/world/random.zone.c",
-      "line": 503,
-      "family": "item_publication",
-      "excerpt": "obj_from_room(chest_obj);"
     },
     {
       "path": "src/world/random.zone.c",
       "line": 504,
       "family": "item_publication",
+      "excerpt": "obj_from_room(chest_obj);"
+    },
+    {
+      "path": "src/world/random.zone.c",
+      "line": 505,
+      "family": "item_publication",
       "excerpt": "obj_to_char(chest_obj, mob);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 527,
+      "line": 528,
       "family": "item_publication",
       "excerpt": "obj_to_char(epic_stone_obj, mob);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 572,
+      "line": 573,
       "family": "item_publication",
       "excerpt": "obj_to_room(sign,"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 580,
+      "line": 581,
       "family": "item_publication",
       "excerpt": "obj_to_room(chest_obj, real_room(random_zone_data[LOADED_RANDOM_ZONES].last_room));"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 966,
+      "line": 967,
       "family": "item_publication",
       "excerpt": "obj_to_char(potion, ch);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 1195,
+      "line": 1196,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 1230,
+      "line": 1231,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, pl);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 1238,
+      "line": 1239,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, pl);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 1243,
+      "line": 1244,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, pl);"
-    },
-    {
-      "path": "src/world/random.zone.c",
-      "line": 1433,
-      "family": "item_publication",
-      "excerpt": "obj_from_room(obj);"
     },
     {
       "path": "src/world/random.zone.c",
       "line": 1434,
       "family": "item_publication",
+      "excerpt": "obj_from_room(obj);"
+    },
+    {
+      "path": "src/world/random.zone.c",
+      "line": 1435,
+      "family": "item_publication",
       "excerpt": "obj_to_room(obj, entrance_rnum);"
     },
     {
       "path": "src/world/random.zone.c",
-      "line": 1589,
+      "line": 1592,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, mob);"
     },
@@ -63126,5 +63629,55 @@
     "base_commit": "a461b989016cb40fff2e1573720c6c9288e6427b",
     "evidence": "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
+  },
+  "pending_source_integration": {
+    "candidate_commit": "9fabe54bb0146d174a47690902fe00cb06eb5f62",
+    "status": "Production source through 9fabe54bb includes the 31 reviewed integration slices and four behavior-preserving strict compile corrections. Existing Plan1 qualification is underway: both strict server builds, eleven focused component owners, 35 worker/journal guard cases per backend, and real pooled bank reply-loss/retained ACK on both SQL engines pass within their input scopes. Item topology fixture expectation and maintained lifecycle link closure now pass both native engines (fdd27c681 and 1dc242ed5). Coin fixture lifetime (80565e8a7) and22 prepared checked-release cases now pass both engines within their exact inputs. All14 prepared startup/held-save cases now pass both engines with original admission and ID-only refusal assertions. All18 current-source recovery-session cases now pass both native engines with original assertions and bounds; actual native publication/recovery remains open, with no Plan1 completion claim. Inactive behavior and unsupported enabled refusals remain unchanged. No optional framework, receipt ledger or acceptance gate was added; no production authority was activated. Full R1-R8, writer/day-one coverage, activation/verifier and active copyover remain required. Plan5 zero-effect e694798f6 and orphan-reservation bbb72ecff are integrated as 47aa60de0 and 4fdbb7033; exporter/consumer require the fifth orphan coverage count. Peer evidence qualifies only its consumed inputs. Historical census/source anchors and rows are preserved; coverage_complete remains false and release blocked.",
+    "qualified": false,
+    "prepared_nonwriter_routes": [
+      "recovery.inert_literal_staging",
+      "recovery.inert_literal_cleanup",
+      "recovery.sql_ordinary_drop_receipt_observation",
+      "recovery.runtime_owner_revision_observation",
+      "recovery.ordinary_drop_graph_observation",
+      "recovery.ordinary_drop_rejection_observation",
+      "recovery.ordinary_drop_recovery_eligibility",
+      "recovery.inert_literal_eligibility",
+      "recovery.ordinary_drop_graph_reconstruction",
+      "recovery.ordinary_save_revision_observation",
+      "recovery.covered_ordinary_save_retirement"
+    ],
+    "pending_interface_sources": [
+      "src/player/player_save_replay_ownership.h",
+      "src/world/db.c:prepare_recovery_object_templates",
+      "src/player/player_save_pipeline.c",
+      "src/player/player_save_worker.c",
+      "src/player/player_save_worker.h",
+      "src/player/player_save_journal.c",
+      "src/player/player_save_journal.h",
+      "src/player/player_snapshot_repository.c",
+      "src/player/player_snapshot_repository.h",
+      "src/player/player_death_conflict_repository.c",
+      "src/player/player_quarantine_recovery.c",
+      "src/player/player_quarantine_recovery.h",
+      "src/core/files.c",
+      "src/account/account.c",
+      "src/net/modify.c",
+      "src/sql/sql_player.c",
+      "src/sql/sql.c",
+      "src/sql/sql.h",
+      "src/player/player_save_pipeline.h",
+      "src/player/player_save_execution_guard.h",
+      "src/persistence/critical_command_coordinator.c",
+      "src/persistence/critical_command_coordinator.h",
+      "src/persistence/critical_command_repository.c",
+      "src/persistence/critical_command_repository.h",
+      "src/item/item_movement_transaction.c",
+      "src/item/item_movement_transaction.h",
+      "src/item/ordinary_drop_recovery.c",
+      "src/item/ordinary_drop_recovery.h",
+      "src/cmd/actobj.c",
+      "src/net/comm.c"
+    ]
   }
 }

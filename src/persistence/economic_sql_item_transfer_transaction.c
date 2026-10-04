@@ -1,6 +1,7 @@
 #include "persistence/economic_sql_item_transfer_transaction.h"
 
 #include "item/economic_accounting_item_reference.h"
+#include "persistence/sql_room_item_payload.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -549,6 +550,12 @@ unsigned int economic_sql_item_transfer_verify_retained(MYSQL *connection,
 			    reference.after_revision != event.after.revision)
 				return EILSEQ;
 		}
+		// A successful ordinary drop also owns immutable full-literal room
+		// payload and native ledger proof. Missing history remains retryable;
+		// do not fabricate evidence from current custody or player projections.
+		if (payload.reason == item_transfer_reason::player_drop &&
+		    !sql_room_item_payload_verify_retained(connection, command, retained_result))
+			return failure_code();
 		return 0;
 	}
 	catch (const std::bad_alloc &)
