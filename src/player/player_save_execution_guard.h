@@ -4,6 +4,7 @@
 #include "persistence/critical_command.h"
 
 #include <array>
+#include <condition_variable>
 #include <cstdint>
 #include <limits>
 #include <map>
@@ -43,6 +44,78 @@ inline bool integrity_failed = false;
 // It exceeds the number of distinct PIDs in a 256 MiB journal whose frame
 // header alone exceeds 64 bytes, plus the runtime worker PID capacity.
 inline constexpr size_t max_permitted_pids = 4 * 1024 * 1024 + 256;
+
+// Opt-in replay ownership metadata. No production caller enables this epoch yet.
+// Source owners retain the exact bodies; these identities only fence execution.
+struct owned_pid
+{
+	uint64_t claims = 0;
+	uint64_t ticket = 0;
+	bool reserved = false;
+	uint64_t scope_owner = 0;
+	bool replay_scope = false;
+};
+struct scope_authority
+{
+	int pid = 0;
+	uint64_t epoch = 0, owner = 0;
+	bool replay = false;
+};
+struct scope_link
+{
+	const scope_authority *entries = nullptr;
+	size_t size = 0;
+	scope_link *previous = nullptr;
+};
+inline std::map<int, owned_pid> owned_pids;
+inline std::map<uint64_t, int> resident_claims;
+inline uint64_t ownership_epoch = 0, next_ownership_epoch = 0;
+inline uint64_t next_owner_generation = 0, ownership_change = 0;
+// Construct the event only during explicit ownership preparation. The unused
+// foundation introduces no new condition-variable initialization on inactive boot.
+inline std::condition_variable &ownership_event()
+{
+	static std::condition_variable event;
+	return event;
+}
+inline thread_local scope_link *current_scope = nullptr;
+inline constexpr size_t max_resident_claims = 4096;
+
+inline void changed_locked() noexcept
+{
+	if (ownership_change == std::numeric_limits<uint64_t>::max())
+		integrity_failed = true;
+	else
+		++ownership_change;
+	ownership_event().notify_all();
+}
+inline bool held_locked(int pid) noexcept
+{
+	for (const auto &hold : holds)
+		if (hold.pid == pid)
+			return true;
+	return false;
+}
+inline bool authorized_locked(int pid) noexcept
+{
+	if (!ownership_epoch)
+		return true;
+	const auto found = owned_pids.find(pid);
+	if (found == owned_pids.end() || !found->second.scope_owner)
+		return false;
+	// The top explicit scope alone supplies borrowing authority. A callback
+	// cannot reach other PIDs through an outer checkpoint batch scope.
+	if (current_scope)
+		for (size_t i = 0; i < current_scope->size; ++i)
+		{
+			const auto &entry = current_scope->entries[i];
+			if (entry.pid == pid && entry.epoch == ownership_epoch &&
+			    entry.owner == found->second.scope_owner &&
+			    entry.replay == found->second.replay_scope)
+				return true;
+		}
+	return false;
+}
 }
 
 class permit
@@ -57,6 +130,10 @@ class permit
 		if (detail::integrity_failed ||
 		    detail::active_permits == std::numeric_limits<uint64_t>::max())
 			return;
+		// An enabled ownership epoch requires an exact explicit scope. Ambient
+		// thread identity and counted permits cannot borrow another owner's PID.
+		if (!detail::authorized_locked(pid))
+			return;
 		for (const auto &hold : detail::holds)
 			if (hold.pid == pid)
 			{
@@ -66,7 +143,7 @@ class permit
 		// Outside the prepared registration phase, no new hold can be installed.
 		// Avoid allocation on the unchanged inactive/ordinary path, but count every
 		// token so the next registration phase cannot overtake existing execution.
-		if (!detail::registration_open)
+		if (!detail::registration_open && !detail::ownership_epoch)
 		{
 			++detail::active_permits;
 			result_ = admission::allowed;
@@ -114,6 +191,8 @@ class permit
 		if (!detail::active_permits)
 		{
 			detail::integrity_failed = true;
+			if (detail::ownership_epoch)
+				detail::changed_locked();
 			return;
 		}
 		--detail::active_permits;
@@ -123,10 +202,14 @@ class permit
 		if (found == detail::permits.end() || !found->second)
 		{
 			detail::integrity_failed = true;
+			if (detail::ownership_epoch)
+				detail::changed_locked();
 			return;
 		}
 		if (!--found->second)
 			detail::permits.erase(found);
+		if (detail::ownership_epoch)
+			detail::changed_locked();
 	}
 	admission result() const noexcept { return result_; }
 	explicit operator bool() const noexcept { return result_ == admission::allowed; }
@@ -142,7 +225,8 @@ class permit
 inline bool begin_registration() noexcept
 {
 	std::lock_guard<std::mutex> lock(detail::mutex);
-	if (detail::integrity_failed || detail::registration_open || detail::active_permits)
+	if (detail::integrity_failed || detail::registration_open || detail::active_permits ||
+	    detail::ownership_epoch)
 		return false;
 	detail::registration_open = true;
 	return true;
@@ -165,6 +249,10 @@ inline bool install_hold(int pid, const critical_operation_id &operation,
 		return false;
 	std::lock_guard<std::mutex> lock(detail::mutex);
 	if (detail::integrity_failed || detail::permits.count(pid))
+		return false;
+	const auto owner = detail::owned_pids.find(pid);
+	if (owner != detail::owned_pids.end() &&
+	    (owner->second.reserved || owner->second.scope_owner))
 		return false;
 	detail::held_pid *available = nullptr;
 	for (auto &hold : detail::holds)
@@ -191,6 +279,8 @@ inline void poison_integrity() noexcept
 {
 	std::lock_guard<std::mutex> lock(detail::mutex);
 	detail::integrity_failed = true;
+	if (detail::ownership_epoch)
+		detail::changed_locked();
 }
 
 // Caller clears its exact slot first under pipeline_mutex, then releases the
@@ -204,9 +294,13 @@ inline bool release_hold(int pid, const critical_operation_id &operation,
 		    hold.generation == generation && generation && !detail::permits.count(pid))
 		{
 			hold = {};
+			if (detail::ownership_epoch)
+				detail::changed_locked();
 			return true;
 		}
 	detail::integrity_failed = true;
+	if (detail::ownership_epoch)
+		detail::changed_locked();
 	return false;
 }
 
@@ -215,7 +309,8 @@ inline bool release_hold(int pid, const critical_operation_id &operation,
 inline bool discard_quiesced_holds() noexcept
 {
 	std::lock_guard<std::mutex> lock(detail::mutex);
-	if (detail::active_permits || !detail::permits.empty() || detail::integrity_failed)
+	if (detail::active_permits || !detail::permits.empty() || detail::integrity_failed ||
+	    detail::ownership_epoch)
 		return false;
 	detail::holds.fill({});
 	detail::registration_open = false;
