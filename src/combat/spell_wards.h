@@ -22,6 +22,13 @@ struct spell_ward_absorb_result
 	bool fully_blocked;
 };
 
+enum class spell_ward_dispel_result
+{
+	unchanged,
+	weakened,
+	broken
+};
+
 bool spell_ward_is_managed(const struct affected_type *af);
 bool spell_ward_is_equipment(const struct affected_type *af);
 bool spell_ward_is_active(const struct affected_type *af);
@@ -44,6 +51,10 @@ void spell_ward_expire(P_char ch, struct affected_type *af);
 /* Consume at most one eligible ward; overflow is returned to spell_damage. */
 spell_ward_absorb_result spell_ward_absorb(P_char attacker, P_char victim, double damage,
 					   unsigned int flags);
+
+/* Resolve one active source without deleting an equipment renewal deadline. */
+spell_ward_dispel_result spell_ward_dispel(P_char caster, P_char victim, struct affected_type *af,
+					   bool succeeded, double failed_wear);
 
 /* Automatic object callbacks cannot bypass an equipment deadline. */
 bool spell_ward_item_callback_allowed(P_char victim, int spell);
