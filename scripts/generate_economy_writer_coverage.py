@@ -55,6 +55,7 @@ DORMANT_WRITERS = {
     "player.confiscate_all_dormant": "Compiled bulk rent confiscation helper has no in-tree callsite; its direct inventory extraction requires bounded UID retirement if revived.",
 }
 NON_WRITERS = {
+    "coin.retained_pile_rendering": "Compares denomination-dependent text and weight on a stack-local zero-add renderer; it neither admits a UID nor changes a native holding.",
     "recovery.sql_exact_room_stage_cleanup": "Clears original UIDs only in the detached exact room tree before extracting its rejected root; durable payload and custody remain retained. Cleanup is not retirement.",
     "macro.checked_item_publication_declaration": "The checked obj_to_char prototype declares an interface; only its implementation and callers can publish a live item.",
     "account.cleanup_temp_char": "restoreCharOnly loads a temporary PC solely for account/browser display; every in-tree caller frees that temporary character graph, so extracting its copied items is not a durable custody retirement.",
@@ -154,6 +155,7 @@ NON_WRITERS = {
     "special.flying_citadel_unreachable_move": "flying_citadel returns FALSE unconditionally before the room-to-room object movement; the two calls cannot execute in this build.",
 }
 PROJECTION_ROUTES = {
+    "coin.retained_room_projection": "Publishes a committed original-UID ordinary-room pile with retained exact literal/custody/result checks. Uncertain handler/materializer stages remain held; no second accounting root is created.",
     "recovery.sql_exact_room_hydration": "Projects a complete literal graph after successful schema-2 provenance, current season, UID/revision/topology and exact staged-byte checks; no accounting root is created.",
     "recovery.sql_exact_room_placement": "Installs retained placement without replaying decay, falling, redirection or gameplay drop effects; no new custody or issuance is authorized.",
     "quest.durable_offering_publication": "Removes the live offering objects only after the committed item-destruction result is checked; it must retain a recoverable quest reward obligation.",
