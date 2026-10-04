@@ -414,6 +414,9 @@ void telemetry_runtime_game_combat_damage(struct char_data *source, struct char_
 void telemetry_runtime_game_combat_healing(struct char_data *healer, struct char_data *target,
 					   std::uint64_t attempted, std::uint64_t effective,
 					   std::uint32_t modifier_flags) noexcept;
+/* Accepted applications only, after affect mutation and before combat teardown.
+ * Self effects observe an existing battle and never establish a hostile edge.
+ * Native control producers are blind/Stun; duration/resistance remain unobserved. */
 void telemetry_runtime_game_combat_control(struct char_data *source, struct char_data *target,
 					   std::uint16_t applications,
 					   std::uint32_t modifier_flags) noexcept;

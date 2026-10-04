@@ -7,6 +7,7 @@
 #include "core/structs.h"
 #include "core/utils.h"
 #include "core/prototypes.h"
+#include "magic/spells.h"
 
 #include "telemetry/telemetry_session.h"
 #include "telemetry_test_runtime.h"
@@ -31,6 +32,50 @@ int top_of_zone_table = -1;
 int top_of_world = -1;
 P_char fixture_pet = nullptr;
 P_char fixture_pet_master = nullptr;
+std::vector<affected_type> fixture_control_effects;
+std::vector<bool> fixture_control_saves;
+std::size_t fixture_control_save_index = 0U;
+bool fixture_control_eyeless = false, fixture_control_named_immune = false;
+int fixture_control_random = 0;
+
+// Game-service seams for the extracted, unchanged blind/Stun helper bodies.
+// Affect mutation is isolated here; the running-server journey remains required.
+affected_type *affect_to_char(P_char character, affected_type *effect)
+{
+	assert(!(effect->flags & AFFTYPE_NOAPPLY));
+	character->specials.affected_by |= effect->bitvector;
+	character->specials.affected_by2 |= effect->bitvector2;
+	fixture_control_effects.push_back(*effect);
+	return &fixture_control_effects.back();
+}
+bool has_innate(P_char, int innate)
+{
+	assert(innate == INNATE_EYELESS);
+	return fixture_control_eyeless;
+}
+bool isname(const char *name, const char *)
+{
+	assert(std::strcmp(name, "_noblind_") == 0);
+	return fixture_control_named_immune;
+}
+bool NewSaves(P_char, int type, int)
+{
+	assert(type == SAVING_FEAR && fixture_control_save_index < fixture_control_saves.size());
+	return fixture_control_saves[fixture_control_save_index++];
+}
+int number(int first, int last)
+{
+	assert(first <= fixture_control_random && fixture_control_random <= last);
+	return fixture_control_random;
+}
+void send_to_char(const char *, P_char) {}
+void act(const char *, int, P_char, P_obj, void *, int) {}
+void stop_fighting(P_char character)
+{
+	assert(IS_AFFECTED2(character, AFF2_STUNNED));
+	GET_OPPONENT(character) = nullptr;
+	telemetry_runtime_game_combat_context(character);
+}
 void panic_corruption(const char *, const char *, ...)
 {
 	std::abort();
@@ -1656,6 +1701,68 @@ fake_repository check_native_inactivity_contributions(bool use_native)
 	return fake;
 }
 
+void export_native_battle_capture(const fake_repository &fake)
+{
+	const char *export_path = std::getenv("TELEMETRY_BATTLE_CAPTURE_EXPORT");
+	if (export_path)
+	{
+		auto *export_file = std::fopen(export_path, "wb");
+		assert(export_file);
+		for (const auto &record : fake.battles)
+		{
+			std::fprintf(
+				export_file,
+				"{\"boot_id\":%llu,\"process_id\":%llu,\"record_seq\":%llu,\"record_kind\":10,\"schema_version\":1,\"occurrence_utc_usec\":%lld",
+				static_cast<unsigned long long>(record.header.key.producer.boot_id),
+				static_cast<unsigned long long>(
+					record.header.key.producer.process_id),
+				static_cast<unsigned long long>(record.header.key.record_seq),
+				static_cast<long long>(record.header.occurrence_utc_usec));
+#define TELEMETRY_BATTLE_FIELD(name, member, width, is_signed)                                  \
+	do                                                                                      \
+	{                                                                                       \
+		if constexpr (is_signed)                                                        \
+			std::fprintf(export_file, ",\"" #name "\":%lld",                        \
+				     static_cast<long long>(record.payload.battle.member));     \
+		else                                                                            \
+			std::fprintf(                                                           \
+				export_file, ",\"" #name "\":%llu",                             \
+				static_cast<unsigned long long>(record.payload.battle.member)); \
+	} while (false);
+#include "telemetry/telemetry_battle_fields.inc"
+#undef TELEMETRY_BATTLE_FIELD
+			std::fputs("}\n", export_file);
+		}
+		for (const auto &record : fake.contributions)
+		{
+			std::fprintf(
+				export_file,
+				"{\"boot_id\":%llu,\"process_id\":%llu,\"record_seq\":%llu,\"record_kind\":11,\"schema_version\":1,\"occurrence_utc_usec\":%lld",
+				static_cast<unsigned long long>(record.header.key.producer.boot_id),
+				static_cast<unsigned long long>(
+					record.header.key.producer.process_id),
+				static_cast<unsigned long long>(record.header.key.record_seq),
+				static_cast<long long>(record.header.occurrence_utc_usec));
+#define TELEMETRY_BC_FIELD(name, member, width, is_signed)                                \
+	do                                                                                \
+	{                                                                                 \
+		if constexpr (is_signed)                                                  \
+			std::fprintf(export_file, ",\"" #name "\":%lld",                  \
+				     static_cast<long long>(                              \
+					     record.payload.battle_contribution.member)); \
+		else                                                                      \
+			std::fprintf(export_file, ",\"" #name "\":%llu",                  \
+				     static_cast<unsigned long long>(                     \
+					     record.payload.battle_contribution.member)); \
+	} while (false);
+#include "telemetry/telemetry_battle_contribution_fields.inc"
+#undef TELEMETRY_BC_FIELD
+			std::fputs("}\n", export_file);
+		}
+		assert(std::fclose(export_file) == 0);
+	}
+}
+
 void check_native_shared_battle_capture(bool use_native = false)
 {
 	fake_repository fake{};
@@ -1953,8 +2060,8 @@ void check_native_shared_battle_capture(bool use_native = false)
 		const auto &actor = row.context.actor.actor;
 		const auto &counts = row.counters;
 		assert(contribution_sequences.insert(row.sequence).second);
-		assert(row.context.available_metrics == 27U && counts.control_applications == 0U &&
-		       counts.control_received == 0U);
+		assert(row.context.available_metrics == TELEMETRY_BC_METRICS &&
+		       counts.control_applications == 0U && counts.control_received == 0U);
 		assert(actor.actor_id != 8804U &&
 		       actor.actor_id != 8805U); // Presence adds no metrics.
 		assert(row.cut.observed_usec >= row.start_usec &&
@@ -2029,64 +2136,7 @@ void check_native_shared_battle_capture(bool use_native = false)
 	fake.contributions.insert(fake.contributions.end(),
 				  unavailable_opponent.contributions.begin(),
 				  unavailable_opponent.contributions.end());
-	const char *export_path = std::getenv("TELEMETRY_BATTLE_CAPTURE_EXPORT");
-	if (export_path)
-	{
-		auto *export_file = std::fopen(export_path, "wb");
-		assert(export_file);
-		for (const auto &record : fake.battles)
-		{
-			std::fprintf(
-				export_file,
-				"{\"boot_id\":%llu,\"process_id\":%llu,\"record_seq\":%llu,\"record_kind\":10,\"schema_version\":1,\"occurrence_utc_usec\":%lld",
-				static_cast<unsigned long long>(record.header.key.producer.boot_id),
-				static_cast<unsigned long long>(
-					record.header.key.producer.process_id),
-				static_cast<unsigned long long>(record.header.key.record_seq),
-				static_cast<long long>(record.header.occurrence_utc_usec));
-#define TELEMETRY_BATTLE_FIELD(name, member, width, is_signed)                                  \
-	do                                                                                      \
-	{                                                                                       \
-		if constexpr (is_signed)                                                        \
-			std::fprintf(export_file, ",\"" #name "\":%lld",                        \
-				     static_cast<long long>(record.payload.battle.member));     \
-		else                                                                            \
-			std::fprintf(                                                           \
-				export_file, ",\"" #name "\":%llu",                             \
-				static_cast<unsigned long long>(record.payload.battle.member)); \
-	} while (false);
-#include "telemetry/telemetry_battle_fields.inc"
-#undef TELEMETRY_BATTLE_FIELD
-			std::fputs("}\n", export_file);
-		}
-		for (const auto &record : fake.contributions)
-		{
-			std::fprintf(
-				export_file,
-				"{\"boot_id\":%llu,\"process_id\":%llu,\"record_seq\":%llu,\"record_kind\":11,\"schema_version\":1,\"occurrence_utc_usec\":%lld",
-				static_cast<unsigned long long>(record.header.key.producer.boot_id),
-				static_cast<unsigned long long>(
-					record.header.key.producer.process_id),
-				static_cast<unsigned long long>(record.header.key.record_seq),
-				static_cast<long long>(record.header.occurrence_utc_usec));
-#define TELEMETRY_BC_FIELD(name, member, width, is_signed)                                \
-	do                                                                                \
-	{                                                                                 \
-		if constexpr (is_signed)                                                  \
-			std::fprintf(export_file, ",\"" #name "\":%lld",                  \
-				     static_cast<long long>(                              \
-					     record.payload.battle_contribution.member)); \
-		else                                                                      \
-			std::fprintf(export_file, ",\"" #name "\":%llu",                  \
-				     static_cast<unsigned long long>(                     \
-					     record.payload.battle_contribution.member)); \
-	} while (false);
-#include "telemetry/telemetry_battle_contribution_fields.inc"
-#undef TELEMETRY_BC_FIELD
-			std::fputs("}\n", export_file);
-		}
-		assert(std::fclose(export_file) == 0);
-	}
+	export_native_battle_capture(fake);
 	fixture_pet = fixture_pet_master = nullptr;
 	world = nullptr;
 	zone_table = nullptr;
@@ -2095,11 +2145,210 @@ void check_native_shared_battle_capture(bool use_native = false)
 		"PASS: native shared battles and disjoint contributions, useful support, exact party presence, generations, alias, scope cuts and censored lifecycle");
 }
 
+fake_repository check_native_control_capture(bool use_native = false, bool export_capture = false)
+{
+	fake_repository fake{};
+	fake.use_native = use_native;
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	telemetry_test_start_runtime(enabled_options());
+	room_data rooms[1]{};
+	zone_data zones[1]{};
+	zones[0].number = 1906;
+	const auto previous_world = world;
+	const auto previous_zones = zone_table;
+	const int previous_top_world = top_of_world, previous_top_zone = top_of_zone_table;
+	world = rooms;
+	zone_table = zones;
+	top_of_world = top_of_zone_table = 0;
+	char_data attacker{}, target{}, unrelated{}, npc{}, pet{};
+	pc_only_data attacker_data{}, target_data{}, unrelated_data{};
+	npc_only_data npc_data{}, pet_data{};
+	attacker.only.pc = &attacker_data;
+	target.only.pc = &target_data;
+	unrelated.only.pc = &unrelated_data;
+	attacker_data.pid = 8961;
+	target_data.pid = 8962;
+	unrelated_data.pid = 8963;
+	npc.only.npc = &npc_data;
+	pet.only.npc = &pet_data;
+	npc_data.R_num = pet_data.R_num = -1; // Native lifetime exists; legacy ID is absent.
+	for (auto *actor : { &npc, &pet })
+	{
+		actor->specials.act = ACT_ISNPC;
+		actor->runtime_id = allocate_character_runtime_id();
+	}
+	for (auto *actor : { &attacker, &target, &unrelated, &npc, &pet })
+	{
+		actor->in_room = 0;
+		actor->player.level = 25;
+		actor->player.m_class = 3;
+		actor->player.race = RACE_HUMAN;
+		actor->player.racewar = 5;
+		actor->specials.position = STAT_NORMAL;
+	}
+	fixture_control_effects.clear();
+	fixture_control_save_index = 0U;
+	fixture_control_random = 0;
+	// Rejected blindness and stun must neither mutate an effect nor start a battle.
+	target.specials.affected_by5 = AFF5_NOBLIND;
+	assert(!blind(&attacker, &target, 10));
+	target.specials.affected_by5 = 0U;
+	target.specials.affected_by = AFF_BLIND;
+	assert(!blind(&attacker, &target, 10));
+	target.specials.affected_by = 0U;
+	for (auto race : { RACE_PARASITE, RACE_SLIME })
+	{
+		target.player.race = race;
+		assert(!blind(&attacker, &target, 10));
+	}
+	target.player.race = RACE_HUMAN;
+	fixture_control_eyeless = true;
+	assert(!blind(&attacker, &target, 10));
+	fixture_control_eyeless = false;
+	fixture_control_named_immune = true;
+	assert(!blind(&attacker, &target, 10));
+	fixture_control_named_immune = false;
+	target.player.level = MAXLVLMORTAL + 1;
+	assert(!blind(&attacker, &target, 10));
+	target.player.level = 25;
+	target.specials.position = STAT_DEAD;
+	assert(!blind(&attacker, &target, 10));
+	Stun(&target, &attacker, 8, false);
+	target.specials.position = STAT_NORMAL;
+	target.specials.act = ACT_ELITE;
+	Stun(&target, &attacker, 8, false);
+	target.specials.act = 0U;
+	target.player.race = RACE_PLANT;
+	Stun(&target, &attacker, 8, false);
+	target.player.race = RACE_HUMAN;
+	target.specials.affected_by2 = AFF2_STUNNED;
+	Stun(&target, &attacker, 8, false);
+	target.specials.affected_by2 = 0U;
+	fixture_control_saves = { true, true };
+	Stun(&target, &attacker, 8, true);
+	assert(fixture_control_save_index == 2U && fixture_control_effects.empty());
+	telemetry_runtime_game_combat_control(&attacker, &unrelated, 0U, 0U);
+	telemetry_runtime_game_combat_control(&attacker, &unrelated, 1U,
+					      ~TELEMETRY_COMBAT_MODIFIER_KNOWN);
+	// Accepted self effects outside a battle remain outside shared participation.
+	assert(blind(&unrelated, &unrelated, 10));
+	Stun(&unrelated, &unrelated, 8, false);
+	assert(fixture_control_effects.size() == 2U);
+	// A real accepted blindness observation can establish the shared hostile edge.
+	assert(blind(&attacker, &target, 10));
+	assert(!blind(&attacker, &target, 10)); // Already active: no second application.
+	assert(fixture_control_effects.size() == 3U);
+	attacker.specials.fighting = &target;
+	target.specials.fighting = &attacker;
+	assert(telemetry_runtime_game_combat_engage(&attacker, &target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	fixture_control_saves = { false };
+	fixture_control_save_index = 0U;
+	Stun(&target, &attacker, 8, true);
+	assert(fixture_control_save_index == 1U && !IS_FIGHTING(&target) &&
+	       fixture_control_effects.back().duration == 8);
+	target.specials.affected_by2 = 0U;
+	target.specials.fighting = &attacker;
+	fixture_control_saves = { true, false };
+	fixture_control_save_index = 0U;
+	Stun(&target, &attacker, 8, true);
+	assert(fixture_control_save_index == 2U && !IS_FIGHTING(&target) &&
+	       fixture_control_effects.back().duration == 4);
+	target.specials.affected_by2 = 0U;
+	target.specials.fighting = &attacker;
+	Stun(&target, &attacker, 8, false);
+	assert(!IS_FIGHTING(&target) && fixture_control_effects.back().duration == 8);
+	target.specials.affected_by = 0U;
+	assert(blind(&target, &target, 10)); // Existing battle: one actor, SELF modifier.
+	fixture_pet = &pet;
+	fixture_pet_master = &attacker;
+	target.specials.affected_by2 = 0U;
+	Stun(&target, &pet, 8, false);
+	assert(blind(&attacker, &npc, 10));
+	assert(blind(&npc, &attacker, 10));
+	assert(fixture_control_effects.size() == 10U); // Eight captured + two unrelated.
+	assert(telemetry_runtime_encounter_close_all(telemetry_encounter_outcome::copyover)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	std::uint64_t applications = 0U, received = 0U;
+	unsigned self_segments = 0U, pet_segments = 0U, npc_segments = 0U, starts = 0U;
+	for (const auto &record : fake.battles)
+	{
+		const auto &fact = record.payload.battle;
+		assert(fact.actor.actor.actor_id != 8963U);
+		starts += fact.kind == telemetry_battle_fact_kind::start;
+	}
+	for (const auto &record : fake.contributions)
+	{
+		const auto &row = record.payload.battle_contribution;
+		const auto &actor = row.context.actor.actor;
+		assert(row.context.available_metrics == TELEMETRY_BC_METRICS &&
+		       actor.actor_id != 8963U);
+		assert(!(row.quality_flags &
+			 (TELEMETRY_QUALITY_QUEUE_DROP | TELEMETRY_QUALITY_CLOCK_DISCONTINUITY)));
+		applications += row.counters.control_applications;
+		received += row.counters.control_received;
+		if (row.modifier_flags & TELEMETRY_COMBAT_MODIFIER_SELF)
+		{
+			assert(actor.actor_id == 8962U && row.counters.control_applications == 1U);
+			++self_segments;
+		}
+		if (actor.kind == telemetry_combat_actor_kind::pet)
+		{
+			assert(actor.owner_subject_id == 8961U &&
+			       row.counters.control_applications == 1U);
+			++pet_segments;
+		}
+		if (actor.kind == telemetry_combat_actor_kind::npc)
+		{
+			assert(actor.actor_id ==
+				       (TELEMETRY_BATTLE_NPC_GENERATION_TAG | npc.runtime_id) &&
+			       row.counters.control_applications == 1U &&
+			       row.counters.control_received == 1U);
+			++npc_segments;
+		}
+	}
+	assert(starts == 1U && applications == 8U && received == 8U && self_segments == 1U &&
+	       pet_segments == 1U && npc_segments == 1U);
+	if (export_capture)
+		export_native_battle_capture(fake);
+	fixture_pet = fixture_pet_master = nullptr;
+	world = previous_world;
+	zone_table = previous_zones;
+	top_of_world = previous_top_world;
+	top_of_zone_table = previous_top_zone;
+	std::puts(
+		"PASS: accepted blind/Stun source helpers, rejection gates, self isolation, pet/NPC lifetime and conserved 8/8 control");
+	return fake;
+}
+
 } // namespace
 
 int main(int argc, char **argv)
 {
+	if (argc == 2 && std::strcmp(argv[1], "--native-control-capture") == 0)
+	{
+		check_native_control_capture(false, true);
+		return 0;
+	}
 #ifdef TELEMETRY_TEST_NATIVE_BATTLE_SQL
+	if (argc == 2 && std::strcmp(argv[1], "--native-control-sql") == 0)
+	{
+		check_native_control_capture(true, true);
+		std::puts("accepted native control helpers through SQL writer passed");
+		return 0;
+	}
 	if (argc == 2 && std::strcmp(argv[1], "--native-battle-sql") == 0)
 	{
 		check_native_shared_battle_capture(true);
@@ -2111,6 +2360,7 @@ int main(int argc, char **argv)
 	(void)argv;
 	check_native_battle_context();
 	check_native_shared_battle_capture();
+	check_native_control_capture();
 	check_group_generation_and_combat_entry();
 	check_authenticated_ownership_path();
 	check_deferred_startup_presence();

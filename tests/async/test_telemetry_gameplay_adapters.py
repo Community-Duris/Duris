@@ -7,10 +7,24 @@ import shlex
 import subprocess
 import tempfile
 
+from test_telemetry_combat_hooks import function
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bool = False) -> None:
+    # Execute the maintained helper bodies with the game-service seams in the
+    # existing harness; the actual runtime/worker/writer remain linked below.
+    source = (ROOT / "src/magic/affects.c").read_text()
+    control_helpers = executable.parent / "telemetry-control-helpers.cc"
+    control_helpers.write_text(
+        '#include "core/prototypes.h"\n#include "core/utils.h"\n'
+        '#include "magic/spells.h"\n#include "telemetry/telemetry_runtime.h"\n'
+        + function((ROOT / "src/core/utility.c").read_text(), "int BOUNDED(int a, int b, int c)") + "\n"
+        + function(source, "bool blind(P_char ch, P_char victim, int duration)") + "\n"
+        + function(source, "void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)") + "\n",
+        encoding="utf-8",
+    )
     command = [
         "g++",
         "-std=c++20",
@@ -21,6 +35,7 @@ def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bo
         "-I",
         str(ROOT / "src"),
         str(ROOT / "tests/async/telemetry_gameplay_adapters.cc"),
+        str(control_helpers),
         str(ROOT / "src/account/character_identity.c"),
         *[
             str(ROOT / "src/telemetry" / name)

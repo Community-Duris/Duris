@@ -45,6 +45,7 @@
 #include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
+#include "telemetry/telemetry_runtime.h"
 #include "world/vnum.obj.h"
 #include "world/weather.h"
 
@@ -3278,6 +3279,8 @@ bool blind(P_char ch, P_char victim, int duration)
 		af.bitvector = AFF_BLIND;
 		af.duration = duration;
 		affect_to_char(victim, &af);
+		telemetry_runtime_game_combat_control(ch, victim, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
 		return TRUE;
 	}
 
@@ -3335,6 +3338,8 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 			af.bitvector2 = AFF2_STUNNED;
 			af.duration = duration;
 			affect_to_char(stunnee, &af);
+			telemetry_runtime_game_combat_control(stunner, stunnee, 1U,
+							      TELEMETRY_COMBAT_MODIFIER_NONE);
 
 			send_to_char("&+wThe world starts spinning, and your ears are ringing!\r\n",
 				     stunnee);
@@ -3350,6 +3355,8 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 			af.bitvector2 = AFF2_STUNNED;
 			af.duration = duration / 2;
 			affect_to_char(stunnee, &af);
+			telemetry_runtime_game_combat_control(stunner, stunnee, 1U,
+							      TELEMETRY_COMBAT_MODIFIER_NONE);
 
 			send_to_char(
 				"&+wWow that &+Rsmarts... &+Wbut you manage to recover quickly!\r\n",
@@ -3369,6 +3376,8 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 		af.bitvector2 = AFF2_STUNNED;
 		af.duration = duration;
 		affect_to_char(stunnee, &af);
+		telemetry_runtime_game_combat_control(stunner, stunnee, 1U,
+						      TELEMETRY_COMBAT_MODIFIER_NONE);
 
 		send_to_char("&+wThe world starts spinning, and your ears are ringing!\r\n",
 			     stunnee);

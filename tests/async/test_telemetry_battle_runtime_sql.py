@@ -17,7 +17,8 @@ import sys
 import tempfile
 
 from test_telemetry_gameplay_adapters import ROOT, compile_gameplay
-from test_telemetry_battle_history import BattleHistoryTests, qualify_native_history, qualify_retained_native_source
+from test_telemetry_battle_history import (BattleHistoryTests, qualify_native_history,
+    qualify_native_control_history, qualify_retained_native_source)
 from test_telemetry_repository import prepare_sql_fixture, drop_sql_fixture
 from test_telemetry_incidents import runtime_fingerprint
 
@@ -36,7 +37,52 @@ from rollup_engine import RollupEngine, RollupBounds, BoundsExceeded, SemanticEr
 from test_telemetry_observations import ownership
 
 
-def qualify_persisted_source(query, environment, command, name, history):
+def qualify_native_control_publication(query, rollup, reporter, executable, run_environment, export):
+    origin = query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"]
+    subprocess.run([str(executable), "--native-control-sql"], cwd=ROOT,
+        env=dict(run_environment, TELEMETRY_BATTLE_CAPTURE_EXPORT=str(export)), check=True, timeout=30)
+    emitted = [json.loads(line) for line in export.read_text(encoding="utf-8").splitlines()]
+    stored = query("SELECT " + ",".join(RAW_COLUMNS) +
+        " FROM telemetry_interval WHERE ingest_id>%s AND record_kind IN (10,11) ORDER BY boot_id,process_id,record_seq", (origin,))
+    emitted.sort(key=lambda row: (row["boot_id"], row["process_id"], row["record_seq"]))
+    assert len(emitted) == len(stored) > 0
+    for observed, row in zip(emitted, stored, strict=True):
+        assert all(row[column] == value for column, value in observed.items()), "accepted control source/SQL drift"
+    result = qualify_native_control_history(stored)
+    first = next(row for row in stored if row["record_kind"] == 10)
+    generation = query("SELECT MAX(generation) AS n FROM telemetry_rollup_state WHERE definition_version=5")[0]["n"] + 1
+    target = RollupTarget(5, generation, first["battle_environment_id"], first["battle_season_id"])
+    through = query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"]
+    rollup.reserve_identity_generation(target.scope_tuple, None)
+    assert RollupEngine(rollup).run(target, origin_ingest_id=origin,
+        through_ingest_id=through, bounds=RollupBounds(page_size=3, max_runtime_s=30)).complete
+    retained = rollup.read_battle_source(target)
+    assert retained.header["contribution_count"] == result.summary["contribution_count"]
+    assert sum(row["bc_control_applications"] for row in retained.facts if row["record_kind"] == 11) == 8
+    assert sum(row["bc_control_received"] for row in retained.facts if row["record_kind"] == 11) == 8
+    assert rollup.publish_generation(target)["status"] == "published"
+    report = reporter.read_report(target, "battle_contributions")
+    assert not report.truncated
+    assert sum(row["bc_control_applications"] for row in report.rows) == 8
+    assert sum(row["bc_control_received"] for row in report.rows) == 8
+    assert all(row["account_token"] is None and row["controller_token"] is None and
+        not row["complete_metric_coverage_implied"] for row in report.rows)
+    assert report.coverage.battle_coverage["verified_contribution_links"] == len(report.rows)
+    assert report.coverage.battle_coverage["partial_contribution_links"] == 0
+    summary = reporter.read_report(target, "battle_observations")
+    assert len(summary.rows) == 1 and summary.rows[0]["control_applications"] == summary.rows[0]["control_received"] == 8
+    assert summary.rows[0]["outcome"] is None and not summary.rows[0]["complete_metric_coverage_implied"]
+    assert rollup.publish_generation(target)["status"] == "published"
+    assert reporter.read_report(target, "battle_contributions") == report
+    return dict(native_control_producer=True, native_control_source_helpers=["blind", "Stun"],
+        native_control_sql_exact=True, native_control_atomic_publication=True,
+        native_control_rejection_gates=True, native_control_self_isolation=True,
+        native_control_records=len(stored), native_control_contributions=len(report.rows),
+        native_control_applications=8, native_control_received=8,
+        native_control_complete_coverage_implied=False, native_control_running_server=False)
+
+
+def qualify_persisted_source(query, environment, command, name, history, executable, run_environment, control_export):
     """Actual cursor/source transactions through a restricted rollup principal."""
     import pymysql
     token = hashlib.sha256(name.encode()).hexdigest()[:12]
@@ -387,7 +433,8 @@ def qualify_persisted_source(query, environment, command, name, history):
                 assert {name: associations[battle_contract.fact_key(row)][name] for name in retained_source.SOURCE_COLUMNS[10]} == row
         summaries = original_reports["battle_observations"].rows
         assert sum(row["damage_dealt"] or 0 for row in summaries if row["canonical"]) == 112
-        assert all(row["outcome"] is None and row["control_applications"] is None for row in summaries)
+        assert all(row["outcome"] is None and row["control_applications"] ==
+            (0 if row["available_metric_mask"] & 4 else None) for row in summaries)
         assert reporter.read_report(target, "battle_associations", max_rows=1).truncated
         for action in (lambda: reporter.read_report(target, "battle_exposure", max_bytes=100_000),
                 lambda: reporter.read_coverage(target, max_bytes=100_000)):
@@ -559,7 +606,9 @@ def qualify_persisted_source(query, environment, command, name, history):
         assert runtime_fingerprint(environment) == fingerprint
         assert reporter.read_report(target, "battle_contributions").rows == original_reports["battle_contributions"].rows
 
-        return dict(history_persisted_source_checkpoint=True, battle_source_identity_reservation=True,
+        controls = qualify_native_control_publication(query, rollup, reporter, executable, run_environment, control_export)
+        assert runtime_fingerprint(environment) == fingerprint
+        return dict(controls, history_persisted_source_checkpoint=True, battle_source_identity_reservation=True,
             battle_source_cursor_atomicity=True, battle_source_lost_acknowledgements=True,
             battle_source_exact_values=True, battle_source_ownership_arrival=True, battle_source_private_roles=True,
             battle_source_bounded_reads=True, battle_source_cli_preparation=True,
@@ -664,7 +713,7 @@ def qualify() -> None:
                     assert basis["battle_classifier_version"] == raw["bc_classifier_version"]
                 assert first["battle_mode"] == raw["bc_mode"]
                 assert first["battle_side_status"] == raw["bc_side_status"]
-                assert raw["bc_available_metrics"] == 27 and raw["bc_control_applications"] == raw["bc_control_received"] == 0
+                assert raw["bc_available_metrics"] == 31 and raw["bc_control_applications"] == raw["bc_control_received"] == 0
             assert sum(row["bc_damage_dealt"] for row in contributions) == 112
             assert sum(row["bc_damage_taken"] for row in contributions) == 112
             assert sum(row["bc_healing_attempted"] for row in contributions) == 45
@@ -678,7 +727,8 @@ def qualify() -> None:
             history = qualify_native_history(stored + contributions)
             source_window, _retained_inputs = qualify_retained_native_source(stored + contributions,
                 (stored[0]["battle_environment_id"], stored[0]["battle_season_id"]), history)
-            persistence = qualify_persisted_source(query, environment, command, name, history)
+            persistence = qualify_persisted_source(query, environment, command, name, history,
+                executable, run_environment, export.with_name("controls.jsonl"))
             unavailable_opponent = [row for row in contributions if row["bc_actor_id"] == 8951]
             assert len(unavailable_opponent) == 1
             assert unavailable_opponent[0]["bc_end_reason"] == 4
@@ -733,7 +783,7 @@ def qualify() -> None:
                 complete_association_references=True, exact_damage_total=112,
                 unavailable_opponent_source_gap=True,
                 inactivity_prefixes_preserved=True, inactivity_fixture_future_pulse=True,
-                available_metric_mask=27, native_control_producer=False,
+                available_metric_mask=31, native_control_producer=True,
                 battle_field_count=70, native_runtime=True, actual_worker=True,
                 native_sql_writer=True, private_writer=True, running_server=False)
             result.update(persistence)

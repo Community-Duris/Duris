@@ -27,7 +27,8 @@ work. A future production deployment is a separate operational decision.
 | Persisted battle source and cursor checkpoint | Implemented and locally qualified | Migration 0063 requires state and immutable identity reservation, retains exact kind-9/10/11 inputs/counts/digest plus the original ingestion boundary, and commits the header with the existing page cursor transaction. Forty-five focused regressions and both full-63-step native-writer SQL journeys qualify selected values, rollback/lost acknowledgements, receipt/constraint guards, original arrival clocks, cursor/origin conflicts, explicit empty building windows, raw retention, bounded consistent reads, CLI preparation, private roles, guarded reruns and drift/restoration. The native selected window contains 153 inputs, including two ownership observations; matching/foreign synthetic ownership cases preserve scope and expand selected evidence once. At that delivery definition 5 prepared private source only; migration 0064 adds publication below. See [BATTLES.md](BATTLES.md#persisted-battle-source-preparation). |
 | Atomic battle observation publication | Implemented and locally qualified | Migration 0064 publishes source coverage, canonical/original battles, latest actors, disjoint contributions, dated exposure and every original association with reserved identity and independent schema-4 loss coverage in one transaction. Fifty-six focused regressions and both full-64-step native-writer SQL journeys qualify exact native values, ownership/review/day cuts, explicit unknowns, rollback, lost acknowledgements, immutable older generations, snapshot tamper refusal, bounds, restricted CLI/report roles and guarded drift/restoration. Definition 5 exposes five observation reports; definitions 1/2/3 retain their meanings. Complete balance suites and remaining native/personal-server evidence remain required. See [BATTLES.md](BATTLES.md#atomic-battle-observation-publication). |
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
-| Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Definition 5 now publishes these observations with exact association/alias/source and independent loss coverage. Control remains unavailable in native contribution mask 27. Compact build/power/arena context, actual control/prevention/faction exposure, typed outcomes, the full balance suites and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
+| Accepted blindness and stun applications | Implemented and locally qualified | Actual `blind`/`Stun` success boundaries feed the existing bounded kind-11 accumulator after effect mutation and before teardown. New segments declare producer mask 31; older unavailable control remains NULL. Normal/ASan/UBSan, 58 history/publication regressions and both full-64-step native-writer SQL journeys preserve eight applications/eight received through eight verified published segments. Source-service seams, partial producer coverage and unobserved duration/resistance remain explicit. See [BATTLES.md](BATTLES.md#accepted-blindness-and-stun-control-capture). |
+| Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/accepted-control/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Definition 5 publishes these observations with exact association/alias/source and independent loss coverage. Accepted control currently covers `blind`/`Stun`; other effect producers, typed attempts/resistance/duration, prevention and faction exposure remain required. Compact build/power/arena context, typed outcomes, the full balance suites and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
@@ -1238,3 +1239,60 @@ complete suites, #487 compatibility and the final actual personal-local gameplay
 persistence/performance gate remain required under #258. All seven completion
 requirements retain their unfinished portions. Production and staging access
 remain unnecessary for technical acceptance.
+
+## Accepted blindness and stun control capture
+
+The maintained `blind()` helper and all three successful `Stun()` branches now
+feed the runtime's existing control adapter after effect mutation and before
+combat teardown. The adapter records both actual sides through the bounded
+kind-11 accumulator before checking legacy kind-8 IDs. Self effects use the
+existing battle and SELF modifier and cannot start a hostile edge. Invalid
+modifier bits are refused before association mutation; zero applications create
+no native contribution stream. Existing gameplay immunity, saving throws,
+already-active gates, duration calculation and legacy summary rules are preserved.
+
+New native contribution segments declare producer availability mask **31**.
+This identifies accepted `blind`/`Stun` observations, including measured segment
+zeros when these hooks observed no application. It does not establish all effect
+coverage, resistance or duration. Older mask-27 inputs still publish NULL control
+counters, and `complete_metric_coverage_implied` remains false. Effect types,
+attempts, rejection reasons, duration/overlap/removal and other direct affect
+producers remain unfinished. No wire fields, versions, migrations, SQL shapes or
+report definitions change.
+
+Normal and fresh **ASan/UBSan gameplay adapter journeys passed**. The fixture
+executes the maintained blindness/stun/clamp source bodies with isolated affect,
+save, random, message and teardown services, linked to the real runtime/queue/
+worker. It covers accepted full/half stuns, blindness, rejected effects, unrelated
+self effects, an in-battle self effect, pet ownership and a native NPC lacking a
+legacy ID. **58 history/source/publication tests passed**, including the new
+accepted-control and older-unavailable-NULL cases, while preserving the original
+6,468-fact/23-journey association proof. The ten pure contribution journeys,
+nine cross-language contribution contract tests, existing accepted-start/stop
+hook test, repository C/C++ formatting and maintained `make -C src -j1` build
+also passed.
+
+Both **MariaDB 10.11.14** and **MySQL 8.0.46** passed the complete **64-step**
+native writer/source/publication journey. The original 123-fact/38-packet/
+28-contribution source proof still conserves damage **112/112**, healing and
+casting partitions. A separate fresh source process adds **20 association facts
+and 8 control contribution segments**. Each original field matches SQL; every
+link verifies; source retention, atomic publication, restricted reports and exact
+publication retry conserve **8 applications / 8 received**. Missing sessions and
+account/controller identity remain unknown. Both engines retain the sealed
+head-64 fingerprints listed above after the source/publication drift tests.
+
+Temporary databases/roles were removed, MariaDB stopped, and the owned MySQL
+fixture stopped and removed. MySQL used the existing no-native-AIO workaround.
+These tests do not prove actual personal-server effect application or performance;
+the affect/service seams are explicitly isolated. TSan retains its earlier unrun
+host limitation. The focused commands are in
+[BATTLES.md](BATTLES.md#accepted-blindness-and-stun-control-capture).
+
+This supplies accepted application producers within the second completion
+requirement. All seven accepted requirements retain their unfinished portions:
+complete native context and typed evidence/control/prevention/faction coverage,
+real authenticated source journeys, distinct PvE attempts, progression/portfolio
+context, the four suites/statistical exports, #487 compatibility and one actual
+personal-local gameplay/persistence/performance command/runbook. Production and
+staging access remain unnecessary for technical acceptance.

@@ -1001,14 +1001,14 @@ bool battle_contribution_context(telemetry_id actor_id,
 					    actor.context,
 					    slot.revision,
 					    slot.fact_sequence,
-					    TELEMETRY_BC_DAMAGE | TELEMETRY_BC_HEALING |
-						    TELEMETRY_BC_CASTING | TELEMETRY_BC_ENGAGEMENT,
+					    TELEMETRY_BC_METRICS,
 					    slot.side_status,
 					    slot.mode,
 					    actor.side,
 					    0U,
 					    slot.quality_flags };
-				/* Control has no native effect producer yet. */
+				/* Control observes accepted blind/Stun applications. Availability
+				 * names these producers, not complete effect/lifecycle coverage. */
 				return telemetry_battle_contribution_context_is_valid(*output);
 			}
 	return false;
@@ -4110,11 +4110,37 @@ void telemetry_runtime_game_combat_control(struct char_data *source, struct char
 		return;
 	telemetry_monotonic_usec at = 0U;
 	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
-	if (!game_time(&at, &utc))
+	if (!game_time(&at, &utc) || !telemetry_combat_modifier_flags_are_valid(modifier_flags))
 		return;
 	if (applications != 0U)
-		(void)capture_battle_relation(source, target, telemetry_battle_relation::hostile,
-					      at, utc);
+	{
+		if (source != target)
+			(void)capture_battle_relation(source, target,
+						      telemetry_battle_relation::hostile, at, utc);
+		else
+		{
+			/* Self/environmental effects cannot establish a hostile relationship. */
+			(void)game_battle_context_at(source, at, utc);
+			modifier_flags |= TELEMETRY_COMBAT_MODIFIER_SELF;
+		}
+		telemetry_battle_contribution_context native_source{}, native_target{};
+		battle_emit_context emitter{};
+		if (native_contribution_context(source, &native_source) &&
+		    native_contribution_context(target, &native_target) &&
+		    native_source.battle.sequence == native_target.battle.sequence)
+			note_battle_contribution(
+				telemetry_battle_contribution_control(
+					&R.battle_contribution, native_source, native_target,
+					applications, at, utc,
+					game_combat_modifier_flags(native_source.actor.actor,
+								   native_target.actor.actor,
+								   modifier_flags),
+					emit_battle_contribution, &emitter),
+				emitter);
+		capture_native_engagement(source, at, utc, emitter);
+		if (source != target)
+			capture_native_engagement(target, at, utc, emitter);
+	}
 	const auto source_actor = game_combat_actor(source);
 	const auto target_actor = game_combat_actor(target);
 	if (!telemetry_combat_actor_ref_is_valid(source_actor) ||

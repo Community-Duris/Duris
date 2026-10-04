@@ -415,12 +415,14 @@ group revision, mode, side and complete-packet reference. Each combat observatio
 uses one monotonic/UTC pair for relationship capture, formal party presence and
 its metric update. Legacy kind-8 amounts are independently preserved.
 
-The native availability mask is **27**: damage (1), healing (2), casting (8) and
-observed opponent-link time (16). Control (4) remains unavailable because the
-typed control API has no native effect producer. Prevention and measured incoming
-pressure also remain required sources. An availability bit identifies an
-implemented producer family; it does not prove that every lifecycle or actor was
-observed. An absent contribution row alone cannot establish a measured zero.
+The initial native delivery used availability mask **27**: damage (1), healing
+(2), casting (8) and observed opponent-link time (16). The accepted blindness and
+stun producers described below add control (4), so new native segments use mask
+**31**. Older segments retain their original mask and unavailable control remains
+NULL. Prevention and measured incoming pressure remain required sources. An
+availability bit identifies implemented producer families; it does not prove that
+every effect, lifecycle or actor was observed. A zero describes the observed
+segment from those producers, and an absent stream cannot establish a measured zero.
 
 Positive effective healing can admit useful support. Ineffective attempted
 healing counts only when both actual actors already belong to the same battle;
@@ -872,8 +874,8 @@ identity is uniform over the observed segment. A uniform account can remain know
 across changing controller reviews; a controller stays known across consecutive
 confirmed association IDs only when it is uniform. No amount is prorated across
 an unobserved action boundary. Zero-duration amounts retain unknown attribution.
-Unavailable native control counters are public NULLs despite the sealed native
-representation's zeros.
+Older unavailable control counters are public NULLs despite the sealed native
+representation's zeros. Availability and partial source coverage remain separate.
 
 Rows use a canonical bounded JSON field/type contract, domain/scoped logical key,
 payload SHA-256 and quality mask. A generation snapshot digest covers every
@@ -924,8 +926,71 @@ Qualification evidence is recorded in
 [the status document](IMPLEMENTATION_STATUS.md#atomic-battle-observation-publication).
 
 These reports supply observation primitives for the accepted balance suites.
-They establish no decisive whole-battle outcome, native control/prevention
+They establish no decisive whole-battle outcome, complete control/prevention
 coverage, gear power, complete population, reward rate or causal balance result.
 The native additions, PvE attempts, progression context, four complete suites,
 #487 compatibility and the actual personal-local gameplay/persistence/performance
 gate remain required under #258.
+
+## Accepted blindness and stun control capture
+
+`blind()` and each successful `Stun()` branch now observe one accepted application
+after `affect_to_char()` installs the effect and before any `stop_fighting()`
+teardown. Existing immunity, death, already-active and saving-throw gates retain
+their gameplay behavior. The full and half-duration stun branches each produce
+one application. The current counters do not record effect type, rejection
+reason, duration, overlapping disabled time or subsequent removal. Other direct
+affect producers require their own reviewed hooks; these counts are partial
+observations and cannot supply a whole-family resistance or control-duration rate.
+
+The runtime uses the same association observation clock and existing bounded
+kind-11 accumulator as damage and healing. Distinct source/target actors can
+establish a hostile relationship, and both actual sides receive their conserved
+application/received count. Native maintained NPC/pet lifetime IDs are measured
+before legacy kind-8 identity validation; a missing legacy ID does not lose a
+valid native observation. Kind-8's existing accumulator and encounter rules
+retain their meaning. Invalid modifier bits are refused before association
+mutation, and zero applications create no native stream or hostile edge.
+
+Self-applied or environmentally sourced effects using the same character for both
+arguments cannot establish a hostile edge. They are measured only within an
+already observed battle, use one actor stream and carry the existing SELF
+modifier. This modifier identifies a self-source observation without asserting
+that a player chose the effect. Self effects outside a battle leave shared
+participation absent. Capture remains bounded and performs no SQL or file I/O.
+
+New native segments declare producer availability mask **31**, including the
+accepted `blind`/`Stun` family. This enables exact observed counts, including a
+zero when the declared hooks observed none in that segment. The reports keep
+`complete_metric_coverage_implied=false`; availability does not establish full
+control coverage. Older mask-27 inputs retain public NULL control counters. No
+wire fields, definition numbers, sealed migrations or schema shapes change.
+
+The existing gameplay harness compiles the maintained helper bodies and bounded
+clamp directly from source. It isolates affect mutation, saves, randomness,
+messages and combat teardown as game-service seams, while the runtime, queue,
+worker, codec and SQL writer execute their maintained implementations. Its
+accepted journey conserves **8 applications / 8 received**, including full/half
+stun, blindness, a self observation, a pet and an NPC lacking a legacy ID. Rejected
+effects and unrelated self effects produce no shared participation. History and
+publication tests preserve these amounts and older unavailable NULLs.
+
+The focused checks use the maintained commands:
+
+```sh
+python3 tests/async/test_telemetry_gameplay_adapters.py
+python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize
+python3 tests/async/test_telemetry_battle_history.py
+python3 tests/async/test_telemetry_battle_contributions.py
+python3 tests/async/test_telemetry_combat_hooks.py
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
+```
+
+The SQL journey adds a fresh native control capture after the original source
+proof, pins its ingestion origin, verifies every original field through the
+restricted writer, and publishes it through the existing rollup/report roles.
+This fixture does not replace the required actual personal-server effect,
+persistence and performance journey. Complete reviewed control/prevention,
+compact build/power/arena context, faction exposure, typed outcomes and the full
+balance suites remain unfinished under #258.

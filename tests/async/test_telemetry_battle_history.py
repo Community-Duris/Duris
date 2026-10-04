@@ -52,7 +52,8 @@ def qualify_native_history(rows):
     assert sum(row["casting_completions"] or 0 for row in canonical) == 1
     assert sum(row["casting_aborts"] or 0 for row in canonical) == 1
     assert sum(row["casting_unresolved"] or 0 for row in canonical) == 4
-    assert all(row["control_applications"] is None and row["control_received"] is None for row in result.battles)
+    assert all(row["control_applications"] == row["control_received"] ==
+               (0 if row["available_metric_mask"] & 4 else None) for row in result.battles)
     assert all(row["outcome"] is None and not row["complete_metric_coverage_implied"] for row in result.battles)
     assert all(row["packet_history_complete"] for row in result.battles)
     assert {row["close_reason"] for row in canonical} == {1, 2, 3}
@@ -71,6 +72,31 @@ def qualify_native_history(rows):
         assert exposures[(actor["canonical_battle"], actor["battle_actor_id"])] == {name: actor[name] for name in battle.EFFORT}
     assert result.summary["verified_exposure_present_usec"] == sum(row["battle_present_usec"] for row in result.actors)
     assert result.summary["reserved_bytes"] <= history.DEFAULT_BYTE_LIMIT
+    return result
+
+
+def qualify_native_control_history(rows):
+    """Actual helper/runtime capture and its independent canonical SQL readback."""
+    scope = next((row["battle_environment_id"], row["battle_season_id"])
+                 for row in rows if row["record_kind"] == 10)
+    result = history.build_history(rows, scope)
+    canonical = [row for row in result.battles if row["canonical"]]
+    assert len(canonical) == 1 and canonical[0]["available_metric_mask"] == 31
+    assert canonical[0]["control_applications"] == canonical[0]["control_received"] == 8
+    assert result.summary["verified_contribution_links"] == result.summary["contribution_count"] > 0
+    assert result.summary["partial_contribution_links"] == 0
+    assert all(row["packet_history_complete"] and row["outcome"] is None and
+        not row["complete_metric_coverage_implied"] for row in result.battles)
+    assert all(row["battle_actor_id"] != 8963 for row in result.actors)
+    segments = result.contributions
+    assert sum(row["bc_control_applications"] for row in segments) == 8
+    assert sum(row["bc_control_received"] for row in segments) == 8
+    assert any(row["bc_actor_kind"] == 2 and row["bc_actor_owner_subject_id"] == 8961 and
+        row["bc_control_applications"] == 1 for row in segments)
+    assert any(row["bc_actor_kind"] == 3 and row["bc_control_applications"] ==
+        row["bc_control_received"] == 1 for row in segments)
+    assert any(row["bc_actor_id"] == 8962 and row["bc_modifier_flags"] & 128 and
+        row["bc_control_applications"] == 1 for row in segments)
     return result
 
 
@@ -111,6 +137,11 @@ class BattleHistoryTests(unittest.TestCase):
             text=True, capture_output=True, check=True, timeout=30)
         assert "telemetry gameplay adapter paths passed" in completed.stdout
         cls.rows = [json.loads(line) for line in exported.read_text(encoding="utf-8").splitlines()]
+        controls = cls.path / "controls.jsonl"
+        subprocess.run([str(executable), "--native-control-capture"], cwd=ROOT,
+            env=dict(os.environ, TELEMETRY_BATTLE_CAPTURE_EXPORT=str(controls)),
+            text=True, capture_output=True, check=True, timeout=30)
+        cls.control_rows = [json.loads(line) for line in controls.read_text(encoding="utf-8").splitlines()]
         cls.scope = next((row["battle_environment_id"], row["battle_season_id"])
                          for row in cls.rows if row["record_kind"] == 10)
         cls.baseline = qualify_native_history(cls.rows)
@@ -200,10 +231,37 @@ class BattleHistoryTests(unittest.TestCase):
         self.assertEqual(output.header["observed_present_usec"], self.baseline.summary["verified_exposure_present_usec"])
         self.assertEqual(sum(row["damage_dealt"] or 0 for row in values if row.get("canonical")), 112)
         metrics = [row for row in values if "bc_segment_seq" in row]
-        self.assertTrue(all(row["bc_control_applications"] is None and row["bc_control_received"] is None for row in metrics))
+        self.assertTrue(all(row["bc_control_applications"] == row["bc_control_received"] == 0 for row in metrics))
         self.assertTrue(all(row.get("controller_token") is None for row in values))
         self.assertEqual(self.source_window, saved)
         self.assertLessEqual(output.reserved_bytes, source.DEFAULT_BYTE_LIMIT)
+
+    def test_accepted_native_control_survives_history_and_publication(self):
+        result = qualify_native_control_history(self.control_rows)
+        window = self._publication_window(self.control_rows)
+        scope = tuple(window.header[name] for name in source.SCOPE)
+        output = publication.build_publication(window, None, incident.public_coverage(None, [], registry_schema_version=4))
+        self.assertEqual(output.header["verified_contribution_links"], result.summary["contribution_count"])
+        metrics = [publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 3]
+        self.assertEqual(sum(row["bc_control_applications"] for row in metrics), 8)
+        self.assertEqual(sum(row["bc_control_received"] for row in metrics), 8)
+        self.assertTrue(all(row["account_token"] is None and row["controller_token"] is None and
+            not row["complete_metric_coverage_implied"] for row in metrics))
+
+    def test_older_unavailable_control_remains_null_after_publication(self):
+        rows = deepcopy(self.rows)
+        for row in rows:
+            if row["record_kind"] == 11:
+                self.assertEqual((row["bc_control_applications"], row["bc_control_received"]), (0, 0))
+                row["bc_available_metrics"] &= ~4
+        result = history.build_history(rows, self.scope)
+        self.assertTrue(all(row["control_applications"] is None and row["control_received"] is None
+            for row in result.battles))
+        window = self._publication_window(rows)
+        output = publication.build_publication(window, None, incident.public_coverage(None, [], registry_schema_version=4))
+        scope = tuple(window.header[name] for name in source.SCOPE)
+        metrics = [publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 3]
+        self.assertTrue(all(row["bc_control_applications"] is None and row["bc_control_received"] is None for row in metrics))
 
     def test_publication_dated_transfer_conserves_presence_without_dividing_amounts(self):
         window, registry, selected, first, middle, last, _epoch = self._dated_publication_fixture()
@@ -490,7 +548,10 @@ class BattleHistoryTests(unittest.TestCase):
             history.build_history(rows, (11, 22))
 
     def test_no_association_does_not_manufacture_rosters_or_zeros(self):
-        result = history.build_history([row for row in self.rows if row["record_kind"] == 11], self.scope)
+        rows = deepcopy([row for row in self.rows if row["record_kind"] == 11])
+        for row in rows:
+            row["bc_available_metrics"] &= ~4  # Explicitly unavailable control producer.
+        result = history.build_history(rows, self.scope)
         self.assertEqual(result.summary["verified_contribution_links"], 0)
         self.assertEqual(result.summary["partial_contribution_links"], 28)
         self.assertFalse(result.actors)
