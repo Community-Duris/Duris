@@ -451,6 +451,7 @@ OBJS =  $(SHIP_OBJS) \
 				 item/item_transfer_command.o \
 				 item/craft_pouch_mutation.o \
 				 item/item_ownership_runtime.o \
+				 item/ordinary_drop_recovery.o \
 				 item/item_get_policy.o \
 				 item/item_command_policy.o \
 				 item/item_command_parser.o \
@@ -527,6 +528,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_load_topology.o \
 				 player/player_load_pipeline.o \
 				 player/player_load_items.o \
+				 player/inert_item_stage.o \
 				 player/player_load_pets.o \
 				 player/pet_restore_state.o \
 				 player/pet_restore_runtime.o \
@@ -550,6 +552,7 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_world_runtime.o \
 				 redis/redis_world_store.o \
 				 economy/currency_transaction.o \
+				 economy/coin_physical_publication.o \
 				 player/player_revision_state.o \
 				 player/player_save_worker.o \
 				 player/player_save_journal.o \

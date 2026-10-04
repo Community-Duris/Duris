@@ -36,6 +36,11 @@ bool sql_room_item_payload_prepare(MYSQL *connection, const item_transfer_payloa
 bool sql_room_item_payload_record(MYSQL *connection, const critical_command &command,
 				  const item_transfer_payload &payload,
 				  const sql_room_item_payload_batch &batch);
+// Successful historical receipt proof: original-operation literal payload and
+// native ledger/reference bindings, independent of later custody or season.
+// Caller owns its transaction and verifies the accounting root separately.
+bool sql_room_item_payload_verify_retained(MYSQL *connection, const critical_command &command,
+					   const item_transfer_result &result);
 // Caller owns a consistent transaction. Reads never commit, adopt, or repair.
 bool sql_room_item_payload_roots(MYSQL *connection, std::vector<uint64_t> *roots);
 bool sql_room_item_payload_available(MYSQL *connection, bool *available);

@@ -20,6 +20,17 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 critical_apply_result
 critical_command_repository_verify_creation_in_transaction(MYSQL *connection,
 							   const critical_command &command);
+// Read-only retained definitive schema-2 ordinary-drop receipt. Caller must own
+// a reconnect-disabled transaction and acquire current lineage/season/room/
+// custody/payload locks in native order BEFORE invoking this historical proof.
+// Uses a nonlocking committed inbox snapshot; it never takes a late inbox lock,
+// STARTs/COMMITs/ROLLBACKs, applies a missing command, or grants publication ACK.
+// Missing/uncommitted receipts retain retry; changed identity/corruption refuse.
+// A proven rejected root returns its exact original terminal_failure result;
+// rejected accounting/root/outbox/native movement/payload absence is verified.
+// This does not establish current source custody or permit publication/ACK.
+critical_apply_result critical_command_repository_verify_ordinary_drop_in_transaction(
+	MYSQL *connection, const critical_command &command) noexcept;
 critical_apply_result critical_command_repository_apply_from_pool(const critical_command &command,
 								  void *context);
 

@@ -134,11 +134,17 @@ assert checkpoint.index("player_save_journal_pid_quarantined") < checkpoint.inde
 )
 for forbidden in ("sql_", "redis_", "fopen", "open(", "write("):
     assert forbidden not in checkpoint
-pulse = section(PIPELINE, "void player_save_pipeline_pulse", "player_save_pipeline_health")
+pulse = function(PIPELINE, "void player_save_pipeline_pulse")
 assert "quest_reward_recovery_save_acknowledged(" in pulse
-assert "player_save_worker_pulse" in pulse
-assert "acknowledge_terminal_fence_completion_locked(completions[index])" in pulse
-assert "player_save_worker_submit_retained" in pulse
+pulse_compact = "".join(pulse.split())
+assert "player_save_worker_pulse_owned(owned_completions,PLAYER_SAVE_PIPELINE_PULSE_BUDGET)" in pulse_compact
+assert "acknowledge_terminal_fence_completion_locked(owned_completions[index].completion)" in pulse_compact
+assert pulse.index("player_save_worker_pulse_owned") < pulse.index(
+    "std::lock_guard<std::mutex> lock(pipeline_mutex)") < pulse.index(
+    "acknowledge_terminal_fence_completion_locked") < pulse.index(
+    "craft_progression_hooks.saved(") < pulse.index(
+    "quest_reward_recovery_save_acknowledged(")
+assert "player_save_worker_submit_owned_retained(&selected->body,selected->residence)" in pulse_compact
 for forbidden in ("player_save_journal_", "sql_", "redis_", "fopen", "open(", "write("):
     assert forbidden not in pulse
 assert "if (append && !acknowledge)" in WORKER
@@ -226,7 +232,7 @@ terminal = section(
     "void player_save_pipeline_pulse",
 )
 assert "std::array<terminal_fence, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS>" in PIPELINE
-assert "fence->revision == durable_ready.back().revision" in dispatcher
+assert "fence->revision == durable_ready.back().body.revision" in dispatcher
 assert "acknowledge_terminal_fence_completion_locked" in PIPELINE
 assert "completion.durable_revision >= fence->revision" in PIPELINE
 assert "std::chrono::steady_clock::now()" in terminal
@@ -265,8 +271,8 @@ mark_body = section(
 assert "if (!accepting)" in mark_body
 assert "fence->revision = revision" in mark_body
 assert "fence->journaled = false" in mark_body
-drain = section(PIPELINE, "bool player_save_pipeline_drain", "player_save_pipeline_health")
-assert "pending_append.empty() && !append_inflight" in drain
+drain = function(PIPELINE, "bool player_save_pipeline_drain(")
+assert "pending_append.empty() && !append_retry && !append_inflight" in drain
 assert "std::chrono::steady_clock::now()" in drain
 assert "++health.drain_failures" in drain
 print("[PASS] terminal fences, exact durability outcomes, retry tracking, and bounded drain are wired")
@@ -309,6 +315,7 @@ terminal_preamble = r'''
 #include <mutex>
 #include <thread>
 #include <array>
+using player_save_execution_guard::resident_claim;
 bool player_save_journal_pid_quarantined(int) { return false; }
 struct char_data { int pid; unsigned int runtime_flags = 0; };
 struct obj_data { int uid; int value[8] = {}; };
@@ -372,6 +379,11 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
     assert(player_revision_queue(ch->pid, &queued, &components));
     if (journal_ready && fence.revision == captured_revision) fence.journaled = true;
     return player_save_pipeline_result::queued;
+}
+player_save_pipeline_result checkpoint_dirty_with_quest_xp(
+    P_char ch, int intent, int room, const player_quest_xp_receipt_snapshot *, size_t,
+    const player_spell_effect_receipt_snapshot *, resident_claim *) {
+    return player_save_pipeline_checkpoint_dirty(ch, intent, room);
 }
 void player_save_pipeline_pulse() {
     if (!database_ready) return;
@@ -505,6 +517,7 @@ receipt_harness = r'''
 #include <mutex>
 #include <new>
 #include <array>
+using player_save_execution_guard::resident_claim;
 struct char_data { int pid; unsigned int runtime_flags = 0; uint64_t runtime_id = 71; };
 #undef GET_PID
 #undef IS_NPC
@@ -584,7 +597,7 @@ player_snapshot_capture_result player_snapshot_capture_literal_inventory(
     snapshot->encoded_size_bound = 4096;
     return player_snapshot_capture_result::ok;
 }
-player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot) {
+player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot, resident_claim) {
     captured = std::move(snapshot);
     return refuse_enqueue ? player_save_pipeline_result::overloaded : player_save_pipeline_result::queued;
 }

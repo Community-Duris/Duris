@@ -48,6 +48,11 @@
 #include <string>
 #include <unordered_set>
 #include <unordered_map>
+#include <climits>
+#include <cstdlib>
+#include <type_traits>
+#include <algorithm>
+#include <new>
 #include "world/object_template.h"
 #include "classes/npc_alchemist.h"
 #include "account/newbie_kit_plan.h"
@@ -193,6 +198,11 @@ struct mm_ds *dead_mob_pool = NULL;
 struct mm_ds *dead_obj_pool = NULL;
 
 P_index generate_indices(FILE *, int *);
+namespace
+{
+void invalidate_recovery_object_templates() noexcept;
+unsigned int prepare_recovery_object_templates() noexcept;
+}
 
 void assign_continents();
 
@@ -425,6 +435,7 @@ void loadGodProcs()
 
 void boot_material_rarity_objects(int mini_mode)
 {
+	invalidate_recovery_object_templates();
 	if (!mini_mode)
 	{
 		if (!(obj_f = fopen(OBJ_FILE, "r")))
@@ -448,6 +459,7 @@ void boot_material_rarity_objects(int mini_mode)
 
 void boot_db(int mini_mode)
 {
+	invalidate_recovery_object_templates();
 	logit(LOG_STATUS, "Boot db -- BEGIN.");
 	fprintf(stderr, "\nBoot db -- BEGIN.\r\n");
 	boot_time = time(0);
@@ -664,6 +676,17 @@ void boot_db(int mini_mode)
 	fprintf(stderr, "-- Spells.\n");
 	logit(LOG_STATUS, "   Spells.");
 	assign_spell_pointers();
+
+	// SQL ordinary-drop recovery must never parse a prototype during publication.
+	// Failure only closes that recovery prerequisite; existing boot/loading stays
+	// available and no partially prepared catalog becomes visible.
+	if (persistence_mode_requires_mysql())
+	{
+		const auto error = prepare_recovery_object_templates();
+		if (error)
+			logit(LOG_STATUS, "SQL recovery object-template catalog unavailable (%u)",
+			      error);
+	}
 
 	npc_alchemist_cache_templates();
 
@@ -1383,6 +1406,7 @@ void boot_world(int mini_mode)
 
 void free_world()
 {
+	invalidate_recovery_object_templates();
 	std::unordered_set<char *> freed_room_strings;
 	for (int room = 0; room <= top_of_world; room++)
 	{
@@ -2843,6 +2867,81 @@ namespace
 {
 std::unordered_map<int, object_template> starter_object_templates;
 
+struct recovery_template_entry
+{
+	int vnum;
+	long position;
+	obj_proc_type special;
+	object_template prototype;
+};
+std::vector<recovery_template_entry> recovery_object_templates;
+P_index recovery_template_index = nullptr;
+FILE *recovery_template_file = nullptr;
+int recovery_template_top = -1;
+bool recovery_template_sealed = false;
+
+void invalidate_recovery_object_templates() noexcept
+{
+	recovery_template_sealed = false;
+	recovery_template_index = nullptr;
+	recovery_template_file = nullptr;
+	recovery_template_top = -1;
+	recovery_object_templates.clear();
+}
+
+struct template_read_failure
+{
+	unsigned int error;
+};
+
+// Recoverable text uses the same valid tilde/newline/color decisions as
+// fread_string, but neither its fatal allocator nor its diagnostic callbacks.
+// Bounded malformed/overlong input refuses instead of overflowing a buffer.
+std::string read_recovery_template_string(FILE *file)
+{
+	char buffer[MAX_STRING_LENGTH] = {}, line[MAX_STRING_LENGTH] = {};
+	size_t length = 0;
+	for (;;)
+	{
+		if (!fgets(line, MAX_STRING_LENGTH - 5, file))
+			throw template_read_failure{ static_cast<unsigned int>(
+				ferror(file) ? EIO : EILSEQ) };
+		const size_t input_length = strlen(line);
+		if (!input_length)
+			throw template_read_failure{ EILSEQ };
+		char *last = line + input_length - 1;
+		while (last > line && isspace(static_cast<unsigned char>(*last)))
+			--last;
+		const bool done = *last == '~';
+		if (done)
+			*last = '\0';
+		else
+		{
+			last = line + input_length - 1;
+			*last++ = '\r';
+			*last++ = '\n';
+			*last = '\0';
+		}
+		const size_t count = strlen(line);
+		if (count >= sizeof(buffer) - length)
+			throw template_read_failure{ E2BIG };
+		memcpy(buffer + length, line, count + 1);
+		length += count;
+		if (done)
+			break;
+	}
+	if (strstr(buffer, "&+") &&
+	    !(length >= 2 && buffer[length - 2] == '&' &&
+	      toupper(static_cast<unsigned char>(buffer[length - 1])) == 'N'))
+	{
+		if (sizeof(buffer) - length <= 2)
+			throw template_read_failure{ E2BIG };
+		memcpy(buffer + length, "&n", 3);
+		length += 2;
+	}
+	return { buffer, length };
+}
+
 std::string read_template_string(FILE *file, const char *shared = nullptr)
 {
 	if (shared)
@@ -2857,7 +2956,132 @@ std::string read_template_string(FILE *file, const char *shared = nullptr)
 	return result;
 }
 
-object_template parse_object_template(int nr)
+struct object_template_reader
+{
+	FILE *file;
+	bool recoverable;
+
+	std::string string(const char *shared = nullptr)
+	{
+		// Recovery provenance is the boot file, not a mutable shared text pointer.
+		return recoverable ? read_recovery_template_string(file) :
+				     read_template_string(file, shared);
+	}
+
+	bool word(std::string &value)
+	{
+		int character;
+		do
+			character = fgetc(file);
+		while (character != EOF && isspace(static_cast<unsigned char>(character)));
+		if (character == EOF)
+		{
+			if (ferror(file))
+				throw template_read_failure{ EIO };
+			return false;
+		}
+		value.clear();
+		do
+		{
+			if (character == 0 || value.size() >= MAX_STRING_LENGTH - 1)
+				throw template_read_failure{ E2BIG };
+			value.push_back(static_cast<char>(character));
+			character = fgetc(file);
+		} while (character != EOF && !isspace(static_cast<unsigned char>(character)));
+		// Every parser numeric/token format consumes trailing whitespace.
+		while (character != EOF && isspace(static_cast<unsigned char>(character)))
+			character = fgetc(file);
+		if (character != EOF && ungetc(character, file) == EOF)
+			throw template_read_failure{ EIO };
+		if (ferror(file))
+			throw template_read_failure{ EIO };
+		return true;
+	}
+
+	template <typename T> int optional(T *output)
+	{
+		if (!recoverable)
+		{
+			if constexpr (std::is_same_v<T, int>)
+				return fscanf(file, " %d ", output);
+			else
+			{
+				static_assert(std::is_same_v<T, unsigned long>);
+				return fscanf(file, " %lu \n", output);
+			}
+		}
+		fpos_t before;
+		if (fgetpos(file, &before))
+			throw template_read_failure{ EIO };
+		std::string text;
+		if (!word(text))
+			return EOF;
+		char *end = nullptr;
+		errno = 0;
+		if constexpr (std::is_same_v<T, int>)
+		{
+			const long number = strtol(text.c_str(), &end, 10);
+			if (errno != ERANGE && end != text.c_str() && !*end && number >= INT_MIN &&
+			    number <= INT_MAX)
+			{
+				*output = static_cast<int>(number);
+				return 1;
+			}
+		}
+		else
+		{
+			static_assert(std::is_same_v<T, unsigned long>);
+			const unsigned long number = strtoul(text.c_str(), &end, 10);
+			if (errno != ERANGE && end != text.c_str() && !*end)
+			{
+				*output = number;
+				return 1;
+			}
+		}
+		if (fsetpos(file, &before))
+			throw template_read_failure{ EIO };
+		return 0;
+	}
+
+	int token(char *output)
+	{
+		if (!recoverable)
+			return fscanf(file, " %s \n", output);
+		std::string text;
+		if (!word(text))
+			return EOF;
+		memcpy(output, text.c_str(), text.size() + 1);
+		return 1;
+	}
+
+	template <typename T> void required(T *output)
+	{
+		if (!recoverable)
+		{
+			if constexpr (std::is_same_v<T, int>)
+				REQUIRED_FSCANF(file, " %d ", output);
+			else if constexpr (std::is_same_v<T, unsigned long>)
+				REQUIRED_FSCANF(file, " %lu ", output);
+			else
+			{
+				static_assert(std::is_same_v<T, char>);
+				REQUIRED_FSCANF(file, " %s \n", output);
+			}
+		}
+		else
+		{
+			int result;
+			if constexpr (std::is_same_v<T, char>)
+				result = token(output);
+			else
+				result = optional(output);
+			if (result != 1)
+				throw template_read_failure{ EILSEQ };
+		}
+	}
+};
+
+object_template parse_object_template_with_reader(int nr, object_template_reader &input)
 {
 	object_template result;
 	auto *obj = &result;
@@ -2865,91 +3089,101 @@ object_template parse_object_template(int nr)
 	unsigned long utmp;
 	char chk[MAX_STRING_LENGTH];
 	obj->R_num = nr;
-	fseek(obj_f, obj_index[nr].pos, 0);
-	obj->name = read_template_string(obj_f, obj_index[nr].keys);
+	if (input.recoverable)
+	{
+		if (fseek(input.file, obj_index[nr].pos, SEEK_SET))
+			throw template_read_failure{ EIO };
+	}
+	else
+		fseek(obj_f, obj_index[nr].pos, 0);
+	obj->name = input.string(obj_index[nr].keys);
 	for (char &letter : obj->name)
 		letter = LOWER(letter);
-	obj->short_description = read_template_string(obj_f, obj_index[nr].desc2);
-	obj->description = read_template_string(obj_f, obj_index[nr].desc1);
-	obj->action_description = read_template_string(obj_f, obj_index[nr].desc3);
+	obj->short_description = input.string(obj_index[nr].desc2);
+	obj->description = input.string(obj_index[nr].desc1);
+	obj->action_description = input.string(obj_index[nr].desc3);
 	/* *** numeric data *** */
 
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	obj->type = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	obj->material = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	//  obj->size = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	//  obj->space = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	obj->craftsmanship = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	//  obj->damres_bonus = tmp;
-	REQUIRED_FSCANF(obj_f, " %lu ", &utmp);
+	input.required(&utmp);
 	obj->extra_flags = utmp;
-	REQUIRED_FSCANF(obj_f, " %lu ", &utmp);
+	input.required(&utmp);
 	obj->wear_flags = utmp;
-	REQUIRED_FSCANF(obj_f, " %lu ", &utmp);
+	input.required(&utmp);
 	obj->extra2_flags = utmp;
-	REQUIRED_FSCANF(obj_f, " %lu ", &utmp);
+	input.required(&utmp);
 	obj->anti_flags = utmp;
-	REQUIRED_FSCANF(obj_f, " %lu ", &utmp);
+	input.required(&utmp);
 	// Hack until we make as script to edit files directly.
 	if (IS_SET(obj->anti_flags, CLASS_NECROMANCER))
 		SET_BIT(obj->anti_flags, CLASS_THEURGIST);
 	obj->anti2_flags = utmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	obj->value[0] = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	obj->value[1] = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	obj->value[2] = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	obj->value[3] = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	obj->value[4] = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	obj->value[5] = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	obj->value[6] = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	obj->value[7] = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	obj->weight = tmp;
-	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+	input.required(&tmp);
 	obj->cost = tmp;
-	REQUIRED_FSCANF(obj_f, " %d \n", &tmp);
+	input.required(&tmp);
 	obj->condition = tmp;
 	//  fscanf(obj_f, " %d \n", &tmp);
 	//  obj->max_condition = tmp;  wipe2011
 	//  if(obj->max_condition < 100)
 	//    obj->max_condition = 100;
 
-	if (fscanf(obj_f, " %lu \n", &utmp) == 1)
+	if (input.optional(&utmp) == 1)
 	{
 		obj->bitvector = utmp;
-		if (fscanf(obj_f, " %lu \n", &utmp) == 1)
+		if (input.optional(&utmp) == 1)
 		{
 			obj->bitvector2 = utmp;
-			if (fscanf(obj_f, " %lu \n", &utmp) == 1)
+			if (input.optional(&utmp) == 1)
 			{
 				obj->bitvector3 = utmp;
-				if (fscanf(obj_f, " %lu \n", &utmp) == 1)
+				if (input.optional(&utmp) == 1)
 					obj->bitvector4 = utmp;
 			}
 		}
 	}
-	if (fscanf(obj_f, " %s \n", chk) != 1)
+	if (input.token(chk) != 1)
 		*chk = '\0';
 	if (!strcmp(chk, "B5"))
 	{
-		if (fscanf(obj_f, " %lu \n", &utmp) == 1)
+		if (input.optional(&utmp) == 1)
 			obj->bitvector5 = utmp;
 		else
+		{
+			if (input.recoverable)
+				throw template_read_failure{ EILSEQ };
 			logit(LOG_STATUS, "Object %d has an invalid B5 affect mask.",
 			      obj_index[nr].virtual_number);
-		if (fscanf(obj_f, " %s \n", chk) != 1)
+		}
+		if (input.token(chk) != 1)
 			*chk = '\0';
 	}
 
@@ -2968,32 +3202,32 @@ object_template parse_object_template(int nr)
 	while (*chk == 'E')
 	{
 		object_template_description description;
-		description.keyword = read_template_string(obj_f);
-		description.description = read_template_string(obj_f);
+		description.keyword = input.string();
+		description.description = input.string();
 		obj->descriptions.push_back(std::move(description));
-		if (fscanf(obj_f, " %s \n", chk) != 1)
+		if (input.token(chk) != 1)
 			*chk = '\0';
 	}
 	for (i = 0; (i < MAX_OBJ_AFFECT) && (*chk == 'A'); i++)
 	{
-		REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+		input.required(&tmp);
 		obj->affected[i].location = tmp;
-		REQUIRED_FSCANF(obj_f, " %d \n", &tmp);
+		input.required(&tmp);
 		obj->affected[i].modifier = tmp;
-		REQUIRED_FSCANF(obj_f, " %s \n", chk);
+		input.required(chk);
 	}
 
 	/* Trapped item data */
 	obj->trap_eff = obj->trap_dam = obj->trap_charge = 0;
 	if (*chk == 'T')
 	{
-		REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+		input.required(&tmp);
 		obj->trap_eff = tmp;
-		REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+		input.required(&tmp);
 		obj->trap_dam = tmp;
-		REQUIRED_FSCANF(obj_f, " %d ", &tmp);
+		input.required(&tmp);
 		obj->trap_charge = tmp;
-		REQUIRED_FSCANF(obj_f, " %d \n", &tmp);
+		input.required(&tmp);
 		obj->trap_level = tmp;
 	}
 	/* ensure builders dont mess things up */
@@ -3059,7 +3293,121 @@ object_template parse_object_template(int nr)
 
 	return result;
 }
+
+object_template parse_object_template(int nr)
+{
+	object_template_reader input{ obj_f, false };
+	return parse_object_template_with_reader(nr, input);
+}
+
+unsigned int prepare_recovery_object_templates() noexcept
+{
+	// This is reachable only from serialized boot, never a runtime miss path.
+	invalidate_recovery_object_templates();
+	const auto index = obj_index;
+	FILE *const file = obj_f;
+	const int top = top_of_objt;
+	if (!index || !file || top < 0 || ferror(file))
+		return EINVAL;
+	fpos_t initial;
+	if (fgetpos(file, &initial))
+		return EIO;
+	auto restore = [&]() noexcept
+	{
+		const bool success = fsetpos(file, &initial) == 0;
+		clearerr(file);
+		return success;
+	};
+	unsigned int error = 0;
+	try
+	{
+		if (fseek(file, 0, SEEK_END))
+			throw template_read_failure{ EIO };
+		const long file_size = ftell(file);
+		if (file_size <= 0)
+			throw template_read_failure{ EIO };
+		std::vector<recovery_template_entry> candidate;
+		const size_t count = static_cast<size_t>(top) + 1;
+		if (count > candidate.max_size())
+			throw template_read_failure{ E2BIG };
+		candidate.reserve(count);
+		object_template_reader input{ file, true };
+		for (size_t number = 0; number < count; ++number)
+		{
+			const auto &entry = index[number];
+			if (entry.pos < 0 || entry.pos >= file_size)
+				throw template_read_failure{ EILSEQ };
+			candidate.push_back({ entry.virtual_number, entry.pos, entry.func.obj,
+					      parse_object_template_with_reader(
+						      static_cast<int>(number), input) });
+		}
+		// Only the private lookup ordering changes. Native index order/R_num and
+		// special procedure pointers are never rewritten or assigned here.
+		std::sort(candidate.begin(), candidate.end(),
+			  [](const auto &a, const auto &b) { return a.vnum < b.vnum; });
+		for (size_t position = 0; position < candidate.size(); ++position)
+		{
+			const auto &entry = candidate[position];
+			const int number = entry.prototype.R_num;
+			if (number < 0 || number > top ||
+			    (position && candidate[position - 1].vnum == entry.vnum) ||
+			    index[number].virtual_number != entry.vnum ||
+			    index[number].pos != entry.position ||
+			    index[number].func.obj != entry.special)
+				throw template_read_failure{ EILSEQ };
+		}
+		if (!restore())
+			return EIO;
+		if (obj_index != index || obj_f != file || top_of_objt != top)
+			return ESTALE;
+		recovery_object_templates.swap(candidate);
+		recovery_template_index = index;
+		recovery_template_file = file;
+		recovery_template_top = top;
+		recovery_template_sealed = true;
+		return 0;
+	}
+	catch (const template_read_failure &failure)
+	{
+		error = failure.error;
+	}
+	catch (const std::bad_alloc &)
+	{
+		error = ENOMEM;
+	}
+	catch (...)
+	{
+		error = EIO;
+	}
+	return restore() ? error : EIO;
+}
 } // namespace
+
+bool recovery_object_templates_ready() noexcept
+{
+	return recovery_template_sealed && persistence_mode_requires_mysql() && obj_index &&
+	       obj_index == recovery_template_index && obj_f == recovery_template_file &&
+	       top_of_objt == recovery_template_top && top_of_objt >= 0 &&
+	       recovery_object_templates.size() == static_cast<size_t>(top_of_objt) + 1;
+}
+
+const object_template *find_recovery_object_template(int vnum) noexcept
+{
+	if (!recovery_object_templates_ready())
+		return nullptr;
+	const auto found = std::lower_bound(recovery_object_templates.begin(),
+					    recovery_object_templates.end(), vnum,
+					    [](const auto &entry, int value)
+					    { return entry.vnum < value; });
+	if (found == recovery_object_templates.end() || found->vnum != vnum)
+		return nullptr;
+	const int number = found->prototype.R_num;
+	if (number < 0 || number > top_of_objt || obj_index[number].virtual_number != vnum ||
+	    obj_index[number].pos != found->position ||
+	    obj_index[number].func.obj != found->special)
+		return nullptr;
+	return &found->prototype;
+}
 
 bool cache_object_template(int vnum)
 {

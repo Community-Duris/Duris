@@ -22,6 +22,11 @@ MYSQL *sql_pool_acquire(void)
 	return nullptr;
 }
 void sql_pool_release(MYSQL *) {}
+bool sql_pool_retire_owned_connection(MYSQL *)
+{
+	// This direct-repository fixture has no owned pool slots to retire.
+	return false;
+}
 MYSQL *sql_pool_replace_connection(MYSQL *)
 {
 	return nullptr;

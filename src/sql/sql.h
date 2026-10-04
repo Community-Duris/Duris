@@ -64,6 +64,13 @@ bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
 
 int initialize_mysql();
 void shutdown_mysql(void);
+// Enabled synchronous-save cleanup only. Close the exact original main handle
+// on its game process/thread, latching the existing exclusion loss before close.
+// Never reconnect, release the control lifecycle lock, or shut down the pool.
+bool sql_retire_main_save_connection(MYSQL *original) noexcept;
+// Caller retains its exact save ownership through this terminal cleanup.
+// False means cleanup was not confirmed; no save ACK/extraction is authorized.
+bool sql_finish_owned_player_save(MYSQL *original, unsigned long session) noexcept;
 bool sql_populate_lookup_tables();
 int sql_save_player_core(P_char ch);
 int sql_level_cap(int racewar_side);

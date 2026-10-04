@@ -27,6 +27,12 @@
 #include "sql/sql_telemetry_connection.h"
 #include "sql/sql_exclusion_guard.h"
 #include "sql/sql_economic_runtime.h"
+#include "economy/economic_gameplay_authority.h"
+#include "player/player_save_replay_ownership.h"
+#include "player/player_save_pipeline.h"
+#ifndef __NO_MYSQL__
+#include "player/player_sql_transaction_cleanup.h"
+#endif
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "sql/sql_pool.h"
@@ -34,6 +40,7 @@
 #include "core/runtime_compatibility_contract.h"
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <openssl/sha.h>
 #include <math.h>
 #include <stdarg.h>
@@ -190,6 +197,14 @@ int initialize_mysql()
 	return -1;
 }
 void shutdown_mysql(void) {}
+bool sql_retire_main_save_connection(MYSQL *) noexcept
+{
+	return false;
+}
+bool sql_finish_owned_player_save(MYSQL *, unsigned long) noexcept
+{
+	return false;
+}
 void do_sql(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
 int sql_save_player_core(P_char /*ch*/)
 {
@@ -1595,6 +1610,19 @@ void shutdown_mysql(void)
 	}
 }
 
+bool sql_retire_main_save_connection(MYSQL *original) noexcept
+{
+	if (!original || DB != original || getpid() != sql_main_process_id ||
+	    !nevent_is_game_thread())
+		return false;
+	// Keep the dedicated lifecycle owner intact. Its guard and every future
+	// factory/query see exclusion loss; never free a handle still available as DB.
+	duris_sql_exclusion_guard_state_ref().lost = true;
+	DB = nullptr;
+	mysql_close(original);
+	return true;
+}
+
 /* Handle a query, log possible errors and return results (if available) */
 MYSQL_RES *db_query_at(struct persistence_query_site site, const char *format, ...)
 {
@@ -2412,6 +2440,18 @@ int sql_save_player_core(P_char ch)
 	char assoc_name[MAX_STRING_LENGTH];
 	char assoc_name_sql[MAX_STRING_LENGTH * 2 + 1];
 	struct char_player_data *p;
+	const auto epoch = player_save_execution_guard::current_ownership_epoch();
+	if (epoch)
+	{
+		if (ch && IS_MORPH(ch))
+			ch = MORPH_ORIG(ch);
+		// This entry owns only an ordinary positive-PID main-session write.
+		// Creation and a caller-owned transaction require their actual owner.
+		if (!ch || !IS_PC(ch) || GET_PID(ch) <= 0 || !DB || !nevent_is_game_thread() ||
+		    sql_in_transaction() || !player_save_pipeline_save_admitted(GET_PID(ch)) ||
+		    player_sql_idle_error(DB))
+			return 0;
+	}
 	if (ch && IS_PC(ch) && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
 	{
 		logit(LOG_DEBUG,
@@ -2423,49 +2463,112 @@ int sql_save_player_core(P_char ch)
 	if (IS_MORPH(ch))
 		ch = MORPH_ORIG(ch);
 	p = &ch->player;
-
-	if (GET_ASSOC(ch) == NULL)
-	{
-		assoc_name[0] = '\0';
-	}
-	else
-	{
-		snprintf(assoc_name, MAX_STRING_LENGTH, "%s", GET_ASSOC(ch)->get_name().c_str());
-	}
-	mysql_str(assoc_name, assoc_name_sql);
-
-	if (IS_SPECIALIZED(ch))
-	{
-	}
-
-	// deactivate any other players with same name (handles renamed characters)
-	snprintf(query, MAX_STRING_LENGTH,
-		 "UPDATE player_data SET active = 0 WHERE name = '%s' and pid != %d", p->name,
-		 GET_PID(ch));
-	db_query(query);
-
-	// Mark this player active and keep its denormalized account identity aligned
-	// with the canonical account projection. Existing rows created before the
-	// transactional status-save linkage are repaired on their next login.
-	if (ch->desc && ch->desc->account && ch->desc->account->acct_name &&
-	    ch->desc->account->acct_name[0])
-	{
-		char account_name_sql[MAX_STRING_LENGTH * 2 + 1];
-		mysql_str(ch->desc->account->acct_name, account_name_sql);
-		if (!qry("UPDATE player_data SET active=1,account_name='%s' WHERE pid=%d",
-			 account_name_sql, GET_PID(ch)))
-			return 0;
-	}
-	else if (!qry("UPDATE player_data SET active=1 WHERE pid=%d", GET_PID(ch)))
-	{
+	if (!epoch && economic_gameplay_authority::active() &&
+	    !player_save_pipeline_save_admitted(GET_PID(ch)))
 		return 0;
+	player_save_execution_guard::resident_claim residence;
+	std::optional<player_save_execution_guard::execution_scope> scope;
+	std::optional<player_save_execution_guard::permit> execution;
+	// Reuse the exact-main-session cleanup/disposal contract. Its destructor
+	// runs before the permit/scope/claim, including exceptions in projections.
+	struct core_save_cleanup
+	{
+		MYSQL *original;
+		unsigned long session;
+		bool pending = true;
+		explicit core_save_cleanup(MYSQL *connection) noexcept
+			: original(connection)
+			, session(mysql_thread_id(connection))
+		{
+		}
+		~core_save_cleanup() noexcept { (void)finish(); }
+		bool finish() noexcept
+		{
+			if (!pending)
+				return true;
+			pending = false;
+			return sql_finish_owned_player_save(original, session);
+		}
+	};
+	std::optional<core_save_cleanup> cleanup;
+	if (epoch)
+	{
+		residence = player_save_execution_guard::resident_claim(epoch, GET_PID(ch));
+		if (!residence)
+			return 0;
+		scope.emplace(residence);
+		if (scope->result() != player_save_execution_guard::ownership_status::allowed)
+			return 0;
+		execution.emplace(GET_PID(ch));
+		if (!*execution)
+			return 0;
+		cleanup.emplace(DB);
 	}
+	auto save = [&]() -> int
+	{
+		if (GET_ASSOC(ch) == NULL)
+		{
+			assoc_name[0] = '\0';
+		}
+		else
+		{
+			snprintf(assoc_name, MAX_STRING_LENGTH, "%s",
+				 GET_ASSOC(ch)->get_name().c_str());
+		}
+		mysql_str(assoc_name, assoc_name_sql);
 
-	// Update frag leaderboard tables for web statistics
-	sql_update_account_character(ch);
-	sql_update_frag_leaderboard(ch);
+		if (IS_SPECIALIZED(ch))
+		{
+		}
 
-	return 1;
+		// deactivate any other players with same name (handles renamed characters)
+		if (!epoch)
+		{
+			snprintf(
+				query, MAX_STRING_LENGTH,
+				"UPDATE player_data SET active = 0 WHERE name = '%s' and pid != %d",
+				p->name, GET_PID(ch));
+			db_query(query);
+		}
+
+		// Mark this player active and keep its denormalized account identity aligned
+		// with the canonical account projection. Existing rows created before the
+		// transactional status-save linkage are repaired on their next login.
+		if (ch->desc && ch->desc->account && ch->desc->account->acct_name &&
+		    ch->desc->account->acct_name[0])
+		{
+			char account_name_sql[MAX_STRING_LENGTH * 2 + 1];
+			mysql_str(ch->desc->account->acct_name, account_name_sql);
+			if (!qry("UPDATE player_data SET active=1,account_name='%s' WHERE pid=%d",
+				 account_name_sql, GET_PID(ch)))
+				return 0;
+		}
+		else if (!qry("UPDATE player_data SET active=1 WHERE pid=%d", GET_PID(ch)))
+		{
+			return 0;
+		}
+
+		// Update frag leaderboard tables for web statistics
+		sql_update_account_character(ch);
+		sql_update_frag_leaderboard(ch);
+
+		return 1;
+	};
+	if (!epoch)
+		return save();
+	int result = 0;
+	try
+	{
+		result = save();
+	}
+	catch (...)
+	{
+		// An exception is not a successful save. Exact-session cleanup or
+		// retirement must finish while this PID remains resident/excluded.
+	}
+	if (!cleanup->finish())
+		result = 0;
+	return result;
 }
 
 /* Save a variable delta. var_type: 1=FRAGS, 2=EXP */
@@ -4847,6 +4950,9 @@ bool sql_verify_auction_engines(void)
 bool sql_pwipe(int code_verify)
 {
 	pwipe_crossed_boundary = false;
+	// Season reset must not erase player authority retained by recovery owners.
+	if (player_save_execution_guard::current_ownership_epoch())
+		return false;
 	logit(LOG_DEBUG, "sql_pwipe: STARTED!");
 	if (code_verify == 1723699)
 	{

@@ -170,6 +170,7 @@ read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
     "${MYSQL_LIBS[@]}" -lcrypto -lz -o "$TEMP/lifecycle-owner"
 # The composed owner harness below also exercises faulted lease transfers.
 "${CXX:-g++}" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -O1 -g \
+    -ffunction-sections -fdata-sections -Wl,--gc-sections \
     -fsanitize=address,undefined -fno-omit-frame-pointer -fno-pie -no-pie \
     "${MYSQL_CFLAGS[@]}" -Isrc \
     tests/async/economic_sql_owned_cutover_capability.cpp \

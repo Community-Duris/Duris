@@ -25,12 +25,23 @@ struct flatfile_economic_mapping
 	critical_operation_id creating_operation = {}, retiring_operation = {}, last_operation = {};
 	uint64_t revision = 0;
 };
+enum class flatfile_baseline_initialization : uint8_t
+{
+	legacy_unknown = 0,
+	never_initialized = 1,
+	initialized = 2,
+};
 struct flatfile_economic_epoch
 {
 	critical_operation_id epoch = {}, predecessor = {}, creating_operation = {};
 	uint64_t ordinal = 0;
 	uint16_t transition_kind = 0;
 	economic_digest transition_digest = {};
+	// Catalog v1 decodes as unknown. Only native append proves never initialized.
+	flatfile_baseline_initialization baseline_initialization =
+		flatfile_baseline_initialization::legacy_unknown;
+	critical_operation_id baseline_initializing_operation = {};
+	economic_account_key baseline_opening = {};
 };
 struct flatfile_economic_control
 {
@@ -86,14 +97,25 @@ unsigned int economic_flatfile_lock_authority(const std::string &, const flatfil
 // receipt in the same bundle. Helpers never publish or authorize creation,
 // baseline or activation. Bootstrap additionally requires external durable proof
 // of never-activated state; an empty directory alone is NOT that proof.
+class flatfile_accounting_staging_view;
 class flatfile_accounting_authority_storage
 {
 	friend class flatfile_accounting_lifecycle_transaction;
+	friend class flatfile_accounting_baseline_storage;
+	friend class flatfile_accounting_staging_view;
 	friend class flatfile_accounting_auction_item_claim_transaction;
 #ifdef DURIS_FLATFILE_ACCOUNTING_TEST
 	friend class flatfile_accounting_test_access;
 #endif
 	using operations = std::vector<flatfile_authority_operation>;
+	static unsigned int read_control(const std::string &, const flatfile_authority_lock &,
+					 const flatfile_accounting_staging_view *,
+					 flatfile_economic_control *, std::string *);
+	static unsigned int read_epoch(const std::string &, const flatfile_authority_lock &,
+				       const flatfile_accounting_staging_view *,
+				       const critical_operation_id &lineage,
+				       const critical_operation_id &epoch,
+				       flatfile_economic_epoch *, std::string *);
 	static unsigned int bootstrap(const std::string &, const flatfile_authority_lock &,
 				      const critical_operation_id &lineage,
 				      const critical_operation_id &operation, operations *,
@@ -114,6 +136,11 @@ class flatfile_accounting_authority_storage
 					   const critical_operation_id &operation,
 					   flatfile_economic_mapping *, operations *,
 					   std::string *);
+	static unsigned int
+	create_mapping_staged(const std::string &, const flatfile_authority_lock &, uint64_t,
+			      economic_account_kind, uint64_t, const flatfile_economic_locator &,
+			      const critical_operation_id &, flatfile_economic_mapping *,
+			      operations *, std::string *, flatfile_accounting_staging_view *);
 	static unsigned int retire_mapping(const std::string &, const flatfile_authority_lock &,
 					   uint64_t expected_revision, const economic_account_key &,
 					   uint64_t mapping_revision,
@@ -128,9 +155,29 @@ class flatfile_accounting_authority_storage
 					 uint64_t expected_revision,
 					 const flatfile_economic_epoch &, operations *,
 					 std::string *);
+	static unsigned int append_epoch_staged(const std::string &,
+						const flatfile_authority_lock &, uint64_t,
+						const flatfile_economic_epoch &, operations *,
+						std::string *, flatfile_accounting_staging_view *);
+	// Private initialization participant: records native authority proof in the
+	// same complete shared-journal bundle as the book head and sixteen indexes.
+	static unsigned int stage_baseline_initialization(
+		const std::string &, const flatfile_authority_lock &, uint64_t expected_revision,
+		const critical_operation_id &lineage, const critical_operation_id &epoch,
+		const economic_account_key &opening, const critical_operation_id &operation,
+		operations *, std::string *);
+	static unsigned int stage_baseline_initialization_staged(
+		const std::string &, const flatfile_authority_lock &, uint64_t,
+		const critical_operation_id &, const critical_operation_id &,
+		const economic_account_key &, const critical_operation_id &, operations *,
+		std::string *, flatfile_accounting_staging_view *);
 	static unsigned int select_epoch(const std::string &, const flatfile_authority_lock &,
 					 uint64_t expected_revision, bool active,
 					 const critical_operation_id &operation, operations *,
 					 std::string *);
+	static unsigned int select_epoch_staged(const std::string &,
+						const flatfile_authority_lock &, uint64_t, bool,
+						const critical_operation_id &, operations *,
+						std::string *, flatfile_accounting_staging_view *);
 };
 #endif

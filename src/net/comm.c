@@ -124,6 +124,7 @@
 #include "persistence/maintenance_snapshot.h"
 #include "persistence/critical_command_coordinator.h"
 #include "economy/economic_command_admission.h"
+#include "economy/economic_gameplay_authority.h"
 #include "persistence/critical_command_repository.h"
 #include "persistence/critical_outbox.h"
 #include "persistence/corpse_lifecycle_transaction.h"
@@ -293,6 +294,17 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	boon_shop_transaction_handle_completions(completions, count);
 	zone_touch_transaction_handle_completions(completions, count);
 	player_death_restitution_runtime_handle_completions(completions, count);
+}
+
+static void critical_gameplay_drain_completions(const critical_completion *completions,
+						size_t count)
+{
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		item_movement_transaction_cancel_drop_preparations();
+		player_save_pipeline_pulse();
+	}
+	critical_gameplay_handle_completions(completions, count);
 }
 
 static void quest_reward_ack_pipeline_pulse(void)
@@ -987,8 +999,32 @@ int run_the_game(int port, int sslport)
 	if (!mini_mode)
 		locker_async_init();
 	const char *journal_directory = getenv("PLAYER_SAVE_JOURNAL_DIR");
-	if (!player_save_pipeline_init(journal_directory,
-				       player_quarantine_recovery_revalidate_selected))
+	const bool player_saves_ready =
+#ifdef __NO_MYSQL__
+		player_save_pipeline_init(journal_directory,
+					  player_quarantine_recovery_revalidate_selected);
+#else
+		player_save_pipeline_prepare(journal_directory,
+					     player_quarantine_recovery_revalidate_selected);
+#endif
+#ifndef __NO_MYSQL__
+	// Runtime SQL boot has already recovered the selected durable authority.
+	// Preparation/revalidation must finish at epoch zero; critical replay then
+	// installs its original holds before any ordinary save execution starts.
+	const bool owned_accounting_boot = economic_gameplay_authority::active();
+	if (owned_accounting_boot)
+	{
+		uint64_t ownership_epoch = 0;
+		if (!player_saves_ready ||
+		    !player_save_execution_guard::begin_ownership_epoch(&ownership_epoch))
+		{
+			fprintf(stderr,
+				"Active accounting save ownership unavailable; aborting boot.\n");
+			_exit(1);
+		}
+	}
+#endif
+	if (!player_saves_ready)
 	{
 		logit(LOG_STATUS,
 		      "Player save pipeline unavailable; nonterminal saves fail closed.");
@@ -1006,15 +1042,26 @@ int run_the_game(int port, int sslport)
 	const bool critical_outbox_ready =
 		critical_outbox_init(critical_gameplay_outbox_delivery, NULL);
 #endif
-	if (
+	const bool critical_commands_ready =
 #ifndef __NO_MYSQL__
-		!critical_outbox_ready ||
+		critical_outbox_ready &&
 #endif
-		!critical_command_coordinator_init(critical_journal_directory, critical_apply, NULL,
-						   CRITICAL_COORDINATOR_DEFAULT_WORKERS,
-						   critical_gameplay_restore_replayed_command, NULL,
-						   critical_extension_validator))
+		critical_command_coordinator_init(critical_journal_directory, critical_apply, NULL,
+						  CRITICAL_COORDINATOR_DEFAULT_WORKERS,
+						  critical_gameplay_restore_replayed_command, NULL,
+						  critical_extension_validator);
+	if (!critical_commands_ready)
 	{
+#ifndef __NO_MYSQL__
+		if (owned_accounting_boot)
+		{
+			// Replay may already retain original holds. Never discard them or
+			// enter gameplay after partial initialization of active authority.
+			fprintf(stderr,
+				"Active accounting critical recovery unavailable; aborting boot.\n");
+			_exit(1);
+		}
+#endif
 		if (critical_command_coordinator_shutdown())
 		{
 			player_death_restitution_runtime_abort_all();
@@ -1028,6 +1075,24 @@ int run_the_game(int port, int sslport)
 		persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
 				  "start_failed", "check critical schema and journal");
 	}
+#ifndef __NO_MYSQL__
+	// Critical replay installs original save holds before any save replay/worker
+	// can execute. Failed critical initialization keeps preparation closed and
+	// retains its original slots for shutdown/restart, rather than running past it.
+	if (player_saves_ready && critical_commands_ready && !player_save_pipeline_start())
+	{
+		if (owned_accounting_boot)
+		{
+			fprintf(stderr,
+				"Active accounting save execution unavailable; aborting boot.\n");
+			_exit(1);
+		}
+		logit(LOG_STATUS,
+		      "Player save execution unavailable; prepared recovery remains held.");
+		persistence_alert(AVATAR, "player_save", "pipeline", "none", "none", "start_failed",
+				  "check prepared save recovery");
+	}
+#endif
 	if (!collector_catalog_cache_refresh())
 		logit(LOG_STATUS,
 		      "Collector catalog refresh unavailable; collector gameplay fails closed.");
@@ -1037,7 +1102,7 @@ int run_the_game(int port, int sslport)
 	if (!locker_identify_init(critical_journal_directory))
 		logit(LOG_STATUS,
 		      "Locker identification unavailable: receipt storage could not initialize.");
-	critical_command_coordinator_set_drain_observer(critical_gameplay_handle_completions);
+	critical_command_coordinator_set_drain_observer(critical_gameplay_drain_completions);
 	if (!mini_mode)
 	{
 		const uint64_t maintenance_instance =
@@ -1096,17 +1161,35 @@ int run_the_game(int port, int sslport)
 	account_recovery_shutdown();
 	password_login_shutdown();
 	player_death_restitution_runtime_shutdown();
-	const bool critical_coordinator_stopped = critical_command_coordinator_shutdown();
+	const bool owned_saves_present = player_save_execution_guard::current_ownership_epoch() !=
+					 0;
+	const bool owned_saves_stopped = !owned_saves_present ||
+					 player_save_pipeline_shutdown_owned();
+	if (!owned_saves_stopped)
+	{
+		fprintf(stderr,
+			"Owned save shutdown incomplete; retaining journals for cold recovery.\n");
+		// Normal return destroys SQL/world dependencies and joinable globals.
+		// A refused close is an unclean exit, never successful owner release.
+		_exit(1);
+	}
+	const bool critical_coordinator_stopped = owned_saves_stopped &&
+						  critical_command_coordinator_shutdown();
 	if (!critical_coordinator_stopped)
+	{
 		logit(LOG_EXIT,
 		      "Critical coordinator refused shutdown after lifecycle guard acquisition.");
+		if (owned_saves_present)
+			_exit(1);
+	}
 	locker_identify_shutdown();
 	if (critical_coordinator_stopped)
 		critical_outbox_shutdown();
 	if (critical_coordinator_stopped && !_pwipe)
 	{
 		locker_async_shutdown();
-		player_save_pipeline_shutdown();
+		if (!owned_saves_present)
+			player_save_pipeline_shutdown();
 	}
 
 	/* Don't need this anymore, as dropped artis are handled in real time on the DB.
@@ -2136,6 +2219,7 @@ static void run_event_phase(game_loop_pulse_context &ctx)
 	}
 
 	item_creation_grant_prepare_pulse();
+	item_movement_transaction_drop_prepare_pulse();
 	artifact_mana_pulse();
 	device_actions_pulse();
 
@@ -2675,6 +2759,16 @@ resume_game_loop:
 						 (_reboot || _autoboot || _pwipe ? 'D' : 'S'));
 	if (_copyover)
 	{
+		if (player_save_execution_guard::current_ownership_epoch())
+		{
+			persistence_alert(AVATAR, "player_save", "copyover", "none", "none",
+					  "owned_lifecycle_pending", "copyover_cancelled=1");
+			shutdownflag = 0;
+			_reboot = 0;
+			_copyover = 0;
+			_autoboot = 0;
+			goto resume_game_loop;
+		}
 		if (!critical_command_coordinator_try_acquire_lifecycle_guard())
 		{
 			refuse_lifecycle_for_active_cutover_owner("copyover");
@@ -2769,7 +2863,9 @@ resume_game_loop:
 		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
-	if (!_pwipe && !player_save_pipeline_drain(3000))
+	if (!_pwipe && !(player_save_execution_guard::current_ownership_epoch() ?
+				 player_save_pipeline_drain_owned(3000) :
+				 player_save_pipeline_drain(3000)))
 	{
 		critical_command_coordinator_resume();
 		critical_outbox_resume();

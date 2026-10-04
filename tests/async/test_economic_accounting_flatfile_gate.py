@@ -31,6 +31,7 @@ SOURCES = (
     "coin_transfer_accounting.c", "critical_command_journal.c",
     "critical_command_coordinator.c",
     "economic_accounting_plan.c", "economic_accounting_types.c",
+    "economic_baseline_codec.c", "economic_baseline_adapter.c",
     "auction_item_claim_accounting.c", "auction_accounting.c",
     "auction_settlement_accounting.c", "auction_money_claim_accounting.c",
     "auction_listing_accounting.c",
@@ -44,13 +45,14 @@ with tempfile.TemporaryDirectory(prefix="duris-accounting-flatfile-gate-") as te
     command = shlex.split(os.environ.get("CXX", "g++")) + [
         "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-O0", "-g",
         "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
+        "-ffunction-sections", "-fdata-sections",
         "-D__NO_MYSQL__", "-DDURIS_FLATFILE_ACCOUNTING_TEST",
         "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST", "-I" + str(ROOT / "src"),
         "-I" + str(ROOT / "src/no_mysql"),
         str(ROOT / "tests/async/economic_accounting_flatfile_gate_test.cpp"),
     ]
     command += [str(source(name)) for name in SOURCES]
-    command += ["-lcrypto", "-lz", "-pthread", "-o", str(executable)]
+    command += ["-lcrypto", "-lz", "-pthread", "-Wl,--gc-sections", "-o", str(executable)]
     subprocess.run(command, cwd=ROOT, check=True)
     environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
                        UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")

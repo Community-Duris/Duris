@@ -57,6 +57,8 @@ manual_names = {spec.path.name for spec in specs if spec.manual}
 
 # Preserve the target branch's bounded server-journey concurrency.
 server_journeys = (
+    "test_coin_publication_ack_retention.py", "test_critical_admission_owner_release.py",
+    "test_craft_publication_ack_retention.py",
     "test_account_recovery_journey.py", "test_area_coin_pickup.py",
     "test_creation_prompt_journey.py", "test_flatfile_auction_coin_put_journey.py",
     "test_flatfile_boot_preflight.py", "test_flatfile_chaos_new_character_kit.py",
@@ -71,6 +73,8 @@ by_name = {spec.path.name: spec for spec in specs}
 assert all("server-journey" in by_name[name].locks for name in server_journeys)
 discovered = {path.name for path in runner.discover_tests(None)}
 assert not (manual_names & discovered)
+assert {"test_player_snapshot_exception_mysql.py",
+        "test_player_death_conflict_exception_mysql.py"} <= manual_names
 assert {
     "test_player_playtime_capture.py", "test_playtime_checkpoint.py",
     "test_playtime_flatfile.py", "test_playtime_legacy_sql.py",
