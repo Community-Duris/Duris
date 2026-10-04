@@ -1575,6 +1575,39 @@ player_save_journal_result checkpoint_proven(const std::map<int, player_revision
 }
 } // namespace
 
+player_save_journal_result
+player_save_journal_collect_retained(std::vector<player_save_journal_retained_frame> *output)
+{
+	if (!output)
+		return player_save_journal_result::replay_blocked;
+	output->clear();
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	if (!health.initialized)
+		return player_save_journal_result::not_initialized;
+	scan_result scanned = scan_journal_safe();
+	if (scanned.result != player_save_journal_result::ok)
+		return scanned.result;
+	try
+	{
+		std::vector<player_save_journal_retained_frame> retained;
+		retained.reserve(scanned.frames.size());
+		for (auto &frame : scanned.frames)
+		{
+			const int pid = frame.snapshot.pid;
+			retained.push_back({ std::move(frame.snapshot), std::move(frame.bytes),
+					     frame.record_id, quarantined_pids.count(pid) != 0,
+					     policy_pids.count(pid) != 0 });
+		}
+		output->swap(retained);
+		return player_save_journal_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		++health.backpressure;
+		return player_save_journal_result::replay_blocked;
+	}
+}
+
 player_save_journal_result player_save_journal_replay(player_save_apply_fn apply, void *context)
 {
 	if (!apply)
