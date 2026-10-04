@@ -13,6 +13,7 @@
 #include "player/player_save_journal.h"
 #include "player/player_save_worker.h"
 #include "player/player_save_execution_guard.h"
+#include "player/player_save_replay_ownership.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_snapshot_repository.h"
@@ -64,8 +65,36 @@ bool trace_player_saves()
 
 std::mutex pipeline_mutex;
 std::condition_variable append_available;
-std::deque<player_snapshot> pending_append;
-std::deque<player_snapshot> durable_ready;
+using player_save_execution_guard::resident_claim;
+using player_save_execution_guard::execution_scope;
+using player_save_execution_guard::ownership_status;
+
+struct retained_snapshot
+{
+	resident_claim residence;
+	player_snapshot body;
+	retained_snapshot() noexcept = default;
+	retained_snapshot(player_snapshot &&snapshot, resident_claim &&claim) noexcept
+		: residence(std::move(claim))
+		, body(std::move(snapshot))
+	{
+	}
+	retained_snapshot(retained_snapshot &&) noexcept = default;
+	retained_snapshot &operator=(retained_snapshot &&other) noexcept
+	{
+		if (this == &other)
+			return *this;
+		// Retire the old body before releasing its residence during deque moves.
+		body = std::move(other.body);
+		residence = std::move(other.residence);
+		return *this;
+	}
+};
+std::deque<retained_snapshot> pending_append;
+std::deque<retained_snapshot> durable_ready;
+// Allocation-free retention when a failed append cannot be requeued. Shutdown
+// cannot destroy an unjournaled original merely because its thread has joined.
+std::optional<retained_snapshot> append_retry;
 std::thread dispatcher;
 player_save_pipeline_health health = {};
 player_save_pipeline_replay_gate replay_gate;
@@ -218,6 +247,7 @@ struct terminal_fence
 	critical_operation_id operation_id = {};
 	uint64_t wallet_pile_uid = 0;
 	std::optional<player_snapshot> death_snapshot;
+	resident_claim death_residence;
 };
 
 static_assert(std::is_nothrow_move_constructible_v<player_snapshot>);
@@ -289,15 +319,15 @@ size_t pinned_death_count_locked();
 /** Refresh queue depth and high-water counters while pipeline_mutex is held. */
 void update_depth_locked()
 {
-	health.pending_append = pending_append.size();
+	health.pending_append = pending_append.size() + (append_retry ? 1 : 0);
 	health.durable_ready = durable_ready.size();
 	health.retained_bytes = retained_bytes;
 	health.accepting = accepting;
 	health.append_inflight = append_inflight;
-	health.high_water_snapshots =
-		std::max(health.high_water_snapshots,
-			 static_cast<uint64_t>(health.pending_append + health.durable_ready +
-					       pinned_death_count_locked()));
+	health.high_water_snapshots = std::max(
+		health.high_water_snapshots,
+		static_cast<uint64_t>(health.pending_append + health.durable_ready +
+				      pinned_death_count_locked() + (append_inflight ? 1 : 0)));
 	health.high_water_bytes =
 		std::max(health.high_water_bytes, static_cast<uint64_t>(retained_bytes));
 }
@@ -360,29 +390,140 @@ void dispatcher_main()
 					  health.initialized && !stop_requested);
 	}
 
-	player_snapshot snapshot;
-	bool retry_inflight = false;
 	for (;;)
 	{
+		const auto epoch = player_save_execution_guard::current_ownership_epoch();
+		// Capture the sequence before queue/waiter inspection. New work and stop
+		// use this same event, so releases between observation and wait survive.
+		const auto observed = player_save_execution_guard::observe_ownership(epoch, 1);
+		if (epoch && observed.available)
+		{
+			std::array<player_save_ownership_waiter, PLAYER_SAVE_WORKER_MAX_PIDS>
+				waiters;
+			const size_t count = player_save_worker_ownership_waiters(waiters.data(),
+										  waiters.size());
+			for (size_t i = 0; i < count; ++i)
+			{
+				const auto &waiter = waiters[i];
+				const auto state = player_save_execution_guard::observe_ownership(
+					epoch, waiter.identity.pid);
+				if (waiter.epoch == epoch && state.available && !state.executing &&
+				    !state.replay_reserved && !state.publication_held)
+					(void)player_save_worker_resume_deferred_exact(
+						waiter.identity);
+			}
+		}
+		retained_snapshot retained;
+		std::optional<execution_scope> append_scope;
+		bool selected = false;
+		bool requeue_failed = false;
 		{
 			std::unique_lock<std::mutex> lock(pipeline_mutex);
-			if (!retry_inflight)
+			if (epoch && (stop_requested || !observed.available))
+			{
+				if (!observed.available)
+				{
+					accepting = false;
+					health.replay_blocked = true;
+					update_depth_locked();
+				}
+				break;
+			}
+			if (append_retry)
+			{
+				bool retry_allowed = !epoch;
+				if (epoch &&
+				    append_retry->residence.matches_current(append_retry->body.pid))
+				{
+					append_scope.emplace(append_retry->residence);
+					retry_allowed = append_scope->result() ==
+							ownership_status::allowed;
+					if (!retry_allowed)
+						append_scope.reset();
+				}
+				if (retry_allowed)
+				{
+					// Retry native append directly even when deque storage is still
+					// unavailable. This preserves the existing inactive OOM path.
+					retained = std::move(*append_retry);
+					append_retry.reset();
+					selected = true;
+				}
+				else
+					try
+					{
+						pending_append.push_front(std::move(*append_retry));
+						append_retry.reset();
+					}
+					catch (const std::bad_alloc &)
+					{
+						++health.overloads;
+						requeue_failed = true;
+					}
+			}
+			if (!selected && !requeue_failed && !epoch)
 			{
 				append_available.wait(
 					lock,
 					[] { return stop_requested || !pending_append.empty(); });
 				if (stop_requested && pending_append.empty())
 					break;
-				snapshot = std::move(pending_append.front());
-				pending_append.pop_front();
-				append_inflight = true;
-				append_inflight_pid = snapshot.pid;
-				append_inflight_revision = snapshot.revision;
 			}
-			retry_inflight = false;
+			if (!selected && !requeue_failed)
+			{
+				for (auto entry = pending_append.begin();
+				     entry != pending_append.end(); ++entry)
+				{
+					if (epoch)
+					{
+						if (!entry->residence.matches_current(
+							    entry->body.pid))
+						{
+							accepting = false;
+							health.replay_blocked = true;
+							break;
+						}
+						append_scope.emplace(entry->residence);
+						const auto admitted = append_scope->result();
+						if (admitted != ownership_status::allowed)
+						{
+							append_scope.reset();
+							if (admitted == ownership_status::busy ||
+							    admitted == ownership_status::held)
+								continue;
+							accepting = false;
+							health.replay_blocked = true;
+							break;
+						}
+					}
+					retained = std::move(*entry);
+					pending_append.erase(entry);
+					selected = true;
+					break;
+				}
+			}
+			if (selected)
+			{
+				append_inflight = true;
+				append_inflight_pid = retained.body.pid;
+				append_inflight_revision = retained.body.revision;
+			}
 			update_depth_locked();
 		}
-
+		if (requeue_failed)
+		{
+			// Existing allocation/I/O backoff, never an ownership-contention retry.
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			continue;
+		}
+		if (!selected)
+		{
+			if (epoch)
+				player_save_execution_guard::wait_ownership_change(
+					epoch, observed.change_sequence);
+			continue;
+		}
+		auto &snapshot = retained.body;
 		const player_save_journal_result appended = player_save_journal_append(snapshot);
 		persistence_trace_event journal_trace;
 		journal_trace.stage = persistence_trace_stage::save_journal;
@@ -391,11 +532,10 @@ void dispatcher_main()
 		journal_trace.outcome = static_cast<uint32_t>(appended);
 		persistence_trace_record(journal_trace);
 		const bool quarantined = appended == player_save_journal_result::quarantined_pid;
-		// A capture queued before the fence still needs durable preservation.
-		// Archive it without admitting it to SQL or claiming a revision ACK.
 		const bool quarantine_preserved =
 			quarantined && player_save_journal_archive_quarantined(snapshot) ==
 					       player_save_journal_result::ok;
+		append_scope.reset();
 		{
 			std::lock_guard<std::mutex> lock(pipeline_mutex);
 			if (quarantine_preserved)
@@ -407,12 +547,12 @@ void dispatcher_main()
 			{
 				try
 				{
-					durable_ready.push_back(std::move(snapshot));
+					durable_ready.push_back(std::move(retained));
 					network_wakeup_notify();
 					if (terminal_fence *fence = find_terminal_fence_locked(
-						    durable_ready.back().pid);
+						    durable_ready.back().body.pid);
 					    fence &&
-					    fence->revision == durable_ready.back().revision)
+					    fence->revision == durable_ready.back().body.revision)
 						fence->journaled = true;
 				}
 				catch (const std::bad_alloc &)
@@ -428,30 +568,24 @@ void dispatcher_main()
 				try
 				{
 					if (quarantined)
-						pending_append.push_back(std::move(snapshot));
+						pending_append.push_back(std::move(retained));
 					else
-						pending_append.push_front(std::move(snapshot));
+						pending_append.push_front(std::move(retained));
 				}
 				catch (const std::bad_alloc &)
 				{
-					// No durable copy exists. Keep the already-owned capture and
-					// its in-flight fence until it is archived, appended, or requeued.
-					retry_inflight = true;
+					// Retain complete bytes and claim in a stable owner across stop.
+					append_retry.emplace(std::move(retained));
 					++health.overloads;
 				}
 			}
-			if (!retry_inflight)
-			{
-				append_inflight = false;
-				append_inflight_pid = 0;
-				append_inflight_revision = 0;
-			}
+			append_inflight = false;
+			append_inflight_pid = 0;
+			append_inflight_revision = 0;
 			update_depth_locked();
 		}
 		if (appended != player_save_journal_result::ok && !quarantine_preserved)
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		if (!retry_inflight)
-			snapshot = {};
 	}
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	health.dispatcher_running = false;
@@ -464,11 +598,14 @@ void dispatcher_main()
 /** Check retained queues for an exact player revision while pipeline_mutex is held. */
 bool snapshot_is_retained_locked(int pid, player_revision_t revision)
 {
-	for (const player_snapshot &snapshot : pending_append)
-		if (snapshot.pid == pid && snapshot.revision == revision)
+	if (append_retry && append_retry->body.pid == pid &&
+	    append_retry->body.revision == revision)
+		return true;
+	for (const auto &retained : pending_append)
+		if (retained.body.pid == pid && retained.body.revision == revision)
 			return true;
-	for (const player_snapshot &snapshot : durable_ready)
-		if (snapshot.pid == pid && snapshot.revision == revision)
+	for (const auto &retained : durable_ready)
+		if (retained.body.pid == pid && retained.body.revision == revision)
 			return true;
 	return false;
 }
@@ -476,11 +613,13 @@ bool snapshot_is_retained_locked(int pid, player_revision_t revision)
 /** Check retained queues for any snapshot belonging to a player. */
 bool any_snapshot_is_retained_locked(int pid)
 {
-	for (const player_snapshot &snapshot : pending_append)
-		if (snapshot.pid == pid)
+	if (append_retry && append_retry->body.pid == pid)
+		return true;
+	for (const auto &retained : pending_append)
+		if (retained.body.pid == pid)
 			return true;
-	for (const player_snapshot &snapshot : durable_ready)
-		if (snapshot.pid == pid)
+	for (const auto &retained : durable_ready)
+		if (retained.body.pid == pid)
 			return true;
 	return false;
 }
@@ -689,7 +828,7 @@ bool merge_craft_receipts(player_snapshot *target, const player_snapshot &source
 }
 
 /** Admit or coalesce a snapshot within queue and byte limits before notifying the dispatcher. */
-player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
+player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot, resident_claim residence)
 {
 	const player_revision_t literal_revision = snapshot.revision;
 	if (player_save_journal_pid_quarantined(snapshot.pid))
@@ -710,8 +849,9 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 	if (terminal_fence *fence = find_terminal_fence_locked(snapshot.pid);
 	    fence && fence->death_pinned)
 		return player_save_pipeline_result::unavailable;
-	for (player_snapshot &queued : pending_append)
+	for (auto &retained : pending_append)
 	{
+		auto &queued = retained.body;
 		if (queued.pid != snapshot.pid)
 			continue;
 		if (snapshot.revision <= queued.revision)
@@ -775,13 +915,16 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 		}
 		retained_bytes =
 			retained_bytes - queued.encoded_size_bound + snapshot.encoded_size_bound;
-		queued = std::move(snapshot);
+		retained = retained_snapshot(std::move(snapshot), std::move(residence));
 		note_literal_enqueue_locked(literal, literal_revision);
 		++health.coalesced;
 		update_depth_locked();
+		player_save_execution_guard::signal_ownership_change(
+			player_save_execution_guard::current_ownership_epoch());
 		return player_save_pipeline_result::coalesced;
 	}
-	if (pending_append.size() + durable_ready.size() + pinned_death_count_locked() >=
+	if (pending_append.size() + durable_ready.size() + (append_retry ? 1 : 0) +
+			    (append_inflight ? 1 : 0) + pinned_death_count_locked() >=
 		    PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS ||
 	    snapshot.encoded_size_bound > PLAYER_SAVE_PIPELINE_MAX_BYTES - retained_bytes)
 	{
@@ -791,7 +934,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 	retained_bytes += snapshot.encoded_size_bound;
 	try
 	{
-		pending_append.push_back(std::move(snapshot));
+		pending_append.emplace_back(std::move(snapshot), std::move(residence));
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -803,6 +946,8 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 	++health.captured;
 	update_depth_locked();
 	append_available.notify_one();
+	player_save_execution_guard::signal_ownership_change(
+		player_save_execution_guard::current_ownership_epoch());
 	return player_save_pipeline_result::queued;
 }
 } // namespace
@@ -902,15 +1047,30 @@ void player_save_pipeline_shutdown(void)
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		replay_gate.begin_replay();
 		stop_requested = true;
+		accepting = false;
 		append_available.notify_all();
+		player_save_execution_guard::signal_ownership_change(
+			player_save_execution_guard::current_ownership_epoch());
 	}
 	if (dispatcher.joinable())
 		dispatcher.join();
 	player_save_worker_shutdown();
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		// Joined workers can still own original slots/results, and the pipeline
+		// can own unjournaled bytes and death pins. Until the lifecycle owner
+		// proves their durable handoff, preserve journal namespace and all holds.
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		shutdown_incomplete = true;
+		execution_started = false;
+		update_depth_locked();
+		return;
+	}
 	player_save_journal_shutdown();
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	pending_append.clear();
 	durable_ready.clear();
+	append_retry.reset();
 	for (terminal_fence &fence : terminal_fences)
 		clear_terminal_fence_locked(fence);
 	target_save_login_fences.fill({});
@@ -970,7 +1130,8 @@ bool player_save_pipeline_mark(int pid, player_component_mask_t components)
 static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 	P_char ch, int save_intent, int room_vnum, const player_quest_xp_receipt_snapshot *receipts,
 	size_t receipt_count,
-	const player_spell_effect_receipt_snapshot *spell_effect_receipt = nullptr)
+	const player_spell_effect_receipt_snapshot *spell_effect_receipt = nullptr,
+	resident_claim *original_residence = nullptr)
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
 		return player_save_pipeline_result::invalid;
@@ -999,6 +1160,15 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 				return player_save_pipeline_result::unavailable;
 			literal_root_uid = literal->token.root_uid;
 		}
+	}
+	const uint64_t ownership_epoch = player_save_execution_guard::current_ownership_epoch();
+	resident_claim residence;
+	if (ownership_epoch)
+	{
+		residence = original_residence ? std::move(*original_residence) :
+						 resident_claim(ownership_epoch, GET_PID(ch));
+		if (!residence.matches_current(GET_PID(ch)))
+			return player_save_pipeline_result::unavailable;
 	}
 	player_snapshot pending_effects;
 	player_component_mask_t required_components =
@@ -1148,7 +1318,7 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 		      (unsigned long long)persistence_observability_now_usec(), GET_PID(ch),
 		      (unsigned long long)queued_revision, (unsigned long long)components,
 		      save_intent, room_vnum);
-	return enqueue_snapshot(std::move(snapshot));
+	return enqueue_snapshot(std::move(snapshot), std::move(residence));
 }
 
 namespace
@@ -1552,9 +1722,20 @@ bool begin_terminal_fence(int pid, player_revision_t *revision, bool pin_death =
 
 bool retain_and_enqueue_death_snapshot(player_snapshot snapshot, uint64_t corpse_uid,
 				       uint64_t wallet_pile_uid,
-				       const critical_operation_id &operation_id)
+				       const critical_operation_id &operation_id,
+				       resident_claim residence)
 {
 	const size_t snapshot_bytes = snapshot.encoded_size_bound;
+	resident_claim pinned_residence;
+	const auto epoch = player_save_execution_guard::current_ownership_epoch();
+	if (epoch)
+	{
+		if (!residence.matches_current(snapshot.pid))
+			return false;
+		pinned_residence = resident_claim::derive_existing(residence);
+		if (!pinned_residence.matches_current(snapshot.pid))
+			return false;
+	}
 	player_snapshot pinned_copy;
 	try
 	{
@@ -1576,7 +1757,8 @@ bool retain_and_enqueue_death_snapshot(player_snapshot snapshot, uint64_t corpse
 	    snapshot.death->wallet_pile_uid != wallet_pile_uid || snapshot.death->corpse.empty() ||
 	    snapshot.death->corpse.front().object_uid != corpse_uid)
 		return false;
-	if (pending_append.size() + durable_ready.size() + pinned_death_count_locked() >=
+	if (pending_append.size() + durable_ready.size() + (append_retry ? 1 : 0) +
+			    (append_inflight ? 1 : 0) + pinned_death_count_locked() >=
 		    PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS ||
 	    retained_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
 	    snapshot_bytes > (PLAYER_SAVE_PIPELINE_MAX_BYTES - retained_bytes) / 2)
@@ -1586,7 +1768,7 @@ bool retain_and_enqueue_death_snapshot(player_snapshot snapshot, uint64_t corpse
 	}
 	try
 	{
-		pending_append.push_back(std::move(snapshot));
+		pending_append.emplace_back(std::move(snapshot), std::move(residence));
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -1597,10 +1779,13 @@ bool retain_and_enqueue_death_snapshot(player_snapshot snapshot, uint64_t corpse
 	fence->operation_id = operation_id;
 	fence->wallet_pile_uid = pinned_copy.death->wallet_pile_uid;
 	fence->death_snapshot.emplace(std::move(pinned_copy));
+	fence->death_residence = std::move(pinned_residence);
 	retained_bytes += snapshot_bytes * 2;
 	++health.captured;
 	update_depth_locked();
 	append_available.notify_one();
+	player_save_execution_guard::signal_ownership_change(
+		player_save_execution_guard::current_ownership_epoch());
 	return true;
 }
 
@@ -1621,10 +1806,19 @@ player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_in
 	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
 		return player_save_terminal_result::unavailable;
 	const int pid = GET_PID(ch);
+	resident_claim residence;
+	const auto epoch = player_save_execution_guard::current_ownership_epoch();
+	if (epoch)
+	{
+		residence = resident_claim(epoch, pid);
+		if (!residence.matches_current(pid))
+			return player_save_terminal_result::unavailable;
+	}
 	player_revision_t revision = 0;
 	if (!begin_terminal_fence(pid, &revision, false))
 		return player_save_terminal_result::unavailable;
-	const auto checkpoint = player_save_pipeline_checkpoint_dirty(ch, save_intent, room_vnum);
+	const auto checkpoint = checkpoint_dirty_with_quest_xp(ch, save_intent, room_vnum, nullptr,
+							       0, nullptr, &residence);
 	if (trace_player_saves())
 		logit(LOG_STATUS,
 		      "PLAYER SAVE TRACE: stage=terminal_begin mono_us=%llu pid=%d revision=%llu checkpoint=%u intent=%d timeout_ms=%llu journal_allowed=%d",
@@ -1658,6 +1852,14 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 	    !IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP))
 		return player_save_terminal_result::unavailable;
 	const int pid = GET_PID(ch);
+	const auto epoch = player_save_execution_guard::current_ownership_epoch();
+	resident_claim residence;
+	if (epoch)
+	{
+		residence = resident_claim(epoch, pid);
+		if (!residence.matches_current(pid))
+			return player_save_terminal_result::unavailable;
+	}
 	player_revision_t revision = 0;
 	if (!begin_terminal_fence(pid, &revision, true))
 		return player_save_terminal_result::unavailable;
@@ -1706,7 +1908,7 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 		return player_save_terminal_result::unavailable;
 	const uint64_t wallet_pile_uid = wallet_pile ? wallet_pile->obj_uid : 0;
 	if (!retain_and_enqueue_death_snapshot(std::move(snapshot), corpse->obj_uid,
-					       wallet_pile_uid, operation_id))
+					       wallet_pile_uid, operation_id, std::move(residence)))
 		return player_save_terminal_result::unavailable;
 	guard.queued = true;
 	char correlation[33] = {};
@@ -1751,6 +1953,7 @@ namespace
 /** Requeue only the pinned immutable bytes after the worker has released a failed slot. */
 bool requeue_pinned_death(int pid, uint64_t corpse_uid)
 {
+	resident_claim residence;
 	player_snapshot retry_snapshot;
 	player_revision_t revision = 0;
 	size_t snapshot_bytes = 0;
@@ -1764,6 +1967,13 @@ bool requeue_pinned_death(int pid, uint64_t corpse_uid)
 		if (fence->acknowledged || snapshot_is_retained_locked(pid, fence->revision) ||
 		    (append_inflight_pid == pid && append_inflight_revision == fence->revision))
 			return true;
+		const auto epoch = player_save_execution_guard::current_ownership_epoch();
+		if (epoch)
+		{
+			residence = resident_claim::derive_existing(fence->death_residence);
+			if (!residence.matches_current(pid))
+				return false;
+		}
 		revision = fence->revision;
 		snapshot_bytes = fence->death_snapshot->encoded_size_bound;
 		try
@@ -1792,7 +2002,8 @@ bool requeue_pinned_death(int pid, uint64_t corpse_uid)
 	if (fence->acknowledged || snapshot_is_retained_locked(pid, revision) ||
 	    (append_inflight_pid == pid && append_inflight_revision == revision))
 		return true;
-	if (pending_append.size() + durable_ready.size() + pinned_death_count_locked() >=
+	if (pending_append.size() + durable_ready.size() + (append_retry ? 1 : 0) +
+			    (append_inflight ? 1 : 0) + pinned_death_count_locked() >=
 		    PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS ||
 	    retained_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
 	    snapshot_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES - retained_bytes)
@@ -1802,7 +2013,7 @@ bool requeue_pinned_death(int pid, uint64_t corpse_uid)
 	}
 	try
 	{
-		pending_append.push_back(std::move(retry_snapshot));
+		pending_append.emplace_back(std::move(retry_snapshot), std::move(residence));
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -1813,6 +2024,8 @@ bool requeue_pinned_death(int pid, uint64_t corpse_uid)
 	++health.terminal_death_requeues;
 	update_depth_locked();
 	append_available.notify_one();
+	player_save_execution_guard::signal_ownership_change(
+		player_save_execution_guard::current_ownership_epoch());
 	return true;
 }
 
@@ -1901,14 +2114,22 @@ player_save_terminal_result await_terminal_fence(int pid, player_revision_t revi
 /** Apply bounded worker completions and submit journaled snapshots from the game thread. */
 void player_save_pipeline_pulse(void)
 {
-	player_save_completion completions[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
+	player_save_owned_completion owned_completions[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
 	int32_t missing_baseline[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
 	size_t missing_baseline_count = 0;
-	player_save_completion custody_mismatches[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
+	struct custody_diagnostic
+	{
+		int32_t pid = 0;
+		player_revision_t revision = 0;
+		player_component_mask_t components = 0;
+		player_save_custody_diagnosis custody_diagnosis =
+			player_save_custody_diagnosis::none;
+	};
+	custody_diagnostic custody_mismatches[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
 	bool custody_recapture_allowed[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
 	size_t custody_mismatch_count = 0;
-	const size_t completed =
-		player_save_worker_pulse(completions, PLAYER_SAVE_PIPELINE_PULSE_BUDGET);
+	const size_t completed = player_save_worker_pulse_owned(owned_completions,
+								PLAYER_SAVE_PIPELINE_PULSE_BUDGET);
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		for (auto &literal : literal_inventory_checkpoints)
@@ -1922,13 +2143,15 @@ void player_save_pipeline_pulse(void)
 		health.completions += completed;
 		for (size_t index = 0; index < completed; ++index)
 		{
-			if (completions[index].outcome == player_save_apply_outcome::applied ||
-			    completions[index].outcome ==
+			if (owned_completions[index].completion.outcome ==
+				    player_save_apply_outcome::applied ||
+			    owned_completions[index].completion.outcome ==
 				    player_save_apply_outcome::already_applied)
-				custody_recapture_armed.erase(completions[index].pid);
+				custody_recapture_armed.erase(
+					owned_completions[index].completion.pid);
 			if (trace_player_saves())
 			{
-				const auto &completion = completions[index];
+				const auto &completion = owned_completions[index].completion;
 				logit(LOG_STATUS,
 				      "PLAYER SAVE TRACE: stage=completion mono_us=%llu pid=%d revision=%llu components=%llu outcome=%u durable=%llu error=%u custody_diagnosis=%s retries=%u queued_us=%llu started_us=%llu completed_us=%llu",
 				      (unsigned long long)persistence_observability_now_usec(),
@@ -1944,8 +2167,9 @@ void player_save_pipeline_pulse(void)
 				      (unsigned long long)completion.started_at_usec,
 				      (unsigned long long)completion.completed_at_usec);
 			}
-			(void)acknowledge_terminal_fence_completion_locked(completions[index]);
-			const auto &completion = completions[index];
+			(void)acknowledge_terminal_fence_completion_locked(
+				owned_completions[index].completion);
+			const auto &completion = owned_completions[index].completion;
 			if (auto *literal = find_literal_inventory_locked(completion.pid);
 			    literal && !literal->held &&
 			    literal->captured_revision == completion.revision &&
@@ -1959,20 +2183,32 @@ void player_save_pipeline_pulse(void)
 			// The worker only ever UPDATEs player_data. A missing row means the
 			// character never got its baseline INSERT, and every further async
 			// save would fail the same way; record it for the sync fallback.
-			if (completions[index].outcome ==
+			if (owned_completions[index].completion.outcome ==
 				    player_save_apply_outcome::terminal_failure &&
-			    completions[index].error_code == ENOENT && completions[index].pid > 0)
-				missing_baseline[missing_baseline_count++] = completions[index].pid;
-			if (completions[index].outcome ==
+			    owned_completions[index].completion.error_code == ENOENT &&
+			    owned_completions[index].completion.pid > 0)
+				missing_baseline[missing_baseline_count++] =
+					owned_completions[index].completion.pid;
+			if (owned_completions[index].completion.outcome ==
 				    player_save_apply_outcome::terminal_failure &&
-			    completions[index].error_code ==
+			    owned_completions[index].completion.error_code ==
 				    PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH &&
-			    completions[index].pid > 0)
+			    owned_completions[index].completion.pid > 0)
 			{
-				custody_mismatches[custody_mismatch_count] = completions[index];
-				custody_recapture_allowed[custody_mismatch_count] =
-					custody_recapture_armed.insert(completions[index].pid)
-						.second;
+				custody_mismatches[custody_mismatch_count] = {
+					completion.pid, completion.revision, completion.components,
+					completion.custody_diagnosis
+				};
+				try
+				{
+					custody_recapture_allowed[custody_mismatch_count] =
+						custody_recapture_armed.insert(completion.pid)
+							.second;
+				}
+				catch (const std::bad_alloc &)
+				{
+					++health.overloads;
+				}
 				++custody_mismatch_count;
 			}
 		}
@@ -1981,32 +2217,37 @@ void player_save_pipeline_pulse(void)
 	{
 		if (craft_progression_hooks.saved)
 		{
-			if (!completions[index].craft_receipts.empty())
+			if (!owned_completions[index].completion.craft_receipts.empty())
 				craft_progression_hooks.saved(
-					completions[index].pid, true,
-					completions[index].craft_receipts.data(),
-					completions[index].craft_receipts.size());
-			if (!completions[index].failed_craft_receipts.empty())
+					owned_completions[index].completion.pid, true,
+					owned_completions[index].completion.craft_receipts.data(),
+					owned_completions[index].completion.craft_receipts.size());
+			if (!owned_completions[index].completion.failed_craft_receipts.empty())
 				craft_progression_hooks.saved(
-					completions[index].pid, false,
-					completions[index].failed_craft_receipts.data(),
-					completions[index].failed_craft_receipts.size());
+					owned_completions[index].completion.pid, false,
+					owned_completions[index]
+						.completion.failed_craft_receipts.data(),
+					owned_completions[index]
+						.completion.failed_craft_receipts.size());
 		}
-		if (!completions[index].quest_xp_receipts.empty())
+		if (!owned_completions[index].completion.quest_xp_receipts.empty())
 			quest_reward_recovery_save_acknowledged(
-				completions[index].pid, completions[index].revision,
-				completions[index].quest_xp_receipts.data(),
-				completions[index].quest_xp_receipts.size());
-		if (!completions[index].spell_effect_receipts.empty())
+				owned_completions[index].completion.pid,
+				owned_completions[index].completion.revision,
+				owned_completions[index].completion.quest_xp_receipts.data(),
+				owned_completions[index].completion.quest_xp_receipts.size());
+		if (!owned_completions[index].completion.spell_effect_receipts.empty())
 			spell_component_retirement_save_completed(
-				completions[index].pid, true,
-				completions[index].spell_effect_receipts.data(),
-				completions[index].spell_effect_receipts.size());
-		if (!completions[index].failed_spell_effect_receipts.empty())
+				owned_completions[index].completion.pid, true,
+				owned_completions[index].completion.spell_effect_receipts.data(),
+				owned_completions[index].completion.spell_effect_receipts.size());
+		if (!owned_completions[index].completion.failed_spell_effect_receipts.empty())
 			spell_component_retirement_save_completed(
-				completions[index].pid, false,
-				completions[index].failed_spell_effect_receipts.data(),
-				completions[index].failed_spell_effect_receipts.size());
+				owned_completions[index].completion.pid, false,
+				owned_completions[index]
+					.completion.failed_spell_effect_receipts.data(),
+				owned_completions[index]
+					.completion.failed_spell_effect_receipts.size());
 	}
 	for (size_t index = 0; index < custody_mismatch_count; ++index)
 	{
@@ -2058,11 +2299,27 @@ void player_save_pipeline_pulse(void)
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		if (durable_ready.empty())
 			break;
-		const size_t snapshot_bytes = durable_ready.front().encoded_size_bound;
-		const int trace_pid = durable_ready.front().pid;
-		const player_revision_t trace_revision = durable_ready.front().revision;
-		const player_save_submit_result submitted =
-			player_save_worker_submit_retained(&durable_ready.front());
+		auto selected = durable_ready.begin();
+		size_t snapshot_bytes = 0;
+		int trace_pid = 0;
+		player_revision_t trace_revision = 0;
+		player_save_submit_result submitted = player_save_submit_result::replay_busy;
+		for (size_t visited = 0; selected != durable_ready.end() &&
+					 visited < PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS;
+		     ++visited, ++selected)
+		{
+			snapshot_bytes = selected->body.encoded_size_bound;
+			trace_pid = selected->body.pid;
+			trace_revision = selected->body.revision;
+			submitted = player_save_worker_submit_owned_retained(&selected->body,
+									     selected->residence);
+			if (submitted != player_save_submit_result::replay_busy)
+				break;
+		}
+		if (selected == durable_ready.end() ||
+		    submitted == player_save_submit_result::replay_busy)
+			break;
+
 		if (trace_player_saves())
 			logit(LOG_STATUS,
 			      "PLAYER SAVE TRACE: stage=submit mono_us=%llu pid=%d revision=%llu outcome=%u append=%llu ready=%llu",
@@ -2074,7 +2331,7 @@ void player_save_pipeline_pulse(void)
 		    submitted == player_save_submit_result::capacity_exceeded)
 			break;
 		retained_bytes -= snapshot_bytes;
-		durable_ready.pop_front();
+		durable_ready.erase(selected);
 		if (submitted == player_save_submit_result::durably_spilled)
 			++health.durable_spills;
 		else
@@ -2110,7 +2367,7 @@ bool player_save_pipeline_drain(uint64_t timeout_msec)
 		player_save_pipeline_pulse();
 		{
 			std::lock_guard<std::mutex> lock(pipeline_mutex);
-			if (pending_append.empty() && !append_inflight)
+			if (pending_append.empty() && !append_retry && !append_inflight)
 				return true;
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));

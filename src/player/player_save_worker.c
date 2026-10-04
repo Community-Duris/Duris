@@ -17,6 +17,7 @@
 #include <limits>
 #include <mutex>
 #include <new>
+#include <optional>
 #include <thread>
 #include <type_traits>
 #include <unordered_map>
@@ -40,6 +41,9 @@ struct queued_snapshot
 	unsigned int retry_count = 0;
 	uint64_t request_generation = 0;
 	bool wake_pending = false;
+	player_save_execution_guard::resident_claim residence;
+	uint64_t ownership_epoch = 0;
+	bool waiting_for_ownership = false;
 };
 
 static_assert(std::is_nothrow_move_assignable_v<player_snapshot>);
@@ -47,6 +51,10 @@ static_assert(std::is_nothrow_move_assignable_v<player_save_completion>);
 static_assert(std::is_nothrow_move_constructible_v<player_save_completion>);
 static_assert(std::is_nothrow_default_constructible_v<player_save_completion>);
 static_assert(std::is_nothrow_destructible_v<player_save_completion>);
+static_assert(std::is_nothrow_move_assignable_v<player_save_owned_completion>);
+static_assert(std::is_nothrow_move_constructible_v<player_save_owned_completion>);
+static_assert(std::is_nothrow_default_constructible_v<player_save_owned_completion>);
+static_assert(std::is_nothrow_destructible_v<player_save_owned_completion>);
 static_assert(PLAYER_SAVE_WORKER_MAX_RESULTS >= PLAYER_SAVE_WORKER_MAX_PIDS);
 
 struct pid_slot
@@ -56,6 +64,9 @@ struct pid_slot
 	bool dispatched = false;
 	bool deferred = false;
 	bool deferred_original = false;
+	// Claimed results cannot transfer their residence until the worker scope
+	// and all nested permits have actually unwound after completion staging.
+	bool completion_ready = true;
 };
 
 std::mutex worker_mutex;
@@ -258,6 +269,9 @@ void worker_main()
 	{
 		int pid = 0;
 		const queued_snapshot *job = nullptr;
+		bool owned_attempt = false;
+		bool result_staged = false;
+		uint64_t request_generation = 0;
 		{
 			std::unique_lock<std::mutex> lock(worker_mutex);
 			job_available.wait(lock,
@@ -299,176 +313,219 @@ void worker_main()
 			// A newer notification during that check remains sticky through park.
 			found->second.active->wake_pending = false;
 			job = found->second.active.get();
+			owned_attempt = static_cast<bool>(job->residence);
+			request_generation = job->request_generation;
+			// Publish the observation window before checking the leaf scope so a
+			// release notice arriving before park remains attached to this job.
+			found->second.active->waiting_for_ownership = owned_attempt;
+			found->second.completion_ready = !owned_attempt;
 			update_depth_health_locked();
 		}
 
-		persistence_trace_event trace;
-		trace.stage = persistence_trace_stage::save_apply;
-		trace.pid = job->snapshot.pid;
-		trace.revision = job->snapshot.revision;
-		trace.components = job->snapshot.components;
-		trace.attempt = job->retry_count;
-		persistence_trace_record(trace);
-		const uint64_t started = now_usec();
-		// Admission and execution share the leaf guard. Keep this owner until
-		// journal ACK/terminal handling and completion staging have finished;
-		// a new publication hold cannot overtake an admitted ordinary save.
-		player_save_execution_guard::permit execution(pid);
-		player_save_apply_result applied = {};
-		if (execution.result() == player_save_execution_guard::admission::held)
 		{
-			applied = { player_save_apply_outcome::deferred, 0, 0 };
-		}
-		else if (execution.result() == player_save_execution_guard::admission::unavailable)
-		{
-			// Allocation/capacity failure has no release-triggered wake. Use
-			// the existing bounded failure retry rather than parking as held.
-			applied = { player_save_apply_outcome::retryable_failure, 0, ENOMEM };
-		}
-		else
-		{
-			try
+			std::optional<player_save_execution_guard::execution_scope>
+				ownership_execution;
+			auto ownership = player_save_execution_guard::ownership_status::allowed;
+			if (owned_attempt)
 			{
-				applied = apply_callback(job->snapshot, apply_context);
+				ownership_execution.emplace(job->residence);
+				ownership = ownership_execution->result();
+				std::lock_guard<std::mutex> lock(worker_mutex);
+				slots.at(pid).active->waiting_for_ownership =
+					ownership ==
+					player_save_execution_guard::ownership_status::busy;
 			}
-			catch (const std::bad_alloc &)
+			persistence_trace_event trace;
+			trace.stage = persistence_trace_stage::save_apply;
+			trace.pid = job->snapshot.pid;
+			trace.revision = job->snapshot.revision;
+			trace.components = job->snapshot.components;
+			trace.attempt = job->retry_count;
+			persistence_trace_record(trace);
+			const uint64_t started = now_usec();
+			// Admission and execution share the leaf guard. Keep this owner until
+			// journal ACK/terminal handling and completion staging have finished;
+			// a new publication hold cannot overtake an admitted ordinary save.
+			player_save_execution_guard::permit execution(pid);
+			player_save_apply_result applied = {};
+			if (ownership == player_save_execution_guard::ownership_status::busy ||
+			    ownership == player_save_execution_guard::ownership_status::held ||
+			    execution.result() == player_save_execution_guard::admission::held)
 			{
+				applied = { player_save_apply_outcome::deferred, 0, 0 };
+			}
+			else if (ownership !=
+					 player_save_execution_guard::ownership_status::allowed ||
+				 execution.result() ==
+					 player_save_execution_guard::admission::unavailable)
+			{
+				// Allocation/capacity failure has no release-triggered wake. Use
+				// the existing bounded failure retry rather than parking as held.
 				applied = { player_save_apply_outcome::retryable_failure, 0,
 					    ENOMEM };
 			}
-			catch (...)
-			{
-				applied = { player_save_apply_outcome::terminal_failure, 0,
-					    EFAULT };
-			}
-		}
-		// Keep the journal record when a receipt-bearing save's claimed success
-		// belongs to a different durable revision.
-		if ((applied.outcome == player_save_apply_outcome::applied ||
-		     applied.outcome == player_save_apply_outcome::already_applied) &&
-		    !player_save_result_matches_exact_request(job->snapshot, applied))
-		{
-			applied.outcome = player_save_apply_outcome::terminal_failure;
-			applied.error_code = ESTALE;
-		}
-		trace.stage = persistence_trace_stage::save_result;
-		trace.outcome = static_cast<uint32_t>(applied.outcome);
-		trace.error = applied.error_code;
-		trace.diagnosis = static_cast<uint32_t>(applied.custody_diagnosis);
-		trace.witness = applied.custody_witness;
-		trace.durable_revision = applied.durable_revision;
-		trace.incident =
-			applied.outcome == player_save_apply_outcome::terminal_failure ||
-			((applied.outcome == player_save_apply_outcome::retryable_failure ||
-			  applied.outcome == player_save_apply_outcome::ambiguous_commit) &&
-			 job->retry_count >= PLAYER_SAVE_WORKER_MAX_RETRIES);
-		persistence_trace_record(trace);
-		if (applied.outcome == player_save_apply_outcome::deferred)
-		{
-			std::lock_guard<std::mutex> lock(worker_mutex);
-			auto &slot = slots.at(pid);
-			slot.dispatched = false;
-			slot.deferred = true;
-			slot.deferred_original = true;
-			update_depth_health_locked();
-			continue;
-		}
-		if ((applied.outcome == player_save_apply_outcome::applied ||
-		     applied.outcome == player_save_apply_outcome::already_applied ||
-		     applied.outcome == player_save_apply_outcome::stale_revision) &&
-		    applied.durable_revision >= job->snapshot.revision &&
-		    player_save_result_matches_exact_request(job->snapshot, applied))
-		{
-			player_save_journal_ack_fn acknowledge = nullptr;
-			void *ack_context = nullptr;
-			{
-				std::lock_guard<std::mutex> lock(worker_mutex);
-				acknowledge = journal_ack_callback;
-				ack_context = journal_context;
-			}
-			bool acked = true;
-			if (acknowledge)
+			else
 			{
 				try
 				{
-					acked = acknowledge(job->snapshot, applied.durable_revision,
-							    ack_context);
+					applied = apply_callback(job->snapshot, apply_context);
+				}
+				catch (const std::bad_alloc &)
+				{
+					applied = { player_save_apply_outcome::retryable_failure, 0,
+						    ENOMEM };
 				}
 				catch (...)
 				{
-					acked = false;
+					applied = { player_save_apply_outcome::terminal_failure, 0,
+						    EFAULT };
 				}
 			}
-			trace.stage = persistence_trace_stage::save_checkpoint;
-			trace.outcome = acked ? 0 : 1;
-			trace.incident = false;
-			persistence_trace_record(trace);
-			if (!acked)
+			// Keep the journal record when a receipt-bearing save's claimed success
+			// belongs to a different durable revision.
+			if ((applied.outcome == player_save_apply_outcome::applied ||
+			     applied.outcome == player_save_apply_outcome::already_applied) &&
+			    !player_save_result_matches_exact_request(job->snapshot, applied))
 			{
-				std::lock_guard<std::mutex> lock(worker_mutex);
-				saturating_increment(health.journal_ack_failures);
-				// DB durability is real, but do not ACK the player or discard the
-				// retained job while its journal checkpoint has failed.
-				applied.outcome = player_save_apply_outcome::retryable_failure;
-				applied.error_code = EIO;
+				applied.outcome = player_save_apply_outcome::terminal_failure;
+				applied.error_code = ESTALE;
 			}
-		}
-		// Do not expose an unresolved terminal result (or drop an exhausted
-		// retry) while login can still consume an older durable DB snapshot.
-		if (applied.outcome == player_save_apply_outcome::terminal_failure ||
-		    ((applied.outcome == player_save_apply_outcome::retryable_failure ||
-		      applied.outcome == player_save_apply_outcome::ambiguous_commit) &&
-		     job->retry_count >= PLAYER_SAVE_WORKER_MAX_RETRIES))
-		{
-			player_save_journal_terminal_fn terminal = nullptr;
-			void *terminal_context = nullptr;
-			{
-				std::lock_guard<std::mutex> lock(worker_mutex);
-				terminal = journal_terminal_callback;
-				terminal_context = journal_context;
-			}
-			if (terminal)
-				terminal(job->snapshot, terminal_context);
-			trace.stage = persistence_trace_stage::save_fence;
+			trace.stage = persistence_trace_stage::save_result;
 			trace.outcome = static_cast<uint32_t>(applied.outcome);
 			trace.error = applied.error_code;
-			trace.incident = true;
+			trace.diagnosis = static_cast<uint32_t>(applied.custody_diagnosis);
+			trace.witness = applied.custody_witness;
+			trace.durable_revision = applied.durable_revision;
+			trace.incident =
+				applied.outcome == player_save_apply_outcome::terminal_failure ||
+				((applied.outcome == player_save_apply_outcome::retryable_failure ||
+				  applied.outcome == player_save_apply_outcome::ambiguous_commit) &&
+				 job->retry_count >= PLAYER_SAVE_WORKER_MAX_RETRIES);
 			persistence_trace_record(trace);
-		}
-		const uint64_t completed = now_usec();
-		player_save_completion completion = {
-			.pid = job->snapshot.pid,
-			.revision = job->snapshot.revision,
-			.components = job->snapshot.components,
-			.outcome = applied.outcome,
-			.durable_revision = applied.durable_revision,
-			.error_code = applied.error_code,
-			.custody_diagnosis = applied.custody_diagnosis,
-			.retry_count = job->retry_count,
-			.queued_at_usec = job->queued_at_usec,
-			.started_at_usec = started,
-			.completed_at_usec = completed,
-			.quest_xp_receipts = {},
-			.spell_effect_receipts = {},
-			.failed_spell_effect_receipts = {},
-			.custody_witness = applied.custody_witness,
-		};
-		{
-			std::unique_lock<std::mutex> lock(worker_mutex);
-			result_available.wait(lock,
-					      [] {
-						      return stop_requested ||
-							     results.size() <
-								     PLAYER_SAVE_WORKER_MAX_RESULTS;
-					      });
-			if (results.size() < PLAYER_SAVE_WORKER_MAX_RESULTS)
+			if (applied.outcome == player_save_apply_outcome::deferred)
 			{
-				// A nondeferred result belongs to this completed attempt; do not
-				// carry a release notification into a later retry or replacement.
-				slots.at(pid).active->wake_pending = false;
-				results.push_back(std::move(completion));
-				network_wakeup_notify();
+				std::lock_guard<std::mutex> lock(worker_mutex);
+				auto &slot = slots.at(pid);
+				slot.dispatched = false;
+				slot.deferred = true;
+				slot.deferred_original = true;
+				update_depth_health_locked();
+				continue;
 			}
+			if ((applied.outcome == player_save_apply_outcome::applied ||
+			     applied.outcome == player_save_apply_outcome::already_applied ||
+			     applied.outcome == player_save_apply_outcome::stale_revision) &&
+			    applied.durable_revision >= job->snapshot.revision &&
+			    player_save_result_matches_exact_request(job->snapshot, applied))
+			{
+				player_save_journal_ack_fn acknowledge = nullptr;
+				void *ack_context = nullptr;
+				{
+					std::lock_guard<std::mutex> lock(worker_mutex);
+					acknowledge = journal_ack_callback;
+					ack_context = journal_context;
+				}
+				bool acked = true;
+				if (acknowledge)
+				{
+					try
+					{
+						acked = acknowledge(job->snapshot,
+								    applied.durable_revision,
+								    ack_context);
+					}
+					catch (...)
+					{
+						acked = false;
+					}
+				}
+				trace.stage = persistence_trace_stage::save_checkpoint;
+				trace.outcome = acked ? 0 : 1;
+				trace.incident = false;
+				persistence_trace_record(trace);
+				if (!acked)
+				{
+					std::lock_guard<std::mutex> lock(worker_mutex);
+					saturating_increment(health.journal_ack_failures);
+					// DB durability is real, but do not ACK the player or discard the
+					// retained job while its journal checkpoint has failed.
+					applied.outcome =
+						player_save_apply_outcome::retryable_failure;
+					applied.error_code = EIO;
+				}
+			}
+			// Do not expose an unresolved terminal result (or drop an exhausted
+			// retry) while login can still consume an older durable DB snapshot.
+			if (applied.outcome == player_save_apply_outcome::terminal_failure ||
+			    ((applied.outcome == player_save_apply_outcome::retryable_failure ||
+			      applied.outcome == player_save_apply_outcome::ambiguous_commit) &&
+			     job->retry_count >= PLAYER_SAVE_WORKER_MAX_RETRIES))
+			{
+				player_save_journal_terminal_fn terminal = nullptr;
+				void *terminal_context = nullptr;
+				{
+					std::lock_guard<std::mutex> lock(worker_mutex);
+					terminal = journal_terminal_callback;
+					terminal_context = journal_context;
+				}
+				if (terminal)
+					terminal(job->snapshot, terminal_context);
+				trace.stage = persistence_trace_stage::save_fence;
+				trace.outcome = static_cast<uint32_t>(applied.outcome);
+				trace.error = applied.error_code;
+				trace.incident = true;
+				persistence_trace_record(trace);
+			}
+			const uint64_t completed = now_usec();
+			player_save_completion completion = {
+				.pid = job->snapshot.pid,
+				.revision = job->snapshot.revision,
+				.components = job->snapshot.components,
+				.outcome = applied.outcome,
+				.durable_revision = applied.durable_revision,
+				.error_code = applied.error_code,
+				.custody_diagnosis = applied.custody_diagnosis,
+				.retry_count = job->retry_count,
+				.queued_at_usec = job->queued_at_usec,
+				.started_at_usec = started,
+				.completed_at_usec = completed,
+				.quest_xp_receipts = {},
+				.spell_effect_receipts = {},
+				.failed_spell_effect_receipts = {},
+				.custody_witness = applied.custody_witness,
+			};
+			{
+				std::unique_lock<std::mutex> lock(worker_mutex);
+				result_available.wait(
+					lock,
+					[] {
+						return stop_requested ||
+						       results.size() <
+							       PLAYER_SAVE_WORKER_MAX_RESULTS;
+					});
+				if (results.size() < PLAYER_SAVE_WORKER_MAX_RESULTS)
+				{
+					// A nondeferred result belongs to this completed attempt; do not
+					// carry a release notification into a later retry or replacement.
+					slots.at(pid).active->wake_pending = false;
+					results.push_back(std::move(completion));
+					result_staged = true;
+					if (!owned_attempt)
+						network_wakeup_notify();
+				}
+			}
+		} // The nested permit and ownership scope unwind before claim delivery.
+		if (owned_attempt && result_staged)
+		{
+			{
+				std::lock_guard<std::mutex> lock(worker_mutex);
+				const auto found = slots.find(pid);
+				if (found == slots.end() || !found->second.active ||
+				    found->second.active->request_generation != request_generation)
+					continue;
+				found->second.completion_ready = true;
+			}
+			network_wakeup_notify();
 		}
 	}
 	std::lock_guard<std::mutex> lock(worker_mutex);
@@ -613,13 +670,18 @@ bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
 	return true;
 }
 
-player_save_submit_result player_save_worker_submit_retained(player_snapshot *snapshot_pointer)
+player_save_submit_result
+player_save_worker_submit_owned_retained(player_snapshot *snapshot_pointer,
+					 player_save_execution_guard::resident_claim &residence)
 {
 	if (!snapshot_pointer)
 		return player_save_submit_result::invalid;
 	player_snapshot &snapshot = *snapshot_pointer;
 	if (!valid_snapshot(snapshot))
 		return player_save_submit_result::invalid;
+	const uint64_t epoch = player_save_execution_guard::current_ownership_epoch();
+	if ((epoch && !residence.matches_current(snapshot.pid)) || (!epoch && residence))
+		return player_save_submit_result::worker_unavailable;
 	player_save_journal_append_fn append = nullptr;
 	void *append_context = nullptr;
 	{
@@ -627,7 +689,21 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 		append = journal_append_callback;
 		append_context = journal_context;
 	}
-	const bool durably_journaled = append && append(snapshot, append_context);
+	bool durably_journaled = false;
+	{
+		std::optional<player_save_execution_guard::execution_scope> append_owner;
+		if (residence)
+		{
+			append_owner.emplace(residence);
+			const auto admitted = append_owner->result();
+			if (admitted == player_save_execution_guard::ownership_status::busy ||
+			    admitted == player_save_execution_guard::ownership_status::held)
+				return player_save_submit_result::replay_busy;
+			if (admitted != player_save_execution_guard::ownership_status::allowed)
+				return player_save_submit_result::worker_unavailable;
+		}
+		durably_journaled = append && append(snapshot, append_context);
+	}
 	if (append && !durably_journaled)
 		return player_save_submit_result::journal_failure;
 	std::lock_guard<std::mutex> lock(worker_mutex);
@@ -676,6 +752,8 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 			job->claimed_components = revision_state.queued_components;
 			job->request_generation = ++next_request_generation;
 			job->snapshot = std::move(snapshot);
+			job->residence = std::move(residence);
+			job->ownership_epoch = epoch;
 			job->queued_at_usec = now_usec();
 			retained_bytes += job->snapshot.encoded_size_bound;
 			inserted.first->second.active = std::move(job);
@@ -745,6 +823,8 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 		}
 		pending->request_generation = ++next_request_generation;
 		pending->snapshot = std::move(snapshot);
+		pending->residence = std::move(residence);
+		pending->ownership_epoch = epoch;
 		pending->queued_at_usec = now_usec();
 		retained_bytes =
 			retained_bytes - replaced_bytes + pending->snapshot.encoded_size_bound;
@@ -764,14 +844,34 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 	return player_save_submit_result::coalesced;
 }
 
+player_save_submit_result player_save_worker_submit_retained(player_snapshot *snapshot)
+{
+	if (!snapshot || !valid_snapshot(*snapshot))
+		return player_save_submit_result::invalid;
+	player_save_execution_guard::resident_claim residence;
+	const auto epoch = player_save_execution_guard::current_ownership_epoch();
+	if (epoch)
+	{
+		residence = player_save_execution_guard::resident_claim(epoch, snapshot->pid);
+		if (residence.result() == player_save_execution_guard::ownership_status::busy)
+			return player_save_submit_result::replay_busy;
+		if (!residence)
+			return player_save_submit_result::worker_unavailable;
+	}
+	return player_save_worker_submit_owned_retained(snapshot, residence);
+}
+
 player_save_submit_result player_save_worker_submit(player_snapshot snapshot)
 {
 	return player_save_worker_submit_retained(&snapshot);
 }
 
-size_t player_save_worker_pulse(player_save_completion *completions_out, size_t capacity)
+namespace
 {
-	if (capacity && !completions_out)
+size_t pulse_impl(player_save_completion *completions_out, player_save_owned_completion *owned_out,
+		  size_t capacity)
+{
+	if (capacity && !completions_out && !owned_out)
 		return 0;
 	std::unique_lock<std::mutex> lock(worker_mutex);
 	size_t consumed = 0;
@@ -788,6 +888,10 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 		    staged_slot->second.active->snapshot.components == front.components)
 		{
 			const auto &slot = staged_slot->second;
+			// Keep the original residence in the worker until its scope has
+			// unwound and a move-only recipient can carry it through callbacks.
+			if (slot.active->residence && (!owned_out || !slot.completion_ready))
+				break;
 			const bool retry =
 				front.outcome == player_save_apply_outcome::retryable_failure ||
 				front.outcome == player_save_apply_outcome::ambiguous_commit;
@@ -833,6 +937,7 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 		account_completion_locked(completion, ack_at);
 		bool finished = false;
 		bool exact_acknowledged = false;
+		player_save_execution_guard::resident_claim delivered_residence;
 		switch (completion.outcome)
 		{
 		case player_save_apply_outcome::applied:
@@ -915,6 +1020,7 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 					std::move(slot.active->snapshot.craft_receipts);
 			}
 			remove_active_bytes_locked(slot);
+			delivered_residence = std::move(slot.active->residence);
 			slot.active.reset();
 			slot.dispatched = false;
 			slot.deferred_original = false;
@@ -931,10 +1037,27 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 		}
 		if (completions_out)
 			completions_out[consumed] = std::move(completion);
+		else
+		{
+			owned_out[consumed].completion = std::move(completion);
+			owned_out[consumed].residence = std::move(delivered_residence);
+		}
 		++consumed;
 	}
 	update_depth_health_locked();
 	return consumed;
+}
+} // namespace
+
+size_t player_save_worker_pulse(player_save_completion *completions_out, size_t capacity)
+{
+	return pulse_impl(completions_out, nullptr, capacity);
+}
+
+size_t player_save_worker_pulse_owned(player_save_owned_completion *completions_out,
+				      size_t capacity)
+{
+	return pulse_impl(nullptr, completions_out, capacity);
 }
 
 bool player_save_worker_pid_pending(int pid)
@@ -976,6 +1099,29 @@ bool player_save_worker_resume_deferred_exact(const player_save_deferred_identit
 		return false;
 	std::lock_guard<std::mutex> lock(worker_mutex);
 	return notify_active_locked(identity.pid, &identity);
+}
+
+size_t player_save_worker_ownership_waiters(player_save_ownership_waiter *out,
+					    size_t capacity) noexcept
+{
+	if (capacity && !out)
+		return 0;
+	std::lock_guard<std::mutex> lock(worker_mutex);
+	if (!health.running || stop_requested || !apply_callback)
+		return 0;
+	size_t count = 0;
+	for (const auto &[pid, slot] : slots)
+	{
+		if (count == capacity)
+			break;
+		if (!slot.active || !slot.active->residence || !slot.active->waiting_for_ownership)
+			continue;
+		const auto &job = *slot.active;
+		out[count++] = { { pid, job.snapshot.revision, job.request_generation,
+				   worker_lifecycle },
+				 job.ownership_epoch };
+	}
+	return count;
 }
 
 player_save_worker_health player_save_worker_health_copy(void)
