@@ -559,6 +559,10 @@ try:
                 assert orphan_counts[code] == 1, orphan_counts
             assert orphan_cut["orphan_evidence_coverage"] == {
                 "scope": "database", "table_counts": dict.fromkeys(exporter.ORPHAN_EVIDENCE_SOURCES, 1)}
+            rootless_lookup = view(orphan_cut, {}, "operation", 100, operation_id=orphan.hex())
+            assert rootless_lookup["record_counts"]["operations"] == 0
+            assert rootless_lookup["record_counts"]["orphan_evidence"] == 4
+            assert rootless_lookup["count"] == 4
             assert orphan_readback() == before_orphans
             with setup.cursor() as writer:
                 for table, _, _ in exporter.ORPHAN_EVIDENCE_SOURCES.values():
@@ -1173,6 +1177,43 @@ try:
                      str(output)], capture_output=True, text=True, timeout=30)
                 assert result.returncode == 1
                 assert json.loads(result.stdout)["exception_counts"] == expected_exceptions
+                # Exact ID views retain the global audit refusal and the
+                # selected cut. Filtering never certifies a partial export.
+                before_lookup = capture(audit, LINEAGE, EPOCH)
+                before_bytes = output.read_bytes()
+                for limit in (0, 1, 100):
+                    lookup = subprocess.run(
+                        [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                         str(output), "--view", "operation", "--operation-id", root.hex(),
+                         "--limit", str(limit)], capture_output=True, text=True, timeout=30)
+                    assert lookup.returncode == 1, lookup.stderr
+                    operation = json.loads(lookup.stdout)
+                    assert operation["count"] == 7 and operation["truncated"] == (limit < 7)
+                    assert operation["record_counts"] == {
+                        "operations": 1, "effects": 2, "postings": 2, "children": 0,
+                        "item_references": 0, "receipts": 1, "source_claims": 1, "orphan_evidence": 0}
+                    assert operation["coverage"]["root_scope"] == "selected_epoch"
+                    assert operation["coverage"]["complete"] is False
+                    assert operation["coverage"]["exception_count"] == sum(expected_exceptions.values())
+                    if limit:
+                        assert operation["rows"][0]["operation_id"] == root.hex()
+                        assert operation["rows"][0]["record"] == "operations"
+                    holding = subprocess.run(
+                        [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                         str(output), "--view", "holdings", "--account-key", key(1, 7).hex(),
+                         "--limit", str(limit)], capture_output=True, text=True, timeout=30)
+                    assert holding.returncode == 1, holding.stderr
+                    account = json.loads(holding.stdout)
+                    assert account["count"] == 1 and account["truncated"] == (limit == 0)
+                    assert account["coverage"]["account_key"] == key(1, 7).hex()
+                    assert account["coverage"]["scope"] == "captured_native_holdings"
+                    if limit:
+                        assert account["rows"][0]["balance"] == [2, 0, 0, 0]
+                    assert "alias" not in lookup.stdout and "alias" not in holding.stdout
+                    assert output.read_bytes() == before_bytes
+                    assert capture(audit, LINEAGE, EPOCH) == before_lookup
+                print("SQL operator views: exact operation/account IDs, global refusal, "
+                      "zero/one/max limits and unchanged source cut passed", flush=True)
                 with setup.cursor() as cursor:
                     cursor.execute("INSERT INTO ships VALUES (25,7)")
                 before_ship_cli = capture(audit, LINEAGE, EPOCH)

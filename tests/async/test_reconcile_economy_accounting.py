@@ -170,6 +170,104 @@ class ReconciliationTests(unittest.TestCase):
                 with self.assertRaisesRegex(SnapshotError, "provenance requires"):
                     view(snapshot, {}, "provenance", 1, uid=uid)
 
+    def test_operation_lookup_is_exact_bounded_scoped_and_alias_free(self):
+        snapshot = clean_snapshot()
+        snapshot["complete"] = False
+        snapshot["children"] = [{"operation_id": OP, "child_index": 1,
+                                  "child_operation_id": LEGACY, "parent_index": 0}]
+        snapshot["orphan_evidence"] = [{"operation_id": OP, "table": "postings", "row_index": 3}]
+        for collection in ("operations", "effects", "postings", "children",
+                           "item_references", "receipts", "source_claims", "orphan_evidence"):
+            for row in snapshot[collection]:
+                row["personal_alias"] = "private-" + collection
+                row["result_payload"] = "private-payload"
+        snapshot["operations"].append({**snapshot["operations"][0], "operation_id": "66" * 16})
+        before = copy.deepcopy(snapshot)
+        expected = {"operations": 1, "effects": 2, "postings": 2, "children": 1,
+                    "item_references": 1, "receipts": 1, "source_claims": 1, "orphan_evidence": 1}
+        for limit in (0, 1, 100):
+            result = view(snapshot, {"exception_count": 2}, "operation", limit, operation_id=OP)
+            self.assertEqual(result["count"], 10)
+            self.assertEqual(result["truncated"], limit < 10)
+            self.assertEqual(len(result["rows"]), min(limit, 10))
+            self.assertEqual(result["record_counts"], expected)
+            self.assertEqual(result["coverage"], {
+                "lineage": LINEAGE, "selected_epoch": EPOCH, "complete": False,
+                "quiescent": True, "exception_count": 2, "root_scope": "selected_epoch",
+                "operation_id": OP})
+            self.assertNotIn("private-", json.dumps(result))
+            self.assertNotIn("alias", json.dumps(result))
+            self.assertEqual(snapshot, before)
+        rows = view(snapshot, {}, "operation", 100, operation_id=OP)["rows"]
+        self.assertEqual(rows[0]["record"], "operations")
+        self.assertEqual(next(row for row in rows if row["record"] == "item_references")
+                         ["legacy_operation_id"], LEGACY)
+        missing = view(snapshot, {}, "operation", 100, operation_id="77" * 16)
+        self.assertEqual(missing["count"], 0)
+        self.assertEqual(missing["record_counts"]["operations"], 0)
+        # Duplicate roots are evidence conflicts and must remain visible.
+        snapshot["operations"].append(copy.deepcopy(snapshot["operations"][0]))
+        self.assertEqual(view(snapshot, {}, "operation", 0, operation_id=OP)
+                         ["record_counts"]["operations"], 2)
+        snapshot["operations"] = [row for row in snapshot["operations"] if row["operation_id"] != OP]
+        rootless = view(snapshot, {}, "operation", 100, operation_id=OP)
+        self.assertEqual(rootless["record_counts"]["operations"], 0)
+        self.assertEqual(rootless["record_counts"]["orphan_evidence"], 1)
+        self.assertEqual(rootless["count"], 9)
+
+    def test_holdings_filter_is_exact_and_reports_capture_scope(self):
+        snapshot = clean_snapshot()
+        before = copy.deepcopy(snapshot)
+        for limit in (0, 1, 100):
+            result = view(snapshot, {}, "holdings", limit, holding_key=WALLET)
+            self.assertEqual(result["count"], 1)
+            self.assertEqual(len(result["rows"]), min(limit, 1))
+            self.assertEqual(result["truncated"], limit == 0)
+            self.assertEqual(result["coverage"]["account_key"], WALLET)
+            self.assertEqual(result["coverage"]["scope"], "captured_native_holdings")
+            self.assertNotIn("alias", json.dumps(result))
+        self.assertEqual(view(snapshot, {}, "holdings", 100, holding_key=key(1, 8))["count"], 0)
+        self.assertEqual(snapshot, before)
+
+    def test_operator_lookup_invalid_ids_filters_and_limits_refuse(self):
+        snapshot = clean_snapshot()
+        for operation in (None, True, "0" * 32, "x" * 32, "A" * 32, "11"):
+            with self.subTest(operation=operation), self.assertRaises(SnapshotError):
+                view(snapshot, {}, "operation", 1, operation_id=operation)
+        for holding in (True, "0" * 80, key(1, 10).upper(), WALLET[:-2]):
+            with self.subTest(holding=holding), self.assertRaises(SnapshotError):
+                view(snapshot, {}, "holdings", 1, holding_key=holding)
+        for name in ("exceptions", "holdings", "provenance", "supply", "prices", "routes"):
+            with self.subTest(name=name), self.assertRaises(SnapshotError):
+                view(snapshot, {}, name, 1, operation_id=OP)
+        with self.assertRaises(SnapshotError):
+            view(snapshot, {}, "operation", 1, operation_id=OP, holding_key=WALLET)
+        for limit in (True, -1, 101):
+            with self.subTest(limit=limit), self.assertRaises(SnapshotError):
+                view(snapshot, {}, "operation", limit, operation_id=OP)
+
+    def test_operator_cli_filters_preserve_global_audit_status_and_snapshot(self):
+        snapshot = clean_snapshot()
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "snapshot.json"
+            path.write_text(json.dumps(snapshot), encoding="utf-8")
+            before = path.read_bytes()
+            command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"), str(path)]
+            for args, count in ((["--view", "operation", "--operation-id", OP], 8),
+                                (["--view", "holdings", "--account-key", WALLET], 1)):
+                result = subprocess.run(command + args, capture_output=True, text=True, check=False)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(json.loads(result.stdout)["count"], count)
+                self.assertEqual(path.read_bytes(), before)
+            snapshot["native"]["holdings"][1]["balance"] = [4, 0, 0, 0]
+            path.write_text(json.dumps(snapshot), encoding="utf-8")
+            before = path.read_bytes()
+            result = subprocess.run(command + ["--view", "holdings", "--account-key", WALLET],
+                                    capture_output=True, text=True, check=False)
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertEqual(json.loads(result.stdout)["coverage"]["exception_count"], 1)
+            self.assertEqual(path.read_bytes(), before)
+
     def test_database_wide_orphan_evidence_is_specific_and_read_only(self):
         snapshot = clean_snapshot()
         # A missing root cannot supply a trustworthy selected lineage/epoch.
