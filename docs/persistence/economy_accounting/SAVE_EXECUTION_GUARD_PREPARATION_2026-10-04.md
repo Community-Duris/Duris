@@ -85,3 +85,17 @@ R1–R8, current writer reanchoring, coverage_complete=False and release=BLOCKED
 - `src/player/player_save_journal.h`: `23b4e2397bfbe35b2845b5ab6bb5ea68729c0dca3aa7f10c02c3e78f57c77a85`.
 - `src/player/player_snapshot_repository.c`: `273e7364edce38876c6109844decc3cbc1a5a6f73e0cafb2f89b199550a7fbbc`.
 - `src/player/player_snapshot_repository.h`: `38d00c1cac85e5f4109e606282a4f0d31e30575d56177463a8d69ec82f2d1aa1`.
+
+
+## Final private preparation receipt (unexecuted)
+
+`tmp/save-execution-guard-prepared-v1-final.local.json` raw SHA-256:
+`1dc308447ecef824903638148d288cba38932becc9de3435bf46aa415f11ac7a`;
+LF-normalized `c6d63065de04c74ce6b17ce649f0c2e1bdb66a753fa53eed543f4e3644c26719`.
+Immutable source archives are BEFORE432db98be and AFTER80692d52b, not the later
+combined candidate. Leaf35 cases pin534 AFTER inputs and retain300-second compile/
+120-second runtime bounds; pipeline14 cases pin555 AFTER inputs and retain600/120.
+Existing19 leaf and9 pipeline baseline cases are preserved. Link/interposer/fault
+calibration and timings remain unmeasured. Controlled apply is not SQL proof;
+manual restored registration is not production critical-ACK/census/wake recovery.
+Missing new BEFORE APIs are unsupported exit78, not RED or pass. No execution ran.
