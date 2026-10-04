@@ -101,6 +101,43 @@ inline void locator(uint64_t kind, uint64_t context, uint64_t type, uint64_t nat
 		need(context == 0 && native > 0 && native <= limit && name.empty());
 	}
 }
+inline bytes frame(const std::filesystem::path &directory, const std::string &name,
+		   const char *magic, size_t limit = maximum_bytes, const digest &expected = {})
+{
+	const int fd =
+		open((directory / name).c_str(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);
+	need(fd >= 0);
+	struct closer
+	{
+		int fd;
+		~closer() { close(fd); }
+	} close_file{ fd };
+	struct stat info = {};
+	need(fstat(fd, &info) == 0 && S_ISREG(info.st_mode) && info.st_uid == geteuid() &&
+	     info.st_nlink == 1 && !(info.st_mode & 0077) && info.st_size >= 48 &&
+	     uint64_t(info.st_size) <= limit);
+	bytes encoded(static_cast<size_t>(info.st_size));
+	size_t offset = 0;
+	while (offset < encoded.size())
+	{
+		auto count = read(fd, encoded.data() + offset, encoded.size() - offset);
+		if (count < 0 && errno == EINTR)
+			continue;
+		need(count > 0);
+		offset += static_cast<size_t>(count);
+	}
+	uint8_t extra;
+	need(read(fd, &extra, 1) == 0);
+	need(!nonzero(expected) || hash(encoded) == expected);
+	reader in{ encoded };
+	auto prefix = in.take(8);
+	need(memcmp(prefix.data(), magic, 8) == 0 && in.number(4) == 1 &&
+	     in.number(4) == encoded.size() - 48);
+	auto body_digest = in.fixed<32>();
+	auto body = in.take(encoded.size() - 48);
+	need(body_digest == hash(body));
+	return { body.begin(), body.end() };
+}
 struct mapping
 {
 	uint64_t authority;
@@ -144,39 +181,8 @@ class checker
 	}
 	bytes frame(const std::string &name, const char *magic, const digest &expected = {}) const
 	{
-		const int fd = open((directory / name).c_str(),
-				    O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);
-		need(fd >= 0);
-		struct closer
-		{
-			int fd;
-			~closer() { close(fd); }
-		} close_file{ fd };
-		struct stat info = {};
-		need(fstat(fd, &info) == 0 && S_ISREG(info.st_mode) && info.st_uid == geteuid() &&
-		     info.st_nlink == 1 && !(info.st_mode & 0077) && info.st_size >= 48 &&
-		     uint64_t(info.st_size) <= maximum_bytes);
-		bytes encoded(static_cast<size_t>(info.st_size));
-		size_t offset = 0;
-		while (offset < encoded.size())
-		{
-			auto count = read(fd, encoded.data() + offset, encoded.size() - offset);
-			if (count < 0 && errno == EINTR)
-				continue;
-			need(count > 0);
-			offset += static_cast<size_t>(count);
-		}
-		uint8_t extra;
-		need(read(fd, &extra, 1) == 0);
-		need(!nonzero(expected) || hash(encoded) == expected);
-		reader in{ encoded };
-		auto prefix = in.take(8);
-		need(memcmp(prefix.data(), magic, 8) == 0 && in.number(4) == 1 &&
-		     in.number(4) == encoded.size() - 48);
-		auto body_digest = in.fixed<32>();
-		auto body = in.take(encoded.size() - 48);
-		need(body_digest == hash(body));
-		return { body.begin(), body.end() };
+		return restore_economic_authority::frame(directory, name, magic, maximum_bytes,
+							 expected);
 	}
 	size_t mapping_count(size_t bucket) const
 	{
