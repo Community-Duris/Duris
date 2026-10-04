@@ -15,6 +15,27 @@ A guarded maintenance procedure can capture a complete opening witness and
 make an activation decision using supplied, verifiable route-coverage evidence.
 It cannot activate when another plan's coverage is missing.
 
+## Current source implementation cadence
+
+The user batches testing when each major plan is ready. Source review and
+implementation continue now; preserve original sources and prepared regression
+owners for milestone failure/fix proof. Written changes remain unqualified.
+
+Recovery-session cleanup is implemented in `7dc837e29`: original-session rollback
+proof covers replacement apply, creation verification, the inspection loader's
+second transaction and journal proof; uncertain boot leases retire. Late session
+retirement preserves an already-durable resolution result. No migration or
+archive encoding changes. Source review passed its bounded scope; native cases,
+both engines, gameplay and recovery remain deferred. Extend the original 13-case
+owner with second-phase inspection faults and a late-retirement success oracle.
+
+Named-lock SQL query construction and scalar comparisons now avoid temporary
+C++ strings in lifecycle acquisition/destruction and transferred cutover release.
+Fixed stack buffers refuse formatting overflow. This bounded allocation change
+is unqualified. Tentative GET_LOCK ownership on lost replies, confirmed release
+before clearing local/coordinator exclusion, exact recovery of retained locks,
+and their native fault checks remain separate open work.
+
 ## Starting files and first checks
 
 Inspect src/persistence/critical_command_coordinator.c,
