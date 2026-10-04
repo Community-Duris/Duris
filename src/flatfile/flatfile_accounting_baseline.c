@@ -458,6 +458,27 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_stag
 	const economic_account_key &opening, const critical_operation_id &creating_operation,
 	operations *ops, std::string *error, flatfile_accounting_staging_view *view)
 {
+	return initialize_with_origin_staged(
+		root, lock, lineage, epoch, opening, creating_operation, ops, error, view,
+		flatfile_baseline_initialization_origin::baseline_participant);
+}
+flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_lifecycle_staged(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const economic_account_key &opening, const critical_operation_id &creating_operation,
+	operations *ops, std::string *error, flatfile_accounting_staging_view *view)
+{
+	return initialize_with_origin_staged(
+		root, lock, lineage, epoch, opening, creating_operation, ops, error, view,
+		flatfile_baseline_initialization_origin::lifecycle_owner);
+}
+flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_with_origin_staged(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const economic_account_key &opening, const critical_operation_id &creating_operation,
+	operations *ops, std::string *error, flatfile_accounting_staging_view *view,
+	flatfile_baseline_initialization_origin origin)
+{
 	return guarded(
 		[&]
 		{
@@ -468,9 +489,26 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_stag
 			if (view)
 				authority(view->begin(root, lock, ops));
 			const auto retained = membership(root, lock, lineage, epoch, view);
+			need(origin ==
+				     flatfile_baseline_initialization_origin::baseline_participant ||
+			     origin == flatfile_baseline_initialization_origin::lifecycle_owner);
+			if (origin == flatfile_baseline_initialization_origin::lifecycle_owner)
+				need(retained.creating_operation.bytes ==
+						     creating_operation.bytes &&
+					     retained.transition_kind == 1,
+				     status::conflict);
 			if (retained.baseline_initialization ==
 			    flatfile_baseline_initialization::initialized)
 			{
+				// Historical unknown generic retries stay unknown. A lifecycle
+				// install cannot adopt unknown or generic initialization as its own.
+				need(retained.initialization_origin == origin ||
+					     (origin == flatfile_baseline_initialization_origin::
+								baseline_participant &&
+					      retained.initialization_origin ==
+						      flatfile_baseline_initialization_origin::
+							      legacy_unknown),
+				     status::conflict);
 				need(retained.baseline_initializing_operation.bytes ==
 						     creating_operation.bytes &&
 					     economic_account_key_equal(retained.baseline_opening,
@@ -486,6 +524,8 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_stag
 			}
 			need(retained.baseline_initialization ==
 			     flatfile_baseline_initialization::never_initialized);
+			need(retained.initialization_origin ==
+			     flatfile_baseline_initialization_origin::legacy_unknown);
 			room(*ops);
 			need(ops->size() + FLATFILE_BASELINE_BUCKETS + 3 <=
 				     flatfile_authority_transaction_maximum_operations,
@@ -514,10 +554,10 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_stag
 			append(result, base + "head.ebc", encode(book), candidate_view.get());
 			// Marker, catalog hash and complete empty book publish atomically.
 			authority(flatfile_accounting_authority_storage::
-					  stage_baseline_initialization_staged(
+					  stage_baseline_initialization_with_origin_staged(
 						  root, lock, control.revision, lineage, epoch,
 						  opening, creating_operation, &result, error,
-						  candidate_view.get()));
+						  candidate_view.get(), origin));
 			room(result);
 			if (view)
 				authority(view->adopt(*candidate_view));
