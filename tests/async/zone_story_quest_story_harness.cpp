@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 82 &&
-				tracker.summary_for(7, 42).total == 1629,
+		require(catalog.story_mappings.size() == 83 &&
+				tracker.summary_for(7, 42).total == 1625,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -6389,6 +6389,118 @@ int main(int argc, char **argv)
 					recovered.has_discovered(7, 42, 241) &&
 					recovered.has_discovered(7, 42, 240),
 				"Mushroom cold recovery lost outcomes, exact owner or discovery boundary");
+		}
+
+		{
+			const auto &heart = story_for("smoke", "rijak-ehkahk-heart");
+			const auto &glasses = story_for("smoke", "korli-lost-spectacles");
+			const auto &blade = story_for("smoke", "erk-hate-and-discontent");
+			const auto &ring = story_for("smoke", "erk-ring-to-earring");
+			const auto &earring = story_for("smoke", "erk-earring-to-ring");
+			const auto &staff = story_for("smoke", "erk-jeweled-staff");
+			service journey(catalog);
+			require(journey.render_journal(7, 42, 1398, 10, 1, 99, false, false)
+							.find("Undiscovered:") !=
+						std::string::npos &&
+					journey.discover_zone(7, 42, 1398, 139832, 100,
+							      "arrival") == result::applied,
+				"Smoke discovery boundary failed");
+			require(journey.render_journal(7, 42, 1398, 10, 1, 101, false, false)
+						.find(heart.title) == std::string::npos,
+				"Smoke discovery exposed an unseen recipient's story");
+			for (const auto &actor : { std::pair<int, int>{ 139811, 139940 },
+						   { 139813, 139832 },
+						   { 139823, 139945 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 102) ==
+						result::applied,
+					"Smoke recipient encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Smoke journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[139814] = 2;
+			supplies.carried[139818] = 1;
+			supplies.carried[139832] = 1;
+			supplies.equipped[16] = 139829;
+			supplies.equipped[18] = 139825;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 1398, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(blade).find("[Missing now] " + blade.steps[2].text) !=
+						std::string::npos &&
+					section(staff).find("[Missing now] " +
+							    staff.steps[2].text) !=
+						std::string::npos &&
+					section(blade).find("permanent Power") !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 1398).completed == 0,
+				"Smoke duplicate Hate, worn material, enhanced staff, key or journal read invented acceptance");
+			supplies.carried[139829] = 1;
+			supplies.carried[139825] = 1;
+			supplies.carried[139822] = 1;
+			supplies.carried[139808] = 1;
+			supplies.carried[139813] = 1;
+			journal = journey.render_journal(7, 42, 1398, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(blade).find("[Ready now] " + blade.steps[2].text) !=
+						std::string::npos &&
+					section(staff).find("[Ready now] " + staff.steps[2].text) !=
+						std::string::npos &&
+					section(staff).find("Next: " + staff.steps.back().text) !=
+						std::string::npos &&
+					section(heart).find("Next: " + heart.steps.back().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Smoke supplied materials required route/kill history or current readiness wrote state");
+			for (const auto *entry : { &blade, &ring, &earring, &staff })
+				record(journey, entry->contracts.front(),
+				       ("smoke-service-" + entry->id).c_str(), 1398, 139945);
+			require(journey.progress_for_zone(7, 42, 1398).completed == 0 &&
+					journey.progress_for_zone(7, 42, 1398).total == 2 &&
+					journey.evidence_for(staff.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Smoke forging or reversible jewelry service awarded quest achievement");
+			record(journey, heart.contracts.front(), "smoke-heart", 1398, 139940);
+			require(journey.progress_for_zone(7, 42, 1398).completed == 1 &&
+					journey.evidence_for(glasses.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Smoke heart exchange fabricated spectacles, personal defeat or rescue");
+			supplies.carried.erase(139822);
+			journal = journey.render_journal(7, 42, 1398, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(staff).find("[Missing now] " + staff.steps[3].text) !=
+					std::string::npos,
+				"Smoke earlier jewelry receipt restored a spent ring");
+			auto wrong_owner =
+				completion(glasses.contracts.front(), "smoke-wrong-owner", 122);
+			wrong_owner.transaction.zone_number = 244;
+			wrong_owner.transaction.room_vnum = 139832;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Smoke receipt accepted incoming-plane ownership");
+			record(journey, glasses.contracts.front(), "smoke-glasses", 1398, 139832);
+			auto replay = completion(glasses.contracts.front(), "smoke-glasses", 120);
+			replay.transaction.zone_number = 1398;
+			replay.transaction.room_vnum = 139832;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Smoke receipt replay duplicated spectacles completion");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 1398).completed == 2 &&
+					recovered.progress_for_zone(7, 42, 1398).total == 2 &&
+					recovered.evidence_for(glasses.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(staff.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					!recovered.has_discovered(7, 42, 244),
+				"Smoke cold recovery lost independent outcomes, service history or discovery ownership");
 		}
 
 		std::cout

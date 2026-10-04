@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 82 authored journals.
+2668 distinct Q contracts; 83 authored journals.
 
 Regenerate with:
 
@@ -199,7 +199,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Shaughin Settlement (`shaughin`) | 4 | 2 | 0 | Fallback | [2 × the heart of a constrictor → a potion of constrictor blood](../../areas/qst/shaughin.qst#L40) | inn |
 | The Ship Yards (`shipy`) | 26 | 20 | 2 | Yes | [5 × a snapjaw turtle shell; 5 × a fire gland → native reward/response](../../areas/qst/shipy.qst#L38) | crew_shop_proc, money_changer, ship_shop_proc |
 | The Orcish Slave Camp (`shortc`) | 3 | 4 | 1 | Fallback | [1 × a small metallic key → a large steak](../../areas/qst/shortc.qst#L16) | — |
-| The Para-Elemental Plane of Smoke (`smoke`) | 6 | 8 | 2 | Fallback | [1 × A wretched broadsword named 'Discontent'; 1 × A wretched broadsword named 'Hate' → A massive double-bladed greatsword named 'Hate & Discontent'](../../areas/qst/smoke.qst#L105) | — |
+| The Para-Elemental Plane of Smoke (`smoke`) | 6 | 8 | 2 | Yes | [1 × A wretched broadsword named 'Discontent'; 1 × A wretched broadsword named 'Hate' → A massive double-bladed greatsword named 'Hate & Discontent'](../../areas/qst/smoke.qst#L105) | — |
 | Shairak and Smokeveil Forest (`smokev`) | 11 | 32 | 1 | Yes | [1 × the black heart of a Tentabeast; 1 × a bloody dragon talon → a blood soaked helm bearing a skull crest](../../areas/qst/smokev.qst#L570) | — |
 | Valley of the Snow Ogres (`snogres`) | 9 | 6 | 4 | Yes | [6 × a substantial chunk of remorhaz hide; 1 × an onyx-hilted cold-iron claymore; 1 × an onyx-hilted cold-iron greatsword → a magical pair of remorhaz hide vambraces](../../areas/qst/snogres.qst#L159) | berserker_toss, block_dir, flesh_golem_repop, hellfire_axe, illithid_whip, remo_burn |
 | Vast Hidden Grove (`solonar`) | 15 | 12 | 10 | Yes | [1 × a small glowing orb; 1 × some mithril linked scales; 1 × some radiant glowing lavander thread; other required items → some robes of the arch-magi](../../areas/qst/solonar.qst#L88) | inn |

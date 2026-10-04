@@ -2313,7 +2313,7 @@ assert sum(d["daily_eligible"] for d in definitions.values())==9
 assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
 assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
-assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1629
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1625
 sources=collections.defaultdict(list);parent=None;room=None
 for reset in crakkaro["reset_commands"]:
     c,v=reset["command"],reset["arguments"]
@@ -3255,7 +3255,101 @@ assert 1515 not in active_objects and not {329339,329042,332030,331125,332935}&a
 assert bracelet_sources==[('underworld','E',4680,4525,[1,4660,1,15,100,0,0,0])]
 
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns"):
+# Smoke: exact deliveries, non-credit services, rare follower supply and access repairs.
+smoke=inventory_module.area_evidence(ROOT,'smoke')
+smoke_map=next(m for m in catalog['story_mappings'] if m['source_area']=='smoke')
+assert (smoke_map['schema_version'],smoke_map['revision'],smoke_map['coverage'])==(3,1,'complete')
+assert len(smoke_map['stories'])==6 and len(smoke_map['contacts'])==12 and not smoke_map['exclusions']
+assert collections.Counter(s['category'] for s in smoke_map['stories'])=={'story':2,'service':4}
+assert collections.Counter(t['kind'] for s in smoke_map['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':8,'completion':4}
+raw=[b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/smoke.qst']
+assert collections.Counter(b['kind'] for b in raw)=={'M':5,'MA':3,'QA':4,'Q':2}
+assert len(smoke['dialogue'])==8
+by_line={b['line']:b for b in raw if 'binding' in b}
+for line,giver,inputs,outputs,disappear in (
+    (28,139811,[('I',139808)],[('I',139809),('I',139818)],True),
+    (71,139813,[('I',139813)],[('I',139812)],True),
+    (105,139823,[('I',139829),('I',139814)],[('I',139831)],False),
+    (120,139823,[('I',139822)],[('I',139823)],False),
+    (128,139823,[('I',139823)],[('I',139822)],False),
+    (136,139823,[('I',139825),('I',139822)],[('I',139832)],False)):
+    b=by_line[line]
+    assert (b['giver_vnum'],b['give'],b['receive'],b['disappear'])==(giver,inputs,outputs,disappear)
+    d=next(r['definition'] for r in smoke['requests'] if r['block']['line']==line)
+    assert d['zone_number']==1398 and d['source_area']=='smoke' and d['repeatable'] and d['daily_eligible']
+stories={s['id']:s for s in smoke_map['stories']}
+assert {tuple(c.items()) for s in stories.values() for c in s['contracts']}=={tuple(b['binding'].items()) for b in by_line.values()}
+assert all(s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional') for s in stories.values())
+blade=stories['erk-hate-and-discontent'];staff=stories['erk-jeweled-staff']
+assert blade['steps'][0]['contracts']==[by_line[71]['binding']]
+assert [(s['item_vnums'],s['count']) for s in blade['steps'][1:-1]]==[([139814],1),([139829],1)]
+assert [s['contracts'] for s in staff['steps'][:2]]==[[by_line[28]['binding']],[by_line[128]['binding']]]
+assert [(s['item_vnums'],s['count']) for s in staff['steps'][2:-1]]==[([139825],1),([139822],1)]
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==1398]
+assert len(units)==6 and sum(u['achievement'] for u in units)==sum(u['daily_candidate'] for u in units)==2
+contacts={c['mob_vnum']:c for c in smoke_map['contacts']}
+for giver in (139811,139813,139823):
+    assert set(contacts[giver]['topics'])=={t for b in raw if b['kind'] in ('M','MA') and b['giver_vnum']==giver for t in b['body'][0].rstrip('~').split()}
+assert sum(len(c['topics']) for c in contacts.values())==16
+assert 'default' in contacts[139813]['topics'] and 'not a wildcard' in contacts[139813]['description']
+assert contacts[139822]['keyword']=='charrzlk' and contacts[139814]['keyword']=='roj'
+assert len(smoke['mobs'])==26 and len(smoke['items'])==36 and len(smoke['reset_commands'])==172
+assert collections.Counter(r['command'] for r in smoke['reset_commands'])=={'M':83,'E':35,'F':26,'O':9,'G':9,'P':6,'D':4}
+assert not smoke['special_assignments'] and not (ROOT/'areas/shp/smoke.shp').exists()
+objects=dawndale_bodies('smoke','obj');rooms=dawndale_bodies('smoke','wld')
+assert set(rooms)==set(range(139800,139953))
+assert sum(not b.split('~')[1].strip() for b in rooms.values())==1
+assert collections.Counter(int(b.split('~')[2].split()[2]) for b in rooms.values())=={11:131,19:18,0:3,35:1}
+assert int(rooms[139832].split('~')[2].split()[1])&4 and not int(rooms[139832].split('~')[2].split()[1])&2048
+assert int(rooms[139945].split('~')[2].split()[2])==35
+for v,d,target in ((139941,0,139942),(139942,2,139941)):
+    assert re.search(r'\bD'+str(d)+r'\s+[^~]*~[^~]*~\s+3 139818 '+str(target)+r'\b',rooms[v],re.S)
+for v in (139812,139818):assert objvalues(objects[v])[0]==18 and objvalues(objects[v])[12]==100
+assert objvalues(objects[139819])[0]==25
+assert set(objects[139829].split('~')[0].split())=={'wretched','broadsword','hate','discontent'}
+assert 'discontent' not in objects[139814].split('~')[0].split()
+assert objvalues(objects[139811])[12:15]==[29,139812,100]
+assert 'T\n512 2 1 60' in objects[139811]
+assert objvalues(objects[139830])[0]==15 and objvalues(objects[139830])[11:19]==[0]*8
+assert objects[139825].split('~')[0]==objects[139832].split('~')[0]
+assert objects[139825].split('~')[1]!=objects[139832].split('~')[1]
+for v,destination in ((139802,139937),(139807,139863),(139819,139941),(139820,25464),(139821,24405)):
+    assert objvalues(objects[v])[11:14]==[destination,7,-1]
+for area,v,destination in (('plane_air_one',24407,139832),('plane_fire_one',25406,139894)):
+    assert objvalues(dawndale_bodies(area,'obj')[v])[11:14]==[destination,7,-1]
+reset={r['line']:r for r in smoke['reset_commands']}
+for line,command,values in (
+    (27,'O',[0,139811,1,139894,100,0,0,0]),
+    (28,'P',[1,139814,1,139811,100,0,0,0]),
+    (72,'M',[0,139809,1,139863,100,0,0,0]),
+    (75,'G',[1,139808,1,0,100,0,0,0]),
+    (76,'G',[1,359,1,0,100,0,0,0]),
+    (77,'M',[0,139822,1,139863,40,0,0,0]),
+    (78,'G',[1,139829,1,0,100,0,0,0]),
+    (81,'F',[1,139804,8,139875,25,0,0,0]),
+    (82,'G',[1,139813,1,0,100,0,0,0]),
+    (159,'M',[0,139815,1,139942,40,0,0,0]),
+    (160,'E',[1,139822,1,1,100,0,0,0]),
+    (163,'M',[0,139818,1,139942,40,0,0,0]),
+    (164,'E',[1,139823,1,1,100,0,0,0]),
+    (171,'M',[0,139817,1,139942,40,0,0,0]),
+    (172,'E',[1,139825,1,18,100,0,0,0])):
+    assert (reset[line]['command'],reset[line]['arguments'])==(command,values)
+for v,packed,level,chance,spells in ((139835,110351,50,35,[351,110,0]),(139831,14545072,56,30,[72,545,14])):
+    values=objvalues(objects[v]);assert values[16:19]==[packed,level,chance]
+    assert [packed%1000,(packed//1000)%1000,packed//1000000]==spells
+assert objvalues(objects[139823])[7]==3  # Current earring is finger-worn; builder intent pending.
+handler=(ROOT/'src/world/handler.c').read_text(encoding='utf8')
+assert 'world[room].sector_type == SECT_NEG_PLANE' in handler
+weapon=(ROOT/'src/combat/attack_effects.c').read_text(encoding='utf8')
+assert 'selected_packed_weapon_action(obj, ch, victim)' in weapon and '.spell_pointer' in weapon
+permanent=(ROOT/'src/magic/spell_permanent_stats.c').read_text(encoding='utf8')
+assert 'void spell_perm_increase_pow' in permanent and 'base_stats.Pow + 1' in permanent
+assignment=(ROOT/'src/specs/specs.assign.c').read_text(encoding='utf8')
+assert 'obj_index[real_object0(359)].func.obj = epic_stone;' in assignment
+
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

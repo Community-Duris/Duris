@@ -124262,6 +124262,434 @@
     {
       "contacts": [
         {
+          "description": "Rijak starts in Sphere of Smoke 139940 and can wander within the zone. Ask about Ehkahk, dead and proof for the heart request. Acceptance grants a veil and vault key, then retires him; narrative vengeance is not a separate personal-kill objective.",
+          "keyword": "rijak",
+          "mob_vnum": 139811,
+          "name": "Rijak, the exiled Sorcerer of Smoke",
+          "topics": [
+            "ehkahk",
+            "prince",
+            "dead",
+            "proof",
+            "hi"
+          ]
+        },
+        {
+          "description": "Korli starts in the Pocket of Fresh Air 139832 and is sentinel. His lost spectacles yield the obsidian key and retirement. The room blocks ordinary mobile entry but is not flagged safe; Air Plane movement requires actual flight. The literal default alias is not a wildcard response.",
+          "keyword": "korli",
+          "mob_vnum": 139813,
+          "name": "Korli, the Halfling adventurer",
+          "topics": [
+            "default",
+            "hi",
+            "hello",
+            "korli",
+            "halfling",
+            "see",
+            "spectacles"
+          ]
+        },
+        {
+          "description": "Erk starts at the Smouldering Forge 139945 and can wander within the zone. His four exact, non-retiring equipment services are distinct from quest achievements. The forge room currently has Negative Plane terrain and schedules life-force damage, despite its fire imagery; the forge object itself is scenery. The literal default alias is not a wildcard.",
+          "keyword": "erk",
+          "mob_vnum": 139823,
+          "name": "Erk, the forgemaster",
+          "topics": [
+            "default",
+            "hi",
+            "hello",
+            "forge"
+          ]
+        },
+        {
+          "description": "Ehkahk starts in the Elemental Prince\u2019s Lair 139863 carrying the quest heart and imported epic stone 359. His equipped elemental attack object has an actual packed combat spell bundle. The preloaded heart, personal defeat and committed group stone claim are different facts; none grants inferred rescue credit.",
+          "keyword": "ehkahk",
+          "mob_vnum": 139809,
+          "name": "Ehkahk, the Prince of the Para-Elemental Plane of Smoke",
+          "topics": []
+        },
+        {
+          "description": "Mephits occupy many Smoke rooms. Korli\u2019s spectacles specifically follow the second, twenty-five-percent F at 139875. Earlier and later mephits there are separate actors; source presence and admitted item generation are not guaranteed.",
+          "keyword": "mephit",
+          "mob_vnum": 139804,
+          "name": "A smoke mephit",
+          "topics": []
+        },
+        {
+          "description": "Charzzlk has a forty-percent M command at 139863 and carries Discontent. He is separate from the conjurer and Ehkahk. Recovering his broadsword does not prove this player\u2019s personal combat or first acquisition.",
+          "keyword": "charrzlk",
+          "mob_vnum": 139822,
+          "name": "Charzzlk, the ash elemental",
+          "topics": []
+        },
+        {
+          "description": "The human concubine has a forty-percent M command in vault 139942 and declares the jewel-encrusted ring equipped in finger slot 1. She can wander within the zone. Captivity lore has no actual escort, release or return-home contract.",
+          "keyword": "human",
+          "mob_vnum": 139815,
+          "name": "A Human Concubine",
+          "topics": []
+        },
+        {
+          "description": "The half-elf concubine has a forty-percent M command in vault 139942 and declares the jewel-encrusted earring equipped in slot 1. That finger slot matches its present wear flag, although its name suggests an earring. Repair needs builder intent; supplied exact earrings remain valid service material.",
+          "keyword": "half",
+          "mob_vnum": 139818,
+          "name": "A Half-Elf Concubine",
+          "topics": []
+        },
+        {
+          "description": "The grey-elf concubine has a forty-percent M command in vault 139942 and declares the ordinary staff of smoke and fire equipped in hold slot 18. It must be loose for offering. Erk\u2019s shared-keyword enhanced staff is a different kind.",
+          "keyword": "grey",
+          "mob_vnum": 139817,
+          "name": "A Grey Elf Concubine",
+          "topics": []
+        },
+        {
+          "description": "Rojlik starts in vault antechamber 139941. The one-way Sphere portal leads into this antechamber, whose south route returns to the smoke grid. He supplies no native quest, key-acceptance or escort endpoint.",
+          "keyword": "roj",
+          "mob_vnum": 139814,
+          "name": "Roj'lik",
+          "topics": []
+        },
+        {
+          "description": "Etrita has a twenty-percent M command in Spawning Room 139935 with a different heart 139810. Her heart cannot replace Ehkahk\u2019s requested heart 139808. Birth-room and flight routes do not establish a rescue or key quest.",
+          "keyword": "etrita",
+          "mob_vnum": 139810,
+          "name": "The great smoke dragon, 'Etrita'",
+          "topics": []
+        },
+        {
+          "description": "The mephit commander has a sixty-percent M command in Spawning Room 139935 and declares his own followers and gauntlets. Actual cap, admitted spawn and last-M follower parenting matter; he is not the spectacles source or a native quest recipient.",
+          "keyword": "commander",
+          "mob_vnum": 139812,
+          "name": "A smoke mephit commander",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the Plane of Smoke, return Korli\u2019s spectacles, fulfill Rijak\u2019s heart request and understand Erk\u2019s four exact equipment services. Follow declared planar and vault routes while keeping current supplies, accepted outcomes and pending native repair decisions distinct.",
+      "orientation": [
+        "Active, ready accounting is mandatory for discovery, visible encounters, journals and new achievement/daily credit. Discovering Smoke has its own achievement. Questions, current inventory, attempted access and scenic lore do not complete quests.",
+        "The two accepted delivery stories are Rijak\u2019s heart exchange and Korli\u2019s spectacles return. Erk\u2019s two-blade forging, ring/earring conversions and staff enhancement are four equipment services with history but no quest achievement or daily credit. Supplied exact materials need no personal kill or producer history.",
+        "Smoke has no ordinary exit to another zone. The older Plane of Air portal at 24405 leads to Korli\u2019s fresh-air pocket 139832; the older Plane of Fire portal at 25464 leads to the fire pocket and locked box 139894. Local blue and red portals return to those older planes. These are distinct from the later Air and Fire areas.",
+        "The main smoke grid spans five layers with six-direction travel. Magical darkness and blocked sight affect perception. Most rooms are actually Fire Plane terrain, so shared heat hazards apply. Fresh-air and sphere/vortex rooms are Air Plane terrain; flight and surviving arrival matter. The fresh-air pocket is not flagged safe.",
+        "At Ehkahk\u2019s lair 139863, the disc leads to Sphere of Smoke 139937; its counterpart returns to the lair. Rijak starts at 139940, whose separate smoky portal leads one way to vault antechamber 139941. The antechamber\u2019s south route returns to the grid, so this does not certify personal use of Rijak\u2019s portal.",
+        "Rijak\u2019s veil and vault key require heart 139808, not Etrita\u2019s different heart. Both are ordinary preloaded trophies; the exchange does not validate a personal kill. Rijak and Erk may wander, while Korli is sentinel. Potential daily metadata does not guarantee renewable recipients, rare actors or proof supplies.",
+        "Korli\u2019s spectacles are declared on the second twenty-five-percent mephit follower at 139875. Returning them grants obsidian key 139812 and retires Korli. His described sight recovery and disappearance are narrative; the native transaction does not equip the glasses, cure blindness or record escort or homecoming.",
+        "The trapped, closed, locked and pickproof obsidian box at 139894 holds Hate. Its key and the vault key both have a one-hundred-percent break roll on accepted unlock. Possession, unlocking, break settlement, opening and loose recovery are separate. A historical key receipt neither opens today\u2019s lock nor restores a spent key.",
+        "The vault portcullis now names the rewarded vault key 139818 on both sides. Unlocking changes reciprocal lock flags but leaves the door closed and pickproof; opening remains separate. The northern door from vault 139942 to forge 139945 resets closed but unlocked. Existing shared state and alternate supplied materials still matter.",
+        "Discontent is a different broadsword from Hate, carried by forty-percent Charzzlk at 139863. Newly loaded Discontent can be selected by its own name and retains its old aliases. Two copies of Hate cannot satisfy Erk\u2019s two-kind forging bundle. First acquisition, original source and another player\u2019s handoff are not distinguished by this inventory check.",
+        "The human ring, half-elf earring and grey-elf staff are equipped on separate forty-percent vault occupants. Recover them to loose inventory. The ring is shared by conversion and enhancement recipes; spending it once does not reserve another. Reversible jewelry services create no daily or quest achievement loop.",
+        "The Smouldering Forge room 139945 currently uses Negative Plane terrain and schedules life-force drain. Its forge object is an ordinary container with no operating quest procedure. Builder review must select intended terrain. The exit down to 139944 reaches blue/red return portals; there is no ordinary upward return from that exodus room.",
+        "Erk\u2019s greatsword currently includes a permanent Power effect. Its intended abilities need builder review before combat or stat growth becomes a story objective. This journal records the accepted forging service and explains its materials.",
+        "Ehkahk carries imported epic stone 359. Its shared touch procedure uses live zone, peaceful-room/group and committed claim checks; holding the stone or delivering the heart does not prove a personal victory or a completed group claim. Frozen obligation recovery stays separate from active-accounting publication.",
+        "Concubine captivity, commander followers, the conjurer, elemental vortices and unused holding/rare rooms have no additional native quest terminals. Builder-selected rescue, obstacle, combat, travel or campaign events would need actual accepted transitions before new progress. Preserve exact identities and explain incomplete intent openly."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "smoke",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:139808;receive=I:139809,I:139818;disappear=1",
+              "giver_vnum": 139811
+            }
+          ],
+          "id": "rijak-ehkahk-heart",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Ehkahk starts at the Elemental Prince\u2019s Lair 139863 carrying this exact heart. Its secret flag and the plane\u2019s darkness make actual perception and recovery separate qualifications. Carry it loose for the exact native offering. This optional check records no first source, personal kill or earlier quest; supplied exact material needs no producer receipt.",
+              "id": "material-139808",
+              "item_vnums": [
+                139808
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Ehkahk\u2019s heart"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139808;receive=I:139809,I:139818;disappear=1",
+                  "giver_vnum": 139811
+                }
+              ],
+              "hint": "Offer the exact requested items to this recipient. An accepted exchange records its outcome; asking questions, holding materials or attempting access does not. Equipment services record history without achievement or daily credit.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted Rijak\u2019s final vengeance exchange"
+            }
+          ],
+          "summary": "Bring Rijak Ehkahk\u2019s exact heart for a veil of smoke and the vault key; Rijak then departs. The heart is declared as an ordinary carried trophy on Ehkahk, not a death-generated proof of your personal victory. Current exact delivery is the accepted outcome. The key opens the vault portcullis from either side but has a one-hundred-percent break roll on accepted unlock; opening, surviving entry and renewable supplies are separate.",
+          "title": "Rijak\u2019s final vengeance"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:139813;receive=I:139812;disappear=1",
+              "giver_vnum": 139813
+            }
+          ],
+          "id": "korli-lost-spectacles",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The item G command follows the second, twenty-five-percent mephit F at 139875, not the earlier leader or every mephit. A supplied exact pair still satisfies delivery. Carry it loose for the exact native offering. This optional check records no first source, personal kill or earlier quest; supplied exact material needs no producer receipt.",
+              "id": "material-139813",
+              "item_vnums": [
+                139813
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Korli\u2019s spectacles"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139813;receive=I:139812;disappear=1",
+                  "giver_vnum": 139813
+                }
+              ],
+              "hint": "Offer the exact requested items to this recipient. An accepted exchange records its outcome; asking questions, holding materials or attempting access does not. Equipment services record history without achievement or daily credit.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted Korli\u2019s lost spectacles exchange"
+            }
+          ],
+          "summary": "Return Korli\u2019s exact spectacles for the obsidian key, then Korli departs. The spectacles are declared on the second mephit follower at 139875 with a twenty-five-percent F command; follower admission and global caps still control actual supply. The narrative puts glasses on Korli and describes his escape, but this native exchange has no blindness cure, escort or homecoming endpoint. The key opens the trapped obsidian box and can break on accepted unlock.",
+          "title": "Korli\u2019s lost spectacles"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:139814,I:139829;receive=I:139831;disappear=0",
+              "giver_vnum": 139823
+            }
+          ],
+          "id": "erk-hate-and-discontent",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139813;receive=I:139812;disappear=1",
+                  "giver_vnum": 139813
+                }
+              ],
+              "hint": "Optional route history only. Supplied exact material does not require this earlier receipt; historical completion does not restore a spent item or certify current access.",
+              "id": "earlier-exchange-71",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: Korli\u2019s obsidian key"
+            },
+            {
+              "count": 1,
+              "hint": "The secret broadsword is P-loaded into obsidian box 139811 at 139894; the closed, locked, pickproof box requires actual opening and recovery, with its trap still relevant. Carry it loose for the exact native offering. This optional check records no first source, personal kill or earlier quest; supplied exact material needs no producer receipt.",
+              "id": "material-139814",
+              "item_vnums": [
+                139814
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the broadsword Hate"
+            },
+            {
+              "count": 1,
+              "hint": "Charzzlk 139822 has a forty-percent M command at 139863 and carries Discontent. Newly loaded Discontent now accepts its own name as well as every older alias. Carry it loose for the exact native offering. This optional check records no first source, personal kill or earlier quest; supplied exact material needs no producer receipt.",
+              "id": "material-139829",
+              "item_vnums": [
+                139829
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the different broadsword Discontent"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139814,I:139829;receive=I:139831;disappear=0",
+                  "giver_vnum": 139823
+                }
+              ],
+              "hint": "Offer the exact requested items to this recipient. An accepted exchange records its outcome; asking questions, holding materials or attempting access does not. Equipment services record history without achievement or daily credit.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted Erk\u2019s Hate and Discontent forging exchange"
+            }
+          ],
+          "summary": "Offer both different broadswords, Hate and Discontent, in one exact bundle for Erk\u2019s greatsword. Two copies of Hate cannot replace Discontent. Hate is inside the locked, trapped obsidian box at the fire pocket; Discontent is carried by rare Charzzlk at Ehkahk\u2019s lair. Korli\u2019s key exchange is optional access history. This equipment service records no zone achievement or daily. The greatsword currently includes a permanent Power effect; its intended abilities need builder review.",
+          "title": "Erk\u2019s Hate and Discontent forging"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:139822;receive=I:139823;disappear=0",
+              "giver_vnum": 139823
+            }
+          ],
+          "id": "erk-ring-to-earring",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139808;receive=I:139809,I:139818;disappear=1",
+                  "giver_vnum": 139811
+                }
+              ],
+              "hint": "Optional route history only. Supplied exact material does not require this earlier receipt; historical completion does not restore a spent item or certify current access.",
+              "id": "earlier-exchange-28",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: Rijak\u2019s vault key"
+            },
+            {
+              "count": 1,
+              "hint": "The human concubine 139815 has a forty-percent M command at 139942 and this ring in finger slot 1. Erk can also create it from the earring. The ring competes with the staff recipe and is not an unlimited shared supply. Carry it loose for the exact native offering. This optional check records no first source, personal kill or earlier quest; supplied exact material needs no producer receipt.",
+              "id": "material-139822",
+              "item_vnums": [
+                139822
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the jewel-encrusted ring"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139822;receive=I:139823;disappear=0",
+                  "giver_vnum": 139823
+                }
+              ],
+              "hint": "Offer the exact requested items to this recipient. An accepted exchange records its outcome; asking questions, holding materials or attempting access does not. Equipment services record history without achievement or daily credit.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted Erk\u2019s ring-to-earring conversion exchange"
+            }
+          ],
+          "summary": "Erk reshapes the exact jewel-encrusted ring into the exact earring and remains available. The human concubine is a declared ring source inside Ehkahk\u2019s vault. Rijak\u2019s key exchange is optional route history; a supplied ring needs no vault visit. Conversion is an equipment service without achievement or daily credit. The earring prototype currently uses a finger wear flag; its intended slot requires a builder decision.",
+          "title": "Erk\u2019s ring-to-earring conversion"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:139823;receive=I:139822;disappear=0",
+              "giver_vnum": 139823
+            }
+          ],
+          "id": "erk-earring-to-ring",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The half-elf concubine 139818 has a forty-percent M command at 139942 and this earring equipped in slot 1. Erk\u2019s ring conversion is an alternative declared producer, not a mandatory earlier step. Carry it loose for the exact native offering. This optional check records no first source, personal kill or earlier quest; supplied exact material needs no producer receipt.",
+              "id": "material-139823",
+              "item_vnums": [
+                139823
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the jewel-encrusted earring"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139823;receive=I:139822;disappear=0",
+                  "giver_vnum": 139823
+                }
+              ],
+              "hint": "Offer the exact requested items to this recipient. An accepted exchange records its outcome; asking questions, holding materials or attempting access does not. Equipment services record history without achievement or daily credit.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted Erk\u2019s earring-to-ring conversion exchange"
+            }
+          ],
+          "summary": "Erk reshapes the exact jewel-encrusted earring into the ring and remains available. The half-elf concubine declares an equipped earring, and the reverse service also produces it. Alternating these two conversions records service history without farming quest achievements or dailies. Current material and exact accepted direction matter; an earlier conversion receipt is not a fresh item.",
+          "title": "Erk\u2019s earring-to-ring conversion"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:139822,I:139825;receive=I:139832;disappear=0",
+              "giver_vnum": 139823
+            }
+          ],
+          "id": "erk-jeweled-staff",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139808;receive=I:139809,I:139818;disappear=1",
+                  "giver_vnum": 139811
+                }
+              ],
+              "hint": "Optional route history only. Supplied exact material does not require this earlier receipt; historical completion does not restore a spent item or certify current access.",
+              "id": "earlier-exchange-28",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: Rijak\u2019s vault key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139823;receive=I:139822;disappear=0",
+                  "giver_vnum": 139823
+                }
+              ],
+              "hint": "Optional route history only. Supplied exact material does not require this earlier receipt; historical completion does not restore a spent item or certify current access.",
+              "id": "earlier-exchange-128",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier preparation: convert an earring to a ring"
+            },
+            {
+              "count": 1,
+              "hint": "The grey-elf concubine 139817 has a forty-percent M command at 139942 and the staff equipped in hold slot 18. The upgraded staff 139832 is a different kind and cannot replace input 139825. Carry it loose for the exact native offering. This optional check records no first source, personal kill or earlier quest; supplied exact material needs no producer receipt.",
+              "id": "material-139825",
+              "item_vnums": [
+                139825
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the staff of smoke and fire"
+            },
+            {
+              "count": 1,
+              "hint": "Recover the human concubine\u2019s equipped ring or obtain the exact ring from Erk\u2019s earring conversion. Ring-to-earring conversion spends this same input; history does not reserve another copy. Carry it loose for the exact native offering. This optional check records no first source, personal kill or earlier quest; supplied exact material needs no producer receipt.",
+              "id": "material-139822",
+              "item_vnums": [
+                139822
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the jewel-encrusted ring for the staff"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:139822,I:139825;receive=I:139832;disappear=0",
+                  "giver_vnum": 139823
+                }
+              ],
+              "hint": "Offer the exact requested items to this recipient. An accepted exchange records its outcome; asking questions, holding materials or attempting access does not. Equipment services record history without achievement or daily credit.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted Erk\u2019s jeweled staff enhancement exchange"
+            }
+          ],
+          "summary": "Bring Erk the exact staff of smoke and fire and jewel-encrusted ring in one bundle for the upgraded staff. The grey-elf concubine declares the staff in hold slot 18, and the human concubine declares the ring. Rijak\u2019s key and the earring-to-ring service are optional routes. Supplied materials need no personal vault entry, rescue or earlier conversion. This equipment enhancement gives no zone achievement or daily; the ordinary and enhanced staffs share ordinary targeting keywords but have different item identities.",
+          "title": "Erk\u2019s jeweled staff enhancement"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Warthehr narrates the shattered-sword expedition, exchanges three original fragments for replacements, provides meaningful returned-piece guidance and accepts the exact dragon skin. His intended Tharnadia placement has not been implemented in the reviewed ordinary resets.",
           "keyword": "warthehr",
           "mob_vnum": 142215,

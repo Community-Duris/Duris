@@ -2282,3 +2282,36 @@ and appends to a 512-byte buffer without bounds; plan actual-function recipient,
 class and long-output qualification/hardening. No live crash or teacher repair
 is claimed. External encounter publication first requires discovery of the
 physical area; it does not automatically discover the Mushroom credit owner.
+
+## Plane of Smoke: accepted access, rare follower supply and typed effects
+
+The [comprehensive dossier](zone-stories/PARA_ELEMENTAL_PLANE_OF_SMOKE.md) and
+[journal](../../areas/story/smoke.story.json) map two accepted delivery outcomes
+and four exact equipment services. Active, ready accounting remains mandatory.
+Services retain receipts while contributing no achievement/daily; reversible
+jewelry is not a quest-credit loop. Prior key exchanges are optional route
+history. Exact supplied materials require no personal kill, rescue or producer.
+
+| Capability | Concrete source evidence | Implementation and acceptance |
+| --- | --- | --- |
+| Actor, source and current-mobile availability | Spectacles G follows the second F25 mephit; Discontent/vault occupants use M40, with caps/dependent item admission | Track the actual admitted M/F actor/current-mobile source and renewable recipient retirement/reset episode. Keep availability distinct from static all-I/reset-two daily classification; qualify real generation under active accounting |
+| Accepted lock, consumption and access episodes | Both keys have break value100; reciprocal vault unlock preserves closed/pickproof, forge pair resets closed/unlocked | Observe exact key UID, selected side, shared lock/open transition, durable break settlement and surviving arrival; qualify interrupts/reset/recovery. History neither restores key/material nor requires a supplied-proof player to use this route |
+| Typed and versioned combat effects | Greatsword139831 packs spells72/545/14; registered permanent Power callback has no authority check and direct proc dispatch bypasses command restrictions | Builder chooses intended current spell IDs/balance, then apply a privileged/permanent-effect policy and accepted attacker/target bundle semantics. Qualify actual legacy/durable combat, existing objects, interrupted actions and persistence before an isolated correction or combat story credit |
+| Terrain and portal context | Forge139945 is Negative Plane35; older Air/Fire incoming portals and local returns coexist with magical darkness/flight/heat | Builder chooses intended forge terrain. Qualify actual target perception, accepted command/destination and surviving arrival/return; a room name or prototype destination is not safe-travel proof |
+| Group claims and campaign endpoints | Imported epic stone359 uses committed group claims; concubine rescue, Korli cure/escort and forge-object operation have no native terminals | Integrate authoritative accepted group claim receipts, physical affiliation and exact beneficiary. Builder defines actual rescue/operation/transitions explicitly; keep frozen obligation recovery separate from new active-accounting publication |
+
+**Shipped native repairs are separate fix commit 0fff62e70:** vault return key
+139819→139818 and Discontent's added own-name alias. Actual production regression
+fails before and passes after. Key destruction/settlement, live access and
+already loaded/strung instance migration remain pending. Ready news: “The Plane
+of Smoke's vault key now works from either side of the portcullis, and Discontent
+can be selected by its own name.”
+
+**Pending decisions, not shipped repairs:** forge sector intent; greatsword
+permanent Power spell/balance and effect authority/version policy; earring wear
+slot; copied fire-elemental air description, Korlia typo and unused scene intent.
+The shared epic absorb post-extraction lead remains separately pending without
+a reproduced crash. Actor command aliases charrzlk/roj are retained explicitly.
+Any later repair needs a clear isolated fix commit, prominent PR trigger and
+before/after, validation limits and precise player news. Preserve existing
+recipes/identities and choose gameplay replacements with builder evidence.

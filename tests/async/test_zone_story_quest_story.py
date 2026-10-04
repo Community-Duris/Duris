@@ -15,8 +15,8 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1463
-assert report['mapped_area_count'] == 82 and report['eligible_by_zone']['162'] == 4
+assert report["daily_unit_count"] == 1459
+assert report['mapped_area_count'] == 83 and report['eligible_by_zone']['162'] == 4
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'
 assert len(tower['stories']) == 4 and len(tower['contacts']) == 14 and not tower['exclusions']

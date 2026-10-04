@@ -58,6 +58,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [b07b560cc](https://github.com/Community-Duris/Duris/commit/b07b560ccf2d3b7bbcb61227cfa5423dd6fa6924): Ironstar exit clues | Inspecting west at 138903 now says west; inspecting south at 138957 now says south. Exactly two native description words change, preserving reciprocal routes and all other native bytes. | Player-facing: “Ironstar's western valley exit and southern Fairlocke exit now describe their actual directions.” Both original color-normalized clues fail the focused regression; repaired source/exact-byte scope pass. Live LOOK/traversal remains unqualified. |
 | [d18758098](https://github.com/Community-Duris/Duris/commit/d18758098083b28463279c130a3e7ec24bb48b24): Brass Imix Avenue exit | Inspecting east at 139017 now says east, matching D1 to 139016 and reciprocal D3. Exactly one native word changes. | Player-facing: “Brass's eastern Imix Avenue exit now describes its actual direction.” Original color-normalized clue fails; repaired source/exact native bytes pass. Live LOOK/traversal remains unqualified. |
 | [3f1ecf2be](https://github.com/Community-Duris/Duris/commit/3f1ecf2be064a63321c0e0243b4168727cb079c2): Tower directions/passwords | South clues at 134011/134014 now say south; four locked magic keywords lose only trailing color resets, restoring plain Sargon/elemental passwords. | Player-facing: “The Tower of Darkness's south-facing shrine and stair clues now describe their actual directions. Its Sargon and elemental magic doors now accept the intended plain passwords.” Original source fails all six; actual C++ matching/reciprocal unlock passes, closed state retained. Live speech/LOOK/traversal remains unqualified. |
+| `0fff62e70` — Smoke vault key / Discontent targeting | Vault south return lock now uses rewarded key 139818; newly loaded Discontent accepts its own name while retaining old aliases. Actual production key/name regressions fail before and pass after; key settlement/live travel/existing-object migration remain unqualified. | **The Plane of Smoke's vault key now works from either side of the portcullis, and Discontent can be selected by its own name.** |
 
 ## Progress
 
@@ -124,9 +125,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 59 | Plane of Fire, Brass | [Comprehensive dossier](zone-stories/PLANE_OF_FIRE_BRASS.md): all 20 blocks/357 rooms/147 mobs/170 objects/18 shops/779 resets; native/shared source and effective access | Four stories/one service/two exclusions; 25 contacts/18 optional checks; collectible coins, quantity-two vials, competing heads and guarded bracer | Actor/barrier/access episodes, duplicate reward/proof allocation, rare wandering/perception and atomic fees; builder-selected djinn/ambient/prose/topology proposals. Separate one-word native exit fix/news ships |
 | 60 | The Tower of Darkness | [Comprehensive dossier](zone-stories/TOWER_OF_DARKNESS.md): all 32 blocks/142 rooms/170 mobs/146 objects/one shop/580 resets; full exit text/passwords and shared execution | Six stories/seven owned bindings; 27 contacts/12 optional checks; guarded alternative, five-sword bundle, three-key puzzle and five physically local foreign-owned requests | Physical affiliation/discovery separate from owner, per-branch fee support, accepted access/source/campaign events and builder-selected rescue/holding/entry/text proposals. Separate native direction/password fix/news ships |
 | 61 | Mushroom Caverns | [Comprehensive dossier](zone-stories/MUSHROOM_CAVERNS.md): all sixteen raw blocks/132 rooms/eight local mobiles/nine objects/54 resets; imported actor/material sources, shared execution and modern identity comparison | Three outcomes/ten contacts/22 representable aliases/five optional checks; exact same-name halves, optional history and explicit source/accounting blockers | Missing goblet/unplaced actors/five absent dispersal destinations, money-proof admission and reward/get/drop, physical affiliation/renewal, literal topic tokens and route/scenery intent. No native repair ships |
-| 62–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 62 | Para-Elemental Plane of Smoke | [Comprehensive dossier](zone-stories/PARA_ELEMENTAL_PLANE_OF_SMOKE.md): all fourteen blocks/153 rooms/26 mobiles/36 objects/172 resets; foreign planar entrances, current-mobile supply and shared key/terrain/weapon/epic execution | Two stories/four services, twelve contacts/16 aliases/12 optional checks; exact two-kind bundles, optional routes, non-credit reversible jewelry | Shipped native fix 0fff62e70 corrects vault return key and Discontent alias. Negative-plane forge, permanent Power proc, key settlement, rare admitted supply/renewal and builder intent remain pending |
+| 63–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Para-Elemental Plane of Smoke (`smoke`).
+The next area is Fishermans Wharf (`fishermans_wharf`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -3171,3 +3173,74 @@ and appends to a 512-byte buffer without bounds; plan actual-function recipient,
 class and long-output qualification/hardening. No live crash or teacher repair
 is claimed. External encounter publication first requires discovery of the
 physical area; it does not automatically discover the Mushroom credit owner.
+
+## Para-Elemental Plane of Smoke completed source map — October 4, 2026
+
+The [dossier](zone-stories/PARA_ELEMENTAL_PLANE_OF_SMOKE.md) reviews all fourteen
+native blocks (five M/three MA/four QA/two Q), all 153 rooms/fourteen prose
+groups/thirty numeric exit families, twenty-six mobiles, thirty-six objects and
+172 resets/sixty-six families. Bounded global sources/consumers, both foreign
+fixed planar entrances, every local portal/lock, actual current-mobile follower
+supply, flight/terrain hazards, packed weapon callbacks and imported epic stone
+execution are covered. All local references resolve; no ordinary foreign boundary
+or additional local shop/teacher/inn/arena quest terminal was found.
+
+The [journal](../../areas/story/smoke.story.json) supplies two delivery outcomes,
+four equipment services, twelve contacts, sixteen native aliases and twelve
+optional checks. Ehkahk's ordinary heart yields Rijak's veil/vault key and
+retirement; spectacles yield Korli's obsidian key and retirement. Erk accepts
+two different broadswords as one forging bundle, converts jewelry in either
+direction, and enhances the exact ordinary staff plus ring. Services preserve
+history without achievements/dailies. Supplied materials require no personal
+kill, vault visit, rescue, producer history or original acquisition. Shared
+staff keywords do not make the upgraded kind a valid ordinary input.
+
+**Native repairs ship separately in fix commit 0fff62e70.** The vault south
+return lock incorrectly named portal 139819; it now names rewarded key 139818,
+matching the reciprocal side. Discontent's displayed name was absent from item
+aliases; add `discontent` and retain every old alias. Actual production door/
+key/lock/unlock and item-name lookup failed on original data and pass after.
+Both directions, carried/held keys, wrong-key rejection, reciprocal state,
+closed/pickproof preservation and Hate-before-Discontent selection are covered.
+Key destruction/durable settlement is a boundary stub; live travel/ownership
+and migration of already loaded/strung items are not qualified.
+
+Ready player news: **“The Plane of Smoke's vault key now works from either side
+of the portcullis, and Discontent can be selected by its own name.”** Journal,
+plan and source-map authoring is a separate commit. All prior shipped native
+repair/news records remain unchanged.
+
+**Pending, with concrete execution evidence:** forge 139945 is Negative Plane
+sector 35 and schedules life-force drain despite fire imagery. Forged greatsword
+139831's packed bundle includes permanent Power spell 545; actual legacy and
+opt-in durable dispatch call its registered callback, which raises base/current
+Power toward 95 without caller authority. No played exploit is claimed. Plans
+require builder-selected terrain/current spell IDs/balance, approved typed
+effects, attacker/target routing and existing-instance/version/recovery policy.
+Earring finger-slot intent, copied fire-elemental air description, Korlia wording
+and unused/unfinished scenes need builder decisions. The earlier shared epic
+absorb post-extraction traversal lead remains pending; no crash or epic fix
+is claimed.
+
+Spectacles attach to the second F25 mephit, not the leader or every mephit.
+Discontent and vault materials depend on M40, Etrita on M20 and commander on
+M60; caps, conditional chains and active-accounting admission still matter.
+Both keys have a 100-percent break roll. Unlock, break settlement, open, arrival
+and reset are distinct; producer history restores none. Two older-plane entrances
+and local returns are declared, but magical darkness, flight, heat and current
+portal selection/survival remain actual prerequisites. Epics require committed
+group claim receipts, not holding a stone or delivering a heart. Captivity lore
+and dialogue audience do not create rescue, learned-topic or observer outcomes.
+
+Focused source and actual C++ projection journeys cover exact kinds, worn/loose
+preparation, optional supplied history, read-only readiness, service exclusion,
+independent outcomes, owner boundaries, replay and cold recovery. Full production/
+source, schema/all-map loader, accounting gates, daily projection, maintained
+build, formatting/whitespace and source-line links are checked. Live admitted
+sources/handoff, perception/flight/terrain travel, key destruction/settlement,
+combat/stat persistence, epic group claims and retirement/renewal remain pending.
+Catalog: 83 maps/1625 achievements/1459 potential dailies/2207 rows; four former
+crafting fallback credits removed. All 2668 native definitions, fingerprint/
+revision two/registry and prior 82 maps unchanged. Original queue: 62/220 complete,
+158 pending; Fishermans Wharf next. Active, ready accounting remains mandatory.
+No DB/account/server operation, migration, deployment or merge.

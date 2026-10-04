@@ -1293,3 +1293,38 @@ and appends to a 512-byte buffer without bounds; plan actual-function recipient,
 class and long-output qualification/hardening. No live crash or teacher repair
 is claimed. External encounter publication first requires discovery of the
 physical area; it does not automatically discover the Mushroom credit owner.
+
+### Plane of Smoke: two deliveries, four services and actual access state
+
+The [dossier](../design/zone-stories/PARA_ELEMENTAL_PLANE_OF_SMOKE.md) and
+[journal](../../areas/story/smoke.story.json) distinguish the two native story
+deliveries from Erk's four equipment services. Keep conversion/forging history
+without achievements/dailies. A supplied ring, blade or staff needs no earlier
+key exchange, personal kill or captive rescue. Two Hate copies do not replace
+Hate plus Discontent, and shared staff keywords do not make upgraded139832
+valid input139825. The ring is competing material across services.
+
+Trace the actual current mobile, not just the last M declaration: the spectacles
+G follows the second F25 mephit. Rare M/F, conditional chains, caps and admitted
+item generation determine source availability. Potential daily metadata is
+independent of playable renewal. Both keys have break value100; carry/hold,
+accepted unlock, durable consumption, open, surviving arrival and reset are
+distinct. Historical receipts do not certify today's access or restore supply.
+
+Inspect typed shared behavior even without a literal local special. The forge
+room uses Negative Plane terrain and schedules life-force drain. Greatsword
+139831 directly resolves a packed permanent Power spell through current weapon
+dispatch. Builder-selected terrain/spells/balance, approved effect authority,
+existing-instance versions and combat/persistence/recovery qualification are
+needed before repairs; do not silently replace spell IDs. Imported epic stone
+359 uses committed group claims, distinct from its custody or heart delivery.
+The literal default topic is an alias, not a wildcard; audience changes create
+no observer credit. Rescue/cure/escort/scenery endpoints require actual design.
+
+Native fix commit 0fff62e70 independently corrects the vault's south return
+key reference and adds Discontent's own-name targeting alias, preserving old
+aliases. The production access/name regression fails before and passes after;
+key settlement/live travel/existing object migration remain unqualified. Ready
+news: “The Plane of Smoke's vault key now works from either side of the
+portcullis, and Discontent can be selected by its own name.” Keep the pending
+forge/proc/earring/prose/scene plans separate from this shipped repair entry.
