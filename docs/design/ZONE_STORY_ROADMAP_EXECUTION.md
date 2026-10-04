@@ -64,6 +64,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [e456b3403](https://github.com/Community-Duris/Duris/commit/e456b3403): Centaur quest/travel clues | Tamilea now points to Banitoor's eastern cave; grotto west exit, both forest approaches, forest east intersection and dead-end entrance now match actual directions. Exactly six native text lines, focused regression in a separate fix commit. | **Centaur Villages' quest and travel clues now point in the correct directions, including Tamilea's route to Banitoor's cave.** All six original clues fail; corrected source/destinations/reciprocal routes pass. Played ASK/LOOK/traversal remains unqualified. |
 | [ac8e2de48](https://github.com/Community-Duris/Duris/commit/ac8e2de48f3aba3915d95abb7ee1d0fefd580f14): Opal Phoenix sand hand-in | Newly instantiated student sand70823 clears only SECRET, allowing ordinary mortal inventory display and named selection for Alazia. All other prototype bytes/native contracts are preserved; hidden chest/key/intestines retain their search paths. Separate fix commit with actual production-function regression. | **Opal Phoenix’s student sand reward is now visible and can be selected for Alazia’s delivery quest.** Original flags fail; corrected aliases and both lookup modes pass under ASan/UBSan, with negative hidden/blind/wrong/ordinal controls. Full played offering and existing saved-item remediation remain unqualified. |
 | [208a56840](https://github.com/Community-Duris/Duris/commit/208a56840acb100fc20dbec4b0af9a80a6cd0914): Cloister Mahr acceptance caption | Brother Mahr accepts adamantite tablet 67100 for recommendation 67101; the acceptance caption now says tablet instead of letter. Exactly one native word changes, in a separate fix commit with its focused regression. Requirements, rewards, departure and all other native bytes remain intact. | **Brother Mahr now correctly identifies the intruder's tablet when accepting it, making the Cloister's recommendation quest clearer.** Original wording fails; corrected caption/contract and exact-byte scope pass. Played turn-in/settlement remains unqualified. |
+| [7baa78c3c](https://github.com/Community-Duris/Duris/commit/7baa78c3c8ee67a2059c314e6372f5ae1843e989): Ixarkon direction clues | LOOK descriptions in11 rooms now match12 reciprocal routes: slave pens, garden path, tower gate, camp approaches, sandstone passage, Rockspire tunnel, dwelling and water cavern. Exactly12 direction words change; all routes/metadata/quests/resets remain intact. | **Ixarkon's slave pens, fungal gardens, towers, camp approaches, Rockspire tunnels and water cavern now give directions that match their exits.** Original12 clue checks fail; corrected clues, reciprocal exits/door metadata and exact native scope pass. Live LOOK/traversal remains unqualified. |
 
 ## Progress
 
@@ -142,9 +143,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 71 | IceCrag Castle | [Comprehensive dossier](zone-stories/ICECRAG_CASTLE.md): all67 blocks/243 rooms/66 mobs/138 objects/620 resets,374 exact/460 parent families; twenty local assignments, full speech gates/command portals/custom encounters/foreign closure | Eight stories/two services/one incomplete exclusion,25 contacts/129 aliases/16 optional checks; exact 3-page/2+2-bottle/two-heart bundles and optional shoes history | No native repair. Missing Masha ingredient/dungeon, wine cap, duplicate kinds and dormant/global behavior remain proposals; accepted access/source/control/transform/fee/settlement/renewal qualification remains open |
 | 72 | Father Tel's Holy Cloister | [Comprehensive dossier](zone-stories/FATHER_TELS_HOLY_CLOISTER.md): all 36 blocks, 71 rooms, 24 mobiles, 31 objects and 113 resets; four automatically bound switches, complete shared and foreign source closure | Seven stories/one supporting rejection; 16 contacts/28 aliases/11 optional checks. Exact robes/tablet/head/tome/note/egg and paired ring/poison, supplied shortcuts and actual access actions | Separate Mahr tablet-caption fix 208a56840. Formal admission, lore/source mismatch, ten-minute mission and orphan intent remain proposals; accepted source/trap/control/search/key/XP/settlement/renewal qualification remains open |
 | 73 | The Ruins of Turolopolis | [Comprehensive dossier](zone-stories/RUINS_OF_TUROLOPOLIS.md): all25 blocks/154 rooms/42 mobiles/56 objects/199 resets, all six type25 portals and complete shared/foreign source closure | Six stories;26 contacts/39 aliases/12 optional checks. Exact five-colour ALL memorial → lesser blade + caecilia stinger → upgrade; independent horn, letter, ooze and skull offerings | No native repair ships. Minotaur source/recipient generation, foreign Lothrell home-journal navigation, rare dispersal/sink, rescue/purification intent and accepted access/custody/XP/coin/renewal qualification remain plans |
-| 74–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 74 | Ixarkon | [Comprehensive dossier](zone-stories/IXARKON.md): all18 blocks/201 rooms/51 mobiles/44 objects/385 resets/five shops and complete shared/foreign closure | Revision2 upgrades existing three identities: two stories/one service;16 contacts/22 aliases/four optional checks. Independent spore and amulet returns; optional paid banker route and supplied amulet | Native direction clues repaired separately in7baa78c3c. Mixed fee guards, absent veil ingress/guarded binding, random arrival, open bridge controller, source custody and actual rescue/peace/renewal remain plans |
+| 75–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Ixarkon (`ixarkon`).
+The next area is Du'Maathe Castle (`mntcastl`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -153,6 +155,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-IXARKON-FEE / VEIL / BRIDGE / CAMPAIGN | The red cap plus1000platinum preparation is blocked under active accounting; sealed veil chamber has no ordinary ingress and assigned room19890 is absent. Bridge starts open and its one-way unblocking switches cannot retract it. | Two stories/one supporting service ship as guidance/projection. Design atomic fee settlement, guarded intended ingress and accepted random arrival/restoration, controller semantics and explicit rescue/peace endpoints. Direction text alone is repaired separately. |
 | ZSQ-TUROLOPOLIS-ALL / GENERATION / FOREIGN / CAMPAIGN | Five different badge keys are required together; minotaur holds the emissary letter but retires after blue ooze, discarding remaining stock. Lothrell loads in Surface while the accepted memorial belongs to71. Rare recipients can disperse into public rooms or a no-exit sink. | Six independent offerings ship as guidance/projection. Add exact key/root custody, source/recipient-generation branches, truthful home-journal links and accepted movement/rescue/purification predicates before campaign or renewal credit. Native repairs remain builder-selected proposals; none ships here. |
 | ZSQ-CLOISTER-REFUSAL / SWITCH / TRAP / CAMPAIGN | Tel's recommendation exchange is an unconditional refusal with same-kind replacement; auto-bound no-show switches use SAY/PUSH, and secret exits need subsequent local SEARCH. Egg trap can consume a charge and hurt the player without accepted pickup. Supplied note/ring bypass earlier producers; three competing egg requests retain separate owners. | Seven stories/one rejection ship. Add accepted UID/source/custody, precise switch/search/door/trap generations, indexed replacement/XP settlement and builder-owned ALL/ANY campaigns. Mahr's one-word caption fix/news ships separately; formal admission, source clues, deadline and orphan intent remain proposals. |
 | ZSQ-ICECRAG-CONTENT / SOURCE / ACCESS / ACTOR | Cuisine requires missing6551 and mismatched pelt/parchment; exact book/onion/page kinds, 2+2 bottles versus cap-one elven source; speech unlock/open/arrival, GET interruption, NPC rescue and global wolf/death replacement. | Eight stories/two services/one excluded incomplete recipe ship. Builder selects native recipe/source/route repairs; add accepted UID/source/custody, door/control/actor generation and transfer/publication/lifecycle, atomic fee and indexed reward/retirement/reset qualification. No native repair ships here; proposed news remains distinct. |
@@ -3982,3 +3985,58 @@ Ixarkon next**. Source completeness and synthetic receipts do not qualify played
 access/recovery/offer/settlement/reset/renewal. Active, ready accounting remains
 mandatory, with frozen recovery separate. The full goal stays active; no accounting
 activation, DB/server operation, migration, deployment or merge occurred.
+
+
+## Priority 74 checkpoint: Ixarkon
+
+The [comprehensive dossier](zone-stories/IXARKON.md) closes all18 blocks
+(15M/threeQ),201 rooms/198 prose groups/15 headers/one extra description/468
+exits,51 mobiles,44 objects,five shops and385 resets/302 exact/323 parent-aware
+families. Literal and automatic bindings, imported board/counter/consumables,
+shared native offer/allocation/XP/coin/item settlement/recovery and actual
+access/source roles were reviewed. Bounded closure includes two Ixxillikor actor
+groups, five full foreign boundary rooms/nine edges, the complete actor room,
+all713 portal prototypes and every full body in the25-target custom veil list.
+All25 destinations exist; separately assigned entry19890 is absent.
+
+Existing schema2/revision1 becomes schema3/revision2 with the same three story
+identities: two independent stories and one supporting paid preparation,16
+contacts/22 aliases/four optional checks. Only one of six myconid placements
+carries the hidden spore; only one of two same-kind elders wears the red cap.
+The pacing elder is a distinct recipient beside them. Black/bone-white caps do
+not substitute. Optional banker history does not restore a spent amulet;
+supplied amulets need no earlier fee receipt. The native price is red cap plus
+1000platinum together, but fresh mixed/coin input remains refused under active
+accounting. Paid hireling and locker actions have their own active guards.
+
+Veil room96524 has no ordinary ingress or exits despite ceremonial prose.
+GithyankiCave is assigned to absent19890; real_room0 falls back to indexzero.
+Builder must choose ingress/race/return intent and guarded binding before repair.
+Random targets, exact argument/selected identity, actual arrival/restoration and
+pre-removal failure handling need qualification. Bridge levers remove BLOCKED
+but the reciprocal exits start open; the bridge is usable and no retraction is
+implemented. Literal inn service works independently of absent ROOM_INN flag
+and unreset receptionist. These findings remain plans, not restored content.
+
+Actual native repair **7baa78c3c** changes12 direction words in11 rooms,
+preserving every other native field/file. It has a separate fix commit and
+focused original-fails/repaired-passes reciprocal-route regression. Prominent
+PR/news treatment is recorded in the repair ledger and dossier. No fee, veil,
+bridge, rescue, diplomatic or service mechanism repair is implied.
+
+Focused source and Python/C++ projections cover stable identities, exact/wrong/
+worn inputs, supplied amulet without banker history, historical supporting
+receipt without story credit, spent custody, canonical ownership, independent
+outcomes, replay and cold recovery. Full production regression, maintained build,
+changed/staged formatting, source links and native/catalog/prior-journal/queue/
+PR preservation checks are required before publication. Synthetic receipts do
+not qualify played access/recovery/offer/settlement/reset/renewal.
+
+Catalog:94 journals/1601 achievement units/1453 potential dailies/2203 rows;
+all2668 definitions/fingerprint/content revision/registry and other93 journals
+remain intact. The previous complete PR body is archived exactly with SHA-256;
+all prior actual repair/news/accounting blocks remain verbatim in this PR.
+Queue: **74/220 source-comprehensive,146 pending; Du'Maathe Castle next**.
+Active, ready accounting remains mandatory; frozen recovery remains separate.
+The full goal stays active. No accounting activation, DB/server operation,
+migration, deployment or merge occurred.

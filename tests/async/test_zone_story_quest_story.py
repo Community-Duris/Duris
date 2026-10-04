@@ -76,6 +76,17 @@ assert willem_stories['kurtukr-bloodsaber-upgrade']['steps'][0]['contracts'] == 
 assert [t['item_vnums'] for t in willem_stories['kurtukr-bloodsaber-upgrade']['steps'][1:-1]] == [[7131], [7139]]
 assert all(t.get('optional') for s in willem['stories'] for t in s['steps'][:-1])
 
+ixarkon = next(m for m in catalog['story_mappings'] if m['source_area'] == 'ixarkon')
+assert (ixarkon['schema_version'], ixarkon['revision'], ixarkon['coverage']) == (3, 2, 'complete')
+assert [s['id'] for s in ixarkon['stories']] == ['request-96419-68463578ae17', 'request-96423-9ef90d0b74d4', 'request-96436-719ce450900e']
+assert [s['category'] for s in ixarkon['stories']] == ['story', 'story', 'service']
+assert report['eligible_by_zone']['964'] == 2 and len(ixarkon['contacts']) == 16 and not ixarkon['exclusions']
+assert sum(len(c['topics']) for c in ixarkon['contacts']) == 22
+assert sum(t.get('optional', False) for s in ixarkon['stories'] for t in s['steps']) == 4
+assert ixarkon['stories'][1]['steps'][0]['contracts'] == ixarkon['stories'][2]['contracts']
+assert [t['item_vnums'] for s in ixarkon['stories'] for t in s['steps'] if t['kind'] == 'carried_item'] == [[96431], [96434], [96414]]
+assert all(t.get('optional') for s in ixarkon['stories'] for t in s['steps'][:-1])
+
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'
 assert len(tower['stories']) == 4 and len(tower['contacts']) == 14 and not tower['exclusions']

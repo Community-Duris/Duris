@@ -1,33 +1,44 @@
 {
-  "schema_version": 2,
-  "revision": 1,
+  "schema_version": 3,
+  "revision": 2,
   "source_area": "ixarkon",
   "coverage": "complete",
-  "introduction": "Explore Ixarkon and meet its people to uncover local requests.",
+  "introduction": "Find Ixaruuk’s exact forest spore and return Lloth’s spider amulet to the pacing elder. The hidden banker’s red-cap-and-payment preparation is optional and currently unavailable; supplied materials, city services and access clues remain distinct from accepted quest outcomes.",
   "orientation": [
-    "Start with look and exits to learn your surroundings.",
-    "Use help home to learn about hometowns and help quest for quest commands."
+    "Ixaruuk’s mushroom-spore request and the pacing elder’s spider-amulet return are independent stories. The banker’s red skullcap and payment are optional preparation for the amulet, not a third achievement.",
+    "From the fungal-garden path, open the eastern gate into Ixaruuk’s dark stone tower and climb twice to his study. The other tower holds Ixaraak and the feedback board. Gardeners and sculpted fungi do not require a belt or supply the forest’s loaded quest spore.",
+    "The Rockspire meeting room holds the pacing amulet recipient alongside two elders. Only one of those two wears the red proof; identify the pacing recipient separately. Black and bone-white skullcaps are different items.",
+    "Follow the mansion canyon east from the markets. South of the broad canyon is a small dark cave; search its cracks, open the concealed southern door and enter the banker’s hidden cave. Beyond that side branch, the canyon descends through a crack into the great mushroom forest.",
+    "The banker’s native price is one red skullcap and 1,000 platinum together. This paid route is currently unavailable while accounting is active. An exact supplied spider amulet can still be returned to the pacing elder. An earlier banker receipt never substitutes for the amulet currently required.",
+    "Water-filled caverns connect to the wider Underdark and the northeastern connector; prepare for water travel. The rubble at the far northern canyon conceals another approach. The herdlands bridge begins open; its levers are not a required quest step.",
+    "The ceremonial clearing describes a shifting veil, but no ordinary exit reaches the veil chamber in the current world. If reached by another valid means, entering its veil selects a random destination, including distant planes. Do not treat it as a reliable quest route or a guaranteed return.",
+    "The rest room has a RENT service, while the food stall and counters offer separate services whose paid actions may be unavailable. Markets, ritual lore, guard encounters and asked keywords do not each award a quest achievement.",
+    "Carry exact materials loose; worn, nested, spent or handed-away copies remain missing. Supplied items are valid without a personal source kill. All new discovery, encounter, journal, achievement and daily credit requires active, ready accounting; frozen reward recovery remains separate."
   ],
   "contacts": [
     {
       "mob_vnum": 96419,
       "name": "the sage Ixaruuk",
-      "keyword": "sage",
-      "description": "Start with these conversation topics, then follow the requests below.",
+      "keyword": "ixaruuk",
+      "description": "Upstairs in the dark stone tower beyond the eastern garden gate. Ask about arcane studies and components for the spore request. Ixaruuk also sells scrolls.",
       "topics": [
         "hi",
+        "hello",
         "arcane",
+        "studies",
         "components"
       ]
     },
     {
       "mob_vnum": 96423,
       "name": "an elder illithid",
-      "keyword": "elder",
-      "description": "Start with these conversation topics, then follow the requests below.",
+      "keyword": "pacer",
+      "description": "Paces in the Rockspire meeting room beside two other elders. Ask about the crisis, appeasement and talisman. This pacing elder receives the spider amulet; the red-cap wearer is a different elder.",
       "topics": [
         "hi",
+        "hello",
         "pleasantries",
+        "busy",
         "crisis",
         "appease",
         "talisman"
@@ -36,24 +47,119 @@
     {
       "mob_vnum": 96436,
       "name": "a drow banker",
-      "keyword": "drow",
-      "description": "Start with these conversation topics, then follow the requests below.",
+      "keyword": "banker",
+      "description": "Behind the concealed southern door outlined by cracks in the small cave off the eastern canyon. Follow business, home, slaves, amulet and cost. The paid amulet preparation is currently unavailable while accounting is active; an exact supplied amulet still serves the pacing elder.",
       "topics": [
         "hi",
+        "hello",
         "business",
         "menzoberranzan",
+        "menzo",
         "drow",
         "slaves",
-        "amulet"
+        "slave",
+        "amulet",
+        "cost"
       ]
+    },
+    {
+      "mob_vnum": 96422,
+      "name": "an elder illithid",
+      "keyword": "elder",
+      "description": "Two elders begin in the Rockspire meeting room; only one wears the red skullcap. Neither is the pacing amulet recipient. A matching name does not identify the right quest actor.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96444,
+      "name": "a myconid",
+      "keyword": "myconid",
+      "description": "Six myconids begin in the great mushroom forest beyond the eastern canyon. Only one placement carries the hidden large spore for Ixaruuk; an ordinary carved part does not replace it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96420,
+      "name": "the sage Ixaraak",
+      "keyword": "ixaraak",
+      "description": "Upstairs in the other garden tower. This sage’s study holds a feedback board, while Ixaruuk receives the spore. Ixaraak has no separate native offering or addressed quest topics here.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96404,
+      "name": "Axonokar",
+      "keyword": "axonokar",
+      "description": "The herdlands weapon shop sells weapons. Purchases help preparation but are separate from the spore and amulet outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96438,
+      "name": "An illithid provisions merchant",
+      "keyword": "provisions-merchant",
+      "description": "At the market’s eastern stall, sells a raft, bags, water and supplies. These can aid travel but do not earn an extra quest outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96441,
+      "name": "Xelrelinak",
+      "keyword": "xelrelinak",
+      "description": "In his mansion’s study north of the gated entrance, sells ringmail and goggles. His account books describe trade; no separate native offering is recorded.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96448,
+      "name": "an illithid clothing merchant",
+      "keyword": "merchant",
+      "description": "The market’s clothing merchant sells a silk robe. Clothing is a service rather than another story completion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96437,
+      "name": "An illithid food merchant",
+      "keyword": "food-merchant",
+      "description": "The northern market stall lists its available hirelings. Purchases and pet rentals are unavailable while accounting is active. Listing or buying does not prove a slave rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96450,
+      "name": "Xiixeaxzzixi, the illithid arch-mage",
+      "keyword": "teacher",
+      "description": "Xiixeaxzzixi is loaded in the large hollowed rest room. Class-appropriate level guidance is separate from the room’s RENT service and these quest outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96449,
+      "name": "a brain golem",
+      "keyword": "guard",
+      "description": "Brain golems guard many city routes. Their former coin-changing service directs customers to the Royal Bank; it is not an amulet purchase or a separate journal achievement.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96427,
+      "name": "the illithid high priest",
+      "keyword": "priest",
+      "description": "The Rockspire high priest wears a black skullcap. Ritual lore and this cap are separate from the banker’s red proof and the elder’s bone-white reward.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96434,
+      "name": "an auctioneer",
+      "keyword": "auctioneer",
+      "description": "At the markets’ slave block. The sale and raid descriptions supply local context, without a native liberation offering or a recorded rescue outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 96447,
+      "name": "a duergar gardener",
+      "keyword": "gardener",
+      "description": "Duergar gardeners tend the fungal gardens. No gardener belt, magical garden-access bargain or flower offering is required by Ixarkon’s three native exchanges.",
+      "topics": []
     }
   ],
   "stories": [
     {
       "id": "request-96419-68463578ae17",
-      "title": "Deliver 1 x a large mushroom spore",
-      "category": "request",
-      "summary": "Bring 1 x a large mushroom spore. Reward: 25,000 copper, 50,000 experience.",
+      "title": "Ixaruuk: supply the mushroom spore",
+      "category": "story",
+      "summary": "Bring the sage Ixaruuk the exact large mushroom spore for 25,000 copper and a declared 50,000 experience. He remains afterward. His component request is independent of the amulet return; his scroll shop and the other sage’s study are separate.",
       "contracts": [
         {
           "giver_vnum": 96419,
@@ -63,33 +169,34 @@
       "steps": [
         {
           "id": "item-1",
-          "text": "Carry 1 x a large mushroom spore",
+          "text": "Carry the exact large mushroom spore",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
           "item_vnums": [
             96431
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "Ixaruuk is upstairs in the dark stone tower reached through the eastern gate from the fungal-garden path. Beyond the eastern canyon, descend through the crack to the great mushroom forest. Six myconids begin there, but only the one near the forest’s centre carries this hidden spore. Recover the actual loaded item rather than substituting an ordinary carved part. Carry it loose; worn or nested items do not count. An exact supplied item can skip personal recovery."
         },
         {
           "id": "turn-in",
-          "text": "Complete the requested exchange",
+          "text": "Complete the exact offering",
           "kind": "completion",
-          "hint": "Give the requested items to this request giver.",
           "contracts": [
             {
               "giver_vnum": 96419,
               "completion_key": "give=I:96431;receive=C:25000,E:50000;disappear=0"
             }
-          ]
+          ],
+          "hint": "Only the accepted exact offering records this outcome. Questions, source kills, current supplies, access and later use remain separate facts. Rewards require settlement; a daily request does not promise renewed stock or a present recipient."
         }
       ]
     },
     {
       "id": "request-96423-9ef90d0b74d4",
-      "title": "Deliver 1 x a small spider amulet of Lloth",
-      "category": "request",
-      "summary": "Bring 1 x a small spider amulet of Lloth. Reward: 5,500 experience, 1 x a bone-white skullcap.",
+      "title": "The pacing elder: return Lloth’s spider amulet",
+      "category": "story",
+      "summary": "Bring the pacing elder in the Rockspire meeting room the small spider amulet of Lloth for a bone-white skullcap and a declared 5,500 experience. He remains afterward. Returning the token is recorded; the hoped-for peace and the banker’s freedom need their own outcomes.",
       "contracts": [
         {
           "giver_vnum": 96423,
@@ -98,34 +205,48 @@
       ],
       "steps": [
         {
+          "id": "optional-banker-route",
+          "text": "Optional earlier route: obtain the banker’s amulet",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96436,
+              "completion_key": "give=C:1000000,I:96414;receive=E:50000,I:96434;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "The banker’s red-skullcap-and-coin exchange can supply this exact amulet, but that paid route is currently unavailable while accounting is active. A supplied amulet needs no earlier banker receipt. History cannot restore a spent, worn or handed-away amulet."
+        },
+        {
           "id": "item-1",
-          "text": "Carry 1 x a small spider amulet of Lloth",
+          "text": "Carry the small spider amulet of Lloth",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
           "item_vnums": [
             96434
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "The drow banker’s hidden cave lies south off the eastern mansion canyon: search the cracks in the small cave and open the concealed southern door. His amulet is the optional paid route’s output; it does not begin in his ordinary inventory. Bring an exact supplied copy directly to the pacing elder if available. Carry it loose; worn or nested items do not count. An exact supplied item can skip personal recovery."
         },
         {
           "id": "turn-in",
-          "text": "Complete the requested exchange",
+          "text": "Complete the exact offering",
           "kind": "completion",
-          "hint": "Give the requested items to this request giver.",
           "contracts": [
             {
               "giver_vnum": 96423,
               "completion_key": "give=I:96434;receive=E:5500,I:96435;disappear=0"
             }
-          ]
+          ],
+          "hint": "Only the accepted exact offering records this outcome. Questions, source kills, current supplies, access and later use remain separate facts. Rewards require settlement; a daily request does not promise renewed stock or a present recipient."
         }
       ]
     },
     {
       "id": "request-96436-719ce450900e",
-      "title": "Deliver 1,000,000 copper, 1 x a red skullcap",
-      "category": "request",
-      "summary": "Bring 1,000,000 copper, 1 x a red skullcap. Reward: 50,000 experience, 1 x a small spider amulet of Lloth.",
+      "title": "The drow banker: paid amulet preparation",
+      "category": "service",
+      "summary": "The native bargain requires one red skullcap and 1,000,000 copper (1,000 platinum) together for the small spider amulet of Lloth and a declared 50,000 experience. This paid route is currently unavailable while accounting is active. It remains optional preparation, with no achievement or daily credit. The banker stays; acceptance does not record his escape or your personal defeat of the skullcap’s wearer.",
       "contracts": [
         {
           "giver_vnum": 96436,
@@ -135,25 +256,26 @@
       "steps": [
         {
           "id": "item-1",
-          "text": "Carry 1 x a red skullcap",
+          "text": "Carry the red skullcap",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
           "item_vnums": [
             96414
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "Two elders begin in the Rockspire meeting room alongside the pacing elder, but only one of those two wears this red skullcap. The high priest’s black skullcap and the bone-white return reward do not substitute. Recover the red cap or arrange a supplied copy; the native offering checks the exact cap and payment rather than a personal kill. Carry it loose; worn or nested items do not count. An exact supplied item can skip personal recovery."
         },
         {
           "id": "turn-in",
-          "text": "Complete the requested exchange",
+          "text": "Complete the exact paid preparation",
           "kind": "completion",
-          "hint": "Give the requested items to this request giver.",
           "contracts": [
             {
               "giver_vnum": 96436,
               "completion_key": "give=C:1000000,I:96414;receive=E:50000,I:96434;disappear=0"
             }
-          ]
+          ],
+          "hint": "This paid preparation is currently unavailable while accounting is active. An earlier accepted exchange can explain where an amulet came from; it does not complete the elder’s story or replace an amulet you no longer carry."
         }
       ]
     }

@@ -1690,3 +1690,34 @@ alone cannot discover every intended story. Require active, ready accounting,
 indexed settlement and qualified renewal for new progress/daily credit. Frozen
 recovery remains separate. No native Turolopolis repair ships; later repairs must
 be identified in separate fix commits and prominent PR/news proof and wording.
+
+
+## Ixarkon example: preserve identities and explain unavailable preparation
+
+The [Ixarkon dossier](../design/zone-stories/IXARKON.md) and
+[revision-two sidecar](../../areas/story/ixarkon.story.json) preserve all three
+existing story IDs while classifying two stories and one supporting service.
+An optional banker receipt explains the amulet route; it never requires that
+route for supplied items or substitutes for a spent/worn/nested amulet. Give
+players all22 native aliases, distinguish the pacing recipient from same-named
+elders, and keep red/black/bone-white skullcaps separate.
+
+The cap-plus1000platinum route is refused while active accounting is enabled.
+State this availability beside a valid supplied-amulet alternative; current
+item readiness is not a live paid-transaction qualification. Paid hireling and
+locker services also have their own guards. Source acquisition, sender provenance,
+reward custody, personal source defeat and terminal acceptance need separate
+evidence. Do not turn each ASK keyword into another achievement.
+
+Room prose is an intent lead. The bridge starts open and its switches only
+unblock it. The veil chamber has no ordinary ingress, and a separately assigned
+entrance room is absent. Builder should define controller/ceremonial/racial/
+return intent, guard assignments and qualify accepted actual movement and
+restoration before adding runtime objectives or repairing those mechanics.
+The two stories do not implement a slave liberation or diplomatic campaign.
+
+Actual repairs must remain easy to announce: Ixarkon's12 direction words in11
+rooms ship in separate fix commit7baa78c3c, with reciprocal-route regression,
+exact scope, before/after table and news sentence. Future mechanic repairs need
+their own separate fix evidence. All new progress requires active, ready
+accounting; frozen reward recovery remains separate.

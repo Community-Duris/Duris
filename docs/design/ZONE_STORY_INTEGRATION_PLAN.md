@@ -2619,3 +2619,31 @@ No native repair, accounting activation, DB/server operation, migration, deploym
 or merge occurs here. Actual later repairs require separate fix commits and
 prominent PR/news before/after/proof/limits text; proposals cannot be announced
 as completed fixes.
+
+
+## Ixarkon: guarded paid preparation, sealed access and campaign intent
+
+[Ixarkon's complete dossier](zone-stories/IXARKON.md) closes priority74 by
+upgrading the existing sidecar in place to schema3/revision2, preserving three
+identities. Two stories and one supporting service keep16 contacts/22 aliases
+and four optional checks. The separate native direction repair7baa78c3c has
+original-fails/repaired-passes proof and explicit news wording; the following
+capabilities and repairs remain plans.
+
+| Capability | Concrete requirement | Implementation/qualification plan |
+| --- | --- | --- |
+| Item plus fee | Red cap plus1million copper buys amulet and XP; coin/mixed input is actively refused | Admit wallet and selected root atomically; freeze fee, actor generation and indexed outputs; qualify reject/busy/replay/partial/retry/cold recovery before removing guards. Keep preparation outside achievement/daily totals |
+| Historical preparation versus custody | Banker receipt is optional for the elder; supplied amulets are valid | Preserve service evidence and stable story IDs across revisions. Never replace present loose amulet with history or force prior purchase for a supplied copy |
+| Exact source roles | Six myconids but only one spore; two elders but only one red cap; separate pacing recipient | Freeze selected source/recipient/root/reset generation and admitted search/corpse/steal/donor transfer. Current item and terminal receipt do not prove first recovery or personal source defeat |
+| Missing special assignment and ingress | Sealed veil room, absent19890 GithyankiCave assignment and real_room0 fallback | Builder selects intended ceremonial/racial/return route. Validate existence before assignment; audit fallback aliasing. Add accepted actual ingress/movement, selected object/argument and arrival identity tests |
+| Random travel and restoration |25 existing destinations across planes/terrain, removal before target loop, self-RESTORE | Select bounded valid target before removal; qualify all-targets-missing, actual arrival/restoration, death/fall and cold recovery. Presence does not promise safe travel or a return |
+| Shared controller state | PULL switches only unblock an already open bridge; prose describes retraction | Builder chooses clearer prose or reversible extend/retract/reset controller. Preserve public traversal; handled callback and shared opening do not prove personal action |
+| Service availability | Hireling and paid locker actions refuse active accounting; literal inn and teacher are distinct | Show availability and supplied alternatives in cards; qualify accepted purchase/rent/terminal save separately. No sale, RENT or ritual keyword automatically records rescue or quest completion |
+| Larger story endpoints | Banker revenge/freedom and elder hoped-for peace have no native state predicates | Builder authors explicit actor, escort/bribe/liberation/diplomatic endpoints and supplied-proof branches, then qualifies indexed settlement and reset conflicts before campaign credit |
+
+Player cards should present two named outcomes, three exact current materials,
+optional historical preparation, clear cap/recipient identity and an unavailable
+paid-route explanation beside the supplied-amulet shortcut. Access lore, service
+limitations and future campaign endpoints need their own accepted facts; static
+mapping cannot discover intended hidden mechanics automatically. Require active,
+ready accounting for all new tracking and keep frozen recovery separate.
