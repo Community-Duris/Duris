@@ -33,6 +33,7 @@ SOURCE_FILE_FIXES = {
 }
 
 OFFLINE_WRITERS = {
+    "repair.player_item_payload": "Reconstructs missing physical payload for an existing selected player UID under an approved offline plan and runtime exclusion. Custody, root, parent, revision and supply remain unchanged; this is neither issuance nor an economic adjustment.",
     "import.legacy_dump": "Guarded local import replaces native rows from a legacy dump; it is an offline migration boundary, not a gameplay credit.",
     "import.currency_baselines": "Creates opening wallet/bank baseline witnesses for an authorized cutover; it must not alter live holdings or masquerade as issuance.",
     "restore.qualification": "Restores into an isolated qualification target; it is not permission to promote that target to live authority.",
@@ -54,6 +55,14 @@ DORMANT_WRITERS = {
     "player.confiscate_all_dormant": "Compiled bulk rent confiscation helper has no in-tree callsite; its direct inventory extraction requires bounded UID retirement if revived.",
 }
 NON_WRITERS = {
+    "recovery.ordinary_drop_graph_reconstruction": "Reconstructs only an entirely absent graph from exact original receipt/current SQL authority using retained UIDs and literals. Projection enrollment changes global/index/room/runtime caches without economic issuance, destruction or ACK.",
+    "recovery.inert_literal_eligibility": "Pure bounded classification of literal/prototype eligibility; no allocation, pool access, hydration, native mutation or enrollment permission.",
+    'recovery.sql_ordinary_drop_receipt_observation': 'Reads exact committed inbox, historical economic root/payload and outbox inside caller-owned native locks; no native mutation, missing-command apply or transaction/ACK ownership.',
+    'recovery.runtime_owner_revision_observation': 'Reads only an existing serialized owner-cache revision without inserting or hydrating missing metadata; no native custody or economic effect.',
+    'recovery.ordinary_drop_graph_observation': 'Observes exact original SQL-drop receipt and current epoch/season/custody/literal graph together with complete physical/runtime placement; no construction, repair, enrollment, issuance/destruction or publication ACK.',
+    "recovery.inert_literal_staging": "Allocates only private discard-only literal memory with a retained UID; no UID issuance, native holdings/custody, global object-list/index-count changes or registry admission. Final proof/enrollment is a separate owner.",
+    "recovery.inert_literal_cleanup": "Releases only unpublished stage memory/strings/descriptions without extraction, effect/procedure/event callbacks or native/runtime custody retirement.",
+    "coin.retained_pile_rendering": "Compares denomination-dependent text and weight on a stack-local zero-add renderer; it neither admits a UID nor changes a native holding.",
     "recovery.sql_exact_room_stage_cleanup": "Clears original UIDs only in the detached exact room tree before extracting its rejected root; durable payload and custody remain retained. Cleanup is not retirement.",
     "macro.checked_item_publication_declaration": "The checked obj_to_char prototype declares an interface; only its implementation and callers can publish a live item.",
     "account.cleanup_temp_char": "restoreCharOnly loads a temporary PC solely for account/browser display; every in-tree caller frees that temporary character graph, so extracting its copied items is not a durable custody retirement.",
@@ -153,6 +162,7 @@ NON_WRITERS = {
     "special.flying_citadel_unreachable_move": "flying_citadel returns FALSE unconditionally before the room-to-room object movement; the two calls cannot execute in this build.",
 }
 PROJECTION_ROUTES = {
+    "coin.retained_room_projection": "Publishes a committed original-UID ordinary-room pile with retained exact literal/custody/result checks. Uncertain handler/materializer stages remain held; no second accounting root is created.",
     "recovery.sql_exact_room_hydration": "Projects a complete literal graph after successful schema-2 provenance, current season, UID/revision/topology and exact staged-byte checks; no accounting root is created.",
     "recovery.sql_exact_room_placement": "Installs retained placement without replaying decay, falling, redirection or gameplay drop effects; no new custody or issuance is authorized.",
     "quest.durable_offering_publication": "Removes the live offering objects only after the committed item-destruction result is checked; it must retain a recoverable quest reward obligation.",
@@ -486,6 +496,8 @@ def source_definition_lines(path: Path, function: str | None) -> list[int]:
 
 
 def source_targets(route_id: str, disposition: str) -> dict:
+    if route_id == "repair.player_item_payload":
+        return {"holding_effect": "No wallet or bank mutation, issuance, retirement or accounting root.", "custody_effect": OFFLINE_WRITERS[route_id], "native_state_targets": ["player_items and player_item_runtime_state for the retained UID", "player_item_affects and player_item_extra_descr", "player_death_restitution_receipt and player_death_restitution_item payload_repair audit rows"]}
     if disposition == "non_writer_candidate":
         return {"holding_effect": "none in this function for economy/custody scope", "custody_effect": "none", "native_state_targets": []}
     if disposition == "dormant_writer_candidate":

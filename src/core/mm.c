@@ -98,6 +98,21 @@ void *_mm_get(struct mm_ds *mmds, const char * /*file*/, int /*line*/)
 	return mem;
 }
 
+void *mm_try_get(struct mm_ds *mmds) noexcept
+{
+	if (!mmds || !mmds->head)
+		return nullptr;
+	char *mem = mmds->head;
+	mmds->head = mm_next(mem, mmds->next_off);
+	if (!mmds->head)
+		mmds->tail = nullptr;
+#ifdef MM_STATS
+	++mmds->objs_used;
+#endif
+	memset(mem, 0, mmds->size);
+	return mem;
+}
+
 void mm_alloc_chunk(struct mm_ds *mmds)
 {
 	char *more;

@@ -18,6 +18,33 @@ MATRIX = ROOT / "docs/persistence/economy_accounting/writer_coverage_matrix.json
 
 
 class SplitEconomyActivationContract(unittest.TestCase):
+    def test_incoming_semantic_paths_do_not_inherit_lexical_coverage_qualification(self):
+        ids = ("repair.player_item_payload", "spell.dispel_object_state",
+               "spell.dispel_portal_lifecycle", "spell.dispel_anchor_lifecycle")
+        registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
+        rows = {row["id"]: row for row in registry["writers"]}
+        for route_id in ids:
+            row, route = rows[route_id], self.routes[route_id]
+            self.assertEqual(row["sites"], [])
+            self.assertEqual(row["evidence"], [])
+            self.assertTrue(all(backend["status"] == "unverified" and not backend["evidence"]
+                                for backend in row["backends"].values()))
+            self.assertFalse(route["double_entry_evidence"]["unified_operation_postings_observed"])
+            self.assertFalse(route["current_critical_command_schema"]["schema_2_gameplay_producer_connected"])
+            self.assertTrue(route["source"]["definition_lines"])
+        repair = self.routes[ids[0]]
+        self.assertEqual(repair["disposition"], "offline_operational_writer")
+        self.assertFalse(repair["counts_as_runtime_writer"])
+        self.assertEqual(repair["blocking_policy_after_activation"]["decision"],
+                         "maintenance_only_no_live_admission")
+        self.assertIn("No wallet or bank mutation", repair["native_effects"]["holding_effect"])
+        self.assertIn("player_item_runtime_state", " ".join(repair["native_effects"]["native_state_targets"]))
+        for route_id in ids[1:]:
+            self.assertEqual(self.routes[route_id]["disposition"], "runtime_mutation_route")
+            self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]["must_block_on_activation"])
+        self.assertFalse(self.artifact["coverage_complete"])
+        self.assertEqual(self.artifact["playable_release_status"], "BLOCKED")
+
     def source_site(self, path, signature, family, expression=None):
         """Locate the reviewed operation by its owner and code, independent of spacing above it."""
         source = (ROOT / path).read_text(encoding="utf-8")
@@ -1097,9 +1124,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new random-zone item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/world/random.zone.c", 426, "item_publication")],
+        self.assertEqual(owners[("src/world/random.zone.c", 427, "item_publication")],
                          {"world.random_chest_coin_issue"})
-        self.assertEqual(owners[("src/world/random.zone.c", 1427, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/random.zone.c", 1428, "item_lifecycle")],
                          {"world.lab_reset_destroy"})
         for route_id in ("world.random_sigil_factory", "world.lab_relic_probe",
                          "world.lab_relic_stage_reject"):
@@ -1239,13 +1266,13 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new legacy file item calls")
         shared_finish = {("src/core/files.c", line, "item_lifecycle")
-                         for line in (1745, 1751)}
+                         for line in (1764, 1770)}
         self.assertTrue(all(len(owners[site]) == (2 if site in shared_finish else 1)
                             for site in current))
         for site in shared_finish:
             self.assertEqual(owners[site], {"player.flat_terminal_inventory_unload",
                                             "player.sql_terminal_inventory_unload"})
-        self.assertEqual(owners[("src/core/files.c", 3695, "item_publication")],
+        self.assertEqual(owners[("src/core/files.c", 3731, "item_publication")],
                          {"recovery.legacy_object_restore"})
         for route_id in ("player.object_save_template_probe",
                          "player.single_item_save_template_probe",

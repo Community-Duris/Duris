@@ -35,6 +35,17 @@ bool item_ownership_runtime_hydrate_owner(const item_owner_identity &owner, uint
 bool item_ownership_runtime_lookup(uint64_t item_uid, item_ownership_runtime_entry *entry);
 bool item_ownership_runtime_snapshot_owner(const item_owner_identity &owner, size_t limit,
 					   std::vector<item_ownership_runtime_entry> *snapshot);
+// Read-only game-thread census of every row claiming this root, including
+// conflicting owners, states and topology. Sorted by item UID; this does not
+// prove root existence, valid custody or durable/native authority. A zero root
+// or zero limit is invalid. Failure empties a nonnull output; success is complete.
+bool item_ownership_runtime_snapshot_root(uint64_t root_item_uid, size_t limit,
+					  std::vector<item_ownership_runtime_entry> *snapshot);
+// Pure serialized game-thread cache observation. Never inserts a missing owner,
+// hydrates, allocates or grants native authority. Missing/invalid/null refuses
+// with output unchanged; a cached revision of zero is a valid observation.
+bool item_ownership_runtime_peek_owner_revision(const item_owner_identity &owner,
+						uint64_t *revision) noexcept;
 bool item_ownership_runtime_owner_revision(const item_owner_identity &owner, uint64_t *revision);
 bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 				  const item_transfer_result &result);

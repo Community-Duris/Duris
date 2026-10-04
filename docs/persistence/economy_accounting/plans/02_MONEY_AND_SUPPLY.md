@@ -57,7 +57,10 @@ database for native SQL acceptance.
 - Fault tests cover denomination overflow, negative holdings, changed replay,
   source-event reuse with a new ID, endpoint failure, pile publication failure,
   lost reply, and restart. Player journeys cover ATM, change, drop/pickup, split
-  remainder/morph, claims, and blackjack push/win/loss/interruption.
+  remainder/morph and claims. Blackjack remains deprecated under active epochs:
+  qualify refusal before wager, wallet or pending-payout mutation. Active blackjack
+  push/win/loss and round-recovery journeys are outside the supported product;
+  existing inactive legacy regression coverage remains separate.
 - Focused money regressions and both server builds pass. Report routes that
   remain intentionally unsupported with executable refusal tests.
 
@@ -67,3 +70,55 @@ The plan exports typed money effects and documented source/sink policy to Plan 4
 It does not change item UID ownership or invent a finite NPC/keeper treasury.
 The independently testable deliverable is an inactive but fully evidenced set
 of money routes; whole-game activation waits for the other plans.
+
+
+### Ordinary room coin producer slice integrated; unqualified
+
+Local merge af900753 contains independent implementation6b6b7c10c and the
+optional post-ACK staging release contract96e2af83a. Active ordinary-room single-root
+coin drop and pickup now use a retained native publication adapter. Original UID,
+canonical before/after literal bytes, denominations, custody and exact result
+revisions must agree. Native materialization, amount updates and placement keep
+explicit started/returned states; uncertain effects remain held. Every ACK retry
+revalidates physical evidence and the current wallet body. Work is one attempt per
+pulse; notifications and bulk continuation follow durable ACK and owner extraction.
+Inactive/schema1 paths remain separate, unsupported active placements refuse and
+callback-free cold replay stays held. Production Makefile registration is primary-owned.
+
+Final BEFORE /opt/duris-accounting-coin-publication-before-final-18fbd004fc3e/source
+manifest SHA-25648792b5f103e286305ec1c4282b0e864ef494cd8d7566347311b2a41aa2235c7
+pins1238 files. Candidate /opt/duris-accounting-coin-publication-committed-3457636af08c/source
+manifest45432924e1c0b872d1f9eb3b4916ac93fc033706dfd74089fc145af6a10860ba pins1240.
+Prepared24physical+15owner cases per SQL-header/flat profile are unexecuted; BEFORE
+uses --scope owner, AFTER --scope all. Their native capture/codec/runtime custody
+plus controlled placement/render/materializer seams do not qualify actual actobj
+handlers, either database or flatfile recovery. Original300-second compile and
+30-second per-case bounds remain unmeasured. Four initial review findings were
+corrected; primary final-pin source review remains separate from qualification.
+
+Open: semantic writer/central owner registration, actual native producer and
+backend journeys, cold routing, actorless hydration and explicit uncertain native
+effect recovery. No source/fixture inventory is promoted to R1-R8 or route evidence.
+
+
+### Final integrated coin review corrections; unqualified
+
+Final-pin review found four bounded source gaps in6b6b7c10c. Corrections now bind
+committed wallet denominations and exact revision advances, plus every native pile
+result identity/revision field, to the original immutable command before any live
+projection. Postcallback paths preserve an already-blocked canonical receipt
+conflict. Every physical publication/ACK attempt rechecks PID/account/race and
+current body identity before and after callbacks. Partial pickup also requires
+canonical opening weight before rendering the after image. Source pins are
+currency_transaction.c94f5bfe23da10bbd25ea0d18ff1a9ba934300f31d91d63bdacc3c1341dcf0dbe
+and coin_physical_publication.c00fbca73cf3d4fc49f51c36e59423ec5224ef520539b0ac7d0ae077faa4d532b.
+Independent read-only review confirms the four corrections; no runtime checks ran.
+
+The command contains bank revision and zero bank delta, not an opening bank
+vector. This verifier checks bank range/revision and retains the authoritative
+immutable native result/reconciliation contract for its balances; it does not
+invent an independent bank proof from live projection. Generic currency linkage
+remains independent of the native world module. Inactive/schema1 and wallet-only
+behavior remain outside these physical-schema2 checks. Prepared regression cases,
+actual producer/recovery journeys, cold ownership and full Plan2 acceptance remain
+required; no issue/route is marked qualified or release-ready.

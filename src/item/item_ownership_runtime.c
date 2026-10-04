@@ -62,6 +62,47 @@ bool item_ownership_runtime_snapshot_owner(const item_owner_identity &owner, siz
 	}
 }
 
+bool item_ownership_runtime_snapshot_root(uint64_t root_item_uid, size_t limit,
+					  std::vector<item_ownership_runtime_entry> *snapshot)
+{
+	if (!snapshot)
+		return false;
+	snapshot->clear();
+	if (!root_item_uid || !limit)
+		return false;
+	try
+	{
+		// Count before allocating. The serialized game-thread registry cannot
+		// change between passes, and unrelated roots never consume the budget.
+		size_t count = 0;
+		for (const auto &[uid, entry] : entries)
+		{
+			(void)uid;
+			if (entry.root_item_uid != root_item_uid)
+				continue;
+			if (count >= limit)
+				return false;
+			++count;
+		}
+		std::vector<item_ownership_runtime_entry> captured;
+		captured.reserve(count);
+		for (const auto &[uid, entry] : entries)
+		{
+			(void)uid;
+			if (entry.root_item_uid == root_item_uid)
+				captured.push_back(entry);
+		}
+		std::sort(captured.begin(), captured.end(), [](const auto &left, const auto &right)
+			  { return left.item_uid < right.item_uid; });
+		*snapshot = std::move(captured);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
 bool item_ownership_runtime_hydrate(const item_ownership_runtime_entry &entry)
 {
 	if (!entry.item_uid || !entry.root_item_uid || !item_owner_identity_valid(entry.owner) ||
@@ -480,6 +521,18 @@ bool item_ownership_runtime_lookup(uint64_t item_uid, item_ownership_runtime_ent
 	if (found == entries.end())
 		return false;
 	*entry = found->second;
+	return true;
+}
+
+bool item_ownership_runtime_peek_owner_revision(const item_owner_identity &owner,
+						uint64_t *revision) noexcept
+{
+	if (!revision || !item_owner_identity_valid(owner))
+		return false;
+	const auto found = owner_revisions.find(owner);
+	if (found == owner_revisions.end())
+		return false;
+	*revision = found->second;
 	return true;
 }
 

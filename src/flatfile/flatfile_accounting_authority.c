@@ -1,4 +1,5 @@
 #include "flatfile/flatfile_accounting_authority.h"
+#include "flatfile/flatfile_accounting_staging_view.h"
 #include "flatfile/flatfile_store.h"
 #include "economy/currency_command.h"
 #include <algorithm>
@@ -76,24 +77,28 @@ struct reader
 	critical_operation_id id() { return { fixed<16>() }; }
 	void done() { need(offset == data.size()); }
 };
-bytes envelope(const char *magic, const bytes &body)
+bytes envelope(const char *magic, const bytes &body, uint32_t version = 1)
 {
 	need(body.size() + 48 <= FLATFILE_ECONOMIC_METADATA_MAX_BYTES, ENOSPC);
 	bytes out;
 	raw(out, { reinterpret_cast<const uint8_t *>(magic), 8 });
-	number(out, 1, 4);
+	number(out, version, 4);
 	number(out, body.size(), 4);
 	raw(out, hash(body));
 	raw(out, body);
 	return out;
 }
-reader unwrap(const bytes &encoded, const char *magic)
+reader unwrap(const bytes &encoded, const char *magic, uint32_t *catalog_version = nullptr)
 {
 	need(encoded.size() >= 48 && encoded.size() <= FLATFILE_ECONOMIC_METADATA_MAX_BYTES);
 	reader in{ encoded };
 	auto prefix = in.take(8);
 	need(!memcmp(prefix.data(), magic, 8));
-	need(in.number(4) == 1 && in.number(4) == encoded.size() - 48);
+	const auto version = in.number(4);
+	need((version == 1 || (catalog_version && version == 2)) &&
+	     in.number(4) == encoded.size() - 48);
+	if (catalog_version)
+		*catalog_version = version;
 	auto digest = in.fixed<32>();
 	auto body = in.take(encoded.size() - 48);
 	need(digest == hash(body));
@@ -117,9 +122,19 @@ std::string native_name(size_t bucket)
 {
 	return bucket_name("native-", bucket, ".ean");
 }
-bytes read_file(const std::string &root, const std::string &name)
+bytes read_file(const std::string &root, const std::string &name,
+		const flatfile_accounting_staging_view *view = nullptr)
 {
 	bytes value;
+	if (view)
+	{
+		bool found = false;
+		const auto code =
+			view->read(name, FLATFILE_ECONOMIC_METADATA_MAX_BYTES, &value, &found);
+		need(!code, code);
+		if (found)
+			return value;
+	}
 	errno = 0;
 	auto result = flatfile_read(directory(root), name, FLATFILE_ECONOMIC_METADATA_MAX_BYTES,
 				    &value, nullptr);
@@ -127,8 +142,18 @@ bytes read_file(const std::string &root, const std::string &name)
 	     result == flatfile_read_result::io_error ? (errno == ENOMEM ? ENOMEM : EIO) : EILSEQ);
 	return value;
 }
-void require_absent(const std::string &root, const std::string &name)
+void require_absent(const std::string &root, const std::string &name,
+		    const flatfile_accounting_staging_view *view = nullptr)
 {
+	if (view)
+	{
+		bytes ignored;
+		bool found = false;
+		const auto code =
+			view->read(name, FLATFILE_ECONOMIC_METADATA_MAX_BYTES, &ignored, &found);
+		need(!code, code);
+		need(!found);
+	}
 	bytes ignored;
 	const auto result = flatfile_read(directory(root), name,
 					  FLATFILE_ECONOMIC_METADATA_MAX_BYTES, &ignored, nullptr);
@@ -229,7 +254,7 @@ flatfile_economic_control decode_control(const bytes &encoded)
 	validate_control(value);
 	return value;
 }
-void validate_epochs(const epochs &values)
+void validate_epochs(const critical_operation_id &lineage, const epochs &values)
 {
 	need(values.size() <= FLATFILE_ECONOMIC_MAX_EPOCHS, ENOSPC);
 	std::set<std::array<uint8_t, 16>> identities;
@@ -241,12 +266,27 @@ void validate_epochs(const epochs &values)
 		     value.transition_kind && value.transition_digest != economic_digest{} &&
 		     value.ordinal == i + 1 && value.predecessor.bytes == previous.bytes &&
 		     identities.insert(value.epoch.bytes).second);
+		const auto state = value.baseline_initialization;
+		need(state == flatfile_baseline_initialization::legacy_unknown ||
+		     state == flatfile_baseline_initialization::never_initialized ||
+		     state == flatfile_baseline_initialization::initialized);
+		if (state == flatfile_baseline_initialization::initialized)
+			need(nonzero(value.baseline_initializing_operation) &&
+			     economic_account_key_valid(value.baseline_opening) &&
+			     value.baseline_opening.kind == economic_account_kind::opening &&
+			     value.baseline_opening.lineage.bytes == lineage.bytes);
+		else
+			need(!nonzero(value.baseline_initializing_operation) &&
+			     !nonzero(value.baseline_opening.lineage) &&
+			     value.baseline_opening.kind == economic_account_kind{} &&
+			     !value.baseline_opening.authority_id &&
+			     !value.baseline_opening.context_id);
 		previous = value.epoch;
 	}
 }
 bytes encode_epochs(const critical_operation_id &lineage, const epochs &values)
 {
-	validate_epochs(values);
+	validate_epochs(lineage, values);
 	bytes out;
 	raw(out, lineage.bytes);
 	number(out, values.size(), 4);
@@ -260,17 +300,28 @@ bytes encode_epochs(const critical_operation_id &lineage, const epochs &values)
 		number(out, 0, 6);
 		raw(out, value.transition_digest);
 		raw(out, value.creating_operation.bytes);
+		number(out, static_cast<uint8_t>(value.baseline_initialization), 1);
+		number(out, 0, 7);
+		raw(out, value.baseline_initializing_operation.bytes);
+		std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES> opening = {};
+		if (value.baseline_initialization == flatfile_baseline_initialization::initialized)
+			need(economic_account_key_encode(value.baseline_opening, &opening) ==
+			     economic_accounting_error::ok);
+		raw(out, opening);
 	}
-	return envelope("DURECE1", out);
+	return envelope("DURECE1", out, 2);
 }
-epochs load_epochs(const std::string &root, const flatfile_economic_control &control)
+epochs load_epochs(const std::string &root, const flatfile_economic_control &control,
+		   const flatfile_accounting_staging_view *view = nullptr)
 {
-	auto encoded = read_file(root, "epochs.eae");
+	auto encoded = read_file(root, "epochs.eae", view);
 	need(hash(encoded) == control.epochs_digest);
-	auto in = unwrap(encoded, "DURECE1");
+	uint32_t version = 0;
+	auto in = unwrap(encoded, "DURECE1", &version);
 	need(in.id().bytes == control.lineage.bytes);
 	auto count = in.number(4);
-	need(count == control.epoch_count && in.number(4) == 0);
+	need(count == control.epoch_count && count <= FLATFILE_ECONOMIC_MAX_EPOCHS &&
+	     in.number(4) == 0 && in.data.size() == 24 + count * (version == 1 ? 96 : 160));
 	epochs values;
 	values.reserve(count);
 	for (size_t i = 0; i < count; ++i)
@@ -283,17 +334,34 @@ epochs load_epochs(const std::string &root, const flatfile_economic_control &con
 		need(in.number(6) == 0);
 		value.transition_digest = in.fixed<32>();
 		value.creating_operation = in.id();
+		if (version == 2)
+		{
+			value.baseline_initialization =
+				static_cast<flatfile_baseline_initialization>(in.number(1));
+			need(in.number(7) == 0);
+			value.baseline_initializing_operation = in.id();
+			auto opening = in.take(ECONOMIC_ACCOUNT_KEY_BYTES);
+			if (value.baseline_initialization ==
+			    flatfile_baseline_initialization::initialized)
+				need(economic_account_key_decode(opening,
+								 &value.baseline_opening) ==
+				     economic_accounting_error::ok);
+			else
+				need(std::all_of(opening.begin(), opening.end(),
+						 [](uint8_t byte) { return byte == 0; }));
+		}
 		values.push_back(value);
 	}
 	in.done();
-	validate_epochs(values);
+	validate_epochs(control.lineage, values);
 	need(values.empty() || values.back().epoch.bytes == control.last_epoch.bytes);
 	return values;
 }
-flatfile_economic_control load_control(const std::string &root)
+flatfile_economic_control load_control(const std::string &root,
+				       const flatfile_accounting_staging_view *view = nullptr)
 {
-	auto value = decode_control(read_file(root, "authority.eal"));
-	(void)load_epochs(root, value);
+	auto value = decode_control(read_file(root, "authority.eal", view));
+	(void)load_epochs(root, value, view);
 	return value;
 }
 void name_valid(const std::string &name)
@@ -458,15 +526,15 @@ bytes encode_mappings(const flatfile_economic_control &control, size_t bucket,
 	return envelope("DURECM1", out);
 }
 mappings load_mappings(const std::string &root, const flatfile_economic_control &control,
-		       size_t bucket)
+		       size_t bucket, const flatfile_accounting_staging_view *view = nullptr)
 {
 	if (control.mapping_digests[bucket] == economic_digest{})
 	{
 		need(mapping_count(control, bucket) == 0);
-		require_absent(root, mapping_name(bucket));
+		require_absent(root, mapping_name(bucket), view);
 		return {};
 	}
-	auto encoded = read_file(root, mapping_name(bucket));
+	auto encoded = read_file(root, mapping_name(bucket), view);
 	need(hash(encoded) == control.mapping_digests[bucket]);
 	auto in = unwrap(encoded, "DURECM1");
 	need(in.id().bytes == control.lineage.bytes && in.number(4) == bucket);
@@ -522,14 +590,14 @@ bytes encode_native(const flatfile_economic_control &control, size_t bucket,
 	return envelope("DURECN1", out);
 }
 native_index load_native(const std::string &root, const flatfile_economic_control &control,
-			 size_t bucket)
+			 size_t bucket, const flatfile_accounting_staging_view *view = nullptr)
 {
 	if (control.native_digests[bucket] == economic_digest{})
 	{
-		require_absent(root, native_name(bucket));
+		require_absent(root, native_name(bucket), view);
 		throw failure{ ENODATA };
 	}
-	auto encoded = read_file(root, native_name(bucket));
+	auto encoded = read_file(root, native_name(bucket), view);
 	need(hash(encoded) == control.native_digests[bucket]);
 	auto in = unwrap(encoded, "DURECN1");
 	need(in.id().bytes == control.lineage.bytes && in.number(4) == bucket);
@@ -562,10 +630,11 @@ size_t find_native(const native_index &values, const bytes &key)
 		       static_cast<size_t>(found - values.begin());
 }
 flatfile_economic_mapping mapping_by_id(const std::string &root,
-					const flatfile_economic_control &control, uint64_t id)
+					const flatfile_economic_control &control, uint64_t id,
+					const flatfile_accounting_staging_view *view = nullptr)
 {
 	need(id && id < control.next_mapping_id, ESTALE);
-	auto values = load_mappings(root, control, id % 256);
+	auto values = load_mappings(root, control, id % 256, view);
 	auto position = (id - 1) / 256;
 	need(position < values.size());
 	return values[position];
@@ -581,19 +650,21 @@ flatfile_economic_mapping mapping_for_key(const std::string &root,
 	return value;
 }
 void active_crosslink(const std::string &root, const flatfile_economic_control &control,
-		      const flatfile_economic_mapping &mapping)
+		      const flatfile_economic_mapping &mapping,
+		      const flatfile_accounting_staging_view *view = nullptr)
 {
 	auto key = native_key(mapping.account.kind, mapping.account.context_id, mapping.locator);
-	auto index = load_native(root, control, hash(key)[0]);
+	auto index = load_native(root, control, hash(key)[0], view);
 	auto at = find_native(index, key);
 	need(!nonzero(mapping.retiring_operation), ESTALE);
 	need(at < index.size() && index[at].active == mapping.account.authority_id);
 }
 void validate_tombstone(const std::string &root, const flatfile_economic_control &control,
-			const native_entry &entry)
+			const native_entry &entry,
+			const flatfile_accounting_staging_view *view = nullptr)
 {
 	need(!entry.active);
-	auto last = mapping_by_id(root, control, entry.last);
+	auto last = mapping_by_id(root, control, entry.last, view);
 	auto current = native_key(last.account.kind, last.account.context_id, last.locator);
 	need(current.size() >= 12 && entry.key.size() >= 12 &&
 	     std::equal(current.begin(), current.begin() + 12, entry.key.begin()));
@@ -602,7 +673,7 @@ void validate_tombstone(const std::string &root, const flatfile_economic_control
 	if (!nonzero(last.retiring_operation))
 	{
 		need(last.account.kind == economic_account_kind::bank && current != entry.key);
-		active_crosslink(root, control, last);
+		active_crosslink(root, control, last, view);
 	}
 }
 void changing(flatfile_economic_control &control, uint64_t expected,
@@ -629,10 +700,23 @@ void put_native(flatfile_economic_control &control, size_t bucket, const native_
 	control.native_digests[bucket] = hash(encoded);
 	need(files.emplace(native_name(bucket), std::move(encoded)).second);
 }
-void finish(const flatfile_economic_control &control, updates files, operations *out)
+void finish(const flatfile_economic_control &control, updates files, operations *out,
+	    flatfile_accounting_staging_view *view = nullptr)
 {
 	need(out, EINVAL);
 	need(files.emplace("authority.eal", encode_control(control)).second);
+	if (view)
+	{
+		operations changes;
+		changes.reserve(files.size());
+		for (auto &[name, encoded] : files)
+			changes.push_back({ flatfile_authority_store::economic_evidence,
+					    flatfile_authority_operation_kind::write, name,
+					    std::move(encoded) });
+		const auto code = view->merge(changes, out);
+		need(!code, code);
+		return;
+	}
 	need(files.size() + out->size() <= flatfile_authority_transaction_maximum_operations,
 	     ENOSPC);
 	size_t total = 50;
@@ -967,25 +1051,39 @@ unsigned int flatfile_accounting_authority_storage::create_mapping(
 	const critical_operation_id &operation, flatfile_economic_mapping *mapping, operations *out,
 	std::string *error)
 {
+	return create_mapping_staged(root, lock, expected, kind, context, locator, operation,
+				     mapping, out, error, nullptr);
+}
+unsigned int flatfile_accounting_authority_storage::create_mapping_staged(
+	const std::string &root, const flatfile_authority_lock &lock, uint64_t expected,
+	economic_account_kind kind, uint64_t context, const flatfile_economic_locator &locator,
+	const critical_operation_id &operation, flatfile_economic_mapping *mapping, operations *out,
+	std::string *error, flatfile_accounting_staging_view *view)
+{
 	return guarded(
 		[&]
 		{
 			need(mapping && out, EINVAL);
+			if (view)
+			{
+				const auto code = view->begin(root, lock, out);
+				need(!code, code);
+			}
 			locator_valid(kind, context, locator, true);
 			auto key = native_key(kind, context, locator);
 			recover(root, lock);
-			auto control = load_control(root);
+			auto control = load_control(root, view);
 			changing(control, expected, operation);
 			need(control.next_mapping_id <= FLATFILE_ECONOMIC_MAX_MAPPINGS, ENOSPC);
 			auto native_bucket = hash(key)[0];
-			auto index = load_native(root, control, native_bucket);
+			auto index = load_native(root, control, native_bucket, view);
 			auto at = find_native(index, key);
 			need(at == index.size() || !index[at].active, EEXIST);
 			if (at < index.size())
-				validate_tombstone(root, control, index[at]);
+				validate_tombstone(root, control, index[at], view);
 			auto id = control.next_mapping_id;
 			auto bucket = id % 256;
-			auto values = load_mappings(root, control, bucket);
+			auto values = load_mappings(root, control, bucket, view);
 			flatfile_economic_mapping value;
 			value.account = { control.lineage, kind, id, context };
 			value.locator = locator;
@@ -1006,7 +1104,7 @@ unsigned int flatfile_accounting_authority_storage::create_mapping(
 			updates files;
 			put_mapping(control, bucket, values, files);
 			put_native(control, native_bucket, index, files);
-			finish(control, std::move(files), out);
+			finish(control, std::move(files), out, view);
 			*mapping = std::move(value);
 		},
 		error);
@@ -1104,21 +1202,93 @@ unsigned int flatfile_accounting_authority_storage::append_epoch(
 	const std::string &root, const flatfile_authority_lock &lock, uint64_t expected,
 	const flatfile_economic_epoch &epoch, operations *out, std::string *error)
 {
+	return append_epoch_staged(root, lock, expected, epoch, out, error, nullptr);
+}
+unsigned int flatfile_accounting_authority_storage::append_epoch_staged(
+	const std::string &root, const flatfile_authority_lock &lock, uint64_t expected,
+	const flatfile_economic_epoch &epoch, operations *out, std::string *error,
+	flatfile_accounting_staging_view *view)
+{
 	return guarded(
 		[&]
 		{
+			if (view)
+			{
+				const auto code = view->begin(root, lock, out);
+				need(!code, code);
+			}
 			recover(root, lock);
-			auto control = load_control(root);
+			auto control = load_control(root, view);
 			changing(control, expected, epoch.creating_operation);
-			auto values = load_epochs(root, control);
+			auto values = load_epochs(root, control, view);
 			need(values.size() < FLATFILE_ECONOMIC_MAX_EPOCHS, ENOSPC);
-			values.push_back(epoch);
+			// Callers cannot supply an initialized marker or invent its proof.
+			need(epoch.baseline_initialization ==
+					     flatfile_baseline_initialization::legacy_unknown &&
+				     !nonzero(epoch.baseline_initializing_operation) &&
+				     !nonzero(epoch.baseline_opening.lineage) &&
+				     epoch.baseline_opening.kind == economic_account_kind{} &&
+				     !epoch.baseline_opening.authority_id &&
+				     !epoch.baseline_opening.context_id,
+			     EINVAL);
+			auto appended = epoch;
+			appended.baseline_initialization =
+				flatfile_baseline_initialization::never_initialized;
+			values.push_back(appended);
 			auto encoded = encode_epochs(control.lineage, values);
 			control.epoch_count = values.size();
 			control.last_epoch = epoch.epoch;
 			control.active_epoch = {};
 			control.epochs_digest = hash(encoded);
-			finish(control, { { "epochs.eae", std::move(encoded) } }, out);
+			finish(control, { { "epochs.eae", std::move(encoded) } }, out, view);
+		},
+		error);
+}
+unsigned int flatfile_accounting_authority_storage::stage_baseline_initialization(
+	const std::string &root, const flatfile_authority_lock &lock, uint64_t expected,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const economic_account_key &opening, const critical_operation_id &operation,
+	operations *out, std::string *error)
+{
+	return stage_baseline_initialization_staged(root, lock, expected, lineage, epoch, opening,
+						    operation, out, error, nullptr);
+}
+unsigned int flatfile_accounting_authority_storage::stage_baseline_initialization_staged(
+	const std::string &root, const flatfile_authority_lock &lock, uint64_t expected,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const economic_account_key &opening, const critical_operation_id &operation,
+	operations *out, std::string *error, flatfile_accounting_staging_view *view)
+{
+	return guarded(
+		[&]
+		{
+			if (view)
+			{
+				const auto code = view->begin(root, lock, out);
+				need(!code, code);
+			}
+			recover(root, lock);
+			need(out && nonzero(lineage) && nonzero(epoch) &&
+				     economic_account_key_valid(opening) &&
+				     opening.kind == economic_account_kind::opening &&
+				     opening.lineage.bytes == lineage.bytes,
+			     EINVAL);
+			auto control = load_control(root, view);
+			need(control.lineage.bytes == lineage.bytes, ESTALE);
+			changing(control, expected, operation);
+			auto values = load_epochs(root, control, view);
+			auto at = std::find_if(values.begin(), values.end(), [&](const auto &value)
+					       { return value.epoch.bytes == epoch.bytes; });
+			need(at != values.end(), ENODATA);
+			need(at->baseline_initialization ==
+				     flatfile_baseline_initialization::never_initialized,
+			     EILSEQ);
+			at->baseline_initialization = flatfile_baseline_initialization::initialized;
+			at->baseline_initializing_operation = operation;
+			at->baseline_opening = opening;
+			auto encoded = encode_epochs(control.lineage, values);
+			control.epochs_digest = hash(encoded);
+			finish(control, { { "epochs.eae", std::move(encoded) } }, out, view);
 		},
 		error);
 }
@@ -1126,17 +1296,84 @@ unsigned int flatfile_accounting_authority_storage::select_epoch(
 	const std::string &root, const flatfile_authority_lock &lock, uint64_t expected,
 	bool active, const critical_operation_id &operation, operations *out, std::string *error)
 {
+	return select_epoch_staged(root, lock, expected, active, operation, out, error, nullptr);
+}
+unsigned int flatfile_accounting_authority_storage::select_epoch_staged(
+	const std::string &root, const flatfile_authority_lock &lock, uint64_t expected,
+	bool active, const critical_operation_id &operation, operations *out, std::string *error,
+	flatfile_accounting_staging_view *view)
+{
 	return guarded(
 		[&]
 		{
+			if (view)
+			{
+				const auto code = view->begin(root, lock, out);
+				need(!code, code);
+			}
 			recover(root, lock);
-			auto control = load_control(root);
+			auto control = load_control(root, view);
 			changing(control, expected, operation);
 			need(control.epoch_count, ENODATA);
 			need(nonzero(control.active_epoch) != active, EALREADY);
 			control.active_epoch = active ? control.last_epoch :
 							critical_operation_id{};
-			finish(control, {}, out);
+			finish(control, {}, out, view);
 		},
 		error);
+}
+
+unsigned int flatfile_accounting_authority_storage::read_control(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_accounting_staging_view *view, flatfile_economic_control *out,
+	std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			need(view && out && view->matches(root, lock), EINVAL);
+			recover(root, lock);
+			auto value = load_control(root, view);
+			*out = std::move(value);
+		},
+		error);
+}
+
+unsigned int flatfile_accounting_authority_storage::read_epoch(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const flatfile_accounting_staging_view *view, const critical_operation_id &lineage,
+	const critical_operation_id &epoch, flatfile_economic_epoch *out, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			need(view && out && view->matches(root, lock) && nonzero(lineage) &&
+				     nonzero(epoch),
+			     EINVAL);
+			recover(root, lock);
+			const auto control = load_control(root, view);
+			need(control.lineage.bytes == lineage.bytes, ESTALE);
+			const auto values = load_epochs(root, control, view);
+			const auto at = std::find_if(values.begin(), values.end(),
+						     [&](const auto &value)
+						     { return value.epoch.bytes == epoch.bytes; });
+			need(at != values.end(), ENODATA);
+			*out = *at;
+		},
+		error);
+}
+
+unsigned int flatfile_accounting_staging_view::control(flatfile_economic_control *out,
+						       std::string *error) const
+{
+	return flatfile_accounting_authority_storage::read_control(root_, lock_, this, out, error);
+}
+
+unsigned int flatfile_accounting_staging_view::epoch(const critical_operation_id &lineage,
+						     const critical_operation_id &epoch,
+						     flatfile_economic_epoch *out,
+						     std::string *error) const
+{
+	return flatfile_accounting_authority_storage::read_epoch(root_, lock_, this, lineage, epoch,
+								 out, error);
 }
