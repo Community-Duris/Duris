@@ -43,6 +43,9 @@ struct coin_publication_callbacks
 {
 	coin_physical_publication_fn publish = nullptr;
 	coin_completion_fn notify = nullptr;
+	// Optional producer-owned staging cleanup, called only after durable ACK and
+	// pending-owner extraction. It must not publish effects or submit new work.
+	void (*release)(const critical_operation_id &) noexcept = nullptr;
 };
 
 // A committed callback receives EOWNERDEAD on its final cleanup notification if
