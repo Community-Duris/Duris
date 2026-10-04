@@ -3841,8 +3841,8 @@ bool telemetry_runtime_game_battle_build_context(const char_data *character,
 	if (!output)
 		return false;
 	*output = {};
-	return R.initialized && R.enabled && !R.shutdown_pending && ensure_current_config() &&
-	       game_battle_build_context(character, output);
+	return R.initialized && R.enabled && !R.shutdown_pending && character != nullptr &&
+	       ensure_current_config() && game_battle_build_context(character, output);
 }
 
 void telemetry_runtime_game_battle_build_changed(const char_data *character) noexcept

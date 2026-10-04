@@ -36,6 +36,44 @@ void check_build_sequence_exhaustion()
 	std::puts("build context sequence exhaustion: refuses permanently without key wrap/reuse");
 }
 
+void check_null_build_boundary()
+{
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	const auto options = make_enabled_options();
+	telemetry_test_start_runtime(options);
+	const auto previous = R.config.config_id;
+	auto changed = R.config;
+	++changed.revision;
+	++changed.policy_version;
+	assert(telemetry_config_compute_fingerprint(changed, changed.fingerprint,
+						    sizeof(changed.fingerprint)));
+	changed.config_id = telemetry_config_id_from_fingerprint(changed.fingerprint,
+								 sizeof(changed.fingerprint));
+	assert(telemetry_config_publish(changed).outcome == telemetry_runtime_outcome::accepted);
+	const auto next_record = R.next_record_sequence;
+	telemetry_battle_build_context output{};
+	output.version = 999U;
+	assert(!telemetry_runtime_game_battle_build_context(nullptr, &output));
+	assert(output.version == 0U && output.available == 0U);
+	assert(R.config.config_id == previous && R.battle.scope.config_id == previous &&
+	       R.next_record_sequence == next_record);
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	std::puts(
+		"null build boundary: clears output without adopting configuration or cutting associations");
+}
+
 void check_copyover_caller_ack_race()
 {
 	R.flush_completed.store(0U);
@@ -447,6 +485,7 @@ int main()
 {
 	check_build_sequence_exhaustion();
 	check_identity_fail_closed();
+	check_null_build_boundary();
 	check_copyover_caller_ack_race();
 	check_copyover_generation_barrier_recovery();
 	check_late_copyover_ack();
