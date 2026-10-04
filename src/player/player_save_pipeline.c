@@ -1743,8 +1743,16 @@ bool player_save_restored_publication_owner::publish(const critical_completion &
 		    player_save_journal_result::ok)
 			return false;
 		const auto published = ordinary_drop_recovery_publish(owner.command_, completion);
-		if ((published.status != ordinary_drop_observation_status::verified_existing &&
-		     published.status != ordinary_drop_observation_status::published) ||
+		const bool successful =
+			published.status == ordinary_drop_observation_status::verified_existing ||
+			published.status == ordinary_drop_observation_status::published;
+		const bool rejected =
+			published.status == ordinary_drop_observation_status::verified_rejected &&
+			completion.disposition == critical_completion_disposition::execution &&
+			completion.outcome == critical_apply_outcome::terminal_failure &&
+			completion.error_code &&
+			completion.failure_stage == critical_failure_stage::none;
+		if ((!successful && !rejected) ||
 		    player_save_journal_publication_census(pid, owner.reservation_) !=
 			    player_save_journal_result::ok)
 			return false;

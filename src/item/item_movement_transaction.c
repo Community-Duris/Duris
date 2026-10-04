@@ -1858,7 +1858,7 @@ void publish_live_drop(std::unordered_map<std::string, pending_movement>::iterat
 	auto &entry = found->second;
 	entry.ordinary_receipt_sealed = true;
 	const auto original_receipt = entry.completed;
-	if (!entry.live_drop_acknowledged && committed)
+	if (!entry.live_drop_acknowledged && !never_admitted)
 	{
 		entry.publication_inflight = true;
 		const auto physical = ordinary_drop_recovery_publish_live(*entry.live_drop_command,
@@ -1876,8 +1876,14 @@ void publish_live_drop(std::unordered_map<std::string, pending_movement>::iterat
 			found->second.publication_status = publication_state::blocked;
 			return;
 		}
-		if (physical.status != ordinary_drop_observation_status::published &&
-		    physical.status != ordinary_drop_observation_status::verified_existing)
+		const bool proven =
+			committed ?
+				(physical.status == ordinary_drop_observation_status::published ||
+				 physical.status ==
+					 ordinary_drop_observation_status::verified_existing) :
+				(physical.status ==
+				 ordinary_drop_observation_status::verified_rejected);
+		if (!proven)
 		{
 			// One bounded attempt per completion pulse, without a lifetime cap
 			// that would abandon a recoverable original publication obligation.
@@ -1993,7 +1999,10 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			return;
 		}
 		pending.erase(found);
-		++health.committed;
+		if (committed)
+			++health.committed;
+		else
+			++health.rejected;
 		account_health();
 		return;
 	}
