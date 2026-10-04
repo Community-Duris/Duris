@@ -167,7 +167,9 @@ class Connection:
             [{"table_name": name, "engine": "InnoDB"} for name in
              ("economic_baseline_control", "economic_baseline_witness",
               "economic_accounting_operation", "critical_operation_inbox",
-              "economic_accounting_account_effect", "economic_accounting_coin_posting", "economic_baseline_reservation")],
+              "economic_accounting_account_effect", "economic_accounting_coin_posting", "economic_baseline_reservation",
+              "economic_accounting_child", "economic_accounting_item_reference", "currency_ledger",
+              "item_ownership_ledger", "critical_outbox")],
             {"opening_account": OPENING, "revision": 1, "last_operation_id": OP}
             if control is None else control,
             {"row_count": len(rows),
@@ -176,6 +178,7 @@ class Connection:
             rows,
             {"projection_rows": sum(map(len, projections))},
             *projections,
+            {"effect_" + str(index): 0 for index in range(6)},
         ])
         self.rollbacks = 0
 
@@ -245,6 +248,38 @@ class ItemRevisionTests(unittest.TestCase):
 
 
 class OriginTests(unittest.TestCase):
+    def test_baseline_native_events_children_and_outbox_refuse_read_only(self):
+        for index, (table, column) in enumerate(origin_exporter.BASELINE_ZERO_EFFECTS):
+            for value in (1, -1, None, True):
+                with self.subTest(table=table, column=column, value=value):
+                    connection = Connection()
+                    connection.scan.rows[10]["effect_" + str(index)] = value
+                    with self.assertRaisesRegex(OriginError, "EAB1 SQL zero-effect mismatch: " + table + "." + column):
+                        capture(connection, LINEAGE, EPOCH)
+                    self.assertEqual(connection.rollbacks, 1)
+                    self.assertTrue(connection.scan.closed)
+                    self.assertTrue(all(sql.startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
+                                        for sql, _ in connection.scan.statements))
+        connection = Connection()
+        connection.scan.rows[10] = None
+        with self.assertRaisesRegex(OriginError, "EAB1 SQL zero-effect mismatch"):
+            capture(connection, LINEAGE, EPOCH)
+        self.assertEqual(connection.rollbacks, 1)
+
+    def test_baseline_zero_effect_sources_require_transactional_tables(self):
+        for index in range(7, 12):
+            for missing in (False, True):
+                with self.subTest(index=index, missing=missing):
+                    connection = Connection()
+                    if missing:
+                        connection.scan.rows[2].pop(index)
+                    else:
+                        connection.scan.rows[2][index]["engine"] = "MyISAM"
+                    with self.assertRaisesRegex(OriginError, "missing or not InnoDB"):
+                        capture(connection, LINEAGE, EPOCH)
+                    self.assertEqual(connection.rollbacks, 1)
+                    self.assertTrue(connection.scan.closed)
+
     def test_missing_extra_duplicate_and_altered_sql_baseline_projections_refuse(self):
         for index in (7, 8, 9):
             connection = Connection()
@@ -496,6 +531,13 @@ class OriginTests(unittest.TestCase):
         self.assertIn("LEFT JOIN economic_baseline_witness", reservation_query)
         self.assertIn("((p.lineage=%s AND p.epoch=%s) OR (w.lineage=%s AND w.epoch=%s))", reservation_query)
         self.assertEqual(reservation_parameters, (LINEAGE, EPOCH, LINEAGE, EPOCH, origin_exporter.MAX_ROWS - 4 + 1))
+        zero_query, zero_parameters = connection.scan.statements[10]
+        self.assertEqual(zero_query.count("EXISTS(SELECT 1"), 6)
+        self.assertEqual(zero_parameters, (LINEAGE, EPOCH) * 6)
+        self.assertNotIn("payload", zero_query)
+        for table, column in origin_exporter.BASELINE_ZERO_EFFECTS:
+            self.assertIn("FROM " + table + " p JOIN economic_baseline_witness w ON w.operation_id=p." + column,
+                          zero_query)
 
     def test_digest_header_count_and_origin_corruption_refuse(self):
         for change in ("digest", "header", "count", "lineage", "source", "owner"):
@@ -730,7 +772,9 @@ class NativeSQLOriginTests(unittest.TestCase):
                             for table in ("economic_lineage_state", "economic_epoch", "critical_operation_inbox",
                                           "economic_accounting_operation", "economic_accounting_account_effect",
                                           "economic_accounting_coin_posting", "economic_accounting_source_claim",
-                                          "economic_baseline_control", "economic_baseline_witness", "economic_baseline_reservation"):
+                                          "economic_baseline_control", "economic_baseline_witness", "economic_baseline_reservation",
+                                          "economic_accounting_child", "economic_accounting_item_reference", "currency_ledger",
+                                          "item_ownership_ledger", "critical_outbox"):
                                 cursor.execute("SELECT * FROM " + table + " ORDER BY 1,2")
                                 rows.append(cursor.fetchall())
                             return rows

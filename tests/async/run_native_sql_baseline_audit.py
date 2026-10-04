@@ -21,7 +21,7 @@ if (os.environ.get("TEST_DB_DISPOSABLE") != "1" or os.environ.get("ENVIRONMENT")
         not os.environ.get("DB_SOCKET", "").startswith("/plan5-restore-baseline-")):
     raise SystemExit("fresh private baseline daemon/socket required")
 fixture = Path(os.environ["DURIS_PLAN5_BASELINE_FIXTURE"]).resolve()
-assert fixture.is_relative_to((ROOT / "bin/tests/plan5-baseline-projection-audit").resolve())
+assert fixture.is_relative_to((ROOT / "bin/tests/plan5-baseline-zero-effects").resolve())
 settings = dict(unix_socket=os.environ["DB_SOCKET"], user=os.environ["DB_USER"],
                 password=os.environ["DB_PASSWD"], database="duris_restore", autocommit=True,
                 cursorclass=pymysql.cursors.DictCursor, read_timeout=30, write_timeout=30)
@@ -32,6 +32,7 @@ TABLES = ("economic_accounting_operation", "economic_accounting_account_effect",
           "economic_baseline_control", "economic_baseline_witness", "economic_baseline_reservation",
           "critical_operation_inbox", "economic_epoch", "economic_lineage_state",
           "player_data", "account_banks", "item_current_owner", "item_ownership_ledger", "currency_ledger")
+TABLES += ("economic_accounting_child", "economic_accounting_item_reference", "critical_outbox")
 
 
 def execute(query, params=()):
@@ -174,6 +175,11 @@ try:
     old_epoch = bytes.fromhex(native["epochs"][0])
     lineage = bytes.fromhex(native["lineage"])
     claims = {row["operation_id"]: row for row in intact["economic_accounting_source_claim"]}
+    cut("selected-baseline-extra-child",
+        [("INSERT INTO economic_accounting_child(operation_id,child_index,child_operation_id,domain_id,"
+          "discriminator,parent_index,relationship) VALUES(%s,1,%s,1,1,0,1)", (selected, bytes([98]) * 16))],
+        [("DELETE FROM economic_accounting_child WHERE operation_id=%s AND child_index=1", (selected,))],
+        refusal="EAB1 SQL zero-effect mismatch")
     posting = next(row for row in intact["economic_accounting_coin_posting"] if row["operation_id"] == selected)
     cut("selected-posting-missing",
         [("DELETE FROM economic_accounting_coin_posting WHERE operation_id=%s AND line_index=%s",
@@ -185,6 +191,65 @@ try:
     def insert_row(table, row):
         return ("INSERT INTO " + table + "(" + ",".join(row) + ") VALUES(" +
                 ",".join(["%s"] * len(row)) + ")", tuple(row.values()))
+
+    def zero_effect_fault(operation):
+        return ({"findings": {"baseline_source_claim": 1}} if operation == old else
+                {"refusal": "EAB1 SQL zero-effect mismatch"})
+
+    def ownership_event(operation, legacy=None):
+        witness = next(row for row in intact["economic_baseline_witness"] if row["operation_id"] == operation)
+        blob = witness["canonical_witness"]
+        offset = 192 + witness["holding_count"] * 112
+        uid = int.from_bytes(blob[offset:offset + 8], "little")
+        revision = int.from_bytes(blob[offset + 48:offset + 56], "little")
+        return dict(operation_id=operation if legacy is None else legacy, event_index=0,
+                    item_uid=uid, root_item_uid=uid, parent_item_uid=None,
+                    from_owner_type=1, from_owner_id=7, from_owner_context_id=0,
+                    to_owner_type=1, to_owner_id=7, to_owner_context_id=0,
+                    item_revision=revision + 1, from_owner_revision=revision,
+                    to_owner_revision=revision + 1, reason_type=1, source_site=1)
+
+    creator = intact["economic_baseline_control"][0]["creating_operation_id"]
+    for operation, other, scope_name in ((selected, old, "selected"), (old, selected, "retained")):
+        if operation == old:
+            cut("retained-baseline-extra-child",
+                [("INSERT INTO economic_accounting_child(operation_id,child_index,child_operation_id,domain_id,"
+                  "discriminator,parent_index,relationship) VALUES(%s,1,%s,1,1,0,1)", (operation, bytes([98]) * 16))],
+                [("DELETE FROM economic_accounting_child WHERE operation_id=%s AND child_index=1", (operation,))],
+                **zero_effect_fault(operation))
+        # Both roots are genuine native baselines; using either as the other's
+        # child violates the zero-effect invariant in the selected book too.
+        cut(scope_name + "-baseline-used-as-child",
+            [("INSERT INTO economic_accounting_child(operation_id,child_index,child_operation_id,domain_id,"
+              "discriminator,parent_index,relationship) VALUES(%s,1,%s,1,1,0,1)", (other, operation))],
+            [("DELETE FROM economic_accounting_child WHERE operation_id=%s AND child_index=1", (other,))],
+            refusal="EAB1 SQL zero-effect mismatch")
+        currency = dict(operation_id=operation, pid=7, bank_id=99, wallet_revision=1, bank_revision=1,
+                        reason_type=1, source_site=1)
+        currency.update({side + "_" + coin: 0 for side in
+                         ("wallet_delta", "bank_delta", "wallet_after", "bank_after")
+                         for coin in ("copper", "silver", "gold", "platinum")})
+        cut(scope_name + "-baseline-extra-currency-ledger", [insert_row("currency_ledger", currency)],
+            [("DELETE FROM currency_ledger WHERE operation_id=%s", (operation,))], **zero_effect_fault(operation))
+        event = ownership_event(operation)
+        cut(scope_name + "-baseline-extra-ownership-ledger", [insert_row("item_ownership_ledger", event)],
+            [("DELETE FROM item_ownership_ledger WHERE operation_id=%s", (operation,))], **zero_effect_fault(operation))
+        legacy = ownership_event(operation, creator)
+        reference = dict(operation_id=operation, line_index=0, event_index=0, child_index=0,
+                         item_uid=legacy["item_uid"], before_revision=legacy["item_revision"] - 1,
+                         after_revision=legacy["item_revision"], legacy_operation_id=creator, legacy_event_index=0)
+        cut(scope_name + "-baseline-extra-item-reference",
+            [insert_row("item_ownership_ledger", legacy), insert_row("economic_accounting_item_reference", reference)],
+            [("DELETE FROM economic_accounting_item_reference WHERE operation_id=%s", (operation,)),
+             ("DELETE FROM item_ownership_ledger WHERE operation_id=%s AND event_index=0", (creator,))],
+            **({"findings": {"baseline_source_claim": 1, "unattributed_ownership_event": 1,
+                             "unattributed_ownership_uid": 1}} if operation == old else zero_effect_fault(operation)))
+        for status in range(4):
+            outbox = dict(operation_id=operation, event_index=0, destination=1, event_type=1,
+                          payload_version=1, payload=b"private-zero-effect-fixture", status=status)
+            cut(scope_name + "-baseline-extra-outbox-status-" + str(status), [insert_row("critical_outbox", outbox)],
+                [("DELETE FROM critical_outbox WHERE operation_id=%s AND event_index=0", (operation,))],
+                **zero_effect_fault(operation))
 
     def projection_fault(operation):
         return ({"findings": {"baseline_source_claim": 1}} if operation == old else

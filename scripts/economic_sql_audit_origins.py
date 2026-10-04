@@ -185,6 +185,27 @@ BASELINE_PROJECTIONS = {
         "child_index", *("delta_" + coin for coin in COINS), "copper_value"),
     "economic_baseline_reservation": ("lineage", "epoch", "identity_kind", "identity_id", "operation_id"),
 }
+BASELINE_ZERO_EFFECTS = (
+    ("economic_accounting_child", "operation_id"),
+    ("economic_accounting_item_reference", "operation_id"),
+    ("currency_ledger", "operation_id"),
+    ("item_ownership_ledger", "operation_id"),
+    ("critical_outbox", "operation_id"),
+    ("economic_accounting_child", "child_operation_id"),
+)
+
+
+def verify_baseline_zero_effects(cursor, lineage: bytes, epoch: bytes) -> None:
+    """A baseline retains opening positions, never native events or children."""
+    probes = ["EXISTS(SELECT 1 FROM " + table + " p JOIN economic_baseline_witness w "
+              "ON w.operation_id=p." + column + " WHERE w.lineage=%s AND w.epoch=%s) AS effect_" + str(index)
+              for index, (table, column) in enumerate(BASELINE_ZERO_EFFECTS)]
+    cursor.execute("SELECT " + ",".join(probes), (lineage, epoch) * len(probes))
+    result = cursor.fetchone()
+    for index, (table, column) in enumerate(BASELINE_ZERO_EFFECTS):
+        value = result.get("effect_" + str(index)) if result is not None else None
+        if type(value) is not int or value != 0:
+            raise OriginError("EAB1 SQL zero-effect mismatch: " + table + "." + column)
 
 
 def baseline_projection_source(table: str, lineage: bytes, epoch: bytes | None = None) -> tuple[str, str, tuple]:
@@ -260,9 +281,11 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
         "WHERE table_schema=DATABASE() AND table_name IN "
         "('economic_baseline_control','economic_baseline_witness',"
         "'economic_accounting_operation','critical_operation_inbox',"
-        "'economic_accounting_account_effect','economic_accounting_coin_posting','economic_baseline_reservation')")
+        "'economic_accounting_account_effect','economic_accounting_coin_posting','economic_baseline_reservation',"
+        "'economic_accounting_child','economic_accounting_item_reference',"
+        "'currency_ledger','item_ownership_ledger','critical_outbox')")
     engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-    if (len(engines) != 7 or any(engine != "InnoDB" for engine in engines.values())):
+    if (len(engines) != 12 or any(engine != "InnoDB" for engine in engines.values())):
         raise OriginError("SQL baseline source is missing or not InnoDB")
     cursor.execute(
         "SELECT opening_account,revision,last_operation_id FROM economic_baseline_control "
@@ -342,6 +365,7 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
     if (witnesses[-1]["operation_id"] if witnesses else None) != control["last_operation_id"]:
         raise OriginError("baseline control terminal witness mismatch")
     verify_baseline_projections(cursor, verified, lineage, epoch)
+    verify_baseline_zero_effects(cursor, lineage, epoch)
     baseline_sources = {}
     for row in witnesses:
         blob = row["canonical_witness"]
