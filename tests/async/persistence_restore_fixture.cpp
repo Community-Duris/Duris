@@ -19,6 +19,38 @@ static std::vector<uint8_t> fixture_bytes(const char *text)
 	return { text, text + std::strlen(text) };
 }
 
+static void seed_pending_fixture_transaction(const fs::path &root)
+{
+	std::string error;
+	for (const char *name : { "restore-probe-one", "restore-probe-two" })
+		require(flatfile_atomic_write((root / "domains").string(), name,
+					      fixture_bytes("before"), &error),
+			"synthetic transaction seed failed");
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error), "synthetic authority lock failed");
+		setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+		const auto result = flatfile_authority_transaction_commit(
+			root.string(), lock,
+			{ { "restore-probe-one", fixture_bytes("after") },
+			  { "restore-probe-two", fixture_bytes("after") } },
+			&error);
+		unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+		require(result == flatfile_authority_transaction_result::io_error,
+			"synthetic transaction was not interrupted");
+	}
+	require(fs::exists(root / "domains/.critical-authority-transaction"),
+		"synthetic pending transaction missing");
+	for (const char *name : { "restore-probe-one", "restore-probe-two" })
+	{
+		std::ifstream stream(root / "domains" / name);
+		std::string value;
+		stream >> value;
+		require(value == (std::string(name) == "restore-probe-one" ? "after" : "before"),
+			"synthetic interruption did not leave a split durable transaction");
+	}
+}
+
 static void seed_fixture_item_allocator(const fs::path &root)
 {
 	// The snapshot/craft/WAL fixtures use UIDs 100 through 202. Reserve them
@@ -95,6 +127,13 @@ int main(int argc, char **argv)
 	const std::string mode = argv[1];
 	const fs::path root = argv[2];
 	std::string error;
+	if (mode == "seed-pending-transaction")
+	{
+		require(fs::is_directory(root / "domains"),
+			"transaction seed requires synthetic authority");
+		seed_pending_fixture_transaction(root);
+		return 0;
+	}
 	if (mode == "craft-receipt-ahead")
 	{
 		critical_operation_id operation = {};
@@ -398,33 +437,7 @@ int main(int argc, char **argv)
 			"synthetic snapshot seed failed");
 	require(flatfile_boon_establish(root.string(), {}, &error) == flatfile_boon_result::ok,
 		"synthetic boon seed failed");
-	for (const char *name : { "restore-probe-one", "restore-probe-two" })
-		require(flatfile_atomic_write((root / "domains").string(), name,
-					      fixture_bytes("before"), &error),
-			"synthetic transaction seed failed");
-	{
-		flatfile_authority_lock lock;
-		require(lock.acquire(root.string(), &error), "synthetic authority lock failed");
-		setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
-		const auto result = flatfile_authority_transaction_commit(
-			root.string(), lock,
-			{ { "restore-probe-one", fixture_bytes("after") },
-			  { "restore-probe-two", fixture_bytes("after") } },
-			&error);
-		unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
-		require(result == flatfile_authority_transaction_result::io_error,
-			"synthetic transaction was not interrupted");
-	}
-	require(fs::exists(root / "domains/.critical-authority-transaction"),
-		"synthetic pending transaction missing");
-	for (const char *name : { "restore-probe-one", "restore-probe-two" })
-	{
-		std::ifstream stream(root / "domains" / name);
-		std::string value;
-		stream >> value;
-		require(value == (std::string(name) == "restore-probe-one" ? "after" : "before"),
-			"synthetic interruption did not leave a split durable transaction");
-	}
+	seed_pending_fixture_transaction(root);
 	if (mode == "seed-first-wal")
 		seed_fixture_journals(root, make_full(1), false);
 	return 0;
