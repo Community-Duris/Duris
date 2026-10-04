@@ -1250,3 +1250,46 @@ Actual fix 3f1ecf2be corrects two direction words and four magic-keyword color
 suffixes. Its regression runs production exact matching/reciprocal unlock and
 retains closed state. Keep its prominent news entry separate from guidance and
 future capability/native proposals; live speech/LOOK/traversal is unqualified.
+
+### Mushroom Caverns: proof type, availability and distinct campaign versions
+
+The [dossier](../design/zone-stories/MUSHROOM_CAVERNS.md) and
+[journal](../../areas/story/mushroom_caverns.story.json) map three native
+outcomes. Preserve two different half kinds despite identical display names;
+producer history is optional and current possession does not prove original
+source. The platinum in Ozman’s reward is not a fee.
+
+Review actual prototype and dispatch policy before labeling an all-I recipe
+supported. Ozman’s half is ITEM_MONEY; active-accounting ordinary item policy
+excludes it and Kryz’s two-item finale is currently unavailable. Coin pickup
+and drop merging differ from maintaining a quest root. Builder-selected type
+repair needs compatibility for existing objects, pending reward grants and
+interrupted offering/currency recovery. Keep guards pending qualification.
+
+Source-comprehensive coverage also records missing goblet 1515, two unplaced
+actors and Haz’on’wyz’s five absent dispersal destinations. Potential daily
+metadata does not certify source/actor availability. Modern Underdark actors,
+halves and seal differ from the legacy campaign; Winterhaven requires the modern
+seal. Draknah’s actual golden goblet is a distinct investigation lead, not an
+automatic substitute. Keep immutable owners and explicit physical discovery
+separate; external encounters do not discover Mushroom Caverns.
+
+Current topic schema cannot encode literal apostrophes. Retain valid aliases
+from mixed families and explain the other native words in prose pending stable
+topic IDs and escaped command tokens. Asking house questions is not allegiance
+proof. Actual pool target/perception/arrival/return, closed/blocked state and
+falling differ from ladder/lift/lava scenery. The second young aboleth follows
+the last young M; a parental story would need actual builder-selected behavior.
+
+No native repair ships in this checkpoint. Missing source/actor/dispersal,
+money type, pool/obstacle/parent and unfinished-scene proposals must not appear
+as completed player news. Any later repair needs a clear separate fix commit
+and prominent PR affected-zone/trigger/before-after/validation/limits/news entry.
+
+Haz’on’wyz also receives the shared teacher from ACT_TEACHER. Its `level`
+guidance lists matching-class live runestones, without a quest or lesson
+receipt. The shared handler lacks addressed-recipient/visibility resolution
+and appends to a 512-byte buffer without bounds; plan actual-function recipient,
+class and long-output qualification/hardening. No live crash or teacher repair
+is claimed. External encounter publication first requires discovery of the
+physical area; it does not automatically discover the Mushroom credit owner.

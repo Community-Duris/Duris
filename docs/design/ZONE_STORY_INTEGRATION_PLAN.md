@@ -2238,3 +2238,47 @@ deployment or merge.
 | Quantity, provenance and competing proof | Five same-kind swords, five different Star pieces, exact supplied locket/note/ring, bone key used then offered | Unique root allocation and first-source/handoff lineage, conditional producer/history requirements, optional earlier receipts, spent proof, replay and cold recovery |
 | Builder-selected narrative endpoints | Katalia/Isabia D0; Azlion’s narrated rift, Darrin’s sacrifice, Sargon defeat/return, three separate Earlions | Define actual departure/escort/rift/campaign and personal/shared/group attribution with renewable episodes before adapters or separate native fixes |
 | Holding/entry and weapon text | Danthas can enter dead-end holding; no ordinary incoming/fixed foreign portal found; hammer Testing proc messages | Qualify admitted spawn/roaming/perception and supported travel; confirm staging/topology intent. Select proc messages and executed item-action path, then isolated repair/news evidence |
+
+## Mushroom Caverns: legacy availability and actual item semantics
+
+The [comprehensive dossier](zone-stories/MUSHROOM_CAVERNS.md) and
+[journal](../../areas/story/mushroom_caverns.story.json) map the stolen-half,
+bracelet/entrusted-half and two-half reunion as three independent accepted
+outcomes, with ten contacts and five optional checks. Active, ready accounting
+remains mandatory. Exact supplied halves require no personal producer history;
+two copies of one same-named kind cannot satisfy the two different inputs.
+
+This checkpoint establishes concrete requirements beyond static Q goal kinds:
+legacy goblet 1515 has no active prototype/source, Ozman/Kryz have no reset,
+Haz’on’wyz’s loading room has five absent destinations, and Ozman’s half is a
+money object. Durable item admission rejects the finale even though its static
+recipe contains only I goals. Currency reward C150000 is not a fee. Ordinary
+get/drop and money reward issuance can destroy or misroute proof semantics.
+Do not bypass these guards or treat synthetic journal receipts as live journeys.
+
+| Capability | Concrete requirement | Implementation and acceptance |
+| --- | --- | --- |
+| Independent source and offering availability | Static all-I/reset-two classification omits missing prototype/actor, actual item type and physical dispersal | Explicit per-recipe support plus source/actor availability states; actual admitted generation, encounter, retirement and renewable episode tests before daily assignment; pending frozen obligations stay recoverable |
+| Typed quest proof and existing objects | Half 24014 is ITEM_MONEY/100 silver, excluded from ordinary durable offering; coin pickup/drop merging differs from item proof | Builder selects intended type and version/upgrade policy. Qualify original roots, reward grant, get/drop/merge, ownership, pending rewards and interrupted recovery before isolated native correction |
+| Owner and same-name campaign identity | Legacy contracts credit Mushroom while imported actors live elsewhere; modern actors/halves/seal differ and Winterhaven consumes modern seal | Immutable receipt owner, explicit physical affiliation/referral and scoped campaign refs; owner discovery remains distinct from an external encounter. Preserve old receipts and reject name-based substitutions |
+| Literal addressed topic tokens | Thirteen raw M families but eleven inventory-safe families; haz'on'wyz and sa'zarn are not schema identifiers | Stable semantic topic ID plus safely escaped literal tokens, mixed valid aliases retained; parity of native dispatch, visible addressed recipient, successful response and recovery. Native house questions create no branch requirement |
+| Accepted exploration versus scenery | Actual pool commands/falling/blocked state coexist with ladder/lift/lava/parent lore | Qualify target visibility, command/destination, surviving arrival/return, shared obstacle transition and reset episode. Builder defines repair/banishment/parent/campaign endpoints before new event credit |
+
+Pending builder-selected repairs cover missing legacy supply, actor homes and
+five stale dispersal edges; money-proof representation and existing/pending
+reward compatibility; reverse-pool wording/NOSHOW intent; permanent obstacle
+versus clearing mechanism; young follower parent; unplaced grell and seventeen
+empty descriptions. Compare the modern campaign before choosing maintenance,
+retirement or referral. Modern roper prose/reward mismatch is a bounded foreign
+lead for its later dossier. **No native repair ships here.** Implemented fixes
+must be separate clear fix commits with prominent PR before/after, validation,
+limits and precise player news; journal authoring and pending proposals stay
+distinct from shipped repairs.
+
+Haz’on’wyz also receives the shared teacher from ACT_TEACHER. Its `level`
+guidance lists matching-class live runestones, without a quest or lesson
+receipt. The shared handler lacks addressed-recipient/visibility resolution
+and appends to a 512-byte buffer without bounds; plan actual-function recipient,
+class and long-output qualification/hardening. No live crash or teacher repair
+is claimed. External encounter publication first requires discovery of the
+physical area; it does not automatically discover the Mushroom credit owner.

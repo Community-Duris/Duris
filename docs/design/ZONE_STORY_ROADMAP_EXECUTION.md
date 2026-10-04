@@ -123,9 +123,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 58 | The Ancient Halls of Ironstar | [Comprehensive dossier](zone-stories/THE_ANCIENT_HALLS_OF_IRONSTAR.md): all 22 blocks/100 rooms/34 mobs/66 objects/198 resets; native/shared source and effective access | Four stories/three services; fifteen contacts/fourteen optional checks; exact rings/crown/paid key/three locks and independent equipment routes | Guarded atomic fees, reset door state, source/transfer/allocation and retiring supply; river/prose/lore/epic concerns pending. Separate two-word native direction fix/news ships |
 | 59 | Plane of Fire, Brass | [Comprehensive dossier](zone-stories/PLANE_OF_FIRE_BRASS.md): all 20 blocks/357 rooms/147 mobs/170 objects/18 shops/779 resets; native/shared source and effective access | Four stories/one service/two exclusions; 25 contacts/18 optional checks; collectible coins, quantity-two vials, competing heads and guarded bracer | Actor/barrier/access episodes, duplicate reward/proof allocation, rare wandering/perception and atomic fees; builder-selected djinn/ambient/prose/topology proposals. Separate one-word native exit fix/news ships |
 | 60 | The Tower of Darkness | [Comprehensive dossier](zone-stories/TOWER_OF_DARKNESS.md): all 32 blocks/142 rooms/170 mobs/146 objects/one shop/580 resets; full exit text/passwords and shared execution | Six stories/seven owned bindings; 27 contacts/12 optional checks; guarded alternative, five-sword bundle, three-key puzzle and five physically local foreign-owned requests | Physical affiliation/discovery separate from owner, per-branch fee support, accepted access/source/campaign events and builder-selected rescue/holding/entry/text proposals. Separate native direction/password fix/news ships |
-| 61–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 61 | Mushroom Caverns | [Comprehensive dossier](zone-stories/MUSHROOM_CAVERNS.md): all sixteen raw blocks/132 rooms/eight local mobiles/nine objects/54 resets; imported actor/material sources, shared execution and modern identity comparison | Three outcomes/ten contacts/22 representable aliases/five optional checks; exact same-name halves, optional history and explicit source/accounting blockers | Missing goblet/unplaced actors/five absent dispersal destinations, money-proof admission and reward/get/drop, physical affiliation/renewal, literal topic tokens and route/scenery intent. No native repair ships |
+| 62–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is the Mushroom Caverns (`mushroom_caverns`).
+The next area is The Para-Elemental Plane of Smoke (`smoke`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -3094,3 +3095,79 @@ identities/fingerprint/revision two/registry and prior 80 maps remain. Original
 queue: 60/220 complete, 160 pending; Mushroom Caverns next. Active, ready
 accounting remains mandatory. No DB/account/server operation, migration,
 deployment or merge.
+
+## Mushroom Caverns completed source map — October 4, 2026
+
+The [dossier](zone-stories/MUSHROOM_CAVERNS.md) reviews all sixteen raw
+shared-source blocks (thirteen M/two Q/one QA), 132 rooms/74 prose groups,
+eight local mobiles, nine objects, 54 resets/33 families, all twelve imported
+physical prototypes, the actual piercer procedure, exact legacy actor/item
+sources and bounded modern Underdark identity comparison. The generated index
+lists eleven identifier-safe M families; the journal includes all twenty-two
+representable aliases and explains the two literal punctuation aliases.
+
+The [journal](../../areas/story/mushroom_caverns.story.json) supplies three
+outcomes, ten contacts and five optional checks. Haz’on’wyz’s missing goblet
+yields one legacy half; Ozman’s exact Bregnar bracelet yields a different half
+and C150000 as a reward; Kryz’s two-root bundle yields the legacy seal, two
+weapons and experience. Same displayed names do not make halves interchangeable.
+Supplied exact materials need no personal assassination or producer receipts;
+historical completion cannot restore spent supplies. Native house dialogue is
+not a validated allegiance branch. Readiness is read-only and does not certify
+available actors or supported accounting admission.
+
+**Concrete source/execution blockers:** object 1515 is absent; Ozman/Kryz have
+no active reset placement; Haz’on’wyz’s sole shared-room 24015 spawn has five
+absent dispersal destinations. Ozman’s half 24014 is ITEM_MONEY with 100 silver
+values. Durable item policy excludes it, so either selected half path cannot
+complete Kryz’s bundle under active accounting. Ordinary pickup uses coin
+settlement; money drop can merge away proof identity, and I reward issuance
+needs qualification. Static all-I/reset-two metadata still calls all three
+potential daily candidates. Plan availability and per-recipe support independent
+of daily eligibility, with actual source/recipient/retirement/reset episodes.
+Retain accounting guards and frozen obligation recovery; no bypass ships.
+
+Modern Underdark actors 700034–700036, halves 700000/700001 and seal 700005
+remain distinct. Its two half carriers have M50/equipped half declarations,
+Kryz M100 at 847218, two non-retiring contracts and different XP/currency terms.
+Winterhaven Lancer requires the modern seal, not legacy 24016. Draknah’s actual
+golden goblet 500119 is also a different kind from missing 1515. Preserve
+identities and receipts rather than infer substitutions from names or lore.
+
+All five reciprocal ordinary boundary pairs resolve. Two pairs of enter-command
+pool objects have exact destinations; one reverse-pool description claims
+no return, two lake/river pools are NOSHOW, and floating does not mean hidden.
+The fallen-mushroom passage resets closed/blocked with no declared local clear;
+the rocks passage resets closed/unlocked. Shaft falling is actual shared behavior;
+lava/wagon/chain/ladder are scenery, and the ruined lift has no repair endpoint.
+The second young F follows the first young M, not the adult aboleth. An unplaced
+level-one grell and seventeen empty room descriptions require builder intent.
+
+**No native zone or quest repair ships.** Missing supply/actors/dispersal,
+money-proof type/recovery, pool/obstacle/parent/scenery decisions and the modern
+foreign roper reward/prose mismatch remain pending repair/qualification leads.
+Each implemented repair must have a clearly named fix commit, prominent PR
+zone/trigger/before-after/validation/limits and exact player news wording.
+Earlier shipped native repair/news records remain unchanged.
+
+Focused source and actual C++ projection journeys cover exact bindings, modern
+separation, same-name kinds, optional history, worn versus loose preparation,
+warnings, physical encounter/owner discovery, independent outcomes, replay and
+cold recovery. Synthetic receipts do not qualify currently impossible live
+offerings. Full production/source, schema/all-map loader, accounting gates,
+daily projection, maintained build, formatting/whitespace and source-line links
+are checked. Live supply/money/source/handoff/roaming/perception/travel/falling/
+combat/retirement/renewal/persistence remain unqualified. Catalog: 82 maps/1629
+achievements/1463 potential dailies/2207 rows; all 2668 native definitions,
+fingerprint/revision two/registry and prior 81 maps unchanged. Original queue:
+61/220 complete, 159 pending; Para-Elemental Plane of Smoke next. Active, ready
+accounting remains mandatory. No DB/account/server operation, migration,
+deployment or merge.
+
+Haz’on’wyz also receives the shared teacher from ACT_TEACHER. Its `level`
+guidance lists matching-class live runestones, without a quest or lesson
+receipt. The shared handler lacks addressed-recipient/visibility resolution
+and appends to a 512-byte buffer without bounds; plan actual-function recipient,
+class and long-output qualification/hardening. No live crash or teacher repair
+is claimed. External encounter publication first requires discovery of the
+physical area; it does not automatically discover the Mushroom credit owner.

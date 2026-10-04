@@ -3167,7 +3167,95 @@ assert re.search(r'\bD1\s+[^~]*~[^~]*~\s+0 0 1883\b',rooms[134000],re.S)
 for v,d,word in ((134034,0,'sargon'),(134040,1,'sargon'),(134041,3,'sargon'),(134073,4,'thothrontithos')):
     assert re.search(r'\bD'+str(d)+r'\s+[^~]*~[^~]*\b'+word+r'~\s+3 -2 \d+',rooms[v],re.S)
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower"):
+# Mushroom: physical availability, same-name identities and real money-item admission.
+mushroom=inventory_module.area_evidence(ROOT,'mushroom_caverns')
+mushroom_map=next(m for m in catalog['story_mappings'] if m['source_area']=='mushroom_caverns')
+assert (mushroom_map['schema_version'],mushroom_map['revision'],mushroom_map['coverage'])==(3,1,'complete')
+assert len(mushroom_map['stories'])==3 and len(mushroom_map['contacts'])==10 and not mushroom_map['exclusions']
+assert all(s['category']=='story' for s in mushroom_map['stories'])
+assert collections.Counter(t['kind'] for s in mushroom_map['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':3,'completion':2}
+givers={24021,24022,24023};all_blocks=inventory_module.native_blocks(ROOT)
+raw=[b for b in all_blocks if b['giver_vnum'] in givers]
+assert collections.Counter(b['kind'] for b in raw)=={'M':13,'Q':2,'QA':1}
+assert len(mushroom['dialogue'])==11
+by_line={b['line']:b for b in raw if 'binding' in b}
+for line,giver,inputs,outputs in (
+    (25,24021,[('I',1515)],[('I',24013)]),
+    (89,24022,[('I',4660)],[('I',24014),('C',150000)]),
+    (127,24023,[('I',24013),('I',24014)],[('I',24016),('I',24018),('I',24017),('E',35000)])):
+    b=by_line[line]
+    assert b['giver_vnum']==giver and b['give']==inputs and b['receive']==outputs and b['disappear']
+    definition=next(r['definition'] for r in mushroom['requests'] if r['block']['line']==line)
+    assert definition['zone_number']==241 and definition['source_area']=='mushroom_caverns' and definition['repeatable'] and definition['daily_eligible']
+stories={s['id']:s for s in mushroom_map['stories']}
+assert {tuple(c.items()) for s in stories.values() for c in s['contracts']}=={tuple(b['binding'].items()) for b in by_line.values()}
+assert stories['haz-goblet-half']['steps']==[stories['haz-goblet-half']['steps'][-1]]
+assert stories['ozman-bracelet-half']['steps'][0]['item_vnums']==[4660]
+finale=stories['kryz-two-halves']
+assert [s['contracts'] for s in finale['steps'][:2]]==[[by_line[25]['binding']],[by_line[89]['binding']]]
+assert [(s['item_vnums'],s['count']) for s in finale['steps'][2:4]]==[([24013],1),([24014],1)]
+assert 'currently unavailable under active accounting' in finale['summary']
+assert all(s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional') for s in stories.values())
+contacts={c['mob_vnum']:c for c in mushroom_map['contacts']}
+for giver in givers:
+    assert set(contacts[giver]['topics'])=={t for b in raw if b['kind']=='M' and b['giver_vnum']==giver for t in b['body'][0].rstrip('~').split() if re.fullmatch('[a-z0-9_-]{1,64}',t)}
+assert sum(len(c['topics']) for c in contacts.values())==22
+assert {'zochra','slin','ilith','olipth','sazarn'}<=set(contacts[24022]['topics'])
+assert not {'haz\'on\'wyz','sa\'zarn'}&set(contacts[24022]['topics'])
+assert len(mushroom['mobs'])==8 and len(mushroom['items'])==9 and len(mushroom['reset_commands'])==54
+assert collections.Counter(r['command'] for r in mushroom['reset_commands'])=={'M':39,'O':8,'D':4,'E':2,'F':1}
+objects=dawndale_bodies('mushroom_caverns','obj');rooms=dawndale_bodies('mushroom_caverns','wld')
+assert set(rooms)==set(range(24101,24238))-{24201,24202,24203,24204,24224}
+assert sum(not b.split('~')[1].strip() for b in rooms.values())==17
+assert not mushroom['special_assignments'] and not (ROOT/'areas/shp/mushroom_caverns.shp').exists()
+for v,target,flags in ((24103,24102,0),(24104,24108,8192),(24108,24229,2),(24109,24218,8194)):
+    values=objvalues(objects[v]);assert values[0]==25 and values[6]==flags and values[11:14]==[target,7,-1]
+for v in (24101,24102,24105,24107):assert objvalues(objects[v])[0]==13
+assert all(int(b.split('~')[2].split()[2])!=39 for b in rooms.values())
+for v,direction,state in ((24144,2,9),(24168,0,9),(24148,1,1),(24151,3,1)):
+    assert [r['arguments'][3] for r in mushroom['reset_commands'] if r['command']=='D' and r['arguments'][1:3]==[v,direction]]==[state]
+physical={r['arguments'][1] for r in mushroom['reset_commands'] if r['command'] in 'MF'}
+assert len(physical)==19 and not any(b['giver_vnum'] in physical for b in all_blocks)
+assert not physical&givers and 24103 not in physical
+shared_mobs=dawndale_bodies('mobs_underdark','mob')
+assert int(shared_mobs[24021].split('~')[4].split()[0])&32768
+assert 'teacher flag' in contacts[24021]['description']
+shared=dawndale_bodies('mobs_underdark','obj')
+assert shared[24013].split('~')[1]==shared[24014].split('~')[1]
+assert objvalues(shared[24013])[0]==8 and objvalues(shared[24014])[0]==18 and objvalues(shared[24014])[11:15]==[0,100,0,0]
+policy=(ROOT/'src/item/item_command_policy.c').read_text(encoding='utf8')
+assert 'object->type == ITEM_MONEY' in policy[:policy.index('bool item_command_object_is_takeable')]
+quest=(ROOT/'src/world/quest.c').read_text(encoding='utf8')
+assert '!item_command_uses_durable_ownership(selected)' in quest and 'submit_durable_quest_offering' in quest
+modern=dawndale_bodies('underdark','obj')
+assert objvalues(modern[700000])[0]==objvalues(modern[700001])[0]==9
+assert inventory_module.plain(shared[24016].split('~')[1])==inventory_module.plain(modern[700005].split('~')[1])
+modern_blocks=[b for b in all_blocks if b['giver_vnum']==700036 and 'binding' in b]
+assert [(b['give'],b['receive'],b['disappear']) for b in modern_blocks]==[([('I',700008)],[('C',100000)],False),([('I',700000),('I',700001)],[('I',700005),('E',250000)],False)]
+assert any(b['giver_vnum']==55151 and ('I',700005) in b['give'] for b in all_blocks)
+assert not any(b['giver_vnum'] not in givers and any(('I',v) in b['give'] for v in (1515,4660,24013,24014,24016,24017,24018)) for b in all_blocks if 'binding' in b)
+placements=collections.defaultdict(list);active_rooms=set();active_objects=set();bracelet_sources=[]
+for zone in catalog_module.zone_registry(ROOT):
+    area=zone['source_area'];p=ROOT/f'areas/zon/{area}.zon';parent=None;room=None
+    if p.exists():
+        for line in p.read_text(encoding='utf8',errors='replace').splitlines():
+            match=re.match(r'^([MFOGEP])\s+((?:-?\d+\s*)+)',line)
+            if not match:continue
+            command=match[1];values=list(map(int,match[2].split()))
+            if command in 'MF':
+                parent,room=values[1],values[3]
+                if parent in givers|{24103}:placements[parent].append((area,command,values))
+            if command in 'GE' and values[1]==4660:bracelet_sources.append((area,command,parent,room,values))
+    for kind,found in (('wld',active_rooms),('obj',active_objects)):
+        p=ROOT/f'areas/{kind}/{area}.{kind}'
+        if p.exists():found.update(int(n) for n in re.findall(r'^#(\d+)\s*$',p.read_text(encoding='utf8',errors='replace'),re.M))
+assert placements[24021]==[('mobs_underdark','M',[0,24021,1,24015,100,0,0,0])]
+assert not placements[24022] and not placements[24023] and not placements[24103]
+assert 1515 not in active_objects and not {329339,329042,332030,331125,332935}&active_rooms
+assert bracelet_sources==[('underworld','E',4680,4525,[1,4660,1,15,100,0,0,0])]
+
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

@@ -49835,6 +49835,262 @@
     {
       "contacts": [
         {
+          "description": "Haz\u2019on\u2019wyz starts at Magma Lake Disp 24015 in the shared Underdark mobile area. Its five exits target absent rooms. His exact goblet is missing; no local cavern spawn is declared. His teacher flag also assigns shared level/runestone guidance for matching player classes; it is not a quest outcome. His dialogue and native identity remain distinct from modern Underdark Haz\u2019on\u2019wyz.",
+          "keyword": "magus",
+          "mob_vnum": 24021,
+          "name": "Haz'on'wyz, the drow fire magus",
+          "topics": [
+            "hi",
+            "hello",
+            "draknah",
+            "master",
+            "weak"
+          ]
+        },
+        {
+          "description": "Ozman has no active reset placement. His bracelet request yields a legacy half and a currency reward, then retires him. Native house questions do not validate membership; the literal punctuation topics haz'on'wyz and sa'zarn cannot be represented as journal topic commands in the current schema.",
+          "keyword": "ozman",
+          "mob_vnum": 24022,
+          "name": "Ozman'dyzus, the drow traveller",
+          "topics": [
+            "hi",
+            "hello",
+            "house",
+            "zochra",
+            "slin",
+            "ilith",
+            "olipth",
+            "sazarn",
+            "zarbonesti",
+            "bregnar"
+          ]
+        },
+        {
+          "description": "Kryz has no active reset placement. His two-half exchange requires two different legacy kinds and is currently unavailable under active accounting because one is a money object. Modern Underdark Kryz accepts different halves and yields a different seal.",
+          "keyword": "kryz",
+          "mob_vnum": 24023,
+          "name": "Kryz'Kyssik, the prophetized hunter",
+          "topics": [
+            "hi",
+            "hello",
+            "hunt",
+            "hunting",
+            "stalking",
+            "zarbonesti",
+            "amulet"
+          ]
+        },
+        {
+          "description": "Bregnar starts in the Underworld audience chamber 4525 with the exact shiny mithril bracelet equipped in wrist slot 15. Loose bracelet delivery is proof by item, not personal assassination or entry history.",
+          "keyword": "bregnar",
+          "mob_vnum": 4680,
+          "name": "Bregnar the duergar King",
+          "topics": []
+        },
+        {
+          "description": "Draknah starts in the Surface loading room 660003 with golden goblet 500119 equipped in hold slot 18. That active goblet is not the missing legacy goblet 1515. Lore resemblance does not authorize substituting it into Haz\u2019on\u2019wyz\u2019s recipe.",
+          "keyword": "draknah",
+          "mob_vnum": 500231,
+          "name": "Draknah",
+          "topics": []
+        },
+        {
+          "description": "The protective aboleth starts in the water-filled cavern 24178 with two young aboleths. There is no native rescue, brood or kill contract. Actual surviving access to its underwater habitat is separate from delivery stories.",
+          "keyword": "aboleth",
+          "mob_vnum": 24101,
+          "name": "a protective aboleth",
+          "topics": []
+        },
+        {
+          "description": "A young aboleth is M-loaded after the protective aboleth at 24178; the next young F follows that last young M, not the protective adult. Both young creatures can be present without a recorded parent-protection objective.",
+          "keyword": "aboleth",
+          "mob_vnum": 24102,
+          "name": "a young aboleth",
+          "topics": []
+        },
+        {
+          "description": "Four duergar guards are declared at road outposts 24185 and 24186. Their Shatter Stone settlement and purple-wormskin armor descriptions do not establish a house-membership, provisioning or construction quest.",
+          "keyword": "soldier",
+          "mob_vnum": 24104,
+          "name": "a duergar guard",
+          "topics": []
+        },
+        {
+          "description": "The fiery demon starts in 24217 with two claw weapons in slots 16 and 17. Destroyed lift machinery and melted rock explain the mine disaster, but no accepted repair, banishment or campaign outcome is declared.",
+          "keyword": "demon",
+          "mob_vnum": 24106,
+          "name": "a fiery demon",
+          "topics": []
+        },
+        {
+          "description": "Three imported piercers start at 24119, 24124 and 24125. Their actual shared procedure can attack a visible, non-hidden player from concealment on a periodic callback and disables its special after one attempt. Surviving or defeating them currently records no story objective.",
+          "keyword": "piercer",
+          "mob_vnum": 4530,
+          "name": "a HUGE piercer",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the Mushroom Caverns, Khildarak\u2019s abandoned mines and underground rivers, and the intended three-exchange Zarbonesti amulet story. The journal identifies current source and accounting blockers separately from the accepted native outcomes.",
+      "orientation": [
+        "Active, ready accounting is mandatory for discovery, encounters, journals and new achievement/daily credit. Discovering Mushroom Caverns has its own achievement. Questions, lore, current inventory and attempted travel do not complete quests.",
+        "The registered three-exchange Zarbonesti story belongs to Mushroom Caverns, but its old quest actors are imported from shared Underdark data and are not reset here. Missing actors, a missing goblet and a money-typed half currently prevent a verified playable chain. Potential daily classification does not certify available actors or supplies.",
+        "Ask Haz\u2019on\u2019wyz about draknah, master and weak for the stolen-half story. Ozman\u2019s house, zarbonesti and bregnar questions describe his other half; Kryz\u2019s hunt and amulet questions describe the reunion. These are addressed responses, not tracked learned keywords or exclusive house branches.",
+        "Bregnar\u2019s bracelet yields Ozman\u2019s half and 150 platinum. Two different legacy halves yield Kryz\u2019s seal, two weapons and experience. Carrying identical-looking halves shows preparation only. Supplied exact proof does not require your own combat or earlier exchange history.",
+        "The modern Underdark Haz\u2019on\u2019wyz, Ozman and Kryz are different actors. Their first and second halves and bronze seal are different item identities. The modern seal is the one requested by Winterhaven\u2019s Lancer; the legacy Mushroom reward cannot substitute because it has the same name.",
+        "The forest, great road, abandoned outpost, river and aboleth habitat connect to Khildarak and the wider Underdark through ordinary routes. The fallen-mushroom passage is reset closed and blocked on both sides; the rocks passage is reset closed but unlocked. No local native unblock or switch endpoint was found.",
+        "Enter the actual pool at the forest/river connection for travel between 24108 and 24102. The river-side description says no return, but another declared pool provides the reverse destination. The floating flag does not mean hidden. Actual perception and successful surviving travel remain to qualify.",
+        "The lake and river pools connect 24218 and 24229 using enter commands. They are not shown as ordinary room objects; their lake and pool aliases still need actual visibility/target selection qualification. A direction, a look or an attempted command is not accepted arrival.",
+        "The old iron ladder, broken wagon, melted chain, huge wheel and lava river explain exploration and the mining disaster. The ladder, wagon, chain and lava are scenery objects. Shaft rooms have actual falling properties; describing a furnace or lava does not establish an operable lift, a heat-sector effect or a repair quest.",
+        "The protective aboleth, young followers, guards, cave lizards, salamanders and fiery demon have no active native Q/M contract. The unused, unfinished grell prototype and incomplete named mine rooms need builder decisions before new objectives. Lore about light, moisture, boiling oil or a one-way current does not by itself establish custom behavior."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "mushroom_caverns",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:1515;receive=I:24013;disappear=1",
+              "giver_vnum": 24021
+            }
+          ],
+          "id": "haz-goblet-half",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:1515;receive=I:24013;disappear=1",
+                  "giver_vnum": 24021
+                }
+              ],
+              "hint": "Complete this exchange with the exact requested items. An accepted turn-in records the outcome; asking questions, holding materials or visiting a location does not.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted Haz\u2019on\u2019wyz\u2019s stolen half exchange"
+            }
+          ],
+          "summary": "Haz\u2019on\u2019wyz asks for Draknah\u2019s goblet and offers one stolen amulet half before departing. This route is currently incomplete: its exact required goblet is absent from active world data. The similarly described golden goblet carried by Draknah is a different item and cannot substitute. Haz\u2019on\u2019wyz starts in an old dispersal room whose five exits target absent rooms, rather than in these caverns.",
+          "title": "Haz\u2019on\u2019wyz\u2019s stolen half"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:4660;receive=C:150000,I:24014;disappear=1",
+              "giver_vnum": 24022
+            }
+          ],
+          "id": "ozman-bracelet-half",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bregnar carries this exact bracelet in wrist slot 15 at the Underworld audience chamber. Recover it to loose inventory; acquiring a supplied bracelet does not record personally killing the king. This optional inventory check records no first source, personal kill or earlier quest. Supplied exact material does not require a producer receipt.",
+              "id": "material-4660",
+              "item_vnums": [
+                4660
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Bregnar\u2019s shiny mithril bracelet"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:4660;receive=C:150000,I:24014;disappear=1",
+                  "giver_vnum": 24022
+                }
+              ],
+              "hint": "Complete this exchange with the exact requested items. An accepted turn-in records the outcome; asking questions, holding materials or visiting a location does not.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted Ozman\u2019s entrusted half exchange"
+            }
+          ],
+          "summary": "Ozman asks for Bregnar\u2019s shiny mithril bracelet in exchange for the other amulet half and 150 platinum, then departs. The platinum is a reward, not a fee. The bracelet is equipped on Bregnar in his Underworld audience chamber; current delivery does not prove a personal assassination, infiltration or house membership. Ozman has no active reset placement. His half is declared as a money object, so its reward handling and preservation need qualification.",
+          "title": "Ozman\u2019s entrusted half"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:24013,I:24014;receive=E:35000,I:24016,I:24017,I:24018;disappear=1",
+              "giver_vnum": 24023
+            }
+          ],
+          "id": "kryz-two-halves",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:1515;receive=I:24013;disappear=1",
+                  "giver_vnum": 24021
+                }
+              ],
+              "hint": "Optional route history only. A matching supplied half does not require this earlier receipt, and a historical receipt does not restore a spent item.",
+              "id": "earlier-exchange-25",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier exchange: Haz\u2019on\u2019wyz\u2019s goblet request"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:4660;receive=C:150000,I:24014;disappear=1",
+                  "giver_vnum": 24022
+                }
+              ],
+              "hint": "Optional route history only. A matching supplied half does not require this earlier receipt, and a historical receipt does not restore a spent item.",
+              "id": "earlier-exchange-89",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier exchange: Ozman\u2019s bracelet request"
+            },
+            {
+              "count": 1,
+              "hint": "Haz\u2019on\u2019wyz\u2019s goblet exchange is the only declared native producer of this particular half. Its goblet source is currently missing. This half differs from Ozman\u2019s identical-looking half and the modern Underdark halves. This optional inventory check records no first source, personal kill or earlier quest. Supplied exact material does not require a producer receipt.",
+              "id": "material-24013",
+              "item_vnums": [
+                24013
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Haz\u2019on\u2019wyz\u2019s legacy amulet half"
+            },
+            {
+              "count": 1,
+              "hint": "Ozman\u2019s bracelet exchange is the only declared native producer. This identical-looking half is a money object: ordinary pickup treats its values as coins, and active-accounting quest acceptance rejects it as an ordinary durable offering. Readiness here does not certify acceptance. This optional inventory check records no first source, personal kill or earlier quest. Supplied exact material does not require a producer receipt.",
+              "id": "material-24014",
+              "item_vnums": [
+                24014
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Ozman\u2019s different legacy amulet half"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:24013,I:24014;receive=E:35000,I:24016,I:24017,I:24018;disappear=1",
+                  "giver_vnum": 24023
+                }
+              ],
+              "hint": "Complete this exchange with the exact requested items. An accepted turn-in records the outcome; asking questions, holding materials or visiting a location does not.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted Kryz\u2019s two amulet halves exchange"
+            }
+          ],
+          "summary": "Bring Kryz both different legacy amulet halves for his bronze Zarbonesti seal, an adamantium-hafted flail, a fine drow elven scepter and 35000 experience; he then departs. Both halves display the same name, but two copies of one half do not fit. Earlier exchanges are optional history. This exchange is currently unavailable under active accounting because Ozman\u2019s half is a money object, and Kryz has no active reset placement. The similarly named Underdark campaign uses different actors, halves and seal.",
+          "title": "Kryz\u2019s two amulet halves"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Town inn. The room supports the shared rent command; Slagtooth's invitation is not a journal quest or a verified lodging journey.",
           "keyword": "slagtooth",
           "mob_vnum": 27001,

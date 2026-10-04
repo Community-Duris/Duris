@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 81 &&
+		require(catalog.story_mappings.size() == 82 &&
 				tracker.summary_for(7, 42).total == 1629,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -6276,6 +6276,119 @@ int main(int argc, char **argv)
 							.successful_attempts == 1 &&
 					!recovered.has_discovered(7, 42, 1350),
 				"Tower cold recovery lost alternatives, exact owners or discovery boundaries");
+		}
+
+		{
+			const auto &haz = story_for("mushroom_caverns", "haz-goblet-half");
+			const auto &ozman = story_for("mushroom_caverns", "ozman-bracelet-half");
+			const auto &kryz = story_for("mushroom_caverns", "kryz-two-halves");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 240, 24015, 100, "arrival") ==
+					result::applied,
+				"Mushroom model physical loading-area discovery failed");
+			for (int giver : { 24021, 24022, 24023 })
+				require(journey.meet_npc(7, 42, giver, 24015, 101) ==
+						result::applied,
+					"Mushroom model external encounter failed");
+			require(!journey.has_discovered(7, 42, 241) &&
+					journey.render_journal(7, 42, 241, 10, 1, 102, false, false)
+							.find("Undiscovered:") != std::string::npos,
+				"Mushroom external actor encounter discovered the credit owner");
+			require(journey.discover_zone(7, 42, 241, 24101, 103, "arrival") ==
+					result::applied,
+				"Mushroom discovery failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Mushroom journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[24013] = 2;
+			supplies.equipped[18] = 4660;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 241, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(kryz).find("[Ready now] " + kryz.steps[2].text) !=
+						std::string::npos &&
+					section(kryz).find("[Missing now] " + kryz.steps[3].text) !=
+						std::string::npos &&
+					section(ozman).find("[Missing now] " +
+							    ozman.steps[0].text) !=
+						std::string::npos &&
+					section(kryz).find(
+						"currently unavailable under active accounting") !=
+						std::string::npos &&
+					section(haz).find("absent from active world data") !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 241).completed == 0,
+				"Mushroom same-name copies, worn proof or reading invented acceptance/credit");
+			supplies.carried[24014] = 1;
+			supplies.carried[4660] = 1;
+			journal = journey.render_journal(7, 42, 241, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(kryz).find("[Ready now] " + kryz.steps[3].text) !=
+						std::string::npos &&
+					section(kryz).find("Next: " + kryz.steps.back().text) !=
+						std::string::npos &&
+					section(kryz).find(
+						"currently unavailable under active accounting") !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Mushroom optional history or ready display hid its accounting limitation");
+			// These historical model receipts test projection, not live acceptance of
+			// the missing goblet, unplaced actors or money-typed half.
+			service supplied(catalog);
+			record(supplied, kryz.contracts.front(), "mushroom-supplied-history", 241,
+			       24015);
+			require(supplied.progress_for_zone(7, 42, 241).completed == 1 &&
+					supplied.evidence_for(haz.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.evidence_for(ozman.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					!supplied.has_discovered(7, 42, 241),
+				"Mushroom final history fabricated earlier exchanges or owner discovery");
+			auto wrong_owner =
+				completion(kryz.contracts.front(), "mushroom-wrong-owner", 120);
+			wrong_owner.transaction.zone_number = 240;
+			wrong_owner.transaction.room_vnum = 24015;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Mushroom receipt accepted the shared-file physical area as credit owner");
+			record(journey, haz.contracts.front(), "mushroom-haz-history", 241, 24015);
+			record(journey, ozman.contracts.front(), "mushroom-ozman-history", 241,
+			       24015);
+			require(journey.progress_for_zone(7, 42, 241).completed == 2 &&
+					journey.evidence_for(kryz.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Mushroom intermediate receipts completed the final bundle");
+			supplies.carried.erase(24014);
+			journal = journey.render_journal(7, 42, 241, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(kryz).find("[Missing now] " + kryz.steps[3].text) !=
+					std::string::npos,
+				"Mushroom historical producer receipt restored a spent half");
+			record(journey, kryz.contracts.front(), "mushroom-final-history", 241,
+			       24015);
+			auto replay =
+				completion(kryz.contracts.front(), "mushroom-final-history", 120);
+			replay.transaction.zone_number = 241;
+			replay.transaction.room_vnum = 24015;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Mushroom historical receipt replay duplicated completion");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 241).completed == 3 &&
+					recovered.progress_for_zone(7, 42, 241).total == 3 &&
+					recovered.evidence_for(kryz.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.has_discovered(7, 42, 241) &&
+					recovered.has_discovered(7, 42, 240),
+				"Mushroom cold recovery lost outcomes, exact owner or discovery boundary");
 		}
 
 		std::cout
