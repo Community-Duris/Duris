@@ -544,3 +544,20 @@ and p1-mysql-b96aebe6.taMU9X (item/result.json). The wrapper verified schema rem
 owned process shutdown and both ports reusable. Production bytes remain identical
 to the V4 strict-build candidate. This fixture repair does not establish active
 ordinary-drop gameplay/restart or complete Plan 1.
+
+### Plan 1 qualification: maintained SQL lifecycle link closure
+
+The second existing lifecycle-owner compiler invocation retained an unused private
+pipeline ACK overload and failed linkage. Its function/data sections and linker
+section collection now match the first isolated owner. Actual lifecycle/cutover
+implementations, strict compiler and sanitizer flags, all original cases and the
+1800-second integration supervision remain unchanged. Both maintained native owners
+pass on MariaDB 10.11.14 and MySQL 8.0.46 in the same disposable roots above;
+lifecycle-exit.log is zero on both. MariaDB lifecycle.log SHA256:
+fd1a0dbbf79e516efe72ff3bc4bf33a5aa5f6c8e2d3e66fc4baccc35fdd0e7d3.
+MySQL lifecycle.log SHA256:
+2e483abf8762581e81530964aca5dab3cc1c6a9ebcf7c98232982eb514ee4b36.
+Native evidence covers existing wallet/bank/keeper baselines, exact replay,
+rollback, serialized legacy writers, runtime gates and cutover faults. No stub
+qualifies the unused private ACK path. Prepared startup and checked-release owners
+still need corrected-expectation reruns; Plan 1 remains incomplete.
