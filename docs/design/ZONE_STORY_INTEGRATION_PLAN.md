@@ -2585,3 +2585,37 @@ path. Source completeness and synthetic projection journeys do not qualify live
 trap/access/offer/XP/reward/retirement/reset/persistence/renewal. Queue: 72/220
 source-comprehensive, 148 pending; Turolopolis next. No accounting activation,
 database/server operation, migration, deployment or merge is part of this work.
+
+
+## Turolopolis: five exact keys, retiring sources and foreign recipients
+
+[Turolopolis's complete dossier](zone-stories/RUINS_OF_TUROLOPOLIS.md) closes
+priority73 with existing schema3/revision1: six independent stories,26 contacts,
+39 aliases and12 optional checks. No new runtime event or native repair ships.
+
+| Capability | Concrete source requirement | Implementation/qualification plan |
+| --- | --- | --- |
+| Exact ALL roots and keys as materials | Five different badge colours, each also a mirror-hatch key; white is not accepted | Use separate count-one current-item checks today. Freeze distinct selected roots, key use/survival and later consumption before richer campaign progress. One ANY list/countfive cannot encode five required colours |
+| Source and recipient generation conflict | Minotaur carries the letter; ooze departure discards it, while killing him removes the current ooze recipient | Track admitted source transfer/destruction, actor/reset generation and recipient availability. Preserve supplied and earlier-generation letters. Builder chooses clearer branch guidance or an explicit native handoff; do not infer letter issuance from wrappings reward |
+| Foreign giver versus home journal | Lothrell loads in Surface, while exact memorial completion belongs to71 | Require physical Surface discovery for encounter; independently gate local journal on local discovery. Add visible home-journal navigation with actual source room, canonical owner and cold-recovery checks; no fabricated discovery |
+| Rare holding and follower availability | Kurtukr follows Sprecken through public-house and no-exit sink paths | Qualify master/follower wander, source stock, survival, sink residence/extraction and admitted reset renewal. Respect one-based room bits; preserve intended rarity before selecting a native reset/path repair |
+| Selected teleport versus successful arrival | RUB259 statues and ENTER7 return portals use fixed targets; chance-fall can interrupt movement | Freeze selected object/target/reset/command and accepted actual arrival. Keep handled boolean, already-open/shared access, local SEARCH and voluntary/forced/fall episodes distinct |
+| Lore versus accepted campaign effects | Memorial assumes dead comrades; live heroes remain trapped. Horn/skull acceptance narrates cleansing/freedom without world-state endpoints | Builder chooses clearer wording or explicit rescue/ecology/field/escort predicates and supplied-proof branches. No keyword, possession, source kill or recipient departure automatically completes that campaign |
+| Indexed rewards and renewal | XP/item/coin outputs, five D1 recipients and cap-one roots | Freeze actual per-recipient XP policy, each output index and actor retirement. Qualify busy/rejected/partial/replay/cold settlement, persistence and renewed stock before live daily availability |
+
+The player view should show six named outcome cards, five coloured material checks
+for the memorial, an optional producer link for the upgrade and distinct access/
+branch/availability hints. Current Ready/Missing state, accepted offering history,
+first-source recovery and supplied handoffs remain separate in text and future
+ANSI/GMCP views. Static scripts reveal mechanisms and exact bindings; authored
+zone files provide semantic intent. ALL/ANY campaign branches require concrete
+accepted events before presentation claims completed prerequisite stages.
+
+Original queue:73/220 source-comprehensive,147 pending; Ixarkon next. Require
+active, ready accounting for every new tracked fact/credit; frozen recovery is
+separate. Source closure and synthetic events do not qualify played statue/key/
+search/fall/custody/offer/XP/coin/retirement/reset/persistence or daily renewal.
+No native repair, accounting activation, DB/server operation, migration, deployment
+or merge occurs here. Actual later repairs require separate fix commits and
+prominent PR/news before/after/proof/limits text; proposals cannot be announced
+as completed fixes.

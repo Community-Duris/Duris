@@ -141,9 +141,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 70 | The Depths of Duris | [Comprehensive dossier](zone-stories/THE_DEPTHS_OF_DURIS.md): all103 blocks/2645 rooms/75 mobiles/60 objects/611 resets,406 exact/530 parent families; ten shops, custom death/decay/CARVE and bounded foreign closure | Nine outcomes/three services,17 contacts/109 aliases/15 optional checks; four brew alternatives, same-name feather kinds, ten loose roots and supplied seer shortcuts | No native repair. Six absent destinations, wall/stair intent, blue/pink wording and unplaced residents remain proposals; accepted source/part mutation/publication/expiry/payment/reward/retirement/renewal qualification remains open |
 | 71 | IceCrag Castle | [Comprehensive dossier](zone-stories/ICECRAG_CASTLE.md): all67 blocks/243 rooms/66 mobs/138 objects/620 resets,374 exact/460 parent families; twenty local assignments, full speech gates/command portals/custom encounters/foreign closure | Eight stories/two services/one incomplete exclusion,25 contacts/129 aliases/16 optional checks; exact 3-page/2+2-bottle/two-heart bundles and optional shoes history | No native repair. Missing Masha ingredient/dungeon, wine cap, duplicate kinds and dormant/global behavior remain proposals; accepted access/source/control/transform/fee/settlement/renewal qualification remains open |
 | 72 | Father Tel's Holy Cloister | [Comprehensive dossier](zone-stories/FATHER_TELS_HOLY_CLOISTER.md): all 36 blocks, 71 rooms, 24 mobiles, 31 objects and 113 resets; four automatically bound switches, complete shared and foreign source closure | Seven stories/one supporting rejection; 16 contacts/28 aliases/11 optional checks. Exact robes/tablet/head/tome/note/egg and paired ring/poison, supplied shortcuts and actual access actions | Separate Mahr tablet-caption fix 208a56840. Formal admission, lore/source mismatch, ten-minute mission and orphan intent remain proposals; accepted source/trap/control/search/key/XP/settlement/renewal qualification remains open |
-| 73–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 73 | The Ruins of Turolopolis | [Comprehensive dossier](zone-stories/RUINS_OF_TUROLOPOLIS.md): all25 blocks/154 rooms/42 mobiles/56 objects/199 resets, all six type25 portals and complete shared/foreign source closure | Six stories;26 contacts/39 aliases/12 optional checks. Exact five-colour ALL memorial → lesser blade + caecilia stinger → upgrade; independent horn, letter, ooze and skull offerings | No native repair ships. Minotaur source/recipient generation, foreign Lothrell home-journal navigation, rare dispersal/sink, rescue/purification intent and accepted access/custody/XP/coin/renewal qualification remain plans |
+| 74–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Turolopolis (`willem`).
+The next area is Ixarkon (`ixarkon`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -152,6 +153,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-TUROLOPOLIS-ALL / GENERATION / FOREIGN / CAMPAIGN | Five different badge keys are required together; minotaur holds the emissary letter but retires after blue ooze, discarding remaining stock. Lothrell loads in Surface while the accepted memorial belongs to71. Rare recipients can disperse into public rooms or a no-exit sink. | Six independent offerings ship as guidance/projection. Add exact key/root custody, source/recipient-generation branches, truthful home-journal links and accepted movement/rescue/purification predicates before campaign or renewal credit. Native repairs remain builder-selected proposals; none ships here. |
 | ZSQ-CLOISTER-REFUSAL / SWITCH / TRAP / CAMPAIGN | Tel's recommendation exchange is an unconditional refusal with same-kind replacement; auto-bound no-show switches use SAY/PUSH, and secret exits need subsequent local SEARCH. Egg trap can consume a charge and hurt the player without accepted pickup. Supplied note/ring bypass earlier producers; three competing egg requests retain separate owners. | Seven stories/one rejection ship. Add accepted UID/source/custody, precise switch/search/door/trap generations, indexed replacement/XP settlement and builder-owned ALL/ANY campaigns. Mahr's one-word caption fix/news ships separately; formal admission, source clues, deadline and orphan intent remain proposals. |
 | ZSQ-ICECRAG-CONTENT / SOURCE / ACCESS / ACTOR | Cuisine requires missing6551 and mismatched pelt/parchment; exact book/onion/page kinds, 2+2 bottles versus cap-one elven source; speech unlock/open/arrival, GET interruption, NPC rescue and global wolf/death replacement. | Eight stories/two services/one excluded incomplete recipe ship. Builder selects native recipe/source/route repairs; add accepted UID/source/custody, door/control/actor generation and transfer/publication/lifecycle, atomic fee and indexed reward/retirement/reset qualification. No native repair ships here; proposed news remains distinct. |
 | ZSQ-RIFT-BATCH / ROLE / ACTOR / BRANCH | Feather cloak needs 15 roots beyond 14 maximum; seven mixed-fee crafts are guarded. Source instances/color counts, secret reveal, token/head disagreement, unspawned dragon alternative and wandering foreign ranger. Two procedural hosts have their own assignment/count/payout authority. |12 outcomes/12 services/3 exclusions ship with 30 optional checks. Extend complete-batch bounds and atomic craft payments; accept source/reveal/dialogue/role/travel/actor and scoped AND/faction/procedural events. Native five-direction fix/news separate; plot/dragon/historical boundary decisions pending. |
@@ -3916,3 +3918,67 @@ journals remain intact. The one-word caption correction is the sole native
 change. Original queue: **72/220 source-comprehensive, 148 pending**; Turolopolis
 is next. The full goal remains active. No accounting activation, database/server
 operation, migration, deployment or merge occurred.
+
+
+## Priority 73 checkpoint: The Ruins of Turolopolis
+
+The [comprehensive dossier](zone-stories/RUINS_OF_TUROLOPOLIS.md) closes all25
+blocks (19M/sixQ),154 complete rooms (109 prose groups/17 headers/22 extra
+descriptions/394 exits),42 mobiles,56 objects and199 resets (160 exact/164
+parent-aware). All six local type25 portal kinds, shared RUB/ENTER dispatch,
+selection/actual arrival, search/door/key/fall, source custody, native allocation,
+indexed XP/coin/item rewards and actor retirement were reviewed. Bounded active
+closure includes one complete foreign reset group, nine foreign room bodies,
+all713 portals, both public reciprocal approaches and no missing required kind
+or foreign local-kind recipe. Generated evidence does not replace source closure.
+
+Six independent stories retain26 contacts/39 aliases and12 optional checks:
+eleven current materials and one earlier memorial receipt. Five separate
+count-one brown/green/blue/red/black steps preserve native ALL allocation;
+white badges and multiple copies of one colour do not substitute. The plaza's
+north–south statue row uses RUB; each mirrored room has an ENTER return portal.
+Badge keys also unlock matching hatches and remain after ordinary unlock, before
+the all-five offering consumes them. Current possession never proves rescue.
+
+Five badges → lesser bloodsaber + loaded caecilia stinger → greater bloodsaber
+is optional guidance between independent outcomes. Supplied blades need no
+memorial history; a receipt cannot restore a spent or worn blade. Corwyck's horn
+provides an iron bunker key, separate from the sentinel's crimson palace key.
+The slave's named-skull outcome grants coins, without a recorded all-prisoner
+liberation or spell-field collapse. Nominal XP remains subject to frozen actual
+recipient policy; five D1 recipients and cap-one materials constrain renewal.
+
+The minotaur carries the letter needed by the emissary. Ooze acceptance
+retires him and can discard it; killing for the letter removes that current
+ooze recipient. Source/recipient-generation branches, admitted transfer, supplied
+proof and renewed availability need explicit qualification. Kurtukr follows
+Sprecken from a real rare-load holding source with public-house exits and a
+no-exit sink. INDOORS8 is not ROOM_NO_MOB4: public dispersal is possible; intent,
+survival, sink stay and reset should be qualified before calling the route broken.
+
+Lothrell currently loads in Surface's grassy foothills, not historical Verspin
+or the empty local start. Surface discovery admits that physical encounter;
+neither it nor the canonical zone71 memorial receipt fabricates local discovery.
+Plan truthful cross-zone home-journal navigation while retaining actual physical
+room and native ownership. Presumed-dead comrades versus living trapped heroes,
+fountain cleansing and palace freedom remain builder intent questions, rather
+than implemented campaign repairs. **No native Turolopolis repair ships.**
+
+Focused source fixtures and Python/C++ projections cover exact/wrong/worn inputs,
+missing badge colours, supplied upgrade, spent history, foreign discovery/owner,
+six outcomes, replay and cold recovery. Full production regression, maintained
+build, changed/staged formatting, source links, exact native/catalog/prior-journal
+preservation and published PR verification are required before publication.
+One earlier Cloister fixture now uses the correct one-based ROOM_INN bit; this
+corrects the source audit/test and leaves its no-inn conclusion unchanged.
+
+The complete earlier PR body is archived in
+[checkpoint history](ZONE_STORY_PR_CHECKPOINT_HISTORY.md) before compacting
+historical prose; all actual repair/news/accounting blocks remain in the current
+PR verbatim. Current catalog:94 journals/1602 achievement units/1453 potential
+dailies/2203 rows; all2668 definitions/fingerprint/revision/registry and prior93
+journals remain intact. Queue: **73/220 source-comprehensive,147 pending;
+Ixarkon next**. Source completeness and synthetic receipts do not qualify played
+access/recovery/offer/settlement/reset/renewal. Active, ready accounting remains
+mandatory, with frozen recovery separate. The full goal stays active; no accounting
+activation, DB/server operation, migration, deployment or merge occurred.

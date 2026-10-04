@@ -1652,3 +1652,41 @@ The Mahr letter→tablet caption repair is isolated in fix commit 208a56840 with
 original-fails/repaired-passes proof and a news-ready sentence. Other admission,
 source-clue, deadline and orphan findings remain proposals. Every actual native
 repair must stay clearly identifiable in its own fix commit and PR/news ledger.
+
+
+## Turolopolis pattern: exact colours, source conflicts and foreign givers
+
+Use [Turolopolis's journal](../../areas/story/willem.story.json) and
+[complete dossier](../design/zone-stories/RUINS_OF_TUROLOPOLIS.md) for several
+independent native offerings with useful optional progression. Five different
+badge colours need five count-one carried-item steps, not one ANY-kind list with
+countfive. Each badge also unlocks a matching mirror hatch. Receiving, wearing,
+using and offering a badge are different facts; a supplied badge need not prove
+personal rescue. The white badge does not substitute for a required colour.
+
+Link Lothrell's memorial optionally to Kurtukr's lesser-blade/stinger upgrade.
+An exact supplied blade bypasses producer history; earlier acceptance cannot
+restore a spent, equipped or handed-away blade. Use actual RUB/ENTER commands
+and the plaza's north–south statue row, followed by local SEARCH/UNLOCK/OPEN as
+needed. Handled commands, shared access, fall attempts and accepted arrival
+remain distinct. Do not add achievement credit for each question or book chapter.
+
+Audit source and recipient survival together. The minotaur carries the emissary's
+letter, but departs with remaining stock discarded after ooze acceptance. Killing
+for the letter removes the same current recipient. Explain that branch and keep
+supplied/earlier-generation proof valid; qualify an actual living-source transfer
+before promising it. Do not invent a reward drop or mandatory personal kill.
+
+Lothrell's physical Surface encounter and the home-zone memorial ownership are
+independent of actual local discovery. Preserve the real source and owner while
+planning visible home-journal links. Holding-room/follower dispersal can reach
+public rooms or a sink; initial placement does not guarantee current availability
+or justify relocating rare NPCs. Review actual one-based flags and reset episodes.
+
+Narrated memorial, fountain purification, freedom and spell-field collapse need
+explicit builder intent and accepted endpoints before richer campaign cards can
+claim them. Existing sidecars author meaningful grouping/guidance; static data
+alone cannot discover every intended story. Require active, ready accounting,
+indexed settlement and qualified renewal for new progress/daily credit. Frozen
+recovery remains separate. No native Turolopolis repair ships; later repairs must
+be identified in separate fix commits and prominent PR/news proof and wording.

@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1453
-assert report['mapped_area_count'] == 93 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 94 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -61,6 +61,20 @@ assert cloister_stories['tel-rejected-recommendation']['category'] == 'service'
 assert cloister_stories['disciple-recommendation']['steps'][0]['contracts'] == cloister_stories['mahr-intruder-tablet']['contracts']
 assert cloister_stories['advisor-ring-and-poison']['steps'][0]['contracts'] == cloister_stories['priest-troggahns-egg']['contracts']
 assert [t['item_vnums'] for t in cloister_stories['advisor-ring-and-poison']['steps'][1:-1]] == [[67113], [67103]]
+
+willem = next(m for m in catalog['story_mappings'] if m['source_area'] == 'willem')
+assert (willem['schema_version'], willem['revision'], willem['coverage']) == (3, 1, 'complete')
+assert len(willem['stories']) == 6 and len(willem['contacts']) == 26 and not willem['exclusions']
+assert report['eligible_by_zone']['71'] == 6
+assert all(s['category'] == 'story' for s in willem['stories'])
+assert sum(len(c['topics']) for c in willem['contacts']) == 39
+assert sum(t.get('optional', False) for s in willem['stories'] for t in s['steps']) == 12
+willem_stories = {s['id']: s for s in willem['stories']}
+assert [t['item_vnums'] for t in willem_stories['lothrell-five-badges']['steps'][:-1]] == [[7124], [7116], [7113], [7107], [7110]]
+assert all(t['count'] == 1 for t in willem_stories['lothrell-five-badges']['steps'][:-1])
+assert willem_stories['kurtukr-bloodsaber-upgrade']['steps'][0]['contracts'] == willem_stories['lothrell-five-badges']['contracts']
+assert [t['item_vnums'] for t in willem_stories['kurtukr-bloodsaber-upgrade']['steps'][1:-1]] == [[7131], [7139]]
+assert all(t.get('optional') for s in willem['stories'] for t in s['steps'][:-1])
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'
