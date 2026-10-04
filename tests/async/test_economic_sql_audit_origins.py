@@ -441,23 +441,39 @@ class OriginTests(unittest.TestCase):
 
     def test_orphan_export_is_bounded_and_does_not_invent_a_lineage(self):
         cursor = mock.Mock()
-        cursor.fetchall.side_effect = [[{"operation_id": OP, "row_index": 3}], [], [], []]
+        cursor.fetchall.side_effect = [[{"operation_id": OP, "row_index": 3}], [], [], [], []]
         rows, coverage = snapshot_exporter.read_orphan_evidence(cursor)
         self.assertEqual(rows, [{"table": "effects", "operation_id": OP.hex(), "row_index": 3}])
         self.assertEqual(coverage, {"scope": "database", "table_counts": {
-            "effects": 1, "postings": 0, "children": 0, "item_references": 0}})
+            "effects": 1, "postings": 0, "children": 0, "item_references": 0, "baseline_reservations": 0}})
         for call in cursor.execute.call_args_list:
             sql, params = call.args
             self.assertTrue(sql.startswith("SELECT "))
             self.assertIn("WHERE o.operation_id IS NULL", sql)
-            self.assertNotIn("lineage=", sql)
+            self.assertNotIn("lineage=%s", sql)
             self.assertIn("LIMIT %s", sql)
             self.assertEqual(params, (snapshot_exporter.MAX_ROWS + 1,))
+        reservation_query = cursor.execute.call_args_list[-1].args[0]
+        self.assertIn("LEFT JOIN economic_baseline_witness", reservation_query)
+        self.assertIn("AND o.lineage=e.lineage AND o.epoch=e.epoch", reservation_query)
+        self.assertIn("e.identity_id", reservation_query)
         cursor.fetchall.side_effect = [[{"operation_id": OP, "row_index": 0}],
                                       [{"operation_id": OP, "row_index": 1}]]
         with mock.patch.object(snapshot_exporter, "MAX_ROWS", 1):
             with self.assertRaisesRegex(snapshot_exporter.ExportError, "orphan evidence collection"):
                 snapshot_exporter.read_orphan_evidence(cursor)
+
+    def test_rootless_reservation_export_preserves_untrusted_scope_and_uint64(self):
+        cursor = mock.Mock()
+        cursor.fetchall.side_effect = [[], [], [], [], [{"operation_id": OP, "row_index": 2,
+            "identity_id": 2**64 - 1, "claimed_lineage": bytes([77]) * 16, "claimed_epoch": bytes([88]) * 16}]]
+        rows, coverage = snapshot_exporter.read_orphan_evidence(cursor)
+        self.assertEqual(rows, [{"table": "baseline_reservations", "operation_id": OP.hex(), "row_index": 2,
+            "identity_id": 2**64 - 1, "claimed_lineage": "4d" * 16, "claimed_epoch": "58" * 16}])
+        self.assertEqual(coverage["table_counts"]["baseline_reservations"], 1)
+        self.assertNotIn("lineage", rows[0])
+        self.assertNotIn("epoch", rows[0])
+        self.assertNotIn("lineage=%s", cursor.execute.call_args_list[-1].args[0])
 
     def test_native_mapping_coverage_is_scoped_to_selected_lineage(self):
         class Cursor:

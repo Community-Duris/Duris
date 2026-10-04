@@ -24,7 +24,7 @@ class NativeBaselineAuditTests(unittest.TestCase):
         from native_build_artifacts import build_native
         import pymysql
 
-        work = ROOT / "bin/tests/plan5-baseline-zero-effects"
+        work = ROOT / "bin/tests/plan5-baseline-reservation-orphans"
         work.mkdir(mode=0o700, parents=True, exist_ok=True)
         sources = ["tests/async/plan5_sql_baseline_audit_fixture.cpp",
                    "src/persistence/economic_sql_baseline_transaction.c",
