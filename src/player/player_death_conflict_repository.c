@@ -481,12 +481,15 @@ retain_death_conflict(MYSQL *connection, const player_snapshot &request, bool te
 	{
 		execution.emplace(request.pid);
 		if (!*execution)
-			return { player_death_conflict_outcome::failed,
-				 execution->result() ==
-						 player_save_execution_guard::admission::held ?
-					 EAGAIN :
-					 ENOMEM,
-				 0 };
+			return {
+				player_death_conflict_outcome::failed,
+				static_cast<unsigned int>(
+					execution->result() ==
+							player_save_execution_guard::admission::held ?
+						EAGAIN :
+						ENOMEM),
+				0
+			};
 	}
 	player_sql_cleanup local;
 	auto &proof = cleanup ? *cleanup : local;

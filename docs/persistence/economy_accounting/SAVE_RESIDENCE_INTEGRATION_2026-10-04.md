@@ -489,3 +489,21 @@ PID, racewar, account comparison and receipt/publication rules remain unchanged.
 Original source remains in `tmp/plan1-coin-account-before-20261004.local.c`.
 Both V4 combined-source strict builds pass. Coin publication/native recovery
 checks continue; this compiler fix does not deliver Plan 2's missing cold pile owner.
+
+## Plan 1 qualification: death-conflict refusal error conversion
+
+The SQL strict build reproduced narrowing of conditional held/unavailable error
+codes into the existing death-conflict result's unsigned field. The explicit
+conversion preserves `EAGAIN` versus `ENOMEM`, refusal before SQL mutation and
+the borrowed caller's cleanup ownership. Original source is preserved in
+`tmp/plan1-death-error-before-20261004.local.c`. Both V4 strict builds pass with
+the corrected translation unit actually compiled. Native retained-death, cleanup
+faults and combined Plan 1 acceptance remain separate ongoing qualification.
+
+### Plan 1 qualification: coordinator fixture link closure
+
+The existing coordinator owner initially failed to link an unused private pipeline ACK overload. Its isolated harness now uses function/data sections and linker section collection, preserving the actual coordinator, journal, original assertions and fault cases. The corrected native owner passes on source candidate 9fabe54bb (11.224 seconds); log tmp/plan1-test_critical_command_coordinator-20261004-v3.local.log, SHA256 4936f708bb36644db45d619c7d22231f87e24910cad4b391029f48324beb42d2. This component does not qualify the unused private ACK overload or full gameplay/recovery acceptance.
+
+### Plan 1 qualification: controlled lifecycle release contract
+
+The runtime-owner fixture lacked the current bool release API. Its controlled guard now preserves ownership on release failure, releases once after repair, and makes repeated shutdown idempotent. The original native runtime owner passes (1.566 seconds), including the bounded failure/retry sequence; log tmp/plan1-test_economic_sql_runtime_owner-20261004-v3.local.log, SHA256 d6cce9595cf01f22c4eb3ecc3a1ae4798628f384c9bbb018b1cce60d40c0590e. This is controlled-interface evidence; actual SQL named-lock release and session-loss qualification remain separate.
