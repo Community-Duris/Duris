@@ -317,10 +317,18 @@ retain their indexes and every sealed/active segment, with dense ranges, exact
 record hashes and no untracked bucket files. The independent reader checks record
 framing, operation/lineage/retained-epoch identities, immutable command/intent/plan
 bindings and declared plan size. Native-encoded rejected receipts and partial
-empty-bucket initialization remain readable. These physical checks do not prove
-policy authorization, full account/item semantics or agreement with native
-authority. Source claims, pile heads, baseline witnesses, native custody and
-activation readiness still require their separate release evidence.
+empty-bucket initialization remain readable. Every successful nonbaseline
+source-bearing record must retain its exact private source-claim frame, keyed by lineage and
+logical event, including earlier retained epochs. Missing, corrupt, mismatched,
+duplicate-source, orphan or malformed claim files block qualification. Rejected
+receipts claim no source; an event may belong to a different successful root.
+Native baseline batches retain source dedupe in their own witness/reservation
+book. The common-claim check recognizes that existing typed storage contract;
+complete independent book and witness qualification remains a separate gate.
+These physical checks do not prove policy authorization, full account/item
+semantics or agreement with native authority. Logical source entitlement, pile
+heads, baseline witnesses, native custody and activation readiness still require
+their separate release evidence.
 Before boot, both journal types are scanned with the production codecs. A
 corrupt/unsupported frame or interrupted temporary journal blocks qualification.
 Validated quarantine archives and admission fences are preserved. An unreplayable
