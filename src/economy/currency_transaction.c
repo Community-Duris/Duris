@@ -69,8 +69,10 @@ struct pending_currency
 	coin_completion_fn coin_completion = nullptr;
 	coin_publication_callbacks coin_publication = {};
 	bool coin_wallets_published = false;
+	std::array<uint64_t, 2> coin_wallet_body_ids = {};
 	bool coin_publication_started = false;
 	bool coin_physical_published = false;
+	bool coin_publication_in_progress = false;
 	unsigned int publication_attempts = 0;
 	bool publication_required = false;
 	bool receipt_received = false;
@@ -155,13 +157,47 @@ bool coin_has_physical_endpoint(const coin_transfer_payload &payload)
 	       payload.destination.change.type == critical_command_type::item_transfer;
 }
 
+bool coin_body_matches(P_char character, const currency_command_result &result)
+{
+	return character && character->only.pc &&
+	       character->only.pc->wallet_revision == result.wallet_revision &&
+	       character->only.pc->bank_revision == result.bank_revision &&
+	       std::array<int64_t, 4>{ GET_COPPER(character), GET_SILVER(character),
+				       GET_GOLD(character),
+				       GET_PLATINUM(character) } == result.wallet.amount &&
+	       std::array<int64_t, 4>{ GET_BALANCE_COPPER(character), GET_BALANCE_SILVER(character),
+				       GET_BALANCE_GOLD(character),
+				       GET_BALANCE_PLATINUM(character) } == result.bank.amount;
+}
+
+struct coin_publication_guard
+{
+	bool *flag;
+	~coin_publication_guard() { release(); }
+	void release()
+	{
+		if (flag)
+			*flag = false;
+		flag = nullptr;
+	}
+};
+
 bool publish_accounted_coin(std::unordered_map<std::string, pending_currency>::iterator found,
 			    P_char actor, bool committed, const coin_transfer_result &result)
 {
 	auto &entry = found->second;
+	const std::string &original_key = found->first;
+	if (entry.disposition_blocked ||
+	    currency_publication_state_is_blocked(entry.publication_state))
+		return false;
+	if (entry.coin_publication_in_progress)
+		return false;
+	entry.coin_publication_in_progress = true;
+	coin_publication_guard guard{ &entry.coin_publication_in_progress };
 	const bool physical = coin_has_physical_endpoint(*entry.coin);
-	if (committed && physical && !entry.coin_physical_published)
+	if (committed && physical)
 	{
+		actor = live_wallet_by_pid(entry.pid);
 		// Journal recovery has no live callback/context. Its immutable command
 		// does not prove a native pile exists; retain it until typed publication
 		// recovery is implemented. A legacy composite callback is not proof.
@@ -179,15 +215,28 @@ bool publish_accounted_coin(std::unordered_map<std::string, pending_currency>::i
 		{
 			// No exception can discharge a committed economic obligation.
 		}
+		if (entry.disposition_blocked ||
+		    currency_publication_state_is_blocked(entry.publication_state))
+			return false;
 		if (!published)
 		{
-			if (++entry.publication_attempts >= CURRENCY_COIN_PUBLICATION_MAX_ATTEMPTS)
-				return retain_unresolved_publication(
-					entry, "coin_publication_exhausted", false);
+			// Each dispatch bounds work to one attempt. A lifetime retry cap would
+			// permanently strand a committed pile after its dependency recovers.
 			entry.publication_state = currency_publication_state::retrying_callback;
 			return false;
 		}
 		entry.coin_physical_published = true;
+		P_char current = live_wallet_by_pid(entry.pid);
+		const size_t wallet_index =
+			entry.coin->source.change.type == critical_command_type::account_bank ? 0 :
+												1;
+		if (!current || current->runtime_id != entry.coin_wallet_body_ids[wallet_index] ||
+		    !coin_body_matches(current, result.wallets[wallet_index]))
+		{
+			entry.publication_state = currency_publication_state::retrying_callback;
+			return false;
+		}
+		actor = current;
 	}
 	if (entry.completed.disposition != critical_completion_disposition::never_admitted &&
 	    !critical_command_coordinator_acknowledge_publication(entry.completed.operation_id))
@@ -197,8 +246,13 @@ bool publish_accounted_coin(std::unordered_map<std::string, pending_currency>::i
 	}
 	// Only notifications may advance a bulk command. The durable ACK and owner
 	// release precede them; failures cannot refund, reinsert or redo physical work.
-	auto node = pending.extract(found);
+	guard.release();
+	// References survive rehash when a publisher admits another PID's command.
+	// The original iterator does not; extract using the pinned original key.
+	auto node = pending.extract(original_key);
 	const auto &finished = node.mapped();
+	if (finished.coin_publication.release)
+		finished.coin_publication.release(finished.completed.operation_id);
 	if (committed)
 		++health.committed;
 	else
@@ -233,6 +287,14 @@ bool publish_accounted_coin(std::unordered_map<std::string, pending_currency>::i
 bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator found, P_char actor)
 {
 	auto &entry = found->second;
+	const std::string &original_key = found->first;
+	if (entry.publication_required && entry.coin_publication_in_progress)
+		return false;
+	coin_publication_guard guard{ entry.publication_required ?
+					      &entry.coin_publication_in_progress :
+					      nullptr };
+	if (guard.flag)
+		*guard.flag = true;
 	const auto &completed = entry.completed;
 	const bool committed = completed.outcome == critical_apply_outcome::applied ||
 			       completed.outcome == critical_apply_outcome::already_applied;
@@ -282,6 +344,27 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 			// body that reconnect will reuse. An unloaded player loads it on re-entry.
 			entry.coin_wallets_published = true;
 		}
+		if (committed && entry.publication_required && entry.coin_wallets_published)
+		{
+			const coin_transfer_endpoint *endpoints[] = { &entry.coin->source,
+								      &entry.coin->destination };
+			for (size_t index = 0; index < 2; ++index)
+			{
+				if (endpoints[index]->change.type !=
+				    critical_command_type::account_bank)
+					continue;
+				currency_command_payload wallet = {};
+				if (!currency_command_decode_payload(endpoints[index]->change,
+								     &wallet))
+					return retain_unresolved_publication(
+						entry, "invalid_coin_endpoint", true);
+				P_char current = coin_wallet_by_pid(wallet.pid);
+				if (current &&
+				    (current->runtime_id != entry.coin_wallet_body_ids[index] ||
+				     !coin_body_matches(current, result.wallets[index])))
+					entry.coin_wallets_published = false;
+			}
+		}
 		if (committed && !entry.coin_wallets_published)
 		{
 			const coin_transfer_endpoint *endpoints[] = { &entry.coin->source,
@@ -328,6 +411,17 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 						entry, "invalid_coin_endpoint", true);
 				P_char character = coin_wallet_by_pid(wallet.pid);
 				const auto &balances = result.wallets[index];
+				const uint64_t body_id = character ? character->runtime_id : 0;
+				if (entry.publication_required &&
+				    coin_has_physical_endpoint(*entry.coin) && character &&
+				    (character->only.pc->wallet_revision >
+					     balances.wallet_revision ||
+				     character->only.pc->bank_revision > balances.bank_revision ||
+				     std::strcmp(currency_transaction_account_name(character),
+						 wallet.account_name.data()) ||
+				     character->player.racewar != wallet.racewar))
+					return retain_unresolved_publication(
+						entry, "coin_body_authority_conflict", false);
 				// Only unloaded endpoints need a fresh load. Publish retained bodies
 				// now, and publish shared bank authority even if the body is unloaded.
 				if (character &&
@@ -342,6 +436,19 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 								balances.bank_revision))
 					return retain_unresolved_publication(
 						entry, "invalid_coin_live_bank", true);
+				entry.coin_wallet_body_ids[index] = body_id;
+				if (entry.publication_required &&
+				    coin_has_physical_endpoint(*entry.coin))
+				{
+					P_char current = coin_wallet_by_pid(wallet.pid);
+					if (current && (current->runtime_id != body_id ||
+							!coin_body_matches(current, balances)))
+					{
+						entry.publication_state =
+							currency_publication_state::retrying_callback;
+						return false;
+					}
+				}
 			}
 			entry.coin_wallets_published = true;
 		}
@@ -350,14 +457,19 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 	{
 		if (!entry.publication_required)
 			throw;
-		if (++entry.publication_attempts >= CURRENCY_COIN_PUBLICATION_MAX_ATTEMPTS)
-			return retain_unresolved_publication(entry, "coin_projection_exhausted",
-							     false);
+		if (entry.disposition_blocked ||
+		    currency_publication_state_is_blocked(entry.publication_state))
+			return false;
+		// Keep the original schema2 projection eligible after transient failures.
+		// The dispatch loop bounds retry work; schema1 retains its legacy cap.
 		entry.publication_state = currency_publication_state::retrying_callback;
 		return false;
 	}
 	if (entry.publication_required)
-		return publish_accounted_coin(found, actor, committed, result);
+	{
+		guard.release();
+		return publish_accounted_coin(pending.find(original_key), actor, committed, result);
+	}
 	// Extract the node so a successful callback can advance a bulk command. A
 	// temporarily unavailable live destination keeps this same operation for retry.
 	auto node = pending.extract(found);
@@ -1361,6 +1473,13 @@ currency_transaction_health currency_transaction_health_copy(void)
 
 void currency_transaction_reset_for_tests(void)
 {
+	for (const auto &[key, entry] : pending)
+		if (entry.coin && entry.publication_required && entry.coin_publication.release)
+		{
+			critical_operation_id id = {};
+			memcpy(id.bytes.data(), key.data(), id.bytes.size());
+			entry.coin_publication.release(id);
+		}
 	pending.clear();
 	health = {};
 }
