@@ -38,6 +38,7 @@ class economic_gameplay_authority_test_access
 // the repository. This exercises its ambiguous outcome and fresh reconciliation.
 static MYSQL *lose_commit_reply = nullptr;
 static MYSQL *lost_commit_connection = nullptr;
+static size_t lost_commit_replies = 0;
 extern "C" int __real_mysql_real_query(MYSQL *, const char *, unsigned long);
 extern "C" unsigned int __real_mysql_errno(MYSQL *);
 extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *sql, unsigned long length)
@@ -47,6 +48,7 @@ extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *sql, unsig
 	{
 		lose_commit_reply = nullptr;
 		lost_commit_connection = connection;
+		++lost_commit_replies;
 		return 1;
 	}
 	return result;
@@ -513,21 +515,45 @@ int main()
 					  literal(pooled_command.operation_id)) == 1);
 	assert(critical_command_repository_apply(connection, command_for(-10)).outcome ==
 	       critical_apply_outcome::applied);
-	const auto pooled_ambiguous = command_for(10);
+	auto pooled_ambiguous = command_for(10);
+	pooled_ambiguous.publication_required = true;
+	const auto bank_sql =
+		"SELECT bank_copper FROM account_banks WHERE id=" + std::to_string(bank_id);
+	const auto bank_before_lost_reply = scalar(connection, bank_sql);
+	const auto lost_replies_before = lost_commit_replies;
 	lose_next_pooled_commit = true;
-	const auto pooled_reconciled = pooled_apply(pooled_ambiguous);
+	// The client wrapper hides a real successful COMMIT, not the coordinator apply
+	// result. The actual pooled repository replaces the session and reconciles it
+	// before returning; coordinator shutdown/restart then replays the held receipt
+	// and ACK checkpoints its original journal frame without repeating the effect.
+	const auto pooled_reconciled =
+		exercise_sql_coordinator(pooled_ambiguous, "bank-native-commit-reply", false,
+					 critical_apply_outcome::already_applied);
 	assert(pooled_reconciled.outcome == critical_apply_outcome::already_applied);
-	assert(pool_acquisitions == 3 && pool_releases == 3 && pool_replacements == 1 &&
+	assert(lost_commit_replies == lost_replies_before + 1);
+	assert(pool_acquisitions == 4 && pool_releases == 4 && pool_replacements == 1 &&
 	       !lose_next_pooled_commit && !lose_commit_reply && !lost_commit_connection);
 	same_receipt(pooled_reconciled,
 		     critical_command_repository_reconcile(connection, pooled_ambiguous));
 	const auto pooled_ambiguous_replayed = pooled_apply(pooled_ambiguous);
 	assert(pooled_ambiguous_replayed.outcome == critical_apply_outcome::already_applied);
 	same_receipt(pooled_reconciled, pooled_ambiguous_replayed);
+	assert(lost_commit_replies == lost_replies_before + 1);
 	assert(scalar(connection, wallet_sql) == 915);
+	assert(scalar(connection, bank_sql) == bank_before_lost_reply + 10);
+	assert(scalar(connection, "SELECT COUNT(*) FROM currency_ledger WHERE operation_id=" +
+					  literal(pooled_ambiguous.operation_id)) == 1);
 	assert(scalar(connection,
 		      "SELECT COUNT(*) FROM economic_accounting_operation WHERE operation_id=" +
 			      literal(pooled_ambiguous.operation_id)) == 1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM critical_operation_inbox WHERE status=1 AND result_code=0 AND operation_id=" +
+			      literal(pooled_ambiguous.operation_id)) == 1);
+	assert(scalar(connection, "SELECT COUNT(*) FROM critical_outbox WHERE operation_id=" +
+					  literal(pooled_ambiguous.operation_id)) == 1);
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+	assert(sql_pool_available() == 1 && sql_pool_in_use() == 0);
+#endif
 	assert(critical_command_repository_apply(connection, command_for(-10)).outcome ==
 	       critical_apply_outcome::applied);
 	pool_enabled = false;
@@ -1152,7 +1178,7 @@ int main()
 	       pooled_retired_ambiguous.outcome == critical_apply_outcome::already_applied);
 	same_receipt(pooled_result, pooled_retired);
 	same_receipt(pooled_reconciled, pooled_retired_ambiguous);
-	assert(pool_acquisitions == 8 && pool_releases == 8 && pool_replacements == 1);
+	assert(pool_acquisitions == 9 && pool_releases == 9 && pool_replacements == 1);
 	pool_enabled = false;
 	puts("SQL pooled bank: retained receipts survive authority retirement");
 
