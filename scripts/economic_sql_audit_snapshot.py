@@ -14,10 +14,12 @@ from collections import Counter
 import json
 import os
 from pathlib import Path
+import re
 import struct
 import sys
 
-from economic_sql_audit_origins import ITEM_STATES, OriginError, identity, read_origins_in_transaction
+from economic_sql_audit_origins import (ITEM_STATES, OriginError, baseline_projection_bound,
+                                       identity, read_origins_in_transaction)
 from reconcile_economy_accounting import (MAX_INPUT_BYTES, MAX_ROWS, ORPHAN_EVIDENCE_SOURCES,
                                           REGISTRY_PATH, TABLES)
 
@@ -178,15 +180,26 @@ def read_orphan_evidence(cursor) -> tuple[list[dict], dict]:
     result = []
     counts = {}
     for name, (table, index, _) in ORPHAN_EVIDENCE_SOURCES.items():
+        extra, join, order = "", "", f"e.operation_id,e.{index}"
+        if name == "baseline_reservations":
+            extra = ",e.identity_id,e.lineage AS claimed_lineage,e.epoch AS claimed_epoch"
+            join = ("LEFT JOIN economic_baseline_witness o ON o.operation_id=e.operation_id "
+                    "AND o.lineage=e.lineage AND o.epoch=e.epoch ")
+            order += ",e.lineage,e.epoch,e.identity_id"
+        else:
+            join = "LEFT JOIN economic_accounting_operation o ON o.operation_id=e.operation_id "
         rows = bounded(cursor,
-            f"SELECT e.operation_id,e.{index} AS row_index FROM {table} e "
-            "LEFT JOIN economic_accounting_operation o ON o.operation_id=e.operation_id "
-            f"WHERE o.operation_id IS NULL ORDER BY e.operation_id,e.{index}")
+            f"SELECT e.operation_id,e.{index} AS row_index{extra} FROM {table} e " + join +
+            f"WHERE o.operation_id IS NULL ORDER BY {order}")
         if len(result) + len(rows) > MAX_ROWS:
             raise ExportError("SQL orphan evidence collection exceeds row limit")
         counts[name] = len(rows)
-        result.extend({"table": name, "operation_id": hex_id(row["operation_id"]),
-                       "row_index": row["row_index"]} for row in rows)
+        for row in rows:
+            entry = {"table": name, "operation_id": hex_id(row["operation_id"]), "row_index": row["row_index"]}
+            if name == "baseline_reservations":
+                entry.update(identity_id=row["identity_id"], claimed_lineage=hex_id(row["claimed_lineage"]),
+                             claimed_epoch=hex_id(row["claimed_epoch"]))
+            result.append(entry)
     return result, {"scope": "database", "table_counts": counts}
 
 
@@ -269,13 +282,13 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
         "SELECT 1 FROM economic_accounting_source_claim s WHERE s.lineage=o.lineage "
         "AND s.source_event=o.source_event AND s.operation_id=o.operation_id) "
         "THEN 0 ELSE 1 END),0) AS missing_claim_operations "
-        "FROM economic_accounting_operation o WHERE o.lineage=%s AND o.reason<>38 "
+        "FROM economic_accounting_operation o WHERE o.lineage=%s "
         "AND o.outcome=1 AND o.source_event IS NOT NULL", (lineage,))
     source_count = cursor.fetchone()
     cursor.execute(
         "SELECT COUNT(*) AS duplicate_source_values FROM ("
         "SELECT source_event FROM economic_accounting_operation "
-        "WHERE lineage=%s AND reason<>38 AND outcome=1 AND source_event IS NOT NULL "
+        "WHERE lineage=%s AND outcome=1 AND source_event IS NOT NULL "
         "GROUP BY source_event HAVING COUNT(*)>1) duplicates", (lineage,))
     duplicates = cursor.fetchone()
     result["source_claim_coverage"] = {
@@ -284,7 +297,7 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
         "duplicate_source_values": int(duplicates["duplicate_source_values"])}
     registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
     required_reasons = sorted(row["number"] for row in registry["reasons"]
-                              if row["source_event_required"] and row["number"] != 38)
+                              if row["source_event_required"])
     placeholders = ",".join("%s" for _ in required_reasons)
     cursor.execute(
         "SELECT COUNT(*) AS required_operations,COALESCE(SUM(source_event IS NULL),0) "
@@ -327,6 +340,46 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
             "state": "tombstone" if row["to_owner_type"] == 8 else "live",
             "action": "create" if reason == 2 else "destroy" if reason == 3 else "move"})
     return result
+
+
+def bind_baseline_claim_witnesses(cursor, lineage: bytes, epoch: bytes,
+                                claims: list[dict], origins: dict) -> None:
+    """Attach source identities from verified EAB1 books in this read view."""
+    baselines = [row for row in claims if row.get("operation_reason") == 38]
+    if not baselines:
+        return
+    # Bound the whole retained lineage before decoding another epoch's book.
+    cursor.execute(
+        "SELECT COUNT(*) AS row_count,COALESCE(SUM(OCTET_LENGTH(w.canonical_witness)+"
+        "COALESCE(OCTET_LENGTH(o.canonical_intent),0)+COALESCE(OCTET_LENGTH(o.canonical_plan),0)),0) "
+        "AS blob_bytes FROM economic_baseline_witness w LEFT JOIN economic_accounting_operation o "
+        "ON o.operation_id=w.operation_id WHERE w.lineage=%s", (lineage,))
+    bounds = cursor.fetchone()
+    if (bounds is None or bounds["row_count"] > MAX_ROWS or
+            bounds["blob_bytes"] > MAX_INPUT_BYTES):
+        raise ExportError("baseline claim witness source exceeds audit input limit")
+    try:
+        baseline_projection_bound(cursor, lineage)
+    except OriginError as error:
+        raise ExportError("baseline claim projection source exceeds audit input limit") from error
+    cache = {epoch.hex(): origins["baseline_source_events"]}
+    for claim in baselines:
+        claim["baseline_witness"] = None
+        other = claim.get("operation_epoch")
+        if (claim.get("operation_lineage") != lineage.hex() or not isinstance(other, str) or
+                re.fullmatch(r"[0-9a-f]{32}", other) is None or other == "0" * 32):
+            continue
+        if other not in cache:
+            try:
+                retained = read_origins_in_transaction(cursor, lineage, bytes.fromhex(other))
+            except OriginError:
+                cache[other] = {}
+            else:
+                cache[other] = retained["baseline_source_events"]
+        source = cache[other].get(claim["operation_id"])
+        if source is not None:
+            claim["baseline_witness"] = {"lineage": lineage.hex(), "epoch": other,
+                                         "operation_id": claim["operation_id"], "source_event": source}
 
 
 def read_lineage_realized_prices(cursor, lineage: bytes,
@@ -1402,6 +1455,7 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)
+        bind_baseline_claim_witnesses(cursor, lineage, epoch, evidence["source_claims"], origins)
         evidence["orphan_evidence"], evidence["orphan_evidence_coverage"] = read_orphan_evidence(cursor)
         lineage_uid_references, lineage_uid_reference_roots, lineage_uid_reference_coverage = (
             read_lineage_uid_references(cursor, lineage))
@@ -1492,6 +1546,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", required=True)
     parser.add_argument("--port", type=int, default=3306)
+    parser.add_argument("--socket", help="explicit local SQL Unix socket")
     parser.add_argument("--user", required=True)
     parser.add_argument("--database", required=True)
     parser.add_argument("--password-env", default="DB_PASSWORD")
@@ -1509,6 +1564,7 @@ def main() -> int:
         import pymysql
         try:
             connection = pymysql.connect(host=args.host, port=args.port, user=args.user,
+                                         unix_socket=args.socket,
                                          password=password, database=args.database,
                                          charset="utf8mb4", autocommit=True,
                                          cursorclass=pymysql.cursors.DictCursor,

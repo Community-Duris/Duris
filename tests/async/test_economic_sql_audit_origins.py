@@ -17,13 +17,15 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import economic_sql_audit_snapshot as snapshot_exporter
+import economic_sql_audit_origins as origin_exporter
+from economic_restore_evidence import decode_plan
 from economic_sql_audit_origins import OriginError, capture, decode_witness  # noqa: E402
 from economic_sql_audit_snapshot import (native_source_count,
                                          read_lineage_realized_prices)  # noqa: E402
 
 LINEAGE = bytes.fromhex("11" * 16)
 EPOCH = bytes.fromhex("22" * 16)
-OP = bytes.fromhex("33" * 16)
+OP = hashlib.sha256(bytes.fromhex("44" * 16) + struct.pack("<IQ", 0x42415345, 1)).digest()[:16]
 
 
 def key(kind, authority, context=0):
@@ -31,6 +33,62 @@ def key(kind, authority, context=0):
 
 
 OPENING = key(9, 99)
+
+
+def baseline_root(blob, revision=1):
+    """Synthetic canonical root for unit/sibling fixtures; native tests use C++."""
+    lineage, epoch = blob[16:32], blob[32:48]
+    operation = hashlib.sha256(blob[48:64] + struct.pack("<I", 0x42415345) + blob[72:80]).digest()[:16]
+    source = struct.pack("<HH", 10, 1) + blob[48:64] + epoch + blob[72:80] + bytes(4)
+    actor = struct.unpack_from("<Q", blob, 64)[0]
+    holdings, items = struct.unpack_from("<II", blob, 184)
+    payload = b"EBC1" + struct.pack("<HHII", 1, 48, len(blob), 0) + hashlib.sha256(blob).digest()
+    domain = hashlib.sha256(b"DURIS-ECONOMIC-DOMAIN-V1\0" + struct.pack("<HHI", 20, 1, 48) + payload).digest()
+    intent = bytearray(256)
+    intent[:4] = b"EAI1"
+    struct.pack_into("<HHIIIIHBBH", intent, 4, 1, 256, 256, 4, 1, 1, 38, 2, 1, 1)
+    intent[32:80] = lineage + epoch + operation
+    struct.pack_into("<Q", intent, 96, actor)
+    intent[112:160], intent[160:192], intent[192:224] = source, bytes([91]) * 32, domain
+    intent = bytes(intent)
+    intent_digest = hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + intent).digest()
+    accounts, postings, equity = [], [], []
+    for index in range(holdings):
+        record = blob[192 + index * 112:192 + (index + 1) * 112]
+        values = struct.unpack_from("<4q", record, 40)
+        total = sum(value * unit for value, unit in zip(values, (1, 10, 100, 1000)))
+        accounts.append(record[:40] + bytes(32) + record[40:72] + struct.pack("<QQ", 0, 1))
+        if total:
+            postings.append(struct.pack("<IHH4qq", len(postings), index, 0, *values, total))
+            equity.append((values, total))
+    if equity:
+        accounts.append(blob[80:120] + bytes(80))
+        for values, total in equity:
+            postings.append(struct.pack("<IHH4qq", len(postings), holdings, 0,
+                                        *(-value for value in values), -total))
+    snapshots = [blob[192 + holdings * 112 + index * 88:192 + holdings * 112 + index * 88 + 56] + bytes(8)
+                 for index in range(items)]
+    counts = (len(accounts), len(postings), 0, items, items, 0)
+    plan = bytearray(256)
+    plan[:4] = b"EAP1"
+    struct.pack_into("<H", plan, 4, 1)
+    plan[8:56], plan[72], plan[100] = lineage + epoch + operation, 2, 1
+    struct.pack_into("<QIIIH", plan, 76, actor, 4, 1, 1, 38)
+    plan[104:152], plan[152:184], plan[184:216] = source, intent_digest, domain
+    struct.pack_into("<6I", plan, 216, *counts)
+    plan = bytes(plan) + b"".join(accounts + postings + snapshots + snapshots)
+    return dict(operation_id=operation, book_revision=revision, holding_count=holdings, item_count=items,
+                witness_digest=hashlib.sha256(blob).digest(), canonical_witness=blob, witness_version=1,
+                reason=38, outcome=1, result_code=0, inbox_status=1, inbox_result=0,
+                inbox_failure_stage=0, inbox_committed_at_present=1, inbox_revision=revision,
+                inbox_type=20, inbox_schema=2, inbox_payload=1, inbox_result_payload=b"",
+                root_lineage=lineage, root_epoch=epoch, original_operation_id=None,
+                accounting_version=1, writer_id=4, policy_version=1, compiler_version=1,
+                actor_kind=2, actor_id=actor, source_event=source, intent_digest=intent_digest,
+                domain_digest=domain, plan_digest=hashlib.sha256(plan).digest(),
+                canonical_intent=intent, canonical_plan=plan,
+                account_count=counts[0], posting_count=counts[1], child_count=0,
+                before_witness_count=items, after_witness_count=items, item_event_count=0)
 
 
 def witness(holdings=None):
@@ -46,11 +104,29 @@ def witness(holdings=None):
     blob += (struct.pack("<QBB6x5Q", 81, 1, 1, 7, 0, 81, 0, 2) +
              bytes.fromhex("88" * 32))
     assert len(blob) == size
-    return {"operation_id": OP, "book_revision": 1, "holding_count": len(holdings),
-            "item_count": 1, "witness_digest": hashlib.sha256(blob).digest(),
-            "canonical_witness": blob, "reason": 38, "outcome": 1,
-            "result_code": 0, "inbox_status": 1, "inbox_result": 0,
-            "inbox_failure_stage": 0, "inbox_committed_at_present": 1}
+    return baseline_root(blob)
+
+
+def baseline_projections(row):
+    """Project a synthetic fixture root; authentic integration rows use native bytes."""
+    operation, blob = row["operation_id"], row["canonical_witness"]
+    plan = decode_plan(row["canonical_plan"])
+    effects = [dict(operation_id=operation, account_index=index, account_key=key,
+                    **dict(zip((side + "_" + coin for side in ("before", "after")
+                                for coin in ("copper", "silver", "gold", "platinum")), (*before, *after))),
+                    before_revision=before_revision, after_revision=after_revision)
+               for index, (key, before, after, before_revision, after_revision) in enumerate(plan["effects"])]
+    postings = [dict(operation_id=operation, line_index=index, event_index=event,
+                     account_index=account, child_index=child,
+                     **dict(zip(("delta_" + coin for coin in ("copper", "silver", "gold", "platinum")), delta)),
+                     copper_value=amount)
+                for index, (event, account, child, delta, amount) in enumerate(plan["postings"])]
+    holdings, items = struct.unpack_from("<II", blob, 184)
+    identities = [(1, struct.unpack_from("<Q", blob, 212 + index * 112)[0]) for index in range(holdings)]
+    identities += [(2, struct.unpack_from("<Q", blob, 192 + holdings * 112 + index * 88)[0]) for index in range(items)]
+    reservations = [dict(lineage=blob[16:32], epoch=blob[32:48], identity_kind=kind,
+                         identity_id=identity, operation_id=operation) for kind, identity in identities]
+    return effects, postings, reservations
 
 
 class Cursor:
@@ -77,16 +153,32 @@ class Cursor:
 class Connection:
     def __init__(self, control=None, rows=None):
         rows = [witness()] if rows is None else rows
+        projections = [[], [], []]
+        for row in rows:
+            # Invalid capsule tests still exercise the root reader first.
+            try:
+                details = baseline_projections(row)
+            except ValueError:
+                details = ([], [], [])
+            for family, values in zip(projections, details):
+                family.extend(values)
         self.scan = Cursor([
             None, None,
             [{"table_name": name, "engine": "InnoDB"} for name in
              ("economic_baseline_control", "economic_baseline_witness",
-              "economic_accounting_operation", "critical_operation_inbox")],
+              "economic_accounting_operation", "critical_operation_inbox",
+              "economic_accounting_account_effect", "economic_accounting_coin_posting", "economic_baseline_reservation",
+              "economic_accounting_child", "economic_accounting_item_reference", "currency_ledger",
+              "item_ownership_ledger", "critical_outbox")],
             {"opening_account": OPENING, "revision": 1, "last_operation_id": OP}
             if control is None else control,
             {"row_count": len(rows),
-             "blob_bytes": sum(len(row["canonical_witness"]) for row in rows)},
+             "blob_bytes": sum(len(row[name]) for row in rows
+                               for name in ("canonical_witness", "canonical_intent", "canonical_plan"))},
             rows,
+            {"projection_rows": sum(map(len, projections))},
+            *projections,
+            {"effect_" + str(index): 0 for index in range(6)},
         ])
         self.rollbacks = 0
 
@@ -156,6 +248,156 @@ class ItemRevisionTests(unittest.TestCase):
 
 
 class OriginTests(unittest.TestCase):
+    def test_baseline_native_events_children_and_outbox_refuse_read_only(self):
+        for index, (table, column) in enumerate(origin_exporter.BASELINE_ZERO_EFFECTS):
+            for value in (1, -1, None, True):
+                with self.subTest(table=table, column=column, value=value):
+                    connection = Connection()
+                    connection.scan.rows[10]["effect_" + str(index)] = value
+                    with self.assertRaisesRegex(OriginError, "EAB1 SQL zero-effect mismatch: " + table + "." + column):
+                        capture(connection, LINEAGE, EPOCH)
+                    self.assertEqual(connection.rollbacks, 1)
+                    self.assertTrue(connection.scan.closed)
+                    self.assertTrue(all(sql.startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
+                                        for sql, _ in connection.scan.statements))
+        connection = Connection()
+        connection.scan.rows[10] = None
+        with self.assertRaisesRegex(OriginError, "EAB1 SQL zero-effect mismatch"):
+            capture(connection, LINEAGE, EPOCH)
+        self.assertEqual(connection.rollbacks, 1)
+
+    def test_baseline_zero_effect_sources_require_transactional_tables(self):
+        for index in range(7, 12):
+            for missing in (False, True):
+                with self.subTest(index=index, missing=missing):
+                    connection = Connection()
+                    if missing:
+                        connection.scan.rows[2].pop(index)
+                    else:
+                        connection.scan.rows[2][index]["engine"] = "MyISAM"
+                    with self.assertRaisesRegex(OriginError, "missing or not InnoDB"):
+                        capture(connection, LINEAGE, EPOCH)
+                    self.assertEqual(connection.rollbacks, 1)
+                    self.assertTrue(connection.scan.closed)
+
+    def test_missing_extra_duplicate_and_altered_sql_baseline_projections_refuse(self):
+        for index in (7, 8, 9):
+            connection = Connection()
+            for field in connection.scan.rows[index][0]:
+                with self.subTest(family=index, field=field):
+                    changed = Connection()
+                    previous = changed.scan.rows[index][0][field]
+                    changed.scan.rows[index][0][field] = (previous + 1 if isinstance(previous, int) else
+                                                        bytes([previous[0] ^ 1]) + previous[1:])
+                    with self.assertRaisesRegex(OriginError, "EAB1 SQL projection mismatch"):
+                        capture(changed, LINEAGE, EPOCH)
+                    self.assertEqual(changed.rollbacks, 1)
+                    self.assertTrue(changed.scan.closed)
+            for change in ("missing", "extra", "duplicate"):
+                with self.subTest(family=index, change=change):
+                    changed = Connection()
+                    values = changed.scan.rows[index]
+                    if change == "missing":
+                        values.pop()
+                    else:
+                        values.append(copy.deepcopy(values[0]))
+                        if change == "extra":
+                            field = ("account_index", "line_index", "identity_id")[index - 7]
+                            values[-1][field] += 100
+                    changed.scan.rows[6]["projection_rows"] = sum(map(len, changed.scan.rows[7:10]))
+                    with self.assertRaisesRegex(OriginError, "EAB1 SQL projection mismatch"):
+                        capture(changed, LINEAGE, EPOCH)
+                    self.assertEqual(changed.rollbacks, 1)
+                    self.assertTrue(changed.scan.closed)
+
+    def test_sql_baseline_projection_bounds_and_transactional_tables(self):
+        connection = Connection()
+        connection.scan.rows[6]["projection_rows"] = origin_exporter.MAX_ROWS + 1
+        with self.assertRaisesRegex(OriginError, "baseline SQL projection source"):
+            capture(connection, LINEAGE, EPOCH)
+        self.assertEqual(len(connection.scan.statements), 7)
+        for index in (4, 5, 6):
+            with self.subTest(table=index):
+                connection = Connection()
+                connection.scan.rows[2][index]["engine"] = "MyISAM"
+                with self.assertRaisesRegex(OriginError, "not InnoDB"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertEqual(connection.rollbacks, 1)
+        with mock.patch.object(origin_exporter, "MAX_ROWS", 5):
+            with self.assertRaisesRegex(OriginError, "baseline SQL projection source"):
+                capture(Connection(), LINEAGE, EPOCH)
+
+    def test_rehashed_witness_and_canonical_root_disagreement_refuse(self):
+        for offset in (64, 120, 152, 232, 264, 272, 320, 344, 360):
+            with self.subTest(offset=offset):
+                row = witness()
+                blob = bytearray(row["canonical_witness"])
+                blob[offset] ^= 1
+                row["canonical_witness"] = bytes(blob)
+                row["witness_digest"] = hashlib.sha256(blob).digest()
+                connection = Connection(rows=[row])
+                with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+        for field, changed in (("root_lineage", bytes([1]) * 16), ("root_epoch", bytes([2]) * 16),
+                               ("writer_id", 5), ("accounting_version", 2), ("policy_version", 2),
+                               ("compiler_version", 2), ("actor_kind", 1), ("actor_id", 8),
+                               ("original_operation_id", bytes(16)), ("source_event", None),
+                               ("domain_digest", bytes([1]) * 32), ("intent_digest", bytes([1]) * 32),
+                               ("plan_digest", bytes([1]) * 32), ("canonical_intent", b"EAI1"),
+                               ("canonical_plan", b"EAP1"), ("account_count", 1),
+                               ("inbox_revision", 2), ("inbox_type", 1), ("inbox_schema", 1),
+                               ("inbox_payload", 2), ("inbox_result_payload", b"x"), ("witness_version", 2)):
+            with self.subTest(field=field):
+                row = witness()
+                row[field] = changed
+                connection = Connection(rows=[row])
+                with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+
+    def test_zero_opening_vectors_bind_without_equity(self):
+        blob = bytearray(witness()["canonical_witness"])
+        blob[232:264] = bytes(32)
+        row = baseline_root(bytes(blob))
+        result = capture(Connection(rows=[row]), LINEAGE, EPOCH)
+        self.assertEqual(result["account_origins"][0]["balance"], [0, 0, 0, 0])
+        self.assertEqual(row["posting_count"], 0)
+        self.assertEqual(row["account_count"], 1)
+
+    def test_baseline_claim_books_are_cached_and_globally_bounded(self):
+        current, retained = EPOCH.hex(), "88" * 16
+        claims = [{"operation_reason": 38, "operation_id": OP.hex(),
+                   "operation_lineage": LINEAGE.hex(), "operation_epoch": value}
+                  for value in (current, retained, retained)]
+        cursor = mock.Mock()
+        cursor.fetchone.return_value = {"row_count": 2, "blob_bytes": 1000, "projection_rows": 6}
+        origins = {"baseline_source_events": {OP.hex(): "aa" * 48}}
+        with mock.patch.object(snapshot_exporter, "read_origins_in_transaction", return_value=origins) as read:
+            snapshot_exporter.bind_baseline_claim_witnesses(cursor, LINEAGE, EPOCH, claims, origins)
+            read.assert_called_once_with(cursor, LINEAGE, bytes.fromhex(retained))
+        self.assertEqual([row["baseline_witness"]["epoch"] for row in claims], [current, retained, retained])
+        for bounds in ({"row_count": 100_001, "blob_bytes": 1},
+                       {"row_count": 1, "blob_bytes": snapshot_exporter.MAX_INPUT_BYTES + 1}):
+            cursor.fetchone.return_value = bounds
+            with mock.patch.object(snapshot_exporter, "read_origins_in_transaction") as read:
+                with self.assertRaisesRegex(snapshot_exporter.ExportError, "baseline claim witness source"):
+                    snapshot_exporter.bind_baseline_claim_witnesses(cursor, LINEAGE, EPOCH, claims, origins)
+                read.assert_not_called()
+        cursor.fetchone.return_value = {"row_count": 2, "blob_bytes": 1000, "projection_rows": 6}
+        with mock.patch.object(snapshot_exporter, "read_origins_in_transaction", side_effect=OriginError("missing book")):
+            snapshot_exporter.bind_baseline_claim_witnesses(cursor, LINEAGE, EPOCH, claims, origins)
+        self.assertIsNone(claims[1]["baseline_witness"])
+        self.assertIsNone(claims[2]["baseline_witness"])
+        self.assertTrue(all(call.args[0].startswith("SELECT ") for call in cursor.execute.call_args_list))
+        cursor.fetchone.return_value = {"row_count": 2, "blob_bytes": 1000, "projection_rows": 100_001}
+        with mock.patch.object(snapshot_exporter, "read_origins_in_transaction") as read:
+            with self.assertRaisesRegex(snapshot_exporter.ExportError, "baseline claim projection source"):
+                snapshot_exporter.bind_baseline_claim_witnesses(cursor, LINEAGE, EPOCH, claims, origins)
+            read.assert_not_called()
+
     def test_native_numeric_holding_order_at_unsigned_boundaries(self):
         for first, second in ((255, 256), (65535, 65536), (2**32 - 1, 2**32),
                               (2**63 - 1, 2**63), (2**64 - 2, 2**64 - 1)):
@@ -199,23 +441,39 @@ class OriginTests(unittest.TestCase):
 
     def test_orphan_export_is_bounded_and_does_not_invent_a_lineage(self):
         cursor = mock.Mock()
-        cursor.fetchall.side_effect = [[{"operation_id": OP, "row_index": 3}], [], [], []]
+        cursor.fetchall.side_effect = [[{"operation_id": OP, "row_index": 3}], [], [], [], []]
         rows, coverage = snapshot_exporter.read_orphan_evidence(cursor)
         self.assertEqual(rows, [{"table": "effects", "operation_id": OP.hex(), "row_index": 3}])
         self.assertEqual(coverage, {"scope": "database", "table_counts": {
-            "effects": 1, "postings": 0, "children": 0, "item_references": 0}})
+            "effects": 1, "postings": 0, "children": 0, "item_references": 0, "baseline_reservations": 0}})
         for call in cursor.execute.call_args_list:
             sql, params = call.args
             self.assertTrue(sql.startswith("SELECT "))
             self.assertIn("WHERE o.operation_id IS NULL", sql)
-            self.assertNotIn("lineage=", sql)
+            self.assertNotIn("lineage=%s", sql)
             self.assertIn("LIMIT %s", sql)
             self.assertEqual(params, (snapshot_exporter.MAX_ROWS + 1,))
+        reservation_query = cursor.execute.call_args_list[-1].args[0]
+        self.assertIn("LEFT JOIN economic_baseline_witness", reservation_query)
+        self.assertIn("AND o.lineage=e.lineage AND o.epoch=e.epoch", reservation_query)
+        self.assertIn("e.identity_id", reservation_query)
         cursor.fetchall.side_effect = [[{"operation_id": OP, "row_index": 0}],
                                       [{"operation_id": OP, "row_index": 1}]]
         with mock.patch.object(snapshot_exporter, "MAX_ROWS", 1):
             with self.assertRaisesRegex(snapshot_exporter.ExportError, "orphan evidence collection"):
                 snapshot_exporter.read_orphan_evidence(cursor)
+
+    def test_rootless_reservation_export_preserves_untrusted_scope_and_uint64(self):
+        cursor = mock.Mock()
+        cursor.fetchall.side_effect = [[], [], [], [], [{"operation_id": OP, "row_index": 2,
+            "identity_id": 2**64 - 1, "claimed_lineage": bytes([77]) * 16, "claimed_epoch": bytes([88]) * 16}]]
+        rows, coverage = snapshot_exporter.read_orphan_evidence(cursor)
+        self.assertEqual(rows, [{"table": "baseline_reservations", "operation_id": OP.hex(), "row_index": 2,
+            "identity_id": 2**64 - 1, "claimed_lineage": "4d" * 16, "claimed_epoch": "58" * 16}])
+        self.assertEqual(coverage["table_counts"]["baseline_reservations"], 1)
+        self.assertNotIn("lineage", rows[0])
+        self.assertNotIn("epoch", rows[0])
+        self.assertNotIn("lineage=%s", cursor.execute.call_args_list[-1].args[0])
 
     def test_native_mapping_coverage_is_scoped_to_selected_lineage(self):
         class Cursor:
@@ -272,6 +530,9 @@ class OriginTests(unittest.TestCase):
         self.assertEqual(result["account_origins"], account_origins)
         self.assertEqual(result["item_origins"], item_origins)
         self.assertEqual(result["baseline_operation_ids"], [OP.hex()])
+        expected_source = (struct.pack("<HH", 10, 1) + bytes.fromhex("44" * 16) +
+                           EPOCH + (1).to_bytes(8, "little") + bytes(4)).hex()
+        self.assertEqual(result["baseline_source_events"], {OP.hex(): expected_source})
         self.assertEqual(connection.rollbacks, 1)
         self.assertTrue(connection.scan.closed)
         statements = [sql.upper() for sql, _ in connection.scan.statements]
@@ -282,6 +543,17 @@ class OriginTests(unittest.TestCase):
         witness_query = connection.scan.statements[5][0]
         self.assertIn("i.failure_stage AS inbox_failure_stage", witness_query)
         self.assertIn("i.committed_at IS NOT NULL", witness_query)
+        reservation_query, reservation_parameters = connection.scan.statements[9]
+        self.assertIn("LEFT JOIN economic_baseline_witness", reservation_query)
+        self.assertIn("((p.lineage=%s AND p.epoch=%s) OR (w.lineage=%s AND w.epoch=%s))", reservation_query)
+        self.assertEqual(reservation_parameters, (LINEAGE, EPOCH, LINEAGE, EPOCH, origin_exporter.MAX_ROWS - 4 + 1))
+        zero_query, zero_parameters = connection.scan.statements[10]
+        self.assertEqual(zero_query.count("EXISTS(SELECT 1"), 6)
+        self.assertEqual(zero_parameters, (LINEAGE, EPOCH) * 6)
+        self.assertNotIn("payload", zero_query)
+        for table, column in origin_exporter.BASELINE_ZERO_EFFECTS:
+            self.assertIn("FROM " + table + " p JOIN economic_baseline_witness w ON w.operation_id=p." + column,
+                          zero_query)
 
     def test_digest_header_count_and_origin_corruption_refuse(self):
         for change in ("digest", "header", "count", "lineage", "source", "owner"):
@@ -330,9 +602,9 @@ class OriginTests(unittest.TestCase):
 
     def test_cross_witness_duplicate_origin_refuses(self):
         first = witness()
-        second = copy.deepcopy(first)
-        second["operation_id"] = bytes.fromhex("99" * 16)
-        second["book_revision"] = 2
+        blob = bytearray(first["canonical_witness"])
+        struct.pack_into("<Q", blob, 72, 2)
+        second = baseline_root(bytes(blob), revision=2)
         connection = Connection(
             control={"opening_account": OPENING, "revision": 2,
                      "last_operation_id": second["operation_id"]}, rows=[first, second])
@@ -516,7 +788,9 @@ class NativeSQLOriginTests(unittest.TestCase):
                             for table in ("economic_lineage_state", "economic_epoch", "critical_operation_inbox",
                                           "economic_accounting_operation", "economic_accounting_account_effect",
                                           "economic_accounting_coin_posting", "economic_accounting_source_claim",
-                                          "economic_baseline_control", "economic_baseline_witness", "economic_baseline_reservation"):
+                                          "economic_baseline_control", "economic_baseline_witness", "economic_baseline_reservation",
+                                          "economic_accounting_child", "economic_accounting_item_reference", "currency_ledger",
+                                          "item_ownership_ledger", "critical_outbox"):
                                 cursor.execute("SELECT * FROM " + table + " ORDER BY 1,2")
                                 rows.append(cursor.fetchall())
                             return rows
