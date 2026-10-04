@@ -45,7 +45,7 @@ inline bool integrity_failed = false;
 // header alone exceeds 64 bytes, plus the runtime worker PID capacity.
 inline constexpr size_t max_permitted_pids = 4 * 1024 * 1024 + 256;
 
-// Opt-in replay ownership metadata. No production caller enables this epoch yet.
+// Replay ownership metadata enabled only by selected active SQL runtime boot.
 // Source owners retain the exact bodies; these identities only fence execution.
 struct owned_pid
 {

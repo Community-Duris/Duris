@@ -11,10 +11,10 @@
 
 class player_save_restored_publication_owner;
 
-// Private opt-in leaf. Exact snapshot/receipt/namespace evidence stays with its
+// Private ownership leaf. Exact snapshot/receipt/namespace evidence stays with its
 // source owner. This supplies neither a complete mutation census nor critical ACK
-// authority. Production must not enable it until every residence/transfer and
-// mutation entry point participates. In particular, it does not revisit replay.
+// authority. Selected active SQL boot enables it after preparation/revalidation
+// and before restored holds and save execution. It does not itself revisit replay.
 namespace player_save_execution_guard
 {
 enum class ownership_status : uint8_t

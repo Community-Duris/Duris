@@ -360,3 +360,29 @@ major-plan readiness. Ownership enable and Plan 1 acceptance remain unfinished.
 The existing native lifecycle harness already composes install, incomplete-evidence
 refusal, activate, pause and reactivate for independent acceptance; production's
 stopped-runtime maintenance caller and full release coverage remain separate work.
+
+## Selected-authority ownership boot connection
+
+The production SQL boot previously prepared save recovery, restored critical
+commands and started saves without calling the existing ownership-epoch primitive.
+That left the completed residence/reservation connections disabled. This is a
+source-established missing caller; runtime failure/fix checks remain deferred.
+
+SQL startup now enables the existing epoch only when runtime recovery has already
+selected verified active gameplay authority. Journal preparation and bounded
+resolved-recovery revalidation finish at epoch zero; unresolved PIDs retain their
+existing fences. The epoch begins before critical outbox/replay initialization,
+original hold installation and ordinary worker/dispatcher start. Active failure
+at preparation, epoch begin, critical recovery or save execution exits before
+gameplay or dependent cleanup. Existing ancillary joinable threads require the
+same terminal process boundary already used for unresolved owned shutdown.
+
+Inactive SQL and flatfile startup retain their existing behavior. No setting,
+activation decision, maintenance write, journal format or new authority mechanism
+was added. Header comments now describe the connected caller. Before source is
+preserved in `tmp/ownership-boot-before-20261004/comm.c`. Independent source review,
+changed-line formatting and diff hygiene passed. This source connection is
+unqualified; no compiler/tests/native SQL/gameplay/recovery ran and no production
+accounting was activated. Rejected restored outcomes, complete supported graph
+recovery, stopped-runtime maintenance, flatfile parity and major-plan acceptance
+remain open; all applicable R1–R8 gates are retained.
