@@ -16,6 +16,12 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1465
+assert report['mapped_area_count'] == 75 and report['eligible_by_zone']['162'] == 4
+tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
+assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'
+assert len(tower['stories']) == 4 and len(tower['contacts']) == 14 and not tower['exclusions']
+assert sum(t.get('optional', False) for s in tower['stories'] for t in s['steps']) == 11
+assert all(s['category'] == 'story' for s in tower['stories'])
 assert mapping["schema_version"] == 3 and mapping["stories"][0]["steps"][0]["optional"]
 assert sum(s["category"] == "service" for s in mapping["stories"]) == 12
 assert len(mapping["exclusions"]) == 1 and len(mapping["exclusions"][0]["contracts"]) == 40

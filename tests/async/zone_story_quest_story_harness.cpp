@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 74 &&
+		require(catalog.story_mappings.size() == 75 &&
 				tracker.summary_for(7, 42).total == 1638,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -5355,6 +5355,117 @@ int main(int argc, char **argv)
 					recovered.evidence_for(feathers.contracts.front(), 2)
 							.successful_attempts == 0,
 				"Rift cold recovery changed independent story outcomes or completed the guarded batch");
+		}
+
+		{
+			const auto &map = *std::find_if(catalog.story_mappings.begin(),
+							catalog.story_mappings.end(),
+							[](const auto &m)
+							{ return m.source_area == "trnsptow"; });
+			const auto &gullivier = story_for("trnsptow", "gullivier-scepter-token");
+			const auto &devilish = story_for("trnsptow", "devilish-scepter-token");
+			const auto &lisa = story_for("trnsptow", "lisa-scepter-token");
+			const auto &librarian = story_for("trnsptow", "librarian-mist-key");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 162, 16212, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 162, 10, 1, 101, false, false)
+							.find("] " + librarian.title + "\r\n") ==
+						std::string::npos,
+				"Tower discovery exposed an unmet recipe");
+			for (const auto &contact : map.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 16212, 102) ==
+						result::applied,
+					"Tower contact encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Tower journal section missing");
+				const auto end = journal.find("\r\n[", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[16264] = 2;
+			supplies.equipped[16] = 16241;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 162, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(librarian).find(
+					"[Missing now] Carry three pale purple tokens") !=
+						std::string::npos &&
+					section(librarian).find(
+						"[Missing now] Carry the scepter of illusion") !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 162).completed == 0,
+				"Tower wrong count, worn scepter or rendering invented credit");
+			supplies = {};
+			supplies.carried[16241] = 1;
+			supplies.carried[16264] = 3;
+			journal = journey.render_journal(7, 42, 162, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(librarian).find(
+					"[Ready now] Carry three pale purple tokens") !=
+						std::string::npos &&
+					section(librarian).find(
+						"[Ready now] Carry the scepter of illusion") !=
+						std::string::npos &&
+					section(librarian).find("Next: " +
+								librarian.steps.back().text) !=
+						std::string::npos &&
+					section(gullivier).find("Next: " +
+								gullivier.steps.back().text) !=
+						std::string::npos,
+				"Tower supplied proof required personal access keys or companion history");
+			record(journey, librarian.contracts.front(), "tower-supplied-final", 162,
+			       16261);
+			require(journey.progress_for_zone(7, 42, 162).completed == 1 &&
+					journey.evidence_for(gullivier.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(devilish.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(lisa.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Tower librarian narration created unperformed companion or campaign credit");
+			service companions(catalog);
+			companions.discover_zone(7, 42, 162, 16212, 100, "arrival");
+			for (const auto &entry : { gullivier, devilish, lisa })
+				record(companions, entry.contracts.front(), entry.id.c_str(), 162,
+				       16212);
+			for (const auto &contact : map.contacts)
+				companions.meet_npc(7, 42, contact.mob_vnum, 16212, 102);
+			supplies = {};
+			journal = companions.render_journal(7, 42, 162, 10, 1, 123, false, false,
+							    &supplies);
+			for (size_t i = 0; i < 3; ++i)
+				require(section(librarian).find("[Recorded] " +
+								librarian.steps[i].text) !=
+						std::string::npos,
+					"Tower separate optional companion history was lost");
+			require(section(librarian).find(
+					"[Missing now] Carry three pale purple tokens") !=
+						std::string::npos &&
+					section(librarian).find(
+						"[Missing now] Carry the scepter of illusion") !=
+						std::string::npos &&
+					companions.progress_for_zone(7, 42, 162).completed == 3,
+				"Tower receipts restored consumed supplies or automatically completed the final");
+			for (const auto &entry : { gullivier, devilish, lisa })
+				record(journey, entry.contracts.front(), entry.id.c_str(), 162,
+				       16212);
+			auto replay = completion(librarian.contracts.front(),
+						 "tower-supplied-final", 120);
+			replay.transaction.zone_number = 162;
+			replay.transaction.room_vnum = 16261;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Tower final replay was not idempotent");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 162).completed == 4 &&
+					recovered.progress_for_zone(7, 42, 162).total == 4,
+				"Tower cold recovery added puzzle, epic or escape outcomes");
 		}
 
 		std::cout

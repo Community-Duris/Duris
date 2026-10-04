@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 74 authored journals, accounting-gated player surfaces, starter/town
+**Status: 75 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -1804,3 +1804,53 @@ contract classification; it does not claim complete objective coverage.
 - Further integration requires animal source witnesses, freshness/decay,
   tanning lineage, learned topics, and reviewed personal/group credit.
   Every raw keyword is not automatically an achievement.
+
+## Transparent Tower completed source map — October 4, 2026
+
+The [comprehensive dossier](zone-stories/TRNSPTOW.md) reviews all thirty native
+blocks (four Q/twenty-six M), 100 rooms, forty mobiles, seventy-five objects,
+208 resets/144 families and five literal special bindings, with full custom
+procedures, shared execution and bounded foreign sources/boundaries. The
+[journal](../../areas/story/trnsptow.story.json) adds four independent outcomes,
+fourteen contacts and eleven optional checks (eight material/count, three
+personal receipts). One native/story daily candidate remains unchanged.
+
+Three companions return the scepter kind and give identical token kinds; the
+librarian accepts any three matching tokens plus the scepter. Separate optional
+receipts explain a full tour without falsely requiring all three sources or
+turning an OR list into an ALL campaign. Supplied proofs fit; prior receipts
+do not restore consumed items. The scepter is inside the locked marble desk,
+whose opening triggers a three-charge room-wide acid trap. Its ordinary route
+uses three fragile keys; successful unlock destroys a normal key, so current
+possession cannot substitute for accepted access history. All actual portal
+commands, spoken-word gates and return routes are explained.
+
+Expand accepted UID/source/transfer and key destruction/access evidence,
+speech/controller/arrival episodes, builder-defined ALL/actor/escape closure,
+and reuse the existing durable epic-touch result for the closet's imported
+rune. Prototype ownership does not make foreign globe/mace sources Tower
+rewards. Custom Aceralde pulse registration, illusion-themed direction/prose
+conflicts, ordinary stair return versus closet-only narrative, unplaced
+trash stone bindings and orphan desk/sign/portal need intent/qualification.
+These remain **pending findings**; **no native Tower repair ships**. Earlier
+shipped repairs and news handoff remain separate and prominent.
+
+Focused source and actual C++ journeys cover exact tokens/loose scepter,
+supplied final acceptance, independent companion outcomes, optional history,
+read-only rendering, replay and cold recovery. Live access/traps/boss/retirement,
+epic group settlement, portals and player/account persistence remain unqualified.
+Catalog: 75 maps, 1638 achievements, 1465 potential daily units, 2212 rows,
+2668 native definitions/content revision two. Original order: 54/220 source maps
+complete, 166 pending; The Tempest Court is next. Active, ready accounting
+remains mandatory. No DB/account/server operation, deployment or merge.
+
+The shared epic absorption loop reads/advances after extraction releases its
+object and clears its content link. A separate shared epic repair needs safe
+live-instance traversal, one destruction decision, adjacent/overlapping victim
+tests and conserved item/tree/recovery accounting. Durable touch settlement
+alone does not qualify absorption. No live crash or player loss was reproduced;
+this is a pending repair, not a shipped improvement.
+
+| Zone checkpoint | Revision | Native classification | Source map | Daily policy | Required qualification |
+| --- | --- | --- | --- | --- | --- |
+| The Transparent Tower | 1 | Four independent outcomes; all four exchanges | [Comprehensive dossier](zone-stories/TRNSPTOW.md); fourteen contacts/eleven optional checks | One existing candidate; companion same-kind exchanges remain excluded from dailies | Durable access/command/epic/source/ALL/escape episodes, actual supply/boss/travel and pending intent-dependent repairs |

@@ -111,9 +111,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 51 | Rogue Plains | [Comprehensive source dossier](zone-stories/ROGUE_PLAINS.md): all twelve blocks/nine Q/three addressed M; 158 rooms/58 mobs/57 objects, 223 resets/127 families, direct Master procedure, mount/container/portal/aerial execution and foreign Balance owner | Revision one: seven outcomes, 24 contacts/16 optional checks; seven grouped story daily candidates, nine native candidates unchanged | No native repair ships. Accepted source/effect/access/reset episodes and R/owner extraction planned; identical proof, sword/hammer wording, meat/wand/set intent and historical northern connection need builder qualification |
 | 52 | Desolate | [Comprehensive source dossier](zone-stories/DESOLATE.md): all twelve blocks/eleven Q/one addressed M, 168 rooms/114 mobs/92 objects/three shops, 400 resets/289 families; direct Master/computed teacher, container/fee/control/phase and foreign letter execution | Revision one: nine stories/two services, 27 contacts/16 optional checks, eight story daily candidates | Separate native south/west trial-button text fix ships with original-fails/repaired-passes source proof and news; missing stock/other intent pending. Atomic fee, content-tree preview/predicates, control/phase/trial/effect and foreign scope planned |
 | 53 | Rift Valley Jungle | [Comprehensive dossier](zone-stories/RFTJNGLE.md): 65 blocks, 470 rooms/220 mobs/220 objects/eight shops/828 resets; direct procedural hosts/computed teachers, source instances/secret search/paired portals/foreign boundaries | 12 outcomes/12 services/3 excluded contracts, 49 contacts/30 optional checks; 11 story candidates | Separate five-direction native fix/news ships; 15-root batch/seven fees guarded, plot/dragon/historical boundary pending; provenance/role/travel/actor/AND/procedural lifecycle planned |
-| 54–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 54 | The Transparent Tower | [Comprehensive dossier](zone-stories/TRNSPTOW.md): all thirty blocks/100 rooms/40 mobs/75 objects/208 resets; five specials, fragile keys, command portals and imported epic/artifact roles | Four outcomes/fourteen contacts/eleven optional checks; one daily candidate | No native repair ships; pulse/misdirection/shortcut/trash intent pending. Accepted source/access/command/epic/ALL/escape evidence planned |
+| 55–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Transparent Tower (`trnsptow`).
+The next area is The Tempest Court (`airp`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -2695,3 +2696,49 @@ Live source recovery, searches, hand-ins, guarded batch/payments, roaming, porta
 survival/return, actor effects and renewal remain unqualified. 53/220 complete,
 167 pending; The Transparent Tower is next. No DB/account/server operation,
 generated area output, accounting activation or merge. Full roadmap stays active.
+
+## Transparent Tower completed source map — October 4, 2026
+
+The [comprehensive dossier](zone-stories/TRNSPTOW.md) reviews all thirty native
+blocks (four Q/twenty-six M), 100 rooms, forty mobiles, seventy-five objects,
+208 resets/144 families and five literal special bindings, with full custom
+procedures, shared execution and bounded foreign sources/boundaries. The
+[journal](../../areas/story/trnsptow.story.json) adds four independent outcomes,
+fourteen contacts and eleven optional checks (eight material/count, three
+personal receipts). One native/story daily candidate remains unchanged.
+
+Three companions return the scepter kind and give identical token kinds; the
+librarian accepts any three matching tokens plus the scepter. Separate optional
+receipts explain a full tour without falsely requiring all three sources or
+turning an OR list into an ALL campaign. Supplied proofs fit; prior receipts
+do not restore consumed items. The scepter is inside the locked marble desk,
+whose opening triggers a three-charge room-wide acid trap. Its ordinary route
+uses three fragile keys; successful unlock destroys a normal key, so current
+possession cannot substitute for accepted access history. All actual portal
+commands, spoken-word gates and return routes are explained.
+
+Expand accepted UID/source/transfer and key destruction/access evidence,
+speech/controller/arrival episodes, builder-defined ALL/actor/escape closure,
+and reuse the existing durable epic-touch result for the closet's imported
+rune. Prototype ownership does not make foreign globe/mace sources Tower
+rewards. Custom Aceralde pulse registration, illusion-themed direction/prose
+conflicts, ordinary stair return versus closet-only narrative, unplaced
+trash stone bindings and orphan desk/sign/portal need intent/qualification.
+These remain **pending findings**; **no native Tower repair ships**. Earlier
+shipped repairs and news handoff remain separate and prominent.
+
+Focused source and actual C++ journeys cover exact tokens/loose scepter,
+supplied final acceptance, independent companion outcomes, optional history,
+read-only rendering, replay and cold recovery. Live access/traps/boss/retirement,
+epic group settlement, portals and player/account persistence remain unqualified.
+Catalog: 75 maps, 1638 achievements, 1465 potential daily units, 2212 rows,
+2668 native definitions/content revision two. Original order: 54/220 source maps
+complete, 166 pending; The Tempest Court is next. Active, ready accounting
+remains mandatory. No DB/account/server operation, deployment or merge.
+
+The shared epic absorption loop reads/advances after extraction releases its
+object and clears its content link. Plan a separate shared epic lifecycle fix
+with actual-procedure original-fails/repaired-passes consecutive/overlapping
+victim, room/carried, identity, single-destruction and accounting/recovery tests.
+No live crash or player loss was reproduced. The source finding remains pending
+and must not appear as a shipped repair/news claim.

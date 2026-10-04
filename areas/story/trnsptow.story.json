@@ -1,0 +1,395 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "trnsptow",
+  "coverage": "complete",
+  "introduction": "Explore the Transparent Tower, recover the scepter and follow three independent companion requests to the librarian's mist key. Four exchanges, fourteen contacts and eleven optional checks explain current native acceptance. Active, ready accounting is required. Supplied proofs fit; puzzle, source, defeat, epic-touch and escape objectives need separate accepted evidence.",
+  "orientation": [
+    "Meet the actual recipients before using addressed ASK topics. Twenty-six dialogue families explain the tower, companions, books and escape. Words do not independently award quest credit or prove learning.",
+    "The ordinary scepter route uses the illithid's warped key, the white mist's swirl key, then Aceralde's marble key for the sitting-room desk. All four progression keys, including the later mist reward, have a hundred-percent normal-unlock break chance. Current carried keys are optional snapshots, not durable access history.",
+    "The scepter is placed inside a locked, pickproof white marble desk. Opening it triggers a three-charge room-wide acid trap. Take the exact scepter out into loose carried inventory before offering it. A supplied scepter bypasses this personal recovery route.",
+    "Gullivier, Devilish and Lisa independently accept the scepter kind, return that kind and give one identical pale purple token before departing. The returned scepter does not guarantee the same UID. Each request records only its own recipient outcome.",
+    "The librarian wants three tokens of that common kind plus the scepter together. Three unique sources, all three earlier personal receipts, a particular order, allegiance and defeating Aceralde are not native requirements. Supplied proofs remain valid.",
+    "Gullivier's green-door portal uses SOUTH into the field. Find the hidden downward grass route and eastern wall past the blue mist dragon. His return-tree portal uses SOUTH; eastward reward prose needs builder review.",
+    "Devilish's red-door portal uses SOUTH into Avernus. Beneath its tree is his chamber. SAY illusion at the iron door to unlock and reveal it, then OPEN it. The portal beyond returns on EAST; the purple obelisk instead returns on SCREAM.",
+    "Lisa's lower-stair open-book portal uses SOUTH into the shadow dragon cave. Open the hidden eastern door to her chamber. Her return-tree portal uses SOUTH.",
+    "The fountain's hidden west route leads to the descending slide and mist-covered library approach. A stair portal also sends WEST into the slide. READ the library room's book portal to reach the lower stair. Ordinary room exits alone do not describe every valid route.",
+    "After the librarian exchange, use the mist key at the green mist door from the lower stair. SAY reality at the secret wall, then OPEN it; the accepted word unlocks and reveals the reciprocal directions but leaves them closed. The closet portal uses SOUTH to the drawbridge.",
+    "The first door portal uses STARE, not LOOK; the field return uses CRY; book controls use their specified commands. Named controls must select the actual object. A successful command, travel arrival or return needs its own accepted event before becoming a story objective.",
+    "The closet's rune of blue power uses the shared durable epic-touch transaction. Its reward and group participation are separate from the token exchange and from actual escape. Story integration should consume its committed result, not a typed TOUCH or descriptive glow.",
+    "The globe of shadows and shadowcraft mace belong to tower prototypes but their active declared sources are foreign: the Chronomancer and Chernovog. Their actual artifact effects and the globe's pet benefit are separate from local quest rewards. Two trash prototypes carry a stone-effect binding without an active local source; builder intent remains pending.",
+    "One ordinary southern exit from the western stair reaches the drawbridge. This source route does not enforce the narrative's closet-only escape claim. Illusion-themed direction mismatches and escape policy need builder confirmation before native repairs.",
+    "All four exchanges remain separate story outcomes; only the librarian recipe has native daily shape. Retiring companions, reset mode one, shared supply, current access, actual encounters and active, ready accounting govern repeats. No full-tower rescue, epic-touch or escape achievement is invented."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 16203,
+      "name": "Lord Gullivier",
+      "keyword": "gullivier",
+      "description": "Gullivier starts beyond the field and blue mist dragon. Ask tower, escape and the other companions for lore; only the accepted scepter exchange records this outcome.",
+      "topics": [
+        "tower",
+        "devilish",
+        "gullivier",
+        "lisa",
+        "four",
+        "three",
+        "hell",
+        "escape"
+      ]
+    },
+    {
+      "mob_vnum": 16206,
+      "name": "Lord Devilish",
+      "keyword": "devilish",
+      "description": "Devilish waits beneath the Avernus tree. Ask tower, aceralde or scepter; the escape words and return controls are separate from his token receipt.",
+      "topics": [
+        "tower",
+        "escape",
+        "hell",
+        "aceralde",
+        "scepter"
+      ]
+    },
+    {
+      "mob_vnum": 16207,
+      "name": "the purple librarian",
+      "keyword": "librarian",
+      "description": "The purple librarian waits in the lower library. Ask escape, books or the companions. He accepts the exact four-root batch and gives the mist key, without enforcing three distinct token sources.",
+      "topics": [
+        "tower",
+        "library",
+        "escape",
+        "book",
+        "books",
+        "four",
+        "aceralde",
+        "lisa",
+        "gullivier",
+        "devilish",
+        "lord",
+        "lords"
+      ]
+    },
+    {
+      "mob_vnum": 16234,
+      "name": "Lady Lisa",
+      "keyword": "lisa",
+      "description": "Lisa waits beyond the shadow dragon and hidden eastern door. Ask tower, aceralde or scepter. Her receipt returns the scepter kind and one common token.",
+      "topics": [
+        "tower",
+        "aceralde",
+        "scepter",
+        "three",
+        "four",
+        "devilish",
+        "gullivier",
+        "librarian"
+      ]
+    },
+    {
+      "mob_vnum": 16205,
+      "name": "Aceralde",
+      "keyword": "aceralde",
+      "description": "Aceralde starts in his chamber with the marble desk key and two following undead. The scepter is in the separate sitting-room desk. His custom pulse registration needs qualification; a key or token receipt proves no personal defeat.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16237,
+      "name": "a sickly illithid",
+      "keyword": "illithid",
+      "description": "The illithid starts in the second-floor bedroom with the warped steel key. Actual current custody and combat conditions govern recovery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16238,
+      "name": "A white mist",
+      "keyword": "white",
+      "description": "The white mist starts beyond the locked kitchen steel door with the swirl key for the upper ebonwood door.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16229,
+      "name": "a blue mist dragon",
+      "keyword": "dragon",
+      "description": "The blue mist dragon guards the hidden route to Gullivier. Its armor is ordinary loot; no kill receipt is required by the token exchange.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16235,
+      "name": "a shadow dragon",
+      "keyword": "dragon",
+      "description": "The shadow dragon guards the cave entered by the lower-stair book portal. The hidden east route leads to Lisa; no recorded defeat is a native prerequisite.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16230,
+      "name": "a lost adventurer",
+      "keyword": "adventurer",
+      "description": "The lost adventurer supplies tower atmosphere without an active local rescue or escort endpoint. Do not treat decorative soul lore as a completed rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16204,
+      "name": "the angry mage",
+      "keyword": "mage",
+      "description": "The angry mage is another trapped tower resident. Its ordinary combat and lore do not create a fifth native token request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16239,
+      "name": "a guardian mist",
+      "keyword": "guardian",
+      "description": "The closet guardian is a separate combatant at the mist-key and spoken-reality route. The closet portal uses SOUTH to the drawbridge; actual escape needs a successful-arrival event.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16232,
+      "name": "a skeletal lich",
+      "keyword": "lich",
+      "description": "Aceralde's following lich wears wrist bones. Ordinary follower combat and a possible custom recharm pulse are separate from the four exchanges.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16231,
+      "name": "an ugly vampire",
+      "keyword": "vampire",
+      "description": "Aceralde's following vampire wears an earring. Recovering equipment is not a named story terminal or proof of freeing all inhabitants.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "gullivier-scepter-token",
+      "title": "Gullivier's pale purple token",
+      "category": "story",
+      "summary": "Use the green-door portal south into the field, then the hidden down and east routes past the blue mist dragon. The return-tree portal uses SOUTH, despite eastward reward prose. Gullivier accepts the scepter, returns its kind and gives one token before departing. The three companion requests are independent; each produces the same token kind.",
+      "contracts": [
+        {
+          "giver_vnum": 16203,
+          "completion_key": "give=I:16241;receive=I:16241,I:16264;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16271",
+          "text": "Carry the warped steel key",
+          "kind": "carried_item",
+          "item_vnums": [
+            16271
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The illithid in the second-floor bedroom carries this key for the steel door east of the kitchen. Current possession is an optional aid, not a personal source or access achievement. Normal unlocking consumes this fragile key; the receipt does not require that history. A supplied scepter also fits."
+        },
+        {
+          "id": "material-16272",
+          "text": "Carry the swirl of mist key",
+          "kind": "carried_item",
+          "item_vnums": [
+            16272
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The white mist beyond that steel door carries this key for the ebonwood door north of the upper stair. Current possession is an optional aid, not a personal source or access achievement. Normal unlocking consumes this fragile key; the receipt does not require that history. A supplied scepter also fits."
+        },
+        {
+          "id": "material-16246",
+          "text": "Carry the white marble key",
+          "kind": "carried_item",
+          "item_vnums": [
+            16246
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Aceralde in his chamber carries this key for the white marble desk in the sitting room. His followers are separate combatants. Current possession is an optional aid, not a personal source or access achievement. Normal unlocking consumes this fragile key; the receipt does not require that history. A supplied scepter also fits."
+        },
+        {
+          "id": "material-16241",
+          "text": "Carry the scepter of illusion",
+          "kind": "carried_item",
+          "item_vnums": [
+            16241
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The scepter is inside the locked white marble desk in the upper sitting room, not on Aceralde. His marble key fits the desk; opening it triggers a three-charge room-wide acid trap. Recover the scepter into loose carried inventory. A supplied matching scepter also fits; wearing or holding it does not satisfy the native loose-carried offering."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted exchange with Gullivier",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 16203,
+              "completion_key": "give=I:16241;receive=I:16241,I:16264;disappear=1"
+            }
+          ],
+          "hint": "Offer the exact scepter kind from loose carried inventory. The recipient departs and returns that scepter kind plus one pale purple token. The returned object is not proof of the same physical UID. No other companion, personal defeat, spoken word, return journey or full escape is completed by this receipt."
+        }
+      ]
+    },
+    {
+      "id": "devilish-scepter-token",
+      "title": "Devilish's pale purple token",
+      "category": "story",
+      "summary": "Use the red-door portal SOUTH into Avernus, then descend beneath the tree. SAY illusion at the iron illusion door, then open it for the eastern return portal; the purple obelisk instead returns on SCREAM. Devilish accepts the scepter, returns its kind and gives one token before departing. The three companion requests are independent; each produces the same token kind.",
+      "contracts": [
+        {
+          "giver_vnum": 16206,
+          "completion_key": "give=I:16241;receive=I:16241,I:16264;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16241",
+          "text": "Carry the scepter of illusion",
+          "kind": "carried_item",
+          "item_vnums": [
+            16241
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The scepter is inside the locked white marble desk in the upper sitting room, not on Aceralde. His marble key fits the desk; opening it triggers a three-charge room-wide acid trap. Recover the scepter into loose carried inventory. A supplied matching scepter also fits; wearing or holding it does not satisfy the native loose-carried offering."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted exchange with Devilish",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 16206,
+              "completion_key": "give=I:16241;receive=I:16241,I:16264;disappear=1"
+            }
+          ],
+          "hint": "Offer the exact scepter kind from loose carried inventory. The recipient departs and returns that scepter kind plus one pale purple token. The returned object is not proof of the same physical UID. No other companion, personal defeat, spoken word, return journey or full escape is completed by this receipt."
+        }
+      ]
+    },
+    {
+      "id": "lisa-scepter-token",
+      "title": "Lisa's pale purple token",
+      "category": "story",
+      "summary": "The open-book portal in the lower stair uses SOUTH into the shadow dragon cave. Find and open the hidden eastern door to Lisa. Her tree portal returns on SOUTH. Lisa accepts the scepter, returns its kind and gives one token before departing. The three companion requests are independent; each produces the same token kind.",
+      "contracts": [
+        {
+          "giver_vnum": 16234,
+          "completion_key": "give=I:16241;receive=I:16241,I:16264;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16241",
+          "text": "Carry the scepter of illusion",
+          "kind": "carried_item",
+          "item_vnums": [
+            16241
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The scepter is inside the locked white marble desk in the upper sitting room, not on Aceralde. His marble key fits the desk; opening it triggers a three-charge room-wide acid trap. Recover the scepter into loose carried inventory. A supplied matching scepter also fits; wearing or holding it does not satisfy the native loose-carried offering."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted exchange with Lisa",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 16234,
+              "completion_key": "give=I:16241;receive=I:16241,I:16264;disappear=1"
+            }
+          ],
+          "hint": "Offer the exact scepter kind from loose carried inventory. The recipient departs and returns that scepter kind plus one pale purple token. The returned object is not proof of the same physical UID. No other companion, personal defeat, spoken word, return journey or full escape is completed by this receipt."
+        }
+      ]
+    },
+    {
+      "id": "librarian-mist-key",
+      "title": "The librarian's mist key",
+      "category": "story",
+      "summary": "Reach the lower library through the fountain slide or the westward stair portal. Three matching pale purple tokens and the scepter yield the mist key. The native recipe accepts supplied proofs without a personal visit to each companion.",
+      "contracts": [
+        {
+          "giver_vnum": 16207,
+          "completion_key": "give=I:16241,I:16264,I:16264,I:16264;receive=I:16258;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-68",
+          "text": "Earlier Gullivier token exchange recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 16203,
+              "completion_key": "give=I:16241;receive=I:16241,I:16264;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal receipt. Supplied matching tokens remain valid without this history; a receipt does not restore consumed objects or prove travel, first recovery or the same scepter UID."
+        },
+        {
+          "id": "producer-104",
+          "text": "Earlier Devilish token exchange recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 16206,
+              "completion_key": "give=I:16241;receive=I:16241,I:16264;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal receipt. Supplied matching tokens remain valid without this history; a receipt does not restore consumed objects or prove travel, first recovery or the same scepter UID."
+        },
+        {
+          "id": "producer-281",
+          "text": "Earlier Lisa token exchange recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 16234,
+              "completion_key": "give=I:16241;receive=I:16241,I:16264;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal receipt. Supplied matching tokens remain valid without this history; a receipt does not restore consumed objects or prove travel, first recovery or the same scepter UID."
+        },
+        {
+          "id": "material-16241",
+          "text": "Carry the scepter of illusion",
+          "kind": "carried_item",
+          "item_vnums": [
+            16241
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The scepter is inside the locked white marble desk in the upper sitting room, not on Aceralde. His marble key fits the desk; opening it triggers a three-charge room-wide acid trap. Recover the scepter into loose carried inventory. A supplied matching scepter also fits; wearing or holding it does not satisfy the native loose-carried offering."
+        },
+        {
+          "id": "material-16264",
+          "text": "Carry three pale purple tokens",
+          "kind": "carried_item",
+          "item_vnums": [
+            16264
+          ],
+          "count": 3,
+          "optional": true,
+          "hint": "Gullivier, Devilish and Lisa each give the same token kind and return the scepter kind. The librarian needs three matching token roots, not three source-distinct tokens or three personal receipts. Supplied tokens fit; earlier receipts do not replenish them."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted librarian exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 16207,
+              "completion_key": "give=I:16241,I:16264,I:16264,I:16264;receive=I:16258;disappear=0"
+            }
+          ],
+          "hint": "Offer the scepter and three matching tokens together from loose carried inventory for the mist key. The librarian stays. This receipt does not certify defeating Aceralde, freeing every soul, using the key, saying reality, touching the rune or returning through the closet portal."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

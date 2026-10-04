@@ -965,3 +965,49 @@ with focused original-fails/repaired-passes source proof and explicit PR/news.
 Head/token wording, reward names, cave clue, absent dragon transition and stale
 historical boundary are pending intent-dependent fixes. Keep implemented native
 repairs prominent and separate from guidance and proposed capabilities.
+
+### Transparent Tower: fragile access, common tokens and accepted closure
+
+The [dossier](../design/zone-stories/TRNSPTOW.md) and
+[journal](../../areas/story/trnsptow.story.json) use four independent exchanges,
+fourteen contacts and eleven optional checks. Gullivier, Devilish and Lisa
+return the scepter kind plus the same token kind. The librarian requires
+three matching token roots and a loose-carried scepter. Three personal receipts
+or three unique token sources are not enforced. Represent each optional history
+separately; three contracts in one completion check mean OR, not ALL.
+
+Trace the actual container and key route: illithid warped key → white mist
+swirl key → Aceralde marble key → locked pickproof desk scepter. Opening
+the desk triggers a room-wide acid trap. Normal use consumes each fragile key;
+current carried-key checks must stay optional. Plan accepted lock/controller
+transition and destruction settlement before claiming access. Source UID,
+container/actor/reset owner and transfer provenance distinguish first recovery
+from another player's supplied proof; a returned same-kind scepter is not
+evidence of an unchanged UID.
+
+Describe actual command portals and spoken-word doors. STARE, READ, CRY and
+SCREAM differ from LOOK; direction portals can override ordinary movement.
+SAY illusion/reality unlocks/reveals but leaves doors closed. Learned words,
+controller success and actual arrival need separate accepted events. A key
+receipt is not escape. The ordinary stair return conflicts with closet-only
+prose; builders choose intended policy before a native route repair.
+
+The imported epic rune already settles through durable zone touch. Consume its
+committed result with participant/owner/episode/replay policy; do not add a
+second payout or credit typed TOUCH. Globe/mace prototypes have foreign active
+sources and their custom effects have separate owners. Full companion rescue,
+corporeal restoration and world protection require defined ALL/actor/world
+transitions, rather than extending receipt narration into fabricated evidence.
+
+Inspect periodic support as well as reward submission. The shared epic
+absorption loop accesses an object after extraction unlinks/releases it.
+Plan safe identity-aware traversal, one destruction decision and conserved
+item/tree/recovery accounting before qualifying absorption as a story effect.
+The touch transaction does not prove safe absorption. A separate shared epic
+repair with executable failure/recovery cases is pending; no live crash was
+reproduced or repaired by this journal addition.
+
+Aceralde pulse registration, illusion wording, unplaced trash stone bindings
+and orphan desk/sign/portal remain pending intent/qualification findings.
+No native Tower repair ships. Actual future fixes require clear separate fix
+commits and PR/news trigger, before/after, validation and remaining limits.

@@ -2588,7 +2588,64 @@ for item,source,roll in ((80134,80046,100),(80137,80220,100),(80142,80023,30),(8
 assert re.search(r'\bD2\s+[^~]*~[^~]*~\s+0 0 228371\b',world[80460],re.S)
 assert re.search(r'\bD1\s+[^~]*~[^~]*~\s+0 0 568516\b',world[80469],re.S)
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle"):
+# Transparent Tower: common-token acceptance is not a mandatory three-source campaign.
+tower=inventory_module.area_evidence(ROOT,'trnsptow')
+tower_map=next(m for m in catalog['story_mappings'] if m['source_area']=='trnsptow')
+assert tower_map['schema_version']==3 and tower_map['revision']==1 and tower_map['coverage']=='complete'
+assert len(tower_map['contacts'])==14 and len(tower_map['stories'])==4 and not tower_map['exclusions']
+assert all(s['category']=='story' for s in tower_map['stories'])
+assert collections.Counter(t['kind'] for s in tower_map['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':8,'completion':3}
+assert collections.Counter(b['kind'] for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/trnsptow.qst')=={'Q':4,'M':26}
+by_line={r['block']['line']:r['block'] for r in tower['requests']}
+assert set(by_line)=={68,104,195,281}
+for line,giver in ((68,16203),(104,16206),(281,16234)):
+    b=by_line[line]
+    assert b['giver_vnum']==giver and b['give']==[('I',16241)] and b['receive']==[('I',16241),('I',16264)]
+    assert b['binding']['completion_key'].endswith('disappear=1')
+assert by_line[195]['giver_vnum']==16207 and collections.Counter(by_line[195]['give'])=={('I',16264):3,('I',16241):1}
+assert by_line[195]['receive']==[('I',16258)] and by_line[195]['binding']['completion_key'].endswith('disappear=0')
+tower_stories={s['id']:s for s in tower_map['stories']}
+final=tower_stories['librarian-mist-key']
+assert [t['contracts'] for t in final['steps'][:3]]==[[by_line[n]['binding']] for n in (68,104,281)]
+assert [(t['item_vnums'],t['count']) for t in final['steps'][3:-1]]==[([16241],1),([16264],3)]
+assert [t['item_vnums'] for t in tower_stories['gullivier-scepter-token']['steps'][:-1]]==[[16271],[16272],[16246],[16241]]
+assert all(s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional') for s in tower_map['stories'])
+defs={r['block']['line']:r['definition'] for r in tower['requests']}
+assert defs[195]['daily_eligible'] and all(not defs[n]['daily_eligible'] and defs[n]['daily_exclusion']=='Item exchange' for n in (68,104,281))
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==162]
+assert len(units)==4 and all(u['achievement'] for u in units) and sum(u['daily_candidate'] for u in units)==1
+contacts={c['mob_vnum']:c for c in tower_map['contacts']}
+assert {b['giver_vnum'] for b in tower['dialogue']}<=contacts.keys()
+assert {'four','three'}<=set(contacts[16203]['topics']) and {'book','books'}<=set(contacts[16207]['topics'])
+assert tower['zone']['reset_mode']==1
+assert collections.Counter(r['command'] for r in tower['reset_commands'])=={'M':73,'E':52,'O':38,'D':32,'P':5,'G':5,'F':3}
+assert len(tower['mobs'])==40 and len(tower['items'])==75
+objects=dawndale_bodies('trnsptow','obj');rooms=dawndale_bodies('trnsptow','wld');mobs=dawndale_bodies('trnsptow','mob')
+assert set(rooms)==set(range(16200,16300)) and not (ROOT/'areas/shp/trnsptow.shp').exists()
+assert all(not int(b.split('~')[4].split()[0])&32768 for b in mobs.values())
+assert objvalues(objects[16239])[0]==15 and objvalues(objects[16239])[11:15]==[100,29,16246,100]
+assert re.search(r'\bT\s+516\s+4\s+3\s+100',objects[16239])
+assert all(objvalues(objects[v])[0]==18 and objvalues(objects[v])[12]==100 for v in (16271,16272,16246,16258))
+assert any(r['command']=='P' and r['arguments'][1:5]==[16241,1,16239,100] for r in tower['reset_commands'])
+sources=collections.defaultdict(list);owner=None;room=None
+for r in tower['reset_commands']:
+    c,v=r['command'],r['arguments']
+    if c in 'MF':owner=v[1];room=v[3]
+    if c=='G':sources[v[1]].append((owner,room,v[2],v[4]))
+assert sources[16271]==[(16237,16241,1,100)] and sources[16272]==[(16238,16244,1,100)]
+assert sources[16246]==[(16205,16253,1,100)] and not sources[16241]
+for v,target,cmd in ((16201,16228,139),(16202,16256,3),(16203,16240,63),(16204,16271,4),(16205,16228,32),(16206,16228,2),(16207,16263,4),(16208,16228,53),(16209,16212,4),(16257,16228,4),(16260,16298,4)):
+    assert objvalues(objects[v])[0]==25 and objvalues(objects[v])[11:15]==[target,cmd,-1,0]
+for source,direction,key,target in ((16243,1,16271,16244),(16252,0,16272,16253),(16241,0,16258,16248),(16248,1,-2,16249),(16278,3,-2,16297),(16229,2,0,16212)):
+    assert re.search(r'\bD'+str(direction)+r'\s+[^~]*~[^~]*~\s+\d+ '+str(key)+' '+str(target)+r'\b',rooms[source],re.S)
+assert {(a['kind'],a['vnum'],a['function']) for a in tower['special_assignments']}=={('mob',16205,'transp_tow_acerlade'),('obj',16263,'artifact_stone'),('obj',16268,'artifact_stone'),('obj',16262,'trans_tower_shadow_globe'),('obj',16242,'zion_light_dark')}
+proc=(ROOT/'src/specs/specs.trnsptow.c').read_text()
+acer=proc[proc.index('int transp_tow_acerlade'):proc.index('#ifdef THARKUN_ARTIS')]
+assert 'return TRUE' not in acer and 'recharm_ch' in acer
+assert '#define THARKUN_ARTIS 1' in (ROOT/'src/core/config.h').read_text()
+assert all(not any(r['command'] in 'OGEP' and r['arguments'][1]==v for r in tower['reset_commands']) for v in (16200,16262,16263,16268,16274))
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
