@@ -126,9 +126,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 60 | The Tower of Darkness | [Comprehensive dossier](zone-stories/TOWER_OF_DARKNESS.md): all 32 blocks/142 rooms/170 mobs/146 objects/one shop/580 resets; full exit text/passwords and shared execution | Six stories/seven owned bindings; 27 contacts/12 optional checks; guarded alternative, five-sword bundle, three-key puzzle and five physically local foreign-owned requests | Physical affiliation/discovery separate from owner, per-branch fee support, accepted access/source/campaign events and builder-selected rescue/holding/entry/text proposals. Separate native direction/password fix/news ships |
 | 61 | Mushroom Caverns | [Comprehensive dossier](zone-stories/MUSHROOM_CAVERNS.md): all sixteen raw blocks/132 rooms/eight local mobiles/nine objects/54 resets; imported actor/material sources, shared execution and modern identity comparison | Three outcomes/ten contacts/22 representable aliases/five optional checks; exact same-name halves, optional history and explicit source/accounting blockers | Missing goblet/unplaced actors/five absent dispersal destinations, money-proof admission and reward/get/drop, physical affiliation/renewal, literal topic tokens and route/scenery intent. No native repair ships |
 | 62 | Para-Elemental Plane of Smoke | [Comprehensive dossier](zone-stories/PARA_ELEMENTAL_PLANE_OF_SMOKE.md): all fourteen blocks/153 rooms/26 mobiles/36 objects/172 resets; foreign planar entrances, current-mobile supply and shared key/terrain/weapon/epic execution | Two stories/four services, twelve contacts/16 aliases/12 optional checks; exact two-kind bundles, optional routes, non-credit reversible jewelry | Shipped native fix 0fff62e70 corrects vault return key and Discontent alias. Negative-plane forge, permanent Power proc, key settlement, rare admitted supply/renewal and builder intent remain pending |
-| 63–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 63 | Fishermans Wharf | [Comprehensive dossier](zone-stories/FISHERMANS_WHARF.md): all thirteen blocks/70 rooms/23 mobiles/20 objects/119 resets, shop, ordinary Surface boundary, imported skull and shared fishing/breathing/key/fall execution | Five independent outcomes, thirteen contacts/44 aliases/10 optional checks; exact 8-root/four-copy bundles and optional bait/line history | No native repair. Fishing narration/XP precedes ownership grant; effect alternatives, source provenance, admitted supply, command-time fall/access and restricted foreign custody require qualification |
+| 64–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Fishermans Wharf (`fishermans_wharf`).
+The next area is Northern Lakes and Settlements (`nlakes`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -3244,3 +3245,65 @@ crafting fallback credits removed. All 2668 native definitions, fingerprint/
 revision two/registry and prior 82 maps unchanged. Original queue: 62/220 complete,
 158 pending; Fishermans Wharf next. Active, ready accounting remains mandatory.
 No DB/account/server operation, migration, deployment or merge.
+
+## Fishermans Wharf completed source map — October 4, 2026
+
+The [dossier](zone-stories/FISHERMANS_WHARF.md) covers all thirteen native
+blocks (eight MA/five QA), seventy rooms/twenty-five prose groups/eighty-nine
+numeric exit families, twenty-three mobiles, twenty objects, 119 resets/106
+exact argument families and Widoc's shop. Full exit text/properties/membership,
+the ordinary Surface boundary, imported skull and bounded global producers/
+consumers/713 teleport prototypes are reviewed. All local references resolve.
+Shared quest root allocation, ownership credit, reset admission, boat movement,
+worn breathing/drowning, totem key lookup, command-time chance fall and actual
+fishing execution are covered.
+
+The [journal](../../areas/story/fishermans_wharf.story.json) supplies five
+independent credited outcomes (two stories/three requests), thirteen contacts,
+forty-four native aliases and ten optional checks (eight current quantities/two
+receipts). Baltik accepts one egg/four stick bundles/three pelts for a cavern
+totem. Dimbled's guide yields line; four bottles yield bait; the adult accepts
+bait plus line for a carrying net. Four frog jellies earn a worn snorkel.
+Supplied exact items bypass earlier routes. Duplicate fishermen share definitions;
+questions, custody, personal kills, guide-reading, fire-building, breeding,
+fishing and later hydra entry are not inferred accepted outcomes.
+
+**No native zone or quest repair ships in this checkpoint.** Actual totem
+lookup accepts its vnum without a key-type guard. Pole reset hold/back slots
+match its present flags, and equipment applies snorkel face/nose or belt waist
+breathing effects. Net negative shell and bottle FLOAT versus sunk prose remain
+builder-intent leads. No silent item-type/slot/balance replacement is made.
+Prior native fix/news entries remain unchanged and separate from journal work.
+
+**Concrete pending execution lead:** actual fishing narrates catch and grants
+XP before generic-crafting ownership submission, ignores the helper result,
+and can report no created item on rejected submission. No played failure or
+repair is claimed. Plans require actual accepted/rejected grant, interruption,
+publication/reward ordering and replay/recovery qualification before a separate
+fix, and typed committed catch/source/UID/session/zone evidence before story
+credit. Equipped poles are not selected by the existing loose-vnum scan; quest
+bait/line/net/jelly are not consumed by fishing. Alternative active-effect
+readiness, source versus handoff, admitted capped quantities, key/open/arrival,
+command-time chance fall and surviving underwater access need actual events.
+
+The imported skull belongs to Qin's separate five-kind Dream bundle. Its owner-
+death lore has no identified callback in reviewed active paths. NODROP ordinary
+handoff differs from native direct-root offering; neither custody nor a local
+kill completes Qin's quest. Dibbly's snorkel buyback and line-dialogue mismatch
+remain in the unchanged earlier Newhaven map. Shared underwater/healing macros
+mix formal argument and outer ch, but all reviewed callers pass ch; no wrong-
+target call or crash is established. Record hardening as pending, not a fix.
+
+Focused exact-source and actual C++ projection journeys cover counts, equipped/
+loose roots, optional supplied history, read-only preparation, independent
+outcomes, immutable owner, replay and cold recovery. Full catalog/source,
+schema/all-map loader, accounting gates/daily projection, maintained build,
+formatting/whitespace, prior source/map preservation and links are checked.
+Live supply/handoff, eight-root commit, fishing XP/ownership, breathing/travel,
+fall survival, restricted skull custody/Qin completion and daily renewal remain
+pending. Catalog: 84 maps/1625 achievements/1459 potential dailies/2207 rows;
+all 2668 definitions, fingerprint/revision two/registry and prior 83 maps unchanged.
+Original queue: 63/220 complete, 157 pending; Northern Lakes and Settlements next.
+Active, ready accounting remains mandatory. No DB/account/server operation,
+migration, deployment or merge. Every later actual repair requires an isolated
+fix commit, prominent PR before/after and precise news with validation limits.

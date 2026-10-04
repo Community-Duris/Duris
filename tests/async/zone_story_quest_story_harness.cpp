@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 83 &&
+		require(catalog.story_mappings.size() == 84 &&
 				tracker.summary_for(7, 42).total == 1625,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -6501,6 +6501,150 @@ int main(int argc, char **argv)
 							.successful_attempts == 1 &&
 					!recovered.has_discovered(7, 42, 244),
 				"Smoke cold recovery lost independent outcomes, service history or discovery ownership");
+		}
+
+		{
+			const auto &trapper =
+				story_for("fishermans_wharf", "baltiks-eight-supplies");
+			const auto &guide = story_for("fishermans_wharf", "dimbleds-fishing-guide");
+			const auto &adult =
+				story_for("fishermans_wharf", "adult-fishermans-supplies");
+			const auto &bottles =
+				story_for("fishermans_wharf", "old-fishermans-bottle-cleanup");
+			const auto &jelly =
+				story_for("fishermans_wharf", "eager-fishermans-frog-jelly");
+			service journey(catalog);
+			require(journey.render_journal(7, 42, 889, 10, 1, 99, false, false)
+							.find("Undiscovered:") !=
+						std::string::npos &&
+					journey.discover_zone(7, 42, 889, 88900, 100, "arrival") ==
+						result::applied,
+				"Wharf discovery boundary failed");
+			require(journey.render_journal(7, 42, 889, 10, 1, 101, false, false)
+						.find(trapper.title) == std::string::npos,
+				"Wharf discovery exposed an unseen recipient's story");
+			for (const auto &actor : { std::pair<int, int>{ 88902, 88923 },
+						   { 88904, 88922 },
+						   { 88905, 88906 },
+						   { 88906, 88906 },
+						   { 88907, 88906 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 102) ==
+						result::applied,
+					"Wharf recipient encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Wharf journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[88913] = 1;
+			supplies.carried[88910] = 3;
+			supplies.carried[88911] = 2;
+			supplies.carried[88912] = 3;
+			supplies.carried[88909] = 3;
+			supplies.carried[88902] = 1;
+			supplies.carried[88914] = 1;
+			supplies.carried[31320] = 1;
+			supplies.carried[293] = 4;
+			supplies.equipped[18] = 88904;
+			supplies.equipped[20] = 88905;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 889, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(trapper).find("[Missing now] " + trapper.steps[1].text) !=
+						std::string::npos &&
+					section(trapper).find("[Missing now] " +
+							      trapper.steps[2].text) !=
+						std::string::npos &&
+					section(bottles).find("[Missing now] " +
+							      bottles.steps[0].text) !=
+						std::string::npos &&
+					section(jelly).find("[Missing now] " +
+							    jelly.steps[0].text) !=
+						std::string::npos &&
+					section(adult).find("[Missing now] " +
+							    adult.steps[3].text) !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 889).completed == 0,
+				"Wharf partial quantities, worn line, breathing gear, key, skull or fish fabricated acceptance");
+			supplies.carried[88910] = 4;
+			supplies.carried[88911] = 3;
+			supplies.carried[88912] = 4;
+			supplies.carried[88909] = 4;
+			supplies.carried[88904] = 1;
+			supplies.carried[88900] = 1;
+			journal = journey.render_journal(7, 42, 889, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(trapper).find("[Ready now] " + trapper.steps[2].text) !=
+						std::string::npos &&
+					section(bottles).find("[Ready now] " +
+							      bottles.steps[0].text) !=
+						std::string::npos &&
+					section(jelly).find("[Ready now] " + jelly.steps[0].text) !=
+						std::string::npos &&
+					section(adult).find("Next: " + adult.steps.back().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Wharf exact supplied quantities required route history or readiness wrote state");
+			service supplied(catalog);
+			require(supplied.deserialize_state(before, &error),
+				"Wharf supplied journey restore failed");
+			record(supplied, adult.contracts.front(), "wharf-supplied-adult", 889,
+			       88908);
+			require(supplied.progress_for_zone(7, 42, 889).completed == 1 &&
+					supplied.evidence_for(bottles.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.evidence_for(guide.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Wharf supplied adult bundle required or invented the earlier cleanup/guide route");
+			record(journey, bottles.contracts.front(), "wharf-bottles", 889, 88906);
+			record(journey, guide.contracts.front(), "wharf-guide", 889, 88922);
+			supplies.carried.erase(88902);
+			supplies.carried.erase(88904);
+			journal = journey.render_journal(7, 42, 889, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(adult).find("[Missing now] " + adult.steps[2].text) !=
+						std::string::npos &&
+					section(adult).find("[Missing now] " +
+							    adult.steps[3].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 889).completed == 2 &&
+					journey.evidence_for(adult.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Wharf earlier receipts restored spent supplies or completed the larger bundle");
+			auto wrong_owner =
+				completion(jelly.contracts.front(), "wharf-wrong-owner", 122);
+			wrong_owner.transaction.zone_number = 352;
+			wrong_owner.transaction.room_vnum = 88906;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Wharf receipt accepted Newhaven ownership");
+			record(journey, adult.contracts.front(), "wharf-adult", 889, 88906);
+			record(journey, trapper.contracts.front(), "wharf-trapper", 889, 88923);
+			require(journey.progress_for_zone(7, 42, 889).completed == 4 &&
+					journey.evidence_for(jelly.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Wharf totem or supplies fabricated jelly completion");
+			record(journey, jelly.contracts.front(), "wharf-jelly", 889, 88906);
+			auto replay = completion(jelly.contracts.front(), "wharf-jelly", 120);
+			replay.transaction.zone_number = 889;
+			replay.transaction.room_vnum = 88906;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Wharf receipt replay duplicated completion");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 889).completed == 5 &&
+					recovered.progress_for_zone(7, 42, 889).total == 5 &&
+					recovered.evidence_for(jelly.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					!recovered.has_discovered(7, 42, 313) &&
+					!recovered.has_discovered(7, 42, 352),
+				"Wharf cold recovery lost independent receipts or invented foreign discovery");
 		}
 
 		std::cout

@@ -2315,3 +2315,36 @@ a reproduced crash. Actor command aliases charrzlk/roj are retained explicitly.
 Any later repair needs a clear isolated fix commit, prominent PR trigger and
 before/after, validation limits and precise player news. Preserve existing
 recipes/identities and choose gameplay replacements with builder evidence.
+
+## Fishermans Wharf: quantity bundles, active effects and committed fishing
+
+The [dossier](zone-stories/FISHERMANS_WHARF.md) and
+[journal](../../areas/story/fishermans_wharf.story.json) map five accepted
+outcomes with exact quantities and optional cleanup/guide supply routes. Active,
+ready accounting remains mandatory; frozen recovery stays separate. Current
+supplied materials need no personal kill, first source or producer history.
+Eight loose roots fit the existing fourteen-root offering limit; no schema or
+runtime adapter is added for these delivery outcomes.
+
+| Capability | Concrete source evidence | Implementation and acceptance |
+| --- | --- | --- |
+| Quantity and admitted source provenance | Egg/four sticks/three pelts is eight different roots; stick cap4 equals the full quantity; same-looking flying eagles lack the guarding eagle's egg | Qualify actual accepted eight-root commit, incomplete/reused-root rejection, wear/loose recovery, cap/reset admission and current actor identity. Future source objectives require actor/item UID/origin/zone and committed acquisition; preserve supplied-item delivery compatibility and distinguish handoff from original source |
+| Alternative active-effect readiness | Snorkel face20/nose39 and belt waist13 share WATERBREATH; held non-weapon armor with other wear flags is ignored; spells/innates are alternatives | Design a current-effect/any-of prerequisite after actual worn, held, carried, removed, spell/innate and drowning journeys. A single equipped-item/slot check or earlier receipt cannot express universal breathing; current effects explain readiness without promising surviving access |
+| Committed fishing outcomes | Loose get_pole recognizes88903; event narrates catch and grants XP before generic-crafting ownership submission, then ignores its result | Qualify actual accepted/rejected ownership and interrupted/disconnected/moved sessions. Repair publication/reward ordering and replay/recovery in a separate fix if confirmed. Add typed accepted catch with actor/pole/item UID/session/zone provenance only after ownership commit; custody, text or generic crafting is insufficient |
+| Accepted access and command-time fall episodes | Totem34 works by exact vnum; south pickproof lock and reverse unlocked door differ; F50 is checked on commands, not grounded arrival | Observe accepted key UID/selected side/lock/open/arrival/return/reset separately. Qualify chance fall, climb catch, flight/mount alternatives, admission, interruption and survival. Never infer these from a key receipt or room visit; retain legitimate alternate routes |
+| Restricted foreign custody and campaign ownership | Hydra carries Dream skull31320; NODROP give rejection differs from native direct-root bundle; Qin requires five different skulls; Dibbly accepts the snorkel but speaks of line | Qualify acquisition, ordinary handoff, native consumption, lifetime/rent and interruption/recovery policy. Builder decides any intended owner curse or Dibbly repair. Preserve exact foreign definition ownership and optional Wharf receipt without double credit |
+
+**No native repair ships here.** Totem type and pole hold/back slots are valid
+under actual reviewed behavior. Net negative shell/capacity, FLOAT bottles
+versus sunk lore, pole SPAWNER type and skull owner-death lore are bounded
+builder-intent leads; preserve native identity/balance until actual tests and
+intent establish the change. Underwater/healing macros mix their argument and
+outer ch, but every reviewed caller passes ch. Independent-argument hardening
+tests are a future isolated shared-code task; no crash is established.
+
+The existing schema remains sufficient for all five delivery outcomes. Keep
+engineering acceptance details in this plan/dossier and player journal guidance
+focused on materials, quantities, active abilities and useful routes. Every
+later actual quest/zone repair needs a separate clear fix commit and prominent
+PR trigger/before-after/validation limits with an accurate player-news sentence.
+Pending proposals must never be described as shipped fixes.

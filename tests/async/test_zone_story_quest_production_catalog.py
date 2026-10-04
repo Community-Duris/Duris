@@ -3349,7 +3349,91 @@ assignment=(ROOT/'src/specs/specs.assign.c').read_text(encoding='utf8')
 assert 'obj_index[real_object0(359)].func.obj = epic_stone;' in assignment
 
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke"):
+# Fishermans Wharf: exact quantities, optional supply routes and foreign ownership.
+wharf=inventory_module.area_evidence(ROOT,'fishermans_wharf')
+wharf_map=next(m for m in catalog['story_mappings'] if m['source_area']=='fishermans_wharf')
+assert (wharf_map['schema_version'],wharf_map['revision'],wharf_map['coverage'])==(3,1,'complete')
+assert len(wharf_map['stories'])==5 and len(wharf_map['contacts'])==13 and not wharf_map['exclusions']
+assert collections.Counter(s['category'] for s in wharf_map['stories'])=={'story':2,'request':3}
+assert collections.Counter(t['kind'] for s in wharf_map['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':8,'completion':2}
+raw=[b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/fishermans_wharf.qst']
+assert collections.Counter(b['kind'] for b in raw)=={'MA':8,'QA':5} and len(wharf['dialogue'])==8
+by_line={b['line']:b for b in raw if 'binding' in b}
+for line,giver,inputs,outputs in (
+    (14,88902,[('I',88913)]+[('I',88910)]*4+[('I',88911)]*3,[('I',88914)]),
+    (49,88904,[('I',88900)],[('I',88904),('E',7500)]),
+    (68,88905,[('I',88902),('I',88904)],[('I',88906),('E',7500)]),
+    (94,88906,[('I',88912)]*4,[('I',88902),('E',7500)]),
+    (114,88907,[('I',88909)]*4,[('I',88905),('E',7500)])):
+    b=by_line[line]
+    assert (b['giver_vnum'],b['give'],b['receive'],b['disappear'])==(giver,inputs,outputs,False)
+    d=next(r['definition'] for r in wharf['requests'] if r['block']['line']==line)
+    assert d['source_area']=='fishermans_wharf' and d['zone_number']==889 and d['repeatable'] and d['daily_eligible']
+stories={s['id']:s for s in wharf_map['stories']}
+assert {tuple(c.items()) for s in stories.values() for c in s['contracts']}=={tuple(b['binding'].items()) for b in by_line.values()}
+assert all(s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional') for s in stories.values())
+assert [(s['item_vnums'],s['count']) for s in stories['baltiks-eight-supplies']['steps'][:-1]]==[([88913],1),([88910],4),([88911],3)]
+adult=stories['adult-fishermans-supplies']
+assert [s['contracts'] for s in adult['steps'][:2]]==[[by_line[94]['binding']],[by_line[49]['binding']]]
+assert [(s['item_vnums'],s['count']) for s in adult['steps'][2:-1]]==[([88902],1),([88904],1)]
+assert stories['old-fishermans-bottle-cleanup']['steps'][0]['count']==stories['eager-fishermans-frog-jelly']['steps'][0]['count']==4
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==889]
+assert len(units)==sum(u['achievement'] for u in units)==sum(u['daily_candidate'] for u in units)==5
+contacts={c['mob_vnum']:c for c in wharf_map['contacts']}
+for giver in (88902,88904,88905,88906,88907):
+    assert set(contacts[giver]['topics'])=={t for b in raw if b['kind']=='MA' and b['giver_vnum']==giver for t in b['body'][0].rstrip('~').split()}
+assert sum(len(c['topics']) for c in contacts.values())==44
+assert all(c['keyword'] in wharf['mobs'][v]['keywords'] for v,c in contacts.items())
+assert len(wharf['mobs'])==23 and len(wharf['items'])==20 and len(wharf['reset_commands'])==119
+assert collections.Counter(r['command'] for r in wharf['reset_commands'])=={'M':78,'O':19,'G':10,'D':6,'E':6}
+assert len({(r['command'],tuple(r['arguments'])) for r in wharf['reset_commands']})==106
+assert not wharf['special_assignments']
+shop=(ROOT/'areas/shp/fishermans_wharf.shp').read_text(encoding='utf8')
+assert shop.startswith('#88903~\nN\n88906\n88903\n88901\n0\n') and '\n88909\n' in shop
+objects=dawndale_bodies('fishermans_wharf','obj');rooms=dawndale_bodies('fishermans_wharf','wld')
+assert set(rooms)==set(range(88900,88970)) and set(objects)==set(range(88900,88920))
+assert all(b.split('~')[1].strip() for b in rooms.values())
+assert collections.Counter(int(b.split('~')[2].split()[2]) for b in rooms.values())=={4:6,1:6,0:2,3:15,6:18,7:5,2:10,9:4,10:4}
+assert all(not int(b.split('~')[2].split()[1])&2048 for b in rooms.values())
+assert re.search(r'\bF\s+50\b',rooms[88960])
+for v,d,f,key,target in ((88965,2,3,88914,88968),(88968,0,1,0,88965),(88922,4,0,0,88960),(88960,5,0,0,88922),(88900,2,0,0,567269)):
+    assert re.search(r'\bD'+str(d)+r'\s+[^~]*~[^~]*~\s+'+f'{f} {key} {target}'+r'\b',rooms[v],re.S)
+assert all(int(rooms[v].split('~')[2].split()[1])&32 for v in range(88961,88969))
+assert int(rooms[88969].split('~')[2].split()[1])&131072
+assert objvalues(objects[88914])[0]==34 and objvalues(objects[88914])[12]==0
+assert (objvalues(objects[88905])[7],objvalues(objects[88905])[22])==(67371009,2048)
+assert (objvalues(objects[88917])[7],objvalues(objects[88917])[22])==(2049,2048)
+assert objvalues(objects[88903])[0]==39 and objvalues(objects[88903])[7]==4210689
+assert objvalues(objects[88906])[0]==15 and objvalues(objects[88906])[11:16]==[150,0,0,500,0] and objvalues(objects[88906])[19]==-75
+assert objvalues(objects[88912])[6]&4096 and objvalues(objects[88912])[6]&8192
+reset={r['line']:r for r in wharf['reset_commands']}
+for line,command,values in (
+    (33,'O',[0,88900,1,88903,100,0,0,0]),
+    (55,'E',[1,88903,2,18,100,0,0,0]),(61,'E',[1,88903,2,27,100,0,0,0]),
+    (125,'M',[0,88910,1,88960,100,0,0,0]),(126,'G',[1,88913,1,0,100,0,0,0]),
+    (131,'E',[1,88917,1,13,100,0,0,0]),(138,'G',[1,31320,1,0,100,0,0,0])):
+    assert (reset[line]['command'],reset[line]['arguments'])==(command,values)
+assert len([r for r in wharf['reset_commands'] if r['command']=='O' and r['arguments'][1]==88910])==4
+assert len([r for r in wharf['reset_commands'] if r['command']=='O' and r['arguments'][1]==88912])==6
+assert len([r for r in wharf['reset_commands'] if r['command']=='G' and r['arguments'][1]==88909])==5
+assert len([r for r in wharf['reset_commands'] if r['command']=='G' and r['arguments'][1]==88911])==3
+assert wharf['mobs'][88910]['keywords']==wharf['mobs'][88911]['keywords']
+skull=objvalues(dawndale_bodies('dream','obj')[31320]);assert skull[0]==8 and skull[11:19]==[0]*8 and skull[6]&128
+foreign=[b for b in inventory_module.native_blocks(ROOT) if 'binding' in b and any(k=='I' and n in (88905,31320) for k,n in b['give']) and b['source']!='areas/qst/fishermans_wharf.qst']
+assert {(b['giver_vnum'],b['source'],b['line']) for b in foreign}=={(35216,'areas/qst/newhaven.qst',177),(31310,'areas/qst/dream.qst',46)}
+qin=next(b for b in foreign if b['giver_vnum']==31310)
+assert qin['give']==[('I',v) for v in range(31316,31321)] and qin['receive']==[('I',31315)]
+newhaven=next(m for m in catalog['story_mappings'] if m['source_area']=='newhaven')
+buyback=next(s for s in newhaven['stories'] if s['id']=='dibblys-snorkel-pipe-buyback')
+assert buyback['category']=='service' and any(t.get('optional') and t.get('contracts')==[by_line[114]['binding']] for t in buyback['steps'])
+fish=(ROOT/'src/economy/tradeskill.c').read_text(encoding='utf8')
+pole=fish[fish.index('P_obj get_pole'):fish.index('void do_fish')]
+assert 'ch->carrying' in pole and '88903' in pole and 'equipment' not in pole
+policy=(ROOT/'src/item/item_command_policy.c').read_text(encoding='utf8')
+assert 'ITEM_NODROP' not in policy[policy.index('bool item_command_uses_durable_ownership'):policy.index('bool item_command_object_is_takeable')]
+
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

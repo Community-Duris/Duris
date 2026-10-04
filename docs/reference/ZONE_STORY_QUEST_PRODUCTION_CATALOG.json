@@ -116258,6 +116258,416 @@
       ]
     },
     {
+      "contacts": [
+        {
+          "description": "Baltik waits in the pine wood shelter 88923. Ask about supplies and chores for his exact egg, four-stick and three-pelt request. Acceptance earns the cavern totem; asking every alias does not complete another quest.",
+          "keyword": "baltik",
+          "mob_vnum": 88902,
+          "name": "Baltik, the lonely trapper",
+          "topics": [
+            "supplies",
+            "sticks",
+            "egg",
+            "pelt",
+            "hi",
+            "chores",
+            "tasks",
+            "chore",
+            "task",
+            "help",
+            "favor"
+          ]
+        },
+        {
+          "description": "Dimbled waits at the pine tree 88922. Ask about being lost, fishing or the lake. His visual guide earns line and experience; there is no escort or return-home objective.",
+          "keyword": "dimbled",
+          "mob_vnum": 88904,
+          "name": "Dimbled, a lost fisherman",
+          "topics": [
+            "lost",
+            "confusion",
+            "help",
+            "find",
+            "hi",
+            "fish",
+            "fishing",
+            "dock",
+            "pier",
+            "lake",
+            "relax"
+          ]
+        },
+        {
+          "description": "Adult fishermen wait at the pier ends 88906 and 88908. Ask about supplies, bait and line. Bring both exact items in one offering for a cast net. The two adults share the same request, not two independent quest achievements.",
+          "keyword": "adult",
+          "mob_vnum": 88905,
+          "name": "an adult fisherman",
+          "topics": [
+            "limits",
+            "supplies",
+            "fish",
+            "fishing",
+            "bait",
+            "line",
+            "reel",
+            "worms",
+            "hi"
+          ]
+        },
+        {
+          "description": "Old fishermen wait at the pier ends 88906 and 88908. Ask about bottles, help or trash. Four separate bottles earn bait. Both actors share one request; picking up bottles alone does not complete cleanup.",
+          "keyword": "old",
+          "mob_vnum": 88906,
+          "name": "an old fisherman",
+          "topics": [
+            "attention",
+            "glass",
+            "bottle",
+            "hi",
+            "help",
+            "clean",
+            "trash"
+          ]
+        },
+        {
+          "description": "Eager fishermen wait at the pier ends 88906 and 88908. Ask about frog jelly or spawn. Four exact jelly items earn a snorkel pipe, which must be worn on face or nose to provide breathing.",
+          "keyword": "eager",
+          "mob_vnum": 88907,
+          "name": "an eager fisherman",
+          "topics": [
+            "dip",
+            "frog",
+            "pocket",
+            "hi",
+            "jelly",
+            "spawn"
+          ]
+        },
+        {
+          "description": "Widoc runs the shady-shack shop at 88909, west of pier 88904 through a closed door. His declared stock includes the fishing pole, paddle boat and cast net. Shopping and native quest rewards are separate routes.",
+          "keyword": "widoc",
+          "mob_vnum": 88903,
+          "name": "Widoc, the retired fisherman",
+          "topics": []
+        },
+        {
+          "description": "Beavers start at 88939, 88942 and 88944 and can wander within the zone. Each declares one soft pelt; Baltik needs three different pelt items. Current possession does not prove a personal kill or skinning.",
+          "keyword": "beaver",
+          "mob_vnum": 88908,
+          "name": "a bold beaver",
+          "topics": []
+        },
+        {
+          "description": "This guarding bald eagle starts at pine-tree top 88960 carrying the full-size egg. It shares its displayed name and ordinary keywords with the flying forest eagles. Check the actual actor and location; the tree can start a fall while you act there.",
+          "keyword": "eagle",
+          "mob_vnum": 88910,
+          "name": "a majestic baldeagle",
+          "topics": []
+        },
+        {
+          "description": "Flying bald eagles start at forest rooms 88913, 88915, 88917, 88919 and 88921 and can wander. They share the guarding eagle\u2019s name but have no declared egg. Meeting one does not satisfy Baltik\u2019s material request.",
+          "keyword": "eagle",
+          "mob_vnum": 88911,
+          "name": "a majestic baldeagle",
+          "topics": []
+        },
+        {
+          "description": "Bullfrogs start in shallows and pond rooms 88924, 88927, 88955, 88957 and 88959 carrying frog spawn jelly. Four separate exact jelly items satisfy the eager fisherman; no spawning action is required.",
+          "keyword": "bullfrog",
+          "mob_vnum": 88915,
+          "name": "a large bullfrog",
+          "topics": []
+        },
+        {
+          "description": "Razhl guards underwater lair 88968, south of cavern 88965. Baltik\u2019s totem can unlock the cavern-side door. The hydra carries imported crystal skull 31320, one of Qin\u2019s five different skulls in the separate Dream quest. Custody or a local reward does not complete Qin\u2019s quest.",
+          "keyword": "razhl",
+          "mob_vnum": 88900,
+          "name": "Razhl, the three-headed hydra serpent",
+          "topics": []
+        },
+        {
+          "description": "The lonely aquaelf starts in deep water 88964 wearing the belt of liquid links at the waist. Its water-breathing effect offers an alternative to a worn snorkel if you can recover and wear it. It is already underwater, so plan the initial descent.",
+          "keyword": "aquaelf",
+          "mob_vnum": 88922,
+          "name": "a lonely aquaelf",
+          "topics": []
+        },
+        {
+          "description": "Blood-hungry leeches occupy pond rooms 88954 through 88959. The jelly route is not guaranteed safe. Their presence does not add another native quest or a required combat achievement.",
+          "keyword": "leech",
+          "mob_vnum": 88912,
+          "name": "a blood hungry leech",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Help the anglers and lonely trapper, connect bottle cleanup and the lost guide to fishing supplies, and prepare the totem and breathing needed for the underwater cavern. Five accepted requests remain independent while the journal explains useful routes between them.",
+      "orientation": [
+        "Active, ready accounting is required for discovery, visible encounters, journals and new achievement/daily credit. Discovering Fishermans Wharf has its own achievement. Questions and current supplies help you prepare; accepted offerings complete its five requests.",
+        "From Surface room 567269, travel north into the Wharf entrance 88900; south returns. At trail 88901, northeast reaches the pier approach and northwest reaches the muddy foothills. Widoc\u2019s shop is west of pier 88904 through a closed door.",
+        "Two requests form useful supply routes for the adult fisherman: four bottles earn bait from an old fisherman, and Dimbled\u2019s guide earns fishing line. Give the adult both exact items together for the cast net. Earlier routes are optional when you already have the exact supplies.",
+        "Baltik\u2019s request needs eight separate items: one eagle egg, four stick bundles and three beaver pelts. His described breakfast, fire and comfort explain the bundle without requiring separate cooking, fire-building or skinning actions.",
+        "The egg belongs to the guarding eagle at tree top 88960, up from pine tree 88922. Flying forest eagles look the same but do not declare an egg. The tree has a chance of starting a fall while you act there; plan protection and a safe descent.",
+        "Four frog jelly items earn a snorkel. Wear it on face or nose to gain breathing; loose or held custody does not provide that effect. A worn belt of liquid links or another working breathing ability is an alternative. None of these rewards guarantees safe underwater travel.",
+        "Windy lake rooms 88939 through 88943 need appropriate movement support, such as a carried or worn boat or a suitable flight ability. A paddle boat is declared in the shallows at 88927 and in Widoc\u2019s shop. The ordinary boat rules differ from sea-going ship systems.",
+        "Descend from windy lake rooms 88942, 88941 or 88939 into 88961, 88962 or 88963. From 88962, continue down through deep water 88964 to cavern 88965. Breathing, darkness and hostile occupants matter; no Wharf room is flagged safe.",
+        "The cavern\u2019s south door to hydra lair 88968 resets closed, locked and pickproof. Baltik\u2019s totem works as its key even though it is a totem. Unlocking and opening are separate. The reverse north door resets closed but unlocked; current door state and alternative access still matter.",
+        "Razhl carries a crystal skull for Qin\u2019s separate five-skull quest in Dream. This journal explains the connection without awarding a Wharf outcome for custody, a personal hydra kill or Qin\u2019s larger quest. Taking the skull onward still requires its actual handling rules.",
+        "For ordinary fishing, learn the fishing skill and carry a recognized pole loose in a water room. Wharf\u2019s pole is recognized, but an equipped pole is not selected by the current fish command. Bait, line, jelly and the cast net are quest materials or equipment; the fishing command does not consume them.",
+        "The five recipients remain after acceptance, and duplicate fishermen share their native requests. Potential dailies still depend on available supplies and active accounting. A historical completion does not refill your inventory, unlock today\u2019s door or guarantee an available daily. Smokey Backwoods 88969 has a healing room flag that supports recovery."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "fishermans_wharf",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:88910,I:88910,I:88910,I:88910,I:88911,I:88911,I:88911,I:88913;receive=I:88914;disappear=0",
+              "giver_vnum": 88902
+            }
+          ],
+          "id": "baltiks-eight-supplies",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The guarding bald eagle at the pine-tree top 88960 carries the egg. The same-looking flying eagles in the forest do not. The tree is precarious; prepare before climbing. Carry the exact quantity loose for the offering. Supplied material is accepted without an earlier quest or a personal kill.",
+              "id": "material-88913",
+              "item_vnums": [
+                88913
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one full-size eagle egg"
+            },
+            {
+              "count": 4,
+              "hint": "Sticks are declared on the forest floor at 88910 and 88915 and in the muddy foothills at 88951 and 88953. A single bundle is one item, despite its name. Carry the exact quantity loose for the offering. Supplied material is accepted without an earlier quest or a personal kill.",
+              "id": "material-88910",
+              "item_vnums": [
+                88910
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry four separate bundles of sticks"
+            },
+            {
+              "count": 3,
+              "hint": "The three beavers starting at 88939, 88942 and 88944 carry the pelts. They can wander within the zone. Recovering a pelt does not require a recorded skinning action. Carry the exact quantity loose for the offering. Supplied material is accepted without an earlier quest or a personal kill.",
+              "id": "material-88911",
+              "item_vnums": [
+                88911
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry three separate soft beaver pelts"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:88910,I:88910,I:88910,I:88910,I:88911,I:88911,I:88911,I:88913;receive=I:88914;disappear=0",
+                  "giver_vnum": 88902
+                }
+              ],
+              "hint": "Offer the whole exact bundle to this recipient. Acceptance completes this request. Questions, current supplies and later travel are separate.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Baltik\u2019s supplies and cavern totem"
+            }
+          ],
+          "summary": "Help the lonely trapper with one eagle egg, four bundles of sticks and three beaver pelts. His accepted eight-item bundle earns the petrified fanged snake totem. His breakfast, fire and comfort are the story behind the supplies; they are not separate actions you must perform. The totem unlocks the south cavern door toward Razhl, but breathing, opening the door and facing the hydra still require preparation.",
+          "title": "Baltik\u2019s supplies and cavern totem"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:88900;receive=E:7500,I:88904;disappear=0",
+              "giver_vnum": 88904
+            }
+          ],
+          "id": "dimbleds-fishing-guide",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The guide is declared on the dirty pier at 88903. Dimbled waits at the pine tree 88922. Carry the exact quantity loose for the offering. Supplied material is accepted without an earlier quest or a personal kill.",
+              "id": "material-88900",
+              "item_vnums": [
+                88900
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the fishing guide"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:88900;receive=E:7500,I:88904;disappear=0",
+                  "giver_vnum": 88904
+                }
+              ],
+              "hint": "Offer the whole exact bundle to this recipient. Acceptance completes this request. Questions, current supplies and later travel are separate.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Dimbled\u2019s missing fishing guide"
+            }
+          ],
+          "summary": "Bring Dimbled the exact fishing guide from the pier. Acceptance earns fishing line and 7500 experience. The guide has a visual map, but this request requires its delivery; reading it or escorting Dimbled is not an additional objective. The line can help supply the adult fisherman.",
+          "title": "Dimbled\u2019s missing fishing guide"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:88902,I:88904;receive=E:7500,I:88906;disappear=0",
+              "giver_vnum": 88905
+            }
+          ],
+          "id": "adult-fishermans-supplies",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:88912,I:88912,I:88912,I:88912;receive=E:7500,I:88902;disappear=0",
+                  "giver_vnum": 88906
+                }
+              ],
+              "hint": "This is an optional way to obtain supplies. Current exact supplied items need no earlier receipt; a completed request does not replace a spent item.",
+              "id": "earlier-request-94",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: clean bottles for bait"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:88900;receive=E:7500,I:88904;disappear=0",
+                  "giver_vnum": 88904
+                }
+              ],
+              "hint": "This is an optional way to obtain supplies. Current exact supplied items need no earlier receipt; a completed request does not replace a spent item.",
+              "id": "earlier-request-49",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: return the guide for line"
+            },
+            {
+              "count": 1,
+              "hint": "The old fisherman rewards bait for four glass bottles. Keep the bait for the adult\u2019s combined offering. Carry the exact quantity loose for the offering. Supplied material is accepted without an earlier quest or a personal kill.",
+              "id": "material-88902",
+              "item_vnums": [
+                88902
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact fishing bait"
+            },
+            {
+              "count": 1,
+              "hint": "Dimbled rewards this line for his guide. Another player\u2019s exact supplied line also satisfies the request. Carry the exact quantity loose for the offering. Supplied material is accepted without an earlier quest or a personal kill.",
+              "id": "material-88904",
+              "item_vnums": [
+                88904
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact fishing line"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:88902,I:88904;receive=E:7500,I:88906;disappear=0",
+                  "giver_vnum": 88905
+                }
+              ],
+              "hint": "Offer the whole exact bundle to this recipient. Acceptance completes this request. Questions, current supplies and later travel are separate.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Supplies for the young anglers"
+            }
+          ],
+          "summary": "Help the adult fisherman teach the boys by delivering one exact bait item and one exact fishing line together. Acceptance earns the weathered cast net and 7500 experience. Cleaning bottles for the old fisherman and returning Dimbled\u2019s guide are useful earlier routes, but supplied bait and line work equally well. The net is a carrying container; catching a fish is a separate activity.",
+          "title": "Supplies for the young anglers"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:88912,I:88912,I:88912,I:88912;receive=E:7500,I:88902;disappear=0",
+              "giver_vnum": 88906
+            }
+          ],
+          "id": "old-fishermans-bottle-cleanup",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "Six bottle placements are declared at 88924, 88925, 88926, 88927, 88929 and 88934. They are secret objects, so actual perception and recovery matter. Four different bottles are needed. Carry the exact quantity loose for the offering. Supplied material is accepted without an earlier quest or a personal kill.",
+              "id": "material-88912",
+              "item_vnums": [
+                88912
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry four separate glass bottles"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:88912,I:88912,I:88912,I:88912;receive=E:7500,I:88902;disappear=0",
+                  "giver_vnum": 88906
+                }
+              ],
+              "hint": "Offer the whole exact bundle to this recipient. Acceptance completes this request. Questions, current supplies and later travel are separate.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Clean bottles from the lake"
+            }
+          ],
+          "summary": "Bring the old fisherman four separate glass bottles to help clean the lake. Acceptance earns fishing bait and 7500 experience. Bottles are declared in the shallows and calm water; finding or picking one up prepares the request, while delivering the full bundle completes it. The bait is useful for the adult fisherman\u2019s supplies.",
+          "title": "Clean bottles from the lake"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:88909,I:88909,I:88909,I:88909;receive=E:7500,I:88905;disappear=0",
+              "giver_vnum": 88907
+            }
+          ],
+          "id": "eager-fishermans-frog-jelly",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "Bullfrogs starting at 88924, 88927, 88955, 88957 and 88959 carry the jelly. Recover four exact items for one complete offering. Carry the exact quantity loose for the offering. Supplied material is accepted without an earlier quest or a personal kill.",
+              "id": "material-88909",
+              "item_vnums": [
+                88909
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry four separate frog spawn jelly items"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:88909,I:88909,I:88909,I:88909;receive=E:7500,I:88905;disappear=0",
+                  "giver_vnum": 88907
+                }
+              ],
+              "hint": "Offer the whole exact bundle to this recipient. Acceptance completes this request. Questions, current supplies and later travel are separate.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Frog jelly for a snorkel"
+            }
+          ],
+          "summary": "Bring an eager fisherman four separate frog spawn jelly items for the crude snorkel pipe and 7500 experience. The bullfrogs carry the jelly; breeding frogs or catching a fish is not required. Wear the snorkel on your face or nose for its water-breathing effect. Carrying or merely holding it is not enough for underwater breathing, and another working breathing ability can serve instead.",
+          "title": "Frog jelly for a snorkel"
+        }
+      ]
+    },
+    {
       "contacts": [],
       "coverage": "complete",
       "exclusions": [],

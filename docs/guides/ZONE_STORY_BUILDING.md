@@ -1328,3 +1328,37 @@ key settlement/live travel/existing object migration remain unqualified. Ready
 news: “The Plane of Smoke's vault key now works from either side of the
 portcullis, and Discontent can be selected by its own name.” Keep the pending
 forge/proc/earring/prose/scene plans separate from this shipped repair entry.
+
+### Fishermans Wharf: quantities, optional supplies and alternative abilities
+
+The [dossier](../design/zone-stories/FISHERMANS_WHARF.md) and
+[journal](../../areas/story/fishermans_wharf.story.json) map five independent
+accepted outcomes. One egg, four separate stick bundles and three pelts require
+eight different physical roots; a single "bundle" item counts once. Four
+bottles and four jellies likewise mean four separate exact items. Optional
+cleanup/guide receipts explain bait/line sources, while supplied exact items
+skip those histories. Duplicate actors share their native definition; aliases,
+current quantities and story narration do not create extra credit.
+
+Use actual actor identity and admitted supply: guarding eagle88910 carries the
+egg while same-looking flying eagle88911 does not. Preloaded pelts/jelly/skull
+do not prove skinning, spawning, personal kills or first acquisition. A future
+source objective needs committed item/actor/source evidence; ordinary deliveries
+remain compatible with supplied items. Keep cap/reset availability separate
+from static potential-daily classification.
+
+Check actual effects and access semantics. Snorkel must be face/nose worn;
+belt waist worn or working spell/innate can provide alternative breathing.
+Historical reward/loose/held custody does not establish an active effect. Totem
+works as a key by exact vnum; unlock/open/arrival are distinct. Tree F50 starts
+chance falling at command time, not immediate grounded arrival. Future effect/
+alternative and accepted travel/fall objectives need actual qualification.
+
+Shared fishing selects recognized loose poles, generates global fish, and does
+not consume quest bait/line/net/jelly. Its success text/XP precede ownership
+submission, whose result is ignored. Qualify accepted/rejected grants and
+recovery before a separate publication-order fix or typed catch objectives.
+Skull31320 belongs to Qin's foreign five-kind quest; NODROP handling and native
+bundle consumption differ. Keep foreign ownership and supplied-route history
+explicit. No native repair ships with this map; preserve earlier Newhaven terms.
+Keep proposed builder decisions separate from actual fix commits and news.
