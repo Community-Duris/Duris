@@ -2809,6 +2809,13 @@ interpreter boundaries; original failures remain retained. Combined-source Plan 
 unit checks pass 63 reconciliation, 11 audit-origin and 16 audit-invariant cases.
 Reduced-schema native audit evidence still requires current-candidate rerun and
 does not establish canonical fresh/upgrade or interruption/CLI qualification.
+The already-underway retention group completed all ten native runs successfully:
+four admission/visibility/checkpoint/capacity owners plus coin, admission-owner
+release and craft retention in SQL-header and flatfile modes. Each craft mode
+passes all 30 scenarios. `tmp/accounting-integration-retention-v1.local.json`
+retains the exact source/owner/log hashes; process completion and all ten results
+are confirmed. These controlled component checks do not qualify actual SQL or
+player/restart routes. No new test run was started after the batching request.
 
 Two isolated implementation specialists now own shop publication retention and
 REMOVE-CURSE custody fixtures/producer work. Primary owns their shared contract
