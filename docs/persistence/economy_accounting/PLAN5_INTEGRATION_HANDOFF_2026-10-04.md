@@ -6,6 +6,9 @@ Experimental branch through `f7d26eaa721cd3b675c0b0c65009a2535813f400`
 was integrated in `a590fc662`; that incoming delta changes only game news.
 No new combined-candidate tests ran. External reports and native input trees
 remain branch-specific evidence, not qualification of the primary candidate.
+The later Plan5 `fcdb1afd8` restore-coin slice is integrated in `8d1be035d`;
+its native tree `d9a9610f3` evidence does not qualify the current combined source.
+Fresh remote readback still shows Plan5 fcdb1afd8 and experimental f7d26eaa7.
 
 Independent read-only specialist/architect source reviews found these remaining
 gates for the Plan 5 owner. Counterexamples below are predictions from source,
@@ -63,3 +66,47 @@ Primary added source-only lifecycle staged composition in2b4591c21 and retains
 native boundary/census, activation and legacy migration ownership.
 The native marker is source-reviewed, not executed or qualified. Defer new reader
 checks to the agreed major-plan batch, preserving actual BEFORE counterexamples.
+
+## Immutable lifecycle receipt interface for independent consumers
+
+Primary's source-only native installer now retains
+`economic-evidence/lifecycle-<original-operation-id>.elr`; see
+[the exact source preparation and limits](LIFECYCLE_RETAINED_RECEIPT_PREPARATION_2026-10-04.md).
+It is mandatory evidence for new completed lifecycle installs, committed in the
+same authenticated authority bundle as mappings, baseline/reservations and epoch
+selection. Original-ID retry precedes selected-epoch rejection and native capture.
+Native format source is local commit `012c32e24` on `codex/accounting-review-fixes`
+in `.worktrees/accounting-review-fixes`, source-reviewed but unqualified/unpushed.
+Use that exact source/contract for the local narrow interface handoff; do not treat
+the published experimental branch as already containing these new prerequisites.
+Historical retry never reselects the original epoch or reconstructs original mapping
+metadata from current mapping rows. Old completed installations lacking this record
+fail closed; no implicit compatibility migration is supplied.
+
+The private v1 envelope is48 bytes: eight-byte `DURELR\0\0` magic, little-endian
+version1/body length and SHA256 body digest. The body stores exact original request,
+opening, resolved coverage, baseline identity/revision, lineage and epoch provenance,
+ordered full original mapping snapshots, original native source descriptors, encoded
+baseline command, canonical witness and command-bound plan. Bounds and exact field
+order live in the native codec; Plan5 should implement an independent reader from
+that contract, preserving malformed/count/name/blob/canonical refusal.
+
+Native decode cross-binds original locator/PID/order, balances, revisions and source
+fingerprints to the separately retained baseline witness and ordered coverage.
+Original mapping revision/create/last metadata remains explicitly authoritative in
+the immutable `.elr` frame; its checksum is not an independent authentication proof
+against coordinated rewriting. Alias names are private and do not identify durable
+economic accounts. Do not invent retention/governance policy or expose raw aliases.
+
+Current Plan5 authority/baseline qualifiers ignore this filename family;
+`scripts/validate_data_lifecycle.py` also lacks its participant. Plan5 owns mandatory
+receipt discovery and independent baseline/epoch/source cross-checks, missing/corrupt
+history refusal, backup/restore/export and erasure/retention consumers/evidence.
+Primary owns native format/producer, shared registry and central registration.
+Return narrow interface needs and immutable owned commits for regular integration.
+
+The38 prepared lifecycle cases remain declarative and unexecuted. Source review
+is accepted; no compiler/native/flatfile recovery or broad release result follows.
+Keep major-plan testing cadence, original budgets and all R1–R8 gates. Native
+boundary authority, complete holdings/items, activation and compatibility remain
+primary prerequisites. New format evidence is not full Plan1 or Plan5 completion.

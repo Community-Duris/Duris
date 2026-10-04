@@ -18,7 +18,7 @@ to its native tree d9a9610f3 and consumed scripts/fixtures. Combined-source
 qualification is still required. Its final900-second per-engine wrapper differs
 from the failed240-second attempt; this does not relax the primary candidate's
 original gate budgets or establish complete release-host workload acceptance.
-The source milestone candidate through `c6b607d41` includes the ten prerequisite
+The source milestone candidate through `012c32e24` includes the fifteen prerequisite
 slices below, plus the later local Plan5 integration described above. Plan5's reports remain evidence of
 its own inputs, not of this combined source candidate. Root checkout WIP is preserved.
 
@@ -41,6 +41,11 @@ Parallel specialists use bounded file ownership; primary integrates and reviews.
 | `2b4591c21` | [Staged lifecycle composition](FLATFILE_LIFECYCLE_COMPOSITION_PREPARATION_2026-10-04.md): private sealed after-image view, complete revision chain and precommit receipt construction. | External boundary fields are assertions; actual native boundary/census, selected-epoch exact retry and activation remain open. |
 | `aa385e73b` | [Exact-request sticky wake](DEFERRED_SAVE_WAKE_PREPARATION_2026-10-04.md): allocation-free before-park notification and guarded notified dispatch. | Actual guard/persistence timing, replay revisit and production recovery remain open. |
 | `c6b607d41` | [Original hold wake handoff](DROP_HOLD_WAKE_HANDOFF_PREPARATION_2026-10-04.md): capture active identity before exact guard release; notify after pipeline unlock. | No production post-drop ACK caller; complete mutation census, ACK reservation and cold startup remain open. |
+| `16e77e111` | [Transaction-scoped ordinary-drop receipt](ORDINARY_DROP_INBOX_VERIFIER_PREPARATION_2026-10-04.md): exact historical inbox/result/root/literal/outbox proof inside caller-owned authority locks, with no late inbox lock. | Read-only proof; current native graph, cleanup ownership, publication and ACK remain separate. |
+| `8068950d3` | [Pure owner-cache observation](RUNTIME_OWNER_PEEK_PREPARATION_2026-10-04.md): missing owner refuses without hydration or cache insertion. | Cache observation grants no native authority; caller must own serialized access and prove current SQL revision. |
+| `488414dc1` | [Actor-independent existing-drop observation](EXISTING_DROP_GRAPH_PREPARATION_2026-10-04.md): one original SQL session binds current epoch/custody/literals, retained receipt and complete physical/runtime graph. | Positive observation follows confirmed rollback; it grants no retained authority, construction, ACK or producer integration. |
+| `e84e52de0` | [Private all-absent reconstruction](ABSENT_DROP_ENROLLMENT_PREPARATION_2026-10-04.md): full eligibility, detached literal topology, atomic runtime hydration and assignment-only native enrollment; uncertain cleanup retains the graph. | Trusted cache-only/activity-excluding subset; general prototype/bookkeeping coverage, production census/reservation/ACK and complete cold recovery remain open. |
+| `012c32e24` | [Immutable lifecycle retained receipt](LIFECYCLE_RETAINED_RECEIPT_PREPARATION_2026-10-04.md): original ordered mappings and native descriptors/baseline/coverage/epoch bindings committed atomically; exact retry precedes EALREADY/native recapture. | Native boundary/holding/item completeness and Plan5 mandatory `.elr` inventory/restore/export/erasure/retention remain open. |
 
 Source reviewers found no remaining blocker in each slice's stated narrow scope.
 This is source review, not native/build/gameplay/persistence/recovery acceptance.
@@ -64,6 +69,17 @@ the linked reports. A missing BEFORE API/compile failure is unsupported, not a
 semantic RED. Original case/aggregate/compile budgets and maintained oracles remain.
 Later combined-candidate qualification must refresh consumed source pins; these
 isolated frozen families do not establish current-head acceptance or route coverage.
+
+The new graph family preserves26 selected BEFORE inputs and30 selected AFTER
+inputs, not a compiler closure. Its44 cases are declarative, non-executable and
+unobserved. Source review closed foreign container/character aliases, unregistered
+intermediate links and opaque allocation/retry classification. Shared receipt and
+cache APIs have separate immutable BEFORE inventories. No new qualification ran.
+Later all-absent preparation retains ten selected inputs and21 declarative case
+groups; lifecycle retains22 selected inputs and38 declarations. The first lifecycle
+source lacked independent locator/source binding; it is preserved as insufficient.
+The strengthened final candidate cross-binds native source fingerprints/coverage.
+None of these inventories is a compiler closure or executable qualification.
 
 ## Remaining integration
 
@@ -132,3 +148,44 @@ Original V1 is preserved as insufficient; corrected V2 restores the exact header
 Primary raw inventory review confirms533 files per variant and only worker.c/h
 differ, with exact frozen/current source matches. The report correction follows
 aa385e73b; no native execution or source change follows from that metadata check.
+
+## Existing-graph recovery follow-up (source only)
+
+The existing ordinary-drop observer is now implemented. It requires the actual
+game thread, sealed definitive original result and continuous original-epoch,
+season, room/custody/literal authority. It compares the entire receipt body and
+complete physical/runtime placement, including foreign container and character
+aliases, before returning matching or absent. Bounded traversal/OOM/opaque proof
+failure cannot become an absent result. It performs no hydration, repair or effects;
+uncertain exact-session rollback overrides any positive observation.
+
+General all-absent coverage, trusted boot prototype coverage/activity bookkeeping,
+production dispatch, save mutation census and
+coordinator-enforced ACK reservation remain open. The
+[registry preparation](RECOVERY_OBSERVATION_REGISTRY_PREPARATION_2026-10-04.md), commit `862f00381`,
+classifies the three observations without changing historical census/matrix anchors
+or unverified backend evidence.
+
+Source tracing established Plan1 selected-epoch lost-reply retry could not recover
+the original lifecycle receipt: prior install returned EALREADY, and original
+ordered mapping names/revisions/lifetime operations are not retained immutably.
+An operation-keyed versioned receipt must join the same authority bundle and
+verify its historical baseline before retry; current mutable mappings cannot
+reconstruct it. This source counterexample is not an executed failure. Native
+boundary authority, holding/item completeness and activation remain required.
+
+That bounded lifecycle retry owner is now implemented in012c32e24, including
+separate original source-descriptor/baseline fingerprint and ordered coverage
+binding. Original mapping revision/create/last metadata remains authoritative in
+the immutable receipt; no current mapping reconstruction occurs. The
+[Plan5 format handoff](PLAN5_INTEGRATION_HANDOFF_2026-10-04.md) records mandatory
+new-format readers/inventory/restore/alias lifecycle obligations. Source metadata
+76588bc86 records pure eligibility, projection reconstruction and real native
+lifecycle installation as separate routes, without current census/matrix proof.
+
+Source review also found blind replay revisit can overlap a worker-owned frame
+after initial replay_deferred. Counted permits and journal scan/checkpoint mutex
+do not serialize native SQL callbacks against worker apply/ACK. No replay edit was
+made. Stable per-PID replay/worker/pipeline/journal census and reservation must
+preserve unrelated-PID progress before that integration. Source work continues;
+the goal is ACTIVE, no new tests or qualified milestone push occurred.

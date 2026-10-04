@@ -1,12 +1,30 @@
 # Accounting implementation and qualification handoff
 
-Updated 2026-10-03. Current ownership is assigned by the user: primary owns Plans 1–4,
+Updated 2026-10-04. Current ownership is assigned by the user: primary owns Plans 1–4,
 shared coordinator, contracts, producer integration, writer registry/matrix and
 activation owner. The separate user-coordinated Plan5 agent owns independent
 reconciliation, audit tooling, backup/restore evidence and release qualification
 on `codex/accounting-plan5`.
 Shared interface changes require a narrow field/invariant/consumer/test handoff;
 no independent shared-type, migration, coordinator or registry edits.
+
+Latest native source candidate `012c32e24` includes transaction-scoped drop
+receipt proof, pure cache peek, complete existing-graph observation, private
+cache-only absent reconstruction and immutable native lifecycle receipt/retry.
+Primary integrated bounded maintainer work with independent architect review;
+shared registry classifications follow in76588bc86. Source review is not native
+qualification. No new compiler/tests/SQL/gameplay/services/recovery or push ran;
+testing stays deferred to major-plan readiness. Earlier schedules below retain
+their dated ownership context rather than implying those agents are still active.
+
+See the [current review](REVIEW_STATUS_2026-10-04.md) and
+[Plan5 new-format handoff](PLAN5_INTEGRATION_HANDOFF_2026-10-04.md). Mandatory
+`.elr` independent inventory/restore/export/erasure/retention consumers belong to
+Plan5; native boundary, full holding/item sources and activation belong to primary.
+Stable per-PID replay/worker/pipeline/journal census/reservation is required before
+replay revisit or coordinator ACK integration; preserve unrelated-PID progress.
+Cache-only/activity exclusions remain general ordinary-route blockers. No pending
+classification, selected-input inventory or declarative fixture closes R1–R8.
 
 ## Current integration boundary
 

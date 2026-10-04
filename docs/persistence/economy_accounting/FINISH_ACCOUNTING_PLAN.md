@@ -52,7 +52,7 @@ backend limitations and the tested revision before checking off acceptance.
 ## Current source preparation checkpoint
 
 The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
-remote histories and unqualified source milestones throughc6b607d41. New source
+remote histories and unqualified source milestones through012c32e24. New source
 prerequisites cover allocation-safe publication cleanup, checkpoint-spanning save
 execution guards, bounded runtime UID-root census, authority-bound native baseline
 initialization markers, ordinary item receipt sealing with ACK-only conflict
@@ -60,9 +60,26 @@ repair, nonfatal inert allocation/discard-only construction and staged flatfile
 lifecycle composition. Source review and frozen private fixtures do not complete these plans.
 Later exact-request worker wake and post-hold-release notification preparation
 are recorded at the same checkpoint; production recovery remains unconnected.
+Transaction-scoped ordinary-drop receipt proof, pure runtime owner-cache peek
+and actor-independent existing-graph observation are now implemented but
+unqualified. They create no retained construction or ACK capability. Three new
+semantic registry rows are prepared in862f00381; historical matrix/census anchors
+remain unchanged pending major-plan qualification.
+Cache-only all-absent private enrollment is now source-implemented in e84e52de0,
+with atomic runtime hydration and assignment-only native links/counts/lighting.
+General boot prototype coverage, activity-bearing bookkeeping and production
+recovery still remain incomplete. Blind replay revisit is unsafe while worker
+frames overlap; a stable per-PID replay/worker census and reservation are required.
+Immutable native flatfile lifecycle receipt/retry is now source-implemented in
+012c32e24, retaining original ordered mappings and independently bound original
+source descriptors/baseline/coverage/epoch provenance. Authentic native cutover
+authority and complete holdings/items remain open. Plan5 must register and verify
+mandatory `.elr` history in independent inventory, restore/export and alias lifecycle
+consumers; no implicit migration or retention policy is supplied. All new routes
+remain source-only/unverified in semantic metadata76588bc86.
 
 Production restored-save/actorless publication ownership, complete mutation census,
-critical ACK reservation, production wake/replay integration, final inert graph enrollment, authentic
+critical ACK reservation, production wake/replay integration, complete ordinary-graph enrollment, authentic
 native baseline boundary authority and Plan5 marker-v2 consumers remain pending. Native writer integration,
 current semantic registry/matrix anchors and executable route proof remain open.
 Testing stays deferred until each major plan is ready; no new source qualification
