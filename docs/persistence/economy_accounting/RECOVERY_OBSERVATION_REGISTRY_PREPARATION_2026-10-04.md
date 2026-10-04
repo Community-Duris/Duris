@@ -25,3 +25,22 @@ semantic/site census, executable same-root tests and matrix reanchoring remain
 required. Lexical inventory and these classifications do not establish R6 or
 full accounting completion. Later all-absent enrollment must receive its own
 writer/projection classification; it cannot inherit this observer's status.
+
+## Later reconstruction and lifecycle source rows
+
+Candidate `012c32e24f84ebe567012d33ae533b21f7264351` adds the pure inert
+eligibility classifier and cache-only all-absent reconstruction (`e84e52de0`).
+Their semantic rows distinguish nonmutating eligibility from authoritative
+projection enrollment: the latter changes global/index/room/runtime caches while
+preserving original economic UID/custody identity. Neither grants critical ACK.
+Both remain unverified; general prototype/activity coverage and production
+integration are incomplete. The generator's nonwriter/projection table now
+records those narrow exclusions explicitly.
+
+A separate real writer row classifies flatfile lifecycle installation, including
+the mandatory retained `.elr` receipt (`012c32e24`). That row is not a nonwriter
+exclusion: it stages mapping lifetimes, baseline evidence and epoch selection.
+Native boundary authority, complete holding/item coverage and Plan5 durable-format
+consumers remain missing. Historical anchors/matrix and all backend evidence stay
+unchanged. No generator, AST or executable checks followed; these are pending
+source classifications, not R6 coverage or activation readiness.

@@ -46582,6 +46582,96 @@
       "sites": [],
       "evidence": [],
       "reachability_evidence": "Opt-in graph owner consumes shared observation seams; no production dispatcher/ACK integration. Current-source semantic census and executable route reanchoring remain pending."
+    },
+    {
+      "id": "recovery.inert_literal_eligibility",
+      "path": "src/player/inert_item_stage.c",
+      "symbol": "inert_item_stage_eligibility",
+      "reason": "item_move",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Pure bounded classification of literal/prototype eligibility; no allocation, pool access, hydration, native mutation or enrollment permission.",
+      "authority_boundary": "Classification only; trusted prototype provenance and native SQL authority belong to integrated enrollment owner.",
+      "current_support": "Source-reviewed, UNQUALIFIED; backend-neutral classifier with no economic effects.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Opt-in source implementation has no production integration. Current-source semantic census/site reanchoring and executable qualification remain pending."
+    },
+    {
+      "id": "recovery.ordinary_drop_graph_reconstruction",
+      "path": "src/item/ordinary_drop_recovery.c",
+      "symbol": "ordinary_drop_recovery_publish",
+      "reason": "item_move",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Reconstructs only an entirely absent graph from exact original receipt/current SQL authority using retained UIDs and literals. Projection enrollment changes global/index/room/runtime caches without economic issuance, destruction or ACK.",
+      "authority_boundary": "Internally reacquired original-epoch/session/custody authority, full absence, private inert ownership, atomic registry hydration and nonthrowing native enrollment; uncertain cleanup retains graph/obligation.",
+      "current_support": "Source-reviewed cache-only SQL subset, UNQUALIFIED. General prototype coverage/activity bookkeeping, production save census/reservation/ACK/startup and full ordinary-route qualification remain required; flatfile unsupported.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Opt-in source implementation has no production integration. Current-source semantic census/site reanchoring and executable qualification remain pending."
+    },
+    {
+      "id": "lifecycle.flatfile_activation_install",
+      "path": "src/flatfile/flatfile_accounting_lifecycle_transaction.c",
+      "symbol": "flatfile_accounting_lifecycle_transaction::install",
+      "reason": "baseline",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Stages native mapping lifetimes, baseline opening evidence/reservations, immutable lifecycle receipt and epoch selection in one existing shared authority bundle.",
+      "authority_boundary": "Fresh-install boundary/virgin booleans remain assertions; authentic native exclusion/census and complete holding/item coverage must precede activation. Exact retry verifies original immutable sources/baseline/epoch without new images or native recapture.",
+      "current_support": "Native flatfile source owner UNQUALIFIED and unwired. Mandatory .elr restore/export/erasure/retention consumers and migration policy remain with independent Plan5 stream; no activation authorization.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Opt-in source implementation has no production integration. Current-source semantic census/site reanchoring and executable qualification remain pending."
     }
   ],
   "census": [
@@ -63541,15 +63631,17 @@
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
   },
   "pending_source_integration": {
-    "candidate_commit": "488414dc1b3e41689ecba444aadef6fd8657d689",
-    "status": "Source rows prepared for inert private allocation/cleanup and pure recovery observations; historical census/source anchors and generated matrix remain unchanged pending full major-plan integration.",
+    "candidate_commit": "012c32e24f84ebe567012d33ae533b21f7264351",
+    "status": "Source rows prepared for inert staging/eligibility, recovery observations/reconstruction and native lifecycle installation; historical census/source anchors and generated matrix remain unchanged pending full major-plan integration.",
     "qualified": false,
     "prepared_nonwriter_routes": [
       "recovery.inert_literal_staging",
       "recovery.inert_literal_cleanup",
       "recovery.sql_ordinary_drop_receipt_observation",
       "recovery.runtime_owner_revision_observation",
-      "recovery.ordinary_drop_graph_observation"
+      "recovery.ordinary_drop_graph_observation",
+      "recovery.inert_literal_eligibility",
+      "recovery.ordinary_drop_graph_reconstruction"
     ]
   }
 }
