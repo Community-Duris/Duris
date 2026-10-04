@@ -853,3 +853,12 @@ No synthetic coverage manifest may establish game-wide completion.
 
 A reliable remaining duration has not been measured; the number of source helpers
 is not a percentage complete. User testing cadence remains major-plan batches.
+
+The user explicitly reaffirmed the group-authored delivery scope: take on no
+additional work and prioritize completing the required implementation for group
+testing. New changes must trace to this plan's acceptance or R1/R6/R8, with item
+identity requirements from R4 where publication touches custody. Avoid optional
+infrastructure or a broader recovery framework. Exact-ID replay and preservation
+of a confirmed native outcome remain required; choosing whichever inventory is
+visible is not evidence of that outcome. Existing ownership prerequisites must
+serve the actual production integration rather than become a separate project.
