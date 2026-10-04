@@ -1,5 +1,11 @@
 # Plan 5 integration handoff — 2026-10-04
 
+Latest peer refresh `559dbd6fe` supplies two further completed slices, imported
+as `67922f9e0` (native reason diagnostic) and `c8f593617` (canonical retained
+history at native erasure boundaries). The latter's 22 normal cuts, four semantic
+refusals and ten cold restarts remain peer-input evidence; no primary combined
+Plan5 qualification ran. No primary production source or shared contract changed.
+
 Primary integrated `codex/accounting-plan5` through
 `7a78bb065a7979b8dc8ad2ec49295629d6713906` in local merge `432db98be`.
 Experimental branch through `f7d26eaa721cd3b675c0b0c65009a2535813f400`

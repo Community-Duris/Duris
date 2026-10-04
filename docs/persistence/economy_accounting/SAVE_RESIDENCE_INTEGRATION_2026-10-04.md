@@ -660,8 +660,42 @@ metadata bb328c2acaf1faf9d78577a22890b8c705347d82f13a19dca28d8eb0103ee6d7.
 Runtime result hashes9bf2599b00cdfc639dae4b1d4bd8313ac74d693627db548ebb4e8d1ee9145f7d
 and5ed16c4e8393d128e19c6688a6f60194323bc47be6dc22c42bd56b4c15e9ab28.
 
-The existing active ordinary-drop journey remains unfinished: real inactive
-creation/get/save and disposable lifecycle activation now execute, but the
-literal-checkpoint wait fails. Prior failed attempts remain preserved. Required
+The existing active ordinary-drop journey remains unfinished. V5's general UI
+message was not an ownership-cache failure: actual native logs identify
+`active_accounting_unsupported`. Prototype48 has `god_bp`; trusted inert staging
+correctly refuses procedure-bearing objects. Procedure-free prototype377 has a
+byte-identical native record. The private V6 fixture changes only the active
+outer reset/query/export prototype, retaining child391, note5, all three actual
+UIDs, exact bytes/topology and original bounds. Its changed export helper compiles
+in221.13 seconds within300. Production source and refusal guards are unchanged.
+V6 reaches actual literal checkpoint, durable journal and native source export
+on both engines, then times out waiting for gameplay publication (154/168 seconds,
+original outer600). Both owned teardowns verify identity, schema absence, shutdown
+and port rebind. Preserved evidence does not yet establish successful COMMIT or
+the exact silent publication refusal.
+No ACK or cold-boot success is claimed. Prior failed attempts remain preserved. Required
 guarded gameplay ACK and two full-world cold boots, Plans2–4, combined Plan5
 qualification and full release remain open. No new acceptance gate is added.
+
+Plans2 and4 continue independently while Plan1 qualifies. A complete private
+12-file SQL room-coin recovery slice now joins the reviewed native owner, exact
+retained repository verifier, original held save registration and guarded ACK
+dispatch, including its production Makefile entry. Two review findings were
+corrected privately: rejected pickup observes current rather than obsolete pile
+authority, and an advanced shared bank projects current locked values while the
+historical receipt remains exact. Corrected native owner8cc4b52e is source-reviewed,
+uncompiled and unqualified; it is not integrated into production. A two-file
+flatfile retained verifier is separately prepared; current-state/publication parity
+remains open. No new schema, receipt store or acceptance gate is introduced.
+
+The private collector proposal now has its existing mapped-wallet/bank admission
+contract and singleton purchase registration connected, with original listing
+binding and the real acceptance time frozen before submission. Read-only review
+found no blocker in those six deltas. Its submit/save/ACK and native recovery
+contracts remain unimplemented; no Plan4 route or writer coverage is qualified.
+
+Completed recovery-session milestone `b878ae837` and the subsequent independent
+Plan5 imports are pushed normally through `c8f593617` to canonical
+`Community-Duris/Duris` experimental-accounting. Remote readback confirms that
+exact head. This publishes incremental review work; Plan1 and full release remain
+incomplete. No private Plan2/4 source or production activation was published.

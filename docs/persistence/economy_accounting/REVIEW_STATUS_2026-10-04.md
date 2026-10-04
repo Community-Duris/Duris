@@ -7,6 +7,16 @@ preparation status, not its bounded historical test evidence.
 
 ## Integrated candidate and ownership
 
+Peer `3b076856a` and `559dbd6fe` are imported as `67922f9e0` and `c8f593617`.
+The diagnostic now reads the native reason bytes; canonical retention checks
+reuse the independent restore qualifier at real inactive erasure/restart cuts.
+Peer results qualify its consumed inputs only. Primary production source is
+unchanged; combined Plan5 acceptance remains open.
+
+Canonical experimental-accounting is now normally pushed through `c8f593617`,
+confirmed by remote readback. The completed recovery-session evidence and peer
+imports are available for review; this is not Plan1 or full-release completion.
+
 Production source through `9fabe54bb` passes both strict server builds. The
 four compile corrections preserve existing behavior. All eleven existing
 component owners now have passing source-bound results; seven stale fixture
