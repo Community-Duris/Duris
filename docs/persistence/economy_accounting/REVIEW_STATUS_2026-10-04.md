@@ -42,7 +42,7 @@ records a rehashed-witness RED and independent committed-root binding, with
 both-engine evidence restricted to its own inputs. Existing native case
 registration covers the updated owner; combined qualification remains deferred.
 
-The source milestone candidate through `480f20ce3` includes the twenty-eight slices
+The source milestone candidate through `97fef7a09` includes the thirty-one slices
 below, plus the local Plan5 integrations described above. Plan5's reports remain evidence of
 its own inputs, not of this combined source candidate. Root checkout WIP is preserved.
 
@@ -83,6 +83,9 @@ Parallel specialists use bounded file ownership; primary integrates and reviews.
 | `1d6043f57` | [Live ordinary-drop producer integration](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#live-ordinary-drop-producer-integration): actual single-root SQL drop consumes literal checkpoint, retains the canonical command/hold, verifies native custody before existing physical handlers, atomically publishes runtime custody and separates ACK from release/notification. | Source review only; ownership remains disabled. Native/player/restart qualification, lifecycle closure, remaining metadata ownership and Plan 1 acceptance remain open. |
 | `1192d08c5` | [Direct login metadata ownership](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#direct-login-metadata-ownership): direct core saves retain PID residence/scope/permit through main-session cleanup; enabled cross-PID deactivation is skipped and rename refuses before filesystem/native mutation. | Source review only; enabled PID-zero/caller-owned transactions remain unsupported. Lifecycle closure, production ownership enable and major-plan qualification remain open. |
 | `480f20ce3` | [Owned lifecycle drain and close](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#owned-lifecycle-drain-and-close): enabled zero-result drain retries, full retained-work/control census, atomic idle worker stop, join/recheck/exact epoch end before journal cleanup, sticky closed admission and terminal late refusal. | Source review only; production ownership enable, rejected/restored outcome and graph coverage, stopped-runtime maintenance caller, active copyover integration and major-plan qualification remain open. |
+| `2078eb7d0` | [Selected-authority ownership boot](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#selected-authority-ownership-boot-connection): existing epoch begins after selected active SQL authority and closed preparation/revalidation, before critical restore and save workers; active failure aborts before gameplay. | Source review only; no production activation. Supported graph admission/recovery and major-plan qualification remain open. |
+| `cec4bd369` | [Definitive rejected drop settlement](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#definitive-rejected-ordinary-drop-disposition): exact original rejected root/no-effect native proof, unchanged source custody/literals, confirmed cleanup and reserved guarded ACK retain identity through release. | Source review only; missing/conflicting source remains held. Supported graph alignment and actual rejection/replay/restart qualification remain open. |
+| `97fef7a09` | [Ordinary-drop eligibility alignment](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#ordinary-drop-admission-and-recovery-eligibility): existing recovery exclusions now run before checkpoint preparation and hold/admission; cold enrollment reuses the same bounded classifier. | Source review only; broader unsupported routes remain in their owning plans. Existing Plan 1 qualification batch is now authorized. |
 
 Source reviewers found no remaining blocker in each slice's stated narrow scope.
 This is source review, not native/build/gameplay/persistence/recovery acceptance.
@@ -126,8 +129,14 @@ native epoch/payload/graph; materialize without economic side effects; establish
 clean mutation census and ACK reservation; checkpoint critical publication; clear
 only the exact original hold; retain wake across parking. Production SQL startup
 now prepares save metadata, restores critical holds and then starts saves. The
-source remains unqualified and ownership remains disabled pending writer/lifecycle
-completion. No login bypass, blind resume or quarantine bypass.
+source remains unqualified. Selected active SQL boot now enables ownership after
+preparation/revalidation, before critical replay and save execution; inactive and
+flatfile boot remain unchanged. Supported graph alignment is source-complete;
+independent review found no remaining production blocker to starting the existing
+Plan 1 qualification batch. The existing stopped native lifecycle harness composes
+the required guarded maintenance procedure; a new production CLI is not an
+independent acceptance gate. Actual full-release activation and every R1–R8 gate
+remain required. No login bypass, blind resume or quarantine bypass.
 
 The [Plan5 handoff](PLAN5_INTEGRATION_HANDOFF_2026-10-04.md) records source-traced
 stake retirement and retained-price metadata gaps, native marker-v2 reader contract,

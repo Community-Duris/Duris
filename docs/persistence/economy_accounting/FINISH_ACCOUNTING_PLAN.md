@@ -52,71 +52,45 @@ backend limitations and the tested revision before checking off acceptance.
 ## Current source preparation checkpoint
 
 The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
-remote histories and unqualified source milestones through `e99468f93`. New source
-prerequisites cover allocation-safe publication cleanup, checkpoint-spanning save
-execution guards, bounded runtime UID-root census, authority-bound native baseline
-initialization markers, ordinary item receipt sealing with ACK-only conflict
-repair, nonfatal inert allocation/discard-only construction and staged flatfile
-lifecycle composition. Source review and frozen private fixtures do not complete these plans.
-Later exact-request worker wake and post-hold-release notification preparation
-are recorded at the same checkpoint. The restored SQL-drop production chain is
-connected, including covered ordinary-frame ordering under existing native save
-revision authority. Production ownership enable, remaining route integration and
-major-plan qualification are still open. No extra receipt schema or release gate
-is required for already-obsolete receipt-free ordinary projections.
-Transaction-scoped ordinary-drop receipt proof, pure runtime owner-cache peek
-and actor-independent existing-graph observation are now implemented but
-unqualified. They create no retained construction or ACK capability. Three new
-semantic registry rows are prepared in862f00381; historical matrix/census anchors
-remain unchanged pending major-plan qualification.
-Cache-only all-absent private enrollment is now source-implemented in e84e52de0,
-with atomic runtime hydration and assignment-only native links/counts/lighting.
-General boot prototype coverage, activity-bearing bookkeeping and production
-recovery still remain incomplete. Blind replay revisit is unsafe while worker
-frames overlap; a stable per-PID replay/worker census and reservation are required.
-Immutable native flatfile lifecycle receipt/retry is now source-implemented in
-012c32e24, retaining original ordered mappings and independently bound original
-source descriptors/baseline/coverage/epoch provenance. Authentic native cutover
-authority and complete holdings/items remain open. Plan5 must register and verify
-mandatory `.elr` history in independent inventory, restore/export and alias lifecycle
-consumers; no implicit migration or retention policy is supplied. All new routes
-remain source-only/unverified in semantic metadata76588bc86.
+remote histories and unqualified primary source through `97fef7a09`. The
+[consolidated save/recovery report](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md)
+retains the exact slices, source-established gaps and evidence limits.
 
-Save residence is now connected through capture, retained queues, worker execution
-and final receipt delivery in6ef8abb88. The existing dispatcher uses release events
-and skips held/busy PIDs; enabled stop preserves exact originals rather than
-claiming a completed lifecycle. Journal replay now reserves available PIDs and rereads frames before scoped apply
-and aggregate checkpoint in95d03d02f. Ownership remains disabled until complete
-native callers/census, serialized lifecycle, actual revisit/startup and critical ACK
-are integrated and qualified.
-Plan5 canonical restore slice57d4d99b2 is imported in e5a458f70; its report qualifies
-only its own consumed inputs. All new primary source remains unqualified.
+Save residence, native synchronous/core ownership, reserved journal replay and
+restored ordinary-drop guarded publication are connected. Covered ordinary frames
+reuse locked native save revision; no additional snapshot receipt ledger or gate
+is required. `1d6043f57` adds the live literal-checkpoint drop producer;
+`480f20ce3` adds full owned lifecycle drain/close. `2078eb7d0` enables the existing
+ownership epoch only after verified selected active SQL authority and preparation,
+before critical replay and save workers. `cec4bd369` settles exact definitive
+rejections without moving or reconstructing inventory. Unsupported enabled
+maintenance, rename and copyover retain pre-mutation refusal; inactive behavior
+and the declined spell path are preserved. No production accounting was activated.
 
-Independent SQL recovery/retained-death participants now borrow enabled caller
-scopes before mutation in c292cb0f0. Death-conflict/quarantine outer calls now
-borrow before native work in258f27b95, spanning pooled lease disposal/replacement
-and journal resolution. Actual caller residence, other native writers, serial
-lifecycle, complete census/ACK and startup/revisit remain open. Inactive bodies
-are preserved; no qualification ran.
+`97fef7a09` aligns ordinary-graph admission with existing recovery eligibility
+before mutation. Independent source review found no remaining production blocker
+to starting Plan 1's existing qualification batch. Existing flatfile bank/item
+parity, real SQL coordinator/pool and guarded lifecycle checks now enter that batch.
+The existing native lifecycle APIs and stopped/disposable harness compose guarded
+install, incomplete-manifest refusal, activation, pause and reactivation; a new
+production CLI or all Plans2–4 writers are not independent Plan 1 test gates.
+Real production activation-owner/verifier integration still belongs to full-release
+R6 and cannot select an epoch before every plan supplies complete evidence.
 
-Positive-PID synchronous ownership is connected in bef2f797f. SQL boot now prepares
-saves before critical restore, and restored ordinary-drop movement dispatch uses
-an actor-independent original-slot owner through fresh journal/control census,
-native graph publication/cleanup, coordinator-guarded ACK and exact hold clear in
-6d42ad788. Release-driven replay reacquires reservations; stopped/failed namespaces
-are not retried. Production ownership remains disabled. Complete native writers,
-serialized shutdown, legitimate overlapping-save/rejected-outcome disposition,
-full ordinary graph/live producer coverage and qualification remain required.
-Plan5 native baseline claim audit17b824618 is integrated in ad504f5c0 and native
-claim/origin cases registered in4e5faf66a; peer evidence qualifies its own inputs,
-not this combined source. Fixture holdings/items remain absent and export partial.
+Plan5 projection audit `a5d26b658` is imported as `cd0fbebb6`, after its claim/root
+binding slices. Existing central native registrations cover those updated owners.
+Peer evidence qualifies its own consumed inputs; intact native world holdings/items
+remain absent and exports partial. Marker-v2 and mandatory `.elr` independent
+inventory/restore/export/lifecycle consumers, command-preimage binding and full
+release qualification remain Plan5 handoffs. Primary retains native formats,
+cutover/complete-source authority and all remaining Plans1–4 writer integration.
 
-Complete native mutation census and owned shutdown, legitimate overlapping-save/
-rejected-outcome completion, full ordinary-graph/live-producer coverage, authentic
-native baseline/cutover/pause authority and Plan5 marker-v2 consumers remain pending. Native writer integration,
-current semantic registry/matrix anchors and executable route proof remain open.
-Testing stays deferred until each major plan is ready; no new source qualification
-or milestone push occurred. Preserve all original BEFORE sources, oracles and budgets.
+Every new primary slice remains source-only and unqualified. Historical semantic
+registry/matrix anchors remain unpromoted. Testing stays deferred until each major
+plan is ready; Plan 1 is now source-ready and its qualification batch is authorized.
+No new passing compiler/native/gameplay/recovery claim or milestone push has been
+made. Preserve original BEFORE sources, oracles, budgets and
+all applicable R1–R8 requirements, including day-one routes and full backend parity.
 
 ## Current implementation and qualification
 

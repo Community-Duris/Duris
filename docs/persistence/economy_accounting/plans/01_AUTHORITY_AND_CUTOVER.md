@@ -34,16 +34,29 @@ ordering case. Prioritize connecting existing owners into the production path.
 `c542a2642` supplies enabled pre-mutation refusal for unsupported character/account
 deletion and pwipe. `1d6043f57` connects the actual single-root ordinary SQL drop
 to its literal checkpoint and native publication owner before generic registry
-application. Source review passed; tests remain deferred and ownership disabled.
+application. Source review passed; tests remain deferred.
 `1192d08c5` now owns direct core metadata and refuses enabled rename before
 native/filesystem mutation. `480f20ce3` connects full owned lifecycle drain/close,
 retaining the original timeout and closed admission after exact epoch end.
-The existing native lifecycle harness already composes install/refusal/activate/
-pause/reactivate; no online handover is needed for independent acceptance.
-Next are ownership enable under the selected active authority, remaining rejected
-recovery/graph behavior, the stopped-runtime maintenance caller and existing
-flatfile bank/item parity, followed by major-plan qualification. Keep
-these within independent Plan 1 acceptance; add no optional frameworks or gates.
+`2078eb7d0` connects ownership enable only after selected active SQL authority and
+save preparation/revalidation, before critical replay and save workers. Active
+boot failure exits before gameplay; inactive/flatfile behavior remains unchanged.
+`cec4bd369` connects definitive rejected ordinary-drop disposition using exact
+original no-effect native proof and the existing reserved guarded ACK path.
+Both are source-reviewed and unqualified; no production authority was activated.
+`97fef7a09` aligns ordinary-graph admission/recovery using the existing eligibility
+checks before mutation. Independent source review found no remaining production
+blocker to starting this major plan's existing qualification batch. Existing
+flatfile bank/item parity and SQL coordinator/pool/lifecycle checks enter that batch;
+passing source review does not establish acceptance.
+
+The existing native lifecycle APIs and stopped/disposable harness already compose
+guarded install/refusal/activate/pause/reactivate. Independent acceptance requires
+that procedure's native checks, including incomplete-manifest refusal; it does not
+require a new production CLI or online handover. Actual production activation-owner
+and Plan5-verifier integration remain required for full-release R6, along with all
+five plans' coverage. They do not create another independent Plan 1 test gate.
+Keep work within the original acceptance; add no optional frameworks or gates.
 
 Recovery-session cleanup is implemented in `7dc837e29`: original-session rollback
 proof covers replacement apply, creation verification, the inspection loader's

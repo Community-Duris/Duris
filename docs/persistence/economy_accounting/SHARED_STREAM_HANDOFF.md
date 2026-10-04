@@ -1,6 +1,16 @@
 # Accounting implementation and qualification handoff
 
-Updated 2026-10-04. Current ownership is assigned by the user: primary owns Plans 1–4,
+Updated 2026-10-04. Latest primary source `97fef7a09` aligns live ordinary-drop
+admission with existing cold-recovery eligibility before mutation, after selected
+SQL ownership boot and definitive rejection settlement. Latest Plan5 projection
+slice `a5d26b658` is imported as `cd0fbebb6`.
+Source review/formatting passed; no primary qualification or milestone push ran.
+Plan 1 is now source-ready for its existing independent qualification batch.
+Older progress entries below retain their original source scope. Independent
+Plan 1 qualification does not require a new production CLI or all Plans2–4
+writers; actual activation/full release still requires every applicable R1–R8 gate.
+
+Current ownership is assigned by the user: primary owns Plans 1–4,
 shared coordinator, contracts, producer integration, writer registry/matrix and
 activation owner. The separate user-coordinated Plan5 agent owns independent
 reconciliation, audit tooling, backup/restore evidence and release qualification
