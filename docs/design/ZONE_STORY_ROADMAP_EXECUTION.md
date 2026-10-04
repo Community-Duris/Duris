@@ -105,9 +105,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 47 | The 222nd Layer of the Abyss | [Comprehensive source dossier](zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md): all 48 blocks/23 exchanges/25 addressed; 183 rooms/117 mobs/113 objects, 378 resets/257 families, six literal procedures and bounded foreign routes/producers | Revision one: 22 outcomes/forty contacts/39 optional checks; 19 potential dailies, equivalent old-leash aliases, exact competing bundles and optional histories | No native repair ships. Phase insertion blocker, lake/generator/legend creation, dormant Ebb, Flow effects, clue/departure and actual scoped world-effect plans pending |
 | 48 | The Minizones of the Surface | [Comprehensive source dossier](zone-stories/THE_MINIZONES_OF_THE_SURFACE.md): all 59 blocks/25 exchanges/32 addressed, 119 rooms/25 mobs/42 objects, 145 resets/66 families, three literal procedures and bounded foreign producers/hosts/routes | Revision one: five stories/sixteen services, 38 contacts/73 optional checks; five potential dailies, exact copies/kinds and any-one cleansing | No native repair ships. Guarded fees, source/recipient choices, wand/pet creation and custody, clue/flame cleanup fixes, missing ordinary entries and dormant igloo/foreign laboratory plans pending |
 | 49 | The Mountain of Peril Peaks | [Comprehensive source dossier](zone-stories/THE_MOUNTAIN_OF_PERIL_PEAKS.md): all 21 blocks/ten deliveries/eleven addressed; 196 rooms/162 mobs/85 objects/two shops, 297 resets/236 families, automatic switches/shared travel and reciprocal Mountain Tracks boundaries | Revision one: ten outcomes, 28 contacts/16 optional checks; ten potential dailies, exact parts and three optional intermediate histories | No native repair ships. Companion-fate finale, causal source/custody, accepted controls/key/arrival and scoped campaigns pending; ring/book, aliases and dormant content need builder decisions |
-| 50–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 50 | Crakkaros' Liar | [Comprehensive source dossier](zone-stories/CRAKKAROS_LIAR.md): all twenty blocks/eleven QA/nine MA; 372 rooms/37 mobs/68 objects, 501 resets/199 families, mounted centaur, shared P/switch/key execution and inactive ocean boundary | Revision one: six stories/five services, 29 contacts/27 optional checks; five authored story daily candidates, nine native candidates unchanged | No native repair ships. Fourteen-root guard versus seventeen furs, R owner extraction, actual shelf custody, secret/key/retiring episodes and finale adapters planned; sculpture/aliases/reverse key/exterior intent pending |
+| 51–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Crakkaros' Liar (`crakkaro`).
+The next area is Rogue Plains (`roguerai`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -116,6 +117,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-CRAKKARO-BATCH / MOUNT / CONTENT | Seventeen-fur reward is beyond fourteen-root durable support; mounted centaur is omitted by M/F-only sources and post-R E/G belongs to the mount. Four required badges plus unrelated badge look identical; P selects actual same-prototype container. Sculpture expects absent block; exterior room only exists in inactive ocean maps. | Versioned bounded batch/recovery, committed UID/source/custody and R/rider/owner extraction; qualified key/control/arrival/retiring/reset episodes and builder-selected AND finale. Separate future native badge/key/control/route decisions and news proof; none ships here. |
 | ZSQ-NEXUS-COMPANION / ACCESS / CONTENT | Traveler requests companion fate after medallion, but no later Q exists. Five companions are placed in a connected load room and can wander. Medallion, NPC-carried same-named emeralds and portals are distinct prerequisites; ring promise contradicts actual prayer book. | Builder designs investigation/report/rescue; add causal source/custody, accepted control/key/arrival and scoped AND episodes with supplied-proof branches. Qualify exposed controls, stock/reset and surviving instances. Separate builder-reviewed clue/alias/dormant-content fixes and news proof; none ships here. |
 | ZSQ-SURFACEMINI-CREATION / CONTENT | Flame collar lacks extraction on narrow-room failure; both collars continue after unchecked placement. Wand consumes before unchecked random replacement. Frost clue says Fire rather than Ice; flame room text says ice. | Separate focused original-failing cleanup/text fixes preserving balance/cooldowns/random output; qualify placement/identity/custody and accepted pet/equipment effects. All replacement prototypes exist; normal lesser/greater predicates are identical, so high-roll split remains conditional. No native repair ships. |
 | ZSQ-SURFACEMINI-SOURCE / HOST / QUANTITY | Four pockets lack ordinary inbound edges; igloo/three local mobiles have no active sources. Foreign scientist/apparatus share caps; chest has no local contents/key producer. Retiring bases, one sphere, five-kind versus any-one cleansing and guarded fees need exact semantics. | Builder-reviewed routes/dormant content/foreign key flow with separate news proof; expand accepted source/handoff, quantities/mixed payment, surviving-recipient episodes, shared resource reservation, choices/scoped all-stage completion and random transformation lineage. Preserve original foreign ownership and supplied materials. |
@@ -2452,3 +2454,57 @@ Catalog: 70 maps/1663 achievements/1478 potential dailies/2218 rows. Original
 order: forty-nine source-comprehensive, 171 pending. Continue with Crakkaros'
 Liar (`crakkaro`). No database, account/server operation, migration, native repair
 or merge occurs; gameplay qualification remains open.
+
+## Crakkaros' Liar completed source map — October 4, 2026
+
+The [dossier](zone-stories/CRAKKAROS_LIAR.md) covers every twenty native blocks:
+eleven QA/nine addressed MA, with no ambient/default families. Read all 372 rooms,
+44 prose groups/23 headers/28 metadata/all 225 exit families, 37 mobiles/68 objects
+and 501 resets/all 199 families. No literal/proclib procedure or shop is local.
+Shared durable offering/reward, mount/follower reset, P container selection,
+automatic switch, key/door/dispatch/wandering and boundary assembly were reviewed.
+All native prototypes/local reset references resolve; no foreign material is needed.
+
+Revision one has six stories/five services, twenty-nine contacts and twenty-seven
+optional checks: twenty-four materials and three earlier-exchange histories.
+Centaur tail, five ogre kinds → shield → bracer → ring → earring and four distinct
+badges → ice key preserve separate receipts and supplied-proof branches. Four
+other part commissions and fur work are services. Nine native daily shapes remain;
+four commissions cease to inflate authored daily progress, leaving five story
+candidates. The departing woman is story only; reset-mode-zero still permits
+candidate contracts with surviving recipients, without guaranteeing fresh supply.
+
+**New precise blockers:** seventeen furs exceed the fourteen-root durable limit
+and are refused before accepted transfer/reward; larger batches require versioned
+continuation and recovery compatibility, atomic currency settlement and replay/
+crash tests. M/F-only source extraction omits the R-loaded centaur and attributes
+post-R saddle/quiver to the elf; runtime E/G actually targets the mount. Same-kind
+P selection uses the live object list, so a bookshelf badge has no permanent
+reset-room guarantee. Four required badge kinds and unrelated corpse badge look
+identical; independent source labels improve journal clarity without native edits.
+
+**Pending builder decisions, no native repair ships:** sculpture envy control
+expects EX_BLOCKED, but the secret locked/closed reset has no block; key access
+is a distinct existing route. Ice key lacks key alias, northeast reverse key is
+zero, and exterior target is absent from active static AREA rooms, appearing in
+inactive ocean maps. Qualify actual generated world/entry/return before selecting
+a route repair. Unused heart/key/level-potion and extra badge/token need intended
+content decisions. No lover rescue, burial or dragon/campaign terminal exists.
+
+Expand committed source/container/mount UID custody versus handoff, accepted
+key/control/opening/arrival/reset-generation and retiring-recipient episodes;
+builder-defined actual effects and scoped AND campaigns retain supplied proofs.
+Existing completion arrays are OR alternatives. Do not add inert schema fields,
+make every word an award or complete a dragon finale from the badge receipt.
+
+Verification covers exact contracts/source relationships, actual C++ distinct
+badges/ogre parts, supplied intermediates, guarded-fur inventory visibility,
+spent/worn proof, no read-side mutation/credit, services, replay and cold recovery;
+catalog/daily report, accounting gates/tracking, maintained server build, formatting,
+whitespace and local/source links. The catalog is 71 maps/1658 achievements/1474
+potential dailies/2218 rows. All 2668 native definitions, revision two, fingerprint,
+registry and seventy prior maps are unchanged. Live access, mount movement,
+source hunting/stock, recipient retirement, traps, larger payment and finale stay
+unqualified. The queue is 50/220 source-comprehensive, 170 pending; Rogue Plains
+(`roguerai`) is next. No database/account/server operation, generated world edit,
+activation or merge occurred; this checkpoint is not full-roadmap completion.

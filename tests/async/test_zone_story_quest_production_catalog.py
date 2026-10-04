@@ -2269,7 +2269,80 @@ assert re.search(r"D2\s*[^~]*~\s*[^~]*~\s*0 0 57505",world[57551])
 assert not any("companion" in entry["id"] for entry in nexus_stories.values())
 assert "prayer book" in nexus_stories["gooran-parchment"]["summary"] and "pending builder" in nexus_stories["gooran-parchment"]["summary"]
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus"):
+# Crakkaro keeps mounted sources, exact badge kinds and guarded oversized work distinct.
+crakkaro=inventory_module.area_evidence(ROOT,"crakkaro")
+crakkaro_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="crakkaro")
+crakkaro_stories={s["id"]:s for s in crakkaro_map["stories"]}
+assert (crakkaro_map["schema_version"],crakkaro_map["revision"],crakkaro_map["coverage"])==(3,1,"complete")
+assert len(crakkaro_stories)==11 and len(crakkaro_map["contacts"])==29 and not crakkaro_map["exclusions"]
+assert collections.Counter(s["category"] for s in crakkaro_stories.values())=={"story":6,"service":5}
+assert collections.Counter(t["kind"] for s in crakkaro_stories.values() for t in s["steps"] if t.get("optional"))=={"carried_item":24,"completion":3}
+assert (len(crakkaro["requests"]),len(crakkaro["dialogue"]),len(crakkaro["mobs"]),len(crakkaro["items"]),len(crakkaro["reset_commands"]))==(11,9,37,68,501)
+assert collections.Counter(b["kind"] for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/crakkaro.qst")=={"QA":11,"MA":9}
+by_line={r["block"]["line"]:r["block"] for r in crakkaro["requests"]}
+for line,required,reward,disappear in ((18,[87007],[("I",87000)],0),
+    (59,list(range(87016,87021)),[("I",87021)],0),(73,[87021],[("I",87022)],0),
+    (84,[87022],[("I",87023)],0),(95,[87023],[("I",87024)],0),
+    (107,[87028,87029],[("I",87030)],0),(119,[87031,87032,87033],[("I",87034)],0),
+    (140,[87035,87036],[("I",87037)],0),(152,[87039,87040,87041],[("I",87042)],0),
+    (166,[87080]*17,[("C",100000)],0),(211,[87044,87045,87046,87047],[("I",87064)],1)):
+    assert by_line[line]["give"]==[("I",v) for v in required] and by_line[line]["receive"]==reward
+    assert by_line[line]["binding"]["completion_key"].endswith("disappear="+str(disappear))
+bindings=[b for entry in crakkaro_stories.values() for b in entry["contracts"]]
+assert len(bindings)==11 and {tuple(sorted(b.items())) for b in bindings}=={tuple(sorted(b["binding"].items())) for b in by_line.values()}
+for later,earlier in (("burnhard-ogre-bracer","burnhard-ogre-shield"),("burnhard-ogre-ring","burnhard-ogre-bracer"),("burnhard-ogre-earring","burnhard-ogre-ring")):
+    assert crakkaro_stories[later]["steps"][0]["optional"] and crakkaro_stories[later]["steps"][0]["contracts"]==crakkaro_stories[earlier]["contracts"]
+badges=crakkaro_stories["woman-four-badges"]
+assert [t["item_vnums"] for t in badges["steps"][:-1]]==[[87044],[87045],[87046],[87047]]
+assert len({t["text"] for t in badges["steps"][:-1]})==4
+assert [t["item_vnums"] for t in crakkaro_stories["burnhard-ogre-shield"]["steps"][:-1]]==[[v] for v in range(87016,87021)]
+fur=crakkaro_stories["burnhard-seventeen-furs"]
+assert fur["category"]=="service" and fur["steps"][0]["count"]==17>catalog_module.MAX_DURABLE_ITEM_OFFERINGS
+assert "reward" in fur["summary"] or "hundred platinum" in fur["summary"]
+assert "guarded" in fur["steps"][-1]["hint"] and "fourteen" in fur["summary"]
+assert all(t["optional"] for entry in crakkaro_stories.values() for t in entry["steps"][:-1])
+assert all(entry["steps"][-1]["contracts"]==entry["contracts"] for entry in crakkaro_stories.values())
+contacts={c["mob_vnum"]:c for c in crakkaro_map["contacts"]}
+for dialogue in crakkaro["dialogue"]:
+    assert set(dialogue["body"][0].rstrip("~").split())<=set(contacts[dialogue["giver_vnum"]]["topics"])
+assert not crakkaro["special_assignments"] and crakkaro["zone"]["reset_mode"]==0
+assert collections.Counter(r["command"] for r in crakkaro["reset_commands"])=={"M":191,"D":94,"E":82,"G":64,"O":51,"F":12,"P":6,"R":1}
+assert all(r["arguments"][-3:]==[0,0,0] for r in crakkaro["reset_commands"])
+definitions={r["block"]["line"]:r["definition"] for r in crakkaro["requests"]}
+assert sum(d["daily_eligible"] for d in definitions.values())==9
+assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
+assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1658
+sources=collections.defaultdict(list);parent=None;room=None
+for reset in crakkaro["reset_commands"]:
+    c,v=reset["command"],reset["arguments"]
+    if c in "MFR":parent,room=v[1],v[3] # R changes the actual E/G target to the mount.
+    elif c in "GE":sources[v[1]].append((c,parent,room,v[2],v[3]))
+    elif c=="P":sources[v[1]].append((c,v[3],None,v[2],None))
+assert sources[87000]==[("E",87000,87007,1,35)] and sources[87078]==[("G",87000,87007,1,0)]
+assert any(r["command"]=="R" and r["arguments"]==[1,87000,1,87007,100,0,0,0] for r in crakkaro["reset_commands"])
+assert sources[87044]==[("E",87011,87297,2,24),("G",87025,87338,2,0)]
+assert sources[87045]==[("E",87006,87219,2,24),("G",87025,87337,2,0)]
+assert sources[87046]==[("G",87008,87040,2,0),("G",87026,87335,2,0)]
+assert sources[87047]==[("P",87012,None,1,None)] and sources[87071]==[("P",87072,None,1,None)]
+assert collections.Counter(v[1] for v in sources[87080])=={87034:9,87003:4,87035:3,87002:4}
+assert all(v[3]==20 for v in sources[87080])
+objects=dawndale_bodies("crakkaro","obj");world=dawndale_bodies("crakkaro","wld")
+assert len(world)==372 and len(objects)==68
+assert len({tuple(objects[v].split("~")[:3]) for v in (87044,87045,87046,87047,87071)})==1
+assert objvalues(objects[87064])[0]==18 and objvalues(objects[87064])[12]==100
+assert objects[87064].split("~")[0].strip()=="ice white"
+assert objvalues(objects[87062])[0]==29 and objvalues(objects[87062])[11:15]==[346,87418,5,1]
+assert all(any(r["command"]=="D" and r["arguments"][1:4]==[room,direction,6] for r in crakkaro["reset_commands"]) for room,direction in ((87418,5),(87428,4)))
+assert re.search(r"D5\s*[^~]*~\s*[^~]*~\s*7 87064 87428",world[87418])
+assert all(objvalues(objects[v])[12]==100 for v in (87010,87015,87064))
+assert all(objvalues(objects[v])[12]==0 for v in (87001,87006))
+assert all(not any(r["command"] in "OGEP" and r["arguments"][1]==v for r in crakkaro["reset_commands"]) for v in (87027,87075,87082))
+assert re.search(r"D2\s*[^~]*~\s*[^~]*~\s*0 0 259959",world[87008])
+assert "same-prototype" in (ROOT/"docs/design/zone-stories/CRAKKAROS_LIAR.md").read_text(encoding="utf8").lower()
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

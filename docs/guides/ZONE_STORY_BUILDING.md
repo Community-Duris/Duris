@@ -792,3 +792,35 @@ tests. Dynamic extraction can suggest sources and links, while reward intent
 Alias, clue or dormant-route repairs belong in separate named fix commits where
 practical, with explicit PR/news trigger, before/after and validation. Journal
 guidance or a proposed companion finale does not constitute a shipped quest repair.
+
+### Crakkaros' Liar: identical badges, mounts and oversized payments
+
+The [source dossier](../design/zone-stories/CRAKKAROS_LIAR.md) and
+[sidecar](../../areas/story/crakkaro.story.json) show six stories/five services
+across eleven native exchanges. Four identical badge names need four separate
+carried checks and helpful source labels. A fifth identically named corpse badge
+does not fit. Maial/Malinok/Burnherf each have a paladin alternative; the fourth
+kind is in a bookshelf. Do not turn the woman's kill claim into a personal-kill
+requirement or let four copies of one kind substitute.
+
+Dynamic extraction must include R-loaded mounts, rider association and actual
+post-R E/G ownership. The centaur is the elf's mount; its existing equipment does
+not complete a tail exchange. P resets select an actual matching container from
+the object list, so shared bookshelf prototypes cannot guarantee a fixed room.
+Committed UID/container/mount custody, source recovery and handoff require deeper
+events beyond current possession and accepted producer receipts.
+
+Burnhard's shield → bracer → ring → earring uses three optional producer histories,
+with exact supplied equipment still valid. Four other part commissions and fur
+work are independent services. Seventeen furs pay one hundred platinum but exceed
+the fourteen-root durable limit. State that readiness describes possession and
+acceptance remains guarded. Larger-batch/versioned recovery support is planned;
+do not silently reduce the recipe or expose an unsupported native payment as
+playable. Reset mode zero does not itself exclude surviving-recipient candidates.
+
+The ice key, secret-door search, unlocking, opening, successful passage and a
+future dragon finale are separate facts. The sculpture's envy switch expects a
+block absent from the reset. Existing key access does not prove that switch
+worked. Builder-approved fixes for badges, aliases, control/key intent or world
+connections need separate clear fix commits and prominent PR/news proof. A source
+finding, journal hint or proposed finale does not count as a shipped native repair.

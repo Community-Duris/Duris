@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 70 authored journals, accounting-gated player surfaces, starter/town
+**Status: 71 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -615,6 +615,23 @@ passage. Refugee BOOM/new camp, follower relocation, drow tunneling, captain
 curse/ritual and telescope installation need builder-selected accepted endpoints.
 Fossil follow-up and Ender's victim-message key are pending content repairs.
 No native repair or accounting activation ships with this journal.
+
+Crakkaros' Liar's [comprehensive dossier](zone-stories/CRAKKAROS_LIAR.md)
+adds six story outcomes/five services covering all eleven exchanges, twenty-nine
+contacts/all nine addressed families and twenty-seven optional checks (twenty-four
+materials, three producer histories). Centaur tail, four consumed ogre stages,
+four independent part commissions, seventeen-fur payment and four distinct
+identically named badges explain the entire native quest set. Source alternatives
+and supplied intermediates remain valid. Mounted sources require R-aware source
+and subsequent E/G owner extraction; shared-prototype P selects a live container.
+The fur bundle exceeds the fourteen-root durable limit. Expand bounded batch and
+versioned recovery support without altering the recipe. Nine native candidates
+remain; four commissions become services, leaving five authored daily candidates.
+Sculpture/block intent, badge/key aliases, reverse keys, inactive exterior target
+and orphan content need builder review; no native repair ships. Add successful
+control/key/arrival/source/effect events and scoped campaigns only with implemented
+runtime/persistence. Catalog: 71 maps/1658 achievements/1474 potential dailies/2218
+rows; native definitions/fingerprint/registry stay unchanged.
 
 Peril Peaks' [comprehensive dossier](zone-stories/THE_MOUNTAIN_OF_PERIL_PEAKS.md)
 adds ten outcomes covering all ten deliveries, twenty-eight contacts/all eleven
@@ -1379,7 +1396,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 171 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 170 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1402,6 +1419,12 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
 
 
+- [x] Complete Crakkaros' Liar's eleven-exchange/nine-addressed source dossier:
+  six stories/five services, twenty-nine contacts and twenty-seven optional checks;
+  mounted centaur, exact prison parts, four-stage ogre chain and four distinct
+  badges. Oversized fur batch, R/owner extraction, actual P custody, access/retiring
+  episodes and scoped finale remain planned. Sculpture, aliases, reverse key and
+  exterior assembly need builder review; no native repair ships.
 - [x] Complete Peril Peaks' ten-delivery/eleven-addressed source dossier: ten
   outcomes, twenty-eight contacts and sixteen optional checks; three linked
   errands, distinct hunting parts, medallion/emerald custody and exact portal
@@ -1691,6 +1714,7 @@ contract classification; it does not claim complete objective coverage.
 | The 222nd Layer of the Abyss | 1 | Complete: 22 outcomes covering all 23 exchanges | [Source-comprehensive dossier](zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md); forty contacts/all 25 addressed families and 39 optional checks | 19 potential candidates; three outcomes remain native Story-only | Warrior/gloves, Uz wand/tales, distinct heads/parts/essences, Neptune and equivalent Marvin aliases. Phase transfer/source/access/effect qualification and truthful clue/departure fixes pending; no native repair ships |
 | The Minizones of the Surface | 1 | Complete: five stories and sixteen services cover all twenty-five exchanges | [Source-comprehensive dossier](zone-stories/THE_MINIZONES_OF_THE_SURFACE.md); thirty-eight contacts/all thirty-two addressed families and seventy-three optional checks | Five potential candidates; support services award no achievement/daily credit; mixed payment remains guarded | Hermit/gland/essence errands, healing tiers, foreign bases/spheres and Mugflog alternatives. Source/quantity/payment/recipient, transformed-item/pet and access/foreign-host qualification pending. Clear text/cleanup repairs proposed; no native fix ships |
 | The Mountain of Peril Peaks | 1 | Complete: ten outcomes cover all ten deliveries | [Source-comprehensive dossier](zone-stories/THE_MOUNTAIN_OF_PERIL_PEAKS.md); twenty-eight contacts/all eleven addressed families and sixteen optional checks | Ten potential candidates; source/custody/access and companion finale remain unqualified | Three linked errands, distinct beast parts, medallion/emerald prerequisites and exact portals. Ring/book and dormant/alias decisions pending; no native repair ships |
+| Crakkaros' Liar | 1 | Complete: six stories/five services cover all eleven exchanges | [Source-comprehensive dossier](zone-stories/CRAKKAROS_LIAR.md); twenty-nine contacts/all nine addressed families and twenty-seven optional checks | Five authored story candidates; nine native candidates unchanged, fur guarded and woman story only | Mount-aware sources, actual shelf custody, bounded batch/recovery and successful access/finale events planned; sculpture/alias/key/exterior decisions pending, no native repair ships |
 
 ## Twin Towers evidence and decisions
 

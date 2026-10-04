@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 70 &&
-				tracker.summary_for(7, 42).total == 1663,
+		require(catalog.story_mappings.size() == 71 &&
+				tracker.summary_for(7, 42).total == 1658,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -4822,6 +4822,116 @@ int main(int argc, char **argv)
 						10 &&
 					restored_nexus.progress_for_zone(7, 42, 575).total == 10,
 				"Peril Peaks cold recovery changed independent delivery totals");
+		}
+
+		{
+			const auto &map = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &mapping)
+				{ return mapping.source_area == "crakkaro"; });
+			const auto &badges = story_for("crakkaro", "woman-four-badges");
+			const auto &ogres = story_for("crakkaro", "burnhard-ogre-shield");
+			const auto &bracer = story_for("crakkaro", "burnhard-ogre-bracer");
+			const auto &earring = story_for("crakkaro", "burnhard-ogre-earring");
+			const auto &furs = story_for("crakkaro", "burnhard-seventeen-furs");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 870, 87008, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 870, 10, 1, 101, false, false)
+							.find("] " + badges.title + "\r\n") ==
+						std::string::npos,
+				"Crakkaro discovery exposed an unmet request");
+			for (const auto &contact : map.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 87007, 102) ==
+						result::applied,
+					"Crakkaro mounted/source contact failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Crakkaro journal section missing");
+				const auto end = journal.find("\r\n[", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[87044] = 4;
+			supplies.carried[87071] = 1;
+			supplies.carried[87016] = 5;
+			supplies.carried[87080] = 16;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 870, 10, 1, 103, false, false,
+							 &supplies);
+			for (std::size_t i = 1; i < badges.steps.size() - 1; ++i)
+				require(section(badges).find("[Missing now] " +
+							     badges.steps[i].text) !=
+						std::string::npos,
+					"Crakkaro repeated or unrelated badges replaced a different required kind");
+			for (std::size_t i = 1; i < ogres.steps.size() - 1; ++i)
+				require(section(ogres).find("[Missing now] " +
+							    ogres.steps[i].text) !=
+						std::string::npos,
+					"Crakkaro repeated ogre fingers replaced different required parts");
+			require(section(furs).find("[Missing now] " + furs.steps.front().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 870).completed == 0,
+				"Crakkaro incomplete fur/readiness invented history or credit");
+			for (int item :
+			     { 87045, 87046, 87047, 87017, 87018, 87019, 87020, 87021, 87023 })
+				supplies.carried[item] = 1;
+			supplies.carried[87080] = 17;
+			journal = journey.render_journal(7, 42, 870, 10, 1, 104, false, false,
+							 &supplies);
+			for (const auto *entry : { &badges, &ogres, &bracer, &earring })
+				require(section(*entry).find("Next: " + entry->steps.back().text) !=
+						std::string::npos,
+					"Crakkaro exact supplied proof required personal producer history");
+			require(section(furs).find("[Ready now] " + furs.steps.front().text) !=
+						std::string::npos &&
+					section(furs).find("remains guarded") !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 870).completed == 0,
+				"Crakkaro guarded fur service lost its availability limit or created completion");
+			record(journey, bracer.steps.front().contracts.front(),
+			       "crakkaro-shield-history", 870, 87386);
+			supplies.carried.erase(87021);
+			supplies.equipped[19] = 87021;
+			journal = journey.render_journal(7, 42, 870, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(bracer).find("[Recorded] " + bracer.steps.front().text) !=
+						std::string::npos &&
+					section(bracer).find("[Missing now] " +
+							     bracer.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 870).completed == 1,
+				"Crakkaro history restored spent/worn shield or completed its next stage");
+			service supplied(catalog);
+			record(supplied, earring.contracts.front(), "crakkaro-supplied-earring",
+			       870, 87386);
+			record(supplied, badges.contracts.front(), "crakkaro-supplied-badges", 870,
+			       87410);
+			require(supplied.evidence_for(earring.steps.front().contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.progress_for_zone(7, 42, 870).completed == 2 &&
+					supplied.progress_for_zone(7, 42, 870).total == 6,
+				"Crakkaro supplied final proofs completed earlier stages, access or dragon finale");
+			auto replay = completion(badges.contracts.front(),
+						 "crakkaro-supplied-badges", 120);
+			replay.transaction.zone_number = 870;
+			replay.transaction.room_vnum = 87410;
+			require(supplied.record_completion(replay) == result::already_applied,
+				"Crakkaro departing-recipient receipt replay was not idempotent");
+			for (const auto &entry : map.stories)
+				if (entry.id != badges.id && entry.id != earring.id &&
+				    entry.id != furs.id)
+					record(supplied, entry.contracts.front(), entry.id.c_str(),
+					       870, 87386);
+			service recovered(catalog);
+			require(recovered.deserialize_state(supplied.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 870).completed == 6 &&
+					recovered.progress_for_zone(7, 42, 870).total == 6,
+				"Crakkaro cold recovery changed story/service totals");
 		}
 
 		std::cout
