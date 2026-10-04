@@ -25,8 +25,8 @@ class RestoreCoinEffectsTests(unittest.TestCase):
         import pymysql
 
         canonical = os.environ.get("DURIS_PLAN5_CANONICAL_EVIDENCE") == "1"
-        work = ROOT / ("bin/tests/plan5-sql-baseline-restore-canonical" if canonical else
-                       "bin/tests/plan5-sql-baseline-restore-coins")
+        work = ROOT / ("bin/tests/plan5-retained-namespace-canonical" if canonical else
+                       "bin/tests/plan5-retained-namespace-coins")
         work.mkdir(mode=0o700, parents=True, exist_ok=True)
         sources = ["tests/async/restore_coin_effects_fixture.cpp",
                    "src/economy/economic_accounting_plan.c", "src/economy/economic_accounting_types.c",
