@@ -7,8 +7,8 @@ narrow prerequisite, not this complete recovery chain.
 ## Required proof and native publication
 
 Keep the exact original command, receipt and disposition sealed before any native
-projection/placement. Current item-movement changed-receipt protection is craft-only;
-ordinary completions can overwrite proof while ACK-pending. Bind original operation,
+projection/placement. Ordinary item-movement proof is now sealed in fd5683abc, preserving ACK-only
+progress across conflicts; that slice is source-reviewed and unqualified. Bind original operation,
 result bytes, error and semantic disposition on all retries; applied/already_applied
 may represent equivalent success, but conflicting proof stays retained.
 
@@ -72,3 +72,15 @@ later custody/season refusal, unrelated room revision advancement, all staging O
 procedure effects refused before creation, rejected receipts, cold restart twice,
 copyover/reconnect, unrelated-PID progress and original-ID receipt preservation.
 Neither component fixtures nor this handoff complete R1–R8 or release qualification.
+
+
+## Inert constructor prerequisite now present (source only)
+
+The [discard-only inert stage](INERT_ITEM_STAGE_PREPARATION_2026-10-04.md) and
+[nonfatal allocation primitives](INERT_ALLOCATION_PREPARATION_2026-10-04.md)
+now prepare exact four-string SQL literals without normal construction/cleanup
+side effects. Existing materializers are unchanged. The stage has no public release/
+enrollment API and refuses unsupported procedural/trap/timed/domain representations
+before acquisition. Prepared prototypes still need provenance and fresh eligibility
+checks. No current SQL authority, graph publication, census, ACK reservation, startup
+or complete cold recovery follows from these unqualified prerequisites.
