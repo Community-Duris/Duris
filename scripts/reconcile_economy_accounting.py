@@ -25,6 +25,16 @@ UNITS = (1, 10, 100, 1000)
 HEX_ID = re.compile(r"[0-9a-f]{32}\Z")
 HEX_SOURCE_EVENT = re.compile(r"[0-9a-f]{96}\Z")
 HEX_KEY = re.compile(r"[0-9a-f]{80}\Z")
+# Independent policy interpretation; exhaustive native metadata comparisons
+# protect this table without importing the mutation implementation at runtime.
+SOURCE_KINDS_BY_REASON = {
+    3: (16,), 5: (1,), 6: (2,), 7: (3, 7), 8: (3,), 9: (4,), 10: (5,),
+    11: (17,), 12: (17,), 13: (17,), 14: (17,), 15: (17,), 16: (17,),
+    17: (8,), 18: (6,), 19: (6,), 21: (12, 18), 22: (12, 18),
+    24: (17, 18), 26: (13,), 27: (13,), 28: (13,), 29: (13,), 30: (13,),
+    31: (13, 17), 36: (14,), 38: (10,), 41: (16,), 42: (16,),
+    43: (18,), 44: (19,), 45: (6,), 46: (6,),
+}
 TABLES = (
     "operations", "effects", "postings", "children", "item_references",
     "ownership_events", "source_claims", "account_origins", "item_origins", "receipts",
@@ -99,6 +109,14 @@ def decode_source_event(value: object) -> tuple[int, str, str, int, int]:
         raise SnapshotError("invalid source event")
     return (kind, raw[4:20].hex(), raw[20:36].hex(),
             int.from_bytes(raw[36:44], "little"), int.from_bytes(raw[44:48], "little"))
+
+
+def source_kind_allowed(reason: object, kind: object) -> bool:
+    # The current native contract permits every valid kind for other known
+    # reasons. Unknown reasons never inherit that permissive default.
+    return (type(reason) is int and 1 <= reason <= 46 and
+            type(kind) is int and 1 <= kind <= 23 and
+            kind in SOURCE_KINDS_BY_REASON.get(reason, range(1, 24)))
 
 
 def unsigned_revision(value: object) -> bool:
@@ -488,7 +506,7 @@ class Reconciler:
                     self.emit("invalid_realized_price", operation_id=op_id)
                 elif op.get("outcome") != "committed":
                     self.emit("rejected_realized_price", operation_id=op_id)
-            policy = self.reasons.get(op.get("reason"))
+            policy = self.reasons.get(op.get("reason")) if type(op.get("reason")) is int else None
             if policy is None:
                 self.emit("unknown_policy_reason", operation_id=op_id)
             elif price is not None and not policy.get("realized_price_required", False):
@@ -518,9 +536,12 @@ class Reconciler:
                 self.emit("missing_source_event", operation_id=op_id)
             if source is not None:
                 try:
-                    decode_source_event(source)
+                    kind = decode_source_event(source)[0]
                 except SnapshotError:
                     self.emit("invalid_source_event", operation_id=op_id)
+                else:
+                    if policy and not source_kind_allowed(op.get("reason"), kind):
+                        self.emit("unauthorized_source_kind", operation_id=op_id)
             if source is not None and op.get("outcome") == "committed":
                 claim = claims.get((lineage, source))
                 if not claim or claim.get("operation_id") != op_id:
@@ -549,16 +570,23 @@ class Reconciler:
             if link not in linked_children:
                 self.emit("unlinked_child", operation_id=link[0], child_index=link[1])
         for claim in claims.values():
+            kind = None
             try:
-                decode_source_event(claim.get("source_event"))
+                kind = decode_source_event(claim.get("source_event"))[0]
             except SnapshotError:
                 self.emit("invalid_source_claim", operation_id=claim.get("operation_id"))
             op = operations.get((claim.get("operation_id"),))
             if (op is not None and claim.get("operation_reason") is not None and
-                    claim.get("operation_reason") != op.get("reason")):
+                    (type(claim.get("operation_reason")) is not int or
+                     claim.get("operation_reason") != op.get("reason"))):
                 self.emit("source_claim_reason_mismatch",
                           operation_id=claim.get("operation_id"))
-            if claim.get("operation_reason") == 38:
+            reason = op.get("reason") if op is not None else claim.get("operation_reason")
+            if type(reason) is not int or reason not in self.reasons:
+                self.emit("unknown_source_claim_policy", operation_id=claim.get("operation_id"))
+            elif kind is not None and not source_kind_allowed(reason, kind):
+                self.emit("unauthorized_source_claim", operation_id=claim.get("operation_id"))
+            if reason == 38:
                 self.emit("baseline_source_claim", operation_id=claim.get("operation_id"),
                           source_event=claim.get("source_event"))
                 continue
@@ -1384,9 +1412,12 @@ class Reconciler:
                 raise SnapshotError("invalid lineage UID reference root")
             if source_event is not None:
                 try:
-                    decode_source_event(source_event)
+                    kind = decode_source_event(source_event)[0]
                 except SnapshotError:
                     self.emit("invalid_lineage_uid_reference_root", operation_id=operation_id)
+                else:
+                    if not source_kind_allowed(reason, kind):
+                        self.emit("unauthorized_lineage_uid_source", operation_id=operation_id)
             if backend == "sql_partial" and (
                     not isinstance(inbox_receipt, dict) or
                     set(inbox_receipt) != {"status", "result_code", "failure_stage",
