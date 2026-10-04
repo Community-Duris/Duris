@@ -43,5 +43,14 @@ struct object_template
 // Boot-only cache population; misses at runtime never fall back to file parsing.
 bool cache_object_template(int vnum);
 const object_template *find_object_template(int vnum);
+// Separate immutable, complete SQL boot catalog. Available only after every
+// native indexed prototype was parsed successfully without construction effects.
+// Readiness binds the sealed table/count/file; lookup also verifies exact target
+// R_num/vnum/file-position/special-procedure identity. No allocation/parser/cache
+// fallback occurs on lookup. Starter/runtime loaders keep their existing cache.
+// Catalog failure or stale boot provenance returns false/nullptr, not partial
+// coverage or authority to restore/ACK. Pointers last until world teardown/reboot.
+bool recovery_object_templates_ready() noexcept;
+const object_template *find_recovery_object_template(int vnum) noexcept;
 P_obj instantiate_object_template(const object_template &prototype);
 #endif
