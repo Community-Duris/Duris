@@ -3277,9 +3277,64 @@ critical_apply_result critical_command_repository_verify_ordinary_drop_in_transa
 			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
 		if (!identity_matches(stored, command, command_hash, keys_hash))
 			return { critical_apply_outcome::terminal_failure, 0, EEXIST };
-		if (stored.result_code ||
-		    stored.failure_stage != static_cast<uint16_t>(critical_failure_stage::none))
+		if (stored.failure_stage != static_cast<uint16_t>(critical_failure_stage::none))
 			return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+		if (stored.result_code)
+		{
+			item_transfer_result rejected{};
+			std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> canonical{};
+			if (!item_transfer_command_decode_result(stored.result_payload.data(),
+								 stored.result_payload.size(),
+								 &rejected) ||
+			    !item_transfer_command_encode_result(rejected, &canonical) ||
+			    stored.result_payload.size() != canonical.size() ||
+			    !std::equal(canonical.begin(), canonical.end(),
+					stored.result_payload.begin()))
+				return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+			error = economic_sql_item_transfer_verify_retained(
+				connection, command, stored.result_code,
+				stored.result_payload.data(), stored.result_payload.size());
+			if (!error)
+				error = verify_accounted_root_outbox(connection, command,
+								     stored.result_code,
+								     stored.result_payload.data(),
+								     stored.result_payload.size());
+			if (error)
+				return { critical_apply_outcome::retryable_failure, 0, error };
+			// A rejected ordinary drop has neither native movement history nor
+			// retained room literals. Do not infer their absence from root counts.
+			char operation[CRITICAL_COMMAND_ID_HEX_SIZE]{};
+			char query[384]{};
+			if (!critical_operation_id_to_hex(command.operation_id, operation,
+							  sizeof(operation)))
+				return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+			const int length = snprintf(
+				query, sizeof(query),
+				"SELECT (SELECT COUNT(*) FROM item_ownership_ledger WHERE operation_id=UNHEX('%s'))+"
+				"(SELECT COUNT(*) FROM sql_room_item_payload WHERE operation_id=UNHEX('%s'))",
+				operation, operation);
+			if (length < 0 || static_cast<size_t>(length) >= sizeof(query))
+				return { critical_apply_outcome::retryable_failure, 0, EOVERFLOW };
+			if (!execute(connection, query))
+				return { critical_apply_outcome::retryable_failure, 0,
+					 database_error(connection) };
+			std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+				mysql_store_result(connection), mysql_free_result);
+			if (!rows)
+				return { critical_apply_outcome::retryable_failure, 0,
+					 database_error(connection) ? database_error(connection) :
+								      EIO };
+			const MYSQL_ROW row = mysql_fetch_row(rows.get());
+			if (mysql_num_rows(rows.get()) != 1 || mysql_num_fields(rows.get()) != 1 ||
+			    !row || !row[0] || strcmp(row[0], "0") != 0)
+				return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+			error = accounted_session_check(connection, &session, true);
+			if (error)
+				return { critical_apply_outcome::retryable_failure, 0, error };
+			// Preserve the exact observed preflight revisions/body. The caller
+			// compares this original result before acknowledging a no-effect root.
+			return stored_result(critical_apply_outcome::terminal_failure, stored);
+		}
 
 		item_transfer_result result{};
 		if (!item_transfer_command_decode_result(stored.result_payload.data(),

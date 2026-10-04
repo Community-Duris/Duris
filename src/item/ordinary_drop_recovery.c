@@ -10,6 +10,7 @@
 
 #ifndef __NO_MYSQL__
 #include "player/inert_item_stage.h"
+#include "item/item_transfer_repository.h"
 #include "world/object_template.h"
 #include "persistence/critical_command_repository.h"
 #include "persistence/economic_sql_item_transfer_transaction.h"
@@ -71,6 +72,14 @@ class ordinary_drop_enrollment_owner final
 class ordinary_drop_live_publication_owner final
 {
     public:
+	static bool rejection_untouched(const critical_command &command, uint64_t actor_runtime_id,
+					const ordinary_drop_live_publication_state &state) noexcept
+	{
+		return actor_runtime_id && !state.departure_started_ && !state.placement_started_ &&
+		       (!state.bound_ ||
+			(critical_operation_id_equal(state.operation_, command.operation_id) &&
+			 state.actor_runtime_id_ == actor_runtime_id));
+	}
 	static ordinary_drop_observation
 	publish(MYSQL *, unsigned long, const critical_command &, const item_transfer_payload &,
 		const item_transfer_result &, const sql_room_item_payload_batch &,
@@ -126,27 +135,31 @@ struct physical_item
 	size_t child_links = 0;
 };
 
-ordinary_drop_observation compare_graph(const item_transfer_payload &payload,
-					const item_transfer_result &result,
-					const sql_room_item_payload_batch &original,
-					const sql_room_item_graph &durable,
-					P_char source_actor = nullptr, bool source_registry = false,
-					bool source_detached = false)
+ordinary_drop_observation
+compare_graph(const item_transfer_payload &payload, const item_transfer_result &result,
+	      const sql_room_item_payload_batch &original, const sql_room_item_graph *durable,
+	      P_char source_actor = nullptr, bool source_registry = false,
+	      bool source_detached = false, const uint64_t *rejected_source_revision = nullptr)
 {
-	if (!item_owner_identity_equal(durable.owner, payload.to_owner) ||
-	    durable.owner_revision < result.to_owner_revision ||
-	    durable.items.size() != payload.item_count ||
-	    durable.identities.size() != payload.item_count)
+	const bool rejected_source = rejected_source_revision != nullptr;
+	if (!rejected_source &&
+	    (!durable || !item_owner_identity_equal(durable->owner, payload.to_owner) ||
+	     durable->owner_revision < result.to_owner_revision ||
+	     durable->items.size() != payload.item_count ||
+	     durable->identities.size() != payload.item_count))
 		return observed(ordinary_drop_observation_status::conflict, ESTALE);
+	const uint64_t view_revision = rejected_source ? *rejected_source_revision :
+							 durable->owner_revision;
+	source_registry = source_registry || rejected_source;
 	std::map<uint64_t, physical_item> expected;
 	for (size_t index = 0; index < payload.item_count; ++index)
 		expected.emplace(payload.items[index].item_uid, physical_item{ index });
 	for (size_t index = 0; index < original.items.size(); ++index)
 		expected.at(original.items[index].object_uid).original_index = index;
-	for (size_t index = 0; index < durable.items.size(); ++index)
+	for (size_t index = 0; !rejected_source && index < durable->items.size(); ++index)
 	{
-		const auto &item = durable.items[index];
-		const auto &identity = durable.identities[index];
+		const auto &item = durable->items[index];
+		const auto &identity = durable->identities[index];
 		const auto found = expected.find(item.object_uid);
 		if (found == expected.end())
 			return observed(ordinary_drop_observation_status::conflict, ESTALE,
@@ -159,7 +172,7 @@ ordinary_drop_observation compare_graph(const item_transfer_payload &payload,
 		    !item_owner_identity_equal(identity.owner, payload.to_owner) ||
 		    identity.state != item_custody_state::active ||
 		    identity.item_revision != entry.expected_item_revision + 1 ||
-		    identity.owner_revision != durable.owner_revision || item.vnum != entry.vnum ||
+		    identity.owner_revision != durable->owner_revision || item.vnum != entry.vnum ||
 		    !canonical_item(item, &bytes) ||
 		    bytes != original.payloads[found->second.original_index])
 			return observed(ordinary_drop_observation_status::conflict, ESTALE,
@@ -222,9 +235,10 @@ ordinary_drop_observation compare_graph(const item_transfer_payload &payload,
 
 	if (!world || top_of_world < 0 || static_cast<size_t>(top_of_world) >= census_limit)
 		return observed(ordinary_drop_observation_status::unavailable, E2BIG);
-	const int room = real_room(static_cast<int>(payload.to_owner.id));
-	if (room < 0 || room > top_of_world || world[room].number <= 0 ||
-	    static_cast<uint64_t>(world[room].number) != payload.to_owner.id)
+	const int room = rejected_source ? NOWHERE :
+					   real_room(static_cast<int>(payload.to_owner.id));
+	if (!rejected_source && (room < 0 || room > top_of_world || world[room].number <= 0 ||
+				 static_cast<uint64_t>(world[room].number) != payload.to_owner.id))
 		return observed(ordinary_drop_observation_status::unsupported, ENOENT);
 	for (int location = 0; location <= top_of_world; ++location)
 	{
@@ -237,7 +251,8 @@ ordinary_drop_observation compare_graph(const item_transfer_payload &payload,
 				return link_failure(error);
 			const auto found = expected.find(object->obj_uid);
 			if (found != expected.end() &&
-			    (source_actor || source_detached || object != found->second.object ||
+			    (rejected_source || source_actor || source_detached ||
+			     object != found->second.object ||
 			     object->obj_uid != payload.selected_item_uid || location != room ||
 			     ++found->second.room_links != 1))
 				return observed(ordinary_drop_observation_status::conflict, ESTALE,
@@ -296,6 +311,16 @@ ordinary_drop_observation compare_graph(const item_transfer_payload &payload,
 			if (const auto error = visit_link(object, generation))
 				return link_failure(error);
 			const auto found = expected.find(object->obj_uid);
+			if (rejected_source && found != expected.end())
+			{
+				if (!IS_PC(character) || GET_PID(character) <= 0 ||
+				    static_cast<uint64_t>(GET_PID(character)) !=
+					    payload.from_owner.id ||
+				    (source_actor && character != source_actor))
+					return observed(ordinary_drop_observation_status::conflict,
+							ESTALE, object->obj_uid);
+				source_actor = character;
+			}
 			if (found != expected.end() &&
 			    (!source_actor || character != source_actor ||
 			     object != found->second.object ||
@@ -329,7 +354,7 @@ ordinary_drop_observation compare_graph(const item_transfer_payload &payload,
 		// The existing boolean census does not distinguish OOM from overflow.
 		return observed(ordinary_drop_observation_status::unavailable, EAGAIN);
 	size_t runtime_present = 0;
-	uint64_t max_owner_revision = result.to_owner_revision;
+	uint64_t max_owner_revision = rejected_source ? 0 : result.to_owner_revision;
 	for (const auto &[uid, item] : expected)
 	{
 		item_ownership_runtime_entry entry = {};
@@ -344,9 +369,10 @@ ordinary_drop_observation compare_graph(const item_transfer_payload &payload,
 		    entry.state != item_custody_state::active ||
 		    entry.item_revision !=
 			    input.expected_item_revision + (source_registry ? 0 : 1) ||
-		    (source_registry ? entry.owner_revision > payload.expected_from_revision :
+		    (rejected_source ? entry.owner_revision > view_revision :
+		     source_registry ? entry.owner_revision > payload.expected_from_revision :
 				       (entry.owner_revision < result.to_owner_revision ||
-					entry.owner_revision > durable.owner_revision)))
+					entry.owner_revision > view_revision)))
 			return observed(ordinary_drop_observation_status::conflict, ESTALE, uid);
 		max_owner_revision = std::max(max_owner_revision, entry.owner_revision);
 	}
@@ -355,13 +381,24 @@ ordinary_drop_observation compare_graph(const item_transfer_payload &payload,
 			return observed(ordinary_drop_observation_status::conflict, ESTALE,
 					entry.item_uid);
 	uint64_t cached_room_revision = 0;
-	const bool has_cached_room =
-		item_ownership_runtime_peek_owner_revision(payload.to_owner, &cached_room_revision);
-	if (has_cached_room && cached_room_revision > durable.owner_revision)
+	const bool has_cached_room = item_ownership_runtime_peek_owner_revision(
+		rejected_source ? payload.from_owner : payload.to_owner, &cached_room_revision);
+	if (has_cached_room && cached_room_revision > view_revision)
 		return observed(ordinary_drop_observation_status::conflict, ESTALE);
+	if (rejected_source)
+	{
+		if ((runtime_present && (runtime_present != payload.item_count ||
+					 runtime.size() != payload.item_count || !has_cached_room ||
+					 cached_room_revision < max_owner_revision)) ||
+		    (!runtime_present && !runtime.empty()))
+			return observed(ordinary_drop_observation_status::conflict, ESTALE);
+		// Offline source objects need not be materialized merely to settle a
+		// rejected command. Any present projection must still be the full source.
+		if (!present)
+			return observed(ordinary_drop_observation_status::verified_rejected);
+	}
 	if (!source_registry && !present && !runtime_present && runtime.empty())
-		return observed(ordinary_drop_observation_status::absent, 0, 0,
-				durable.owner_revision);
+		return observed(ordinary_drop_observation_status::absent, 0, 0, view_revision);
 	if (present != payload.item_count || runtime_present != payload.item_count ||
 	    runtime.size() != payload.item_count)
 		return observed(ordinary_drop_observation_status::conflict, ESTALE);
@@ -417,8 +454,64 @@ ordinary_drop_observation compare_graph(const item_transfer_payload &payload,
 			return observed(ordinary_drop_observation_status::conflict, ESTALE,
 					item.object_uid);
 	}
-	return observed(ordinary_drop_observation_status::verified_existing, 0, 0,
-			durable.owner_revision);
+	return observed(rejected_source ? ordinary_drop_observation_status::verified_rejected :
+					  ordinary_drop_observation_status::verified_existing,
+			0, 0, rejected_source ? 0 : view_revision);
+}
+
+ordinary_drop_observation observe_rejected_transaction(
+	MYSQL *connection, const critical_command &command, const critical_completion &completion,
+	const item_transfer_payload &payload, const item_transfer_result &result,
+	uint64_t actor_runtime_id, const ordinary_drop_live_publication_state *live_state)
+{
+	if (live_state && !ordinary_drop_live_publication_owner::rejection_untouched(
+				  command, actor_runtime_id, *live_state))
+		return observed(ordinary_drop_observation_status::conflict, EOWNERDEAD);
+	economic_sql_item_transfer_context context;
+	const auto authority_error = economic_sql_item_transfer_lock(connection, command, &context);
+	if (authority_error)
+		return observed(ordinary_drop_observation_status::unavailable, authority_error);
+	uint64_t season = 0, source_revision = 0;
+	errno = 0;
+	// Same native lock order as recovery: lineage, season, source owner, then
+	// the original source custody/physical SQL payload. A rejected preflight can
+	// precede creation of the destination owner; no target projection is needed.
+	if (!sql_room_item_payload_lock_season(connection, &season) ||
+	    !item_transfer_repository_lock_owner(connection, payload.from_owner,
+						 &source_revision))
+		return observed(ordinary_drop_observation_status::unavailable, current_error());
+	if (source_revision < payload.expected_from_revision)
+		return observed(ordinary_drop_observation_status::conflict, ESTALE);
+	sql_room_item_payload_batch source;
+	if (!sql_room_item_payload_prepare(connection, payload, &source))
+		// Its nested codecs can flatten OOM. An opaque refusal never discharges
+		// the original, even if its errno also describes a custody mismatch.
+		return observed(ordinary_drop_observation_status::unavailable, current_error());
+	if (source.session_id != context.session_id || source.season_epoch != season ||
+	    !session_current(connection, context.session_id))
+		return observed(ordinary_drop_observation_status::unavailable, ENOTCONN);
+	const auto retained = critical_command_repository_verify_ordinary_drop_in_transaction(
+		connection, command);
+	if (retained.outcome == critical_apply_outcome::retryable_failure ||
+	    retained.outcome == critical_apply_outcome::ambiguous_commit)
+		return observed(ordinary_drop_observation_status::unavailable,
+				retained.error_code ? retained.error_code : EAGAIN);
+	if (retained.outcome != critical_apply_outcome::terminal_failure ||
+	    retained.error_code != completion.error_code ||
+	    retained.failure_stage != completion.failure_stage ||
+	    retained.durable_revision != completion.durable_revision ||
+	    retained.result_size != completion.result_size ||
+	    retained.result_payload != completion.result_payload)
+		return observed(ordinary_drop_observation_status::conflict, EBADMSG);
+	if (!session_current(connection, context.session_id))
+		return observed(ordinary_drop_observation_status::unavailable, ENOTCONN);
+	// Unlike successful-drop recovery, no room payload is manufactured or read
+	// as a target graph. The fresh native source proof owns this comparison.
+	auto observation = compare_graph(payload, result, source, nullptr, nullptr, true, false,
+					 &source_revision);
+	if (!session_current(connection, context.session_id))
+		return observed(ordinary_drop_observation_status::unavailable, ENOTCONN);
+	return observation;
 }
 
 ordinary_drop_observation
@@ -460,7 +553,7 @@ observe_transaction(MYSQL *connection, const critical_command &command,
 								     command, payload, result,
 								     original, durable,
 								     actor_runtime_id, *live_state);
-	auto observation = compare_graph(payload, result, original, durable);
+	auto observation = compare_graph(payload, result, original, &durable);
 	if (!session_current(connection, context.session_id))
 		return observed(ordinary_drop_observation_status::unavailable, ENOTCONN);
 	if (publish_absent && observation.status == ordinary_drop_observation_status::absent)
@@ -495,7 +588,7 @@ ordinary_drop_observation ordinary_drop_live_publication_owner::publish(
 		return observed(ordinary_drop_observation_status::unavailable, EOWNERDEAD);
 	// This is also the exact retry path after placement, registry publication or
 	// SQL cleanup. A handler that did not return cannot reach this successful cut.
-	auto complete = compare_graph(payload, result, original, durable);
+	auto complete = compare_graph(payload, result, original, &durable);
 	if (complete.status == ordinary_drop_observation_status::verified_existing)
 		return session_current(connection, session) ?
 			       complete :
@@ -516,7 +609,7 @@ ordinary_drop_observation ordinary_drop_live_publication_owner::publish(
 	    source_revision < payload.expected_from_revision ||
 	    source_revision > result.from_owner_revision)
 		return observed(ordinary_drop_observation_status::conflict, ESTALE);
-	const auto source = compare_graph(payload, result, original, durable,
+	const auto source = compare_graph(payload, result, original, &durable,
 					  placed || detached ? nullptr : actor, true, detached);
 	if (source.status != ordinary_drop_observation_status::verified_existing)
 		return source;
@@ -575,7 +668,7 @@ ordinary_drop_observation ordinary_drop_live_publication_owner::publish(
 	// Retain completed placement if this atomic registry operation runs out of
 	// storage. The next attempt verifies the target graph with its old registry
 	// and retries only projection publication, never either native handler.
-	const auto target = compare_graph(payload, result, original, durable, nullptr, true);
+	const auto target = compare_graph(payload, result, original, &durable, nullptr, true);
 	if (target.status != ordinary_drop_observation_status::verified_existing)
 		return target;
 	if (!session_current(connection, session))
@@ -590,7 +683,7 @@ ordinary_drop_observation ordinary_drop_live_publication_owner::publish(
 	// publication and this existing-key update; it cannot require an insertion.
 	if (!item_ownership_runtime_hydrate_owner(payload.from_owner, result.from_owner_revision))
 		return observed(ordinary_drop_observation_status::unavailable, ESTALE);
-	complete = compare_graph(payload, result, original, durable);
+	complete = compare_graph(payload, result, original, &durable);
 	if (!session_current(connection, session))
 		return observed(ordinary_drop_observation_status::unavailable, ENOTCONN);
 	return complete;
@@ -772,7 +865,7 @@ ordinary_drop_observation ordinary_drop_enrollment_owner::publish(
 	// then take a fresh complete absence census immediately before mutation.
 	if (!session_current(owner.connection_, owner.session_))
 		return observed(ordinary_drop_observation_status::unavailable, ENOTCONN);
-	const auto fresh = compare_graph(payload, result, original, durable);
+	const auto fresh = compare_graph(payload, result, original, &durable);
 	if (fresh.status != ordinary_drop_observation_status::absent)
 		return fresh;
 	if (!session_current(owner.connection_, owner.session_) || obj_index != owner.index_ ||
@@ -854,12 +947,14 @@ recover_drop(const critical_command &command, const critical_completion &complet
 		    command.type != critical_command_type::item_transfer ||
 		    !command.publication_required)
 			return observed(ordinary_drop_observation_status::unsupported, ENOTSUP);
+		const bool rejected = completion.outcome == critical_apply_outcome::terminal_failure;
 		if (!critical_command_envelope_valid(command) ||
 		    !critical_operation_id_equal(command.operation_id, completion.operation_id) ||
 		    completion.disposition != critical_completion_disposition::execution ||
-		    (completion.outcome != critical_apply_outcome::applied &&
-		     completion.outcome != critical_apply_outcome::already_applied) ||
-		    completion.error_code ||
+		    (rejected ? !completion.error_code :
+				(completion.outcome != critical_apply_outcome::applied &&
+				 completion.outcome != critical_apply_outcome::already_applied) ||
+					completion.error_code) ||
 		    completion.failure_stage != critical_failure_stage::none ||
 		    completion.result_size != ITEM_TRANSFER_RESULT_BYTES)
 			return observed(ordinary_drop_observation_status::refused, EBADMSG);
@@ -900,12 +995,14 @@ recover_drop(const critical_command &command, const critical_completion &complet
 				completion.result_payload.begin()) ||
 		    result.root_item_uid != payload->selected_item_uid ||
 		    result.item_count != payload->item_count ||
-		    result.from_owner_revision != payload->expected_from_revision + 1 ||
-		    result.to_owner_revision != payload->expected_to_revision + 1 ||
-		    result.max_item_revision != maximum || result.corpse_revision ||
-		    result.collector_catalog_changed ||
-		    completion.durable_revision != std::max({ result.from_owner_revision,
-							      result.to_owner_revision, maximum }))
+		    (!rejected &&
+		     (result.from_owner_revision != payload->expected_from_revision + 1 ||
+		      result.to_owner_revision != payload->expected_to_revision + 1 ||
+		      result.max_item_revision != maximum)) ||
+		    result.corpse_revision || result.collector_catalog_changed ||
+		    completion.durable_revision !=
+			    std::max({ result.from_owner_revision, result.to_owner_revision,
+				       result.max_item_revision }))
 			return observed(ordinary_drop_observation_status::refused, EBADMSG);
 
 		player_sql_pool_lease lease(sql_pool_acquire());
@@ -931,6 +1028,11 @@ recover_drop(const critical_command &command, const critical_completion &complet
 			else if (!session_current(connection, proof.original_session))
 				observation = observed(
 					ordinary_drop_observation_status::unavailable, ENOTCONN);
+			else if (rejected)
+				observation = observe_rejected_transaction(connection, command,
+									   completion, *payload,
+									   result, actor_runtime_id,
+									   live_state);
 			else
 				observation = observe_transaction(connection, command, completion,
 								  *payload, result, original,

@@ -12,6 +12,7 @@ enum class ordinary_drop_observation_status : uint8_t
 	refused,
 	unavailable,
 	published,
+	verified_rejected,
 };
 
 struct ordinary_drop_observation
@@ -37,6 +38,8 @@ ordinary_drop_recovery_observe_existing(const critical_command &original_command
 // unsupported activity/procedure/timer representations remain held. A published
 // result requires confirmed SQL cleanup; uncertain cleanup retains any enrolled
 // graph for exact re-observation. No economic mutation or publication ACK occurs.
+// A definitive rejection verifies the unchanged native source and original
+// no-effect receipt instead; it never reconstructs or moves a graph.
 ordinary_drop_observation
 ordinary_drop_recovery_publish(const critical_command &original_command,
 			       const critical_completion &sealed_completion) noexcept;
