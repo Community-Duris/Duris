@@ -63631,8 +63631,8 @@
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
   },
   "pending_source_integration": {
-    "candidate_commit": "480f20ce3c0e8f711d095621cde3e73176339ed7",
-    "status": "Source integration through 480f20ce3 connects synchronous/core save residence/native cleanup, phased SQL startup, restored ordinary-drop guarded ACK and reserved replay revisit, covered ordinary-save retirement from locked native save_revision, actual live ordinary SQL drop checkpoint/native publication/ACK/release, and owned full lifecycle drain/close under existing timeout/journal controls. Unsupported enabled maintenance/rename/copyover refuses. No new receipt schema, optional framework or acceptance gate. Ownership remains disabled. PID-zero/caller-owned transactions, uncovered-save/rejected-outcome disposition, complete ordinary graph coverage, stopped-runtime maintenance connection, active copyover integration, flatfile parity and major-plan qualification remain pending. Plan5 root-binding audit45c895ff4 is integrated in24766ebff with existing native case registration; qualification applies only to peer inputs. Historical census/source anchors and prior rows are preserved; no current coverage or qualification claim.",
+    "candidate_commit": "97fef7a09bc18e2247d3fd99bee1ba792e80064d",
+    "status": "Source integration through 97fef7a09 aligns ordinary-drop live admission with existing cold-recovery eligibility before mutation, after selected-active SQL ownership boot and exact definitive rejected-drop settlement. Earlier synchronous/core residence, reserved replay, covered ordinary-save retirement, live literal-checkpoint drop and owned full lifecycle drain/close remain connected. Independent source review found no remaining production blocker to starting the existing Plan1 qualification batch; flatfile bank/item parity, real SQL coordinator/pool/lifecycle and both builds enter that batch. No passing qualification claim yet. Unsupported enabled maintenance/rename/copyover refuses; inactive behavior is preserved. No new receipt schema, optional framework or acceptance gate. No production authority was activated. Full-release activation/verifier, complete writer/day-one coverage, active copyover and all R1-R8 remain required. Existing stopped native lifecycle APIs/harness compose independent maintenance acceptance without a new CLI prerequisite. Plan5 projection audit a5d26b658 is integrated in cd0fbebb6 with unchanged native registrations; peer qualification applies only to consumed inputs. Historical census/source anchors and prior rows are preserved; no current coverage or qualification claim.",
     "qualified": false,
     "prepared_nonwriter_routes": [
       "recovery.inert_literal_staging",
@@ -63640,6 +63640,8 @@
       "recovery.sql_ordinary_drop_receipt_observation",
       "recovery.runtime_owner_revision_observation",
       "recovery.ordinary_drop_graph_observation",
+      "recovery.ordinary_drop_rejection_observation",
+      "recovery.ordinary_drop_recovery_eligibility",
       "recovery.inert_literal_eligibility",
       "recovery.ordinary_drop_graph_reconstruction",
       "recovery.ordinary_save_revision_observation",
@@ -63668,6 +63670,8 @@
       "src/player/player_save_execution_guard.h",
       "src/persistence/critical_command_coordinator.c",
       "src/persistence/critical_command_coordinator.h",
+      "src/persistence/critical_command_repository.c",
+      "src/persistence/critical_command_repository.h",
       "src/item/item_movement_transaction.c",
       "src/item/item_movement_transaction.h",
       "src/item/ordinary_drop_recovery.c",
