@@ -25,6 +25,7 @@ flatfile_accounting_baseline_lookup(const std::string &, const flatfile_authorit
 // journal; no native balances/custody are changed here. Keep account lifetimes
 // and item UIDs unique within the epoch, including across preparation IDs.
 class flatfile_accounting_staging_view;
+enum class flatfile_baseline_initialization_origin : uint8_t;
 class flatfile_accounting_baseline_storage
 {
 	friend class flatfile_accounting_lifecycle_transaction;
@@ -48,6 +49,21 @@ class flatfile_accounting_baseline_storage
 			  const economic_account_key &, const critical_operation_id &,
 			  std::vector<flatfile_authority_operation> *, std::string *,
 			  flatfile_accounting_staging_view *);
+	// Only the lifecycle friend selects this entry; general initialization retains
+	// its own participant identity even when creation and initialization IDs coincide.
+	static flatfile_accounting_status
+	initialize_lifecycle_staged(const std::string &, const flatfile_authority_lock &,
+				    const critical_operation_id &, const critical_operation_id &,
+				    const economic_account_key &, const critical_operation_id &,
+				    std::vector<flatfile_authority_operation> *, std::string *,
+				    flatfile_accounting_staging_view *);
+	static flatfile_accounting_status
+	initialize_with_origin_staged(const std::string &, const flatfile_authority_lock &,
+				      const critical_operation_id &, const critical_operation_id &,
+				      const economic_account_key &, const critical_operation_id &,
+				      std::vector<flatfile_authority_operation> *, std::string *,
+				      flatfile_accounting_staging_view *,
+				      flatfile_baseline_initialization_origin);
 	// Append witness, exact receipt, reservation buckets and book head together.
 	// Refuses duplicate account/UID openings, conflicting command IDs, orphan
 	// witnesses and missing/corrupt indexes. An exact retained retry returns

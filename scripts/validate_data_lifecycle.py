@@ -81,6 +81,7 @@ DESTRUCTIVE_ACTIONS = {
 }
 REQUIRED_NON_DATABASE_STORES = {
     "file:flatfile-authority-journal": ("recovery_state", "FLATFILE_ROOT/domains/.critical-authority-transaction"),
+    "file:economic-lifecycle-receipt": ("recovery_state", "FLATFILE_ROOT/economic-evidence/lifecycle-*.elr"),
     "file:economic-baseline-control": ("recovery_state", "FLATFILE_ROOT/economic-evidence/baseline-*.ebc"),
     "file:economic-baseline-reservations": ("recovery_state", "FLATFILE_ROOT/economic-evidence/baseline-*.ebi"),
     "file:economic-baseline-witness": ("recovery_state", "FLATFILE_ROOT/economic-evidence/baseline-*.eab"),
