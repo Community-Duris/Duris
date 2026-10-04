@@ -23,6 +23,28 @@ namespace
 {
 using outcome = player_death_conflict_outcome;
 using result_ptr = std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)>;
+struct writer_cleanup_scope
+{
+	economic_sql_currency_writer_guard &writer;
+	player_sql_transaction_cleanup &transaction_owner;
+	player_sql_cleanup &proof;
+	bool *transaction_readback_clean = nullptr;
+	~writer_cleanup_scope() noexcept
+	{
+		transaction_owner.finish();
+		if (transaction_readback_clean)
+			*transaction_readback_clean =
+				transaction_owner.same_session() &&
+				proof.disposition ==
+					player_sql_cleanup_disposition::idle_verified &&
+				proof.rollback_confirmed && !proof.cleanup_error;
+		if (!writer.release())
+		{
+			proof.disposition = player_sql_cleanup_disposition::retire_required;
+			proof.cleanup_error = EIO;
+		}
+	}
+};
 struct failure
 {
 	unsigned int code;
@@ -436,15 +458,16 @@ player_save_apply_result save_failure(unsigned int code)
 } // namespace
 #endif
 
-static player_death_conflict_result retain_death_conflict(MYSQL *connection,
-							  const player_snapshot &request,
-							  bool terminal,
-							  player_sql_cleanup *cleanup) noexcept
+static player_death_conflict_result
+retain_death_conflict(MYSQL *connection, const player_snapshot &request, bool terminal,
+		      player_sql_cleanup *cleanup,
+		      economic_sql_currency_writer_guard *pooled_writer = nullptr) noexcept
 {
 #ifdef __NO_MYSQL__
 	(void)connection;
 	(void)request;
 	(void)terminal;
+	(void)pooled_writer;
 	if (cleanup)
 		*cleanup = {};
 	return { player_death_conflict_outcome::failed, ENOTSUP, 0 };
@@ -452,6 +475,7 @@ static player_death_conflict_result retain_death_conflict(MYSQL *connection,
 	player_sql_cleanup local;
 	auto &proof = cleanup ? *cleanup : local;
 	player_sql_transaction_cleanup owner(connection, proof);
+	bool transaction_readback_clean = false;
 	try
 	{
 		auto run = [&]() -> player_death_conflict_result
@@ -463,7 +487,10 @@ static player_death_conflict_result retain_death_conflict(MYSQL *connection,
 			// Serialize new unresolved evidence with the maintenance source gate.
 			// This is not a currency mutation; it must nevertheless prevent a
 			// cutover from racing a newly retained unresolved case.
-			economic_sql_currency_writer_guard writer;
+			economic_sql_currency_writer_guard borrowed_writer;
+			auto &writer = pooled_writer ? *pooled_writer : borrowed_writer;
+			writer_cleanup_scope writer_cleanup{ writer, owner, proof,
+							     &transaction_readback_clean };
 			const auto admission =
 				economic_sql_currency_writer_guard::acquire(connection, &writer);
 			require(admission == 0, admission);
@@ -574,7 +601,11 @@ static player_death_conflict_result retain_death_conflict(MYSQL *connection,
 		const auto result = run();
 		owner.finish();
 		if (proof.disposition == player_sql_cleanup_disposition::retire_required &&
-		    result.outcome != outcome::commit_unknown)
+		    result.outcome != outcome::commit_unknown &&
+		    result.outcome != outcome::retained &&
+		    result.outcome != outcome::terminal_committed &&
+		    !(transaction_readback_clean && (result.outcome == outcome::already_terminal ||
+						     result.outcome == outcome::already_retained)))
 			return { outcome::failed, proof.cleanup_error ? proof.cleanup_error : EIO,
 				 result.source_revision };
 		return result;
@@ -616,13 +647,15 @@ player_death_conflict_result player_death_conflict_retain(MYSQL *connection,
 	return player_death_conflict_retain(connection, request, nullptr);
 }
 
-player_save_apply_result player_death_conflict_apply(MYSQL *connection,
-						     const player_snapshot &request,
-						     player_sql_cleanup *cleanup) noexcept
+static player_save_apply_result
+apply_death_conflict_owned(MYSQL *connection, const player_snapshot &request,
+			   player_sql_cleanup *cleanup,
+			   economic_sql_currency_writer_guard *pooled_writer) noexcept
 {
 #ifdef __NO_MYSQL__
 	(void)connection;
 	(void)request;
+	(void)pooled_writer;
 	if (cleanup)
 		*cleanup = {};
 	return { player_save_apply_outcome::terminal_failure, 0, ENOTSUP };
@@ -639,7 +672,9 @@ player_save_apply_result player_death_conflict_apply(MYSQL *connection,
 		player_save_apply_result original{};
 		bool has_original = false;
 		{
-			economic_sql_currency_writer_guard writer;
+			economic_sql_currency_writer_guard borrowed_writer;
+			auto &writer = pooled_writer ? *pooled_writer : borrowed_writer;
+			writer_cleanup_scope writer_cleanup{ writer, entry, proof };
 			const auto admission =
 				economic_sql_currency_writer_guard::acquire(connection, &writer);
 			require(admission == 0, admission);
@@ -668,9 +703,12 @@ player_save_apply_result player_death_conflict_apply(MYSQL *connection,
 					return original;
 			}
 		}
+		if (proof.disposition == player_sql_cleanup_disposition::retire_required)
+			return has_original ? original : save_failure(proof.cleanup_error);
 		// The retained participant owns a separate checked transaction. Ordinary
 		// cleanup can authorize its admission, never certify its later cleanup.
-		const auto completed = retain_death_conflict(connection, request, true, &proof);
+		const auto completed =
+			retain_death_conflict(connection, request, true, &proof, pooled_writer);
 		if (completed.outcome == outcome::terminal_committed ||
 		    completed.outcome == outcome::already_terminal)
 			return { completed.outcome == outcome::terminal_committed ?
@@ -701,6 +739,13 @@ player_save_apply_result player_death_conflict_apply(MYSQL *connection,
 }
 
 player_save_apply_result player_death_conflict_apply(MYSQL *connection,
+						     const player_snapshot &request,
+						     player_sql_cleanup *cleanup) noexcept
+{
+	return apply_death_conflict_owned(connection, request, cleanup, nullptr);
+}
+
+player_save_apply_result player_death_conflict_apply(MYSQL *connection,
 						     const player_snapshot &request) noexcept
 {
 	return player_death_conflict_apply(connection, request, nullptr);
@@ -720,14 +765,36 @@ player_save_apply_result player_death_conflict_apply_from_pool(const player_snap
 	if (!lease.get())
 		return save_failure(ETIMEDOUT);
 	player_sql_cleanup cleanup;
-	auto applied = player_death_conflict_apply(lease.get(), request, &cleanup);
+	player_save_apply_result applied{};
+	{
+		economic_sql_currency_writer_guard writer;
+		applied = apply_death_conflict_owned(lease.get(), request, &cleanup, &writer);
+		if (!writer.release())
+		{
+			cleanup.disposition = player_sql_cleanup_disposition::retire_required;
+			cleanup.cleanup_error = EIO;
+			(void)lease.retire_writer(writer);
+		}
+	}
 	lease.reuse(cleanup);
 	if (applied.outcome == player_save_apply_outcome::ambiguous_commit ||
 	    connection_error(applied.error_code))
 	{
 		if (!lease.replace())
 			return applied;
-		const auto replay = player_death_conflict_apply(lease.get(), request, &cleanup);
+		player_save_apply_result replay{};
+		{
+			economic_sql_currency_writer_guard writer;
+			replay =
+				apply_death_conflict_owned(lease.get(), request, &cleanup, &writer);
+			if (!writer.release())
+			{
+				cleanup.disposition =
+					player_sql_cleanup_disposition::retire_required;
+				cleanup.cleanup_error = EIO;
+				(void)lease.retire_writer(writer);
+			}
+		}
 		lease.reuse(cleanup);
 		// A replacement readback failure cannot erase the original uncertainty.
 		if (applied.outcome != player_save_apply_outcome::ambiguous_commit ||

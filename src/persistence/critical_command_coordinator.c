@@ -1613,7 +1613,7 @@ bool critical_command_coordinator_owner::validate_cutover_lease(uint64_t generat
 	return cutover_ready_locked();
 }
 
-void critical_command_coordinator_owner::release_cutover_lease(uint64_t generation,
+bool critical_command_coordinator_owner::release_cutover_lease(uint64_t generation,
 							       uint64_t lease_id)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
@@ -1621,9 +1621,10 @@ void critical_command_coordinator_owner::release_cutover_lease(uint64_t generati
 	    lease_id != active_cutover_lease_id ||
 	    active_cutover_phase != cutover_owner_phase::lease_idle ||
 	    active_cutover_thread != std::this_thread::get_id())
-		return;
+		return false;
 	invalidate_active_cutover_lease();
 	update_depth();
+	return true;
 }
 
 bool critical_command_coordinator_owner::begin_cutover_transaction(uint64_t generation,

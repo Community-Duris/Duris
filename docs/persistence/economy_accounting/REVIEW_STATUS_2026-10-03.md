@@ -2903,3 +2903,46 @@ original 300-second compile/120-second aggregate runtime limits; preparation
 receipt `tmp/sql-recovery-cleanup-owner-prepared-v3.local.json` is SHA-256
 `386a9a75f93b58370c336863ec351b6911fdb6a5948ca3f24204af28274cc5a2`.
 No route, R1-R8, activation or release gate is promoted by source integration.
+
+### Lifecycle owner and cleanup propagation implementation; unqualified
+
+Acquisition now binds the original SQL session, acquiring thread and local
+exclusion before issuing GET_LOCK. A separate confirmation bit grants authority
+only after native readback and lifecycle-state validation. Same-session borrowed
+named locks are refused before acquisition. Checked release validates the owner
+thread before SQL or mutex operations, proves original-session nonownership, and
+retains uncertainty. Each owned acquisition permits one RELEASE_LOCK attempt;
+subsequent cleanup retries read back rather than drain recursive leases.
+
+The coordinator release callback now reports exact lease/thread success. Cutover
+transfer and publication handoff preserve the thread and confirmed authority;
+partial SQL cleanup retains the remaining obligation. Runtime acquisition failure
+keeps an unresolved connection and guard together in a non-ready owner; shutdown
+can retry cleanup, and forked children still avoid inherited protocol traffic.
+
+Critical-command and death-conflict pool adapters retain writer guards through
+transaction cleanup. A new pool operation validates an exact currently borrowed
+slot, closes it, then allows local writer exclusion to end. Foreign/direct DB
+handles are untouched. The pooled player lease checks the same guard/handle
+identity and clears the consumed pointer. Unresolved borrowed writer destruction
+latches runtime SQL exclusion closed and retains local exclusion for process
+recovery; it never silently closes a borrowed DB handle. Known committed results,
+including exact retained replay after independently confirmed rollback, survive a
+later named-lock cleanup failure. Ambiguous outcomes retain original-ID recovery.
+
+Read-only review caught foreign-thread cleanup ordering and a retained replay
+result downgrade; both are corrected in source. BEFORE manifest
+`tmp/lifecycle-owned-release-before-v2.local/manifest.json` is SHA-256
+`0460595a3b4b810a5864d85bb42b32995aa7e67aac4a0930e8941a9a732d8855`,
+base `7c391d98d`; the supplementary pool header is separately Git-normalized.
+New pool/guard link symbols require maintained fixture-double updates. Fault-owner
+preparation remains unexecuted; original budgets and both actual SQL engines remain
+required. This source implementation has no compiler, native, SQL or gameplay
+qualification. Plan 1 also still needs restored-save production wiring and the
+complete integrated failure/replay/restart batch; no acceptance gate is promoted.
+
+Worker identity preparation V2 has 25 unexecuted cases with real journal append,
+canonical frame and ACK checks, controlled repository outcomes and ordinary
+controls. Its receipt `tmp/worker-typed-identity-prepared-v2.local.json` is SHA-256
+`d7f22f403cff50d2a72471ebeefdbeac86f421da7fc7f5bb49e7aa04338b4eaa`,
+binding 529 inputs at `7c391d98d`. Original 300/120 limits are unmeasured.
