@@ -7,6 +7,8 @@
 #include "player/player_snapshot_codec.h"
 
 #ifndef __NO_MYSQL__
+#include "player/inert_item_stage.h"
+#include "world/object_template.h"
 #include "persistence/critical_command_repository.h"
 #include "persistence/economic_sql_item_transfer_transaction.h"
 #include "persistence/sql_room_item_payload.h"
@@ -15,6 +17,7 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <functional>
 #include <map>
 #include <memory>
@@ -25,6 +28,44 @@ extern P_obj object_list;
 extern P_char character_list;
 extern P_room world;
 extern const int top_of_world;
+
+#ifndef __NO_MYSQL__
+extern P_index obj_index;
+extern int top_of_objt;
+
+// This owner is defined only in the integrated module. It has no public stage
+// release or exported constructor; SQL authority and every private allocation
+// remain synchronous and nonescaping until the last assignment-only step.
+class ordinary_drop_enrollment_owner final
+{
+    public:
+	static ordinary_drop_observation
+	publish(MYSQL *, unsigned long, const critical_command &, const critical_completion &,
+		const item_transfer_payload &, const item_transfer_result &,
+		const sql_room_item_payload_batch &, const sql_room_item_graph &);
+
+    private:
+	ordinary_drop_enrollment_owner(const critical_command &command,
+				       const critical_completion &receipt) noexcept
+		: command_(command)
+		, receipt_(receipt)
+	{
+	}
+	ordinary_drop_enrollment_owner(const ordinary_drop_enrollment_owner &) = delete;
+	ordinary_drop_enrollment_owner &operator=(const ordinary_drop_enrollment_owner &) = delete;
+	void enroll() noexcept;
+	const critical_command &command_;
+	const critical_completion &receipt_;
+	MYSQL *connection_ = nullptr;
+	unsigned long session_ = 0;
+	int room_ = -1, light_ = 0;
+	P_index index_ = nullptr;
+	std::vector<inert_item_stage> stages_;
+	std::vector<const object_template *> prototypes_;
+	std::vector<item_ownership_runtime_entry> runtime_;
+	std::map<int, int> counts_;
+};
+#endif
 
 namespace
 {
@@ -359,7 +400,8 @@ ordinary_drop_observation observe_transaction(MYSQL *connection, const critical_
 					      const critical_completion &completion,
 					      const item_transfer_payload &payload,
 					      const item_transfer_result &result,
-					      const sql_room_item_payload_batch &original)
+					      const sql_room_item_payload_batch &original,
+					      bool publish_absent)
 {
 	economic_sql_item_transfer_context context;
 	const unsigned int authority_error =
@@ -391,18 +433,259 @@ ordinary_drop_observation observe_transaction(MYSQL *connection, const critical_
 	auto observation = compare_graph(payload, result, original, durable);
 	if (!session_current(connection, context.session_id))
 		return observed(ordinary_drop_observation_status::unavailable, ENOTCONN);
+	if (publish_absent && observation.status == ordinary_drop_observation_status::absent)
+		return ordinary_drop_enrollment_owner::publish(connection, context.session_id,
+							       command, completion, payload, result,
+							       original, durable);
 	return observation;
 }
 #endif
 } // namespace
 
-ordinary_drop_observation
-ordinary_drop_recovery_observe_existing(const critical_command &command,
-					const critical_completion &completion) noexcept
+#ifndef __NO_MYSQL__
+ordinary_drop_observation ordinary_drop_enrollment_owner::publish(
+	MYSQL *connection, unsigned long session, const critical_command &command,
+	const critical_completion &receipt, const item_transfer_payload &payload,
+	const item_transfer_result &result, const sql_room_item_payload_batch &original,
+	const sql_room_item_graph &durable)
+{
+	ordinary_drop_enrollment_owner owner(command, receipt);
+	owner.connection_ = connection;
+	owner.session_ = session;
+	owner.index_ = obj_index;
+	owner.room_ = real_room(static_cast<int>(payload.to_owner.id));
+	if (!owner.index_ || owner.room_ < 0 || owner.room_ > top_of_world ||
+	    original.items.empty() || original.items.size() != payload.item_count ||
+	    original.items[0].object_uid != payload.selected_item_uid)
+		return observed(ordinary_drop_observation_status::refused, EINVAL);
+	if (top_of_objt < 0 || top_of_objt == INT_MAX)
+		return observed(ordinary_drop_observation_status::refused, EINVAL);
+	owner.runtime_.reserve(durable.identities.size());
+	for (size_t index = 0; index < durable.identities.size(); ++index)
+	{
+		const auto &identity = durable.identities[index];
+		owner.runtime_.push_back({ identity.item_uid, identity.root_item_uid,
+					   identity.parent_item_uid, identity.owner,
+					   identity.item_revision, identity.owner_revision,
+					   durable.items[index].vnum, identity.state });
+	}
+	std::vector<size_t> depths(original.items.size(), 0);
+	for (size_t index = 0; index < original.items.size(); ++index)
+	{
+		const auto &literal = original.items[index];
+		if (!index)
+		{
+			if (literal.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				return observed(ordinary_drop_observation_status::refused, EBADMSG);
+			continue;
+		}
+		if (literal.parent_index < 0 || literal.parent_index >= static_cast<int32_t>(index))
+			return observed(ordinary_drop_observation_status::refused, EBADMSG);
+		const int parent_type = original.items[literal.parent_index].type;
+		if (parent_type != ITEM_CONTAINER && parent_type != ITEM_QUIVER &&
+		    parent_type != ITEM_STORAGE)
+			return observed(ordinary_drop_observation_status::refused, EBADMSG,
+					literal.object_uid);
+		depths[index] = depths[literal.parent_index] + 1;
+		if (depths[index] > static_cast<size_t>(top_of_objt) + 1)
+			return observed(ordinary_drop_observation_status::refused, E2BIG,
+					literal.object_uid);
+	}
+	owner.stages_.resize(original.items.size());
+	owner.prototypes_.reserve(original.items.size());
+	std::vector<P_obj> child_tails(original.items.size(), nullptr);
+	// Resolve every trusted cache entry and aggregate signed counters before
+	// acquiring any pooled object. Runtime cache misses never invoke a parser.
+	for (const auto &literal : original.items)
+	{
+		const auto *prototype = find_object_template(literal.vnum);
+		if (!prototype)
+			return observed(ordinary_drop_observation_status::unsupported, ENOENT,
+					literal.object_uid);
+		const int number = prototype->R_num;
+		if (number < 0 || number > top_of_objt ||
+		    owner.index_[number].virtual_number != literal.vnum)
+			return observed(ordinary_drop_observation_status::conflict, ESTALE,
+					literal.object_uid);
+		// These types can enroll allocating activity indexes or external ship
+		// bindings. A future complete activity owner is required before admission.
+		const auto activity_type = [](int type)
+		{ return type == ITEM_TELEPORT || type == ITEM_SHIP || type == ITEM_BOAT; };
+		if (activity_type(prototype->type) || activity_type(literal.type))
+			return observed(ordinary_drop_observation_status::unsupported, ENOTSUP,
+					literal.object_uid);
+		const auto eligibility = inert_item_stage_eligibility(*prototype, literal);
+		if (eligibility != inert_item_stage_result::ok)
+			return observed(eligibility == inert_item_stage_result::unsupported ?
+						ordinary_drop_observation_status::unsupported :
+						ordinary_drop_observation_status::refused,
+					eligibility == inert_item_stage_result::unsupported ?
+						ENOTSUP :
+						EBADMSG,
+					literal.object_uid);
+		owner.prototypes_.push_back(prototype);
+		++owner.counts_[number];
+	}
+	for (const auto &[number, count] : owner.counts_)
+		if (owner.index_[number].number < 0 ||
+		    owner.index_[number].number > INT_MAX - count)
+			return observed(ordinary_drop_observation_status::refused, EOVERFLOW);
+	for (size_t index = 0; index < original.items.size(); ++index)
+	{
+		// Original retained canonical literals use slot0. The differently ordered
+		// current SQL loader may use -1; compare_graph already normalizes that.
+		const auto &literal = original.items[index];
+		const auto prepared = prepare_inert_item_stage(*owner.prototypes_[index], literal,
+							       owner.stages_[index]);
+		if (prepared != inert_item_stage_result::ok)
+			return observed(
+				prepared == inert_item_stage_result::allocation_unavailable ?
+					ordinary_drop_observation_status::unavailable :
+				prepared == inert_item_stage_result::unsupported ?
+					ordinary_drop_observation_status::unsupported :
+					ordinary_drop_observation_status::refused,
+				prepared == inert_item_stage_result::allocation_unavailable ?
+					ENOMEM :
+				prepared == inert_item_stage_result::unsupported ? ENOTSUP :
+										   EBADMSG,
+				literal.object_uid);
+		if (!index)
+		{
+			if (literal.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				return observed(ordinary_drop_observation_status::refused, EBADMSG);
+			continue;
+		}
+		if (literal.parent_index < 0 || literal.parent_index >= static_cast<int32_t>(index))
+			return observed(ordinary_drop_observation_status::refused, EBADMSG);
+		P_obj object = owner.stages_[index].object_;
+		P_obj parent = owner.stages_[literal.parent_index].object_;
+		object->loc_p = LOC_INSIDE;
+		object->loc.inside = parent;
+		P_obj &tail = child_tails[literal.parent_index];
+		if (tail)
+			tail->next_content = object;
+		else
+			parent->contains = object;
+		tail = object;
+	}
+
+	// Prepare the exact room-light projection without logs, callbacks, signed
+	// overflow or a walk that could accept a cyclic/foreign person list.
+	std::vector<P_char> characters;
+	size_t visits = 0;
+	for (P_char character = character_list; character; character = character->next)
+	{
+		if (++visits > census_limit)
+			return observed(ordinary_drop_observation_status::unavailable, E2BIG);
+		characters.push_back(character);
+	}
+	std::sort(characters.begin(), characters.end(), std::less<P_char>{});
+	std::vector<bool> linked_characters(characters.size(), false);
+	int light = 0;
+	for (P_char character = world[owner.room_].people; character;
+	     character = character->next_in_room)
+	{
+		if (++visits > census_limit)
+			return observed(ordinary_drop_observation_status::unavailable, E2BIG);
+		const auto found = std::lower_bound(characters.begin(), characters.end(), character,
+						    std::less<P_char>{});
+		if (found == characters.end() || *found != character)
+			return observed(ordinary_drop_observation_status::conflict, ENXIO);
+		const size_t index = static_cast<size_t>(found - characters.begin());
+		if (linked_characters[index] || character->in_room != owner.room_)
+			return observed(ordinary_drop_observation_status::conflict, ELOOP);
+		linked_characters[index] = true;
+		if (character->light > 0)
+			light = std::min(127, light + std::min(127, int(character->light)));
+	}
+	for (P_obj object = world[owner.room_].contents; object; object = object->next_content)
+	{
+		if (++visits > census_limit)
+			return observed(ordinary_drop_observation_status::unavailable, E2BIG);
+		if (object->loc_p != LOC_ROOM || object->loc.room != owner.room_)
+			return observed(ordinary_drop_observation_status::conflict, ESTALE);
+		if ((object->extra_flags & ITEM_LIT) ||
+		    (object->type == ITEM_LIGHT && object->value[2] == -1))
+			light = std::min(127, light + 1);
+	}
+	P_obj root = owner.stages_[0].object_;
+	if ((root->extra_flags & ITEM_LIT) || (root->type == ITEM_LIGHT && root->value[2] == -1))
+		light = std::min(127, light + 1);
+	owner.light_ = light;
+
+	// Nothing above publishes an object. Hold the original locked authority,
+	// then take a fresh complete absence census immediately before mutation.
+	if (!session_current(owner.connection_, owner.session_))
+		return observed(ordinary_drop_observation_status::unavailable, ENOTCONN);
+	const auto fresh = compare_graph(payload, result, original, durable);
+	if (fresh.status != ordinary_drop_observation_status::absent)
+		return fresh;
+	if (!session_current(owner.connection_, owner.session_) || obj_index != owner.index_ ||
+	    world[owner.room_].number <= 0 ||
+	    static_cast<uint64_t>(world[owner.room_].number) != payload.to_owner.id ||
+	    !critical_operation_id_equal(owner.command_.operation_id, owner.receipt_.operation_id))
+		return observed(ordinary_drop_observation_status::unavailable, ESTALE);
+	for (size_t index = 0; index < original.items.size(); ++index)
+	{
+		const auto &literal = original.items[index];
+		const auto *prototype = owner.prototypes_[index];
+		if (find_object_template(literal.vnum) != prototype ||
+		    prototype->R_num != owner.stages_[index].object_->R_num ||
+		    prototype->R_num < 0 || prototype->R_num > top_of_objt ||
+		    owner.index_[prototype->R_num].virtual_number != literal.vnum ||
+		    owner.index_[prototype->R_num].func.obj ||
+		    inert_item_stage_eligibility(*prototype, literal) !=
+			    inert_item_stage_result::ok)
+			return observed(ordinary_drop_observation_status::conflict, ESTALE,
+					literal.object_uid);
+	}
+	for (const auto &[number, count] : owner.counts_)
+		if (owner.index_[number].number < 0 ||
+		    owner.index_[number].number > INT_MAX - count)
+			return observed(ordinary_drop_observation_status::refused, EOVERFLOW);
+	// Final fallible step rolls back entry/owner values on allocation refusal.
+	// No callback, SQL, allocation or other fallible operation follows success.
+	if (!item_ownership_runtime_hydrate_many_atomic(owner.runtime_.data(),
+							owner.runtime_.size()))
+		return observed(ordinary_drop_observation_status::unavailable, EAGAIN);
+	owner.enroll();
+	return observed(ordinary_drop_observation_status::published, 0, 0, durable.owner_revision);
+}
+
+void ordinary_drop_enrollment_owner::enroll() noexcept
+{
+	for (auto &stage : stages_)
+	{
+		P_obj object = stage.object_;
+		object->next = object_list;
+		if (object_list)
+			object_list->prev = object;
+		object_list = object;
+	}
+	for (const auto &[number, count] : counts_)
+		index_[number].number += count;
+	P_obj root = stages_[0].object_;
+	root->loc_p = LOC_ROOM;
+	root->loc.room = room_;
+	root->next_content = world[room_].contents;
+	world[room_].contents = root;
+	world[room_].light = light_;
+	for (auto &stage : stages_)
+	{
+		stage.object_ = nullptr;
+		stage.pool_ = nullptr;
+	}
+}
+#endif
+
+static ordinary_drop_observation recover_drop(const critical_command &command,
+					      const critical_completion &completion,
+					      bool publish_absent) noexcept
 {
 #ifdef __NO_MYSQL__
 	(void)command;
 	(void)completion;
+	(void)publish_absent;
 	return observed(ordinary_drop_observation_status::unsupported, ENOTSUP);
 #else
 	if (!nevent_is_game_thread())
@@ -492,7 +775,8 @@ ordinary_drop_recovery_observe_existing(const critical_command &command,
 					ordinary_drop_observation_status::unavailable, ENOTCONN);
 			else
 				observation = observe_transaction(connection, command, completion,
-								  *payload, result, original);
+								  *payload, result, original,
+								  publish_absent);
 		}
 		catch (const std::bad_alloc &)
 		{
@@ -520,4 +804,18 @@ ordinary_drop_recovery_observe_existing(const critical_command &command,
 		return observed(ordinary_drop_observation_status::unavailable, EIO);
 	}
 #endif
+}
+
+ordinary_drop_observation
+ordinary_drop_recovery_observe_existing(const critical_command &command,
+					const critical_completion &completion) noexcept
+{
+	return recover_drop(command, completion, false);
+}
+
+ordinary_drop_observation
+ordinary_drop_recovery_publish(const critical_command &command,
+			       const critical_completion &completion) noexcept
+{
+	return recover_drop(command, completion, true);
 }

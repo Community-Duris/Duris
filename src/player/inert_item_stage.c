@@ -109,9 +109,8 @@ void inert_item_stage::reset() noexcept
 	pool_ = nullptr;
 }
 
-inert_item_stage_result prepare_inert_item_stage(const object_template &prototype,
-						 const player_item_snapshot &literal,
-						 inert_item_stage &output) noexcept
+inert_item_stage_result inert_item_stage_eligibility(const object_template &prototype,
+						     const player_item_snapshot &literal) noexcept
 {
 	const int number = prototype.R_num;
 	if (!obj_index || number < 0 || number > top_of_objt || literal.vnum <= 0 ||
@@ -170,7 +169,17 @@ inert_item_stage_result prepare_inert_item_stage(const object_template &prototyp
 	for (auto timer : literal.timers)
 		if (timer != 0)
 			return inert_item_stage_result::unsupported;
+	return inert_item_stage_result::ok;
+}
 
+inert_item_stage_result prepare_inert_item_stage(const object_template &prototype,
+						 const player_item_snapshot &literal,
+						 inert_item_stage &output) noexcept
+{
+	const auto eligibility = inert_item_stage_eligibility(prototype, literal);
+	if (eligibility != inert_item_stage_result::ok)
+		return eligibility;
+	const int number = prototype.R_num;
 	if (!dead_obj_pool || dead_obj_pool->size != sizeof(obj_data) ||
 	    dead_obj_pool->next_off != offsetof(obj_data, next))
 		return inert_item_stage_result::allocation_unavailable;
