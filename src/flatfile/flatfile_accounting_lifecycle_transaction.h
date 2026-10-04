@@ -68,10 +68,18 @@ struct flatfile_accounting_lifecycle_receipt
 // Coordinates complete native capture of wallets and shared banks, enforces
 // one-to-one mapping and lifetime reconciliation, stages the baseline witness
 // and reservations, verifies virgin_state (never_activated) proof, and commits
-// the lifecycle receipt before selecting the active epoch.
-// The common receipt bucket must already be initialized. A selected epoch still
-// returns EALREADY; constituent original-ID retry checks do not make install an
-// idempotent lifecycle-receipt lookup. Caller receipt stays unchanged on failure.
+// immutable lifecycle receipt and epoch selection in one authority bundle.
+// Exact original-ID retry verifies retained baseline/reservations and historical
+// epoch links before EALREADY or native capture, returning the original ordered
+// mappings without consulting mutable mapping rows. Changed requests conflict;
+// Original native descriptors bind locator/PID/order to retained baseline source
+// fingerprints and coverage. Mapping revision/operation metadata is authority of
+// the immutable lifecycle frame, not independently rebuilt from later mappings.
+// missing/corrupt completed history refuses. Shared authenticated journal recovery
+// may finish a previously committed original bundle on retry; no new images,
+// native capture/mutation, mapping changes or epoch selection are prepared.
+// The common receipt bucket must already be initialized for a fresh install.
+// Caller receipt stays unchanged on failure, including allocation/I/O failure.
 // Frozen-boundary authority is an external prerequisite; no authenticated native
 // boundary producer or production activation wiring is supplied by this owner.
 class flatfile_accounting_lifecycle_transaction
