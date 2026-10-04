@@ -478,3 +478,14 @@ ordering before this indexed access. No identity, revision or publication rule c
 Original source remains in `tmp/plan1-live-projection-before-20261004.local.c`.
 The V4 combined-source strict builds above pass; actual native publication/restart
 qualification remains open. This commit records only this diagnosed compile issue.
+
+## Plan 1 qualification: coin account accessor correction
+
+The flatfile strict build reproduced an undefined account-name helper in coin
+body identity comparison. It now calls the existing `get_account_name_safe`
+accessor already used by this transaction module. Missing disconnected account
+identity retains the existing conservative mismatch instead of inventing identity.
+PID, racewar, account comparison and receipt/publication rules remain unchanged.
+Original source remains in `tmp/plan1-coin-account-before-20261004.local.c`.
+Both V4 combined-source strict builds pass. Coin publication/native recovery
+checks continue; this compiler fix does not deliver Plan 2's missing cold pile owner.
