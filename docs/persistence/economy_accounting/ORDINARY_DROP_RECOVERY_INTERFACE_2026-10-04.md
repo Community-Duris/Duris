@@ -161,3 +161,18 @@ across parking/in-flight transitions. It must include retained active, pending,
 result and exact journal frames; omitted archives/quarantines or missing namespace
 proof cannot become a clean census. Actual unrelated-PID progress remains required.
 No replay source change or test followed from this review.
+
+## Current integrated source5766555f8
+
+The complete indexed SQL boot prototype catalog is now implemented and consumed
+by both private reconstruction lookups. Catalog staging is recoverable/nonfatal;
+no partial catalog or starter fallback is admitted. The former starter-only
+coverage boundary is removed in source. Activity-bearing bookkeeping, real
+production callers and native qualification remain unfinished.
+
+The ownership leaf in241e54162 supplies move-only residence/ticket/reservation
+metadata and explicit nested scopes. Production does not enable its epoch.
+Complete residence through pipeline/worker/results plus every mutation boundary,
+fresh reserved namespace-valid scan and coordinator ACK proof remain required
+before enabling or adding replay revisit. See its preparation report; no new
+compiler/native/SQL/gameplay/AST checks ran.

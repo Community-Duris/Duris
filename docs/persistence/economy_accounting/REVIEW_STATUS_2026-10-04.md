@@ -18,7 +18,7 @@ to its native tree d9a9610f3 and consumed scripts/fixtures. Combined-source
 qualification is still required. Its final900-second per-engine wrapper differs
 from the failed240-second attempt; this does not relax the primary candidate's
 original gate budgets or establish complete release-host workload acceptance.
-The source milestone candidate through `012c32e24` includes the fifteen prerequisite
+The source milestone candidate through `5766555f8` includes the seventeen prerequisite
 slices below, plus the later local Plan5 integration described above. Plan5's reports remain evidence of
 its own inputs, not of this combined source candidate. Root checkout WIP is preserved.
 
@@ -46,6 +46,8 @@ Parallel specialists use bounded file ownership; primary integrates and reviews.
 | `488414dc1` | [Actor-independent existing-drop observation](EXISTING_DROP_GRAPH_PREPARATION_2026-10-04.md): one original SQL session binds current epoch/custody/literals, retained receipt and complete physical/runtime graph. | Positive observation follows confirmed rollback; it grants no retained authority, construction, ACK or producer integration. |
 | `e84e52de0` | [Private all-absent reconstruction](ABSENT_DROP_ENROLLMENT_PREPARATION_2026-10-04.md): full eligibility, detached literal topology, atomic runtime hydration and assignment-only native enrollment; uncertain cleanup retains the graph. | Trusted cache-only/activity-excluding subset; general prototype/bookkeeping coverage, production census/reservation/ACK and complete cold recovery remain open. |
 | `012c32e24` | [Immutable lifecycle retained receipt](LIFECYCLE_RETAINED_RECEIPT_PREPARATION_2026-10-04.md): original ordered mappings and native descriptors/baseline/coverage/epoch bindings committed atomically; exact retry precedes EALREADY/native recapture. | Native boundary/holding/item completeness and Plan5 mandatory `.elr` inventory/restore/export/erasure/retention remain open. |
+| `241e54162` | [Replay ownership foundation](REPLAY_OWNERSHIP_PREPARATION_2026-10-04.md): exact resident claims, per-PID tickets/reservations, top-scope nested borrowing and release notification; inactive path preserved. | No production enable; complete resident delivery, mutation owners, fresh reserved journal scan, ACK and replay revisit remain open. |
+| `5766555f8` | [Complete boot recovery catalog](BOOT_OBJECT_TEMPLATE_CATALOG_PREPARATION_2026-10-04.md): nonfatal staged SQL catalog of every indexed prototype; reconstruction uses sealed pure lookup rather than starter-only cache. | Source-only; loader parity/boot cost/native qualification, activity bookkeeping and production recovery remain open. |
 
 Source reviewers found no remaining blocker in each slice's stated narrow scope.
 This is source review, not native/build/gameplay/persistence/recovery acceptance.
@@ -189,3 +191,24 @@ do not serialize native SQL callbacks against worker apply/ACK. No replay edit w
 made. Stable per-PID replay/worker/pipeline/journal census and reservation must
 preserve unrelated-PID progress before that integration. Source work continues;
 the goal is ACTIVE, no new tests or qualified milestone push occurred.
+
+## Integration priority and estimate correction
+
+Plan 1 is an independent authority/cutover milestone. Its documented acceptance
+permits Plans 2–4 to remain unfinished and flatfile coin roots to refuse until
+Plan 2 qualifies them. Its activation procedure must refuse incomplete route
+evidence; this does not authorize actual activation or waive full-feature gates.
+
+The next implementation priority is one complete production SQL recovery path,
+then the authentic baseline/cutover/pause owner and existing flatfile bank/item
+parity. Too many disconnected source prerequisites have accumulated; additional
+leaf preparation must not replace production integration. Plan 1 qualification
+starts when that major plan is ready, per user cadence. Plans 2–4 may advance
+independently; all five still meet on one qualified final candidate.
+
+The earlier conversational 1–2 week estimate was not measured and is withdrawn
+as a reliable forecast. No percentage or calendar estimate is evidenced by the
+number of source helpers or prepared cases. These two new issues have separate
+local source commits; no compiler/tests/native/SQL/gameplay/AST qualification or
+verified milestone push occurred. The goal remains active and merge readiness
+is unproven.

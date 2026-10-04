@@ -52,7 +52,7 @@ backend limitations and the tested revision before checking off acceptance.
 ## Current source preparation checkpoint
 
 The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
-remote histories and unqualified source milestones through012c32e24. New source
+remote histories and unqualified source milestones through5766555f8. New source
 prerequisites cover allocation-safe publication cleanup, checkpoint-spanning save
 execution guards, bounded runtime UID-root census, authority-bound native baseline
 initialization markers, ordinary item receipt sealing with ACK-only conflict
@@ -869,3 +869,18 @@ contracts, producer integration, writer registry/matrix and activation owner.
 The second user-coordinated agent owns Plan5 independent reconciliation, audit
 tooling, backup/restore evidence and release qualification. Integrate separately
 committed slices through narrow interface handoffs on one tested candidate.
+
+## October 4 delivery priority
+
+Complete Plan 1's documented independent authority/cutover acceptance first,
+with Plans 2–4 progressing on independent producer work. Plan 1 need not wait
+for every writer or flatfile coin implementation; guarded activation must still
+refuse incomplete coverage, and actual activation/full release remains gated
+on every plan. Prioritize production SQL recovery integration over further
+isolated helper layers, followed by native baseline/cutover/pause and existing
+flatfile bank/item parity. Testing stays deferred until the major plan is ready.
+
+Source prerequisites241e54162 and5766555f8 now supply the replay ownership leaf
+and full indexed SQL boot prototype catalog. Reconstruction consumes the latter.
+Neither closes production ownership/ACK/replay or current-candidate qualification.
+No defensible remaining duration or completion percentage has been measured.

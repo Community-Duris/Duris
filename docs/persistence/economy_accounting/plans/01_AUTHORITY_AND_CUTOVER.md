@@ -837,3 +837,19 @@ Boundary request bool/digest remain external assertions; actual native boundary
 producer/capability, full holding/item-source/writer/pending census and activation
 remain required. Inert stageb36e9690f is discard-only; graph proof and final atomic
 hydration/nonthrowing enrollment are not implemented. No checks or milestone push ran.
+
+## October 4 integration priority
+
+The current source checkpoint is5766555f8. Replay ownership and the complete
+indexed SQL boot recovery catalog are implemented but unqualified; the latter
+is consumed by private all-absent reconstruction. Production delivery claims,
+mutation census, fresh reserved journal scan, coordinator ACK reservation and
+release-driven revisit are still unwired. Finish that actual SQL recovery path
+before adding more isolated prerequisites, then the native baseline/cutover/pause
+owner and existing flatfile bank/item parity. Keep the stated independent
+acceptance: missing Plans2–4 coverage must refuse activation, but those writers
+need not all be delivered to prove this plan's guarded authority procedure.
+No synthetic coverage manifest may establish game-wide completion.
+
+A reliable remaining duration has not been measured; the number of source helpers
+is not a percentage complete. User testing cadence remains major-plan batches.
