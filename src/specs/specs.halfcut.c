@@ -16,6 +16,7 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include <stdio.h>
+#include <vector>
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 
@@ -61,31 +62,41 @@ int halfcut_defenders(P_char ch, P_char player, int /*cmd*/, char * /*arg*/)
 	return TRUE;
 }
 
-int crossbow_ambusher(P_char ch, P_char player, int cmd, char * /*arg*/)
+int crossbow_ambusher(P_char ch, P_char /*player*/, int cmd, char * /*arg*/)
 {
-	int targ_rooms[] = { 27139, 27137, 27136, 0 };
-	int x, y;
-
-	if (cmd != CMD_SET_PERIODIC)
-	{ /*only gonan check on periodic calls */
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+	if (cmd != CMD_PERIODIC || !char_in_list(ch) || !IS_ALIVE(ch) || ch->in_room == NOWHERE)
 		return FALSE;
-	}
-	x = 0;
-	for (x = 0; real_room0(targ_rooms[x]) != 0; x++)
+
+	const uint64_t ambusher_id = ch->runtime_id;
+	const int ambusher_room = ch->in_room;
+	const int targ_rooms[] = { 27139, 27137, 27136 };
+	for (const int vnum : targ_rooms)
 	{
-		for (player = world[real_room0(targ_rooms[x])].people; player;
-		     player = player->next_in_room)
-		{
+		const int room = real_room0(vnum);
+		if (!room)
+			continue;
+		// Damage can remove or move any occupant, including the next target.
+		std::vector<uint64_t> targets;
+		for (P_char player = world[room].people; player; player = player->next_in_room)
 			if (IS_PC(player))
-			{ /* Wohoo, got a target */
-				for (y = 0; y <= 3; y++)
-				{ /* shoot bolts */
-					act("A crossbow bolt flies in from the north, striking $N!",
-					    0, player, 0, player, TO_ROOM);
-					act("A crossbow bolt flies in from the north striking you!",
-					    0, player, 0, player, TO_VICT);
-					damage(ch, player, dice(2, 4) + 10, TYPE_UNDEFINED);
-				}
+				targets.push_back(player->runtime_id);
+		for (const uint64_t target_id : targets)
+		{
+			for (int bolt = 0; bolt < 4; ++bolt)
+			{
+				ch = find_character_by_runtime_id(ambusher_id);
+				if (!IS_ALIVE(ch) || ch->in_room != ambusher_room)
+					return FALSE;
+				P_char player = find_character_by_runtime_id(target_id);
+				if (!IS_ALIVE(player) || !IS_PC(player) || player->in_room != room)
+					break;
+				act("A crossbow bolt flies in from the north, striking $N!", 0,
+				    player, 0, player, TO_ROOM);
+				act("A crossbow bolt flies in from the north striking you!", 0,
+				    player, 0, player, TO_VICT);
+				damage(ch, player, dice(2, 4) + 10, TYPE_UNDEFINED);
 			}
 		}
 	}
