@@ -36,29 +36,33 @@ def change(files, name, offset, data, bind=None):
         files["authority.eal"] = rehash(control)
 
 
+def build_fixture(destination):
+    return build_native(
+        destination,
+        ["tests/async/flatfile_restore_authority_fixture.cpp",
+         "src/flatfile/flatfile_accounting_authority.c", *SOURCES[1:]],
+        ["-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-O1", "-g",
+         "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
+         "-DDURIS_FLATFILE_ACCOUNTING_TEST", "-Isrc", "-pthread"],
+        ["-lcrypto", "-pthread"], compiler="g++", name="restore-authority-fixture")
+
+
 def main():
     os.umask(0o077)
     with tempfile.TemporaryDirectory(prefix="duris-restore-authority-build-",
                                      dir=ROOT / "bin/tests") as build:
         binary = qualifier.build(Path(build) / "qualify")
-        fixture = build_native(
-            Path(build) / "fixture",
-            ["tests/async/flatfile_restore_authority_fixture.cpp",
-             "src/flatfile/flatfile_accounting_authority.c", *SOURCES[1:]],
-            ["-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-O1", "-g",
-             "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
-             "-DDURIS_FLATFILE_ACCOUNTING_TEST", "-Isrc", "-pthread"],
-            ["-lcrypto", "-pthread"], compiler="g++", name="restore-authority-fixture")
+        fixture = build_fixture(Path(build) / "fixture")
         environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
                            UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
         # Exercise the independent reader under sanitizers without invoking
         # candidate recovery or any native mutation/storage interface.
         audit_source = Path(build) / "audit.cpp"
-        audit_source.write_text('''#include "qualify_flatfile_economic_authority.h"
+        audit_source.write_text('''#include "qualify_flatfile_economic_records.h"
 #include <iostream>
 int main(int argc, char **argv) {
     if (argc != 2) return 2;
-    try { restore_economic_authority::checker(argv[1]).run(); return 0; }
+    try { restore_economic_records::checker(argv[1]).run(); return 0; }
     catch (...) { std::cerr << "native_restore_qualification_failed\\n"; return 1; }
 }
 ''')
@@ -123,6 +127,10 @@ int main(int argc, char **argv) {
             (evidence / "authority.eal").unlink()
             subprocess.run([str(fixture), str(state), "bootstrap"], env=environment, check=True)
             check("native partial inactive bootstrap", True)
+            for path in evidence.iterdir():
+                path.unlink()
+            subprocess.run([str(fixture), str(state), "evidence-bootstrap"], env=environment, check=True)
+            check("native empty initialized evidence before any epoch", True)
             for path in evidence.iterdir():
                 path.unlink()
             subprocess.run([str(fixture), str(state), "lifetimes"], env=environment, check=True)
@@ -228,6 +236,125 @@ int main(int argc, char **argv) {
             check("FIFO control refuses without blocking", False)
             restore(clean)
             check("clean native evidence remains qualified", True)
+
+            # A native-encoded retained operation store has one successful plan,
+            # 22 rejections, a sealed segment, an active segment and an empty
+            # initialized bucket. No epoch is selected or native gameplay applied.
+            restore({})
+            subprocess.run([str(fixture), str(state), "records"], env=environment, check=True)
+            check("native retained operation store sealed active empty bucket", True)
+            records = inventory(evidence)
+            index = "bucket-01.eai"
+            sealed, active = "bucket-01-0.eas", "bucket-01-1.eas"
+            assert sealed in records and active in records
+            record_cases = []
+            def record_case(label, mutate):
+                record_cases.append((label, mutate))
+
+            for name in (index, "bucket-02.eai", sealed, active):
+                record_case("missing " + name, lambda f, n=name: f.pop(n))
+            record_case("untracked initialized index", lambda f: f.update({
+                "bucket-03.eai": f["bucket-02.eai"]}))
+            for name in ("bucket-01-2.eas", "bucket-01-70.eas", "bucket-01-00.eas",
+                         "bucket-GG.eai", "bucket-01-stray.bin"):
+                record_case("untracked segment/name " + name, lambda f, n=name: f.update({n: f[active]}))
+            record_case("missing initialization flag", lambda f: change(
+                f, "authority.eal", 48 + 16520, b"\x04"))
+            record_case("initialization flag without index", lambda f: change(
+                f, "authority.eal", 48 + 16520, b"\x0e"))
+            record_case("index checksum", lambda f: f.update({index: f[index][:-1] + b"\x01"}))
+            for label, offset, data in (
+                ("magic", 0, b"X"), ("version", 8, struct.pack("<I", 2)),
+                ("lineage", 48, b"\x63"), ("bucket", 64, b"\x02"),
+                ("count capacity", 68, struct.pack("<I", 4097)),
+                ("total bytes", 72, b"\x00" * 8), ("zero operation", 80, b"\x00" * 16),
+                ("operation bucket", 80, b"\x02"), ("zero digest", 96, b"\x00" * 32),
+                ("missing segment number", 128, struct.pack("<I", 2)),
+                ("segment capacity", 128, struct.pack("<I", 255)),
+                ("nonzero starting offset", 132, b"\x01"),
+                ("record below frame minimum", 136, struct.pack("<I", 47)),
+                ("reserved", 140, b"\x01")):
+                record_case("index " + label, lambda f, o=offset, d=data: change(f, index, o, d))
+            record_case("index duplicate operation", lambda f: change(f, index, 144, f[index][80:96]))
+            record_case("sealed segment checksum", lambda f: f.update({sealed: f[sealed][:-1] + b"\x01"}))
+            for label, offset, data in (
+                ("magic", 0, b"X"), ("version", 8, struct.pack("<I", 2)),
+                ("lineage", 48, b"\x63"), ("bucket", 64, b"\x02"),
+                ("segment", 68, b"\x01"), ("count", 72, b"\x00" * 4),
+                ("reserved", 76, b"\x01")):
+                record_case("sealed segment " + label,
+                            lambda f, o=offset, d=data: change(f, sealed, o, d))
+
+            # Rehash the segment AND record index when altering record content.
+            # This makes the independent wire identity/binding checks decisive.
+            first_size = struct.unpack_from("<I", records[index], 136)[0]
+            first = records[sealed][80:80 + first_size]
+            command_start = 48 + 26
+            key_count, rev_count, payload_size = struct.unpack_from("<III", first, command_start + 40)
+            intent_start = command_start + 52 + key_count * 16 + rev_count * 24 + payload_size + 4
+            command_size = struct.unpack_from("<I", first, 48)[0]
+            plan_start = command_start + command_size
+            def alter_record(files, offset, data):
+                value = bytearray(first)
+                value[offset:offset + len(data)] = data
+                value = rehash(value)
+                segment = bytearray(files[sealed])
+                segment[80:80 + first_size] = value
+                files[sealed] = rehash(segment)
+                change(files, index, 96, hashlib.sha256(value).digest())
+
+            record_case("record hash missing from index", lambda f: change(f, sealed, 80 + 16, b"\x63"))
+            for label, offset, data in (
+                ("magic", 0, b"X"), ("version", 8, struct.pack("<I", 2)),
+                ("command length", 48, struct.pack("<I", 512 * 1024 + 1)),
+                ("plan length", 52, struct.pack("<I", 4 * 1024 * 1024 + 1)),
+                ("result length", 56, struct.pack("<I", 4097)),
+                ("rejection retains success plan", 60, b"\x01"),
+                ("success failure stage", 72, b"\x01"),
+                ("unsupported failure bits", 72, b"\x00\x80"),
+                ("command magic", command_start, b"X"),
+                ("command schema", command_start + 4, b"\x01"),
+                ("command operation", command_start + 8, b"\x02"),
+                ("command key reserved", command_start + 53, b"\x01"),
+                ("command timestamp binding", command_start + 32, b"\x00" * 8),
+                ("intent lineage", intent_start + 32, b"\x63"),
+                ("intent unknown epoch", intent_start + 48, b"\x63"),
+                ("intent operation", intent_start + 64, b"\x63"),
+                ("intent reserved", intent_start + 224, b"\x01"),
+                ("intent command binding", intent_start + 160, b"\x63"),
+                ("intent domain binding", intent_start + 192, b"\x63"),
+                ("plan operation", plan_start + 40, b"\x63"),
+                ("plan intent digest", plan_start + 152, b"\x63"),
+                ("plan count shape", plan_start + 216, b"\x00" * 4),
+                ("plan reserved", plan_start + 240, b"\x01")):
+                record_case("record " + label,
+                            lambda f, o=offset, d=data: alter_record(f, o, d))
+            for label, mutate in record_cases:
+                files = dict(records)
+                mutate(files)
+                restore(files)
+                check(label, False)
+            files = dict(records)
+            alter_record(files, 64, struct.pack("<Q", 2**64 - 1))
+            restore(files)
+            check("retained receipt unsigned maximum revision", True)
+            restore(records)
+            target = evidence / sealed
+            target.chmod(0o644)
+            check("nonprivate sealed operation segment", False)
+            restore(records)
+            target.unlink()
+            target.symlink_to(evidence / active)
+            check("symlink sealed operation segment", False)
+            restore(records)
+            os.link(evidence / active, evidence / "hardlink-active")
+            check("hardlinked active operation segment", False)
+            restore(records)
+            (evidence / active).unlink()
+            os.mkfifo(evidence / active, 0o600)
+            check("FIFO active operation segment refuses without blocking", False)
+            restore(records)
+            check("clean native retained records remain qualified", True)
         print(json.dumps({"positive_stores": successes, "refused_corruptions": refusals,
                           "native_invocations_per_case": 2, "economic_bytes_unchanged": True,
                           "qualifier_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),

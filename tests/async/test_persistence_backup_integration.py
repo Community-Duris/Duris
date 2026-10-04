@@ -31,6 +31,7 @@ import persistence_backup as backup
 import persistence_restore as restore
 import build_restore_qualifier as native
 from _restore_fixture import build as build_fixture
+from test_flatfile_restore_economic_authority import build_fixture as build_economic_fixture
 import migration_runner as migrations
 from test_persistence_backup import policy
 
@@ -86,6 +87,44 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         backup.write_json(path, dict(version=1, captured_at=int(time.time()), tombstones=[],
                                     policy_sha256=backup.digest(ROOT / "migrations/data_lifecycle_manifest.json")))
         return path
+
+    def test_flatfile_economic_record_loss_refuses_before_service_boot(self):
+        self.build_native_fixture()
+        fixture = build_economic_fixture(ROOT / "bin/tools/flatfile_restore_authority_fixture")
+        live = self.base / "live"
+        for directory in ("identities/accounts", "identities/names", "players", "domains"):
+            (live / directory).mkdir(mode=0o700, parents=True, exist_ok=True)
+        backup.run([str(fixture), str(live), "records"], env=dict(
+            os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
+            UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"))
+        proof = self.base / "intact-economic-proof"
+        proof.mkdir(mode=0o700)
+        backup.write_json(proof / "ISOLATED_RESTORE", {"synthetic": True})
+        shutil.copytree(live, proof / "state")
+        backup.run([str(ROOT / "bin/tools/qualify_flatfile_restore"),
+                    "--state-preflight", str(proof / "state")])
+        for name in ("bucket-01.eai", "bucket-01-0.eas", "bucket-01-1.eas"):
+            with self.subTest(missing=name):
+                path = live / "economic-evidence" / name
+                original = path.read_bytes()
+                path.unlink()
+                source_before = backup.inventory(live, exclude_locks=True)
+                with mock.patch.dict(os.environ, {"FLATFILE_STATE_DIR": str(live)}):
+                    result = backup.backup(self.p, "flatfile-primary")
+                generation = self.p["root"] / result["generation"]
+                captured = backup.inventory(generation)
+                self.assertNotIn("state/economic-evidence/" + name,
+                                 backup.verify(generation)["files"])
+                self.assertIn("state/economic-evidence/authority.eal",
+                              backup.verify(generation)["files"])
+                with mock.patch.object(restore, "service_load") as service:
+                    with self.assertRaises(backup.BackupError):
+                        restore.restore(self.p, result["generation"], self.ledger())
+                    service.assert_not_called()
+                self.assertFalse(list(self.p["restore_root"].glob("candidate-*/QUALIFIED.json")))
+                self.assertEqual(backup.inventory(generation), captured)
+                self.assertEqual(backup.inventory(live, exclude_locks=True), source_before)
+                path.write_bytes(original)
 
     @unittest.skipUnless(os.geteuid() == 0, "requires root to model a foreign-owned checkout")
     def test_isolated_service_boot_from_private_foreign_owned_checkout(self):

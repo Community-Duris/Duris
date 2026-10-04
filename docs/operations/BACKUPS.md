@@ -312,9 +312,15 @@ framing, hashes, sequence and cross-links. Renamed bank tombstones, retired and
 recreated lifetimes, unsigned revision counters and partial inactive bootstrap
 remain readable. Missing or corrupt metadata refuses qualification without
 changing the retained evidence. Absent or empty accounting storage remains
-eligible for legacy inactive installations. This gate does not validate retained
-operation segments, source claims, pile heads, baseline witnesses, native
-custody or activation readiness; those require their separate release evidence.
+eligible for legacy inactive installations. Initialized operation buckets must
+retain their indexes and every sealed/active segment, with dense ranges, exact
+record hashes and no untracked bucket files. The independent reader checks record
+framing, operation/lineage/retained-epoch identities, immutable command/intent/plan
+bindings and declared plan size. Native-encoded rejected receipts and partial
+empty-bucket initialization remain readable. These physical checks do not prove
+policy authorization, full account/item semantics or agreement with native
+authority. Source claims, pile heads, baseline witnesses, native custody and
+activation readiness still require their separate release evidence.
 Before boot, both journal types are scanned with the production codecs. A
 corrupt/unsupported frame or interrupted temporary journal blocks qualification.
 Validated quarantine archives and admission fences are preserved. An unreplayable

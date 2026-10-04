@@ -22,7 +22,7 @@
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_craft_progression.h"
 #include "kingdom/kingdom_restore.h"
-#include "qualify_flatfile_economic_authority.h"
+#include "qualify_flatfile_economic_records.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
 // only aggregate success or a fixed failure code.
@@ -226,7 +226,7 @@ int main(int argc, char **argv)
 			flatfile_player_domain_result::ok);
 		// Recovery is complete on this copied candidate. Audit retained authority
 		// without invoking the storage readers, which also perform recovery.
-		restore_economic_authority::checker(root).run();
+		restore_economic_records::checker(root).run();
 		// Mini-world boot does not materialize every persistent world domain.
 		// Exercise their native decoders before any qualification receipt.
 		require(flatfile_corpse_repository_validate(root, &error));
