@@ -52,15 +52,16 @@ backend limitations and the tested revision before checking off acceptance.
 ## Current source preparation checkpoint
 
 The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
-remote histories and unqualified source milestones through fd5683abc. New source
+remote histories and unqualified source milestones through2b4591c21. New source
 prerequisites cover allocation-safe publication cleanup, checkpoint-spanning save
 execution guards, bounded runtime UID-root census, authority-bound native baseline
-initialization markers and ordinary item receipt sealing with ACK-only conflict
-repair. Source review and frozen private fixtures do not complete these plans.
+initialization markers, ordinary item receipt sealing with ACK-only conflict
+repair, nonfatal inert allocation/discard-only construction and staged flatfile
+lifecycle composition. Source review and frozen private fixtures do not complete these plans.
 
 Production restored-save/actorless publication ownership, complete mutation census,
-critical ACK reservation, reliable wake, inert native construction, lifecycle staged
-composition and Plan5 marker-v2 consumers remain pending. Native writer integration,
+critical ACK reservation, reliable wake, final inert graph enrollment, authentic
+native baseline boundary authority and Plan5 marker-v2 consumers remain pending. Native writer integration,
 current semantic registry/matrix anchors and executable route proof remain open.
 Testing stays deferred until each major plan is ready; no new source qualification
 or milestone push occurred. Preserve all original BEFORE sources, oracles and budgets.

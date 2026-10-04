@@ -81,3 +81,24 @@ required at major-plan qualification. Formatting/diff hygiene only were executed
 - `src/flatfile/flatfile_accounting_staging_view.h`: `574ebbbefbecec44417f772b92913d0c25bd0377d4c0f49b93d0cca03bf9089f`.
 
 R1–R8, coverage_complete=False and release=BLOCKED remain.
+
+
+## Final private native-owner preparation (unexecuted)
+
+`tmp/lifecycle-composite-prepared-v1/manifest-v2.json` SHA-256:
+`aae9ffb88080da76cfa934f8b600be2178e38ded6df09b021b36fb245e5f0b69`.
+V2 declares143 BEFORE/144 AFTER consumed inputs and35 maintained coin-family
+production units. Only six changed owner files plus the new private staging header
+differ; other declared inputs are identical raw bytes. Earlier insufficient V1
+transitive freeze remains preserved; corrected V2 inventory is preparation, not
+compiler-measured dependency closure or execution evidence.
+
+The private fixture has11 old-public-API cases and2 AFTER-only boundary-input cases,
+using actual native identity/domain capture, baseline adapter/witness and common
+receipt participants. SHA-256 fixture `999dc923be9b8f148f34235b531bdab526d2439410de3e0fca467f8e625c00b6`;
+maintained helper `411834cf6365fafce58f1a972750743b4a4c883cb88b35ecfba72c1d4a61d1a1`.
+External fixture boundary fields are modeled assertions, not production authority.
+Tail checks depend on a successful reference install and are not independently
+calibrated BEFORE REDs. Private manifest-injection cases, populated-book revision,
+all-image crash/OOM sweeps and authentic boundary/census/activation remain open.
+No tests/compiler/AST/native/SQL/services ran. Original budgets/oracles remain required.

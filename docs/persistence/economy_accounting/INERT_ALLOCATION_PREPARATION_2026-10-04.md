@@ -49,3 +49,18 @@ construction. Current read_object and maintained materializers remain unchanged.
 Prepared prototypes, complete current-authority graph/epoch proof, all allocation,
 atomic runtime hydration and nonthrowing final enrollment remain separate ownership
 gates. These primitives do not establish an inert factory or full cold recovery.
+
+
+## Final private owner preparation (unexecuted)
+
+Eight cases consume actual mm.c/memory.c and real malloc/free/mmap observers.
+`tmp/inert-allocation-prepared-v1-final.local.json` SHA-256
+`60ad180e160ed7dc726623a98af91c18d73eaed936209ef8c3e5c21d29313272`;
+LF `cff09144a6bbe584b788482fab7cfaf14838d275e60d8e2d8db688b1ec4a8e4c`.
+528 declared source inputs;530 with private runner/harness. Selected BEFORE files
+match8c76443a6, but complete historical headers were not frozen: no mixed BEFORE
+native closure is claimed. Concurrent unrelated flatfile header drift is recorded
+without replacing frozen bytes. Proposed300 compile/120 aggregate bounds unmeasured.
+Actual __free is consumed; str_free and mm_create are not independently qualified.
+Legacy node-count decrement behavior is preserved, not a new completion claim.
+MEMCHK>1 defects are unsupported; no-MEMCHK strict diagnostics remain unmeasured.

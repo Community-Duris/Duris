@@ -195,3 +195,12 @@ still requires native graph/epoch proof, inert construction, complete mutation
 census, ACK reservation and retained wake before comm startup wiring. Testing is
 deferred until major-plan readiness. Current semantic registry anchors/matrix
 remain pending; no historical counts or private cases establish completion.
+
+
+Source follow-up2b4591c21 supplies private staged lifecycle composition; primary
+retains authentic native boundary/census and activation. The external request
+assertion/digest are not proof. Discard-only inert constructionb36e9690f has no
+ownership-release/enrollment API; current authority/graph publication remains open.
+See [current checkpoint](REVIEW_STATUS_2026-10-04.md) for exact scope/fixture limits.
+New semantic inert rows retain unverified backend status and historical matrix
+anchors pending full current-source reanchoring. No new tests or pushes ran.

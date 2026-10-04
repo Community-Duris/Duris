@@ -828,3 +828,12 @@ Lifecycle staged composition, independent Plan5 marker readers, authentic baseli
 source proof, full mutation census, inert actorless publication, ACK reservation,
 wake retention and full native/gameplay/recovery qualification remain open.
 Keep all historical component scopes and original test budgets. No new checks ran.
+
+
+Source follow-up2b4591c21 adds private sealed staged lifecycle composition with
+preserved original participant signatures, authentic predecessor visibility and
+precommit receipt preparation. See [source scope and corrected private V2](../FLATFILE_LIFECYCLE_COMPOSITION_PREPARATION_2026-10-04.md).
+Boundary request bool/digest remain external assertions; actual native boundary
+producer/capability, full holding/item-source/writer/pending census and activation
+remain required. Inert stageb36e9690f is discard-only; graph proof and final atomic
+hydration/nonthrowing enrollment are not implemented. No checks or milestone push ran.

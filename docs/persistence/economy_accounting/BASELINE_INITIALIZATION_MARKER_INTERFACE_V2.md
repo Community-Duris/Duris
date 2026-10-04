@@ -3,7 +3,7 @@
 Dated: 2026-10-04. Native owner: Plans1–4 primary/assigned marker implementation
 worker. Independent readers, reconciliation and release evidence: Plan5 owner.
 **Native slice implemented/source-reviewed; unqualified. Independent readers
-and lifecycle composition pending.** This is a narrow shared format
+pending; lifecycle composition now has an unqualified source prerequisite.** This is a narrow shared format
 handoff, not activation authorization or proof of authentic source holdings.
 
 ## Established gap and canonical owner
@@ -77,3 +77,14 @@ retention/deactivation/epoch turnover, populated updates, OOM unchanged-output,
 maximum catalog, stale digest and malformed reserved/state cases. Native and
 independent-reader evidence must meet on the same combined candidate. No new
 compiler/test/native/SQL runs have occurred for this contract.
+
+
+## Later lifecycle integration checkpoint
+
+Source2b4591c21 adds [private staged composition](FLATFILE_LIFECYCLE_COMPOSITION_PREPARATION_2026-10-04.md)
+through mappings, epoch membership, marker initialization, baseline book/receipt and
+selection without duplicate final destinations. Its external boundary assertion
+is not native proof; full source coverage, authenticated boundary authority,
+independent Plan5 readers and qualification remain open. The marker-only catalog
+format above remains unchanged. Historical namespace/composition gap statements
+explain the prerequisite; they no longer assert that no staged view exists.

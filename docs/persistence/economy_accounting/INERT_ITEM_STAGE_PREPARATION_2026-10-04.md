@@ -61,3 +61,28 @@ unsupported cases before acquisition, zero UID/RNG/list/count/procedure/event ef
 and unchanged ordinary/inactive behavior. Private owner preparation remains pending.
 Production object-list registration is source-only; no build has executed.
 R1–R8 and release=BLOCKED remain.
+
+
+## Final private owner preparation (unexecuted)
+
+`tmp/inert-item-stage-prepared-v1.local.json` SHA-256
+`5ed45c6c55bcab2fc49878c16b6e0ba3225781e8f619ed9e22e99f3849b1b7c2`;
+LF `b77eb7be265995172ec4010caaddab70fa106fc448605ba7f3845197f5ec847d`.
+Immutable b36e9690f full source archive supplies constructor/mm/memory:529 declared
+source inputs,531 with private owner files,22 case groups. Ten actual malloc sites
+have all-ordinal failure oracles with native __free/tag/pool cleanup. Output/moves,
+exact literals and pre-acquisition refusals are prepared; all selected LF pins match.
+300 compile/30 case/120 aggregate bounds are proposed, unmeasured. BEFORE API absence
+is unsupported exit78. UID/RNG/custody invocation absence is a source/link boundary,
+not full-world proof; no normal constructor/enrollment/release success stubs exist.
+LP64 wider integer narrowing cases are architecture-limited. No execution ran.
+
+
+Pin reconciliation: source-review rawe53f1247... preceded two affect-guard line
+wraps. Read-only reversal exactly reproduces that raw hash; no semantic change.
+Final current module raw `4dd014289925427c4213d04980dd4833edf4d9233edc81d4f47b53e0db806b60`,
+LF `373377acfb532671112741bb8061b9845b4f7980336d44fc2c7c0c92b331e06a`;
+header raw `749632640d451fdd3650b3aaab0b2f8593bccc76b8e2a2709d007a736c6dffee`,
+LF `9f996becdaa6e4cf1697c300b7790101769a8516bb02ae447dad291878f72841`.
+Both current LF images equal b36e9690f Git blobs and were reread by the source
+reviewer with no remaining blocker in discard-only scope. No native checks ran.
