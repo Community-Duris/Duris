@@ -561,3 +561,25 @@ Native evidence covers existing wallet/bank/keeper baselines, exact replay,
 rollback, serialized legacy writers, runtime gates and cutover faults. No stub
 qualifies the unused private ACK path. Prepared startup and checked-release owners
 still need corrected-expectation reruns; Plan 1 remains incomplete.
+
+### Plan 1 qualification: real-pool coin fixture lifetime
+
+The original coin fixture checked pooled session cleanliness only after its legacy
+direct-session crash case deliberately killed a native transaction. The existing
+borrowed writer guard could not confirm cleanup on that dead session and correctly
+latched SQL admission closed; pool reborrow therefore refused despite a free slot.
+The fixture now explicitly finishes its real-pool lifecycle before that legacy
+matrix. Every original pooled lease/reborrow/autocommit/shutdown assertion and every
+legacy direct fault remain; no exclusion flag, production guard or pool behavior
+changed. Failure-only numeric diagnostics retain the original strict assertion.
+
+The corrected strict ASan/UBSan executable passes all original coin cases on
+MariaDB 10.11.14 (6 seconds) and MySQL 8.0.46 (9 seconds), each within 120 seconds.
+Binary SHA256 e129a9f061a5398fb40c879d778b42ba255a590838b533595bad8696461b9b69;
+both native logs e2e4b4f3ee7fbec6dea0248c3225439afdab6e32cde456014ffeddeb6d7136a6.
+Evidence roots /opt/duris-plan1-qualification-20261004/p1-mariadb-2a4385a1.joztid
+and p1-mysql-b21dae2b.bMpFLQ (coin/result.json). Both verify exact owned identity,
+schema absence, process shutdown and reusable ports. V6 all1245 production inputs
+match V4; tmp/plan1-real-pool-compile-20261004-v6.local.json binds consumed inputs.
+Existing failed V5 results remain preserved. This closes real-pool coin component
+qualification, not Plan2 restored physical-pile integration or full Plan1 acceptance.
