@@ -135,6 +135,8 @@ TABLES = (
     "root_item_uid BIGINT,parent_item_uid BIGINT,to_owner_type INT,to_owner_id BIGINT,"
     "to_owner_context_id BIGINT,item_revision BIGINT UNSIGNED,from_owner_revision BIGINT,"
     "reason_type INT) ENGINE=InnoDB",
+    "CREATE TABLE currency_ledger (operation_id BINARY(16)) ENGINE=InnoDB",
+    "CREATE TABLE critical_outbox (operation_id BINARY(16)) ENGINE=InnoDB",
 )
 
 
