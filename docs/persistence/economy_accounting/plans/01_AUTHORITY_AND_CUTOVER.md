@@ -22,7 +22,7 @@ ready and its existing qualification batch is underway. Preserve original source
 and regression owners for failure/fix proof. Production source `9fabe54bb` passes
 both strict builds; focused components and worker/journal guards pass within
 their stated scopes, and real pooled bank passes both SQL engines. Remaining
-coin/item/lifecycle reruns and actual publication/recovery still prevent Plan 1
+prepared startup reruns plus actual publication/recovery still prevent Plan 1
 completion. Do not expand its independent acceptance or add optional gates.
 
 Keep implementation within the group's R1–R8 contract and this plan's independent

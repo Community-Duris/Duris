@@ -583,3 +583,25 @@ schema absence, process shutdown and reusable ports. V6 all1245 production input
 match V4; tmp/plan1-real-pool-compile-20261004-v6.local.json binds consumed inputs.
 Existing failed V5 results remain preserved. This closes real-pool coin component
 qualification, not Plan2 restored physical-pile integration or full Plan1 acceptance.
+
+### Plan 1 qualification: checked native release owner
+
+All22 prepared checked-release cases pass on both native engines in3 seconds each,
+within the original120-second aggregate limit. The sole failed wrong-thread guard
+fixture had expected idle guard cleanup to reopen coordinator admission. Existing
+lease cleanup deliberately leaves admission closed until explicit resume, as the
+maintained idle-capability oracle already requires. The corrected private owner
+retains wrong-thread zero-SQL, exact origin cleanup retry, retained admission and
+transaction rollback's existing automatic-resume assertions. No production change.
+
+Evidence roots /opt/duris-plan1-qualification-20261004/p1r-mariadb-98e8269a.yL51pn
+and p1r-mysql-95d07855.EBkLm6 (release/result.json), original cases/order and all
+inputs verified unchanged. Binary6dea57735872abf5af5dc3e0ac4527b7725ae8f9c1229d2c804cec935f11ed30;
+metadata0f9ab2a108a26c0abd71e1fcc144495e41cb939d200b8e7d685ca9f3de7b289c.
+Runtime reports b62050e5f5b324033c201c2de6cac0b0ab160f2cfc45db18669b9205f50d36ba
+(MariaDB) and b1bad0d9f8ef47ee1c95ecfcca632db73dd71bc4e24f10fd9b3bd9e8e9f57770
+(MySQL). Both owned identities, schema removal, server shutdown and port rebind
+are verified. Startup owner remains failed on stale post-start registration and
+ID-only release assumptions; its private next candidate is recompiling, with all
+previous failed candidates preserved. This result does not qualify the unrelated
+startup owner, active ordinary-drop route, Plans2-4 or full release.
