@@ -444,6 +444,46 @@ struct affected_type *find_absorb_candidate(P_char victim, unsigned int flags)
 	return NULL;
 }
 
+spell_ward_absorb_result consume_ward_capacity(P_char victim, struct affected_type *af,
+					       double damage, bool announce_expiry)
+{
+	spell_ward_absorb_result result = { damage, 0.0, false };
+	const double available = static_cast<double>(std::max<int64_t>(0, af->ward_capacity)) /
+				 SPELL_WARD_CAPACITY_SCALE;
+	result.blocked = std::min(damage, available);
+	result.remaining = damage - result.blocked;
+	if (result.blocked <= 0.0)
+		return result;
+
+	const int64_t debit = std::min(
+		af->ward_capacity,
+		static_cast<int64_t>(std::ceil(result.blocked * SPELL_WARD_CAPACITY_SCALE)));
+	af->ward_capacity = std::max<int64_t>(0, af->ward_capacity - debit);
+	result.fully_blocked = result.remaining <= 0.000001;
+	if (af->ward_capacity <= 0)
+	{
+		if (spell_ward_is_equipment(af))
+		{
+			deactivate_equipment_ward(victim, af, true);
+			gmcp_char_affects(victim);
+		}
+		else if (affect_is_live(victim, af))
+		{
+			if (announce_expiry)
+				wear_off_message(victim, af);
+			affect_remove(victim, af);
+		}
+	}
+	else
+	{
+		cancel_short_event(victim, af);
+		af->duration = remaining_pulses(af);
+		schedule_short_event(victim, af);
+		gmcp_char_affects(victim);
+	}
+	return result;
+}
+
 void append_status(char *buffer, size_t buffer_size, size_t *used, const char *format, ...)
 {
 	if (!buffer || !used || *used >= buffer_size)
@@ -553,6 +593,8 @@ void spell_ward_equipment_sync(P_char ch)
 		{
 			struct affected_type prototype = {};
 			prototype.type = spell;
+			// Generic removal must retain this renewal record. Dispel Magic
+			// explicitly exhausts the active pool instead of deleting it.
 			prototype.flags = AFFTYPE_SPELL_WARD | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL |
 					  AFFTYPE_NOAPPLY;
 			const int ticks = equipment_duration_ticks(spell);
@@ -713,40 +755,52 @@ spell_ward_absorb_result spell_ward_absorb(P_char attacker, P_char victim, doubl
 	struct affected_type *af = find_absorb_candidate(victim, flags);
 	if (!af)
 		return result;
+	return consume_ward_capacity(victim, af, damage, true);
+}
 
-	const double available = static_cast<double>(std::max<int64_t>(0, af->ward_capacity)) /
-				 SPELL_WARD_CAPACITY_SCALE;
-	result.blocked = std::min(damage, available);
-	result.remaining = damage - result.blocked;
-	if (result.blocked <= 0.0)
-		return result;
+spell_ward_dispel_result spell_ward_dispel(P_char caster, P_char victim, struct affected_type *af,
+					   bool succeeded, double failed_wear)
+{
+	if (!caster || !victim || !affect_is_live(victim, af))
+		return spell_ward_dispel_result::unchanged;
+	spell_ward_sync_timers(victim);
+	if (!spell_ward_is_active(af) ||
+	    (!succeeded && (failed_wear <= 0.0 || !std::isfinite(failed_wear))))
+		return spell_ward_dispel_result::unchanged;
 
-	const int64_t debit = std::min(
-		af->ward_capacity,
-		static_cast<int64_t>(std::ceil(result.blocked * SPELL_WARD_CAPACITY_SCALE)));
-	af->ward_capacity = std::max<int64_t>(0, af->ward_capacity - debit);
-	result.fully_blocked = result.remaining <= 0.000001;
-	if (af->ward_capacity <= 0)
+	const char *name = ward_names[ward_kind_for_spell(af->type)];
+	const char *source = spell_ward_is_equipment(af) ? "equipment" : "cast";
+	const double capacity = double(af->ward_capacity) / SPELL_WARD_CAPACITY_SCALE;
+	const bool broken = succeeded ||
+			    std::ceil(failed_wear * SPELL_WARD_CAPACITY_SCALE) >= af->ward_capacity;
+	consume_ward_capacity(victim, af, succeeded ? capacity : failed_wear, false);
+
+	char message[256];
+	if (succeeded)
 	{
-		if (spell_ward_is_equipment(af))
-		{
-			deactivate_equipment_ward(victim, af, true);
-			gmcp_char_affects(victim);
-		}
-		else if (affect_is_live(victim, af))
-		{
-			wear_off_message(victim, af);
-			affect_remove(victim, af);
-		}
+		snprintf(message, sizeof(message), "&+YYour magic dispels $N's %s (%s).&n", name,
+			 source);
+		act(message, FALSE, caster, NULL, victim, TO_CHAR);
+		snprintf(message, sizeof(message), "&+Y$n's magic dispels your %s (%s).&n", name,
+			 source);
+		act(message, FALSE, caster, NULL, victim, TO_VICT);
+		snprintf(message, sizeof(message), "&+Y$n's magic dispels $N's %s (%s).&n", name,
+			 source);
 	}
 	else
 	{
-		cancel_short_event(victim, af);
-		af->duration = remaining_pulses(af);
-		schedule_short_event(victim, af);
-		gmcp_char_affects(victim);
+		const char *outcome = broken ? "breaks" : "weakens";
+		snprintf(message, sizeof(message), "&+YYour dispel %s $N's %s (%s)%s&n", outcome,
+			 name, source, broken ? "." : ", shortening its remaining duration.");
+		act(message, FALSE, caster, NULL, victim, TO_CHAR);
+		snprintf(message, sizeof(message), "&+Y$n's dispel %s your %s (%s)%s&n", outcome,
+			 name, source, broken ? "." : ", shortening its remaining duration.");
+		act(message, FALSE, caster, NULL, victim, TO_VICT);
+		snprintf(message, sizeof(message), "&+Y$n's dispel %s $N's %s (%s).&n", outcome,
+			 name, source);
 	}
-	return result;
+	act(message, FALSE, caster, NULL, victim, TO_NOTVICT);
+	return broken ? spell_ward_dispel_result::broken : spell_ward_dispel_result::weakened;
 }
 
 bool spell_ward_item_callback_allowed(P_char victim, int spell)
