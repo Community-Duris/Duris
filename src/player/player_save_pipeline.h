@@ -101,6 +101,8 @@ class player_save_pipeline_replay_gate
 // Game-thread lifecycle API. Preparation establishes journal/recovery metadata
 // with admission and loads closed, without starting persistence threads. The
 // caller must complete restored-command ownership before opting into start.
+// Preparation refuses pre-existing execution owners or an incomplete shutdown;
+// a failed drain requires an explicit successful shutdown retry.
 // Start preserves prepared holds; shutdown also accepts an unstarted pipeline.
 bool player_save_pipeline_prepare(const char *journal_directory,
 				  void (*verify_resolved_recovery)() = nullptr);
@@ -151,6 +153,9 @@ bool player_save_pipeline_literal_inventory_cancel(const player_literal_inventor
 // Critical replay restores a SQL ordinary-drop obligation without inventing a
 // live runtime token or checkpoint revision. Identical immutable commands are
 // idempotent; conflicting identity or capacity refuses before admission.
+// Registration is restricted to the prepared/no-execution phase. A private
+// generation fences ordinary save apply and journal retirement; broader native
+// mutation coverage, clean census and critical-ACK reservation remain required.
 bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &command);
 // A restored drop may hydrate authoritative state while saves/lifecycle remain
 // held. All other recovery, target-login and pinned-death fences still refuse.
