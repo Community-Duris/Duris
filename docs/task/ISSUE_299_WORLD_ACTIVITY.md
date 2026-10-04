@@ -186,7 +186,7 @@ Qualification uses the provisioned local Linux build/test containers:
   outside the existing `total_tick` timing boundary and remain in process CPU.
 - The authoritative `./scripts/format.sh --rev HEAD --check` passes in a native
   Linux formatting checkout containing the PR's touched C/C++ files and their
-  `experimental-accounting` base (`1cf5c08b6`). Both changed lines and complete
+  `experimental-accounting` base (`b84693f96`). Both changed lines and complete
   touched files are checked. `git diff --check` in the managed worktree passes.
 
 The focused production-policy commands are:
@@ -230,6 +230,14 @@ the existing ASan/UBSan harness, including the reported wrong-binding cleanup.
 This check is separate from the flatfile gameplay journeys and does not qualify
 a live SQL deployment. The seven workload measurements below retain their
 recorded source/binary identity; this review did not repeat that full matrix.
+
+Default-enabled combat/corpse and Craft/Forge journeys passed at `10f0d9472`,
+including copyover and two cold restarts. Review integration `4f04ef25b` then
+includes target `b84693f96` (Dispel Magic duration wear and portal lifetime
+checks). Both server backends rebuilt, the updated spell-ward and activity
+regressions passed, and the full-world recovery smoke with native index checks
+passed again on that combined source. Its flatfile binary SHA-256 is
+`8f5a8fd62fbc39ef2ec7a999098b37189fc460346f10e79e649ea55c2dbf43e4`.
 
 This is local synthetic evidence, not a production performance guarantee.
 No live server configuration or persistence authority is changed. Gameplay and
