@@ -695,11 +695,14 @@ ordinary_drop_observation ordinary_drop_live_publication_owner::publish(
 	// original command/result remain untouched.
 	std::vector<item_ownership_runtime_entry> runtime;
 	runtime.reserve(durable.identities.size());
-	for (const auto &identity : durable.identities)
+	for (size_t index = 0; index < durable.identities.size(); ++index)
+	{
+		const auto &identity = durable.identities[index];
 		runtime.push_back({ identity.item_uid, identity.root_item_uid,
 				    identity.parent_item_uid, identity.owner,
-				    identity.item_revision, identity.owner_revision, identity.vnum,
-				    identity.state });
+				    identity.item_revision, identity.owner_revision,
+				    durable.items[index].vnum, identity.state });
+	}
 	if (!session_current(connection, session))
 		return observed(ordinary_drop_observation_status::unavailable, ENOTCONN);
 	if (!placed)
