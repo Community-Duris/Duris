@@ -394,6 +394,16 @@ def require_integrity(executor):
                   "identity_kind,identity_id,lineage,epoch LIMIT " + str(len(expected) + 1)) != expected:
             mismatch("baseline_reservation")
 
+    # Ordinary histories may have no baseline book. Their canonical capsules
+    # still require the retained lifecycle namespace, including inactive epochs.
+    if executor.sql("SELECT COUNT(*) FROM economic_accounting_operation o "
+                    "LEFT JOIN economic_lineage_state l ON l.lineage=o.lineage "
+                    "WHERE l.lineage IS NULL;") != "0":
+        mismatch("lineage")
+    if executor.sql("SELECT COUNT(*) FROM economic_accounting_operation o "
+                    "LEFT JOIN economic_epoch e ON e.lineage=o.lineage AND e.epoch=o.epoch "
+                    "WHERE e.epoch IS NULL;") != "0":
+        mismatch("epoch")
     root_count = int(executor.sql("SELECT COUNT(*) FROM economic_accounting_operation;"))
     processed, cursor = 0, ""
     while processed < root_count:
