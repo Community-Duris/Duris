@@ -1164,6 +1164,10 @@ bool sql_player_exists(const char *name)
 
 bool sql_player_rename(P_char ch, const char *new_name)
 {
+	// Rename also changes identity projections outside this PID's save body;
+	// it has no enabled resident owner yet. Refuse before allocation or SQL.
+	if (player_save_execution_guard::current_ownership_epoch())
+		return false;
 	if (!DB || !new_name || !ch ||
 	    (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch))))
 		return false;

@@ -105,6 +105,10 @@ bool stop_requested = false;
 bool accepting = false;
 bool execution_started = false;
 bool shutdown_incomplete = false;
+// Enabled close must not turn late teardown saves into epoch-zero synchronous
+// writes. Only an explicit cancellation before stopping may reopen admission.
+bool lifecycle_admission_closed = false;
+bool lifecycle_stop_attempted = false;
 bool append_inflight = false;
 std::atomic<bool> replay_revisit_requested{ false };
 int append_inflight_pid = 0;
@@ -1035,7 +1039,7 @@ bool player_save_pipeline_prepare(const char *journal_directory, void (*verify_r
 		return false;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
-		if (health.initialized || shutdown_incomplete)
+		if (health.initialized || shutdown_incomplete || lifecycle_admission_closed)
 			return false;
 	}
 	if (!player_save_execution_guard::begin_registration())
@@ -2510,8 +2514,11 @@ void player_save_pipeline_quiesce(void)
 void player_save_pipeline_resume(void)
 {
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
-	if (health.initialized && execution_started && !stop_requested)
+	if (health.initialized && execution_started && !stop_requested && !lifecycle_stop_attempted)
+	{
+		lifecycle_admission_closed = false;
 		accepting = true;
+	}
 	update_depth_locked();
 }
 
@@ -2535,6 +2542,154 @@ bool player_save_pipeline_drain(uint64_t timeout_msec)
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	++health.drain_failures;
 	return false;
+}
+
+namespace
+{
+bool owned_pipeline_idle_locked()
+{
+	if (!pending_append.empty() || append_retry || append_inflight || !durable_ready.empty() ||
+	    retained_bytes || append_inflight_pid || append_inflight_revision)
+		return false;
+	for (const auto &fence : terminal_fences)
+		if (fence.death_pinned || fence.death_snapshot || fence.death_residence)
+			return false;
+	for (const auto &literal : literal_inventory_checkpoints)
+		if (literal.token.pid || literal.held || literal.execution_hold_generation)
+			return false;
+	return true;
+}
+
+bool owned_coordinator_idle()
+{
+	const auto state = critical_command_coordinator_health_copy();
+	return !state.queued && !state.inflight && !state.blocked && !state.publication_pending &&
+	       !state.awaiting_durability && !state.admission_queue_bytes && !state.append_inflight;
+}
+
+bool owned_lifecycle_idle(uint64_t epoch)
+{
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || !owned_pipeline_idle_locked())
+			return false;
+	}
+	if (!player_save_worker_idle() || !owned_coordinator_idle() ||
+	    !player_save_execution_guard::ownership_epoch_quiescent(epoch))
+		return false;
+	// A cached frame list or scalar revision is not a namespace proof. Retained
+	// quarantine/policy originals stay byte-for-byte on disk across clean close.
+	std::vector<player_save_journal_retained_frame> frames;
+	if (player_save_journal_collect_lifecycle_frames(&frames) != player_save_journal_result::ok)
+		return false;
+	for (const auto &frame : frames)
+		if (!frame.quarantined && !frame.policy_fenced)
+			return false;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	return owned_pipeline_idle_locked() && player_save_worker_idle() &&
+	       player_save_execution_guard::ownership_epoch_quiescent(epoch);
+}
+} // namespace
+
+bool player_save_pipeline_drain_owned(uint64_t timeout_msec)
+{
+	const auto epoch = player_save_execution_guard::current_ownership_epoch();
+	if (!epoch || !timeout_msec || !nevent_is_game_thread() ||
+	    !critical_command_coordinator_lifecycle_guard_held_by_current_thread())
+		return false;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		lifecycle_admission_closed = true;
+		accepting = false;
+		if (!health.initialized || stop_requested || !execution_started)
+			return false;
+		update_depth_locked();
+	}
+	const auto deadline =
+		std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_msec);
+	try
+	{
+		while (std::chrono::steady_clock::now() < deadline)
+		{
+			player_save_pipeline_pulse();
+			const auto now = std::chrono::steady_clock::now();
+			if (now >= deadline)
+				break;
+			const auto remaining =
+				std::chrono::duration_cast<std::chrono::milliseconds>(deadline -
+										      now)
+					.count();
+			// Its game-thread observer pumps save receipts before publication,
+			// even when the critical completion batch is empty.
+			if (!critical_command_coordinator_drain(static_cast<uint64_t>(remaining)))
+				break;
+			if (owned_lifecycle_idle(epoch) &&
+			    std::chrono::steady_clock::now() < deadline)
+				return true;
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+	}
+	catch (...)
+	{
+		// An unavailable proof or callback leaves the original owners running;
+		// it never authorizes stop, epoch end or journal namespace teardown.
+	}
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	++health.drain_failures;
+	return false;
+}
+
+bool player_save_pipeline_shutdown_owned(void)
+{
+	const auto epoch = player_save_execution_guard::current_ownership_epoch();
+	if (!epoch || !nevent_is_game_thread() ||
+	    !critical_command_coordinator_lifecycle_guard_held_by_current_thread())
+		return false;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		lifecycle_admission_closed = true;
+		accepting = false;
+		update_depth_locked();
+	}
+	try
+	{
+		// No callbacks or native work are pumped after destructive world teardown.
+		if (!owned_lifecycle_idle(epoch))
+			return false;
+		{
+			std::lock_guard<std::mutex> lock(pipeline_mutex);
+			if (!owned_pipeline_idle_locked())
+				return false;
+			lifecycle_stop_attempted = true;
+			stop_requested = true;
+			replay_gate.begin_replay();
+			append_available.notify_all();
+		}
+		player_save_execution_guard::signal_ownership_change(epoch);
+		if (dispatcher.joinable())
+			dispatcher.join();
+		if (!player_save_worker_shutdown_if_idle() || !owned_lifecycle_idle(epoch) ||
+		    !player_save_execution_guard::end_ownership_epoch(epoch))
+		{
+			std::lock_guard<std::mutex> lock(pipeline_mutex);
+			shutdown_incomplete = true;
+			return false;
+		}
+		// Namespace cleanup cannot clear owners while this epoch still exists.
+		player_save_journal_shutdown();
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		health.initialized = false;
+		execution_started = false;
+		shutdown_incomplete = false;
+		update_depth_locked();
+		return true;
+	}
+	catch (...)
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		shutdown_incomplete = true;
+		return false;
+	}
 }
 
 player_save_pipeline_health player_save_pipeline_health_copy(void)
@@ -2563,6 +2718,9 @@ player_save_pipeline_diagnostic player_save_pipeline_diagnostic_copy(int pid)
 
 bool player_save_pipeline_loads_allowed(void)
 {
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	if (lifecycle_admission_closed)
+		return false;
 	return replay_gate.loads_allowed();
 }
 
@@ -2699,7 +2857,7 @@ bool player_save_pipeline_save_admitted(int pid)
 	if (player_save_journal_pid_quarantined(pid))
 		return false;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
-	if (health.initialized && !execution_started)
+	if (lifecycle_admission_closed || (health.initialized && !execution_started))
 		return false;
 	if (find_target_save_login_fence_locked(pid))
 		return false;
@@ -2718,7 +2876,7 @@ bool player_save_pipeline_authoritative_hydration_admitted(int pid)
 	if (pid <= 0 || player_save_journal_pid_quarantined(pid))
 		return false;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
-	if (health.initialized && !execution_started)
+	if (lifecycle_admission_closed || (health.initialized && !execution_started))
 		return false;
 	if (find_target_save_login_fence_locked(pid))
 		return false;
@@ -2744,6 +2902,8 @@ void player_save_pipeline_reset_for_tests(void)
 	player_revision_reset_for_tests();
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	health = {};
+	lifecycle_admission_closed = false;
+	lifecycle_stop_attempted = false;
 	replay_gate.begin_replay();
 	stop_requested = false;
 	accepting = false;

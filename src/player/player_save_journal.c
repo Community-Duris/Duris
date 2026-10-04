@@ -107,6 +107,7 @@ struct control_fingerprint
 };
 control_fingerprint archive_fingerprint, policy_fingerprint, legacy_fingerprint;
 std::array<uint8_t, 32> sha256(const uint8_t *bytes, size_t size);
+player_save_journal_result control_namespace_locked();
 
 void remember_control(control_fingerprint &fingerprint, const std::vector<uint8_t> &bytes,
 		      bool exists)
@@ -1683,8 +1684,8 @@ player_save_journal_result checkpoint_proven(const std::map<int, player_revision
 }
 } // namespace
 
-player_save_journal_result
-player_save_journal_collect_retained(std::vector<player_save_journal_retained_frame> *output)
+static player_save_journal_result
+collect_journal_frames(std::vector<player_save_journal_retained_frame> *output, bool lifecycle)
 {
 	if (!output)
 		return player_save_journal_result::replay_blocked;
@@ -1692,6 +1693,19 @@ player_save_journal_collect_retained(std::vector<player_save_journal_retained_fr
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	if (!health.initialized)
 		return player_save_journal_result::not_initialized;
+	if (lifecycle)
+	{
+		try
+		{
+			const auto controls = control_namespace_locked();
+			if (controls != player_save_journal_result::ok)
+				return controls;
+		}
+		catch (...)
+		{
+			return player_save_journal_result::replay_blocked;
+		}
+	}
 	scan_result scanned = scan_journal_safe();
 	if (scanned.result != player_save_journal_result::ok)
 		return scanned.result;
@@ -1716,15 +1730,24 @@ player_save_journal_collect_retained(std::vector<player_save_journal_retained_fr
 	}
 }
 
+player_save_journal_result
+player_save_journal_collect_retained(std::vector<player_save_journal_retained_frame> *output)
+{
+	return collect_journal_frames(output, false);
+}
+
+player_save_journal_result player_save_journal_collect_lifecycle_frames(
+	std::vector<player_save_journal_retained_frame> *output)
+{
+	return collect_journal_frames(output, true);
+}
+
 namespace
 {
 // Caller owns journal_mutex. These allocating control reads all precede any
 // retirement; no archive, policy or recovery record is waived by a revision.
-player_save_journal_result publication_namespace_locked(
-	int pid, const player_save_execution_guard::held_publication_reservation &reservation)
+player_save_journal_result control_namespace_locked()
 {
-	if (!reservation.matches_pid(pid))
-		return player_save_journal_result::replay_blocked;
 	if (!health.initialized || !quarantine_state_ready || quarantine_state_failed)
 		return player_save_journal_result::not_initialized;
 	const auto matches_control =
@@ -1740,6 +1763,17 @@ player_save_journal_result publication_namespace_locked(
 	    !matches_control(quarantine_pids_path, 4096, policy_fingerprint) ||
 	    !matches_control(quarantine_path, journal_quota, legacy_fingerprint))
 		return player_save_journal_result::replay_blocked;
+	return player_save_journal_result::ok;
+}
+
+player_save_journal_result publication_namespace_locked(
+	int pid, const player_save_execution_guard::held_publication_reservation &reservation)
+{
+	if (!reservation.matches_pid(pid))
+		return player_save_journal_result::replay_blocked;
+	const auto controls = control_namespace_locked();
+	if (controls != player_save_journal_result::ok)
+		return controls;
 	if (quarantined_pids.count(pid) || archived_pids.count(pid) || policy_pids.count(pid))
 		return player_save_journal_result::quarantined_pid;
 	for (const auto &record : archive_records)

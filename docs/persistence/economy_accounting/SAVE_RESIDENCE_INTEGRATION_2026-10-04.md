@@ -241,3 +241,122 @@ Source review, changed-line formatting and diff hygiene passed. No schema, new
 economic operation, fixture family or acceptance gate was added. No compiler,
 tests, SQL, services, gameplay or recovery checks ran; qualification stays deferred
 to major-plan readiness. Ownership remains disabled and Plan 1 remains unfinished.
+
+## Unsupported maintenance refusal
+
+`c542a2642` closes source-established native ownership bypasses in character
+deletion, account deletion and pwipe. Enabled ownership refuses before native
+mutation; the account confirmation also refuses before installing its deletion
+fence or closing sessions. An already-fenced request retains its state. Epoch-zero
+behavior remains unchanged. This supplies Plan 1's permitted unsupported-route
+behavior, not R8's complete economic deletion/reset implementation. Source review,
+changed-line formatting and diff hygiene passed; milestone tests remain deferred.
+
+## Live ordinary-drop producer integration
+
+The actual ordinary SQL drop previously supplied only a void physical callback
+and did not consume the full-literal inventory checkpoint. Generic movement could
+advance the runtime registry before proving live placement. These are source-
+established missing production connections; no new runtime RED was executed.
+
+The active, already-authoritative single-root drop now owns a bounded preparation
+entry containing identities, destination and notification bytes. It captures the
+literal inventory, waits for its native acknowledgement and recaptures the complete
+root before admission. Canonical command storage and pending-entry allocation
+precede binding the original checkpoint hold and coordinator publication submission.
+No character/object pointer is retained across preparation pulses. The game loop
+drives preparation before completion delivery. Inactive behavior and unsupported
+locker, bulk, money, corpse and unowned-root routes retain their existing behavior.
+
+Specialized publication precedes generic registry application. The existing native
+owner freshly locks current custody and literal room payloads and verifies the
+original receipt. Its complete physical/runtime census proves the carried graph
+before calling the existing unlink and placement handlers. Retained handler stages
+avoid repeated effects after completed departure or placement; detached/placed
+retries can proceed without an actor. Unconfirmed handler completion remains held.
+Runtime publication uses the existing atomic hydration operation and an existing
+source-owner counter key, followed by fresh exact target verification and confirmed
+same-session SQL cleanup. Ordinary older per-item source owner revisions remain
+valid under their original owner counter, including moving two separate roots.
+
+The movement owner retains the original command, receipt, checkpoint and operation
+through publication, ACK and exact hold release. A successful ACK is not repeated
+if release must retry. Definitive admission refusal can retry release alone;
+uncertain admission retains the original. Post-ACK callbacks only notify and write
+existing floor hints; they do not unlink, place or change custody. Deterministic
+placement preflight does not consume the native falling RNG.
+
+The six production source files are actobj C, movement C/H, ordinary-drop recovery
+C/H and comm C. Independent source review, changed-line formatting and diff hygiene
+passed. No compiler, tests, SQL, gameplay, persistence or recovery checks ran.
+Maintained link closures and actual native/player journeys remain for the major-
+plan qualification batch. This source slice is unqualified; no new schema,
+framework, fixture family or acceptance gate was added. Ownership remains disabled;
+clean lifecycle closure, supported native metadata ownership, authentic cutover,
+flatfile parity and Plan 1 acceptance remain open.
+
+## Direct login metadata ownership
+
+`sql_save_player_core` is called after the master save owner has returned during
+login and modification. Its independent native player/account/frag projections
+previously lacked an enabled PID residence and exact main-session cleanup owner.
+The source now borrows existing resident claim, execution scope and permit around
+that native body; confirmed cleanup or original-session retirement precedes every
+owner's destruction, including exceptions. PID-zero creation, caller-owned
+transactions, non-game-thread writes, unsafe main sessions and held saves refuse.
+The historical same-name update affecting other PIDs is skipped in enabled mode.
+
+Renaming is an unsupported enabled operation and now refuses at both the command
+facade and SQL entry, before the trusted declined-name filesystem unlink or any
+native/identity change. Epoch-zero behavior retains the original body. The three
+changed source files are sql C, sql_player C and modify C. Independent source
+review, changed-line formatting and diff hygiene passed. This is source-only;
+native/compiler/player/recovery checks remain deferred to major-plan readiness.
+No receipt, schema, fixture, framework or acceptance gate was added. Production
+ownership enable, clean lifecycle close and Plan 1 acceptance remain unfinished.
+
+## Owned lifecycle drain and close
+
+Enabled pipeline shutdown previously joined execution and always retained an
+incomplete epoch; its append-only drain did not prove delivery of worker results,
+pending native publication or exact hold release. The production critical drain
+also skipped its observer when no new result arrived, preventing an owner waiting
+for publication from retrying. These are source-established missing lifecycle
+connections, not newly executed failure evidence.
+
+The existing coordinator lifecycle guard now exposes a same-thread observation
+for the save owner. Enabled critical draining pumps original save completions
+before all gameplay publication retries, including empty completion batches.
+Unadmitted drop preparations cancel through the existing literal cancellation;
+their ordinary save bodies remain owned by pipeline/workers. Admitted or uncertain
+originals and held tokens remain intact. Epoch-zero draining keeps its old behavior.
+
+A lifecycle-specific full drain leaves append-only `player_save_pipeline_drain`
+unchanged. Within the original caller's 3,000 ms budget, it proves empty pipeline
+queues/inflight/death/literal owners, actual worker slots/results/ready containers,
+critical work and the exact epoch's claims/permits/holds. It freshly reuses existing
+archive/policy/legacy control fingerprints and the complete active journal scanner;
+archive bytes include recovery records. Retained quarantine/policy originals remain
+on disk. Existing enabled missing-file refusal still applies; no extra file-proof
+format or acceptance gate was added. A failed pre-stop drain can explicitly resume
+the existing running process before destructive teardown.
+
+Final closure runs after teardown tails that may attempt saves. The worker's idle
+check and stop admission share its mutex; joins occur outside owner locks. The
+pipeline joins its dispatcher, stops idle workers, repeats the census, and ends
+the same epoch before journal metadata cleanup. Closed save/load admission persists
+through epoch end and repeated cleanup. Direct core metadata writes consult that
+admission while gameplay authority remains active. A late close refusal exits
+uncleanly before normal dependency teardown or global destructors, preserving
+durable originals for cold recovery; it does not report clean release. Enabled
+copyover explicitly refuses before its flush/serialization effects pending its
+required integration. Inactive shutdown/copyover retain their existing behavior.
+
+The thirteen source files are pipeline C/H, worker C/H, replay ownership H,
+coordinator C/H, journal C/H, movement C/H, comm C and sql C. Independent source
+review, changed-line formatting and diff hygiene passed. No compiler/tests/native
+SQL/player/persistence/recovery checks ran; qualification remains deferred until
+major-plan readiness. Ownership enable and Plan 1 acceptance remain unfinished.
+The existing native lifecycle harness already composes install, incomplete-evidence
+refusal, activate, pause and reactivate for independent acceptance; production's
+stopped-runtime maintenance caller and full release coverage remain separate work.
