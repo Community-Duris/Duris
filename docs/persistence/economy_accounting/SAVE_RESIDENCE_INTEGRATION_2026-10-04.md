@@ -489,3 +489,13 @@ PID, racewar, account comparison and receipt/publication rules remain unchanged.
 Original source remains in `tmp/plan1-coin-account-before-20261004.local.c`.
 Both V4 combined-source strict builds pass. Coin publication/native recovery
 checks continue; this compiler fix does not deliver Plan 2's missing cold pile owner.
+
+## Plan 1 qualification: death-conflict refusal error conversion
+
+The SQL strict build reproduced narrowing of conditional held/unavailable error
+codes into the existing death-conflict result's unsigned field. The explicit
+conversion preserves `EAGAIN` versus `ENOMEM`, refusal before SQL mutation and
+the borrowed caller's cleanup ownership. Original source is preserved in
+`tmp/plan1-death-error-before-20261004.local.c`. Both V4 strict builds pass with
+the corrected translation unit actually compiled. Native retained-death, cleanup
+faults and combined Plan 1 acceptance remain separate ongoing qualification.
