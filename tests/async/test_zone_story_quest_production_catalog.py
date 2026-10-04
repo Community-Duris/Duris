@@ -3945,6 +3945,13 @@ assert sum(catalog_module.report_for(catalog)['eligible_by_zone'].values())==160
 assert catalog_module.report_for(catalog)['story_unit_count']==2203
 
 
+# Cloister: the native acceptance caption must name the actual required tablet.
+mahr = next(b for b in inventory_module.native_blocks(ROOT)
+            if b['source'] == 'areas/qst/cloister.qst' and b['line'] == 34)
+assert mahr['give'] == [('I', 67100)] and mahr['receive'] == [('I', 67101)] and mahr['disappear']
+assert 'smiles, accepting the tablet.' in '\n'.join(mahr['body'])
+assert 'small tablet of adamantite' in dawndale_bodies('cloister', 'obj')[67100]
+
 # IceCrag: quarantine incomplete content; preserve exact quantities and causal limits.
 icecrag=inventory_module.area_evidence(ROOT,'icecrag')
 mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='icecrag')
