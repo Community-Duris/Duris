@@ -202,6 +202,13 @@ def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index
             check_runtime_index("boot population and player login")
             check_combat("fixture setup")
             for enabled in (0, 1):
+                # Runtime property commands do not persist across copyover.
+                # Keep this private fixture's startup value in the measured mode.
+                content, replacements = re.subn(r"(?m)^world\.activity\.enabled=.*$",
+                                                f"world.activity.enabled={enabled}.000",
+                                                properties.read_text())
+                assert replacements == 1, "missing/duplicate activity startup property"
+                properties.write_text(content)
                 client.send(f"properties set world.activity.enabled {enabled}"); drain(client, 1)
                 client.send("properties show world.activity.enabled")
                 text = client.expect("world.activity.enabled") + drain(client, .5)
@@ -210,6 +217,10 @@ def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index
                 if scenario == "recovery":
                     copyover_seconds = copyover()
                     drain(client, 2)
+                    client.send("properties show world.activity.enabled")
+                    text = client.expect("world.activity.enabled") + drain(client, .5)
+                    assert f"{enabled}.000" in text, text
+                    check_runtime_index(f"enabled={enabled} pre-capture copyover")
                 if scenario == "empty":
                     client.send("quit"); client.expect("ACCOUNT MENU", timeout=30)
                     client.close(); client = None
@@ -295,6 +306,8 @@ def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index
                         health.append(dict((key, int(value)) for key, value in re.findall(
                             r"(\w+)=(\d+)", line.split("WORLD ACTIVITY: ", 1)[1])))
                 result["activity_windows"] = health
+                assert health and all(row["enabled"] == enabled for row in health), \
+                    f"activity diagnostics disagree with measured mode {enabled}: {health}"
                 result["mundane_calls_per_second"] = result["mundane_calls"] / result["callback_seconds"]
                 print(json.dumps(result), flush=True); results.append(result)
                 Path(output).write_text(json.dumps(results, indent=2) + "\n")
