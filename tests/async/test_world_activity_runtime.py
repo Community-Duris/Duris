@@ -89,6 +89,10 @@ static void mob(char_data &ch, npc_only_data &data, int room) {
 static void move_corpse(obj_data &object, int room) {
     world_activity_object_leave(&object); object.loc.room = room; world_activity_object_enter(&object);
 }
+static void overlapping_wakes(P_char mob, P_char player, P_obj, void *) {
+    world_activity_promote_character(mob);
+    world_activity_player_enter(player);
+}
 int main() {
     reset_scheduler();
     static index_data indexes[1]{}; mob_index = indexes;
@@ -102,11 +106,9 @@ int main() {
     mob(near, near_data, 0); mob(far, far_data, 200);
     near.next = &far; character_list = &near;
     world[0].people = &near; world[200].people = &far;
-    world_activity_reload();
-    assert(!world_activity_is_enabled());
-    assert(world_activity_mundane_delay(&far, false, false) == 90);
-    properties["world.activity.enabled"] = 1;
+    // Older property files without the feature key use the shipped default.
     world_activity_reload(); world_activity_rebuild();
+    assert(world_activity_is_enabled());
     assert(world_activity_get_health().indexed_npcs == 2);
     assert(world_activity_mundane_delay(&far, false, false) == 240);
     world_activity_schedule_mundane(&near, false, false);
@@ -184,11 +186,13 @@ int main() {
     world_activity_reload(); far.in_room = 259;
     assert(world_activity_mundane_delay(&far, false, false) == 3600 * WAIT_SEC);
     properties["world.activity.enabled"] = 0; world_activity_reload();
+    assert(!world_activity_is_enabled());
     assert(!world_activity_get_health().ready);
     assert(world_activity_mundane_delay(&far, false, false) == 90);
     assert(world_activity_mundane_delay(&far, false, true) == 30);
     assert(world_activity_mundane_delay(&far, true, false) == PULSE_VIOLENCE);
-    properties["world.activity.enabled"] = 1; world_activity_reload();
+    properties.erase("world.activity.enabled"); world_activity_reload();
+    assert(world_activity_is_enabled());
     assert(world_activity_get_health().ready && world_activity_get_health().corpse_reasons == 1);
     far_data.R_num = -1; assert(world_activity_mob_is_timing_sensitive(&far));
     far_data.R_num = 1; assert(world_activity_mob_is_timing_sensitive(&far));
@@ -387,6 +391,19 @@ int main() {
     world_activity_player_leave(&pc); pc.in_room = 201; world_activity_player_enter(&pc);
     assert(world_activity_get_health().wake_promotions == promotions);
     assert(ne_event_time(world_activity_mundane_event(&far).event) == 30);
+    world_activity_player_leave(&pc); cancel_all_events();
+
+    // An encounter wake followed by a wider region promotion in the same
+    // callback must retain the encounter's next-pulse deadline.
+    world_activity_rebuild();
+    world_activity_schedule_mundane_after(&far, 240);
+    const int before_wake = mundane_calls;
+    add_event(overlapping_wakes, 0, &far, &pc, nullptr, 0, nullptr, 0);
+    ne_events();
+    assert(ne_event_time(world_activity_mundane_event(&far).event) == 1);
+    nevent_advance_tick();
+    run_one_heartbeat();
+    assert(mundane_calls == before_wake + 1);
     world_activity_player_leave(&pc); cancel_all_events();
 
     // Isolate subtree traversal from NPC wake cost and future subtree caching.

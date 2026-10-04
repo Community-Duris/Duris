@@ -98,8 +98,7 @@ def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index
             path.write_text(path.read_text().replace("\nS\n", "\n" + resets + "S\n"))
         properties = runtime / "lib/duris.properties"
         properties.write_text(properties.read_text()
-                             .replace("world.activity.diagnostics=0.000", "world.activity.diagnostics=1.000")
-                             .replace("world.activity.enabled=0.000", "world.activity.enabled=1.000"))
+                             .replace("world.activity.diagnostics=0.000", "world.activity.diagnostics=1.000"))
         port, tls, ws = journey.available_ports()
         env = dict(PATH=os.environ.get("PATH", "/usr/bin:/bin"), ENVIRONMENT="local",
                    PERSISTENCE_MODE="flatfile-primary", FLATFILE_STATE_DIR=str(state),

@@ -775,6 +775,15 @@ bool nevent_reschedule_after(nevent_handle handle, unsigned long long delay)
 	return nevent_reschedule_at(handle, nevent_add_ticks(ne_event_tick, delay));
 }
 
+static unsigned long long nevent_effective_due_tick(P_nevent event)
+{
+	const auto pending = nevent_pending_reschedules.find(event);
+	if (pending != nevent_pending_reschedules.end() &&
+	    pending->second.sequence == event->sequence)
+		return pending->second.due_tick;
+	return event->due_tick;
+}
+
 bool nevent_advance_by(nevent_handle handle, unsigned long long ticks)
 {
 	P_nevent event = handle.event;
@@ -783,7 +792,8 @@ bool nevent_advance_by(nevent_handle handle, unsigned long long ticks)
 		return FALSE;
 	if (!event || handle.sequence == 0 || event->sequence != handle.sequence)
 		return FALSE;
-	return nevent_reschedule_at(handle, ticks >= event->due_tick ? 0 : event->due_tick - ticks);
+	const auto due_tick = nevent_effective_due_tick(event);
+	return nevent_reschedule_at(handle, ticks >= due_tick ? 0 : due_tick - ticks);
 }
 
 // Returns true iff all the events in ch->nevents belong to ch.
@@ -1108,9 +1118,14 @@ int ne_event_time(P_nevent e1)
 
 	if (!nevent_require_game_thread("ne_event_time"))
 		return 0;
-	if (!e1 || e1->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE || e1->due_tick <= ne_event_tick)
+	if (!e1 || e1->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE)
 		return 0;
-	time_left = e1->due_tick - ne_event_tick;
+	// A queued wake is already the effective deadline, even while physical
+	// bucket changes wait for the current callback or wake batch to finish.
+	const auto due_tick = nevent_effective_due_tick(e1);
+	if (due_tick <= ne_event_tick)
+		return 0;
+	time_left = due_tick - ne_event_tick;
 	return time_left > static_cast<unsigned long long>(INT_MAX) ? INT_MAX :
 								      static_cast<int>(time_left);
 }

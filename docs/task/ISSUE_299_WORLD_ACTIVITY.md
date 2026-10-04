@@ -17,8 +17,9 @@ identified while tracing the issue. The source issue is
    **Both maintained server backends and focused executable/sanitizer checks
    pass. Live topology, controlled-body presence, deterministic wandering,
    recovery wakes and exact loop quantiles are implemented. Matched full-world
-   workload captures are recorded below. Production enablement is an owner
-   rollout decision; the shipped default remains disabled.**
+   workload captures are recorded below. The owner authorized default
+   enablement after qualification and PR review; explicit disable remains
+   available for rollback.**
 
 ## Implemented policy
 
@@ -35,11 +36,11 @@ The current defaults are:
 | Nearby/recent | `PULSE_MOBILE * 3` (90 pulses, about 22.5 seconds) |
 | Distant idle | 60 seconds (240 pulses) |
 
-The existing small random jitter is retained. The feature is **disabled by
-default**, including a missing property: occupied zones use 1× and playerless
-zones use `PLAYERLESS_ZONE_SPEED_MODIFIER` (3×). Set
-`world.activity.enabled=1.000` to opt in after local workload qualification.
-Broad enablement remains an explicit owner rollout decision.
+The existing small random jitter is retained. The feature is **enabled by
+default**, including when an older property file omits the key. Set
+`world.activity.enabled=0.000` to restore the legacy cadence: occupied zones
+use 1× and playerless zones use `PLAYERLESS_ZONE_SPEED_MODIFIER` (3×).
+An existing explicit `0` remains disabled until the operator changes it.
 
 Fighting, pursuing, remembering a target, controlled, mounted,
 casting/memorizing/scribing, injured, patrolling, sentinel, trusted, and
@@ -115,7 +116,7 @@ The settings are read and reloaded through the existing property path:
 
 | Property | Default | Bounds/meaning |
 | --- | ---: | --- |
-| `world.activity.enabled` | `0` | Opt-in feature switch; `0` preserves/restores the legacy cadence |
+| `world.activity.enabled` | `1` | Enabled when absent; explicit `0` preserves/restores the legacy cadence |
 | `world.activity.distant.seconds` | `60` | Distant delay, bounded to at least one normal interval and at most one hour |
 | `world.activity.grace.seconds` | `90` | Nearby grace after the last reason leaves, bounded to one hour |
 | `world.activity.nearby.multiplier` | `3` | Nearby delay multiplier, bounded to 1–8 |
@@ -137,7 +138,8 @@ Qualification uses the provisioned local Linux build/test containers:
   scheduler under ASan/UBSan. It covers bounded regions, one-way adjacency,
   next-pulse wake, independent PC corpses and halo, NPC corpse exclusion,
   nested/carried/worn placement, malformed graphs, cancellation, sequence and
-  owner mismatch, repeated rebuild, reload bounds and disabled defaults.
+  owner mismatch, repeated rebuild, reload bounds, missing-key enablement and
+  explicit-disable rollback.
   It also executes the production legal-wandering block with injected direction
   choices: a predator crosses a corpse-protected region edge after the last
   player leaves, a sentinel stays put, and stay-zone, closed-door, no-mob and
@@ -152,6 +154,10 @@ Qualification uses the provisioned local Linux build/test containers:
   Nested activity-wake batches retain the same due ticks, sequence ordering and
   player priority; cancellation and replacement before the batch flush remain
   safe. A batch opened during dispatch waits for the existing dispatch boundary.
+  Remaining-time queries and relative advances observe queued deadlines before
+  the physical bucket update. A production-policy regression reproduces an
+  encounter wake followed by a region promotion in the same callback and proves
+  that the encounter still runs on the next pulse.
 - `test_npc_alchemist_runtime.py` preserves the approximately one-third caster
   cadence across 60 matched cases and the independent once-per-spawn vial rule.
 - Focused equipment, publication retention, fresh-corpse adoption, coin custody,
@@ -192,6 +198,7 @@ python3 tests/async/test_nevent_scheduler_runtime.py
 python3 tests/async/test_nevent_cancellation_runtime.py
 python3 tests/async/test_latency_trace_runtime.py
 python3 tests/async/test_npc_alchemist_runtime.py
+python3 tests/async/test_spell_ward_durability.py
 python3 tests/async/test_issue_551_flatfile_craft.py
 ```
 
@@ -205,8 +212,27 @@ server binary; the existing native #551 conservation fixture and NPC alchemist
 cadence/once-per-spawn issuance regression passed. MariaDB was compile-qualified;
 these live journeys used private flatfile state, without a live SQL deployment.
 
+The default-enablement review also reproduced a wake-ordering bug: an encounter
+wake queued during a callback could be overwritten by a subsequent region wake
+that read the old physical deadline. Remaining-time queries and relative
+advances now use the queued deadline. The regression first failed against the
+previous code, then passed under ASan/UBSan and verified the actual next-pulse
+callback. Both backend builds, scheduler/cancellation sanitizers, loop quantiles,
+alchemist cadence and spell-ward durability checks pass after this correction.
+The full-world recovery smoke journey now starts from the shipped enabled
+setting, verifies explicit disable/enable across copyover, and checks the native
+indexes after boot, reconstruction, staff creation and extraction.
+
+A completed CI SQL-authority fixture reported a MySQL lock-cleanup assertion.
+The SQL implementation and that harness are unchanged by this PR. Its five
+runtime-authority scenarios pass locally against disposable MySQL 8.0.46 with
+the existing ASan/UBSan harness, including the reported wrong-binding cleanup.
+This check is separate from the flatfile gameplay journeys and does not qualify
+a live SQL deployment. The seven workload measurements below retain their
+recorded source/binary identity; this review did not repeat that full matrix.
+
 This is local synthetic evidence, not a production performance guarantee.
-No production configuration or persistence authority is changed. Gameplay and
+No live server configuration or persistence authority is changed. Gameplay and
 accounting correctness are acceptance conditions; a CPU reduction does not
 justify changing a combat, corpse, crafting or issuance rule.
 

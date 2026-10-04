@@ -614,7 +614,7 @@ void wake_all_indexed_mobs(bool force)
 void load_configuration()
 {
 	activity_config next;
-	next.enabled = get_property("world.activity.enabled", 0) != 0;
+	next.enabled = get_property("world.activity.enabled", 1) != 0;
 	next.distant_pulses =
 		std::clamp(get_property("world.activity.distant.seconds", DEFAULT_DISTANT_SECONDS),
 			   (PULSE_MOBILE + WAIT_SEC - 1) / WAIT_SEC, MAX_ACTIVITY_SECONDS) *
