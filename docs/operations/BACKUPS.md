@@ -305,6 +305,42 @@ new socket. Flatfile restore verifies copied bytes before mutation, runs native
 authority replay, and validates existing account, snapshot, and world catalog bytes.
 Full player/domain loads run after WAL replay, allowing a durable first snapshot
 to materialize its missing projection. These loads reject lossy topology repair.
+Flatfile preflight and postflight also independently read retained economic
+authority metadata after native authority replay. A present control record must
+retain its exact epoch catalog, mapping lifetimes and native indexes, with valid
+framing, hashes, sequence and cross-links. Renamed bank tombstones, retired and
+recreated lifetimes, unsigned revision counters and partial inactive bootstrap
+remain readable. Missing or corrupt metadata refuses qualification without
+changing the retained evidence. Absent or empty accounting storage remains
+eligible for legacy inactive installations. Initialized operation buckets must
+retain their indexes and every sealed/active segment, with dense ranges, exact
+record hashes and no untracked bucket files. The independent reader checks record
+framing, operation/lineage/retained-epoch identities, immutable command/intent/plan
+bindings and declared plan size. Native-encoded rejected receipts and partial
+empty-bucket initialization remain readable. Every successful nonbaseline
+source-bearing record must retain its exact private source-claim frame, keyed by lineage and
+logical event, including earlier retained epochs. Missing, corrupt, mismatched,
+duplicate-source, orphan or malformed claim files block qualification. Rejected
+receipts claim no source; an event may belong to a different successful root.
+Native baseline batches retain source dedupe in their own witness/reservation
+book. The independent reader requires each successful batch's exact private EAB1
+witness, binds it to its command, operator, preparation, batch and retained epoch,
+and regenerates the complete opening plan without native mutation codecs. It
+checks numeric account/UID ordering, nonnegative denomination/value bounds,
+unchanged item forests and source digests. Every book must retain its head and
+all 16 reservation indexes, with exact head hashes, consecutive receipt revisions,
+the terminal operation and the complete holding/UID reservations regenerated from
+its witnesses. Orphan or malformed baseline files, missing receipts, duplicate
+reservations and inconsistent openings refuse qualification. Initialized empty
+inactive books remain readable, and partial loss of those books refuses.
+The current control format does not record empty-book initialization independently.
+Complete loss of an empty baseline namespace before any receipt remains
+indistinguishable from never-initialized storage; the lifecycle owner must resolve
+that evidence gap before release qualification.
+These physical checks do not prove policy authorization, full account/item
+semantics or agreement with native authority. Logical source entitlement, pile
+heads, external baseline attestations, native custody and activation readiness still require
+their separate release evidence.
 Before boot, both journal types are scanned with the production codecs. A
 corrupt/unsupported frame or interrupted temporary journal blocks qualification.
 Validated quarantine archives and admission fences are preserved. An unreplayable
