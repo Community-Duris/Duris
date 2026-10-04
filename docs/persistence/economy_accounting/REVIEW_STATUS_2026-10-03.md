@@ -2911,8 +2911,11 @@ exclusion before issuing GET_LOCK. A separate confirmation bit grants authority
 only after native readback and lifecycle-state validation. Same-session borrowed
 named locks are refused before acquisition. Checked release validates the owner
 thread before SQL or mutex operations, proves original-session nonownership, and
-retains uncertainty. Each owned acquisition permits one RELEASE_LOCK attempt;
-subsequent cleanup retries read back rather than drain recursive leases.
+retains uncertainty. Each cleanup call permits one RELEASE_LOCK attempt. Failed
+RPCs can retry on a later owner call only after fresh original-session readback
+proves the fence remains held. A successful RPC still showing ownership remains
+fenced and cannot drain recursive leases. Maintained native pre-send failure and
+partial-release recovery cases remain required and unchanged.
 
 The coordinator release callback now reports exact lease/thread success. Cutover
 transfer and publication handoff preserve the thread and confirmed authority;

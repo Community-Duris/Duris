@@ -238,8 +238,9 @@ bool economic_sql_lifecycle_guard::release_named_lock(MYSQL *connection, unsigne
 			return false;
 		if (!has_owner || owner != session)
 			return true;
-		// Issue at most one release for this owned acquisition. A later call only
-		// retries readback; it must not drain recursive leases of unknown origin.
+		// Issue at most one release per checked cleanup call. After a successful
+		// release reply, readback alone may finish cleanup; never drain a recursive
+		// same-session lease by sending another successful RELEASE.
 		if (*attempted)
 			return false;
 		char query[160];
@@ -248,7 +249,9 @@ bool economic_sql_lifecycle_guard::release_named_lock(MYSQL *connection, unsigne
 		if (length < 0 || static_cast<size_t>(length) >= sizeof(query))
 			return false;
 		*attempted = true;
-		if (!mysql_real_query(connection, query, static_cast<unsigned long>(length)))
+		const int rc =
+			mysql_real_query(connection, query, static_cast<unsigned long>(length));
+		if (!rc)
 		{
 			result_ptr result(mysql_store_result(connection), mysql_free_result);
 			if (!result || mysql_num_rows(result.get()) != 1 ||
@@ -256,9 +259,18 @@ bool economic_sql_lifecycle_guard::release_named_lock(MYSQL *connection, unsigne
 				return false;
 		}
 		// The actual original-session readback, not the RPC reply, proves cleanup.
-		return idle(connection) &&
-		       query_lock_owner(connection, session, name, &owner, &has_owner) &&
-		       (!has_owner || owner != session);
+		if (!idle(connection) ||
+		    !query_lock_owner(connection, session, name, &owner, &has_owner))
+			return false;
+		if (!has_owner || owner != session)
+			return true;
+		// A failed RPC with fresh proof that the original fence remains held may
+		// be retried by that owner on a later call. The same exclusively borrowed
+		// session must not acquire another named-lock count outside this guard.
+		// A successful RPC that still leaves ownership is never repeated.
+		if (rc)
+			*attempted = false;
+		return false;
 	}
 	catch (...)
 	{
