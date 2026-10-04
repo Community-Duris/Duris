@@ -3,6 +3,7 @@
 import os
 import sys
 import migration_runner as migrations
+import economic_restore_evidence
 
 
 def require_completed_history(rows):
@@ -238,8 +239,8 @@ def require_economic_evidence_integrity(executor):
     """Refuse lost or internally inconsistent retained economic evidence.
 
     This is independent SELECT-only reconciliation across every retained epoch.
-    Empty/inactive histories pass. It does not decode canonical plans or qualify
-    native custody, sources required by policy, publication or allocator state.
+    Empty/inactive histories pass. Canonical capsules bind retained SQL evidence;
+    locked native custody, publication and allocator authority remain separate.
     """
     checks = []
     for table, count, index, first, family in (
@@ -308,6 +309,7 @@ def require_economic_evidence_integrity(executor):
         if executor.sql(query) != "0":
             raise RuntimeError(code)
     require_economic_coin_effect_integrity(executor)
+    economic_restore_evidence.require_integrity(executor)
 
 
 def main():
