@@ -706,3 +706,30 @@ teardown/port rebind. This bounded scheduling issue is solved locally.
 Results-push allocation, typed exact journal identity, SQL
 transaction/lease cleanup, restored-save integration and current-remote/broad
 qualification remain open. No R1-R8 requirement is marked complete.
+
+Ordinary SQL cleanup now has actual paired BEFORE evidence:13 cases on each
+private MariaDB/MySQL engine reproduce12 genuine failures/one consumed-null
+replacement control. Unsafe borrowed settings are admitted; rollback/lease and
+resource ownership fail at measured allocation seams. Failed conflict cleanup
+loses original custody evidence and reuses an unsafe pool session, while its
+existing idle gate prevents a second transaction. Declaration8e986daf and October3
+review retain immutable source/owner/binary/case/teardown evidence and the first
+strict fixture compile failure. Implementation/AFTER checks remain pending; this
+does not complete any R1-R8 gate or qualify incoming0056 integration.
+
+Worker completion delivery after a real exact journal ACK is now solved locally.
+The allocating result deque is replaced by a fixed 256-entry FIFO under the same
+mutex, capacity/backpressure and receipt ownership. Nothrow moves preserve
+completion delivery when allocation is unavailable after the journal frame is
+removed. Five proven BEFORE aborts/seven controls become twelve AFTER passes per
+backend, including FIFO wrap, partial/full capacity, shutdown/reopen, exact typed
+receipts, real ACK failure/repair and unrelated-PID progress. Unchanged scheduling,
+admission and parking owners contribute another 86 AFTER passes (110 total).
+Both strict incremental server builds, nine maintained owners,14 validations/30
+contracts and nonmutating matrix pass. Actual inactive MariaDB/MySQL save, death,
+crash and copyover journeys plus native follow-ups pass; flatfile creation/save/
+cold restart/relog passes. Final declaration edd75c103ad576d8d8b0c994696a0108b09914e0533725db536a8cfeec4d9678 verifies all1,232 production
+inputs, component artifacts, binaries/logs and owned SQL teardown/port rebind.
+Preserved fixture failures remain evidence, not production failures. Ordinary SQL
+cleanup, typed exact journal identity, restored-save integration, incoming0056 and
+broad qualification remain open. No R1-R8 gate or coverage status is promoted.

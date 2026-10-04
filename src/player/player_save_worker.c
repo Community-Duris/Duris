@@ -6,6 +6,8 @@
 #include "player/player_revision_state.h"
 
 #include <algorithm>
+#include <array>
+#include <cassert>
 #include <cerrno>
 #include <chrono>
 #include <condition_variable>
@@ -36,6 +38,9 @@ struct queued_snapshot
 static_assert(std::is_nothrow_move_assignable_v<player_snapshot>);
 static_assert(std::is_nothrow_move_assignable_v<player_save_completion>);
 static_assert(std::is_nothrow_move_constructible_v<player_save_completion>);
+static_assert(std::is_nothrow_default_constructible_v<player_save_completion>);
+static_assert(std::is_nothrow_destructible_v<player_save_completion>);
+static_assert(PLAYER_SAVE_WORKER_MAX_RESULTS >= PLAYER_SAVE_WORKER_MAX_PIDS);
 
 struct pid_slot
 {
@@ -51,7 +56,46 @@ std::condition_variable job_available;
 std::condition_variable result_available;
 std::unordered_map<int, pid_slot> slots;
 std::deque<int> ready_pids;
-std::deque<player_save_completion> results;
+// Worker delivery must not allocate after a real journal ACK. All entries stay
+// within the existing result bound; their receipts remain on the active job
+// until pulse validates the revision and transfers that ownership.
+class completion_queue
+{
+    public:
+	bool empty() const noexcept { return count_ == 0; }
+	size_t size() const noexcept { return count_; }
+	player_save_completion &front() noexcept
+	{
+		assert(count_ > 0);
+		return entries_[head_];
+	}
+	void push_back(player_save_completion &&completion) noexcept
+	{
+		assert(count_ < entries_.size());
+		entries_[(head_ + count_) % entries_.size()] = std::move(completion);
+		++count_;
+	}
+	void pop_front() noexcept
+	{
+		assert(count_ > 0);
+		entries_[head_] = {};
+		head_ = (head_ + 1) % entries_.size();
+		--count_;
+	}
+	void clear() noexcept
+	{
+		while (!empty())
+			pop_front();
+		head_ = 0;
+	}
+
+    private:
+	static_assert(PLAYER_SAVE_WORKER_MAX_RESULTS > 0);
+	std::array<player_save_completion, PLAYER_SAVE_WORKER_MAX_RESULTS> entries_{};
+	size_t head_ = 0;
+	size_t count_ = 0;
+};
+completion_queue results;
 std::unordered_set<int> ready_set;
 std::vector<std::thread> workers;
 player_save_apply_fn apply_callback = nullptr;
@@ -329,7 +373,7 @@ void worker_main()
 					      });
 			if (results.size() < PLAYER_SAVE_WORKER_MAX_RESULTS)
 			{
-				results.push_back(completion);
+				results.push_back(std::move(completion));
 				network_wakeup_notify();
 			}
 		}

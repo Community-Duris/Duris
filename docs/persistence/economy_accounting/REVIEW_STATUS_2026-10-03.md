@@ -2312,3 +2312,203 @@ MySQL/MariaDB cases are pending. Synthetic craft entitlement rows exercise the
 repository seam rather than producer provenance; controlled ROLLBACK failure does
 not establish successful cleanup. Worker/pipeline, producer/coordinator, general
 allocator sweep, death evidence transaction sweep and incoming0056 are excluded.
+
+### Ordinary SQL cleanup: actual paired failure evidence, implementation pending
+
+The original strict fixture compile failed before behavior on a signed PID
+initializer; its argv, frozen owner and log remain in declaration93421178. A
+type-only correction preserved all oracles. The first executed owner produced
+12 genuine failures/one consumed-null replacement control on each actual engine
+(declaration27d1a049). Diagnostic-only refinement then measured the borrowed and
+conflict states without changing those13 oracles. Current runner SHA-256
+`b1da8dbe2369749c3ece9b6e234d19fa995663039f52cc2e008cf9840b38e863`;
+current harness SHA-256
+`ae1bbc75e8a79db2c549ffd3c34824a0c11b86292cc27047881083dfa70b4d42`.
+
+The refined native compile passes51.774 seconds within its original300-second
+bound. Actual private MariaDBf4e0d7b1 and MySQL1dd038ec each attempt all13 cases
+and reproduce12 failures/one control within the original120-second aggregate
+bound. START/DML allocation escapes without rollback; pooled paths retain a
+lease. Actual COMMIT followed by hidden reply/replacement readback allocation
+leaves the replacement lease held. Failed original rollback returns an unclosed
+unsafe session to the pool. Borrowed transaction, autocommit-OFF and reconnect-ON
+connections actually return applied, durable revision2, and changed rows; the
+first two also change caller transaction settings. Description buffers and pet
+MYSQL_RES leak at measured allocation seams. These are post-apply failures, not
+seed, codec, target-guard or setup errors.
+
+Failed custody-conflict cleanup begins only the original transaction: starts1,
+rollback1/confirmed0, rows unchanged. The existing idle gate prevents a second
+evidence transaction. The returned EBUSY/empty diagnosis loses original custody
+error10001, diagnosis12 and witness, while the unsafe original session is released
+available. Preserve that distinction; no second evidence START was observed.
+
+Qualified BEFORE declaration
+`tmp/player-snapshot-exception-before-qualified-artifact-v3.local.json`, SHA-256
+`8e986daf4182e7e40f3ce589847e41a9b0eb7a4ef2e7419540a87a7d908ee2da`,
+verifies1,232 native/current source inputs,527 component inputs, owner/binary/log/
+case pins, three wrong-artifact guards, canonical private0055 migrations,
+idempotence/accounting fingerprints and owned teardown/port rebind. Both engines
+use the same native client ABI. Retry/healthy controls after a failing assertion
+remain AFTER obligations. Source cleanup remains unmodified; no requirement or
+acceptance gate is promoted. Incoming0056, producer provenance, worker/pipeline,
+general allocator and retained evidence sweeps remain outside this proof.
+
+### Completion delivery: first native failure reproduction and calibration gap
+
+The initial12-case native owner compiles36.941 seconds within300 seconds. Four
+quest/spell/craft/unrelated block-growth cases prove a worker-thread bad_alloc
+abort after successful real exact journal ACK and independent raw-frame removal.
+Seven retry, real ACK-repair, healthy, reopen,384/448-delivery wrap and full256
+shutdown controls pass. The mixed-map case is unqualified: its main-thread pulse
+can drain retained fillers before target enqueue, changing actual deque growth
+from the probe. No calibrated fault marker was observed for that case. Preserve
+this result as a fixture ordering gap; it is not a fifth semantic failure.
+
+First declaration `tmp/worker-result-delivery-before-qualified-artifact-v1.local.json`,
+SHA-256 `460905b98527205deab2a172f15e4d17e24b0de3e4cdeb8f871f8bd55bb1d243`,
+retains binary16088883, all12 observations, four full abort-proof witnesses, source/
+owner/artifact pins and guards. Production source remains unchanged. Corrected
+immutable native calibration and the private fixed-capacity queue candidate still
+require qualification; no issue, route or R1-R8 gate is completed by this attempt.
+
+Corrected completion calibration preserves the real no-pop prefix until the
+actual native enqueue signal. Full12 BEFORE rerun now records five independently
+proven worker-thread post-ACK allocation aborts and seven passing controls; no
+oracle or300/120 budget changed. Native compile39.762 seconds, declaration
+`tmp/worker-result-delivery-before-qualified-artifact-v2.local.json`, SHA-256
+`a34138e3a8e1a93b3d5043b71a77686ab60b26ca84af4b19794804fc40073f1e`,
+pins binary7d68a54c and all source/owner/log/raw-frame identities. The original
+mixed-map attempt460905b9 remains preserved and unqualified. Corrected harness
+SHA-256 `4690e4ce8fea28a9df4f84eb3a716e4b9cfc6fb2c88682522f591f74d450b774`;
+runner remainsd0b58a71.
+
+The reviewed production candidate replaces the allocating completion deque with
+a256-entry fixed FIFO under the same mutex/bounds, nothrow move constraints and
+existing readiness/receipt ownership. Static capacity relates results to the
+maximum distinct active PIDs. The full-results shutdown skip is not a reproduced
+bug: distinct dispatched slots bound pre-enqueue depth below the result limit.
+The immutable candidate manifesta92afb73 contains1,232 inputs with only worker.c
+changed from scheduling9ba7020a. Paired AFTER/build/gameplay qualification is
+running; this remains an implementation candidate, not a solved issue.
+
+SQL candidate source review found and corrected a double mysql_errno read in
+failed-rollback proof; a nonzero ROLLBACK result must always remain unconfirmed.
+The borrowing contract now explicitly says save success does not prove session
+reuse and cleanup-aware callers inspect every return. No further new source
+blocker was found. Four independent retained-participant allocation/failed-cleanup/
+uncertain-commit cases are required beyond SQL13 and the maintained terminal
+matrix, including explicit cleanup-before-writer-fence-release observation.
+Lifecycle lock acquisition/release sustained-allocation failure and general
+recovery_apply remain separate limits; no SQL source candidate is integrated yet.
+
+The first completion AFTER owner compiles36.377 seconds and passes11/12 cases.
+The remaining spell case delivered the target allocation-free but failed its
+unrelated-PID check: that predicate combined in-flight and queued counts from
+two independently locked health snapshots. Dispatch between them can fabricate
+a settled state. One consistent snapshot corrects the fixture, with the exact
+healthy-PID completion oracle retained. Original owner4690e4ce and artifact
+`tmp/worker-result-delivery-regression-delivery-after-sql-v1-artifact.local.json`
+SHA-256 `0ca4c9f411f04d73049b0f2ce252f8db51a36afa00935cc47da9524dcad2e869`
+remain preserved. Corrected owneraaa77dc6 requires a full paired rerun. Neither
+that first AFTER attempt nor any isolated target pass completes this milestone.
+
+The consistent-health owneraaa77dc6 is requalified against immutable original
+scheduling source9ba7020a:37.497-second compile, five proven post-ACK aborts/seven
+controls, aggregate12.126 seconds. Declaration
+`tmp/worker-result-delivery-before-qualified-artifact-v3.local.json`, SHA-256
+`2f81786677a307dc9341bf977502e21fd08ecf98549391b528b6f0a0ed4530c4`,
+explicitly verifies the sole current worktree delta is the reviewed ring worker;
+the original BEFORE native source and other1,231 current inputs remain unchanged.
+All12 corrected delivery AFTER cases pass both modes, including zero post-ACK
+allocations and exact FIFO/receipts/capacity/reopen controls. Remaining unchanged
+worker owners, strict builds and actual gameplay/recovery remain milestone gates.
+
+All110 completion-candidate AFTER cases now pass:12 delivery/15 scheduling/20
+admission/eight parking per mode. Paired component declaration
+`tmp/worker-result-delivery-qualified-artifact.local.json`, SHA-256
+`7146a76567cecac7a377641366fad957c7b662830038be368e413ab0a9a82e3b`,
+verifies nine frozen artifacts, all guards/source/owner/log/case pins, original
+300/120 bounds and both preserved fixture attempts. Both forced strict native
+server builds pass in15 SQL/11 flatfile seconds within unchanged600/-j2 limits.
+Only worker.c changes among1,232 frozen production inputs. Maintained owners,
+accounting contracts and actual inactive gameplay/recovery remain pending; no
+completion milestone or R1-R8 acceptance gate is declared solved yet.
+
+The nine maintained worker/pipeline/journal/quarantine/recovery/diagnostics/writer/
+evidence/root owners pass on the ring candidate. Accounting validation,30
+contracts and nonmutating matrix check pass; coverage remainsfalse/releaseBLOCKED.
+Actual SQL and flatfile gameplay/recovery are still pending, so no ring milestone
+commit is made yet. An independently reviewed four-case retained SQL owner is
+compiling against the unchanged SQL repositories; original13-case owner stays
+unchanged. Native SQL qualification requires exact rollback/fence/readback/row/
+journal witnesses, not an assumption that every BEFORE case must fail.
+
+Both SQL qualification owners require explicit CLI artifacts/targets. On eventual
+SQL integration register their distinct names in the regression runner's existing
+manual-only list, as for the other supplied-schema native owners; the generic
+runner invokes discovered scripts without arguments. This avoids treating CLI
+argument errors as regressions or silently treating a missing SQL run as proof.
+
+### Retained SQL participant: independent paired BEFORE qualification
+
+Distinct four-case runnerb5dd0b55/harnessc25081cc passes48.957-second native
+compile against unchanged SQL repositories. An early stale temporary-directory
+prefix guard refused before initialization; a subsequent attempt exposed the
+107-byte Unix socket limit and stopped both owned engines before migrations or
+cases. Setup receipts and roots/logs are preserved. A short fresh root prefix and
+explicit socket-length check repair setup only; schema settings, source, binaries,
+oracles and original300/120 bounds are unchanged.
+
+Actual private MariaDB9b1aef1e and MySQL6bb9bc18 attempt all four cases. Post-START
+work allocation and allocation after real evidence INSERT are valid BEFORE
+controls: both original-session rollbacks succeed before the first writer-lock
+release, exact retry settles and healthy PID progresses. These do not establish
+throwing-constructor coverage. Failed second rollback genuinely returns an
+unclosed unsafe original session available; actual COMMIT followed by distinct
+replacement exact-record readback allocation genuinely returns terminal ENOMEM
+instead of retaining ambiguity. Each engine has two controls/two genuine failures.
+Both query APIs are observed without double counting; first fence-release attempt
+and actual original sessions/SQL boundaries are recorded allocation-free.
+
+Declaration `tmp/player-death-conflict-exception-before-qualified-artifact-v1.local.json`,
+SHA-256 `a5b3de94f7e7063dee01e0abb08da34d1ce73582b999e0225ef168c5dd4a7491`,
+verifies1,232 native/current-LF source inputs,527 component/owner inputs, binary
+e9afdae3, all case/log/report pins, three wrong-artifact guards, private0055
+migrations/idempotence/fingerprints, preserved setup attempts and owned engine
+teardown/port rebind. One native client ABI is used on both servers. Empty other
+receipt/inbox/outbox projections are unintended-write controls, not populated
+receipt preservation or producer provenance. Failed cases leave later AFTER
+assertions pending. Lifecycle sustained-allocation/recovery_apply/incoming0056
+remain outside this bounded proof. Source implementation is still isolated; no
+SQL issue or R1-R8 gate is marked solved.
+
+### Completion delivery: qualified local milestone
+
+Worker completion delivery after a real exact journal ACK is now solved locally.
+The allocating result deque is replaced by a fixed 256-entry FIFO under the same
+mutex, capacity/backpressure and receipt ownership. Nothrow moves preserve
+completion delivery when allocation is unavailable after the journal frame is
+removed. Five proven BEFORE aborts/seven controls become twelve AFTER passes per
+backend, including FIFO wrap, partial/full capacity, shutdown/reopen, exact typed
+receipts, real ACK failure/repair and unrelated-PID progress. Unchanged scheduling,
+admission and parking owners contribute another 86 AFTER passes (110 total).
+Both strict incremental server builds, nine maintained owners,14 validations/30
+contracts and nonmutating matrix pass. Actual inactive MariaDB/MySQL save, death,
+crash and copyover journeys plus native follow-ups pass; flatfile creation/save/
+cold restart/relog passes. Final declaration edd75c103ad576d8d8b0c994696a0108b09914e0533725db536a8cfeec4d9678 verifies all1,232 production
+inputs, component artifacts, binaries/logs and owned SQL teardown/port rebind.
+Preserved fixture failures remain evidence, not production failures. Ordinary SQL
+cleanup, typed exact journal identity, restored-save integration, incoming0056 and
+broad qualification remain open. No R1-R8 gate or coverage status is promoted.
+
+The final immutable receipt is `tmp/worker-result-delivery-final-milestone.local.json`,
+SHA-256 `edd75c103ad576d8d8b0c994696a0108b09914e0533725db536a8cfeec4d9678`. Worker sourceab105ee1, runnerd0b58a71 and harnessaaa77dc6 retain
+the unchanged300-second compile/120-second aggregate component bounds. The strict
+builds force changed worker.o in both modes within600 seconds/-j2; they are
+incremental server evidence, not cold/tool or combined-remote qualification.
+Actual engine runs use private0055 schemas and one native client ABI. SQL wallet
+root item exclusion, inactive accounting and the declined inactive spell paths
+are preserved. The original full-results shutdown skip is not a reproduced bug.
+Normal GitHub publication still requires permitted history integration under the
+retained no-merge restriction; no force push, merge, deployment or activation.
