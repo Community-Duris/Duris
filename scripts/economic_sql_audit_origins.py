@@ -120,7 +120,7 @@ def decode_witness(row: dict, lineage: bytes, epoch: bytes, opening: bytes) -> t
     return holdings, items
 
 
-def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> None:
+def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> dict:
     """Bind all EAB1 bytes and their opening projections to a committed root."""
     try:
         blob = row["canonical_witness"]
@@ -171,8 +171,84 @@ def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> None:
                                               "before_witness_count", "after_witness_count", "item_event_count")) != counts or
                 row["canonical_plan"][256:] != b"".join(effects + postings + snapshots + snapshots)):
             raise OriginError("EAB1 committed root mismatch")
+        return plan
     except (ValueError, KeyError, TypeError, struct.error) as error:
         raise OriginError("EAB1 committed root mismatch") from error
+
+
+COINS = ("copper", "silver", "gold", "platinum")
+BASELINE_PROJECTIONS = {
+    "economic_accounting_account_effect": ("operation_id", "account_index", "account_key",
+        *(side + "_" + coin for side in ("before", "after") for coin in COINS),
+        "before_revision", "after_revision"),
+    "economic_accounting_coin_posting": ("operation_id", "line_index", "event_index", "account_index",
+        "child_index", *("delta_" + coin for coin in COINS), "copper_value"),
+    "economic_baseline_reservation": ("lineage", "epoch", "identity_kind", "identity_id", "operation_id"),
+}
+
+
+def baseline_projection_source(table: str, lineage: bytes, epoch: bytes | None = None) -> tuple[str, str, tuple]:
+    """Include reservations by their claimed scope and by their witness root."""
+    scope = "w.lineage=%s" + (" AND w.epoch=%s" if epoch is not None else "")
+    parameters = (lineage,) if epoch is None else (lineage, epoch)
+    if table == "economic_baseline_reservation":
+        return (" LEFT JOIN economic_baseline_witness w ON w.operation_id=p.operation_id",
+                "((" + scope.replace("w.", "p.") + ") OR (" + scope + "))", parameters * 2)
+    return " JOIN economic_baseline_witness w ON w.operation_id=p.operation_id", scope, parameters
+
+
+def baseline_projection_bound(cursor, lineage: bytes, epoch: bytes | None = None) -> int:
+    """Bound all three fixed-width projection families before fetching rows."""
+    counts, parameters = [], ()
+    for table in BASELINE_PROJECTIONS:
+        join, scope, arguments = baseline_projection_source(table, lineage, epoch)
+        counts.append("SELECT COUNT(*) AS n FROM " + table + " p" + join + " WHERE " + scope)
+        parameters += arguments
+    cursor.execute("SELECT COALESCE(SUM(n),0) AS projection_rows FROM (" +
+                   " UNION ALL ".join(counts) + ") baseline_projections", parameters)
+    bounds = cursor.fetchone()
+    if bounds is None or bounds["projection_rows"] > MAX_ROWS:
+        raise OriginError("baseline SQL projection source exceeds audit input limit")
+    return int(bounds["projection_rows"])
+
+
+def verify_baseline_projections(cursor, verified: list[tuple[dict, dict]], lineage: bytes, epoch: bytes) -> None:
+    """Compare persisted baseline details with independently verified EAP1/EAB1."""
+    expected = {table: [] for table in BASELINE_PROJECTIONS}
+    effects, postings, reservations = expected.values()
+    for row, plan in verified:
+        operation = row["operation_id"]
+        effects.extend((operation, index, key, *before, *after, before_revision, after_revision)
+                       for index, (key, before, after, before_revision, after_revision) in enumerate(plan["effects"]))
+        postings.extend((operation, index, event, account, child, *delta, amount)
+                        for index, (event, account, child, delta, amount) in enumerate(plan["postings"]))
+        blob = row["canonical_witness"]
+        holdings, items = struct.unpack_from("<II", blob, 184)
+        reservations.extend((lineage, epoch, 1, unsigned(blob[212 + index * 112:220 + index * 112]), operation)
+                            for index in range(holdings))
+        reservations.extend((lineage, epoch, 2,
+                             unsigned(blob[192 + holdings * 112 + index * 88:200 + holdings * 112 + index * 88]),
+                             operation) for index in range(items))
+    if sum(map(len, expected.values())) > MAX_ROWS:
+        raise OriginError("baseline SQL projection source exceeds audit input limit")
+    total = baseline_projection_bound(cursor, lineage, epoch)
+    if total != sum(map(len, expected.values())):
+        raise OriginError("EAB1 SQL projection mismatch")
+    fetched = 0
+    for table, fields in BASELINE_PROJECTIONS.items():
+        join, scope, parameters = baseline_projection_source(table, lineage, epoch)
+        cursor.execute("SELECT " + ",".join("p." + field for field in fields) + " FROM " + table + " p" + join +
+                       " WHERE " + scope + " LIMIT %s", (*parameters, MAX_ROWS - fetched + 1))
+        rows = cursor.fetchall()
+        fetched += len(rows)
+        if fetched > MAX_ROWS:
+            raise OriginError("baseline SQL projection source exceeds audit input limit")
+        try:
+            actual = [tuple(row[field] for field in fields) for row in rows]
+            if sorted(actual) != sorted(expected[table]):
+                raise OriginError("EAB1 SQL projection mismatch")
+        except (KeyError, TypeError) as error:
+            raise OriginError("EAB1 SQL projection mismatch") from error
 
 
 def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
@@ -183,9 +259,10 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
         "SELECT TABLE_NAME AS table_name,ENGINE AS engine FROM information_schema.tables "
         "WHERE table_schema=DATABASE() AND table_name IN "
         "('economic_baseline_control','economic_baseline_witness',"
-        "'economic_accounting_operation','critical_operation_inbox')")
+        "'economic_accounting_operation','critical_operation_inbox',"
+        "'economic_accounting_account_effect','economic_accounting_coin_posting','economic_baseline_reservation')")
     engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-    if (len(engines) != 4 or any(engine != "InnoDB" for engine in engines.values())):
+    if (len(engines) != 7 or any(engine != "InnoDB" for engine in engines.values())):
         raise OriginError("SQL baseline source is missing or not InnoDB")
     cursor.execute(
         "SELECT opening_account,revision,last_operation_id FROM economic_baseline_control "
@@ -236,6 +313,7 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
     seen_keys: set[str] = set()
     seen_lifetimes: set[int] = set()
     seen_uids: set[int] = set()
+    verified = []
     for expected_revision, row in enumerate(witnesses, 1):
         if (row["book_revision"] != expected_revision or row["reason"] != 38 or
                 row["outcome"] != 1 or row["result_code"] != 0 or
@@ -244,7 +322,7 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
                 row["inbox_committed_at_present"] != 1):
             raise OriginError("uncommitted or noncanonical baseline witness")
         batch_holdings, batch_items = decode_witness(row, lineage, epoch, opening)
-        verify_baseline_root(row, lineage, epoch)
+        verified.append((row, verify_baseline_root(row, lineage, epoch)))
         for holding in batch_holdings:
             key = holding["account_key"]
             lifetime = account_key(key)[2]
@@ -263,6 +341,7 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
             raise OriginError("baseline origin collection limit exceeded")
     if (witnesses[-1]["operation_id"] if witnesses else None) != control["last_operation_id"]:
         raise OriginError("baseline control terminal witness mismatch")
+    verify_baseline_projections(cursor, verified, lineage, epoch)
     baseline_sources = {}
     for row in witnesses:
         blob = row["canonical_witness"]
