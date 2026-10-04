@@ -1,7 +1,7 @@
 // Independent physical retained-operation scan. No mutation/recovery codecs.
 #ifndef DURIS_QUALIFY_FLATFILE_ECONOMIC_RECORDS_H
 #define DURIS_QUALIFY_FLATFILE_ECONOMIC_RECORDS_H
-#include "qualify_flatfile_economic_authority.h"
+#include "qualify_flatfile_economic_baseline.h"
 #include <tuple>
 
 namespace restore_economic_records
@@ -12,17 +12,6 @@ constexpr size_t command_limit = 512 * 1024, plan_limit = 4 * 1024 * 1024;
 constexpr size_t record_limit = 48 + 26 + command_limit + plan_limit + 4096;
 constexpr uint64_t bucket_limit = uint64_t{ 256 } << 20;
 constexpr size_t segment_count_limit = bucket_limit / (segment_limit - record_limit - 80) + 1;
-inline bool same(std::span<const uint8_t> first, std::span<const uint8_t> second)
-{
-	return first.size() == second.size() &&
-	       std::equal(first.begin(), first.end(), second.begin());
-}
-inline uint64_t number(std::span<const uint8_t> value, size_t offset, size_t width)
-{
-	reader in{ value };
-	(void)in.take(offset);
-	return in.number(width);
-}
 inline std::span<const uint8_t> unwrap(std::span<const uint8_t> value, const char *magic)
 {
 	reader in{ value };
@@ -52,6 +41,7 @@ class checker
 	std::set<identity> epochs;
 	std::set<std::string> expected_files;
 	std::vector<digest> claimed_events;
+	restore_economic_baseline::checker baselines;
 
 	void record(std::span<const uint8_t> encoded, const identity &operation)
 	{
@@ -60,8 +50,7 @@ class checker
 		auto command_size = in.number(4), plan_size = in.number(4),
 		     result_size = in.number(4);
 		auto result_code = in.number(4);
-		(void)in.number(
-			8); // Full unsigned durable revision, with no inferred native counter.
+		auto durable_revision = in.number(8);
 		auto failure_stage = in.number(2);
 		need(command_size <= command_limit && plan_size <= plan_limit &&
 		     result_size <= 4096 && failure_stage <= 0x3fff &&
@@ -169,8 +158,7 @@ class checker
 					    (counts[3] + counts[4]) * 64 + counts[5] * 128);
 		if (type == 20 || number(intent, 24, 2) == 38 || number(event, 0, 2) == 10)
 		{
-			// Native baselines retain dedupe in their witness/reservation book,
-			// not a common source-claim file. Book qualification remains separate.
+			// Native baselines retain dedupe in their witness/reservation book.
 			need(type == 20 && number(intent, 24, 2) == 38 && intent[27] == 1 &&
 			     number(intent, 12, 4) == 4 && intent[26] == 2 &&
 			     !nonzero(intent.subspan(80, 16)) && number(event, 0, 2) == 10 &&
@@ -180,6 +168,11 @@ class checker
 				  { reinterpret_cast<const uint8_t *>("EBC1"), 4 }) &&
 			     number(payload, 4, 2) == 1 && number(payload, 6, 2) == 48 &&
 			     !nonzero(payload.subspan(12, 4)) && nonzero(payload.subspan(16, 32)));
+			need(payload_version == 1 && source == 6 && deadline == 4 && !publication &&
+			     keys == 1 && identities[0] == key{ 9, 0x45434f4e42415345 } &&
+			     !revisions && !result_size);
+			baselines.observe(lineage, epoch, operation, intent, payload, plan,
+					  durable_revision);
 			return;
 		}
 		if (intent[27])
@@ -270,6 +263,7 @@ class checker
 	explicit checker(const std::filesystem::path &path)
 		: root(path)
 		, directory(path / "economic-evidence")
+		, baselines(path)
 	{
 	}
 	void run()
@@ -295,6 +289,7 @@ class checker
 		for (size_t index = 0; index < 256; ++index)
 			if (control[16520 + index / 8] & (1u << (index % 8)))
 				bucket(index);
+		baselines.finish(lineage, epochs);
 		// At most 256 * 4096 keys (32 MiB of digests), bounded by the native
 		// index format. Keep no unbounded map of roots or retained record bytes.
 		std::sort(claimed_events.begin(), claimed_events.end());

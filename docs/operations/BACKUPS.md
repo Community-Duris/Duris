@@ -323,11 +323,23 @@ logical event, including earlier retained epochs. Missing, corrupt, mismatched,
 duplicate-source, orphan or malformed claim files block qualification. Rejected
 receipts claim no source; an event may belong to a different successful root.
 Native baseline batches retain source dedupe in their own witness/reservation
-book. The common-claim check recognizes that existing typed storage contract;
-complete independent book and witness qualification remains a separate gate.
+book. The independent reader requires each successful batch's exact private EAB1
+witness, binds it to its command, operator, preparation, batch and retained epoch,
+and regenerates the complete opening plan without native mutation codecs. It
+checks numeric account/UID ordering, nonnegative denomination/value bounds,
+unchanged item forests and source digests. Every book must retain its head and
+all 16 reservation indexes, with exact head hashes, consecutive receipt revisions,
+the terminal operation and the complete holding/UID reservations regenerated from
+its witnesses. Orphan or malformed baseline files, missing receipts, duplicate
+reservations and inconsistent openings refuse qualification. Initialized empty
+inactive books remain readable, and partial loss of those books refuses.
+The current control format does not record empty-book initialization independently.
+Complete loss of an empty baseline namespace before any receipt remains
+indistinguishable from never-initialized storage; the lifecycle owner must resolve
+that evidence gap before release qualification.
 These physical checks do not prove policy authorization, full account/item
 semantics or agreement with native authority. Logical source entitlement, pile
-heads, baseline witnesses, native custody and activation readiness still require
+heads, external baseline attestations, native custody and activation readiness still require
 their separate release evidence.
 Before boot, both journal types are scanned with the production codecs. A
 corrupt/unsupported frame or interrupted temporary journal blocks qualification.

@@ -41,6 +41,11 @@ inline digest hash(std::span<const uint8_t> value)
 	SHA256(value.data(), value.size(), result.data());
 	return result;
 }
+inline bool same(std::span<const uint8_t> first, std::span<const uint8_t> second)
+{
+	return first.size() == second.size() &&
+	       std::equal(first.begin(), first.end(), second.begin());
+}
 struct reader
 {
 	std::span<const uint8_t> value;
@@ -70,6 +75,12 @@ struct reader
 	}
 	void done() { need(offset == value.size()); }
 };
+inline uint64_t number(std::span<const uint8_t> value, size_t offset, size_t width)
+{
+	reader in{ value };
+	(void)in.take(offset);
+	return in.number(width);
+}
 inline std::string filename(const char *prefix, size_t bucket, const char *suffix)
 {
 	constexpr char hex[] = "0123456789abcdef";
@@ -101,8 +112,8 @@ inline void locator(uint64_t kind, uint64_t context, uint64_t type, uint64_t nat
 		need(context == 0 && native > 0 && native <= limit && name.empty());
 	}
 }
-inline bytes frame(const std::filesystem::path &directory, const std::string &name,
-		   const char *magic, size_t limit = maximum_bytes, const digest &expected = {})
+inline bytes file_bytes(const std::filesystem::path &directory, const std::string &name,
+			size_t limit, const digest &expected = {})
 {
 	const int fd =
 		open((directory / name).c_str(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);
@@ -129,6 +140,12 @@ inline bytes frame(const std::filesystem::path &directory, const std::string &na
 	uint8_t extra;
 	need(read(fd, &extra, 1) == 0);
 	need(!nonzero(expected) || hash(encoded) == expected);
+	return encoded;
+}
+inline bytes frame(const std::filesystem::path &directory, const std::string &name,
+		   const char *magic, size_t limit = maximum_bytes, const digest &expected = {})
+{
+	auto encoded = file_bytes(directory, name, limit, expected);
 	reader in{ encoded };
 	auto prefix = in.take(8);
 	need(memcmp(prefix.data(), magic, 8) == 0 && in.number(4) == 1 &&
