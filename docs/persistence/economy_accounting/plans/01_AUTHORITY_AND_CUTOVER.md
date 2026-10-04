@@ -21,6 +21,16 @@ The user batches testing when each major plan is ready. Source review and
 implementation continue now; preserve original sources and prepared regression
 owners for milestone failure/fix proof. Written changes remain unqualified.
 
+Keep implementation within the group's R1–R8 contract and this plan's independent
+acceptance. Ordinary save projections do not need an additional economic receipt
+or historical snapshot ledger. For a retained, receipt-free ordinary save, the
+existing locked native `player_data.save_revision` can establish that the frame
+is already obsolete. Use that authority under the original held-PID reservation;
+the drop receipt's revision cannot substitute for it. Uncovered saves retain
+existing custody/replay checks, and operation-bearing saves retain their existing
+receipt requirements. Do not add optional frameworks or release gates for this
+ordering case. Prioritize connecting existing owners into the production path.
+
 Recovery-session cleanup is implemented in `7dc837e29`: original-session rollback
 proof covers replacement apply, creation verification, the inspection loader's
 second transaction and journal proof; uncertain boot leases retire. Late session
@@ -840,11 +850,13 @@ hydration/nonthrowing enrollment are not implemented. No checks or milestone pus
 
 ## October 4 integration priority
 
-The current source checkpoint is5766555f8. Replay ownership and the complete
+The current source checkpoint is6d42ad788. Replay ownership and the complete
 indexed SQL boot recovery catalog are implemented but unqualified; the latter
-is consumed by private all-absent reconstruction. Production delivery claims,
-mutation census, fresh reserved journal scan, coordinator ACK reservation and
-release-driven revisit are still unwired. Finish that actual SQL recovery path
+is consumed by private all-absent reconstruction. Positive-PID synchronous save ownership, phased SQL startup, actor-independent
+restored ordinary-drop dispatch, fresh journal/control census, private guarded ACK
+and release-driven reserved revisit are now connected source. Ownership stays
+disabled pending complete native writers/shutdown, legitimate overlapping-save
+and rejected-outcome disposition and full graph/live producer coverage. Finish that actual SQL recovery path
 before adding more isolated prerequisites, then the native baseline/cutover/pause
 owner and existing flatfile bank/item parity. Keep the stated independent
 acceptance: missing Plans2–4 coverage must refuse activation, but those writers

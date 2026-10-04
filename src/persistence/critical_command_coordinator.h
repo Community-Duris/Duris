@@ -9,6 +9,7 @@
 
 class economic_sql_lifecycle_guard;
 class economic_sql_cutover_transaction_owner;
+class player_save_restored_publication_owner;
 
 // Private coordinator-side lease operations used only by the SQL lifecycle
 // owner. They expose no readiness boolean or lease identity to public callers.
@@ -151,6 +152,9 @@ bool critical_command_coordinator_get_completed(const critical_operation_id &ope
 // Release a publication-held operation only after the live callback succeeded and
 // the journal checkpoint was durable. A false result leaves the operation fenced.
 bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id);
+// Only the original restored save owner can supply this nonconstructible proof.
+bool critical_command_coordinator_acknowledge_publication(
+	player_save_restored_publication_owner &owner);
 size_t critical_command_coordinator_pulse(critical_completion *completions, size_t capacity);
 bool critical_command_coordinator_is_fenced(const critical_entity_key &key,
 					    critical_operation_id *operation_id);

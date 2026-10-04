@@ -3,6 +3,8 @@
 
 #include "player/player_revision_state.h"
 #include "persistence/critical_command.h"
+#include "persistence/critical_command_completion.h"
+#include "player/player_save_replay_ownership.h"
 
 #include <atomic>
 #include <cstddef>
@@ -157,14 +159,45 @@ bool player_save_pipeline_literal_inventory_cancel(const player_literal_inventor
 // generation fences ordinary save apply and journal retirement; broader native
 // mutation coverage, clean census and critical-ACK reservation remain required.
 bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &command);
+// The restored slot owns publication and ACK together. No caller can construct
+// an ACK capability from a graph observation, operation ID or readiness bool.
+class player_save_restored_publication_owner final
+{
+    public:
+	static bool publish(const critical_completion &completion) noexcept;
+
+    private:
+	friend bool critical_command_coordinator_acknowledge_publication(
+		player_save_restored_publication_owner &owner);
+	player_save_restored_publication_owner(critical_command &&command,
+					       std::vector<uint8_t> &&frozen,
+					       const critical_completion &completion,
+					       uint64_t epoch, int pid,
+					       uint64_t generation) noexcept
+		: command_(std::move(command))
+		, frozen_(std::move(frozen))
+		, completion_(completion)
+		, reservation_(epoch, pid, completion.operation_id, generation)
+		, pid_(pid)
+		, generation_(generation)
+	{
+	}
+	bool consume_acknowledged_hold() noexcept;
+	critical_command command_;
+	std::vector<uint8_t> frozen_;
+	critical_completion completion_;
+	player_save_execution_guard::held_publication_reservation reservation_;
+	int pid_ = 0;
+	uint64_t generation_ = 0, coordinator_generation_ = 0;
+	bool publication_proven_ = false, acknowledged_ = false;
+};
+
 // A restored drop may hydrate authoritative state while saves/lifecycle remain
 // held. All other recovery, target-login and pinned-death fences still refuse.
 bool player_save_pipeline_authoritative_hydration_admitted(int pid);
-// Called only after the coordinator has durably acknowledged publication. This
-// original-ID release needs no live actor and does not allocate. After exact
-// guard release it notifies only the captured active worker request, outside
-// pipeline locks. Wake acceptance survives worker parking; it does not prove
-// a clean mutation census or authorize the preceding critical ACK.
+// Live-token cleanup after durable coordinator ACK. Restored holds refuse this
+// ID-only assertion; their private owner consumes the exact checked reservation
+// and emits the worker/replay notice after guarded ACK.
 void player_save_pipeline_sql_drop_publication_acknowledged(
 	const critical_operation_id &operation_id) noexcept;
 

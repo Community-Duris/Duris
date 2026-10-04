@@ -75,6 +75,7 @@ struct pending_movement
 	bool craft_publication_started = false;
 	bool ordinary_receipt_sealed = false;
 	bool ordinary_publication_ready = false;
+	bool restored_sql_drop = false;
 	bool publication_inflight = false;
 	bool craft_publication_ready = false;
 	bool collector_invalidated;
@@ -1781,6 +1782,26 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		account_health();
 		return;
 	}
+	if (entry.restored_sql_drop)
+	{
+		// This original restored owner publishes and ACKs as one reserved attempt,
+		// before generic registry/callback handling, independently of actor login.
+		entry.ordinary_receipt_sealed = true;
+		entry.publication_inflight = true;
+		const bool acknowledged =
+			player_save_restored_publication_owner::publish(entry.completed);
+		entry.publication_inflight = false;
+		if (!acknowledged)
+		{
+			entry.publication_status = publication_state::owner_waiting;
+			account_health();
+			return;
+		}
+		pending.erase(found);
+		++health.committed;
+		account_health();
+		return;
+	}
 	if (entry.publication && !craft)
 		entry.ordinary_receipt_sealed = true;
 	if (craft)
@@ -3380,6 +3401,11 @@ void retry_publications(void)
 			publish(found, nullptr);
 			continue;
 		}
+		if (found->second.restored_sql_drop)
+		{
+			publish(found, nullptr);
+			continue;
+		}
 		if (!found->second.actor_pid)
 			continue;
 		if (P_char actor = find_live_player(found->second.actor_pid))
@@ -3469,10 +3495,12 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 			collector_catalog_cache_invalidate();
 			found->second.collector_invalidated = true;
 		}
-		if ((found->second.publication ||
-		     found->second.payload.reason == item_transfer_reason::craft) &&
-		    (found->second.publication_status == publication_state::ack_pending ||
-		     found->second.ordinary_publication_ready))
+		if (found->second.restored_sql_drop)
+			publish(found, nullptr);
+		else if ((found->second.publication ||
+			  found->second.payload.reason == item_transfer_reason::craft) &&
+			 (found->second.publication_status == publication_state::ack_pending ||
+			  found->second.ordinary_publication_ready))
 			publish(found, nullptr);
 		else if (found->second.actor_pid)
 		{
@@ -3510,6 +3538,14 @@ bool item_movement_transaction_restore_replayed_command(const critical_command &
 	    payload.from_owner.type != item_owner_type::player || !payload.from_owner.id ||
 	    payload.from_owner.id > UINT32_MAX)
 		return false;
+#ifndef __NO_MYSQL__
+	const bool ordinary_sql_drop = command.schema_version ==
+					       CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+				       payload.reason == item_transfer_reason::player_drop &&
+				       payload.to_owner.type == item_owner_type::room;
+#else
+	const bool ordinary_sql_drop = false;
+#endif
 	const bool quest_offering = payload.reason == item_transfer_reason::quest_turnin &&
 				    payload.continuation.kind ==
 					    item_transfer_continuation_kind::quest_offering;
@@ -3555,6 +3591,16 @@ bool item_movement_transaction_restore_replayed_command(const critical_command &
 	if (!item_movement_transaction_restore_replayed_publication(
 		    command, publication, replay_context, replay_context_size))
 		return false;
+	if (ordinary_sql_drop)
+	{
+		if (!player_save_pipeline_restore_sql_drop_obligation(command))
+		{
+			pending.erase(key);
+			return false;
+		}
+		pending.find(key)->second.restored_sql_drop = true;
+		pending.find(key)->second.publication_attempts = 0;
+	}
 	return !spell_component_retirement ||
 	       spell_component_retirement_restore_replayed_effect(
 		       command.operation_id, static_cast<uint32_t>(payload.from_owner.id),

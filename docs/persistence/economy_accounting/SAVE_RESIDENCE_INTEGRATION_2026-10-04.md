@@ -148,3 +148,96 @@ Private BEFORE source copies are preserved at source base `c30a97622`.
 Formatting/diff hygiene only; no compiler/tests/native SQL or qualified push.
 Actual caller residence, serial lifecycle, other native writers, complete clean
 census, critical ACK, production startup/revisit and major-plan gates remain open.
+
+## Positive-PID synchronous save owner
+
+Source tracing found the synchronous `writeCharacter` path changed money and
+equipment before `sql_save_player` began its transaction, and its failed legacy
+rollback could clear the local flag without native idle proof. The owner now
+retains a resident claim, explicit execution scope and nested permit before that
+pre-save work, through native SQL, existing inventory restoration and post-save
+hooks. The raw pet participant also borrows the same scope before native mutation.
+
+The outer owner finishes exact-main-session cleanup before its permit/scope/claim
+unwind. Literal rollback and same-session idle checks do not trust the old local
+transaction flag. Unconfirmed cleanup closes the exact main connection and
+latches existing runtime exclusion loss, retaining the separate lifecycle control
+and pool. It introduces no reconnect or new recovery framework. A master-save
+exception follows the existing failed-source restoration tail; uncertain partial
+gameplay tails poison admission and cannot claim complete restoration.
+
+Enabled PID-zero creation, caller-owned transactions, direct migration without a
+scope and independent component/locker writers remain incomplete paths. The healthy
+inactive body remains the legacy path. Source review by the maintainer and architect
+accepted this bounded owner; formatting and diff hygiene passed. No compiler,
+tests, native SQL/gameplay/persistence/recovery checks or qualified push ran.
+Maintainer preserved the four original source files under
+`tmp/synchronous-save-boundary-before-v1.local`; this is not a compiler closure.
+Plan1 remains unfinished and ownership is still disabled.
+
+## Restored ordinary-drop production integration
+
+The actual SQL boot path now prepares saves, restores critical commands and their
+exact immutable drop holds, then starts save execution. Critical initialization
+failure keeps preparation closed. Flatfile immediate startup and healthy inactive
+schema1 routes retain their existing path. Movement completion/retry dispatch now
+recognizes the validated restored SQL ordinary drop and runs it without an actor,
+before generic registry/callback handling.
+
+One private original-slot owner binds frozen command, semantic completion, PID,
+hold generation and ownership epoch. It reserves exclusion while the hold remains
+installed, grants no save execution scope/permit, and refuses resident/queued/
+inflight/worker/revision obligations. Fresh active journal and validated control
+file fingerprints include archive, policy, legacy quarantine and recovery evidence;
+any affected unresolved frame/history remains held, never declared obsolete from
+the drop result. Control digest allocation precedes archive publication.
+
+The owner calls the existing fresh native graph publication helper, requires its
+confirmed cleanup, repeats the journal census and supplies a nonconstructible
+capability to the coordinator. Coordinator ACK checks original frozen command,
+sealed result and its own lifetime before durable critical checkpoint. ID-only ACK
+and ID-only release cannot clear a restored obligation. Guarded ACK retains
+lifecycle exclusion through exact hold consumption outside coordinator locks,
+then emits the exact worker wake and a retained reserved-journal revisit notice.
+Same-thread lifecycle draining can finish already accepted work; foreign lifecycle
+ownership, shutdown and cutover cannot cross the ACK/consumption interval.
+
+The dispatcher observes release sequence before selecting notices, tracks actual
+remaining replay-eligible journal PIDs, and revisits only `replay_deferred` work
+once original owners release. Replay itself reacquires reservations and rereads
+frames. IO/corruption failures do not gain automatic retry authority. Ownership
+integrity failure closes save admission and the load gate. Source reviewers found
+and closed a missed-notice sleep race and post-durable fingerprint allocation gap.
+
+This is connected production source, **not completed ordinary-drop recovery**.
+Production ownership enable remains absent until all native writers and serialized
+shutdown/census are covered. Overlapping retained saves need their legitimate
+native disposition; rejected receipts need verified no-publication completion.
+Activity-bearing ordinary graph coverage, original live producer integration,
+native qualification/cold restarts/copyover and full Plan1 gates remain open.
+No compiler, AST, tests, services, native SQL, gameplay or recovery checks ran.
+Source review/formatting/diff hygiene passed; the user-requested major-plan test
+batch remains deferred. No new fixture/report family or qualified push was added.
+
+## Covered ordinary-save ordering
+
+At `2d6111f8b`, the restored publisher refused every overlapping save-journal
+frame, including ordinary saves already superseded by native `save_revision`.
+This is a source-established missing connection, not a new runtime RED result.
+The economy contract keeps ordinary projections separate from economic receipts;
+existing stale-save retirement supplies the required policy without a new ledger.
+
+The restored owner now collects affected originals under its exact held-PID
+reservation, reads locked native `player_data.save_revision` on one pooled
+session, and confirms rollback/idle cleanup before issuing private coverage proof.
+Journal retirement freshly matches encoded originals and removes only receipt-free
+ordinary frames covered by that revision. Uncovered, operation-bearing and
+unrelated frames remain intact. Fresh namespace/custody publication and guarded
+critical ACK still follow. An empty-target census syncs the directory to settle
+an earlier compaction whose rename succeeded but directory sync failed.
+
+The five changed source files are repository C/H, journal C/H and pipeline C.
+Source review, changed-line formatting and diff hygiene passed. No schema, new
+economic operation, fixture family or acceptance gate was added. No compiler,
+tests, SQL, services, gameplay or recovery checks ran; qualification stays deferred
+to major-plan readiness. Ownership remains disabled and Plan 1 remains unfinished.

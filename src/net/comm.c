@@ -987,8 +987,15 @@ int run_the_game(int port, int sslport)
 	if (!mini_mode)
 		locker_async_init();
 	const char *journal_directory = getenv("PLAYER_SAVE_JOURNAL_DIR");
-	if (!player_save_pipeline_init(journal_directory,
-				       player_quarantine_recovery_revalidate_selected))
+	const bool player_saves_ready =
+#ifdef __NO_MYSQL__
+		player_save_pipeline_init(journal_directory,
+					  player_quarantine_recovery_revalidate_selected);
+#else
+		player_save_pipeline_prepare(journal_directory,
+					     player_quarantine_recovery_revalidate_selected);
+#endif
+	if (!player_saves_ready)
 	{
 		logit(LOG_STATUS,
 		      "Player save pipeline unavailable; nonterminal saves fail closed.");
@@ -1006,14 +1013,15 @@ int run_the_game(int port, int sslport)
 	const bool critical_outbox_ready =
 		critical_outbox_init(critical_gameplay_outbox_delivery, NULL);
 #endif
-	if (
+	const bool critical_commands_ready =
 #ifndef __NO_MYSQL__
-		!critical_outbox_ready ||
+		critical_outbox_ready &&
 #endif
-		!critical_command_coordinator_init(critical_journal_directory, critical_apply, NULL,
-						   CRITICAL_COORDINATOR_DEFAULT_WORKERS,
-						   critical_gameplay_restore_replayed_command, NULL,
-						   critical_extension_validator))
+		critical_command_coordinator_init(critical_journal_directory, critical_apply, NULL,
+						  CRITICAL_COORDINATOR_DEFAULT_WORKERS,
+						  critical_gameplay_restore_replayed_command, NULL,
+						  critical_extension_validator);
+	if (!critical_commands_ready)
 	{
 		if (critical_command_coordinator_shutdown())
 		{
@@ -1028,6 +1036,18 @@ int run_the_game(int port, int sslport)
 		persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
 				  "start_failed", "check critical schema and journal");
 	}
+#ifndef __NO_MYSQL__
+	// Critical replay installs original save holds before any save replay/worker
+	// can execute. Failed critical initialization keeps preparation closed and
+	// retains its original slots for shutdown/restart, rather than running past it.
+	if (player_saves_ready && critical_commands_ready && !player_save_pipeline_start())
+	{
+		logit(LOG_STATUS,
+		      "Player save execution unavailable; prepared recovery remains held.");
+		persistence_alert(AVATAR, "player_save", "pipeline", "none", "none", "start_failed",
+				  "check prepared save recovery");
+	}
+#endif
 	if (!collector_catalog_cache_refresh())
 		logit(LOG_STATUS,
 		      "Collector catalog refresh unavailable; collector gameplay fails closed.");
