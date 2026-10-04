@@ -20,10 +20,24 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import economic_sql_audit_snapshot as exporter  # noqa: E402
 from economic_sql_audit_snapshot import capture  # noqa: E402
 from reconcile_economy_accounting import Reconciler, SnapshotError, view  # noqa: E402
-from test_economic_sql_audit_origins import EPOCH, LINEAGE, OPENING, OP, key, witness  # noqa: E402
+from test_economic_sql_audit_origins import EPOCH, LINEAGE, OPENING, OP, baseline_root, key, witness  # noqa: E402
 from test_reconcile_economy_accounting import malformed_sources, source_identity  # noqa: E402
 
 INSTALL = bytes.fromhex("77" * 16)
+ROOT_INSERT = ("INSERT INTO economic_accounting_operation(operation_id,lineage,epoch,original_operation_id,"
+               "reason,outcome,result_code,source_event,account_count,posting_count,child_count,item_event_count,"
+               "realized_price_copper) VALUES ")
+
+
+def bind_synthetic_baseline(cursor, blob):
+    baseline = baseline_root(bytes(blob))
+    fields = ("accounting_version", "writer_id", "policy_version", "compiler_version",
+              "actor_kind", "actor_id", "intent_digest", "domain_digest", "plan_digest",
+              "canonical_intent", "canonical_plan", "before_witness_count", "after_witness_count",
+              "account_count", "posting_count")
+    cursor.execute("UPDATE economic_accounting_operation SET " +
+                   ",".join(field + "=%s" for field in fields) + " WHERE operation_id=%s",
+                   (*[baseline[field] for field in fields], OP))
 
 private_socket = (os.environ.get("DB_SOCKET", "").startswith("/plan5-restore-baseline-") and
                   os.environ.get("TEST_DB_DISPOSABLE") == "1" and os.environ.get("ENVIRONMENT") == "test")
@@ -52,13 +66,19 @@ TABLES = (
     "opening_account VARBINARY(40),revision BIGINT UNSIGNED,last_operation_id BINARY(16)) ENGINE=InnoDB",
     "CREATE TABLE economic_baseline_witness (operation_id BINARY(16),lineage BINARY(16),"
     "epoch BINARY(16),book_revision BIGINT UNSIGNED,holding_count INT,item_count INT,"
-    "witness_digest BINARY(32),canonical_witness MEDIUMBLOB) ENGINE=InnoDB",
+    "witness_digest BINARY(32),canonical_witness MEDIUMBLOB,witness_version INT DEFAULT 1) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_operation (operation_id BINARY(16),lineage BINARY(16),"
     "epoch BINARY(16),original_operation_id BINARY(16),reason INT,outcome INT,result_code INT,"
     "source_event BINARY(48),account_count INT,posting_count INT,child_count INT,"
-    "item_event_count INT,realized_price_copper BIGINT NULL) ENGINE=InnoDB",
+    "item_event_count INT,realized_price_copper BIGINT NULL,"
+    "accounting_version INT NULL,writer_id INT NULL,policy_version INT NULL,compiler_version INT NULL,"
+    "actor_kind INT NULL,actor_id BIGINT UNSIGNED NULL,intent_digest BINARY(32) NULL,domain_digest BINARY(32) NULL,"
+    "plan_digest BINARY(32) NULL,canonical_intent MEDIUMBLOB NULL,canonical_plan MEDIUMBLOB NULL,"
+    "before_witness_count INT DEFAULT 0,after_witness_count INT DEFAULT 0) ENGINE=InnoDB",
     "CREATE TABLE critical_operation_inbox (operation_id BINARY(16),status INT,result_code INT,"
-    "failure_stage INT NOT NULL DEFAULT 0,committed_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB",
+    "failure_stage INT NOT NULL DEFAULT 0,committed_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,"
+    "durable_revision BIGINT UNSIGNED DEFAULT 1,command_type INT DEFAULT 20,schema_version INT DEFAULT 2,"
+    "payload_version INT DEFAULT 1,result_payload VARBINARY(16) DEFAULT X'') ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_account_effect (operation_id BINARY(16),account_index INT,"
     "account_key BINARY(40),before_copper BIGINT,before_silver BIGINT,before_gold BIGINT,"
     "before_platinum BIGINT,after_copper BIGINT,after_silver BIGINT,after_gold BIGINT,"
@@ -169,20 +189,22 @@ try:
             blob = bytes(blob)
             cursor.execute("INSERT INTO economic_baseline_control VALUES (%s,%s,%s,1,%s)",
                            (LINEAGE, EPOCH, OPENING, OP))
-            cursor.execute("INSERT INTO economic_baseline_witness VALUES (%s,%s,%s,1,6,3,%s,%s)",
+            cursor.execute("INSERT INTO economic_baseline_witness(operation_id,lineage,epoch,book_revision,"
+                           "holding_count,item_count,witness_digest,canonical_witness) VALUES (%s,%s,%s,1,6,3,%s,%s)",
                            (OP, LINEAGE, EPOCH, hashlib.sha256(blob).digest(), blob))
-            cursor.execute("INSERT INTO economic_accounting_operation VALUES "
-                           "(%s,%s,%s,NULL,38,1,0,%s,2,0,0,0,NULL)",
-                           (OP, LINEAGE, EPOCH, struct.pack("<HH", 10, 1) + blob[48:64] + EPOCH + blob[72:80] + bytes(4)))
+            baseline = baseline_root(blob)
+            cursor.execute(ROOT_INSERT + "(%s,%s,%s,NULL,38,1,0,%s,%s,%s,0,0,NULL)",
+                           (OP, LINEAGE, EPOCH, baseline["source_event"], baseline["account_count"], baseline["posting_count"]))
+            bind_synthetic_baseline(cursor, blob)
             cursor.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
                            (LINEAGE, struct.pack("<HH", 10, 1) + blob[48:64] + EPOCH + blob[72:80] + bytes(4), OP))
             cursor.execute("INSERT INTO economic_sql_lifecycle_installation VALUES "
                            "(%s,%s,%s,%s,2,%s,1)",
                            (INSTALL, LINEAGE, EPOCH, OP, EPOCH))
-            cursor.execute("INSERT INTO economic_accounting_operation VALUES "
+            cursor.execute(ROOT_INSERT +
                            "(%s,%s,%s,NULL,3,1,0,%s,2,2,0,0,NULL)",
                            (root, LINEAGE, EPOCH, source))
-            cursor.execute("INSERT INTO economic_accounting_operation VALUES "
+            cursor.execute(ROOT_INSERT +
                            "(%s,%s,%s,NULL,1,1,0,NULL,2,2,0,0,NULL)",
                            (new_wallet_root, LINEAGE, EPOCH))
             cursor.execute("INSERT INTO critical_operation_inbox "
@@ -221,15 +243,15 @@ try:
                                (new_wallet_root, index, index, delta, delta))
             cursor.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
                            (LINEAGE, source, root))
-            cursor.execute("INSERT INTO economic_accounting_operation VALUES "
+            cursor.execute(ROOT_INSERT +
                            "(%s,%s,%s,NULL,3,1,0,%s,2,2,0,0,NULL)",
                            (prior_root, LINEAGE, prior_epoch, prior_source))
-            cursor.execute("INSERT INTO economic_accounting_operation VALUES "
+            cursor.execute(ROOT_INSERT +
                            "(%s,%s,%s,NULL,3,1,0,%s,2,2,0,0,NULL),"
                            "(%s,%s,%s,NULL,31,1,0,%s,2,2,0,0,NULL)",
                            (consumed_source_root, LINEAGE, prior_epoch, consumed_source_event,
                             consumer_root, LINEAGE, prior_epoch, consumer_source_event))
-            cursor.execute("INSERT INTO economic_accounting_operation VALUES "
+            cursor.execute(ROOT_INSERT +
                            "(%s,%s,%s,NULL,33,1,0,%s,0,0,0,1,NULL)",
                            (creation_root, LINEAGE, EPOCH, creation_source_event))
             for index, account, before, after in (
@@ -721,6 +743,7 @@ try:
                 writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
                                "canonical_witness=%s WHERE operation_id=%s",
                                (hashlib.sha256(money_blob).digest(), bytes(money_blob), OP))
+                bind_synthetic_baseline(writer, money_blob)
                 writer.execute("UPDATE player_data SET wallet_revision=%s WHERE pid=7",
                                (money_maximum,))
                 writer.execute("UPDATE item_current_owner SET item_revision=%s WHERE item_uid=82",
@@ -745,6 +768,7 @@ try:
                 writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
                                "canonical_witness=%s WHERE operation_id=%s",
                                (hashlib.sha256(blob).digest(), blob, OP))
+                bind_synthetic_baseline(writer, blob)
             assert capture(audit, LINEAGE, EPOCH) == snapshot
             print("SQL money uint64 boundary: wallet/pile authority, stale-revision refusal "
                   "and baseline recovery passed", flush=True)
@@ -786,9 +810,10 @@ try:
                 writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
                                "canonical_witness=%s WHERE operation_id=%s",
                                (hashlib.sha256(high_blob).digest(), bytes(high_blob), OP))
+                bind_synthetic_baseline(writer, high_blob)
                 writer.execute("UPDATE item_current_owner SET item_revision=%s WHERE item_uid=81",
                                (maximum_revision,))
-                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                writer.execute(ROOT_INSERT +
                                "(%s,%s,%s,NULL,32,1,0,NULL,0,0,0,1,NULL)",
                                (high_revision_root, LINEAGE, EPOCH))
                 writer.execute("INSERT INTO critical_operation_inbox "
@@ -823,6 +848,7 @@ try:
                 writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
                                "canonical_witness=%s WHERE operation_id=%s",
                                (hashlib.sha256(blob).digest(), blob, OP))
+                bind_synthetic_baseline(writer, blob)
             assert capture(audit, LINEAGE, EPOCH) == snapshot
             print("SQL UID uint64 boundary: witnessed exact move, missing-reference refusal "
                   "and baseline recovery passed", flush=True)
@@ -877,7 +903,7 @@ try:
             duplicate_uid_root = bytes.fromhex("e6" * 16)
             duplicate_uid_source = bytes.fromhex(source_identity(kind=18, identity="b2"))
             with setup.cursor() as writer:
-                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                writer.execute(ROOT_INSERT +
                                "(%s,%s,%s,NULL,33,1,0,%s,0,0,0,1,NULL)",
                                (duplicate_uid_root, LINEAGE, EPOCH, duplicate_uid_source))
                 writer.execute("INSERT INTO critical_operation_inbox "
@@ -915,7 +941,7 @@ try:
             revived_uid_root = bytes.fromhex("e7" * 16)
             revived_uid_source = bytes.fromhex(source_identity(kind=18, identity="b3"))
             with setup.cursor() as writer:
-                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                writer.execute(ROOT_INSERT +
                                "(%s,%s,%s,NULL,32,1,0,%s,0,0,0,1,NULL)",
                                (revived_uid_root, LINEAGE, EPOCH, revived_uid_source))
                 writer.execute("INSERT INTO critical_operation_inbox "
@@ -979,7 +1005,7 @@ try:
             assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
                 expected_exceptions
             with setup.cursor() as writer:
-                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                writer.execute(ROOT_INSERT +
                                "(%s,%s,%s,NULL,33,1,0,%s,0,0,0,1,NULL)",
                                (prior_item_root, LINEAGE, prior_epoch, prior_item_source))
                 writer.execute("INSERT INTO critical_operation_inbox "
@@ -1093,13 +1119,13 @@ try:
             other_lineage_operation = bytes.fromhex("94" * 16)
             other_lineage = bytes.fromhex("44" * 16)
             with setup.cursor() as writer:
-                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                writer.execute(ROOT_INSERT +
                                "(%s,%s,%s,NULL,33,1,0,NULL,0,0,0,0,NULL)",
                                (unanchored_operation, LINEAGE, EPOCH))
-                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                writer.execute(ROOT_INSERT +
                                "(%s,%s,%s,NULL,33,1,0,NULL,0,0,0,0,NULL)",
                                (unscoped_operation, LINEAGE, EPOCH))
-                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                writer.execute(ROOT_INSERT +
                                "(%s,%s,%s,NULL,33,1,0,NULL,0,0,0,0,NULL)",
                                (other_lineage_operation, other_lineage, EPOCH))
                 writer.execute("INSERT INTO item_current_owner VALUES "
@@ -1376,10 +1402,10 @@ try:
             assert unmapped["multiply_mapped_native_wallet"] == 1
             assert unmapped["dangling_bank_mapping"] == 1
             with setup.cursor() as cursor:
-                cursor.execute("INSERT INTO economic_accounting_operation VALUES "
+                cursor.execute(ROOT_INSERT +
                                "(%s,%s,%s,NULL,5,1,0,NULL,0,0,0,0,NULL)",
                                (bytes.fromhex("9a" * 16), LINEAGE, prior_epoch))
-                cursor.execute("INSERT INTO economic_accounting_operation VALUES "
+                cursor.execute(ROOT_INSERT +
                                "(%s,%s,%s,NULL,3,1,0,%s,0,0,0,0,NULL)",
                                (bytes.fromhex("ab" * 16), LINEAGE, prior_epoch, prior_source))
                 cursor.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
