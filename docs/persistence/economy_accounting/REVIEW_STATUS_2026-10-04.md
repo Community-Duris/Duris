@@ -11,8 +11,15 @@ Primary integrated experimental-accounting through
 `f7d26eaa721cd3b675c0b0c65009a2535813f400` in `a590fc662` (news only), and
 Plan5 through `7a78bb065a7979b8dc8ad2ec49295629d6713906` in `432db98be`.
 Both were normal local history-preserving merges authorized by the user.
-The source milestone candidate through `2b4591c218c86513ba674721fe1dfef134ea268a`
-includes the eight prerequisite slices below. Plan5's reports remain evidence of
+The later Plan5 restore-coin slice fcdb1afd8 is integrated in8d1be035d; see
+[its independent report](PLAN5_RESTORE_COIN_EFFECTS_SLICE_2026-10-04.md).
+Its 32 native coin decisions and canonical0056 engine results remain specific
+to its native tree d9a9610f3 and consumed scripts/fixtures. Combined-source
+qualification is still required. Its final900-second per-engine wrapper differs
+from the failed240-second attempt; this does not relax the primary candidate's
+original gate budgets or establish complete release-host workload acceptance.
+The source milestone candidate through `c6b607d41` includes the ten prerequisite
+slices below, plus the later local Plan5 integration described above. Plan5's reports remain evidence of
 its own inputs, not of this combined source candidate. Root checkout WIP is preserved.
 
 Primary owns Plans1–4, shared contracts/coordinator, producers, registry/matrix
@@ -32,6 +39,8 @@ Parallel specialists use bounded file ownership; primary integrates and reviews.
 | `64c495eb0` | [Nonfatal inert allocation](INERT_ALLOCATION_PREPARATION_2026-10-04.md): no-growth pooled slot acquisition and checked debug-compatible storage. | Exhausted pools retain work; lifetime/allocator profiles and native fault qualification pending. |
 | `b36e9690f` | [Discard-only inert literal stage](INERT_ITEM_STAGE_PREPARATION_2026-10-04.md): exact retained UID/text/fields and callback-free partial cleanup. | Prepared-prototype provenance, unsupported behavior, current graph/epoch proof and final enrollment remain open. |
 | `2b4591c21` | [Staged lifecycle composition](FLATFILE_LIFECYCLE_COMPOSITION_PREPARATION_2026-10-04.md): private sealed after-image view, complete revision chain and precommit receipt construction. | External boundary fields are assertions; actual native boundary/census, selected-epoch exact retry and activation remain open. |
+| `aa385e73b` | [Exact-request sticky wake](DEFERRED_SAVE_WAKE_PREPARATION_2026-10-04.md): allocation-free before-park notification and guarded notified dispatch. | Actual guard/persistence timing, replay revisit and production recovery remain open. |
+| `c6b607d41` | [Original hold wake handoff](DROP_HOLD_WAKE_HANDOFF_PREPARATION_2026-10-04.md): capture active identity before exact guard release; notify after pipeline unlock. | No production post-drop ACK caller; complete mutation census, ACK reservation and cold startup remain open. |
 
 Source reviewers found no remaining blocker in each slice's stated narrow scope.
 This is source review, not native/build/gameplay/persistence/recovery acceptance.
@@ -48,7 +57,8 @@ Private frozen inputs and cases are prepared, not executed:
 critical cleanup seven groups; save guard 35 leaf and 14 pipeline cases; runtime
 root census ten groups; marker 546-input closures; receipt publication 30 unchanged
 craft cases plus 19 ordinary cases; allocator eight cases; discard-only constructor
-22 groups; lifecycle13 cases in corrected private V2. Exact pins and controlled-leaf
+22 groups; lifecycle13 cases in corrected private V2; worker wake13 cases with533 inputs
+per corrected V2 variant. Exact pins and controlled-leaf
 limits are in
 the linked reports. A missing BEFORE API/compile failure is unsupported, not a
 semantic RED. Original case/aggregate/compile budgets and maintained oracles remain.
@@ -90,3 +100,35 @@ Staged lifecycle composition now exists; older pending-composition reports refer
 to the marker-only scope. Native boundary
 assertions, independent v2 readers, migration, all holdings/item-source coverage,
 production recovery/activation and final candidate qualification are still required.
+
+
+## Exact-request deferred wake follow-up (source only)
+
+The worker now retains a notification on the exact active request, including a
+notification before parking. Monotonic request/lifecycle identities prevent credit
+from passing to a replacement; notified parked dispatch requires no ready-queue
+allocation, rechecks the execution guard and does not poll if still held. Ordinary
+FIFO and notified work alternate when both are available. The primary post-drop
+hold owner captures that identity before exact hold release and notifies it after
+unlock. Failed hold release restores the original checkpoint and sends no notice.
+
+See [worker preparation](DEFERRED_SAVE_WAKE_PREPARATION_2026-10-04.md) and
+[shared handoff](DROP_HOLD_WAKE_HANDOFF_PREPARATION_2026-10-04.md). Source review
+found no blocker within this mechanism's scope. New source remains UNQUALIFIED;
+no compiler/native/SQL/gameplay/service/recovery tests or milestone pushes ran.
+Legacy PID-only wake now reports acceptance, including coalesced duplicates;
+BEFORE retry/race/OOM fixtures must remain preserved with explicit new AFTER
+semantics. No missing API/compile failure counts as semantic RED.
+
+No production caller of the post-drop acknowledgement API exists yet. Worker wake
+does not revisit journal replay, prove a clean affected-PID mutation census, reserve
+critical ACK or authorize current epoch/native graph construction. Those owners,
+actual producer/gameplay integration, semantic matrix reanchoring and all R1-R8
+acceptance gates remain open. The recovery interface now records the next bounded
+actor-independent existing-graph verifier and later all-absent enrollment contract.
+
+The worker V1 preparation accidentally overlaid the AFTER header into BEFORE.
+Original V1 is preserved as insufficient; corrected V2 restores the exact header.
+Primary raw inventory review confirms533 files per variant and only worker.c/h
+differ, with exact frozen/current source matches. The report correction follows
+aa385e73b; no native execution or source change follows from that metadata check.

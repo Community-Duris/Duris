@@ -84,3 +84,46 @@ enrollment API and refuses unsupported procedural/trap/timed/domain representati
 before acquisition. Prepared prototypes still need provenance and fresh eligibility
 checks. No current SQL authority, graph publication, census, ACK reservation, startup
 or complete cold recovery follows from these unqualified prerequisites.
+
+
+## Next native-graph owner: exact existing graph (source design)
+
+The October4 read-only review identifies the next bounded integration owner:
+`src/item/ordinary_drop_recovery.c/.h` (new operation-specific module, not yet
+implemented), with primary-owned Makefile registration. Its generic public result
+must distinguish verified_existing, absent, conflict, unsupported and unavailable.
+The returned value is an observation, not a coordinator ACK capability.
+
+Validate the original schema2 SQL ordinary-drop command and sealed definitive
+completion, then own one SQL transaction/session across historical retained
+receipt/payload verification, epoch and season locks, current room-item payload
+read and serialized physical comparison. The exported `sql_room_item_graph` alone
+contains no session/epoch identity and cannot carry that authority past unlock.
+Current selected item revisions must be exactly expected+1; independently current
+room revision can legitimately be greater because of other roots.
+
+Enumerate all global physical UID occurrences, room-root links, complete physical
+subtree and runtime root census, including extra and foreign entries. Compare exact
+UID/root/parent/current owner/state and full literal snapshot against the original
+command and current payload. Use `player_item_snapshot_tree_capture_literal` for
+unstrung objects; normalize only serialization parent indices/equipment slots.
+No pointer, weight, metadata, registry or room-list repair is permitted. Fully
+matching graphs verify unchanged. Entirely absent graphs remain absent, not a
+permission to construct. Partial, duplicate, changed or misplaced graphs conflict.
+All refusal/OOM exits preserve physical and runtime state.
+
+Existing ordinary publication applies the runtime transfer before its callback;
+a new callback alone would not meet proof-before-mutation ordering. It also waits
+for actors at dispatch and some ACK-ready notification paths. Production integration
+must refactor that ordering under primary ownership after complete native proof,
+all-absent enrollment, mutation census and ACK reservation exist. The existing
+`sql_room_item_publish` rejects any already present expected UID and invokes the
+legacy non-inert materializer; it cannot substitute for this idempotent owner.
+
+The subsequent all-absent owner must retain trusted prepared prototypes/fresh
+eligibility, normalize SQL loader slot -1 to literal slot0 before inert staging,
+privately transfer staged ownership, preallocate all topology/counters/bookkeeping,
+recheck current authority and global absence, then perform atomic runtime hydration
+and nonthrowing global/index/room enrollment with no callbacks or allocations.
+No general raw-pointer release is authorized by this design. Both owners still
+need native tests and full actorless cold recovery on the combined candidate.

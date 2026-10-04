@@ -204,3 +204,33 @@ ownership-release/enrollment API; current authority/graph publication remains op
 See [current checkpoint](REVIEW_STATUS_2026-10-04.md) for exact scope/fixture limits.
 New semantic inert rows retain unverified backend status and historical matrix
 anchors pending full current-source reanchoring. No new tests or pushes ran.
+
+
+## Later October4 integration and exact-request wake
+
+Plan5 fcdb1afd8 is locally integrated in8d1be035d. Its independent restore coin
+checker preserves zero system witnesses and denomination/revision validation for
+ordinary accounts. Native decision parity and canonical0056 restore evidence are
+branch-input-specific, not the combined candidate's qualification. The external
+900-second wrapper records an earlier240-second timeout; primary's original
+acceptance budgets remain unchanged. Its canonical intent/plan evidence binding,
+marker-v2 readers and earlier narrow independent handoffs still remain open.
+
+The [worker wake preparation](DEFERRED_SAVE_WAKE_PREPARATION_2026-10-04.md) and
+[post-hold-release handoff](DROP_HOLD_WAKE_HANDOFF_PREPARATION_2026-10-04.md)
+retain the exact active request's notification across parking, without queue
+allocation, cross-request credit or guard bypass. Primary still owns complete
+save census, coordinator-enforced ACK reservation, journal replay revisit and
+production startup/actorless publication. Read-only review found no source blocker
+in the notification scope; qualification is deferred. No source milestone push.
+
+The recovery interface records the next operation-specific existing native graph
+verifier. It must own current epoch/session authority while comparing global UID
+uniqueness, complete physical/runtime topology and exact literal payload. Its
+observation cannot authorize ACK or all-absent enrollment. Full cold recovery
+and all declared plans/acceptance gates remain required.
+
+Worker aa385e73b and pipeline c6b607d41 are separate unqualified source commits.
+The corrected worker V2 receipt preserves an insufficient V1 BEFORE-header overlay
+and pins the exact original header; only worker.c/h differ in533 frozen inputs.
+These source inventory observations are not native failure or acceptance evidence.

@@ -80,8 +80,12 @@ Source pins independently reviewed by `cpp_modernization_architect`:
   `a1a304d0e253896f4ae61f8bf909584412ade24c09c10bd7401bf6f761ea7301`.
 
 Private preparation receipt:
-`tmp/deferred-save-wake-prepared-v1/manifest.json`, SHA-256
-`7d9b70b8e48bc431803b645adf776179f6f67d39d558525d4b617b52740bd898`.
+`tmp/deferred-save-wake-prepared-v1/manifest-v2.json`, SHA-256
+`b241ea6ad0dd6208f38843e102d9e8491b3eb7d577563b0c0c400553f1473208`.
+The original v1 BEFORE-header overlay missed a backslash path and copied the
+AFTER header; v1 is preserved as insufficient. Corrected `closure-v2` copies
+the exact original worker header and source. A raw inventory comparison confirms
+only those two files differ across the final variants. No execution occurred.
 Each frozen variant contains 533 files: five maintained production worker/revision/
 codec/journal/observability units, a conservative complete `src/*.h` inventory,
 and two private fixture files. Only worker `.c/.h` differ between variants; this
