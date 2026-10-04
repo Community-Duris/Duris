@@ -50,6 +50,7 @@ extern int top_of_world;
 extern Skill skills[MAX_AFFECT_TYPES + 1] __attribute__((weak));
 extern struct arena_data arena __attribute__((weak));
 extern P_char character_list __attribute__((weak));
+extern P_char find_character_by_runtime_id(std::uint64_t) __attribute__((weak));
 /* The standalone runtime harnesses do not link properties.c.  Production has
  * the strong game implementation; an absent weak symbol makes bootstrap fail
  * closed instead of manufacturing an effective value. */
@@ -3800,8 +3801,10 @@ void capture_control_state(const char_data *character,
 			   battle_emit_context &emitter) noexcept
 {
 	telemetry_battle_actor_context actor{};
-	if (!character || character->telemetry_control_rebuild_depth != 0U ||
-	    !R.control.initialized || !game_battle_actor(character, &actor))
+	if (!character || !find_character_by_runtime_id ||
+	    find_character_by_runtime_id(character->runtime_id) != character ||
+	    character->telemetry_control_rebuild_depth != 0U || !R.control.initialized ||
+	    !game_battle_actor(character, &actor))
 		return;
 	auto value = control_basis(at, utc);
 	value.kind = telemetry_control_kind::state_entry;
@@ -3812,11 +3815,11 @@ void capture_control_state(const char_data *character,
 	value.last_target_association_revision = association.association_revision;
 	value.last_target_association_fact_sequence = association.association_fact_sequence;
 	value.before_mask = value.after_mask = telemetry_runtime_game_control_mask(character);
-	/* Point reads cover all selected flag banks. The complete producer inventory
-	 * is still outstanding; a sampled change cannot establish exact elapsed time. */
-	value.duration_coverage = 0U;
-	value.quality_flags = actor.quality_flags | association.quality_flags |
-			      TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+	/* The reviewed native writer inventory and completed-state callbacks cover
+	 * these flag banks for this published lifetime. Other context, configuration,
+	 * clock and delivery quality remains independent; this is not action time. */
+	value.duration_coverage = TELEMETRY_CONTROL_STATE_MASK;
+	value.quality_flags = actor.quality_flags | association.quality_flags;
 	note_control(telemetry_control_observe(&R.control, value, emit_control, &emitter), emitter);
 }
 
@@ -5009,6 +5012,8 @@ void telemetry_control_mutation_scope::finish() noexcept
 void telemetry_runtime_game_control_changed(char_data *character) noexcept
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending || !character ||
+	    !find_character_by_runtime_id ||
+	    find_character_by_runtime_id(character->runtime_id) != character ||
 	    character->telemetry_control_rebuild_depth != 0U || !R.control.initialized ||
 	    !ensure_current_config())
 		return;

@@ -139,3 +139,27 @@ the harness source:
 The closeout should attach the sanitized JSON report, record the compiler and
 Python versions, note host/runtime limitations, and keep any follow-up live
 database qualification as a separate issue.
+
+## Selected-control measurement
+
+The maintained [personal-local control command](CONTROL_QUALIFICATION.md) runs
+this original gate and `tests/async/test_telemetry_control_performance.py`.
+The latter measures the actual fixed control accumulator plus portable encoding
+with an off baseline at 50, 200 and 512 resident targets, 4,096 samples per profile
+and five repetitions. It records p50/p95/p99/p99.9, maximum, wall time, compiler,
+fixed-state bytes and event allocation. Its local guards reuse capture p99 ≤ 1 ms
+and p99.9 ≤ 5 ms; event-time allocation must be zero and fixed state must be
+213,048 bytes for 512 slots. Executable capacity tests require explicit uncertainty
+on exhaustion and forbid overwriting a resident target.
+
+This cost covers accumulation and encoding. Runtime association/context refresh,
+SQL/network and process RSS are outside that measurement. The real-server journey
+records ten telemetry-off and ten telemetry-on saves while a selected equipment
+status is present, through authoritative SQL readback and private outage/recovery.
+Those round trips include Telnet scheduling/persistence and are not isolated
+callback timings. The qualification receipt keeps both measurements and each
+phase's result; a failure remains visible instead of relaxing a budget.
+
+ASan/UBSan checks the pure/native control paths. TSan is not run by the combined
+command; its earlier Docker-host probe was unsupported. The command claims no
+production load result or full burn-in.

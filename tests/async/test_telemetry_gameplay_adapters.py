@@ -54,6 +54,19 @@ def verify_control_mutation_hooks() -> None:
     assert pet_save.index("all_affects(ch, TRUE)") < pet_save.index("control_state.finish();")
     wards = (ROOT / "src/combat/spell_wards.c").read_text(encoding="utf-8")
     assert "telemetry_control_mutation_scope control_state(ch);" in function(wards, "void set_ward_bits(")
+    position = function((ROOT / "src/combat/fight_state.c").read_text(encoding="utf-8"),
+                        "void update_pos(")
+    assert position.count("telemetry_control_mutation_scope control_state(ch);") == 2
+    assert position.index("control_state.finish();") < position.index("do_wake(ch,")
+    ranged = function((ROOT / "src/combat/range.c").read_text(encoding="utf-8"), "void do_fire(")
+    assert ranged.index("telemetry_control_mutation_scope control_state(victim);") < ranged.index(
+        "REMOVE_BIT(victim->specials.affected_by, AFF_SLEEP)")
+    extraction = function((ROOT / "src/world/handler.c").read_text(encoding="utf-8"), "void extract_char(")
+    assert extraction.index("telemetry_runtime_game_battle_leave(ch)") < extraction.index("affect_remove(ch, af)")
+    staff = (ROOT / "src/cmd/actset.c").read_text(encoding="utf-8")
+    assert "telemetry_runtime_game_control_changed(static_cast<P_char>(ptr));" in function(staff, "static void setbit_parseTable(P_char ch,")
+    attribute = (ROOT / "src/cmd/staff_setattr.c").read_text(encoding="utf-8")
+    assert "telemetry_runtime_game_control_changed(ch);" in function(attribute, "static void sa_intCopy(")
 
 
 def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bool = False,
@@ -122,6 +135,9 @@ def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bo
         str(executable),
     ]
     if native_affects:
+        fight = (ROOT / "src/combat/fight.c").read_text(encoding="utf-8")
+        release_at = fight.index("if (GET_STAT(victim) == STAT_SLEEPING && new_stat != STAT_DEAD)")
+        release = fight[fight.rfind("\n\t\t{", 0, release_at):fight.index("/* make mirror images disappear */", release_at)]
         native_helpers = executable.parent / "telemetry-native-affects.cc"
         native_helpers.write_text(
             '#include "core/prototypes.h"\n#include "core/utils.h"\n#include "core/mm.h"\n'
@@ -133,6 +149,7 @@ def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bo
             '#include "kingdom/kingdom_store_piece.h"\n'
             '#include "world/events.h"\n#include "world/rested.h"\n'
             '#include "telemetry/telemetry_runtime.h"\n#include "world/db.h"\n'
+            '#include "world/character_maintenance.h"\n'
             'extern P_char character_list;\nextern P_room world;\nextern int top_of_world;\n'
             'extern const struct stat_data stat_factor[];\n'
             'extern float combat_by_race[LAST_RACE + 1][3];\n'
@@ -160,10 +177,42 @@ def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bo
             + function((ROOT / "src/magic/spell_healing.c").read_text(encoding="utf-8"),
                        "void spell_cure_blind(") + "\n"
             + function((ROOT / "src/classes/bard.c").read_text(encoding="utf-8"),
-                       "void song_broken(") + "\n",
+                       "void song_broken(") + "\n"
+            + "\n".join(function((ROOT / "src/combat/fight_state.c").read_text(encoding="utf-8"),
+                                  signature) for signature in
+                          ("unsigned int calculate_ch_state(", "void update_pos(")) + "\n"
+            + "void fixture_damage_control_release(P_char ch, P_char victim, int dam, int new_stat) {\n"
+            + "affected_type *af, *next_af;\n" + release + "\n}\n",
             encoding="utf-8",
         )
         command.extend(["-DTELEMETRY_TEST_NATIVE_AFFECTS", str(native_helpers)])
+        staff = (ROOT / "src/cmd/actset.c").read_text(encoding="utf-8")
+        staff_helpers = executable.parent / "telemetry-native-staff.cc"
+        staff_helpers.write_text(
+            '#include "core/prototypes.h"\n#include "core/utils.h"\n#include "core/safe_format.h"\n'
+            '#include "telemetry/telemetry_runtime.h"\n#include <cstddef>\n#include <cstdlib>\n#include <cstring>\n#include <cctype>\n'
+            '#define SETBIT_CHAR 1\n#define SAME_STRING(A,B) ac_strcasecmp(A,B)\n'
+            '#define LOWER_CASE(C) (isupper(C) ? tolower(C) : (C))\n'
+            + staff[staff.index("struct setBitTable\n"):staff.index("/* Private Interface */")] + "\n"
+            + 'char bad_on_off[MAX_INPUT_LENGTH]{};\n'
+            + 'static void setbit_syntax(P_char, int) {}\n'
+            + 'static void setbit_printOutTable(P_char, SetBitTable *, int) {}\n'
+            + 'static void setbit_printOutSubTable(P_char, const char **, int) {}\n'
+            + 'static void ac_tongueCopy(void *, int, char *, int, int) { std::abort(); }\n'
+            + 'static void ac_skillCopy(void *, int, char *, int, int) { std::abort(); }\n'
+            + function(staff, "static int ac_strcasecmp(const char *str1,") + "\n"
+            + function(staff, "static void ac_bitCopy(void *where,") + "\n"
+            + function((ROOT / "src/cmd/interp.c").read_text(encoding="utf-8"), "bool is_number(") + "\n"
+            + function(staff, "static void setbit_parseTable(P_char ch,") + "\n"
+            + function((ROOT / "src/cmd/staff_setattr.c").read_text(encoding="utf-8"), "static void sa_intCopy(") + "\n"
+            + 'void fixture_staff_control_bit(P_char target, bool second, unsigned bit, bool enabled, bool character) {\n'
+            + 'SetBitTable table[] = {{"aff", offsetof(char_data, specials.affected_by), nullptr, ac_bitCopy},'
+            + '{"aff2", offsetof(char_data, specials.affected_by2), nullptr, ac_bitCopy}};\n'
+            + 'char first_flag[]="aff", second_flag[]="aff2", value[32]; std::snprintf(value,sizeof(value),"%u",bit);\n'
+            + 'setbit_parseTable(target,target,table,2,second?second_flag:first_flag,value,enabled,character?SETBIT_CHAR:2);\n}\n'
+            + 'void fixture_staff_control_bank(P_char target, int value) { sa_intCopy(target,offsetof(char_data,specials.affected_by),value); }\n',
+            encoding="utf-8")
+        command.extend([str(staff_helpers), str(ROOT / "src/core/safe_format.c")])
     if native_sql:
         command.extend(["-DTELEMETRY_TEST_NATIVE_BATTLE_SQL", "-DTELEMETRY_TEST_STUB_REPOSITORY",
                         str(ROOT / "tests/async/telemetry_gameplay_sql.cc")])

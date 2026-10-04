@@ -4,7 +4,9 @@
 #include "telemetry/telemetry_control.h"
 
 #include <cassert>
+#include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
@@ -977,6 +979,29 @@ void typed_control_results_and_intervals()
 	}
 
 	control_fixture overlaps(2U);
+	if (const char *path = std::getenv("TELEMETRY_CONTROL_ASSOCIATION_EXPORT"))
+	{
+		fixture association;
+		association.observe(player(71), player(72), telemetry_battle_relation::hostile,
+				    100U);
+		const auto target = association.association(72U);
+		assert(target.battle.sequence == 1U && target.association_revision == 1U &&
+		       target.association_fact_sequence == 5U);
+		assert(telemetry_battle_leave(association.graph.get(), key(player(72)), 600U,
+					      epoch + 600U, fixture::graph_sink, &association)
+			       .outcome == telemetry_battle_outcome::accepted);
+		auto *output = std::fopen(path, "wb");
+		assert(output);
+		for (const auto &fact : association.facts)
+		{
+			std::array<std::uint8_t, TELEMETRY_BATTLE_WIRE_BYTES> wire{};
+			assert(telemetry_battle_fact_encode(fact, wire.data(), wire.size()));
+			for (auto byte : wire)
+				std::fprintf(output, "%02x", unsigned(byte));
+			std::fputs("\n", output);
+		}
+		assert(std::fclose(output) == 0);
+	}
 	assert(overlaps.observe(control_point(100U, 0U)).rows_accepted == 1U);
 	for (auto [time, mask] : { std::pair{ 200U, 4U }, std::pair{ 300U, 12U },
 				   std::pair{ 400U, 8U }, std::pair{ 500U, 0U } })
@@ -1186,8 +1211,84 @@ template <bool Control = false> int verify_file(const char *path)
 }
 } // namespace
 
+void control_performance()
+{
+	using clock = std::chrono::steady_clock;
+	constexpr std::size_t samples = 4'096U;
+	std::array<std::uint64_t, samples> timings{};
+	std::uint64_t checksum = 0U;
+	const auto sink = [](void *opaque, const telemetry_control_observation &value) noexcept
+	{
+		std::array<std::uint8_t, TELEMETRY_CONTROL_WIRE_BYTES> wire{};
+		assert(telemetry_control_observation_encode(value, wire.data(), wire.size()));
+		*static_cast<std::uint64_t *>(opaque) += value.sequence + wire.back();
+		return true;
+	};
+	for (const unsigned population : { 50U, 200U, 512U })
+		for (const bool capture : { false, true })
+		{
+			auto state = std::make_unique<telemetry_control_state>();
+			assert(telemetry_control_state_init(state.get(), producer, 11U, 22U));
+			for (unsigned id = 0U; capture && id < population; ++id)
+				assert(checked(
+					       [&]
+					       {
+						       return telemetry_control_observe(
+							       state.get(),
+							       control_point(
+								       1U, 0U,
+								       static_cast<int>(id + 1U)),
+							       sink, &checksum);
+					       })
+					       .rows_accepted == 1U);
+			const auto started = clock::now();
+			for (std::size_t index = 0U; index < samples; ++index)
+			{
+				const auto before = clock::now();
+				auto value = control_point(
+					index + 2U,
+					static_cast<std::uint16_t>(
+						(index / population) % 2U ? 0U : 255U),
+					static_cast<int>(index % population + 1U));
+				if (capture)
+					assert(checked(
+						       [&] {
+							       return telemetry_control_observe(
+								       state.get(), value, sink,
+								       &checksum);
+						       })
+						       .rows_accepted == 1U);
+				else
+					checksum += value.after_mask + value.target.actor.actor_id;
+				timings[index] =
+					std::chrono::duration_cast<std::chrono::nanoseconds>(
+						clock::now() - before)
+						.count();
+			}
+			const auto wall = std::chrono::duration_cast<std::chrono::nanoseconds>(
+						  clock::now() - started)
+						  .count();
+			std::sort(timings.begin(), timings.end());
+			std::printf(
+				"{\"stage\":\"%s\",\"population\":%u,\"samples\":%zu,\"p50_ns\":%llu,\"p95_ns\":%llu,\"p99_ns\":%llu,\"p999_ns\":%llu,\"max_ns\":%llu,\"wall_ns\":%lld,\"state_bytes\":%zu,\"event_allocation_bytes\":0,\"checksum\":%llu}\n",
+				capture ? "control_capture_encode" : "off", population, samples,
+				static_cast<unsigned long long>(timings[samples * 50U / 100U]),
+				static_cast<unsigned long long>(timings[samples * 95U / 100U]),
+				static_cast<unsigned long long>(timings[samples * 99U / 100U]),
+				static_cast<unsigned long long>(timings[samples * 999U / 1000U]),
+				static_cast<unsigned long long>(timings.back()),
+				static_cast<long long>(wall), sizeof(telemetry_control_state),
+				static_cast<unsigned long long>(checksum));
+		}
+}
+
 int main(int argc, char **argv)
 {
+	if (argc == 2 && std::string_view(argv[1]) == "--control-performance")
+	{
+		control_performance();
+		return 0;
+	}
 	if (argc == 3 && std::string_view(argv[1]) == "--verify")
 		return verify_file(argv[2]);
 	if (argc == 3 && std::string_view(argv[1]) == "--verify-control")

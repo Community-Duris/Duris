@@ -878,6 +878,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "fccaba3f8c7c2480b555178334d598b7b1c929a0f3df8cec1e2942e6baf08638",
       "verify_checksum": "7f2e23bd872b74adf1bc0355e0b01247b483aebbb450d68f82e7cc79ee466808"
+    },
+    {
+      "id": "0068_telemetry_control_publication",
+      "sequence": 71,
+      "description": "Retain and atomically publish exact control operations and disjoint status prefixes under definition 7",
+      "apply": "immutable/0068_telemetry_control_publication.sql",
+      "verify": "immutable/0068_telemetry_control_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "f12dc17675d1139e8fcfc54d9cfbd2d8fa2acc488965b891bb8f968980f64c28",
+      "verify_checksum": "ca003a4e0e99f838fa479730381a16a3ad34aed151561fa656c0284d379e60bc"
     }
   ]
 }

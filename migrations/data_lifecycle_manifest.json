@@ -9577,6 +9577,131 @@
         ],
         "shared_fields": []
       }
+    },
+    {
+      "id": "database:telemetry_battle_source_v7",
+      "kind": "database_table",
+      "locator": "telemetry_battle_source_v7",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_character_account_confirmed_controller_identity_or_generation_coverage",
+      "technical_purpose": "Private exact battle source count/digest/cursor tied to the immutable dated identity reservation; preparation is not report publication; independent definition 7 with exact build/control source, disjoint status prefixes, configuration and explicit coverage",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_generation_identity",
+        "database:telemetry_rollup_state"
+      ]
+    },
+    {
+      "id": "database:telemetry_battle_input_v7",
+      "kind": "database_table",
+      "locator": "telemetry_battle_input_v7",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_character_account_confirmed_controller_identity_or_generation_coverage",
+      "technical_purpose": "Private retained ownership, battle association and contribution inputs with original producer receipts and separate occurrence/arrival clocks; independent definition 7 with exact build/control source, disjoint status prefixes, configuration and explicit coverage",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_battle_source_v7"
+      ]
+    },
+    {
+      "id": "database:telemetry_rollup_battle_coverage_v7",
+      "kind": "database_table",
+      "locator": "telemetry_rollup_battle_coverage_v7",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_character_account_confirmed_controller_identity_or_generation_coverage",
+      "technical_purpose": "Immutable public battle publication coverage, retained source digest, reserved dated identity and measured presence conservation; independent definition 7 with exact build/control source, disjoint status prefixes, configuration and explicit coverage",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_battle_source_v7"
+      ]
+    },
+    {
+      "id": "database:telemetry_rollup_battle_row_v7",
+      "kind": "database_table",
+      "locator": "telemetry_rollup_battle_row_v7",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_character_account_confirmed_controller_identity_or_generation_coverage",
+      "technical_purpose": "Bounded canonical public observations, original associations and aliases, contributions and dated presence with explicit unknown identity and availability; independent definition 7 with exact build/control source, disjoint status prefixes, configuration and explicit coverage",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_rollup_battle_coverage_v7"
+      ]
     }
   ]
 }

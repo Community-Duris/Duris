@@ -29,32 +29,37 @@ work. A future production deployment is a separate operational decision.
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Accepted blindness and stun applications | Implemented and locally qualified | Actual `blind`/`Stun` success boundaries feed the existing bounded kind-11 accumulator after effect mutation and before teardown. New segments declare producer mask 31; older unavailable control remains NULL. Normal/ASan/UBSan, 58 history/publication regressions and both full-64-step native-writer SQL journeys preserve eight applications/eight received through eight verified published segments. Source-service seams, partial producer coverage and unobserved duration/resistance remain explicit. See [BATTLES.md](BATTLES.md#accepted-blindness-and-stun-control-capture). |
 | Expanded accepted status-control applications | Implemented and locally qualified | Actual major/minor paralysis, slow, sleep, silence and entangle success boundaries feed the existing kind-11 accumulator after mutation. The separate fresh journey preserves 17 accepted applications/17 received, 28 native source rows and eight published segments; the original blindness/Stun journey remains eight/eight. Normal/ASan/UBSan, 66 history/publication regressions and both full-66-step native-writer SQL journeys qualify the added producers and unchanged earlier publications. Counts include accepted refreshes; segment modifier flags are unions and cannot apportion self/external totals. Typed attempts, resistance, immunity, duration and complete producer coverage remain required. See [BATTLES.md](BATTLES.md#expanded-accepted-status-control-capture). |
-| Typed control resolution and target-state storage | Partially implemented and locally qualified | Kind 13 preserves exact per-operation outcomes from the maintained selected-control helpers/spell bodies and separate overlap-safe target-state prefixes. The independent 76-field codec, bounded accumulator, private writer, full 67-step storage chains and schema-6 incident review are qualified. Native state coverage remains explicitly partial; complete mutation/removal inventory, retained control publication and personal-server duration journeys remain required. See [CONTROL_OBSERVATIONS.md](CONTROL_OBSERVATIONS.md). |
-| Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/accepted-control/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Definition 5 publishes these observations with exact association/alias/source and independent loss coverage. Kind-13 selected-control results now distinguish applied, saved, resisted, immune and other rejection boundaries. Complete effect producers/removals, qualified duration, retained control publication, prevention and faction exposure remain required. Complete build/power/arena comparisons, typed outcomes, the full balance suites and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
+| Selected control state and retained publication | Implemented; personal-local qualification command maintained | Kind 13 preserves 76 exact fields. The reviewed native inventory covers 74 distinct writer statements / 81 occurrences / 38 final boundaries; state coverage 255 is independent of context quality. Definition 7 retains exact source/configuration evidence and atomically publishes operations and qualified disjoint status prefixes under independent schema-6 loss review. Missing source/lifecycle/configuration/clock/identity evidence remains explicit. The command runs both 71-step SQL engines, a real-server apply/expiry/overlap/cure/equipment/save/copyover/outage journey, sanitizers and measured budgets. Complete attempt denominators, proven action restrictions and caster duration remain unavailable. See [CONTROL_OBSERVATIONS.md](CONTROL_OBSERVATIONS.md) and [CONTROL_QUALIFICATION.md](CONTROL_QUALIFICATION.md). |
+| Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/accepted-control/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Definition 5 publishes these observations with exact association/alias/source and independent loss coverage. Definition 7 adds typed control operations and qualified selected-state prefixes. Reviewed build/power/arena comparisons, prevention, faction exposure, typed outcomes, complete balance suites and their personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
 | #487: economic projection compatibility | Pending audit and implementation | Reuse current accounting reconciliation where it meets acceptance; project canonical earned receipts without counting compatibility ledgers, transfers or openings as new rewards. |
-| #258: local observational acceptance and final runbook | In progress | Initial readiness/capacity recovery is implemented and qualified in executable fixtures. Remaining: dedicated roles/catalog, real session/progression readback, normal gameplay/save, failure/recovery and a single reproducible local qualification command. |
+| #258: local observational acceptance and final runbook | In progress | The selected-control slice has one disposable command with dedicated synthetic accounts/SQL roles, reviewed property catalog, real gameplay/save/readback, copyover, failure/recovery, both SQL engines and measured capture budgets. Its receipt records exact evidence and source stability. Full progression, PvE and four-suite journeys remain required; all seven final requirements remain open. See [CONTROL_QUALIFICATION.md](CONTROL_QUALIFICATION.md). |
 | Native compact build snapshot reader | Reader and cached capture qualified | Version-1 value reader preserves exact class masks/spec, base/effective resources/stats, fixed equipment declarations, learned epic skill fingerprints, bounded listed effects and independent arena room/roster observations. The 440-byte snapshot has explicit unavailable/partial families. A fixed cache gates entry/change/configuration/periodic/recovery reads before gear/epic scans, including combat callbacks. Normal/ASan/UBSan, lifetime/cap/queue-loss checks, both runtime variants, history/publication regressions and the server build pass. Exact point publication is qualified below; complete reviewed classification, comparison suites and actual personal-server evidence remain required. See [BATTLES.md](BATTLES.md#native-cached-build-capture). |
 | Durable selected build observations and loss review | Storage, native capture and point publication qualified | Kind 12 has 110 typed fields, a 447-byte portable encoding and a 448-byte C++ payload. Migration 0065, exact logical replay, DMSTLJ04 and independent private incident schema 5 remain qualified. Native cached capture supplies fresh point keys and empty unavailable markers. Migration 0066 retains and publishes the exact points under independent definition 6, as described below. Existing definitions 1/2/3/5 retain their meanings. See [BATTLES.md](BATTLES.md#native-cached-build-capture). |
 | Retained build point publication | Implemented and locally qualified | Definition 6 retains all 110 kind-12 fields, arrival labels and configuration evidence with the cursor; publishes exact points and independent schema-5 coverage through the existing bounded pipeline. Sixty-five history/publication regressions and both full-66-step native-writer SQL journeys qualify all 20 points, missing/stale/retired references, clock and configuration uncertainty, independent kind-10/12 loss, review corrections, old-generation immutability, rollback, lost acknowledgements, raw-retention independence, the restricted report CLI and guarded schema drift/restoration. Points establish no continuous build exposure or damage attribution. Full comparison suites and personal-server evidence remain required. See [BATTLES.md](BATTLES.md#retained-build-point-publication). |
 
 ## Qualified first-layer checks
 
-The native control-state increment adds final mutation callbacks and nested
-remove/reapply suppression to the existing bounded accumulator. The callback
-fixture verifies 18 final transitions without build hashing or outside/inactive
-enrollment. The maintained-affect/ward ASan/UBSan journey verifies 28 final transitions
-across all eight selected states, expiry, overlap, refresh, refused unlink,
-`NOAPPLY`, equipment/save-style rebuilding and actual cure/broken-song callers.
-The managed ward setter observes arbitrary restored banks, preserves active
-cast/equipment overlap and excludes inactive ward owners during removal;
-10 short timers are canceled and the scope finishes before character destruction.
-The full selected mutation/removal inventory, complete attempt denominators,
-qualified duration/action restrictions, retained definition-7 comparisons and
-personal-server qualification remain required. Live duration coverage stays zero
-with `CONTEXT_UNKNOWN`; all seven final requirements in issue #258 remain open.
+The latest native callback fixture verifies 18 final transitions without build
+hashing or outside/inactive enrollment. The maintained native ASan/UBSan journey
+verifies 58 transitions across all eight states, generic affects/wards, real
+cure/song/wake/damage-release blocks, staff flag/offset writers, expiry, overlap,
+refresh, refused unlink, `NOAPPLY` and equipment/save rebuilding. Eleven timers
+are canceled and the completed scope precedes character destruction. Live identity
+guards exclude temporary copies, borrowed lifetime IDs and unregistered actors.
+Reviewed selected-state coverage is 255; independent context uncertainty still
+prevents duration qualification. Definition 7 retains exact controls and publishes
+nullable elapsed selected-state values through the existing bounded transactions.
+The history suite covers predecessor, overlap, lifecycle, identity, clock,
+configuration, loss and publication bounds. Complete attempt denominators and
+proven action restrictions remain separate unfinished requirements. The complete
+personal-local command and receipt contract are in
+[CONTROL_QUALIFICATION.md](CONTROL_QUALIFICATION.md).
+
+The following delivery evidence is historical; later sections identify additions
+and the final section states the current selected-control qualification contract.
 
 The SQL fixture loaded and verified the complete accounting migration manifest:
 53 steps through `0053_craft_progression`, independently on MariaDB 10.11.14 and
@@ -1616,7 +1621,7 @@ readback and performance journeys remain required. All seven final requirements
 retain unfinished portions. See [BATTLES.md](BATTLES.md#expanded-accepted-status-control-capture)
 for the exact source catalog, semantics and maintained local commands.
 
-## Typed control resolutions and target-state storage
+## Historical typed control storage and accounting integration
 
 Record family 13 separates individual resolved operations from observed target
 state. Its exact 76-field encoding is 368 bytes, with a 408-byte payload inside
@@ -1740,13 +1745,136 @@ The common fresh/restored normalized metadata fingerprints are:
 Actual personal-server authentication/effect/save/readback and measured
 performance remain required. All seven final #258 requirements remain open.
 
-**Next executable expectation:** complete the native selected-status mutation/removal
-inventory and duration qualification, retain exact controls and publish reviewed
-comparisons under a new definition, then finish native prevention/faction,
-typed death/escape/objective evidence and complete battle reports. Distinct PvE
-attempts/objectives/failure/recovery/interruption and committed rewards,
-rested/assistance/milestone/switching/portfolio additions, all four balance suites
-and statistical exports, #487 economic compatibility and the real personal-local
-gameplay/persistence/performance gate remain required. Production or staging
-access is unnecessary. See [CONTROL_OBSERVATIONS.md](CONTROL_OBSERVATIONS.md)
-for exact semantics, limits and maintained local commands.
+The preceding 67/70-step evidence describes the earlier storage/integration
+deliveries. Definition 7 and the selected-control personal-local gate supersede
+their inventory/publication limitations as described below.
+
+## Selected-control retention and personal-local qualification
+
+The [reviewed inventory](CONTROL_SOURCE_INVENTORY.json) and maintained native
+fixtures cover direct/generic/offset writes, refresh, expiry, cures, wake/damage
+release, equipment, wards, saves, restoration and teardown. Compound mutations
+observe one final state; unchanged saves emit no false transitions. Runtime
+lifetime validation prevents temporary loaded characters from mutating a live
+target's timeline. Selected entry/interval coverage is 255; resolution/gap
+coverage is zero and context/source uncertainty remains independent.
+
+Definition 7 retains original control values, arrival labels, configuration
+evidence and source counts/digests with the page cursor. Publication atomically
+retains identity and independent incident-schema-6 snapshots alongside the
+existing battle/build reports and two new bounded reports:
+`battle_control_operations` and `battle_control_states`. Accepted counts, signed
+configured ticks and nullable elapsed status microseconds have separate meanings.
+Verified predecessors, context, lifecycle, clocks, configuration and loss evidence
+qualify duration. Exact leave/closure evidence is required; no inactivity tail is
+extended. Changing ownership within a prefix leaves aggregate identity unknown.
+Action-restriction time and caster duration stay NULL.
+
+Migration `0068_telemetry_control_publication` appends sequence **71** to all six
+histories and adds four versioned tables, for **267 runtime tables**. All 144
+previously sealed files and preserved 56/67-step prefixes are unchanged. Guarded
+reruns, private roles, atomic rollback, lost acknowledgements, immutable older
+definitions/generations, reviewed corrections, raw-retention independence,
+capacity refusal and metadata drift/restoration are exercised by the maintained
+command. Current normalized fingerprints are:
+
+| Engine | Fingerprint |
+| --- | --- |
+| MariaDB 10.11.14 | `e3b55899684dd05ba01bbdf0dd8b6af7a886c632c793cdc209f7025cd5d3f025` |
+| MySQL 8.0.46 | `e06a960be47c0eceea443f808d4908ff5a1bab2d9f96651338aa5073847a6506` |
+
+Run `python tests/async/qualify_telemetry_controls.py --disposable` from the
+repository root. Its [runbook](CONTROL_QUALIFICATION.md) defines isolated Docker
+ownership, explicit SQL allow-lists and five dedicated roles. It builds/checks
+the server, runs focused behavioral/contract tests and ASan/UBSan, measures
+50/200/512-target accumulator/encoding cost against the documented 1-ms p99 /
+5-ms p99.9 guards with zero event allocation and 213,048 bytes of fixed state,
+and runs the original transport/rollup/report gate at 50/200/1,000 workloads.
+Both supported engines exercise six complete migration histories, exact private
+storage/native publication and a real synthetic-account gameplay journey.
+Real commands qualify apply/expiry/overlap/cure, equipment/save rebuilding,
+failed/successful copyover and private telemetry outage/recovery. Exact retained
+reports preserve reviewed outage uncertainty. The receipt includes phase exit
+codes/times, unchanged source digest, binary hashes, counts, latency samples and
+verified owned-resource cleanup. Save round trips include transport/persistence;
+the pure benchmark excludes runtime refresh and SQL. TSan is unrun by the command
+and its earlier host probe was unsupported. No full burn-in is claimed.
+
+**Next executable expectation:** positively qualified elapsed selected-status
+prefixes from normal live PvP, including native context, paired clocks and complete
+independent review windows. Then reviewed build/power comparisons and typed
+death/escape/objective evidence, followed by prevention/faction and complete battle
+reports. Distinct PvE attempts/objectives/failure/recovery/interruption and committed
+rewards, rested/assistance/milestone/switching/portfolio additions, all four balance
+suites and statistical exports, #487 economic compatibility and their full
+personal-local journeys remain required. Issue #258 stays open with all seven
+final requirements preserved. Production or staging access is unnecessary.
+
+## Passed selected-control qualification: 2026-10-04
+
+The repository-root command below passed **31/31 phases** in one complete run
+(`180756252bd3`), on both MariaDB 10.11.14 and MySQL 8.0.46:
+
+```text
+python tests/async/qualify_telemetry_controls.py --disposable
+```
+
+The receipt is `bin/tests/duris-controls-180756252bd3/qualification.json`. It records
+the unchanged qualification source SHA-256
+`1869891999e760c95b0bed881af2cd5e1621acdf38b69e8fa5179d1979f9bb8a` and verified cleanup of every container created by
+the command. Fixture databases and dedicated users were removed. Only documentation evidence and inventory line endings changed afterward;
+executable, migration and test source bytes were audited unchanged against the
+6,080-file frozen snapshot. The normalized inventory retains identical JSON values.
+
+The server build, eleven C++ formatting checks, thirteen focused programs,
+84 history tests, runtime/lifecycle validators, both ASan/UBSan journeys and
+both performance gates passed. Native adapters verify 18 callback transitions,
+58 maintained native transitions across all eight statuses, and 11 scheduled
+and canceled timers with safe teardown. Both engines pass all six 71-step /
+267-table histories, compiled boot/restoration and tamper rejection, 76 exact
+control fields and 455 tagged payload columns, atomic publication/replay/fault
+journeys and immutable older definitions/generations. All 144 earlier sealed
+migration files retain their original bytes.
+
+| Engine | Native SQL controls / operations / states | Actual server controls / operations / states | Live qualified elapsed prefixes |
+| --- | --- | --- | --- |
+| mariadb:10.11.14 | 80 / 56 / 24 | 24 / 5 / 19 | 0 |
+| mysql:8.0.46 | 80 / 56 / 24 | 24 / 5 / 19 | 0 |
+
+The actual server verifies synthetic-account authentication, disabled capture,
+native apply/overlap/cure/expiry, equipment/save rebuilding, failed and successful
+copyover, logical-session continuity, a terminal private-writer authentication
+outage while gameplay saves remain usable, explicit operator restart recovery,
+protected ledger readback and restricted published reports. Reviewed abandoned
+or unknown outage evidence remains loss; restoration does not reconstruct it.
+
+Worst capture p99 is **0.553 µs**, p99.9
+**1.853 µs**, and maximum **29.851 µs** across
+30 profiles, against the 1-ms / 5-ms p99 / p99.9 guards. Fixed state is
+213,048 bytes for 512 targets with zero event-time allocation. The original
+transport/rollup/report gate passes at 50/200/1,000 workloads with six injected
+faults. The capture measurement excludes runtime context refresh and SQL.
+The measured compiler is `g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0` with `-O2`;
+Python is `3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]`. The receipt records the
+exact tools image ID and binary hashes.
+
+| Engine | Save capture mode | Samples | Median round trip (ms) | Maximum (ms) |
+| --- | --- | --- | --- | --- |
+| mariadb:10.11.14 | telemetry_off | 10 | 2004.135 | 2004.626 |
+| mariadb:10.11.14 | telemetry_on_status_present | 10 | 2004.477 | 2202.315 |
+| mysql:8.0.46 | telemetry_off | 10 | 2004.465 | 2004.859 |
+| mysql:8.0.46 | telemetry_on_status_present | 10 | 2004.137 | 2004.675 |
+
+These save timings include Telnet scheduling and authoritative persistence;
+they do not isolate callback overhead. TSan is unrun by the command and the
+earlier host probe was unsupported. No full burn-in or production load result
+is claimed. No production or staging access was used.
+
+The reducer has five positively qualified fixture prefixes; native SQL and
+these staff-command server journeys preserve unknown elapsed duration.
+Zero qualified live prefixes does not establish zero status time. The next
+dependency is normal live PvP with positively qualified context, paired clocks
+and complete independent review windows, then reviewed build/power comparisons
+and typed death/escape/objective evidence. Action-restriction time and
+caster-attributed duration remain NULL. Issue #258 stays open with its seven
+final acceptance requirements unchanged; the full expansion is unfinished.

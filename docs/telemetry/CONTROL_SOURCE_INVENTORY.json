@@ -1,0 +1,734 @@
+{
+  "inventory_version": 1,
+  "scope": "native selected flag state only; attempt denominator and action-restriction time are independent",
+  "selected_flags": [
+    "AFF2_MAJOR_PARALYSIS",
+    "AFF2_MINOR_PARALYSIS",
+    "AFF2_SILENCED",
+    "AFF2_SLOW",
+    "AFF2_STUNNED",
+    "AFF_BLIND",
+    "AFF_BOUND",
+    "AFF_SLEEP"
+  ],
+  "reviews": {
+    "observed": "Live selected-bank mutation has a final callback or a completed compound scope. Generic affects, wards, refresh, expiry, cures, binding, wake, damage release, conversion and staff edits are observed without accepted-application or caster credit.",
+    "construction": "Fresh/unpublished character or NPC lifetime before admission. Temporary account/deletion/display loads cannot pass the live runtime identity guard. Constructor banks establish the first admitted baseline; they are not gameplay changes to an earlier lifetime.",
+    "admission": "enter_game restores/rebuilds a new admitted lifetime before game_enter/session observation; reconnect uses the existing connection-transition path. Initial bank clearing in init_char precedes placement. Baseline is taken after entry. Copyover closes the old producer and establishes a fresh target baseline.",
+    "aggregate": "apply_affs is called only by all_affects. FALSE is a temporary removal phase; all maintained live remove/reapply callers have an outer scope. TRUE/all affect insertion/removal publishes the completed bank state. Object and effect bitvectors are inputs to these boundaries, not independent live banks.",
+    "offset": "Staff offset tables reach the actual character-bank copy/parser boundary. sa_intCopy observes the affected offset; setbit_parseTable observes only character aff/aff2 rows after the copy, excluding object/effect/room tables.",
+    "unchanged": "Only non-selected hide/invisible/concealment bits change. Faerie fog saves and restores the same selected bits; actual effect removal delegates to the generic observed removal path."
+  },
+  "writers": [
+    {
+      "path": "src/account/account.c",
+      "function": "load_char_display_data",
+      "statement": "memset(temp_ch, 0, sizeof(struct char_data));",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/account/nanny.c",
+      "function": "enter_game",
+      "statement": "ch->specials.affected_by = 0;",
+      "occurrences": 1,
+      "review": "admission"
+    },
+    {
+      "path": "src/account/nanny.c",
+      "function": "enter_game",
+      "statement": "ch->specials.affected_by2 = 0;",
+      "occurrences": 1,
+      "review": "admission"
+    },
+    {
+      "path": "src/account/nanny.c",
+      "function": "init_char",
+      "statement": "ch->specials.affected_by = 0;",
+      "occurrences": 1,
+      "review": "admission"
+    },
+    {
+      "path": "src/account/nanny.c",
+      "function": "init_char",
+      "statement": "ch->specials.affected_by2 = 0;",
+      "occurrences": 1,
+      "review": "admission"
+    },
+    {
+      "path": "src/classes/bard.c",
+      "function": "song_broken",
+      "statement": "REMOVE_BIT(cld->linking->specials.affected_by, AFF_SLEEP);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/classes/drannak.c",
+      "function": "do_conjure",
+      "statement": "REMOVE_BIT(t_ch->specials.affected_by, AFF_SLEEP);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/classes/ethermancer.c",
+      "function": "event_tupor_wake",
+      "statement": "REMOVE_BIT(victim->specials.affected_by, AFF_SLEEP);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/classes/innates.c",
+      "function": "do_innate_hide",
+      "statement": "ch->specials.affected_by |= AFF_HIDE;",
+      "occurrences": 1,
+      "review": "unchanged"
+    },
+    {
+      "path": "src/classes/necromancy.c",
+      "function": "create_golem",
+      "statement": "mob->specials.affected_by = AFF_FLY + AFF_DETECT_INVISIBLE;",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/classes/necromancy.c",
+      "function": "raise_undead",
+      "statement": "undead->specials.affected_by = undead_data[typ].aff1;",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/classes/necromancy.c",
+      "function": "raise_undead",
+      "statement": "undead->specials.affected_by2 = undead_data[typ].aff2;",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/classes/new_skills.c",
+      "function": "capture",
+      "statement": "SET_BIT(victim->specials.affected_by, AFF_BOUND);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/classes/new_skills.c",
+      "function": "chant_chi_purge",
+      "statement": "REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/classes/new_skills.c",
+      "function": "do_bind",
+      "statement": "SET_BIT(t_char->specials.affected_by, AFF_BOUND);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/classes/new_skills.c",
+      "function": "do_unbind",
+      "statement": "REMOVE_BIT(t_char->specials.affected_by, AFF_BOUND);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/classes/psionics.c",
+      "function": "spell_cell_adjustment",
+      "statement": "REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/cmd/actset.c",
+      "function": "setbit_char",
+      "statement": "SPOFFSET(affected_by)",
+      "occurrences": 1,
+      "review": "offset"
+    },
+    {
+      "path": "src/cmd/actset.c",
+      "function": "setbit_char",
+      "statement": "SPOFFSET(affected_by2)",
+      "occurrences": 1,
+      "review": "offset"
+    },
+    {
+      "path": "src/cmd/staff_character_recovery.c",
+      "function": "do_reboot_restore",
+      "statement": "REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/cmd/staff_setattr.c",
+      "function": "do_setattr",
+      "statement": "OFFSET(specials.affected_by)",
+      "occurrences": 2,
+      "review": "offset"
+    },
+    {
+      "path": "src/combat/fight.c",
+      "function": "raw_damage",
+      "statement": "REMOVE_BIT(victim->specials.affected_by, AFF_BOUND);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/combat/fight.c",
+      "function": "raw_damage",
+      "statement": "REMOVE_BIT(victim->specials.affected_by, AFF_SLEEP);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/combat/fight.c",
+      "function": "raw_damage",
+      "statement": "REMOVE_BIT(victim->specials.affected_by2, AFF2_MINOR_PARALYSIS);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/combat/fight_state.c",
+      "function": "set_fighting",
+      "statement": "REMOVE_BIT(ch->specials.affected_by, AFF_SLEEP);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/combat/fight_state.c",
+      "function": "update_pos",
+      "statement": "REMOVE_BIT(ch->specials.affected_by, AFF_SLEEP);",
+      "occurrences": 4,
+      "review": "observed"
+    },
+    {
+      "path": "src/combat/range.c",
+      "function": "do_fire",
+      "statement": "REMOVE_BIT(victim->specials.affected_by, AFF_SLEEP);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/combat/spell_wards.c",
+      "function": "set_ward_bits",
+      "statement": "REMOVE_BIT(ch->specials.affected_by, clear_bits[0]);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/combat/spell_wards.c",
+      "function": "set_ward_bits",
+      "statement": "REMOVE_BIT(ch->specials.affected_by2, clear_bits[1]);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/combat/spell_wards.c",
+      "function": "set_ward_bits",
+      "statement": "ch->specials.affected_by |= af->bitvector;",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/combat/spell_wards.c",
+      "function": "set_ward_bits",
+      "statement": "ch->specials.affected_by2 |= af->bitvector2;",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/combat/training_dummy.c",
+      "function": "training_dummy_apply_profile",
+      "statement": "dummy->specials.affected_by = 0;",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/combat/training_dummy.c",
+      "function": "training_dummy_apply_profile",
+      "statement": "dummy->specials.affected_by2 = 0;",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "affect_to_char",
+      "statement": "ch->specials.affected_by |= af->bitvector;",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "affect_to_char",
+      "statement": "ch->specials.affected_by2 |= af->bitvector2;",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "apply_affs",
+      "statement": "REMOVE_BIT(ch->specials.affected_by, TmpAffs.BV_1);",
+      "occurrences": 1,
+      "review": "aggregate"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "apply_affs",
+      "statement": "REMOVE_BIT(ch->specials.affected_by, TmpAffs.Fprot);",
+      "occurrences": 1,
+      "review": "aggregate"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "apply_affs",
+      "statement": "REMOVE_BIT(ch->specials.affected_by2, TmpAffs.BV_2);",
+      "occurrences": 1,
+      "review": "aggregate"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "apply_affs",
+      "statement": "SET_BIT(ch->specials.affected_by, TmpAffs.BV_1);",
+      "occurrences": 1,
+      "review": "aggregate"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "apply_affs",
+      "statement": "SET_BIT(ch->specials.affected_by, TmpAffs.Fprot);",
+      "occurrences": 1,
+      "review": "aggregate"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "apply_affs",
+      "statement": "SET_BIT(ch->specials.affected_by2, TmpAffs.BV_2);",
+      "occurrences": 1,
+      "review": "aggregate"
+    },
+    {
+      "path": "src/magic/smagic.c",
+      "function": "spell_greater_mending",
+      "statement": "REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/magic/smagic.c",
+      "function": "spell_purify_spirit",
+      "statement": "REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/magic/smagic.c",
+      "function": "spell_restoration",
+      "statement": "REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/magic/spell_conjuration.c",
+      "function": "conjure_specialized",
+      "statement": "REMOVE_BIT(mob->specials.affected_by2, AFF2_SLOW);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/magic/spell_conjuration.c",
+      "function": "spell_conjour_elemental",
+      "statement": "REMOVE_BIT(mob->specials.affected_by2, AFF2_SLOW);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/magic/spell_healing.c",
+      "function": "spell_cure_blind",
+      "statement": "REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/magic/spell_status_control.c",
+      "function": "spell_entangle",
+      "statement": "SET_BIT(victim->specials.affected_by, AFF_BOUND);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/magic/spell_visibility.c",
+      "function": "spell_faerie_fog",
+      "statement": "tmp_victim->specials.affected_by = a;",
+      "occurrences": 1,
+      "review": "unchanged"
+    },
+    {
+      "path": "src/magic/spell_visibility.c",
+      "function": "spell_faerie_fog",
+      "statement": "tmp_victim->specials.affected_by2 = a2;",
+      "occurrences": 1,
+      "review": "unchanged"
+    },
+    {
+      "path": "src/mob/mobconv.c",
+      "function": "convertMob",
+      "statement": "REMOVE_BIT(ch->specials.affected_by, AFF_KNOCKED_OUT | AFF_BOUND | AFF_CHARM | AFF_FEAR | AFF_MEDITATE | AFF_CAMPING | AFF_SLEEP);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/mob/mobconv.c",
+      "function": "convertMob",
+      "statement": "REMOVE_BIT(ch->specials.affected_by2, AFF2_MINOR_PARALYSIS | AFF2_MAJOR_PARALYSIS | AFF2_POISONED | AFF2_SILENCED | AFF2_STUNNED | AFF2_HOLDING_BREATH | AFF2_MEMORIZING | AFF2_IS_DROWNING | AFF2_CASTING | AFF2_SCRIBING | AFF2_HUNTER);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/net/ws_handlers.c",
+      "function": "ws_cmd_account_info",
+      "statement": "memset(temp_ch, 0, sizeof(struct char_data));",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/net/ws_handlers.c",
+      "function": "ws_cmd_admin_delete_character",
+      "statement": "memset(ch, 0, sizeof(struct char_data));",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/net/ws_handlers.c",
+      "function": "ws_cmd_delete_character",
+      "statement": "memset(ch, 0, sizeof(struct char_data));",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/net/ws_handlers.c",
+      "function": "ws_cmd_rested_bonus",
+      "statement": "memset(temp_ch, 0, sizeof(struct char_data));",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/net/ws_handlers.c",
+      "function": "ws_cmd_roll_stats",
+      "statement": "memset(temp_ch, 0, sizeof(struct char_data));",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/net/ws_handlers.c",
+      "function": "ws_load_char_info",
+      "statement": "memset(temp_ch, 0, sizeof(struct char_data));",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/player/pet_restore_runtime.c",
+      "function": "summoned_pet_apply",
+      "statement": "pet->specials.affected_by = s.intrinsic_affects[0] & ~AFF_CHARM;",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/player/pet_restore_runtime.c",
+      "function": "summoned_pet_apply",
+      "statement": "pet->specials.affected_by2 = s.intrinsic_affects[1];",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/specs/specs.monster_attacks.c",
+      "function": "event_tentacles",
+      "statement": "REMOVE_BIT(ch->specials.affected_by2, AFF2_MAJOR_PARALYSIS);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/specs/specs.monster_attacks.c",
+      "function": "tentacle",
+      "statement": "REMOVE_BIT(ch->specials.affected_by2, AFF2_MAJOR_PARALYSIS);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "function": "alloc_temp_char",
+      "statement": "memset(ch, 0, sizeof(struct char_data));",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "function": "sql_load_player",
+      "statement": "memset(ch, 0, sizeof(struct char_data));",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/world/buildings.c",
+      "function": "outpost_generate",
+      "statement": "SET_BIT(mob->specials.affected_by2, AFF2_MAJOR_PARALYSIS);",
+      "occurrences": 1,
+      "review": "observed"
+    },
+    {
+      "path": "src/world/db.c",
+      "function": "clear_char",
+      "statement": "bzero(ch, sizeof(struct char_data));",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/world/db.c",
+      "function": "read_mobile",
+      "statement": "REMOVE_BIT(mob->specials.affected_by2, AFF2_MAJOR_PARALYSIS);",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/world/db.c",
+      "function": "read_mobile",
+      "statement": "mob->specials.affected_by = tmp2;",
+      "occurrences": 3,
+      "review": "construction"
+    },
+    {
+      "path": "src/world/db.c",
+      "function": "read_mobile",
+      "statement": "mob->specials.affected_by = utmp2;",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/world/db.c",
+      "function": "read_mobile",
+      "statement": "mob->specials.affected_by2 = 0;",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/world/db.c",
+      "function": "read_mobile",
+      "statement": "mob->specials.affected_by2 = tmp3;",
+      "occurrences": 2,
+      "review": "construction"
+    },
+    {
+      "path": "src/world/db.c",
+      "function": "read_mobile",
+      "statement": "mob->specials.affected_by2 = utmp3;",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/world/generated_npc_runtime.c",
+      "function": "generated_npc_apply",
+      "statement": "pet->specials.affected_by = s.intrinsic_affects[0];",
+      "occurrences": 1,
+      "review": "construction"
+    },
+    {
+      "path": "src/world/generated_npc_runtime.c",
+      "function": "generated_npc_apply",
+      "statement": "pet->specials.affected_by2 = s.intrinsic_affects[1];",
+      "occurrences": 1,
+      "review": "construction"
+    }
+  ],
+  "boundaries": [
+    {
+      "path": "src/classes/bard.c",
+      "function": "song_broken",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/classes/drannak.c",
+      "function": "do_conjure",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/classes/ethermancer.c",
+      "function": "event_tupor_wake",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/classes/new_skills.c",
+      "function": "capture",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/classes/new_skills.c",
+      "function": "chant_chi_purge",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/classes/new_skills.c",
+      "function": "do_bind",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/classes/new_skills.c",
+      "function": "do_unbind",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/classes/psionics.c",
+      "function": "spell_cell_adjustment",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/cmd/staff_character_recovery.c",
+      "function": "do_reboot_restore",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/combat/fight.c",
+      "function": "raw_damage",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/combat/fight_state.c",
+      "function": "set_fighting",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/combat/fight_state.c",
+      "function": "update_pos",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/combat/range.c",
+      "function": "do_fire",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/combat/spell_wards.c",
+      "function": "set_ward_bits",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "affect_to_char",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/magic/smagic.c",
+      "function": "spell_greater_mending",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/magic/smagic.c",
+      "function": "spell_purify_spirit",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/magic/smagic.c",
+      "function": "spell_restoration",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/magic/spell_conjuration.c",
+      "function": "conjure_specialized",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/magic/spell_conjuration.c",
+      "function": "spell_conjour_elemental",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/magic/spell_healing.c",
+      "function": "spell_cure_blind",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/magic/spell_status_control.c",
+      "function": "spell_entangle",
+      "observation": "telemetry_runtime_game_combat_control"
+    },
+    {
+      "path": "src/mob/mobconv.c",
+      "function": "convertMob",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/specs/specs.monster_attacks.c",
+      "function": "event_tentacles",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/specs/specs.monster_attacks.c",
+      "function": "tentacle",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/world/buildings.c",
+      "function": "outpost_generate",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "all_affects",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "affect_total",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "affect_remove",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "affect_from_char",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/magic/affects.c",
+      "function": "affect_join",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/core/files.c",
+      "function": "writeCharacter",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/core/files.c",
+      "function": "writePet",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/world/handler.c",
+      "function": "unequip_char",
+      "observation": "telemetry_control_mutation_scope"
+    },
+    {
+      "path": "src/world/handler.c",
+      "function": "extract_char",
+      "observation": "telemetry_runtime_game_battle_leave"
+    },
+    {
+      "path": "src/cmd/actset.c",
+      "function": "setbit_parseTable",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/cmd/staff_setattr.c",
+      "function": "sa_intCopy",
+      "observation": "telemetry_runtime_game_control_changed"
+    },
+    {
+      "path": "src/magic/spells.c",
+      "function": "event_change_yzar_race",
+      "observation": "telemetry_control_mutation_scope"
+    }
+  ]
+}

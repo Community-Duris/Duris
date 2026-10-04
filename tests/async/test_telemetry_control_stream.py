@@ -69,8 +69,11 @@ class ControlMixedStreamTests(unittest.TestCase):
             build_page_contributions([first, self.raw], self.target(5))
 
     def test_control_reports_require_a_separate_supported_definition(self):
-        with self.assertRaises(ValueError):
-            self.target(7)
+        page = build_page_contributions([self.raw], self.target(7))
+        self.assertEqual(page.cursor, 2)
+        self.assertEqual(len(page.battle_inputs), 1)
+        for definition in (5, 6):
+            self.assertEqual(build_page_contributions([self.raw], self.target(definition)).battle_inputs, [])
 
 
 if __name__ == "__main__":

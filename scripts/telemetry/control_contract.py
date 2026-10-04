@@ -137,6 +137,17 @@ def observation_key(v):
     return v["ctl_boot_id"], v["ctl_process_id"], v["ctl_sequence"]
 
 
+def actor_context(v, prefix):
+    """Name the captured actor fields for the shared association/identity reader."""
+    _require(prefix in ("source", "target"), "control actor prefix")
+    def field(name):
+        suffix = name.removeprefix("battle_actor_")
+        return "ctl_" + prefix + "_" + ("actor_" if suffix in ("id", "pid", "kind") else "") + suffix
+    # The compact control contract has no encounter identifiers. Their absence
+    # cannot be filled from a later roster or interpreted as a captured zero.
+    return {name: v[field(name)] for name in battle.ACTOR_VALUES if field(name) in v}
+
+
 def validate_observation(row: Mapping) -> dict:
     _require(isinstance(row, Mapping) and set(row) == set(FIELDS), "exact control field set")
     for name, width, signed in FIELD_LAYOUT:

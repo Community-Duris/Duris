@@ -23,6 +23,7 @@
 #include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
+#include "telemetry/telemetry_runtime.h"
 
 /* external variables */
 
@@ -1390,6 +1391,9 @@ static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size
 
 	/* Now call copy function */
 	(*(entry->sb_func))(ptr, entry->sb_offset, value, bit, on_off);
+	if (type == SETBIT_CHAR && entry->sb_func == ac_bitCopy &&
+	    (SAME_STRING(entry->sb_flag, "aff") || SAME_STRING(entry->sb_flag, "aff2")))
+		telemetry_runtime_game_control_changed(static_cast<P_char>(ptr));
 }
 
 /* This function should be called when there is a high-level error. */

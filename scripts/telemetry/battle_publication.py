@@ -17,7 +17,7 @@ from typing import Any, Callable, Mapping
 
 try:
     from . import battle_source as source, battle_history as history, battle_contract as battle
-    from . import battle_contribution_contract as contribution, battle_build_contract as builds, identity_history as identity
+    from . import battle_contribution_contract as contribution, battle_build_contract as builds, control_contract as controls, identity_history as identity
     from . import identity_publication, observation_semantics as observations, incident
     from .rollup_definitions import ROLLUP_QUALITY_MASK, ROLLUP_QUALITY_UTC_FANOUT, UNKNOWN_DAY
 except ImportError:
@@ -26,6 +26,7 @@ except ImportError:
     import battle_contract as battle
     import battle_contribution_contract as contribution
     import battle_build_contract as builds
+    import control_contract as controls
     import identity_history as identity
     import identity_publication
     import observation_semantics as observations
@@ -45,6 +46,7 @@ REPORT_METADATA_BYTE_BOUND = 3 * source.HEADER_BYTE_BOUND + 2 * incident.MAX_PAC
 ROW_COLUMNS = (*SCOPE, "row_kind", "row_key", "payload", "payload_digest", "quality_flags")
 ROW_KINDS = {"battle_observations": 1, "battle_actors": 2, "battle_contributions": 3, "battle_exposure": 4, "battle_associations": 5}
 BUILD_ROW_KINDS = {**ROW_KINDS, "battle_build_points": 6}
+CONTROL_ROW_KINDS = {**BUILD_ROW_KINDS, "battle_control_operations": 7, "battle_control_states": 8}
 COUNT_FIELDS = ("battle_row_count", "actor_row_count", "contribution_row_count", "exposure_row_count", "association_row_count")
 COVERAGE_COLUMNS = (*source.HEADER_COLUMNS, "snapshot_digest", *COUNT_FIELDS,
     "complete_packet_count", "incomplete_packet_count", "alias_count", "canonical_battle_count",
@@ -72,6 +74,15 @@ ASSOCIATION_FIELDS = (*source.SOURCE_COLUMNS[10], "projection_quality_flags")
 VALUE_FIELDS = {1: BATTLE_FIELDS, 2: ACTOR_FIELDS, 3: CONTRIBUTION_FIELDS, 4: EXPOSURE_FIELDS, 5: ASSOCIATION_FIELDS}
 BUILD_FIELDS = (*source.SOURCE_COLUMNS[12], "canonical_battle", "link_status", "point_clock_status",
     "configuration_status", "publication_quality_flags", "point_context_verified", "continuous_build_exposure_implied")
+CONTROL_IDENTITY_FIELDS = ("account_token", "controller_token", "association_id", "linkage_status", "attribution_status", "attribution_quality_flags")
+CONTROL_FIELDS = (*source.SOURCE_COLUMNS[13], "source_canonical_battle", "target_canonical_battle",
+    "source_link_status", "target_link_status", "chain_status", "clock_status", "configuration_status",
+    "publication_quality_flags", "observed_prefix_usec", "accepted_application_count", "qualified_duration_mask",
+    "qualified_status_usec", "proven_action_restriction_usec", "caster_attributed_duration_usec", "registry_version",
+    *(prefix + "_" + name for prefix in ("source", "target") for name in CONTROL_IDENTITY_FIELDS))
+CONTROL_COVERAGE_FIELDS = ("control_operation_count", "control_state_count", "control_accepted_applications",
+    "control_entry_count", "control_interval_count", "control_gap_count", "verified_control_target_links",
+    "partial_control_target_links", "verified_control_chains", "qualified_control_prefixes", "configuration_unknown_control_points")
 _BOOLEANS = frozenset(("canonical", "start_seen", "close_seen", "retired_by_alias", "packet_history_complete",
     "observed_graph_verified", "end_censored", "active_at_last_observation", "effort_replay_verified",
     "history_verified", "complete_population_coverage_implied", "complete_metric_coverage_implied",
@@ -80,22 +91,25 @@ _REFERENCES = {"battle": 3, "canonical_battle": 3, "source_battle": 3, "start_as
 
 
 def row_kinds(scope):
-    return BUILD_ROW_KINDS if scope[0] == source.BUILD_DEFINITION_VERSION else ROW_KINDS
+    return CONTROL_ROW_KINDS if scope[0] == source.CONTROL_DEFINITION_VERSION else BUILD_ROW_KINDS if scope[0] == source.BUILD_DEFINITION_VERSION else ROW_KINDS
 
 
 def value_fields(scope):
-    return {**VALUE_FIELDS, 6: BUILD_FIELDS} if scope[0] == source.BUILD_DEFINITION_VERSION else VALUE_FIELDS
+    return {**VALUE_FIELDS, 6: BUILD_FIELDS, 7: CONTROL_FIELDS, 8: CONTROL_FIELDS} if scope[0] == source.CONTROL_DEFINITION_VERSION else {
+        **VALUE_FIELDS, 6: BUILD_FIELDS} if scope[0] == source.BUILD_DEFINITION_VERSION else VALUE_FIELDS
 
 
 def count_fields(scope):
-    return (*COUNT_FIELDS, "build_row_count") if scope[0] == source.BUILD_DEFINITION_VERSION else COUNT_FIELDS
+    return (*COUNT_FIELDS, "build_row_count", "control_operation_count", "control_state_count") if scope[0] == source.CONTROL_DEFINITION_VERSION else (
+        *COUNT_FIELDS, "build_row_count") if scope[0] == source.BUILD_DEFINITION_VERSION else COUNT_FIELDS
 
 
 def coverage_columns(scope):
-    if scope[0] == source.BUILD_DEFINITION_VERSION:
+    if scope[0] in source.BUILD_DEFINITION_VERSIONS:
         return (*source.header_columns(scope), *COVERAGE_COLUMNS[len(source.HEADER_COLUMNS):],
             "build_row_count", "verified_build_links", "partial_build_links", "qualified_build_points",
-            "unavailable_build_points", "configuration_unknown_build_points")
+            "unavailable_build_points", "configuration_unknown_build_points", *(
+                CONTROL_COVERAGE_FIELDS if scope[0] == source.CONTROL_DEFINITION_VERSION else ()))
     return COVERAGE_COLUMNS
 
 
@@ -123,6 +137,8 @@ def _logical_key(kind, value):
         return battle.fact_key(value)
     if kind == 6:
         return builds.observation_key(value)
+    if kind in (7, 8):
+        return controls.observation_key(value)
     return (*value["source_battle"], value["battle_actor_id"],
         value["start_monotonic_usec"], value["observed_through_monotonic_usec"])
 
@@ -151,12 +167,17 @@ def snapshot_digest(scope, rows, *, check_deadline=lambda: None):
 
 def _quality(value):
     main, attribution = value.get("quality_flags", value.get("publication_quality_flags", value.get("projection_quality_flags", 0))), value.get("attribution_quality_flags", 0)
+    if "ctl_sequence" in value:
+        attribution |= value["source_attribution_quality_flags"] | value["target_attribution_quality_flags"]
     _require(type(main) is int and type(attribution) is int and main >= 0 and attribution >= 0 and
         (main | attribution) & ~ROLLUP_QUALITY_MASK == 0, "battle_public_quality")
     return main | attribution
 
 
 def _validate_value(kind, value):
+    if kind in (7, 8):
+        _validate_control_value(kind, value)
+        return
     if kind == 6:
         _require(type(value) is dict and set(value) == set(BUILD_FIELDS), "battle_public_build_fields")
         raw = {name: value[name] for name in source.SOURCE_COLUMNS[12]}
@@ -248,6 +269,8 @@ def retain_row(scope, kind, value):
     _validate_value(kind, value)
     if kind == 6:
         _require((value["bctx_environment_id"], value["bctx_season_id"]) == scope[2:], "battle_public_build_scope")
+    if kind in (7, 8):
+        _require((value["ctl_environment_id"], value["ctl_season_id"]) == scope[2:], "battle_public_control_scope")
     payload = _canonical(value)
     _require(len(payload) <= MAX_PAYLOAD_BYTES, "battle_public_payload_capacity")
     return dict(zip(SCOPE, scope, strict=True), row_kind=kind, row_key=_key(scope, kind, value), payload=payload,
@@ -270,6 +293,8 @@ def decode_row(scope, row):
     _validate_value(row["row_kind"], value)
     if row["row_kind"] == 6:
         _require((value["bctx_environment_id"], value["bctx_season_id"]) == scope[2:], "battle_public_build_scope")
+    if row["row_kind"] in (7, 8):
+        _require((value["ctl_environment_id"], value["ctl_season_id"]) == scope[2:], "battle_public_control_scope")
     _require(_key(scope, row["row_kind"], value) == row["row_key"] and
         _quality(value) == row["quality_flags"], "battle_public_stored_identity")
     return value
@@ -440,6 +465,133 @@ def _build_verified(value):
         value["configuration_status"] == "verified" and not value["publication_quality_flags"] & fatal)
 
 
+def _control_duration_mask(value):
+    # The observed prefix can be censored at a later decision. Its recorded end
+    # is retained, never extended into that tail. Status duration is not action
+    # restriction time; the native v1 contract carries no action-gate evidence.
+    fatal = (battle.QUALITY_KNOWN & ~64) | history.ROLLUP_QUALITY_PROCESS_GAP | identity.UTC_ATTRIBUTION_FLAGS | (
+        history.ROLLUP_QUALITY_INCIDENT_GAP | history.ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN)
+    qualified = (value["ctl_kind"] == 3 and value["chain_status"] == value["target_link_status"] ==
+        value["clock_status"] == value["configuration_status"] == "verified" and
+        not value["publication_quality_flags"] & fatal)
+    return value["ctl_duration_coverage"] if qualified else 0
+
+
+def _validate_control_value(kind, value):
+    _require(type(value) is dict and set(value) == set(CONTROL_FIELDS), "battle_public_control_fields")
+    raw = {name: value[name] for name in source.SOURCE_COLUMNS[13]}
+    controls.validate_raw_observation(raw)
+    _require(type(raw["ingest_id"]) is int and raw["ingest_id"] > 0 and type(raw["ingested_utc_usec"]) is int and
+        -(1 << 63) <= raw["ingested_utc_usec"] < (1 << 63), "battle_public_control_arrival")
+    _require((kind == 7) == (raw["ctl_kind"] == 1), "battle_public_control_row_family")
+    link_states = {"verified", "missing_packet", "partial_history", "outside_battle", "context_changed",
+        "stale_association", "outside_observed_prefix", "missing_lifecycle", "lifecycle_mismatch"}
+    for prefix in ("source", "target"):
+        ref = controls._association(raw, prefix)
+        root = value[prefix + "_canonical_battle"]
+        _require(root is None if not any(ref) else isinstance(root, (tuple, list)) and len(root) == 3 and
+            all(type(item) is int and 0 < item <= battle.UINT64_MAX for item in root) and
+            tuple(root[:2]) == controls.observation_key(raw)[:2], "battle_public_control_reference")
+        _require(value[prefix + "_link_status"] in link_states and
+            (value[prefix + "_link_status"] == "outside_battle") == (not any(ref)), "battle_public_control_link")
+        account, controller, association = (value[prefix + "_" + name] for name in CONTROL_IDENTITY_FIELDS[:3])
+        _require(all(item is None or type(item) is int and 0 < item <= battle.UINT64_MAX for item in
+            (account, controller, association)), "battle_public_control_identity")
+        actor = controls.actor_context(raw, prefix)
+        if account is not None:
+            _require(actor["battle_actor_kind"] == 1 and actor["battle_actor_pid"] == actor["battle_actor_id"] ==
+                actor["battle_actor_owner_subject_id"] and all(actor["battle_actor_" + name] for name in observations.SESSION),
+                "battle_public_control_authenticated_actor")
+        _require(controller is None or account is not None and association is not None and value["registry_version"] is not None and
+            value[prefix + "_linkage_status"] == "confirmed", "battle_public_control_controller_authority")
+        _require(value[prefix + "_linkage_status"] in {"unknown_account", "confirmed", "unknown", "clock_unknown",
+            "outside_reviewed_window", "no_reviewed_mapping", "not_player_actor", "unproven_owner_identity", "missing_session", "not_applicable"} and
+            value[prefix + "_attribution_status"] in {"point_identity", "uniform_observed_identity", "identity_changes_inside_prefix",
+                "identity_unavailable", "not_applicable", "not_player_actor", "unproven_owner_identity", "missing_session"},
+            "battle_public_control_attribution_status")
+        flags = value[prefix + "_attribution_quality_flags"]
+        _require(type(flags) is int and 0 <= flags <= ROLLUP_QUALITY_MASK and flags & ~ROLLUP_QUALITY_MASK == 0,
+            "battle_public_control_identity_quality")
+    _require(value["registry_version"] is None or type(value["registry_version"]) is int and value["registry_version"] > 0,
+        "battle_public_control_registry")
+    expected_chain = {1: {"not_applicable"}, 2: {"entry"}, 3: {"verified", "missing_predecessor"}, 4: {"not_applicable"}}
+    _require(value["chain_status"] in expected_chain[raw["ctl_kind"]] and
+        value["clock_status"] in {"verified", "unknown", "mismatch", "discontinuous"} and
+        value["configuration_status"] in {"verified", "unknown", "unavailable"} and
+        (value["configuration_status"] == "unavailable") == (raw["ctl_config_id"] == 0), "battle_public_control_status")
+    _require(type(value["accepted_application_count"]) is int and value["accepted_application_count"] ==
+        int(raw["ctl_kind"] == raw["ctl_result"] == 1), "battle_public_control_accepted_count")
+    elapsed = raw["ctl_at_usec"] - raw["ctl_start_usec"] if raw["ctl_kind"] == 3 else None
+    mask = _control_duration_mask(value)
+    _require(value["observed_prefix_usec"] == elapsed and type(value["qualified_duration_mask"]) is int and
+        value["qualified_duration_mask"] == mask and isinstance(value["qualified_status_usec"], (tuple, list)) and
+        list(value["qualified_status_usec"]) == [(elapsed if raw["ctl_before_mask"] & (1 << bit) else 0)
+            if mask & (1 << bit) else None for bit in range(8)] and
+        value["proven_action_restriction_usec"] is None and value["caster_attributed_duration_usec"] is None,
+        "battle_public_control_duration")
+    _quality(value)
+
+
+def _control_identity(row, prefix, ownership, registry, coverage, budget):
+    actor = controls.actor_context(row, prefix)
+    result = dict(account_token=None, controller_token=None, association_id=None, linkage_status="unknown_account",
+        attribution_status="identity_unavailable", attribution_quality_flags=row["publication_quality_flags"])
+    if prefix == "source" and row["ctl_kind"] != 1:
+        return dict(result, linkage_status="not_applicable", attribution_status="not_applicable", attribution_quality_flags=0)
+    session = tuple(actor["battle_actor_" + name] for name in observations.SESSION)
+    if actor["battle_actor_kind"] != 1 or not all(session):
+        status = "not_player_actor" if actor["battle_actor_kind"] == 3 else "unproven_owner_identity" if actor["battle_actor_kind"] == 2 else "missing_session"
+        return dict(result, linkage_status=status, attribution_status=status)
+    samples = ownership[(session, actor["battle_actor_id"], actor["battle_actor_pid"])]
+    reservation = _piece_reservation(samples, registry, coverage)
+    budget.reserve(reservation)
+    try:
+        if prefix == "target" and row["ctl_kind"] == 3 and row["ctl_at_usec"] > row["ctl_start_usec"]:
+            shim = dict(actor, source_battle=(*controls.observation_key(row)[:2], row["ctl_target_battle_seq"]),
+                battle_environment_id=row["ctl_environment_id"], battle_season_id=row["ctl_season_id"],
+                battle_config_id=row["ctl_config_id"], start_record_seq=row["record_seq"],
+                start_monotonic_usec=row["ctl_start_usec"], observed_through_monotonic_usec=row["ctl_at_usec"],
+                start_utc_usec=row["ctl_start_utc_usec"], observed_through_utc_usec=row["ctl_at_utc_usec"],
+                quality_flags=row["publication_quality_flags"])
+            pieces = _pieces(shim, samples, registry, coverage, budget)
+            identities = {tuple(piece[4:8]) for piece in pieces}
+            if len(identities) == 1:
+                account, controller, association, status = next(iter(identities))
+                result.update(account_token=account, controller_token=controller, association_id=association,
+                    linkage_status=status, attribution_status="uniform_observed_identity" if account is not None else "identity_unavailable")
+            else:
+                result["attribution_status"] = "identity_changes_inside_prefix"
+            for piece in pieces:
+                result["attribution_quality_flags"] |= piece[8]
+            return result
+        at, utc = row["ctl_decision_usec"], row["ctl_decision_utc_usec"]
+        ordered = identity.ordered_ownership((row["ctl_environment_id"], row["ctl_season_id"]), session,
+            actor["battle_actor_id"], actor["battle_actor_pid"], controls.observation_key(row)[:2], samples)
+        before = [sample for sample in ordered if sample.at_monotonic_usec <= at]
+        sample = before[-1] if before else None
+        account = None if sample is None else sample.account_token
+        quality = row["publication_quality_flags"] | (sample.quality_flags if sample else 0)
+        if sample is not None and sample.at_utc_usec is not None and utc != controls.UTC_UNKNOWN and (
+                sample.at_utc_usec + at - sample.at_monotonic_usec != utc):
+            quality |= identity.ROLLUP_QUALITY_UTC_MISMATCH
+        shim = dict(zip(observations.SESSION, session, strict=True), environment_id=row["ctl_environment_id"],
+            season_id=row["ctl_season_id"], boot_id=row["ctl_boot_id"], process_id=row["ctl_process_id"],
+            subject_id=actor["battle_actor_id"], pid=actor["battle_actor_pid"], at_monotonic_usec=at,
+            at_utc_usec=utc, projection_quality=quality)
+        windows = identity_publication._gap_windows(shim, coverage, samples)
+        if windows and (utc == controls.UTC_UNKNOWN or any((first is None or first <= utc) and
+                (last is None or utc < last) for first, last in windows)):
+            account = None
+            quality |= history.ROLLUP_QUALITY_INCIDENT_GAP
+        controller, association, status = identity.linkage_at(registry, account,
+            None if utc == controls.UTC_UNKNOWN or quality & identity.UTC_ATTRIBUTION_FLAGS else utc)
+        return dict(result, account_token=account, controller_token=controller, association_id=association,
+            linkage_status=status, attribution_status="point_identity" if account is not None else "identity_unavailable",
+            attribution_quality_flags=quality)
+    finally:
+        budget.used -= reservation
+
+
 def build_publication(window: source.VerifiedSource, registry: identity.Registry | None, coverage: Mapping[str, Any], *,
                       max_total_bytes: int = source.DEFAULT_BYTE_LIMIT, max_output_rows: int = 2_000,
                       check_deadline: Callable[[], None] = lambda: None) -> Publication:
@@ -450,7 +602,7 @@ def build_publication(window: source.VerifiedSource, registry: identity.Registry
         len(window.projection_qualities), "battle_public_building_source")
     _require(registry is None or type(registry) is identity.Registry and (registry.environment_id, registry.season_id) == scope[2:],
         "battle_public_registry_scope")
-    incident_version = 5 if scope[0] == source.BUILD_DEFINITION_VERSION else 4
+    incident_version = incident.generation_schema(scope[0])
     _require(coverage["registry_schema_version"] == incident_version, "battle_public_incident_schema")
     budget = _Budget(max_total_bytes, max_output_rows, check_deadline)
     budget.reserve(source.HEADER_BYTE_BOUND + len(window.facts) * source.PUBLICATION_INPUT_BYTE_BOUND + REVIEW_BYTE_BOUND)
@@ -466,7 +618,7 @@ def build_publication(window: source.VerifiedSource, registry: identity.Registry
         counts[source.counts(scope)[row["record_kind"]]] += 1
     budget.used -= source.PUBLICATION_INPUT_BYTE_BOUND
     _require(digest == window.header["source_digest"] and all(counts[name] == window.header[name] for name in counts), "battle_public_source_changed")
-    reduced = history.build_history([row for row in window.facts if row["record_kind"] in (10, 11, 12)], scope[2:],
+    reduced = history.build_history([row for row in window.facts if row["record_kind"] in (10, 11, 12, 13)], scope[2:],
         incident_coverage=coverage, incident_schema_version=incident_version, max_output_rows=max_output_rows, max_total_bytes=budget.limit - budget.used,
         check_deadline=check_deadline)
     budget.reserve(reduced.summary["reserved_bytes"])
@@ -505,6 +657,29 @@ def build_publication(window: source.VerifiedSource, registry: identity.Registry
         header["qualified_build_points"] += int(row["point_context_verified"])
         header["unavailable_build_points"] += int(row["bctx_status"] == 2)
         header["configuration_unknown_build_points"] += int(row["configuration_status"] != "verified")
+    control_source = {controls.observation_key(row): (row, configuration) for row, configuration in zip(window.facts,
+        window.configurations or (None,) * len(window.facts), strict=True) if row["record_kind"] == 13}
+    for value in reduced.controls:
+        raw, configuration = control_source[controls.observation_key(value)]
+        row = dict(value, ingest_id=raw["ingest_id"], ingested_utc_usec=raw["ingested_utc_usec"],
+            configuration_status="unavailable" if not value["ctl_config_id"] else "unknown" if configuration is None else "verified",
+            accepted_application_count=int(value["ctl_kind"] == value["ctl_result"] == 1),
+            proven_action_restriction_usec=None, caster_attributed_duration_usec=None,
+            registry_version=None if registry is None else registry.registry_version)
+        row["qualified_duration_mask"] = _control_duration_mask(row)
+        row["qualified_status_usec"] = [(row["observed_prefix_usec"] if row["ctl_before_mask"] & (1 << bit) else 0)
+            if row["qualified_duration_mask"] & (1 << bit) else None for bit in range(8)]
+        for prefix in ("source", "target"):
+            attributed = _control_identity(row, prefix, ownership, registry, coverage, budget)
+            row.update({prefix + "_" + name: item for name, item in attributed.items()})
+        append(7 if row["ctl_kind"] == 1 else 8, row)
+        header["control_accepted_applications"] += row["accepted_application_count"]
+        for control_kind, field in ((2, "control_entry_count"), (3, "control_interval_count"), (4, "control_gap_count")):
+            header[field] += int(row["ctl_kind"] == control_kind)
+        header["verified_control_target_links" if row["target_link_status"] == "verified" else "partial_control_target_links"] += 1
+        header["verified_control_chains"] += int(row["chain_status"] == "verified")
+        header["qualified_control_prefixes"] += int(row["qualified_duration_mask"] != 0)
+        header["configuration_unknown_control_points"] += int(row["configuration_status"] != "verified")
     for value, flags in zip(window.facts, window.projection_qualities, strict=True):
         if value["record_kind"] == 10:
             append(5, dict(value, projection_quality_flags=flags))
@@ -536,7 +711,7 @@ def build_publication(window: source.VerifiedSource, registry: identity.Registry
     for field in ("complete_packet_count", "incomplete_packet_count", "alias_count", "canonical_battle_count",
             "verified_contribution_links", "partial_contribution_links"):
         header[field] = reduced.summary[field]
-    if scope[0] == source.BUILD_DEFINITION_VERSION:
+    if scope[0] in source.BUILD_DEFINITION_VERSIONS:
         header.update({field: reduced.summary[field] for field in ("verified_build_links", "partial_build_links")})
     header["snapshot_digest"] = snapshot_digest(scope, sorted(output, key=lambda item: (item["row_kind"], item["row_key"])),
         check_deadline=check_deadline)
@@ -560,12 +735,19 @@ def _validate_header(row):
         row["observed_present_usec"] == row["observed_pc_present_usec"] + row["non_pc_present_usec"] and
         row["observed_pc_present_usec"] == row["owned_pc_present_usec"] + row["unknown_account_pc_present_usec"] ==
         row["confirmed_controller_pc_present_usec"] + row["unlinked_controller_pc_present_usec"], "battle_public_header_conservation")
-    if scope[0] == source.BUILD_DEFINITION_VERSION:
+    if scope[0] in source.BUILD_DEFINITION_VERSIONS:
         _require(row["build_count"] == row["build_row_count"] == row["verified_build_links"] + row["partial_build_links"] and
             row["qualified_build_points"] <= row["verified_build_links"] and
             row["qualified_build_points"] + row["unavailable_build_points"] <= row["build_count"] and
             row["configuration_unknown_build_points"] <= row["build_count"],
             "battle_public_build_conservation")
+    if scope[0] == source.CONTROL_DEFINITION_VERSION:
+        _require(row["control_count"] == row["control_operation_count"] + row["control_state_count"] ==
+            row["verified_control_target_links"] + row["partial_control_target_links"] and
+            row["control_state_count"] == row["control_entry_count"] + row["control_interval_count"] + row["control_gap_count"] and
+            row["control_accepted_applications"] <= row["control_operation_count"] and
+            row["qualified_control_prefixes"] <= row["verified_control_chains"] <= row["control_interval_count"] and
+            row["configuration_unknown_control_points"] <= row["control_count"], "battle_public_control_conservation")
 
 
 def public_header(row, reservation):
@@ -579,8 +761,13 @@ def public_header(row, reservation):
         presence_is_input_activity=False, alternative_projections_additive=False, metrics_apportioned_across_identity_boundaries=False,
         decisive_outcomes_available=False, complete_metric_coverage_implied=False, complete_controller_population_implied=False,
         zero_activity_implied=False, economic_rewards_included=False, rates_computed=False)
-    if row["definition_version"] == source.BUILD_DEFINITION_VERSION:
+    if row["definition_version"] in source.BUILD_DEFINITION_VERSIONS:
         result.update(builds_are_point_observations=True, continuous_build_exposure_implied=False,
             contributions_attributed_to_builds=False, raw_cleared_values_require_available_family=True,
             build_actor_identity_inferred=False, arena_roster_is_match_result=False)
+    if row["definition_version"] == source.CONTROL_DEFINITION_VERSION:
+        result.update(control_operations_and_status_prefixes_are_separate=True, configured_ticks_are_elapsed_time=False,
+            status_family_order=("blindness", "stun", "major_paralysis", "minor_paralysis", "slow", "sleep", "silence", "binding"),
+            overlapping_status_families_are_additive=False, caster_attributed_duration_available=False,
+            proven_action_restriction_duration_available=False, complete_control_attempt_coverage_implied=False)
     return result

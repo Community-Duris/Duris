@@ -9,6 +9,8 @@
 #include "net/comm.h"
 #include "ships/ships.h"
 #include "sql/sql.h"
+#include "telemetry/telemetry_runtime.h"
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,6 +38,8 @@ static void sa_shortCopy(P_char ch, unsigned long offset, int value)
 static void sa_intCopy(P_char ch, unsigned long offset, int value)
 {
 	bcopy((char *)&value, (char *)ch + offset, sizeof(int));
+	if (offset == offsetof(char_data, specials.affected_by))
+		telemetry_runtime_game_control_changed(ch);
 }
 
 /*

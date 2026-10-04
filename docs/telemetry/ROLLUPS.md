@@ -20,6 +20,13 @@ effort and observed XP portfolios. See [IDENTITY_PUBLICATION.md](IDENTITY_PUBLIC
 for exact source retention, review/incident snapshots, uncertainty and role grants.
 Its catalog exposes the two new identity reports and established session/cohort
 activity reports; the five observation reports remain definition 2.
+Definitions 5 and 6 retain and publish shared battle and selected build observations.
+Definition 7 adds exact typed control inputs and separate operation/status-prefix
+reports in its own `_v7` tables. Source, cursor, configuration and digest updates
+share the existing page transaction; publication includes immutable identity and
+independent schema-6 incident snapshots. See [CONTROL_OBSERVATIONS.md](CONTROL_OBSERVATIONS.md)
+for duration/overlap/uncertainty rules and [CONTROL_QUALIFICATION.md](CONTROL_QUALIFICATION.md)
+for the complete disposable two-engine command.
 
 ## Public Python API
 
@@ -64,13 +71,13 @@ finally:
 ```
 
 `RollupTarget` validates all four identity fields and currently accepts only
-`definition_version=1`, `2` or `3`. Definition 3 requires an immutable identity
+`definition_version=1`, `2`, `3`, `5`, `6` or `7`. Definitions 3/5/6/7 require an immutable identity
 reservation before processing. `origin_ingest_id` is immutable per generation and is
 the initial cursor for a newly bootstrapped state row. `through_ingest_id` is a
 fixed inclusive high-water bound; rows arriving later are intentionally left
 for a later invocation. A generation can be processed in pages while a
 previous published generation remains readable.
-For definition 3, the source window freezes at publication; processing later
+For definitions 3/5/6/7, the source window freezes at publication; processing later
 input requires a new generation. Explicit superseded generation reads preserve
 their earlier reports and identity/incident coverage. Definitions 1 and 2 retain
 their existing incremental and publication behavior.

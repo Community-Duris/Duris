@@ -9,7 +9,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def compile_harness(executable, sanitize=False):
+def compile_harness(executable, sanitize=False, optimize=False):
     command = ['g++', '-std=c++20', '-Wall', '-Wextra', '-Werror', '-pedantic',
                '-I', str(ROOT / 'src'),
                str(ROOT / 'tests/async/telemetry_battle_contribution_harness.cc'),
@@ -19,6 +19,8 @@ def compile_harness(executable, sanitize=False):
                str(ROOT / 'src/telemetry/telemetry_battle_contract.c'), '-o', str(executable)]
     if sanitize:
         command += ['-g', '-fno-omit-frame-pointer', '-fsanitize=address,undefined']
+    if optimize:
+        command += ['-O2']
     subprocess.run(command, check=True, timeout=120)
 
 

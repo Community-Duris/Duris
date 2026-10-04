@@ -21,10 +21,12 @@ from scripts.telemetry import battle_history as history
 from scripts.telemetry import battle_contract as battle
 from scripts.telemetry import battle_contribution_contract as contribution
 from scripts.telemetry import battle_build_contract as builds
+from scripts.telemetry import control_contract as controls
 from scripts.telemetry import battle_source as source
 from scripts.telemetry import battle_publication as publication, identity_history as identity, incident
 from scripts.telemetry.rollup_engine import build_page_contributions, BoundsExceeded, SemanticError
 from test_telemetry_observations import ownership
+from test_telemetry_battle_contribution_contract import ControlContractTests
 from scripts.telemetry.rollup_definitions import (
     ROLLUP_QUALITY_PROCESS_GAP, ROLLUP_QUALITY_INCIDENT_GAP,
     ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN, ROLLUP_QUALITY_UTC_UNKNOWN,
@@ -146,10 +148,13 @@ class BattleHistoryTests(unittest.TestCase):
             text=True, capture_output=True, check=True, timeout=30)
         cls.control_rows = [json.loads(line) for line in controls.read_text(encoding="utf-8").splitlines()]
         expanded_controls = cls.path / "expanded-controls.jsonl"
+        typed_controls = cls.path / "typed-controls.jsonl"
         subprocess.run([str(executable), "--native-expanded-control-capture"], cwd=ROOT,
-            env=dict(os.environ, TELEMETRY_BATTLE_CAPTURE_EXPORT=str(expanded_controls)),
+            env=dict(os.environ, TELEMETRY_BATTLE_CAPTURE_EXPORT=str(expanded_controls),
+                     TELEMETRY_CONTROL_CAPTURE_EXPORT=str(typed_controls)),
             text=True, capture_output=True, check=True, timeout=30)
         cls.expanded_control_rows = [json.loads(line) for line in expanded_controls.read_text(encoding="utf-8").splitlines()]
+        cls.typed_control_rows = [json.loads(line) for line in typed_controls.read_text(encoding="utf-8").splitlines()]
         build_points, build_battles = cls.path / "build-points.jsonl", cls.path / "build-battles.jsonl"
         subprocess.run([str(executable), "--native-build-capture"], cwd=ROOT,
             env=dict(os.environ, TELEMETRY_BUILD_CAPTURE_EXPORT=str(build_points), TELEMETRY_BATTLE_CAPTURE_EXPORT=str(build_battles)),
@@ -186,6 +191,31 @@ class BattleHistoryTests(unittest.TestCase):
             cls.association_cases[item["case"]].append(dict(value, boot_id=value["battle_boot_id"],
                 process_id=value["battle_process_id"], record_seq=index, schema_version=1,
                 record_kind=10, occurrence_utc_usec=value["battle_at_utc_usec"]))
+        ControlContractTests.setUpClass()
+        try:
+            associations, control_export = cls.path / "control-associations", cls.path / "control-prefixes.jsonl"
+            subprocess.run([str(ControlContractTests.native), "--export-control", str(control_export)],
+                env=dict(os.environ, TELEMETRY_CONTROL_ASSOCIATION_EXPORT=str(associations)),
+                check=True, capture_output=True, timeout=30)
+            cls.control_prefix_rows = []
+            for wire in associations.read_text(encoding="ascii").splitlines():
+                value = battle.decode_fact(bytes.fromhex(wire))
+                cls.control_prefix_rows.append(dict(value, boot_id=value["battle_boot_id"], process_id=value["battle_process_id"],
+                    record_seq=len(cls.control_prefix_rows) + 1, schema_version=1, record_kind=10,
+                    occurrence_utc_usec=value["battle_at_utc_usec"]))
+            for line in control_export.read_text(encoding="ascii").splitlines():
+                item = json.loads(line)
+                if item["case"] != 2:
+                    continue
+                value = item["fields"]
+                cls.control_prefix_rows.append(dict(value, boot_id=value["ctl_boot_id"], process_id=value["ctl_process_id"],
+                    record_seq=len(cls.control_prefix_rows) + 1, schema_version=1, record_kind=13,
+                    occurrence_utc_usec=value["ctl_decision_utc_usec"]))
+            cls.control_prefix_rows.sort(key=lambda row: (row["occurrence_utc_usec"], row["record_kind"], row["record_seq"]))
+            for index, row in enumerate(cls.control_prefix_rows, 1):
+                row["record_seq"] = index
+        finally:
+            ControlContractTests.tearDownClass()
 
     @classmethod
     def tearDownClass(cls):
@@ -230,6 +260,203 @@ class BattleHistoryTests(unittest.TestCase):
         meta, details = incident.validate_packet(packet)
         summary = incident.publication_summary((6, 1, packet["environment_id"], packet["season_id"]), meta, details)
         return rows, incident.public_coverage(summary, details, registry_schema_version=5)
+
+    @staticmethod
+    def _control_window(rows, *, capture_config=True):
+        scope = next((row["ctl_environment_id"], row["ctl_season_id"]) for row in rows if row["record_kind"] == 13)
+        target = (source.CONTROL_DEFINITION_VERSION, 1, *scope)
+        ordered = [dict(row, ingest_id=index) for index, row in enumerate(sorted(rows,
+            key=lambda row: (row["boot_id"], row["process_id"], row["record_seq"])), 1)]
+        inputs = [source.retain_input(row, target, 0, configuration={name: row["ctl_" + name]
+            for name in source.CONTROL_CONFIG_COLUMNS} if capture_config and row["record_kind"] == 13 and row["ctl_config_id"] else None)
+            for row in ordered]
+        header = source.advance_header(source.initial_header(target), inputs, len(ordered))
+        return source.verify_source(header, inputs, expected_scope=target, expected_watermark=len(ordered)), inputs
+
+    def test_native_typed_control_exact_source_and_versioned_publication(self):
+        rows = [*self.expanded_control_rows, *self.typed_control_rows]
+        window, retained = self._control_window(rows)
+        scope = tuple(window.header[name] for name in source.SCOPE)
+        output = publication.build_publication(window, None, incident.public_coverage(None, [], registry_schema_version=6))
+        values = [publication.decode_row(scope, row) for row in output.rows if row["row_kind"] in (7, 8)]
+        self.assertEqual(len(values), len(self.typed_control_rows))
+        self.assertEqual({controls.observation_key(row): {name: row[name] for name in controls.FIELDS} for row in values},
+            {controls.observation_key(row): {name: row[name] for name in controls.FIELDS} for row in self.typed_control_rows})
+        self.assertEqual(sum(row["accepted_application_count"] for row in values), 18)
+        self.assertEqual(output.header["control_operation_count"], 56)
+        self.assertEqual(output.header["control_interval_count"], sum(row["ctl_kind"] == 3 for row in values))
+        self.assertTrue(all(row["qualified_duration_mask"] == 0 and row["qualified_status_usec"] == [None] * 8 and
+            row["proven_action_restriction_usec"] is None and row["caster_attributed_duration_usec"] is None for row in values))
+        self.assertTrue(all(source.decode_input(row, scope).configuration is not None for row in retained if row["record_kind"] == 13))
+        self.assertEqual({row["name"] for row in report_catalog(7)}, set(publication.CONTROL_ROW_KINDS))
+        self.assertEqual({row["name"] for row in report_catalog(6)}, set(publication.BUILD_ROW_KINDS))
+
+    def test_control_missing_source_configuration_and_loss_remain_explicit(self):
+        rows = [*self.expanded_control_rows, *self.typed_control_rows]
+        window, retained = self._control_window(rows, capture_config=False)
+        scope = tuple(window.header[name] for name in source.SCOPE)
+        coverage = incident.public_coverage(None, [], registry_schema_version=6)
+        output = publication.build_publication(window, None, coverage)
+        self.assertEqual(output.header["configuration_unknown_control_points"], len(self.typed_control_rows))
+        self.assertTrue(all(publication.decode_row(scope, row)["configuration_status"] == "unknown"
+            for row in output.rows if row["row_kind"] in (7, 8)))
+        without_associations = [row for row in rows if row["record_kind"] != 10]
+        missing, _ = self._control_window(without_associations)
+        output = publication.build_publication(missing, None, coverage)
+        self.assertEqual(output.header["verified_control_target_links"], 0)
+        self.assertEqual(output.header["partial_control_target_links"], len(self.typed_control_rows))
+        with self.assertRaisesRegex(publication.PublicationError, "incident_schema"):
+            publication.build_publication(window, None, incident.public_coverage(None, [], registry_schema_version=5))
+        modified = deepcopy(retained)
+        selected = next(row for row in modified if row["record_kind"] == 13)
+        selected["payload"] = selected["payload"].replace(b'"ctl_configured_ticks":', b'"changed_ticks":')
+        with self.assertRaisesRegex(source.SourceError, "digest"):
+            source.verify_source(window.header, modified, expected_scope=scope, expected_watermark=window.header["input_watermark"])
+
+    def test_control_public_tampering_and_bounded_publication_refuse(self):
+        window, _ = self._control_window([*self.expanded_control_rows, *self.typed_control_rows])
+        scope = tuple(window.header[name] for name in source.SCOPE)
+        coverage = incident.public_coverage(None, [], registry_schema_version=6)
+        output = publication.build_publication(window, None, coverage)
+        original = next(publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 7)
+        for changes in ({"proven_action_restriction_usec": 1}, {"caster_attributed_duration_usec": 1},
+                {"accepted_application_count": 99}, {"qualified_duration_mask": 255},
+                {"qualified_status_usec": [0] * 8}, {"source_account_token": 999, "source_controller_token": 999}):
+            with self.subTest(changes=changes), self.assertRaises(publication.PublicationError):
+                publication.retain_row(scope, 7, dict(original, **changes))
+        with self.assertRaisesRegex((publication.PublicationError, history.HistoryError), "capacity"):
+            publication.build_publication(window, None, coverage, max_output_rows=1)
+        with self.assertRaisesRegex(publication.PublicationError, "byte_capacity"):
+            publication.build_publication(window, None, coverage, max_total_bytes=1)
+
+    def _control_prefix_publication(self, rows=None, *, registry=None, losses=()):
+        rows = deepcopy(self.control_prefix_rows if rows is None else rows)
+        window, _ = self._control_window(rows)
+        scope = tuple(window.header[name] for name in source.SCOPE)
+        packet = dict(incident.template(6), incidents=list(losses), environment_id=scope[2], season_id=scope[3],
+            reviewer_token="a" * 64, review_evidence_digest="b" * 64,
+            reviewed_from_utc_usec=min(row["occurrence_utc_usec"] for row in rows) - 1,
+            reviewed_through_utc_usec=max(row["occurrence_utc_usec"] for row in rows) + 1)
+        meta, details = incident.validate_packet(packet)
+        details = tuple(dict(row, occurrence_relation=incident.occurrence_relation(row,
+            packet["reviewed_from_utc_usec"], packet["reviewed_through_utc_usec"])) for row in details)
+        coverage = incident.public_coverage(incident.publication_summary(scope, meta, details), details, registry_schema_version=6)
+        output = publication.build_publication(window, registry, coverage)
+        values = [publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 8]
+        return output, values
+
+    def test_control_native_accumulator_prefixes_qualify_disjoint_overlap(self):
+        output, values = self._control_prefix_publication()
+        prefixes = [row for row in values if row["ctl_kind"] == 3]
+        self.assertEqual(output.header["qualified_control_prefixes"], 5)
+        self.assertTrue(all(row["qualified_duration_mask"] == 255 for row in prefixes))
+        self.assertEqual(sum(row["qualified_status_usec"][2] for row in prefixes), 200)
+        self.assertEqual(sum(row["qualified_status_usec"][3] for row in prefixes), 200)
+        self.assertEqual(sum(row["observed_prefix_usec"] for row in prefixes if row["ctl_before_mask"]), 300)
+        self.assertEqual((prefixes[-1]["ctl_at_usec"], prefixes[-1]["ctl_decision_usec"]), (550, 600))
+        self.assertEqual(prefixes[-1]["observed_prefix_usec"], 50)
+        self.assertTrue(all(row["proven_action_restriction_usec"] is None and
+            row["caster_attributed_duration_usec"] is None for row in values))
+
+    def test_control_missing_predecessor_and_partial_family_do_not_invent_zero(self):
+        rows = deepcopy(self.control_prefix_rows)
+        entry = next(row for row in rows if row.get("ctl_kind") == 2)
+        rows.remove(entry)
+        _, values = self._control_prefix_publication(rows)
+        first = next(row for row in values if row["ctl_previous_state_sequence"] == entry["ctl_sequence"])
+        self.assertEqual(first["chain_status"], "missing_predecessor")
+        self.assertEqual(first["qualified_status_usec"], [None] * 8)
+        rows = deepcopy(self.control_prefix_rows)
+        for row in rows:
+            if row["record_kind"] == 13:
+                row["ctl_duration_coverage"] = 12
+                row["ctl_quality_flags"] |= 1  # Native CONTEXT_UNKNOWN marks partial families.
+        _, values = self._control_prefix_publication(rows)
+        self.assertTrue(all(row["qualified_status_usec"] == [None] * 8 for row in values))
+
+    def test_control_clock_source_loss_and_configuration_cuts_censor_duration(self):
+        for updates in ({"ctl_quality_flags": battle.QUALITY_CLOCK_DISCONTINUITY},
+                {"ctl_at_utc_usec": controls.UTC_UNKNOWN},
+                {"ctl_at_utc_usec": 1, "ctl_quality_flags": battle.QUALITY_CLOCK_DISCONTINUITY}):
+            rows = deepcopy(self.control_prefix_rows)
+            selected = next(row for row in rows if row.get("ctl_before_mask") == 12)
+            selected.update(updates)
+            # A point used as the next predecessor must carry the same clock;
+            # select its own public prefix in an independently truncated stream.
+            rows = [row for row in rows if row["record_seq"] <= selected["record_seq"]]
+            _, values = self._control_prefix_publication(rows)
+            found = next(row for row in values if row["ctl_sequence"] == selected["ctl_sequence"])
+            self.assertEqual(found["qualified_duration_mask"], 0)
+            self.assertEqual(found["qualified_status_usec"], [None] * 8)
+        selected = next(row for row in self.control_prefix_rows if row.get("ctl_before_mask") == 12)
+        for family in (10, 13):
+            loss = dict(incident.template(6)["incidents"][0], producer_boot_id=selected["boot_id"],
+                producer_process_id=selected["process_id"], record_kind_mask=1 << family,
+                start_utc_usec=selected["ctl_start_utc_usec"], end_utc_usec=selected["ctl_at_utc_usec"],
+                first_record_seq=None, last_record_seq=None, evidence_digest="c" * 64)
+            _, values = self._control_prefix_publication(losses=[loss])
+            found = next(row for row in values if row["ctl_sequence"] == selected["ctl_sequence"])
+            self.assertEqual(found["qualified_duration_mask"], 0)
+            self.assertTrue(found["publication_quality_flags"] & ROLLUP_QUALITY_INCIDENT_GAP)
+
+    def test_control_conflicting_chain_and_overlapping_target_prefixes_refuse(self):
+        rows = deepcopy(self.control_prefix_rows)
+        selected = next(row for row in rows if row.get("ctl_before_mask") == 12)
+        selected["ctl_before_mask"] = 4
+        with self.assertRaisesRegex(history.HistoryError, "chain_conflict"):
+            self._control_prefix_publication(rows)
+        rows = deepcopy(self.control_prefix_rows)
+        duplicate = dict(next(row for row in rows if row.get("ctl_before_mask") == 12),
+            ctl_sequence=1000, record_seq=1000)
+        rows.append(duplicate)
+        with self.assertRaisesRegex(history.HistoryError, "target_overlap"):
+            self._control_prefix_publication(rows)
+
+    def test_control_missing_departure_or_close_keeps_lifecycle_unknown(self):
+        rows = [row for row in deepcopy(self.control_prefix_rows) if row["record_kind"] != 10 or
+            row["battle_at_monotonic_usec"] != 600]
+        _, values = self._control_prefix_publication(rows)
+        last = next(row for row in values if row["ctl_boundary"] == 5)
+        self.assertEqual(last["target_link_status"], "missing_lifecycle")
+        self.assertEqual(last["qualified_status_usec"], [None] * 8)
+        last = next(row for row in rows if row.get("ctl_boundary") == 5)
+        last["ctl_boundary"] = 6
+        _, values = self._control_prefix_publication(rows)
+        self.assertEqual(next(row for row in values if row["ctl_boundary"] == 6)["target_link_status"], "missing_lifecycle")
+
+    def test_control_departure_clock_must_match_actual_lifecycle(self):
+        rows = deepcopy(self.control_prefix_rows)
+        for row in rows:
+            if row["record_kind"] == 13 and row["ctl_boundary"] == 5:
+                row["ctl_decision_utc_usec"] += 1
+                row["occurrence_utc_usec"] = row["ctl_decision_utc_usec"]
+        _output, values = self._control_prefix_publication(rows)
+        last = next(row for row in values if row["ctl_boundary"] == 5)
+        self.assertEqual(last["target_link_status"], "lifecycle_mismatch")
+        self.assertEqual(last["qualified_status_usec"], [None] * 8)
+
+    def test_control_dated_identity_never_borrows_a_later_owner(self):
+        rows = deepcopy(self.control_prefix_rows)
+        entry = next(row for row in rows if row.get("ctl_kind") == 2)
+        for index, (at, token) in enumerate(((100, 101), (350, 102)), len(rows) + 1):
+            rows.append(ownership(boot_id=entry["boot_id"], process_id=entry["process_id"], record_seq=index,
+                environment_id=11, season_id=22, config_id=33, classifier_version=4, policy_version=5,
+                subject_id=72, pid=72, session_boot_id=101, session_process_id=202, session_seq=72,
+                connection_boot_id=101, connection_process_id=202, connection_seq=index,
+                at_monotonic_usec=at, at_utc_usec=entry["ctl_at_utc_usec"] + at - 100,
+                occurrence_utc_usec=entry["ctl_at_utc_usec"] + at - 100, ownership_account_token=token))
+        registry = identity.Registry(11, 22, 1, 0, None, entry["ctl_at_utc_usec"] - 1,
+            entry["ctl_at_utc_usec"] + 1000, entry["ctl_at_utc_usec"] + 1001, "a" * 64, "b" * 64,
+            tuple(identity.Association(index, token, controller, entry["ctl_at_utc_usec"] - 1, None,
+                "confirmed", "staff_review", "c" * 64) for index, (token, controller) in enumerate(((101, 701), (102, 702)), 1)))
+        _, values = self._control_prefix_publication(rows, registry=registry)
+        early = next(row for row in values if row["ctl_kind"] == 3 and row["ctl_at_usec"] == 300)
+        crossing = next(row for row in values if row["ctl_kind"] == 3 and row["ctl_at_usec"] == 400)
+        late = next(row for row in values if row["ctl_kind"] == 3 and row["ctl_at_usec"] == 500)
+        self.assertEqual((early["target_account_token"], early["target_controller_token"]), (101, 701))
+        self.assertEqual(crossing["target_attribution_status"], "identity_changes_inside_prefix")
+        self.assertIsNone(crossing["target_account_token"])
+        self.assertEqual((late["target_account_token"], late["target_controller_token"]), (102, 702))
 
     def test_native_build_points_retain_all_fields_and_publish_separately(self):
         rows, coverage = self._dated_build_rows()
@@ -1283,7 +1510,7 @@ class BattleHistoryTests(unittest.TestCase):
         with self.assertRaisesRegex(source.SourceError, "published_immutable"):
             source.advance_header(header, [], header["input_watermark"] + 1)
         from scripts.telemetry.rollup_definitions import SUPPORTED_DEFINITION_VERSIONS
-        self.assertEqual(SUPPORTED_DEFINITION_VERSIONS, {1, 2, 3, 5, 6})
+        self.assertEqual(SUPPORTED_DEFINITION_VERSIONS, {1, 2, 3, 5, 6, 7})
 
     def test_bounds_and_deadline_refuse_without_mutating_source(self):
         saved = deepcopy(self.rows)

@@ -1,0 +1,7 @@
+ARG TOOLS_IMAGE=duris-telemetry-control-base:local
+FROM ${TOOLS_IMAGE}
+RUN apt-get update \
+    && apt-get install --no-install-recommends --yes python3-pymysql python3-cryptography \
+    && rm -rf /var/lib/apt/lists/*
+RUN git config --system --add safe.directory /workspace
+WORKDIR /workspace

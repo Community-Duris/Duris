@@ -13,7 +13,7 @@ import json
 from typing import Any, Callable, Mapping, Sequence
 
 try:
-    from . import battle_contract as battle, battle_contribution_contract as contribution, battle_build_contract as builds
+    from . import battle_contract as battle, battle_contribution_contract as contribution, battle_build_contract as builds, control_contract as controls
     from . import identity_history as identity, identity_publication, observation_semantics as observations, incident
     from .battle_history import HEADER
     from .rollup_definitions import BATTLE_DEFINITION_VERSION, ROLLUP_QUALITY_MASK
@@ -21,6 +21,7 @@ except ImportError:
     import battle_contract as battle
     import battle_contribution_contract as contribution
     import battle_build_contract as builds
+    import control_contract as controls
     import identity_history as identity
     import identity_publication
     import observation_semantics as observations
@@ -30,7 +31,9 @@ except ImportError:
 
 DEFINITION_VERSION = BATTLE_DEFINITION_VERSION  # Independent incident schema 4.
 BUILD_DEFINITION_VERSION = 6  # Independent incident schema 5; definition 5 stays sealed.
-DEFINITION_VERSIONS = frozenset((DEFINITION_VERSION, BUILD_DEFINITION_VERSION))
+CONTROL_DEFINITION_VERSION = 7  # Independent incident schema 6; earlier generations stay sealed.
+BUILD_DEFINITION_VERSIONS = frozenset((BUILD_DEFINITION_VERSION, CONTROL_DEFINITION_VERSION))
+DEFINITION_VERSIONS = frozenset((DEFINITION_VERSION, *BUILD_DEFINITION_VERSIONS))
 SCOPE = observations.SCOPE
 REPLAY = identity_publication.REPLAY
 MAX_INPUTS = 16_384
@@ -47,27 +50,35 @@ SOURCE_COLUMNS = {
     10: ("ingest_id", *HEADER, "ingested_utc_usec", *battle.FIELDS),
     11: ("ingest_id", *HEADER, "ingested_utc_usec", *contribution.FIELDS),
     12: ("ingest_id", *HEADER, "ingested_utc_usec", *builds.FIELDS),
+    13: ("ingest_id", *HEADER, "ingested_utc_usec", *controls.FIELDS),
 }
 SOURCE_SCOPE = {9: ("environment_id", "season_id"),
     10: ("battle_environment_id", "battle_season_id"), 11: ("bc_environment_id", "bc_season_id"),
-    12: ("bctx_environment_id", "bctx_season_id")}
+    12: ("bctx_environment_id", "bctx_season_id"), 13: ("ctl_environment_id", "ctl_season_id")}
 COUNTS = {9: "ownership_count", 10: "association_count", 11: "contribution_count"}
 CONFIG_COLUMNS = ("config_id", "environment_id", "season_id", "build_version", "content_version")
+CONTROL_CONFIG_COLUMNS = (*CONFIG_COLUMNS, "classifier_version", "policy_version")
+
+
+def configuration_columns(kind):
+    _require(kind in (12, 13), "battle_source_configuration_family")
+    return CONTROL_CONFIG_COLUMNS if kind == 13 else CONFIG_COLUMNS
 
 
 def counts(scope):
-    return COUNTS | ({12: "build_count"} if scope[0] == BUILD_DEFINITION_VERSION else {})
+    return COUNTS | ({12: "build_count"} if scope[0] in BUILD_DEFINITION_VERSIONS else {}) | (
+        {13: "control_count"} if scope[0] == CONTROL_DEFINITION_VERSION else {})
 
 
 def header_columns(scope):
-    return (*HEADER_COLUMNS, "build_count") if scope[0] == BUILD_DEFINITION_VERSION else HEADER_COLUMNS
+    return (*HEADER_COLUMNS, *tuple(name for kind, name in counts(scope).items() if kind >= 12))
 
 
 def table(name, scope):
     _scope(scope)
     _require(name in ("telemetry_battle_source", "telemetry_battle_input",
         "telemetry_rollup_battle_coverage", "telemetry_rollup_battle_row"), "battle_source_table")
-    return name + ("_v6" if scope[0] == BUILD_DEFINITION_VERSION else "")
+    return name + ("_v" + str(scope[0]) if scope[0] in BUILD_DEFINITION_VERSIONS else "")
 
 
 class SourceError(ValueError):
@@ -119,12 +130,14 @@ def advance_digest(digest: bytes, row: Mapping[str, Any]) -> bytes:
 
 def _source(row: Mapping[str, Any], scope: tuple[int, int, int, int], *, exact: bool) -> dict[str, Any]:
     _require(isinstance(row, Mapping), "battle_source_mapping")
-    kind = _integer(row.get("record_kind"), lower=9, upper=12)
+    kind = _integer(row.get("record_kind"), lower=9, upper=13)
     _require(kind in counts(scope), "battle_source_family_definition")
     if exact:
         _require(set(row) == set(SOURCE_COLUMNS[kind]), "battle_source_exact_fields")
     try:
-        if kind == 12:
+        if kind == 13:
+            controls.validate_raw_observation(row)
+        elif kind == 12:
             builds.validate_raw_observation(row)
         elif kind == 10:
             battle.validate_raw_fact(row)
@@ -133,7 +146,7 @@ def _source(row: Mapping[str, Any], scope: tuple[int, int, int, int], *, exact: 
         else:
             observations.validate_observation(row)
     except (battle.BattleContractError, contribution.ContributionContractError,
-            builds.BuildContractError, observations.ObservationError) as error:
+            builds.BuildContractError, controls.ControlContractError, observations.ObservationError) as error:
         raise SourceError(str(error)) from error
     _integer(row.get("ingest_id"), lower=1)
     _require(tuple(row[name] for name in SOURCE_SCOPE[kind]) == scope[2:], "battle_source_environment_season")
@@ -151,10 +164,12 @@ def _source(row: Mapping[str, Any], scope: tuple[int, int, int, int], *, exact: 
 def _configuration(configuration, source):
     if configuration is None:
         return None
-    _require(source["record_kind"] == 12 and isinstance(configuration, Mapping) and
-        set(configuration) == set(CONFIG_COLUMNS), "battle_source_configuration_fields")
-    result = {name: _integer(configuration[name], lower=1) for name in CONFIG_COLUMNS}
-    _require(all(result[name] == source["bctx_" + name] for name in CONFIG_COLUMNS),
+    kind = source["record_kind"]
+    fields = configuration_columns(kind)
+    _require(isinstance(configuration, Mapping) and set(configuration) == set(fields), "battle_source_configuration_fields")
+    result = {name: _integer(configuration[name], lower=1) for name in fields}
+    prefix = "ctl_" if kind == 13 else "bctx_"
+    _require(all(result[name] == source[prefix + name] for name in fields),
         "battle_source_configuration_conflict")
     return result
 
@@ -165,6 +180,7 @@ def retain_input(row: Mapping[str, Any], scope: tuple[int, int, int, int], quali
     packet = {"projection_quality": _quality(quality), "source": source}
     if source["record_kind"] == 12:
         packet["source"] = {name: value.hex() if name in builds.BYTE_FIELDS else value for name, value in source.items()}
+    if source["record_kind"] in (12, 13):
         packet["configuration"] = _configuration(configuration, source)
     else:
         _require(configuration is None, "battle_source_configuration_family")
@@ -197,7 +213,7 @@ def decode_input(row: Mapping[str, Any], scope: tuple[int, int, int, int]) -> De
         packet = incident.decode_evidence_packet(payload, max_bytes=MAX_PAYLOAD_BYTES)
     except incident.IncidentError as error:
         raise SourceError("battle_source_payload_json") from error
-    fields = {"projection_quality", "source"} | ({"configuration"} if row["record_kind"] == 12 else set())
+    fields = {"projection_quality", "source"} | ({"configuration"} if row["record_kind"] in (12, 13) else set())
     _require(type(packet) is dict and set(packet) == fields and
         type(packet["source"]) is dict, "battle_source_payload_fields")
     _require(_canonical(packet) == payload, "battle_source_payload_canonical")

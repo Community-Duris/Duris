@@ -1724,19 +1724,21 @@ class PyMySQLRollupDatabase:
         if header["source_fact_count"] + len(contribution.battle_inputs) > battle_source.MAX_INPUTS:
             raise BoundsExceeded("battle generation exceeds retained source capacity; use a bounded new generation")
         try:
-            if target.definition_version == battle_source.BUILD_DEFINITION_VERSION:
+            if target.definition_version in battle_source.BUILD_DEFINITION_VERSIONS:
                 # Retain the exact configuration evidence in the same page/cursor
                 # transaction. Publication never rereads a mutable raw catalogue.
                 retained = []
                 for row in contribution.battle_inputs:
                     self._check_deadline()
-                    if row["record_kind"] != 12:
+                    if row["record_kind"] not in (12, 13):
                         retained.append(row)
                         continue
                     decoded = battle_source.decode_input(row, target.scope_tuple)
-                    config = [] if not decoded.source["bctx_config_id"] else self._execute("SELECT " +
-                        ",".join(battle_source.CONFIG_COLUMNS) + " FROM telemetry_config WHERE config_id=%s LIMIT 1",
-                        (decoded.source["bctx_config_id"],))[0]
+                    prefix = "ctl_" if row["record_kind"] == 13 else "bctx_"
+                    config = [] if not decoded.source[prefix + "config_id"] else self._execute("SELECT " +
+                        ",".join(battle_source.configuration_columns(row["record_kind"])) +
+                        " FROM telemetry_config WHERE config_id=%s LIMIT 1",
+                        (decoded.source[prefix + "config_id"],))[0]
                     retained.append(battle_source.retain_input(decoded.source, target.scope_tuple, decoded.projection_quality,
                         configuration=config[0] if config else None))
                 contribution.battle_inputs[:] = retained

@@ -4739,52 +4739,52 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 			    TO_NOTVICTROOM | act_flag);
 		}
 
-		if (GET_STAT(victim) == STAT_SLEEPING && new_stat != STAT_DEAD)
 		{
-			act("$n has a RUDE awakening!", TRUE, victim, 0, 0, TO_ROOM);
-			affect_from_char(victim, SPELL_SLEEP);
-			if (IS_AFFECTED(victim, AFF_SLEEP))
+			telemetry_control_mutation_scope control_state(victim);
+			if (GET_STAT(victim) == STAT_SLEEPING && new_stat != STAT_DEAD)
 			{
-				REMOVE_BIT(victim->specials.affected_by, AFF_SLEEP);
-				telemetry_runtime_game_control_changed(victim);
+				act("$n has a RUDE awakening!", TRUE, victim, 0, 0, TO_ROOM);
+				affect_from_char(victim, SPELL_SLEEP);
+				if (IS_AFFECTED(victim, AFF_SLEEP))
+				{
+					REMOVE_BIT(victim->specials.affected_by, AFF_SLEEP);
+				}
+				SET_POS(victim, GET_POS(victim) + STAT_NORMAL);
 			}
-			SET_POS(victim, GET_POS(victim) + STAT_NORMAL);
-		}
 
-		/* instant nuke of minor para if hit */
-		if (IS_AFFECTED2(victim, AFF2_MINOR_PARALYSIS) && ch != victim)
-		{
-			act("$n's crushing blow frees $N from a magic which held $M motionless.",
-			    FALSE, ch, 0, victim, TO_ROOM);
-			act("$n's blow shatters the magic paralyzing you!", FALSE, ch, 0, victim,
-			    TO_VICT);
-			act("Your blow disrupts the magic keeping $N frozen.", FALSE, ch, 0, victim,
-			    TO_CHAR);
-			for (af = victim->affected; af; af = next_af)
+			/* instant nuke of minor para if hit */
+			if (IS_AFFECTED2(victim, AFF2_MINOR_PARALYSIS) && ch != victim)
 			{
-				next_af = af->next;
-				if (af->bitvector2 & AFF2_MINOR_PARALYSIS)
-					affect_remove(victim, af);
+				act("$n's crushing blow frees $N from a magic which held $M motionless.",
+				    FALSE, ch, 0, victim, TO_ROOM);
+				act("$n's blow shatters the magic paralyzing you!", FALSE, ch, 0,
+				    victim, TO_VICT);
+				act("Your blow disrupts the magic keeping $N frozen.", FALSE, ch, 0,
+				    victim, TO_CHAR);
+				for (af = victim->affected; af; af = next_af)
+				{
+					next_af = af->next;
+					if (af->bitvector2 & AFF2_MINOR_PARALYSIS)
+						affect_remove(victim, af);
+				}
+				REMOVE_BIT(victim->specials.affected_by2, AFF2_MINOR_PARALYSIS);
 			}
-			REMOVE_BIT(victim->specials.affected_by2, AFF2_MINOR_PARALYSIS);
-			telemetry_runtime_game_control_changed(victim);
-		}
 
-		/* if char is bound there is a chance the dam cut the binding */
-		if (IS_AFFECTED(victim, AFF_BOUND))
-		{
-			if (number(0, 100) <= dam)
+			/* if char is bound there is a chance the dam cut the binding */
+			if (IS_AFFECTED(victim, AFF_BOUND))
 			{
-				/* ok char if free */
-				REMOVE_BIT(victim->specials.affected_by, AFF_BOUND);
-				telemetry_runtime_game_control_changed(victim);
-				act("$N's bindings are cut free!", FALSE, ch, 0, victim,
-				    TO_NOTVICT);
-				act("Your blow cuts through $N's bindings.", FALSE, ch, 0, victim,
-				    TO_CHAR);
-				send_to_char(
-					"Your bindings are cut from the damage, you're free!\r\n",
-					victim);
+				if (number(0, 100) <= dam)
+				{
+					/* ok char if free */
+					REMOVE_BIT(victim->specials.affected_by, AFF_BOUND);
+					act("$N's bindings are cut free!", FALSE, ch, 0, victim,
+					    TO_NOTVICT);
+					act("Your blow cuts through $N's bindings.", FALSE, ch, 0,
+					    victim, TO_CHAR);
+					send_to_char(
+						"Your bindings are cut from the damage, you're free!\r\n",
+						victim);
+				}
 			}
 		}
 

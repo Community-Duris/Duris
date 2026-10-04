@@ -137,16 +137,14 @@ void set_fighting(P_char ch, P_char vict)
 	     (victim->following && (victim->following == ch))))
 		affect_from_char(ch, SONG_CHARMING);
 
-	if (affected_by_spell(ch, SONG_SLEEP))
-		affect_from_char(ch, SONG_SLEEP);
-
-	if (affected_by_spell(ch, SPELL_SLEEP))
-		affect_from_char(ch, SPELL_SLEEP);
-
-	if (IS_AFFECTED(ch, AFF_SLEEP))
 	{
-		REMOVE_BIT(ch->specials.affected_by, AFF_SLEEP);
-		telemetry_runtime_game_control_changed(ch);
+		telemetry_control_mutation_scope control_state(ch);
+		if (affected_by_spell(ch, SONG_SLEEP))
+			affect_from_char(ch, SONG_SLEEP);
+		if (affected_by_spell(ch, SPELL_SLEEP))
+			affect_from_char(ch, SPELL_SLEEP);
+		if (IS_AFFECTED(ch, AFF_SLEEP))
+			REMOVE_BIT(ch->specials.affected_by, AFF_SLEEP);
 	}
 
 	if (IS_AFFECTED(ch, AFF_SNEAK))
@@ -711,16 +709,15 @@ void update_pos(P_char ch)
 
 			if (tmp && (stat < STAT_RESTING))
 			{
+				telemetry_control_mutation_scope control_state(ch);
 				if (affected_by_spell(ch, SPELL_SLEEP))
 				{
 					REMOVE_BIT(ch->specials.affected_by, AFF_SLEEP);
-					telemetry_runtime_game_control_changed(ch);
 					affect_from_char(ch, SPELL_SLEEP);
 				}
 				if (affected_by_spell(ch, SONG_SLEEP))
 				{
 					REMOVE_BIT(ch->specials.affected_by, AFF_SLEEP);
-					telemetry_runtime_game_control_changed(ch);
 					affect_from_char(ch, SONG_SLEEP);
 				}
 				if (stat == STAT_SLEEPING)
@@ -736,18 +733,18 @@ void update_pos(P_char ch)
 	if ((GET_STAT(ch) == STAT_SLEEPING) && (stat > STAT_SLEEPING))
 	{
 		act("$n has a RUDE awakening!", TRUE, ch, 0, 0, TO_ROOM);
+		telemetry_control_mutation_scope control_state(ch);
 		if (affected_by_spell(ch, SPELL_SLEEP))
 		{
 			REMOVE_BIT(ch->specials.affected_by, AFF_SLEEP);
-			telemetry_runtime_game_control_changed(ch);
 			affect_from_char(ch, SPELL_SLEEP);
 		}
 		if (affected_by_spell(ch, SONG_SLEEP))
 		{
 			REMOVE_BIT(ch->specials.affected_by, AFF_SLEEP);
-			telemetry_runtime_game_control_changed(ch);
 			affect_from_char(ch, SONG_SLEEP);
 		}
+		control_state.finish();
 		do_wake(ch, 0, -4);
 		if (IS_NPC(ch))
 		{

@@ -1459,12 +1459,15 @@ The maintained commands remain
 disposable `python3 tests/async/test_telemetry_battle_runtime_sql.py --sql-fixture`.
 The subsequent [typed control contract](CONTROL_OBSERVATIONS.md) adds kind-13
 resolutions and separate target-state evidence while retaining these kind-11
-meanings. Live duration coverage, the complete producer inventory, retained
-control publication, prevention, faction exposure, typed outcomes and all seven
-final acceptance requirements retain unfinished portions under #258.
+meanings. The [selected-state inventory and definition-7 publication](CONTROL_OBSERVATIONS.md)
+now qualify nullable elapsed flag duration independently from accepted operations
+and configured ticks. Proven action restrictions, complete attempt denominators,
+prevention, faction exposure, typed outcomes and all seven final acceptance
+requirements retain unfinished portions under #258.
 
 The combined accounting/telemetry contract now preserves six immutable upgrade
-histories at **70 steps / 263 tables**. Both database engines qualified those
+histories at **71 steps / 267 tables**, preserving the earlier 70-step integration
+and appending control publication. The maintained personal-local command qualifies those
 histories, their unchanged prefixes and the shared runtime schema. See
 [runtime compatibility](../persistence/RUNTIME_COMPATIBILITY.md) and the latest
 [implementation status](IMPLEMENTATION_STATUS.md) for the integrated copyover,

@@ -181,6 +181,11 @@ std::array<nevent_data, 128> fixture_affect_events{};
 std::array<event_short_affect_data, 128> fixture_affect_payloads{};
 std::size_t fixture_affect_event_count = 0U;
 unsigned fixture_affect_scheduled = 0U, fixture_affect_canceled = 0U, fixture_affect_deaths = 0U;
+unsigned fixture_affect_wakes = 0U;
+std::uint16_t fixture_expected_wake_mask = 0U;
+void fixture_damage_control_release(P_char, P_char, int, int);
+void fixture_staff_control_bit(P_char, bool, unsigned, bool, bool);
+void fixture_staff_control_bank(P_char, int);
 unsigned long long ne_event_tick = 100U;
 bool do_profile = false;
 profile_timer short_affect_liveness_profile{};
@@ -351,7 +356,29 @@ void song_broken(char_link_data *);
 void set_ward_bits(P_char, const affected_type *, bool);
 void do_wake(P_char character, char *, int)
 {
-	assert(!IS_AFFECTED(character, AFF_SLEEP));
+	assert(character->telemetry_control_rebuild_depth == 0U);
+	assert(telemetry_runtime_game_control_mask(character) == fixture_expected_wake_mask);
+	++fixture_affect_wakes;
+}
+void do_stand(P_char, char *, int) {}
+void stop_riding(P_char)
+{
+	std::abort();
+}
+void StopAllAttackers(P_char) {}
+int NumAttackers(P_char)
+{
+	return 0;
+}
+void clear_links(P_char, ush_int type)
+{
+	assert(type == LNK_FLANKING || type == LNK_CIRCLING);
+}
+void character_maintenance_changed(P_char) {}
+int dice(int count, int size)
+{
+	assert(count > 0 && size > 0);
+	return count;
 }
 void do_alert(P_char, char *, int) {}
 void die(P_char character, P_char)
@@ -363,6 +390,25 @@ void die(P_char character, P_char)
 
 namespace
 {
+struct fixture_native_lifetimes
+{
+	std::vector<P_char> characters;
+	explicit fixture_native_lifetimes(std::initializer_list<P_char> values)
+		: characters(values)
+	{
+		for (auto *character : characters)
+		{
+			if (!character->runtime_id)
+				character->runtime_id = allocate_character_runtime_id();
+			register_character_runtime_id(character);
+		}
+	}
+	~fixture_native_lifetimes()
+	{
+		for (auto *character : characters)
+			unregister_character_runtime_id(character);
+	}
+};
 struct fake_repository
 {
 	bool use_native = false;
@@ -2847,13 +2893,13 @@ fake_repository check_native_control_capture(bool use_native = false, bool expor
 	attacker_data.pid = 8961;
 	target_data.pid = 8962;
 	unrelated_data.pid = 8963;
+	fixture_native_lifetimes lifetimes{ &attacker, &target, &unrelated, &npc, &pet };
 	npc.only.npc = &npc_data;
 	pet.only.npc = &pet_data;
 	npc_data.R_num = pet_data.R_num = -1; // Native lifetime exists; legacy ID is absent.
 	for (auto *actor : { &npc, &pet })
 	{
 		actor->specials.act = ACT_ISNPC;
-		actor->runtime_id = allocate_character_runtime_id();
 	}
 	for (auto *actor : { &attacker, &target, &unrelated, &npc, &pet })
 	{
@@ -3037,13 +3083,13 @@ fake_repository check_native_expanded_control_capture(bool use_native = false,
 	attacker_data.pid = 8971;
 	target_data.pid = 8972;
 	rejected_data.pid = 8973;
+	fixture_native_lifetimes lifetimes{ &attacker, &target, &rejected, &npc, &pet };
 	npc.only.npc = &npc_data;
 	pet.only.npc = &pet_data;
 	npc_data.R_num = pet_data.R_num = -1;
 	for (auto *actor : { &npc, &pet })
 	{
 		actor->specials.act = ACT_ISNPC;
-		actor->runtime_id = allocate_character_runtime_id();
 	}
 	for (auto *actor : { &attacker, &target, &rejected, &npc, &pet })
 	{
@@ -3328,12 +3374,15 @@ fake_repository check_native_expanded_control_capture(bool use_native = false,
 	for (const auto &record : fake.controls)
 	{
 		const auto &value = record.payload.control;
-		assert(value.duration_coverage == 0U);
+		assert(value.duration_coverage ==
+		       (value.kind == telemetry_control_kind::state_entry ||
+					value.kind == telemetry_control_kind::state_interval ?
+				255U :
+				0U));
 		if (value.kind != telemetry_control_kind::resolution)
 		{
 			assert(value.source.actor.actor_id == 0U &&
-			       value.target.actor.actor_id != 8973U &&
-			       (value.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN));
+			       value.target.actor.actor_id != 8973U);
 			continue;
 		}
 		++resolutions;
@@ -3382,7 +3431,7 @@ fake_repository check_native_expanded_control_capture(bool use_native = false,
 	       telemetry_control_result::percentage_rejected })
 		assert(rejections.contains(expected));
 	std::printf(
-		"PASS: %u native typed resolutions, %u accepted, 12 actual rejection reasons, refresh/bypass/bound declarations and partial target-state coverage\n",
+		"PASS: %u native typed resolutions, %u accepted, 12 actual rejection reasons, refresh/bypass/bound declarations and selected-state coverage independent of context quality\n",
 		resolutions, applied);
 	if (export_capture)
 		export_native_battle_capture(fake);
@@ -3702,6 +3751,7 @@ void check_native_affect_mutations()
 	pc_only_data pc{}, target_pc{};
 	pc.pid = 8988;
 	target_pc.pid = 8989;
+	fixture_native_lifetimes lifetimes{ &player, &target };
 	player.only.pc = &pc;
 	target.only.pc = &target_pc;
 	player.in_room = target.in_room = 0;
@@ -3709,6 +3759,7 @@ void check_native_affect_mutations()
 	character_list = &player;
 	player.player.level = target.player.level = 20;
 	player.player.m_class = target.player.m_class = CLASS_WARRIOR;
+	target.player.race = RACE_HUMAN;
 	player.points.base_hit = target.points.base_hit = 300;
 	player.points.max_hit = target.points.max_hit = 300;
 	player.points.hit = target.points.hit = 300;
@@ -3796,6 +3847,96 @@ void check_native_affect_mutations()
 	song_broken(&link);
 	assert(telemetry_runtime_game_control_mask(&target) == 0U);
 	expected.emplace_back(32U, 0U);
+	// A rude awakening removes two native sleep sources as one operation.
+	// A third source survives; its rebuild must not invent a stop/restart.
+	for (bool retain_sleep : { false, true })
+	{
+		prototype = {};
+		prototype.type = SPELL_SLEEP;
+		prototype.bitvector = AFF_SLEEP;
+		(void)affect_to_char(&target, &prototype);
+		prototype.type = SONG_SLEEP;
+		(void)affect_to_char(&target, &prototype);
+		expected.emplace_back(0U, 32U);
+		if (retain_sleep)
+		{
+			prototype.type = 100;
+			(void)affect_to_char(&target, &prototype);
+		}
+		SET_POS(&target, POS_PRONE + STAT_SLEEPING);
+		target.specials.fighting = &player;
+		fixture_expected_wake_mask = retain_sleep ? 32U : 0U;
+		update_pos(&target);
+		assert(!affected_by_spell(&target, SPELL_SLEEP) &&
+		       !affected_by_spell(&target, SONG_SLEEP));
+		assert(telemetry_runtime_game_control_mask(&target) == fixture_expected_wake_mask);
+		target.specials.fighting = nullptr;
+		if (retain_sleep)
+			affect_from_char(&target, 100);
+		expected.emplace_back(32U, 0U);
+	}
+	// Falling applies native stun, then releases both magical sleep sources.
+	// Stun remains a separate status; no transient sleep removal is observable.
+	prototype = {};
+	prototype.type = SPELL_SLEEP;
+	prototype.bitvector = AFF_SLEEP;
+	(void)affect_to_char(&target, &prototype);
+	prototype.type = SONG_SLEEP;
+	(void)affect_to_char(&target, &prototype);
+	expected.emplace_back(0U, 32U);
+	SET_POS(&target, POS_STANDING + STAT_SLEEPING);
+	fixture_expected_wake_mask = 2U;
+	update_pos(&target);
+	expected.emplace_back(32U, 34U);
+	expected.emplace_back(34U, 2U);
+	assert(telemetry_runtime_game_control_mask(&target) == 2U);
+	affect_from_char(&target, SPELL_PWORD_STUN);
+	expected.emplace_back(2U, 0U);
+	assert(fixture_affect_wakes == 4U);
+	fixture_expected_wake_mask = 0U;
+	// The maintained damage-release block completes all status removals before
+	// observing the hit. Multiple minor-paralysis owners retain unrelated flags.
+	prototype = {};
+	prototype.type = SPELL_MINOR_PARALYSIS;
+	prototype.bitvector = AFF_SLEEP | AFF_BOUND | AFF_BLIND;
+	prototype.bitvector2 = AFF2_MINOR_PARALYSIS;
+	(void)affect_to_char(&target, &prototype);
+	expected.emplace_back(0U, 169U);
+	prototype.type = SPELL_SLEEP;
+	(void)affect_to_char(&target, &prototype);
+	SET_POS(&target, POS_PRONE + STAT_SLEEPING);
+	fixture_damage_control_release(&player, &target, 20, STAT_NORMAL);
+	assert(!target.affected && telemetry_runtime_game_control_mask(&target) == 0U);
+	expected.emplace_back(169U, 0U);
+	prototype = {};
+	prototype.type = SPELL_MINOR_PARALYSIS;
+	prototype.bitvector2 = AFF2_MINOR_PARALYSIS;
+	(void)affect_to_char(&target, &prototype);
+	expected.emplace_back(0U, 8U);
+	fixture_damage_control_release(&target, &target, 20, STAT_NORMAL);
+	assert(target.affected && telemetry_runtime_game_control_mask(&target) == 8U);
+	fixture_damage_control_release(&player, &target, 20, STAT_NORMAL);
+	expected.emplace_back(8U, 0U);
+	// Staff table/offset writes execute their maintained parsers/copy bodies.
+	for (unsigned family = 0U; family < 8U; ++family)
+	{
+		const auto flag = first[family] ? first[family] : second[family];
+		unsigned bit = 0U;
+		while ((1UL << bit) != flag)
+			++bit;
+		fixture_staff_control_bit(&target, first[family] == 0U, bit, true, true);
+		assert(telemetry_runtime_game_control_mask(&target) == (1U << family));
+		expected.emplace_back(0U, 1U << family);
+		fixture_staff_control_bit(&target, first[family] == 0U, bit, false, true);
+		expected.emplace_back(1U << family, 0U);
+	}
+	fixture_staff_control_bank(&target, AFF_BLIND | AFF_SLEEP | AFF_BOUND);
+	expected.emplace_back(0U, 161U);
+	fixture_staff_control_bank(&target, 0);
+	expected.emplace_back(161U, 0U);
+	char_data outside{};
+	fixture_staff_control_bit(&outside, false, 0U, true, true);
+	fixture_staff_control_bank(&outside, 0);
 	// Execute the actual equipment aggregation and save-style remove/reapply.
 	obj_data gear{};
 	gear.R_num = -1;
@@ -3871,7 +4012,7 @@ void check_native_affect_mutations()
 	assert(affect_total(dead, TRUE) == TRUE && fixture_affect_deaths == 1U);
 	assert(std::none_of(fixture_affect_used.begin(), fixture_affect_used.end(),
 			    [](bool used) { return used; }));
-	assert(fixture_affect_scheduled == 10U && fixture_affect_canceled == 10U);
+	assert(fixture_affect_scheduled == 11U && fixture_affect_canceled == 11U);
 	assert(target.telemetry_control_rebuild_depth == 0U);
 	assert(telemetry_runtime_game_battle_leave(&target).outcome ==
 	       telemetry_runtime_outcome::accepted);
@@ -3885,23 +4026,34 @@ void check_native_affect_mutations()
 	for (const auto &record : fake.controls)
 	{
 		const auto &value = record.payload.control;
-		assert(value.duration_coverage == 0U);
+		assert(value.duration_coverage ==
+		       (value.kind == telemetry_control_kind::state_entry ||
+					value.kind == telemetry_control_kind::state_interval ?
+				255U :
+				0U));
 		if (value.target.actor.actor_id == 8989U &&
 		    value.boundary == telemetry_control_boundary::state_changed)
 		{
 			assert(transitions < expected.size());
+			if (value.before_mask != expected[transitions].first ||
+			    value.after_mask != expected[transitions].second)
+				std::fprintf(
+					stderr,
+					"Native transition %zu: observed %u -> %u, expected %u -> %u\n",
+					transitions, value.before_mask, value.after_mask,
+					expected[transitions].first, expected[transitions].second);
 			assert(value.before_mask == expected[transitions].first &&
 			       value.after_mask == expected[transitions].second);
 			++transitions;
 		}
 	}
-	assert(transitions == expected.size() && transitions == 28U);
+	assert(transitions == expected.size() && transitions == 58U);
 	character_list = nullptr;
 	world = nullptr;
 	zone_table = nullptr;
 	top_of_world = top_of_zone_table = -1;
 	std::puts(
-		"PASS: maintained affect/ward functions and direct cure/song callers conserve 28 final control transitions across all eight statuses, expiry, overlapping affects/wards, refresh, refused removal, NOAPPLY, equipment and save rebuilds; 10 timers canceled and teardown is ASan-safe; coverage remains partial");
+		"PASS: maintained affect/ward/wake/damage/staff functions conserve 58 final control transitions across all eight statuses, expiry, overlap, refresh, refused removal, NOAPPLY, equipment/save rebuilding and compound release; 11 timers canceled and teardown is ASan-safe; selected flag coverage is 255 with independent context quality");
 }
 #endif
 
@@ -3926,12 +4078,26 @@ void check_native_control_state_changes()
 	pc.pid = 8985;
 	target_pc.pid = 8986;
 	outside_pc.pid = 8987;
+	fixture_native_lifetimes lifetimes{ &player, &target, &outside };
 	player.only.pc = &pc;
 	target.only.pc = &target_pc;
 	outside.only.pc = &outside_pc;
 	player.in_room = target.in_room = outside.in_room = 0;
 	assert(telemetry_runtime_game_combat_engage(&player, &target).outcome ==
 	       telemetry_runtime_outcome::accepted);
+	// A temporary/account-screen load can reuse a PID and default room zero.
+	// Neither an unpublished identity nor a borrowed live identity may mutate it.
+	char_data temporary{};
+	pc_only_data temporary_pc{};
+	temporary_pc.pid = target_pc.pid;
+	temporary.only.pc = &temporary_pc;
+	temporary.in_room = 0;
+	temporary.specials.affected_by = AFF_BLIND;
+	telemetry_runtime_game_control_changed(&temporary);
+	temporary.runtime_id = target.runtime_id;
+	telemetry_runtime_game_control_changed(&temporary);
+	temporary.runtime_id = allocate_character_runtime_id();
+	telemetry_runtime_game_control_changed(&temporary);
 	const unsigned long first[] = { AFF_BLIND, 0U, 0U, 0U, 0U, AFF_SLEEP, 0U, AFF_BOUND };
 	const unsigned long second[] = {
 		0U,	   AFF2_STUNNED, AFF2_MAJOR_PARALYSIS, AFF2_MINOR_PARALYSIS,
@@ -4012,7 +4178,12 @@ void check_native_control_state_changes()
 	{
 		const auto &value = record.payload.control;
 		assert(value.target.actor.actor_id != 8987U);
-		assert(value.duration_coverage == 0U &&
+		assert(value.duration_coverage ==
+			       (value.kind == telemetry_control_kind::state_entry ||
+						value.kind ==
+							telemetry_control_kind::state_interval ?
+					255U :
+					0U) &&
 		       (value.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN));
 		if (value.target.actor.actor_id != 8986U)
 			continue;
@@ -4033,7 +4204,7 @@ void check_native_control_state_changes()
 	zone_table = nullptr;
 	top_of_world = top_of_zone_table = -1;
 	std::puts(
-		"PASS: native control-state callbacks conserve 18 final transitions, suppress nested rebuilds, preserve partial coverage and exclude outside/inactive actors without build hashing");
+		"PASS: native control-state callbacks conserve 18 final transitions, suppress nested rebuilds, preserve independent context quality and exclude outside/inactive actors without build hashing");
 }
 
 void check_native_build_limits()

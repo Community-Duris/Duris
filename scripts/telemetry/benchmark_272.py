@@ -339,6 +339,10 @@ def report_measurement(workload: int, repetitions: int) -> dict[str, Any]:
         def _read_published_state(self, _request: Any) -> dict[str, Any]:
             return state_row()
 
+        def _read_incident_coverage(self, _target: Any, _state: Any, *, max_bytes: int) -> Any:
+            from incident import public_coverage
+            return public_coverage(None, ())
+
         def _read_page(self, _request: Any, _target: Any) -> Any:
             return _QueryPage(
                 rows=tuple(rows),

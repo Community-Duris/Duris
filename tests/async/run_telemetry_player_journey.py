@@ -20,6 +20,23 @@ import run_copyover_runtime_journey as copyover
 import test_flatfile_combat_journey as journey
 
 
+def reviewed_property_catalog(runtime: Path, catalog: Path) -> None:
+    """Reviewed registry-v1 fixture shared by personal-local server journeys."""
+    properties = (runtime / "lib/duris.properties").read_text()
+    for key, expected in {
+        "exp.zoneTrophy.observe": 0.0, "exp.rested.enabled": 1.0,
+        "epic.touch.maxPayoutFactor": 10.0, "epic.touch.PayoutFactor": 1.0,
+        "epic.zone.alignmentMod": 0.2, "epic.alignment.minPercentage": 0.15,
+    }.items():
+        values = re.findall(r"^" + re.escape(key) + r"=([^\r\n]+)$", properties, re.M)
+        assert len(values) == 1 and float(values[0]) == expected, f"reviewed fixture drift: {key}"
+    catalog.touch(mode=0o600)
+    catalog.write_text(
+        "6f49b7e9b16055b6c7d48d83f4a9de789d89adeddabbb4bfc1f6d2c86f6b8792 265 265 1\n"
+        "f616d8c74b8768d1eaab9e007e2289f431dfe7eaf3a57fac7ee95f29da73eca8 4128692423 265 2\n"
+    )
+
+
 def run(binary: Path, settings: Path) -> None:
     cfg = json.loads(settings.read_text())
     assert re.fullmatch(r"duris_265_[a-z0-9_]*test", cfg["DB_NAME"])
@@ -80,23 +97,8 @@ def run(binary: Path, settings: Path) -> None:
         # policy values and the five existing effective properties pinned below;
         # entry 20 is the rested gate with reviewed default 1. Entries 15..19
         # remain maintained-but-unused and excluded from identity.
-        properties = (runtime / "lib/duris.properties").read_text()
-        for key, expected in {
-            "exp.zoneTrophy.observe": 0.0,
-            "exp.rested.enabled": 1.0,
-            "epic.touch.maxPayoutFactor": 10.0,
-            "epic.touch.PayoutFactor": 1.0,
-            "epic.zone.alignmentMod": 0.2,
-            "epic.alignment.minPercentage": 0.15,
-        }.items():
-            values = re.findall(r"^" + re.escape(key) + r"=([^\r\n]+)$", properties, re.M)
-            assert len(values) == 1 and float(values[0]) == expected, f"reviewed fixture drift: {key}"
         catalog = root / "reviewed-properties.catalog"
-        catalog.touch(mode=0o600)
-        catalog.write_text(
-            "6f49b7e9b16055b6c7d48d83f4a9de789d89adeddabbb4bfc1f6d2c86f6b8792 265 265 1\n"
-            "f616d8c74b8768d1eaab9e007e2289f431dfe7eaf3a57fac7ee95f29da73eca8 4128692423 265 2\n"
-        )
+        reviewed_property_catalog(runtime, catalog)
         env["TELEMETRY_PROPERTY_CATALOG_FILE"] = str(catalog)
         for name in ("logs/log", "journals/players", "journals/critical", "bin/server"):
             (runtime / name).mkdir(parents=True, exist_ok=True, mode=0o700)

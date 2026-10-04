@@ -976,11 +976,11 @@ void do_fire(P_char ch, char *argument, int cmd)
 			// Wakes up if hit and alive.
 			if (result == DAM_NONEDEAD)
 			{
-				REMOVE_BIT(victim->specials.affected_by, AFF_SLEEP);
-				telemetry_runtime_game_control_changed(victim);
-				if (affected_by_spell(victim, SPELL_SLEEP))
 				{
-					affect_from_char(victim, SPELL_SLEEP);
+					telemetry_control_mutation_scope control_state(victim);
+					REMOVE_BIT(victim->specials.affected_by, AFF_SLEEP);
+					if (affected_by_spell(victim, SPELL_SLEEP))
+						affect_from_char(victim, SPELL_SLEEP);
 				}
 				// At level 56, we have major para arrows.  Otherwise, they just have fire/cold/lightning/acid.
 				if (!shield_blocked)

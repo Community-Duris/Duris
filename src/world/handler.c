@@ -5477,7 +5477,10 @@ void extract_char(P_char ch)
 	// A morph delegates to un_morph, which re-enters extraction for the body.
 	// Retire other identities before any teardown callbacks, including CTF cleanup.
 	if (!IS_MORPH(ch))
+	{
+		(void)telemetry_runtime_game_battle_leave(ch);
 		unregister_character_runtime_id(ch);
+	}
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	while (affected_by_spell(ch, TAG_CTF))
 	{

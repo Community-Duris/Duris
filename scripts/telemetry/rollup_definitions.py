@@ -12,10 +12,11 @@ from types import MappingProxyType
 from typing import Any, Mapping
 
 DEFINITION_VERSION = 1
-SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2, 3, 5, 6})
+SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2, 3, 5, 6, 7})
 BATTLE_DEFINITION_VERSION = 5
 BATTLE_BUILD_DEFINITION_VERSION = 6
-BATTLE_DEFINITION_VERSIONS = frozenset((BATTLE_DEFINITION_VERSION, BATTLE_BUILD_DEFINITION_VERSION))
+BATTLE_CONTROL_DEFINITION_VERSION = 7
+BATTLE_DEFINITION_VERSIONS = frozenset((BATTLE_DEFINITION_VERSION, BATTLE_BUILD_DEFINITION_VERSION, BATTLE_CONTROL_DEFINITION_VERSION))
 
 PUBLICATION_BUILDING = 0
 PUBLICATION_PUBLISHED = 1
@@ -588,11 +589,31 @@ BUILD_REPORT_DEFINITIONS = MappingProxyType({
             "unique_human_count", "universal_power_score", "arena_match_result"), rate_unit="not_computed"),
 })
 
+CONTROL_REPORT_DEFINITIONS = MappingProxyType({
+    **{name: replace(value, definition_version=BATTLE_CONTROL_DEFINITION_VERSION,
+                    table="telemetry_rollup_battle_row_v7") for name, value in BUILD_REPORT_DEFINITIONS.items()},
+    **{name: ReportDefinition(name=name, definition_version=BATTLE_CONTROL_DEFINITION_VERSION,
+        grain=grain, table="telemetry_rollup_battle_row_v7",
+        dimensions=("ctl_boot_id", "ctl_process_id", "ctl_sequence", "ctl_kind", "ctl_family", "ctl_result",
+            "ctl_target_actor_id", "ctl_target_actor_kind", "ctl_config_id", "ctl_build_version", "ctl_content_version",
+            "target_account_token", "target_controller_token", "source_account_token", "source_controller_token"),
+        metrics=("accepted_application_count", "ctl_configured_ticks", "ctl_before_mask", "ctl_after_mask",
+            "ctl_duration_coverage", "observed_prefix_usec", "qualified_status_usec", "chain_status",
+            "source_link_status", "target_link_status", "clock_status", "configuration_status", "publication_quality_flags"),
+        denominator="Exact original operations or disjoint target-state prefixes. Accepted operations, signed configured ticks, elapsed selected-state time and action restrictions are different measurements. Only verified source chains, association prefixes, configuration, clocks and independent schema-6 review qualify duration; each status also requires its duration coverage bit.",
+        distinct_semantics="An operation is not an independent battle or player. Overlapping causes contribute one target-state prefix. Source identity is credited only for accepted operations, never for elapsed target status time. Status families overlap and their durations cannot be summed as action loss.",
+        distribution_semantics="Compare explicit family/result, target/source context, configuration/content and identity cells. Missing source, overlap, censored tails, unknown identities and coverage remain visible. No causal or whole-population balance claim is established.",
+        account_metrics_available=True, unavailable_metrics=("proven_action_restriction_usec", "caster_attributed_duration",
+            "unique_human_count", "battle_win_rate", "complete_controller_population"), rate_unit="not_computed")
+        for name, grain in (("battle_control_operations", "original_typed_control_operation"),
+                            ("battle_control_states", "original_target_state_entry_prefix_or_gap"))},
+})
+
 
 def report_definition(name: str, definition_version: int | None = None) -> ReportDefinition:
     canonical = REPORT_ALIASES.get(name, name)
     try:
-        definition = REPORT_DEFINITIONS.get(canonical) or OBSERVATION_REPORT_DEFINITIONS.get(canonical) or IDENTITY_REPORT_DEFINITIONS.get(canonical) or BATTLE_REPORT_DEFINITIONS.get(canonical) or BUILD_REPORT_DEFINITIONS[canonical]
+        definition = REPORT_DEFINITIONS.get(canonical) or OBSERVATION_REPORT_DEFINITIONS.get(canonical) or IDENTITY_REPORT_DEFINITIONS.get(canonical) or BATTLE_REPORT_DEFINITIONS.get(canonical) or BUILD_REPORT_DEFINITIONS.get(canonical) or CONTROL_REPORT_DEFINITIONS[canonical]
     except KeyError as error:
         raise ValueError(
             f"unknown report definition {name!r}; "
@@ -606,14 +627,16 @@ def report_definition(name: str, definition_version: int | None = None) -> Repor
         raise ValueError(f"report requires definition version {definition.definition_version}")
     if canonical in OBSERVATION_REPORT_DEFINITIONS and definition_version != 2:
         raise ValueError("observation report requires definition version 2")
-    if (canonical in BUILD_REPORT_DEFINITIONS) != (definition_version in BATTLE_DEFINITION_VERSIONS):
+    if (canonical in CONTROL_REPORT_DEFINITIONS) != (definition_version in BATTLE_DEFINITION_VERSIONS):
         raise ValueError("battle reports require their independent definition version")
+    if definition_version == BATTLE_CONTROL_DEFINITION_VERSION:
+        return CONTROL_REPORT_DEFINITIONS[canonical]
     return BUILD_REPORT_DEFINITIONS[canonical] if definition_version == BATTLE_BUILD_DEFINITION_VERSION else replace(definition, definition_version=definition_version)
 
 
 def report_definitions(definition_version: int = 1) -> tuple[ReportDefinition, ...]:
     if definition_version in BATTLE_DEFINITION_VERSIONS:
-        definitions = BUILD_REPORT_DEFINITIONS if definition_version == BATTLE_BUILD_DEFINITION_VERSION else BATTLE_REPORT_DEFINITIONS
+        definitions = CONTROL_REPORT_DEFINITIONS if definition_version == BATTLE_CONTROL_DEFINITION_VERSION else BUILD_REPORT_DEFINITIONS if definition_version == BATTLE_BUILD_DEFINITION_VERSION else BATTLE_REPORT_DEFINITIONS
         return tuple(report_definition(name, definition_version) for name in sorted(definitions))
     names = set(REPORT_DEFINITIONS)
     if definition_version == 2:

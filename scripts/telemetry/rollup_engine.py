@@ -938,7 +938,7 @@ def build_page_contributions(
             return
         if tuple(row[name] for name in battle_source.SOURCE_SCOPE[kind]) != target.scope_tuple[2:]:
             return
-        prefix = {9: "", 10: "battle_", 11: "bc_", 12: "bctx_"}[kind]
+        prefix = {9: "", 10: "battle_", 11: "bc_", 12: "bctx_", 13: "ctl_"}[kind]
         quality = _normalize_raw_quality(row[prefix + "quality_flags"])
         occurrence = row["occurrence_utc_usec"]
         if occurrence == UTC_UNKNOWN:

@@ -8,6 +8,14 @@ The version 2 [typed observation reports](OBSERVATION_PROJECTIONS.md) and versio
 through the existing rollup Python API and `rollup.py report` command. The
 administrator catalog retains its version 1 definitions while the four complete
 balance report suites are implemented.
+Definitions 5/6/7 expose battle, build and selected-control observations through
+the same rollup API/CLI. Definition 7's `battle_control_operations` and
+`battle_control_states` read only its published `_v7` rows and coverage; the
+dedicated report role cannot read private retained inputs. Accepted operations,
+configured ticks and qualified elapsed status values are distinct units.
+Missing source, clocks/configuration, loss and identity remain visible; proven
+action-restriction time and caster duration remain NULL. See
+[CONTROL_OBSERVATIONS.md](CONTROL_OBSERVATIONS.md) for fields and comparison limits.
 
 ## Boundary and connection policy
 
