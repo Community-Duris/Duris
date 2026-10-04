@@ -654,6 +654,52 @@ void player_save_worker_shutdown(void)
 	apply_context = nullptr;
 }
 
+bool player_save_worker_idle(void) noexcept
+{
+	std::lock_guard<std::mutex> lock(worker_mutex);
+	return slots.empty() && results.empty() && ready_pids.empty() && ready_set.empty() &&
+	       !retained_bytes;
+}
+
+bool player_save_worker_shutdown_if_idle(void)
+{
+	{
+		std::lock_guard<std::mutex> lock(worker_mutex);
+		if (!slots.empty() || !results.empty() || !ready_pids.empty() ||
+		    !ready_set.empty() || retained_bytes)
+			return false;
+		for (const std::thread &worker : workers)
+			if (worker.get_id() == std::this_thread::get_id())
+				return false;
+		// Submission observes this same mutex; no job can enter after the check.
+		stop_requested = true;
+		health.stop_pending = true;
+		job_available.notify_all();
+		result_available.notify_all();
+	}
+	try
+	{
+		for (std::thread &worker : workers)
+			if (worker.joinable())
+				worker.join();
+	}
+	catch (const std::system_error &)
+	{
+		return false;
+	}
+	std::lock_guard<std::mutex> lock(worker_mutex);
+	if (!slots.empty() || !results.empty() || !ready_pids.empty() || !ready_set.empty() ||
+	    retained_bytes)
+		return false;
+	workers.clear();
+	health.running = false;
+	health.stop_pending = false;
+	health.worker_threads = 0;
+	apply_callback = nullptr;
+	apply_context = nullptr;
+	return true;
+}
+
 bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
 					  player_save_journal_ack_fn acknowledge, void *context,
 					  player_save_journal_terminal_fn terminal)

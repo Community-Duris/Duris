@@ -295,6 +295,17 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	player_death_restitution_runtime_handle_completions(completions, count);
 }
 
+static void critical_gameplay_drain_completions(const critical_completion *completions,
+						size_t count)
+{
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		item_movement_transaction_cancel_drop_preparations();
+		player_save_pipeline_pulse();
+	}
+	critical_gameplay_handle_completions(completions, count);
+}
+
 static void quest_reward_ack_pipeline_pulse(void)
 {
 	quest_reward_ack_completion completions[QUEST_REWARD_ACK_PIPELINE_PULSE_MAX] = {};
@@ -1057,7 +1068,7 @@ int run_the_game(int port, int sslport)
 	if (!locker_identify_init(critical_journal_directory))
 		logit(LOG_STATUS,
 		      "Locker identification unavailable: receipt storage could not initialize.");
-	critical_command_coordinator_set_drain_observer(critical_gameplay_handle_completions);
+	critical_command_coordinator_set_drain_observer(critical_gameplay_drain_completions);
 	if (!mini_mode)
 	{
 		const uint64_t maintenance_instance =
@@ -1116,17 +1127,35 @@ int run_the_game(int port, int sslport)
 	account_recovery_shutdown();
 	password_login_shutdown();
 	player_death_restitution_runtime_shutdown();
-	const bool critical_coordinator_stopped = critical_command_coordinator_shutdown();
+	const bool owned_saves_present = player_save_execution_guard::current_ownership_epoch() !=
+					 0;
+	const bool owned_saves_stopped = !owned_saves_present ||
+					 player_save_pipeline_shutdown_owned();
+	if (!owned_saves_stopped)
+	{
+		fprintf(stderr,
+			"Owned save shutdown incomplete; retaining journals for cold recovery.\n");
+		// Normal return destroys SQL/world dependencies and joinable globals.
+		// A refused close is an unclean exit, never successful owner release.
+		_exit(1);
+	}
+	const bool critical_coordinator_stopped = owned_saves_stopped &&
+						  critical_command_coordinator_shutdown();
 	if (!critical_coordinator_stopped)
+	{
 		logit(LOG_EXIT,
 		      "Critical coordinator refused shutdown after lifecycle guard acquisition.");
+		if (owned_saves_present)
+			_exit(1);
+	}
 	locker_identify_shutdown();
 	if (critical_coordinator_stopped)
 		critical_outbox_shutdown();
 	if (critical_coordinator_stopped && !_pwipe)
 	{
 		locker_async_shutdown();
-		player_save_pipeline_shutdown();
+		if (!owned_saves_present)
+			player_save_pipeline_shutdown();
 	}
 
 	/* Don't need this anymore, as dropped artis are handled in real time on the DB.
@@ -2696,6 +2725,16 @@ resume_game_loop:
 						 (_reboot || _autoboot || _pwipe ? 'D' : 'S'));
 	if (_copyover)
 	{
+		if (player_save_execution_guard::current_ownership_epoch())
+		{
+			persistence_alert(AVATAR, "player_save", "copyover", "none", "none",
+					  "owned_lifecycle_pending", "copyover_cancelled=1");
+			shutdownflag = 0;
+			_reboot = 0;
+			_copyover = 0;
+			_autoboot = 0;
+			goto resume_game_loop;
+		}
 		if (!critical_command_coordinator_try_acquire_lifecycle_guard())
 		{
 			refuse_lifecycle_for_active_cutover_owner("copyover");
@@ -2790,7 +2829,9 @@ resume_game_loop:
 		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
-	if (!_pwipe && !player_save_pipeline_drain(3000))
+	if (!_pwipe && !(player_save_execution_guard::current_ownership_epoch() ?
+				 player_save_pipeline_drain_owned(3000) :
+				 player_save_pipeline_drain(3000)))
 	{
 		critical_command_coordinator_resume();
 		critical_outbox_resume();

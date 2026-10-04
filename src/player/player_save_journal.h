@@ -113,6 +113,11 @@ class player_save_covered_revision final
 // corrupt bytes and latch the global fence; it never treats a partial cut as OK.
 player_save_journal_result
 player_save_journal_collect_retained(std::vector<player_save_journal_retained_frame> *output);
+// Lifecycle owner only, after globally quiescing save execution. Reread the
+// existing archive/policy/legacy fingerprints before the complete active census.
+// This readback grants no checkpoint, publication or namespace-close authority.
+player_save_journal_result player_save_journal_collect_lifecycle_frames(
+	std::vector<player_save_journal_retained_frame> *output);
 // Publication-only collection binds original target-PID frames to the fresh
 // validated namespace; archive/policy/recovery evidence always refuses.
 player_save_journal_result player_save_journal_collect_publication_frames(

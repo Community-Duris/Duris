@@ -314,3 +314,49 @@ review, changed-line formatting and diff hygiene passed. This is source-only;
 native/compiler/player/recovery checks remain deferred to major-plan readiness.
 No receipt, schema, fixture, framework or acceptance gate was added. Production
 ownership enable, clean lifecycle close and Plan 1 acceptance remain unfinished.
+
+## Owned lifecycle drain and close
+
+Enabled pipeline shutdown previously joined execution and always retained an
+incomplete epoch; its append-only drain did not prove delivery of worker results,
+pending native publication or exact hold release. The production critical drain
+also skipped its observer when no new result arrived, preventing an owner waiting
+for publication from retrying. These are source-established missing lifecycle
+connections, not newly executed failure evidence.
+
+The existing coordinator lifecycle guard now exposes a same-thread observation
+for the save owner. Enabled critical draining pumps original save completions
+before all gameplay publication retries, including empty completion batches.
+Unadmitted drop preparations cancel through the existing literal cancellation;
+their ordinary save bodies remain owned by pipeline/workers. Admitted or uncertain
+originals and held tokens remain intact. Epoch-zero draining keeps its old behavior.
+
+A lifecycle-specific full drain leaves append-only `player_save_pipeline_drain`
+unchanged. Within the original caller's 3,000 ms budget, it proves empty pipeline
+queues/inflight/death/literal owners, actual worker slots/results/ready containers,
+critical work and the exact epoch's claims/permits/holds. It freshly reuses existing
+archive/policy/legacy control fingerprints and the complete active journal scanner;
+archive bytes include recovery records. Retained quarantine/policy originals remain
+on disk. Existing enabled missing-file refusal still applies; no extra file-proof
+format or acceptance gate was added. A failed pre-stop drain can explicitly resume
+the existing running process before destructive teardown.
+
+Final closure runs after teardown tails that may attempt saves. The worker's idle
+check and stop admission share its mutex; joins occur outside owner locks. The
+pipeline joins its dispatcher, stops idle workers, repeats the census, and ends
+the same epoch before journal metadata cleanup. Closed save/load admission persists
+through epoch end and repeated cleanup. Direct core metadata writes consult that
+admission while gameplay authority remains active. A late close refusal exits
+uncleanly before normal dependency teardown or global destructors, preserving
+durable originals for cold recovery; it does not report clean release. Enabled
+copyover explicitly refuses before its flush/serialization effects pending its
+required integration. Inactive shutdown/copyover retain their existing behavior.
+
+The thirteen source files are pipeline C/H, worker C/H, replay ownership H,
+coordinator C/H, journal C/H, movement C/H, comm C and sql C. Independent source
+review, changed-line formatting and diff hygiene passed. No compiler/tests/native
+SQL/player/persistence/recovery checks ran; qualification remains deferred until
+major-plan readiness. Ownership enable and Plan 1 acceptance remain unfinished.
+The existing native lifecycle harness already composes install, incomplete-evidence
+refusal, activate, pause and reactivate for independent acceptance; production's
+stopped-runtime maintenance caller and full release coverage remain separate work.

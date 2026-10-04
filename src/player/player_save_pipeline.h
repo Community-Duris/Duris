@@ -231,6 +231,10 @@ void player_save_pipeline_pulse(void);
 void player_save_pipeline_quiesce(void);
 void player_save_pipeline_resume(void);
 bool player_save_pipeline_drain(uint64_t timeout_msec);
+// Enabled lifecycle owner on the game thread, with the coordinator guard held.
+// Failed close retains originals and closes load/save admission for retry.
+bool player_save_pipeline_drain_owned(uint64_t timeout_msec);
+bool player_save_pipeline_shutdown_owned(void);
 player_save_pipeline_health player_save_pipeline_health_copy(void);
 // Normal account, legacy, and copyover materialization is forbidden until the
 // startup save-journal replay has completed successfully.

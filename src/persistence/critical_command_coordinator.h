@@ -132,6 +132,7 @@ bool critical_command_coordinator_init(
 // owner untouched. Keep the guard through shutdown/copyover dependencies, then
 // release it if the lifecycle operation is cancelled or after SQL teardown.
 bool critical_command_coordinator_try_acquire_lifecycle_guard(void);
+bool critical_command_coordinator_lifecycle_guard_held_by_current_thread(void);
 void critical_command_coordinator_release_lifecycle_guard(void);
 // Returns false without changing coordinator lifetime when an owner is issuing
 // or holds a cutover. Retry only after that owner reaches a terminal boundary.

@@ -1072,6 +1072,12 @@ bool critical_command_coordinator_try_acquire_lifecycle_guard(void)
 	return true;
 }
 
+bool critical_command_coordinator_lifecycle_guard_held_by_current_thread(void)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	return lifecycle_guard_active && lifecycle_guard_thread == std::this_thread::get_id();
+}
+
 void critical_command_coordinator_release_lifecycle_guard(void)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
@@ -1663,7 +1669,8 @@ bool critical_command_coordinator_drain(uint64_t timeout_msec)
 			std::lock_guard<std::mutex> lock(coordinator_mutex);
 			observer = drain_observer;
 		}
-		if (completed && observer)
+		if (observer &&
+		    (completed || player_save_execution_guard::current_ownership_epoch()))
 			observer(completions, completed);
 		const critical_coordinator_health snapshot =
 			critical_command_coordinator_health_copy();
