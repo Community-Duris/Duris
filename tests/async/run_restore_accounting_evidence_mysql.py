@@ -6,6 +6,7 @@ mounted below /plan5-restore-. No existing database or project .env is used.
 These are native SQL fixtures, not gameplay or complete restore qualification.
 """
 import contextlib
+import hashlib
 import io
 import json
 import os
@@ -41,6 +42,23 @@ CHILD = bytes.fromhex("55" * 16)
 REJECTED = bytes.fromhex("66" * 16)
 ORPHAN = bytes.fromhex("77" * 16)
 SOURCE = bytes.fromhex("44" * 48)
+native_blocks = []
+fixture = os.environ.get("DURIS_PLAN5_COIN_FIXTURE")
+if fixture:
+    fixture_path = Path(fixture).resolve()
+    assert fixture_path.is_relative_to((ROOT / "bin/tests/plan5-sql-coin-effects").resolve())
+    payload = fixture_path.read_bytes()
+    assert len(payload) <= 1024 * 1024
+    offset = 0
+    while offset < len(payload):
+        size, = struct.unpack_from("<I", payload, offset)
+        offset += 4
+        native_blocks.append(payload[offset:offset + size])
+        offset += size
+    assert offset == len(payload) and len(native_blocks) == 37
+    assert native_blocks[0][:4] == b"EAI1" and native_blocks[1][:4] == b"EAP1"
+    SOURCE = native_blocks[1][104:152]
+    CHILD = native_blocks[2][592:608]
 READER = "plan5_restore_reader"
 TABLES = ("economic_accounting_operation", "economic_accounting_account_effect",
           "economic_accounting_coin_posting", "economic_accounting_child",
@@ -153,6 +171,13 @@ try:
     execute(f"GRANT SELECT ON duris_restore.* TO '{READER}'@'localhost'")
     reader = pymysql.connect(**(settings | {"database": "duris_restore", "user": READER,
                                           "password": "plan5-disposable-reader"}))
+    try:
+        with reader.cursor() as cursor:
+            cursor.execute("UPDATE economic_lineage_state SET revision=revision")
+    except pymysql.MySQLError as error:
+        assert error.args[0] == 1142, error
+    else:
+        raise AssertionError("SELECT-only restore reader accepted UPDATE")
     os.environ["DB_USER"] = READER
     os.environ["DB_PASSWD"] = "plan5-disposable-reader"
     admitted()  # Inactive legacy/empty evidence remains eligible for restore.
@@ -172,26 +197,32 @@ try:
             "intent_digest,domain_digest,plan_digest,canonical_intent,canonical_plan,outcome,result_code,"
             "account_count,posting_count,child_count,item_event_count,before_witness_count,after_witness_count) "
             "VALUES(%s,%s,%s,1,1,1,1,2,1,38,%s,%s,%s,%s,%s,%s,1,0,2,2,0,0,0,0)",
-            (OP, LINEAGE, EPOCH, SOURCE, bytes(32), bytes(32), bytes(32), bytes(256), bytes(256)))
+            (OP, LINEAGE, EPOCH, SOURCE,
+             hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + native_blocks[0]).digest() if native_blocks else bytes(32),
+             native_blocks[0][192:224] if native_blocks else bytes(32),
+             hashlib.sha256(native_blocks[1]).digest() if native_blocks else bytes(32),
+             native_blocks[0] if native_blocks else bytes(256), native_blocks[1] if native_blocks else bytes(256)))
     keys = [LINEAGE + struct.pack("<HHQQ4x", 1, kind, lifetime, 0)
-            for kind, lifetime in ((1, 7), (10, 1))]
-    for index, amount in ((0, 7), (1, -7)):
+            for kind, lifetime in ((1, 7), (9, 1))]
+    for index, amount in ((0, 7), (1, 0)):
         execute("INSERT INTO economic_accounting_account_effect(operation_id,account_index,account_key,"
                 "before_copper,before_silver,before_gold,before_platinum,after_copper,after_silver,"
                 "after_gold,after_platinum,before_revision,after_revision) "
-                "VALUES(%s,%s,%s,0,0,0,0,%s,0,0,0,0,1)", (OP, index, keys[index], amount))
+                "VALUES(%s,%s,%s,0,0,0,0,%s,0,0,0,0,%s)", (OP, index, keys[index], amount, int(index == 0)))
         execute("INSERT INTO economic_accounting_coin_posting VALUES(%s,%s,%s,%s,0,%s,0,0,0,%s)",
-                (OP, index, index, index, amount, amount))
+                (OP, index, index, index, 7 if index == 0 else -7, 7 if index == 0 else -7))
     execute("INSERT INTO economic_accounting_source_claim VALUES(%s,%s,%s,1)", (LINEAGE, SOURCE, OP))
     execute("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
             "command_type,schema_version,payload_version,status,result_code,result_payload,committed_at) "
             "VALUES(%s,%s,%s,1,2,1,1,211,'',CURRENT_TIMESTAMP(6))", (REJECTED, bytes(32), bytes(32)))
     execute("INSERT INTO economic_accounting_operation(operation_id,lineage,epoch,accounting_version,"
-            "writer_id,policy_version,compiler_version,actor_kind,actor_id,reason,"
+            "writer_id,policy_version,compiler_version,actor_kind,actor_id,reason,source_event,"
             "intent_digest,domain_digest,outcome,result_code,canonical_intent,"
             "account_count,posting_count,child_count,item_event_count,before_witness_count,after_witness_count) "
-            "VALUES(%s,%s,%s,1,1,1,1,2,1,18,%s,%s,2,211,%s,0,0,0,0,0,0)",
-            (REJECTED, LINEAGE, EPOCH, bytes(32), bytes(32), bytes(256)))
+            "VALUES(%s,%s,%s,1,1,1,1,1,1,18,%s,%s,%s,2,211,%s,0,0,0,0,0,0)",
+            (REJECTED, LINEAGE, EPOCH, native_blocks[4][112:160] if native_blocks else None,
+             hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + native_blocks[4]).digest() if native_blocks else bytes(32),
+             native_blocks[4][192:224] if native_blocks else bytes(32), native_blocks[4] if native_blocks else bytes(256)))
     before = captured()
     old_money_checks()
     admitted()
@@ -241,8 +272,8 @@ try:
     damaged("UPDATE economic_accounting_coin_posting SET delta_copper=-6,copper_value=-6 WHERE line_index=1",
             "UPDATE economic_accounting_coin_posting SET delta_copper=-7,copper_value=-7 WHERE line_index=1",
             "restore_economic_root_unbalanced")
-    damaged("UPDATE economic_accounting_account_effect SET after_copper=-6 WHERE account_index=1",
-            "UPDATE economic_accounting_account_effect SET after_copper=-7 WHERE account_index=1",
+    damaged("UPDATE economic_accounting_account_effect SET after_copper=6 WHERE account_index=0",
+            "UPDATE economic_accounting_account_effect SET after_copper=7 WHERE account_index=0",
             "restore_economic_account_delta_mismatch")
     execute("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
             "command_type,schema_version,payload_version,status,result_payload,committed_at) "
@@ -255,6 +286,10 @@ try:
     execute("INSERT INTO economic_accounting_item_reference VALUES(%s,0,0,1,99,1,2,%s,0)", (OP, CHILD))
     execute("UPDATE economic_accounting_operation SET child_count=1,item_event_count=1 WHERE operation_id=%s", (OP,))
     execute("UPDATE economic_accounting_coin_posting SET child_index=1")
+    if native_blocks:
+        execute("UPDATE economic_accounting_operation SET canonical_plan=%s,plan_digest=%s,"
+                "before_witness_count=1,after_witness_count=1 WHERE operation_id=%s",
+                (native_blocks[2], hashlib.sha256(native_blocks[2]).digest(), OP))
     admitted()
     for table, family in (("economic_accounting_account_effect", "account"),
                           ("economic_accounting_coin_posting", "posting"),
@@ -291,7 +326,67 @@ try:
                 "after_revision=18446744073709551615")
     finally:
         execute("SET SESSION FOREIGN_KEY_CHECKS=1")
+    if native_blocks:
+        execute("UPDATE economic_accounting_operation SET canonical_plan=%s,plan_digest=%s WHERE operation_id=%s",
+                (native_blocks[3], hashlib.sha256(native_blocks[3]).digest(), OP))
     admitted()  # Full uint64 counters are compared without subtraction wrap.
+    if native_blocks:
+        cases = [json.loads(block) for block in native_blocks[5:]]
+        qualified, constrained = 0, 0
+        for case in cases:
+            original = captured()
+            connection.begin()
+            try:
+                # The disposable owner publishes a test cut before the
+                # SELECT-only reader starts its consistent transaction.
+                execute("DELETE FROM economic_accounting_coin_posting WHERE operation_id=%s", (OP,))
+                execute("DELETE FROM economic_accounting_account_effect WHERE operation_id=%s", (OP,))
+                for index, effect in enumerate(case["effects"]):
+                    execute("INSERT INTO economic_accounting_account_effect VALUES(" + ",".join(["%s"] * 13) + ")",
+                            (OP, index, bytes.fromhex(effect["account_key"]), *effect["before"], *effect["after"],
+                             effect["before_revision"], effect["after_revision"]))
+                try:
+                    for index, post in enumerate(case["postings"]):
+                        execute("INSERT INTO economic_accounting_coin_posting VALUES(" + ",".join(["%s"] * 10) + ")",
+                                (OP, index, post["event_index"], post["account_index"], post["child_index"],
+                                 *post["delta"], post["copper"]))
+                except pymysql.MySQLError as error:
+                    assert case["name"] in ("sparse-events", "duplicate-events")
+                    assert error.args[0] in (1062, 3819, 4025), error
+                    assert not case["accepted"], case["name"]
+                    constrained += 1
+                    print("COIN_SQL_CONSTRAINT " + case["name"] + " native_accepted=" + str(case["accepted"]), flush=True)
+                    continue
+                connection.commit()
+                cut = captured()
+                try:
+                    with reader.cursor() as cursor:
+                        cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+                        cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
+                    qualifier.require_economic_coin_effect_integrity(Executor())
+                except RuntimeError as error:
+                    assert not case["accepted"], (case["name"], str(error))
+                else:
+                    assert case["accepted"], case["name"]
+                finally:
+                    reader.rollback()
+                assert captured() == cut
+                qualified += 1
+            finally:
+                connection.rollback()
+                connection.begin()
+                execute("DELETE FROM economic_accounting_coin_posting WHERE operation_id=%s", (OP,))
+                execute("DELETE FROM economic_accounting_account_effect WHERE operation_id=%s", (OP,))
+                for row in original["economic_accounting_account_effect"]:
+                    execute("INSERT INTO economic_accounting_account_effect VALUES(" + ",".join(["%s"] * 13) + ")", row)
+                for row in original["economic_accounting_coin_posting"]:
+                    execute("INSERT INTO economic_accounting_coin_posting VALUES(" + ",".join(["%s"] * 10) + ")", row)
+                connection.commit()
+                assert captured() == original
+        assert qualified == 30 and constrained == 2
+        print("COIN_RESTORE_QUALIFIED " + json.dumps({"native_cases": 32, "audited_cases": qualified,
+              "canonical_constraint_refusals": constrained, "schema_head": "0056_spell_ward_durability",
+              "authority_unchanged": True, "production_access": False}, sort_keys=True), flush=True)
     print("economic restore: intact/inactive/rejected histories pass; damaged retained rows, "
           "receipts, sources, values and item links refuse with SELECT-only unchanged authority", flush=True)
 finally:
