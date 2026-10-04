@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 45 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 46 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -118,6 +118,12 @@ independent pyramid exchange; supplied proof fits without earlier history.
 Surface Leppts' six-hide/two-weapon/2,500-platinum service remains guarded.
 Missing stalk and three-hide supply, actual grotto/fall access, foreign ownership
 and custom burn/golem/toss/equipment repairs need qualification. None ships here.
+Dawndale's [completed dossier](zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md)
+adds nine outcomes/three services/one referral exclusion, twenty-seven contacts
+and thirty-one optional checks. Refugee preparations, competing captain bundles
+and foreign Emition flute return retain optional histories. Guarded persistent-key
+purchase, shared material caps and actual camp/tunnel/curse/lens endpoints need
+qualification. Fossil follow-up and Ender's message are pending repairs; none ships.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
 ## Reviewed first integrations
@@ -244,7 +250,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 43 | [The Scorched Valley](zone-stories/THE_SCORCHED_VALLEY.md) (`scorchvalley`) | Pit heirloom → survivor; frost giant sack / three local-and-foreign heads / Mount Banishment essence → advisor; two distinct banners + pit hide / cart charm → collector; godly magic → Torg advisor; five-key temple blood → Fields Between seeker → four distinct rings → wandering wildmage necklace. | Source-comprehensive, revision one: nine outcomes/twenty-two contacts/all eleven addressed families/twenty-two optional checks. Source/recipient episodes, foreign encounters, nested recovery and actual access need qualification. Yeenoghu dispatch/safety/balance and clue/departure repairs remain pending; no native fix or invented captive/resummon/society/curse/rod finale credit. |
 | 44 | [Court of the Muse](zone-stories/COURT_OF_THE_MUSE.md) (`court`) | Frost thief snowflake / Tookles petal pouch / Grielda dew / stump red leaf → four seasonal favors → four distinct tokens → priestess admission key; twelve koi scales → necklace; obsidian → either friend → sunshine; initial soul essence → Kyra → decay; icy diamond wand → Larissa → stud. | Source-comprehensive, revision one: nine outcomes/twenty-five contacts/all six addressed families/sixteen optional checks. Supplied tokens preserve optional history; no ritual, audience, fishing or soul-extraction credit. Book/dew keys, competing use, source/retiring episodes, traps and safe access/return need qualification; cave/pouch/trap repairs pending, no native fix. |
 | 45 | [Valley of the Snow Ogres](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md) (`snogres`) | Chieftain hourglass / rare astereater eye / illithid tentacle → three distinct shards → lich pyramid; independent hydra head / sundew stalk / dragon scale; hide refusal → surface Leppts six-hide + exact claymore/greatsword + 2,500-platinum armor commission. | Source-comprehensive, revision one: seven outcomes/one service/one excluded refusal, sixteen contacts/all six addressed families/fifteen optional checks. Supplied shards preserve optional history; no personal kills, ritual or transformation credit. Stalk/hide supply, active renewal, mixed payment, grotto/fall/foreign access and custom targeting/helper/cadence/custody repairs pending; no native fix. |
-| 46 | The Mountain Valley of Dawndale (`airshipgrave`) | [Meet the giver → 2 × a vial of liquid sunlight; 1 × a handful of combustable rock dust; 1 × a bucket of rank pool water and the remaining ingredients → the lost blade of the Astral Dancer, 'Ender'](../../areas/qst/airshipgrave.qst#L101) | 13 Q; 4 dialogue; 4 candidate link items |
+| 46 | [The Mountain Valley of Dawndale](zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md) (`airshipgrave`) | Portrait → stones → dust → device; 250-platinum/persistent city key + device → refugee moonstone/backpack. Separate captain two-vial/six-kind bundles; hunter bow, sack treasure, worm larvae; sand/25-platinum lens service and electrum → foreign Emition flute → Whetstone return. | Source-comprehensive, revision one: nine outcomes/three services/one referral, twenty-seven contacts/all four addressed families/thirty-one optional checks. Supplied proof preserves optional histories. Active coin guards, exact recovery/content, shared caps and actual control/escape/curse/install endpoints pending; fossil/Ender repairs proposed, no native fix. |
 | 47 | The 222nd Layer of the Abyss (`juiblex`) | [Meet the giver → 1 × the head of the lost wildmage; 1 × the head of the lost wildmage; 1 × the head of the lost great wildmage and the remaining ingredients → a necklace of wildmage scalps](../../areas/qst/juiblex.qst#L593) | 23 Q; 25 dialogue; 3 candidate link items |
 | 48 | The Minizones of the Surface (`surfacemini`) | [Meet the giver → 8 × a fire gland → an elixir of the pyro-mage](../../areas/qst/surfacemini.qst#L261) | 25 Q; 32 dialogue; 3 candidate link items |
 | 49 | the Mountain of Peril Peaks (`nexus`) | [Meet the giver → 1 × a python scale; 1 × a serpent scale; 1 × a pair of slimy scales of an anaconda → some slimy reptilian snakescales](../../areas/qst/nexus.qst#L36) | 10 Q; 11 dialogue; 3 candidate link items |

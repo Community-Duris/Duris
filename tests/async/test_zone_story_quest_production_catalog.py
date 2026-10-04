@@ -1967,7 +1967,105 @@ assert values[0]==29 and values[11:15]==[270,87717,3,0]
 assert len(snogres["special_assignments"])==12
 assert [(a["vnum"],a["function"]) for a in snogres["special_assignments"] if a["vnum"]==87734]==[(87734,"block_dir"),(87734,"snogres_flesh_golem")]
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres"):
+# Dawndale retains exact competing bundles, actual producers and support/referral boundaries.
+# Source-comprehensive coverage does not certify guarded payment or narrated world effects.
+dawndale=inventory_module.area_evidence(ROOT,"airshipgrave")
+dawndale_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="airshipgrave")
+dawndale_stories={s["id"]:s for s in dawndale_map["stories"]}
+assert (dawndale_map["schema_version"],dawndale_map["revision"],dawndale_map["coverage"])==(3,1,"complete")
+assert len(dawndale_stories)==12 and len(dawndale_map["contacts"])==27 and len(dawndale_map["exclusions"])==1
+assert sum(s["category"]=="service" for s in dawndale_stories.values())==3
+assert sum(t.get("optional",False) for s in dawndale_stories.values() for t in s["steps"])==31
+assert (len(dawndale["requests"]),len(dawndale["dialogue"]),len(dawndale["mobs"]),len(dawndale["items"]),len(dawndale["reset_commands"]))==(13,4,69,66,321)
+assert not dawndale["special_assignments"]
+assert collections.Counter(b["kind"] for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/airshipgrave.qst")=={"Q":11,"QA":2,"M":4}
+bindings=[b for s in list(dawndale_stories.values())+dawndale_map["exclusions"] for b in s["contracts"]]
+assert len(bindings)==13 and {tuple(sorted(b.items())) for b in bindings}=={
+    tuple(sorted(r["block"]["binding"].items())) for r in dawndale["requests"]}
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==775]
+assert (len(units),sum(u["achievement"] for u in units),sum(u["daily_candidate"] for u in units))==(12,9,9)
+by_line={r["block"]["line"]:r["block"] for r in dawndale["requests"]}
+for line,required,reward,retire in (
+    (2,[("C",250000)],[("I",77501)],0),
+    (8,[("I",77550)],[("E",250000),("I",77562)],1),
+    (21,[("I",77508)],[("I",77508)],0),
+    (30,[("I",77523)],[("C",250000),("I",77524)],0),
+    (41,[("I",77517)],[("I",77516)],0),
+    (49,[("I",77522)],[("I",77523)],0),
+    (60,[("I",77501),("I",77525)],[("I",34464),("I",77563)],1),
+    (82,[("I",77524)],[("I",77525)],1),
+    (131,[("I",77513)],[("E",250000),("I",77552)],0),
+    (159,[("I",21673),("C",25000)],[("I",77566)],0),
+    (180,[("I",40778)],[("I",40779)],1)):
+    assert by_line[line]["give"]==required and by_line[line]["receive"]==reward
+    assert by_line[line]["binding"]["completion_key"].endswith("disappear="+str(retire))
+for line,reward in ((101,77548),(113,77558)):
+    assert collections.Counter(by_line[line]["give"])==collections.Counter([("I",77515)]*2+[("I",v) for v in (77524,77556,77549,77551,77557)])
+    assert by_line[line]["receive"]==[("I",reward)]
+    story=dawndale_stories["astral-captain-supply" if line==101 else "dlalgarvara-captain-supply"]
+    assert story["steps"][1]["count"]==2 and len([t for t in story["steps"] if t["kind"]=="carried_item"])==6
+assert by_line[101]["binding"]!=by_line[113]["binding"]
+final=dawndale_stories["refugee-key-and-device"]
+assert [t["contracts"] for t in final["steps"][:4]]==[dawndale_stories[k]["contracts"] for k in ("refugee-gold-portrait","rockcutter-combustible-dust","engineer-explosive-device","exile-city-key")]
+assert [t["item_vnums"] for t in final["steps"][4:-1]]==[[77501],[77525]]
+assert "250 platinum" in dawndale_stories["exile-city-key"]["steps"][-1]["hint"]
+assert "25 platinum" in dawndale_stories["smith-sand-lens"]["steps"][-1]["hint"]
+assert "guarded" in dawndale_stories["smith-sand-lens"]["steps"][-1]["hint"]
+emition=next(b for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/divhome.qst" and b["line"]==156)
+assert emition["give"]==[("I",77539)] and emition["receive"]==[("I",40778)]
+assert dawndale_stories["whetstone-flute-return"]["steps"][0]["contracts"]==[emition["binding"]]
+assert dawndale_map["exclusions"][0]["contracts"]==[by_line[21]["binding"]]
+contacts={c["mob_vnum"]:c for c in dawndale_map["contacts"]}
+for v,c in contacts.items():
+    assert c["keyword"] in inventory_mobs[v]["keywords"] and len(c["topics"])<=32
+    native=set(t for b in dawndale["dialogue"] if b["giver_vnum"]==v for t in b["body"][0].rstrip("~").split())
+    assert set(c["topics"])==native
+assert set(contacts[77543]["topics"])=={"lens","telescope","pile","fine","sand"}
+assert contacts[77558]["topics"]==["metal"] and not contacts[77517]["topics"]
+parent=room=None;sources=collections.defaultdict(list);families=set();mob_sources=collections.defaultdict(list)
+assert collections.Counter(r["command"] for r in dawndale["reset_commands"])=={"M":161,"E":54,"D":38,"G":35,"O":20,"F":7,"P":6}
+for r in dawndale["reset_commands"]:
+    c,v=r["command"],r["arguments"]
+    assert v[5:]==[0,0,0]
+    if c in ("M","F"):parent,room=v[1],v[3];mob_sources[v[1]].append((room,v[4]))
+    families.add((c,tuple(v[:3]),parent if c in ("G","E") else None))
+    if c in ("G","E"):sources[v[1]].append((parent,room,v[2]))
+assert len(families)==175
+assert sources[77515]==[(77520,77593,3)]*3
+for item,mob,room in ((77517,77541,77528),(77522,77554,77562),(77549,77567,77646),(77551,77568,77600),(77557,77569,77621),(77547,77566,77647),(77528,77556,77518),(77518,77546,77630),(77560,77521,77595)):
+    assert sources[item]==[(mob,room,1)]
+for v,room,chance in ((77501,77511,33),(77505,77549,50),(77561,77568,35),(77549,77581,35),(77568,77600,50)):
+    assert mob_sources[v]==[(room,chance)]
+assert any(r["command"]=="P" and r["arguments"][1:5]==[77550,1,77547,100] for r in dawndale["reset_commands"])
+assert any(r["command"]=="O" and r["arguments"][1:5]==[77513,1,77622,100] for r in dawndale["reset_commands"])
+assert re.search(r"^P\s+1\s+77551\s+1\s+40\s+100",(ROOT/"areas/zon/heavens.zon").read_text(),re.M)
+assert re.search(r"^M\s+0\s+21673\s+1\s+21568\s+100",(ROOT/"areas/zon/clfhaven.zon").read_text(),re.M)
+assert any(a["vnum"]==21673 and a["function"]=="wh_corpse_to_object" for a in inventory_module.special_assignments((ROOT/"src/specs/specs.assign.c").read_text()))
+def dawndale_bodies(area,kind):
+    return {int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/f"areas/{kind}/{area}.{kind}").read_text(),re.M|re.S)}
+rooms=dawndale_bodies("airshipgrave","wld")
+assert set(rooms)==set(range(77501,77651))
+assert len({(b.split("~")[0].strip(),b.split("~")[1].strip()) for b in rooms.values()})==83
+for room,flags,key,target in ((77542,12,0,77634),(77634,12,0,77542),(77508,3,77501,77516),(77525,3,77528,77526),(77533,3,77518,77534),(77595,2,77560,77596),(77596,2,77540,77604),(77604,2,0,77596),(77543,0,0,616080),(77557,0,0,617684)):
+    assert f"{flags} {key} {target}" in rooms[room]
+assert all(not re.search(r"^F\s+",b,re.M) for b in rooms.values())
+assert "77627" not in rooms[77627] and "77602" in rooms[77627]
+objects=dawndale_bodies("airshipgrave","obj")
+def objvalues(body):return list(map(int,re.match(r"\s*((?:-?\d+\s+)+)",body.split("~")[4])[1].split()))
+for v,room,direction in ((77541,77542,1),(77542,77634,3)):
+    values=objvalues(objects[v]);assert values[0]==29 and values[11:15]==[270,room,direction,0]
+assert objvalues(objects[77501])[12]==0
+for v in (77540,77560):assert objvalues(objects[v])[12]==100
+assert objvalues(objects[77528])[12]==0 and objvalues(objects[77521])[11:14]==[522469,7,-1]
+assert objvalues(objects[77547])[12]==5 and objvalues(objects[77505])[12]==13 and re.search(r"\bT\s+516\s+5\s+5\s+50",objects[77505])
+assert objvalues(objects[77550])[0]==8 and objvalues(objects[77531])[0]==20
+assert "_vict_msg~" in objects[77548] and objvalues(objects[77548])[16:19]==[103,50,30]
+flutes=dawndale_bodies("divhome","obj")
+assert flutes[40778].split("~")[:3]==flutes[40779].split("~")[:3]
+assert objvalues(flutes[40778])[11:13]==[184,0] and objvalues(flutes[40779])[11:13]==[184,35]
+assert inventory_items[34464]["source"]=="areas/obj/long.obj" and all(("I",77559) not in b["receive"] for b in by_line.values())
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

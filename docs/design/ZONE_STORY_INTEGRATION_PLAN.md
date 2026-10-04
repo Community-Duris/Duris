@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 66 authored journals, accounting-gated player surfaces, starter/town
+**Status: 67 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -16,7 +16,7 @@ the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
 Ship Yards, Ultarium, the Surface Realm, Tharnadia, Mini Zones and the City
 of Torrhan, Golden Hall of the Crown, Ashrumite Village and The Hall of the
 Ancients, Sarmiz'Duul, Duke Delwyn, Home of the Divine, The Halfcut Hills,
-The Scorched Valley, Court of the Muse and Valley of the Snow Ogres now have
+The Scorched Valley, Court of the Muse, Valley of the Snow Ogres and Dawndale now have
 complete source story maps;
 their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
@@ -592,6 +592,29 @@ replacement, repop guards, dormant berserker cadence/selection and equipment
 custody. Axe/whip hits and lich hunting are connected callbacks. Actual sources,
 controls, kills, transformation and reunion need accepted endpoints before
 credit. This checkpoint ships no native repair or accounting activation.
+
+Dawndale's [comprehensive dossier](zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md)
+covers all seventeen blocks/thirteen exchanges/four addressed families, 150
+rooms, sixty-nine mobiles, sixty-six objects and 321 resets/175 families.
+Revision one adds nine independent outcomes, three support services and one
+excluded fossil referral, twenty-seven contacts and thirty-one optional checks.
+Portrait → stones → dust → device supports a separate key/device refugee finale.
+Producer histories remain optional, including the guarded 250-platinum city-key
+purchase. That city key survives ordinary admission; its final delivery needs current proof.
+Each rival captain consumes his own two-sunlight-vial/six-kind bundle. Whetstone's
+foreign Emition forge history stays optional for a distinct same-named flute return.
+
+Expand source/content qualification for container recovery, exact liquid content,
+shared global caps and forced-versus-ordinary renewal. Three sunlight declarations
+do not establish four-copy captain supply; the scholar's book shares cap one
+with an administrative library. Aravne's sand is a real death-procedure output,
+requiring accepted generation and recovery. Coin-only key purchase and mixed
+25-platinum lens service remain guarded; rock-cutter coin payout is item settlement.
+Secret rock switches clear each direction independently on an already open
+passage. Refugee BOOM/new camp, follower relocation, drow tunneling, captain
+curse/ritual and telescope installation need builder-selected accepted endpoints.
+Fossil follow-up and Ender's victim-message key are pending content repairs.
+No native repair or accounting activation ships with this journal.
 
 ## Accounting requirement and delivery sequence
 
@@ -1304,7 +1327,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 175 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 174 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1327,6 +1350,15 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
 
 
+- [x] Complete Dawndale's thirteen-exchange/four-addressed source dossier:
+  nine outcomes/three services/one referral, twenty-seven contacts and thirty-one
+  optional checks; all 175 reset families, Aravne sand and foreign Emition forge.
+- [ ] Qualify persistent city-key availability and atomic coin-only purchase,
+  mixed lens payment, four-vial/shared-book generation/renewal, exact loose
+  container recovery and liquid identity/volume. Select fossil follow-up and
+  separately fix Ender's victim-message key with audience proof. Design scoped
+  camp/follower escape, tunnel, curse/ritual and lens-use endpoints and recovery;
+  retain service/referral non-credit and report actual future repairs prominently.
 - [x] Complete Snow Ogres' nine-exchange/six-addressed source dossier:
   seven independent outcomes/one service/one refusal, sixteen contacts and
   fifteen optional checks; all eighty reset families and foreign Leppts source.
@@ -1582,6 +1614,7 @@ contract classification; it does not claim complete objective coverage.
 | The Scorched Valley | 1 | Complete: nine independent deliveries | [Source-comprehensive dossier](zone-stories/THE_SCORCHED_VALLEY.md); twenty-two contacts/all eleven addressed families and twenty-two optional checks | Nine potential candidates still require live stock/access/payout qualification | Five-key blood route → four colors → necklace; foreign heads/essence/recipients, advisor source/recipient episode and narrative state boundaries. Yeenoghu dispatch/safety/balance, clue/departure fixes and rod/finale design remain pending; no native repair ships |
 | Court of the Muse | 1 | Complete: nine independent deliveries | [Source-comprehensive dossier](zone-stories/COURT_OF_THE_MUSE.md); twenty-five contacts/all six addressed families and sixteen optional checks | Nine potential candidates still require live stock/access/payout qualification | Four exact seasonal tokens → admission; twelve scales, shared friends and exact soul/wand sources. Real book/dew keys and competing use; cave/pouch/trap fixes, safe access/reset/return and seasonal/audience endpoints remain pending; no native repair ships |
 | Valley of the Snow Ogres | 1 | Complete: seven outcomes, one armor service and one refusal exclusion | [Source-comprehensive dossier](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md); sixteen contacts/all six addressed families and fifteen optional checks | Seven potential candidates need actual source/access/payout qualification; mixed armor payment guarded | Distinct shard producers → pyramid; independent trophies; surface Leppts six-hide/two-weapon/2,500-platinum commission. Stalk/hide sources, active renewal, controls and custom lifecycle/target/cadence repairs pending; no native repair ships |
+| The Mountain Valley of Dawndale | 1 | Complete: nine outcomes, three support services and one referral exclusion | [Source-comprehensive dossier](zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md); twenty-seven contacts/all four addressed families and thirty-one optional checks | Nine potential candidates require actual source/access/retirement/payout qualification; coin-only key and mixed lens service guarded | Refugee portrait/stones/dust/device + persistent key; competing captain bundles; bow/treasure/larvae and foreign flute return. Shared caps, exact source/content, fossil/Ender repairs and actual camp/tunnel/curse/lens endpoints pending; no native repair ships |
 
 ## Twin Towers evidence and decisions
 

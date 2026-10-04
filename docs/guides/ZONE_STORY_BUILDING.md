@@ -236,6 +236,32 @@ Do not enable dormant behavior while mapping. Accepted source, control, entity,
 effect and reunion transactions are prerequisites for deeper credit; actual
 future fixes need clear commits/news. No native repair ships with this journal.
 
+Dawndale's [dossier](../design/zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md)
+shows optional local/foreign producer histories, separate captain receipts for
+identical consumed recipes and a distinct same-named flute return. Preserve
+item-kind identity, duplicate counts, both recipients and owner zone. The city key
+survives admission and is consumed by its final delivery; office/alcove keys can
+break. A contact reused by discovered journals shares its saved encounter,
+while each receipt keeps its contract owner. Coin-only purchase
+and mixed crafting must retain accounting guards; an item-only coin payout is
+different. Preparation/service/referral classification removes extra credit
+without changing native rewards or inventing full-stage requirements.
+
+Trace generation, container custody and content. Sand may come from a death
+procedure rather than an item reset; treasury proof may sit inside a closed
+sack rather than be ordinary money. Three vial declarations do not establish
+four-copy supply. A foreign administrative copy may share a global cap, while
+forced resets bypass that cap; qualify renewal/recovery before repairing stock.
+Water item identity alone does not verify source, liquid or volume. Secret rock
+switches can clear separate directions on an already open passage, so do not
+add an opening instruction merely because another zone uses a secret door.
+
+Descriptions of BOOM, new camps, follower escape, worm tunneling, incantations,
+curse removal or telescope use need actual accepted endpoints before credit.
+The great lens is not a demonstrated broken apparatus. Builder-selected fossil
+follow-up and Ender audience-key repair remain pending; actual future repairs
+need separate clear commits and prominent PR/news text, with proof and limits.
+
 ## Schema version 1
 
 Version 1 remains supported. Use version 2 or 3 for new starter and hometown

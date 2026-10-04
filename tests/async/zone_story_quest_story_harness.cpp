@@ -165,11 +165,15 @@ int main(int argc, char **argv)
 								   101, false, false);
 			for (const auto &contact : mapping.contacts)
 			{
-				require(unseen.find("[Met] " + contact.name) == std::string::npos,
-					"unseen NPC was listed");
+				const bool already_met =
+					tracker.has_met_npc(7, 42, contact.mob_vnum);
+				require((unseen.find("[Met] " + contact.name) !=
+					 std::string::npos) == already_met,
+					"contact visibility disagreed with a retained cross-zone encounter");
 				require(tracker.meet_npc(7, 42, contact.mob_vnum,
-							 std::max(1, zone.first_vnum),
-							 101) == result::applied,
+							 std::max(1, zone.first_vnum), 101) ==
+						(already_met ? result::already_applied :
+							       result::applied),
 					"mapped contact was not tracked");
 			}
 			const auto journal = tracker.render_journal(7, 42, zone.zone_number, 10, 1,
@@ -178,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 66 &&
-				tracker.summary_for(7, 42).total == 1688,
+		require(catalog.story_mappings.size() == 67 &&
+				tracker.summary_for(7, 42).total == 1684,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -4209,6 +4213,152 @@ int main(int argc, char **argv)
 				recovered_snogres.progress_for_zone(7, 42, 877).completed == 7 &&
 				recovered_snogres.progress_for_zone(7, 42, 877).total == 7,
 			"Snow recovery counted service/refusal or invented kills, transformation or reunion");
+
+		const auto &dawn_map = *std::find_if(
+			catalog.story_mappings.begin(), catalog.story_mappings.end(),
+			[](const auto &mapping) { return mapping.source_area == "airshipgrave"; });
+		const auto &dawn_final = story_for("airshipgrave", "refugee-key-and-device");
+		const auto &dawn_portrait = story_for("airshipgrave", "refugee-gold-portrait");
+		const auto &dawn_astral = story_for("airshipgrave", "astral-captain-supply");
+		const auto &dawn_rival = story_for("airshipgrave", "dlalgarvara-captain-supply");
+		const auto &dawn_treasure = story_for("airshipgrave", "orc-warchief-treasure");
+		const auto &dawn_flute = story_for("airshipgrave", "whetstone-flute-return");
+		service dawn(catalog);
+		require(dawn.discover_zone(7, 42, 775, 77543, 100, "arrival") == result::applied &&
+				dawn.render_journal(7, 42, 775, 10, 1, 101, false, false)
+						.find("] " + dawn_final.title + "\r\n") ==
+					std::string::npos,
+			"Dawndale discovery exposed an unmet request");
+		for (int npc : { 77511, 77517, 77518, 77502, 77558, 77501, 77543, 77504 })
+			require(dawn.meet_npc(7, 42, npc, 77590, 102) == result::applied,
+				"Dawndale encounter fixture failed");
+		const auto dawn_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Dawndale journal section missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies.carried.clear();
+		for (int item : { 77501, 77525, 77515, 77524, 77556, 77549, 77551, 77557, 40778 })
+			supplies.carried[item] = 1;
+		supplies.carried[77531] = 1;
+		supplies.carried[77547] = 1;
+		const auto dawn_before = dawn.serialize_state();
+		journal = dawn.render_journal(7, 42, 775, 10, 1, 103, false, false, &supplies);
+		require(dawn_section(dawn_final).find("Next: " + dawn_final.steps.back().text) !=
+					std::string::npos &&
+				dawn_section(dawn_final)
+						.find("[Pending] " +
+						      dawn_final.steps.front().text) !=
+					std::string::npos &&
+				dawn_section(dawn_astral)
+						.find("[Missing now] " +
+						      dawn_astral.steps[1].text) !=
+					std::string::npos &&
+				dawn_section(dawn_rival)
+						.find("[Missing now] " +
+						      dawn_rival.steps[1].text) !=
+					std::string::npos &&
+				dawn_section(dawn_treasure)
+						.find("[Missing now] " +
+						      dawn_treasure.steps.front().text) !=
+					std::string::npos &&
+				dawn_section(dawn_flute)
+						.find("[Ready now] " + dawn_flute.steps[1].text) !=
+					std::string::npos,
+			"Dawndale required producer history, accepted one vial/money/sack or lost exact flute proof");
+		supplies.carried[77515] = 2;
+		supplies.carried[77550] = 1;
+		journal = dawn.render_journal(7, 42, 775, 10, 1, 104, false, false, &supplies);
+		require(dawn_section(dawn_astral).find("[Ready now] " + dawn_astral.steps[1].text) !=
+					std::string::npos &&
+				dawn_section(dawn_rival)
+						.find("[Ready now] " + dawn_rival.steps[1].text) !=
+					std::string::npos &&
+				dawn_section(dawn_treasure)
+						.find("[Ready now] " +
+						      dawn_treasure.steps.front().text) !=
+					std::string::npos &&
+				dawn.serialize_state() == dawn_before &&
+				dawn.progress_for_zone(7, 42, 775).completed == 0,
+			"Dawndale read-only readiness wrote state or conflated competing deliveries");
+		supplies.carried.erase(77501);
+		supplies.equipped[14] = 77501;
+		record(dawn, dawn_portrait.contracts.front(), "dawn-portrait", 775, 77627);
+		journal = dawn.render_journal(7, 42, 775, 10, 1, 105, false, false, &supplies);
+		require(dawn_section(dawn_final)
+						.find("[Recorded] " +
+						      dawn_final.steps.front().text) !=
+					std::string::npos &&
+				dawn_section(dawn_final)
+						.find("[Missing now] " +
+						      dawn_final.steps[4].text) !=
+					std::string::npos,
+			"Dawndale history or worn key restored loose final proof");
+		supplies.equipped.erase(14);
+		supplies.carried[40779] = 1;
+		supplies.carried.erase(40778);
+		journal = dawn.render_journal(7, 42, 775, 10, 1, 106, false, false, &supplies);
+		require(dawn_section(dawn_flute).find("[Missing now] " + dawn_flute.steps[1].text) !=
+				std::string::npos,
+			"Dawndale same-named retained flute replaced the forge input kind");
+		require(dawn.discover_zone(7, 42, 407, 40757, 107, "arrival") == result::applied &&
+				dawn.meet_npc(7, 42, 40712, 40757, 107) == result::applied,
+			"Dawndale foreign forge encounter ignored physical discovery");
+		journal = dawn.render_journal(7, 42, 775, 10, 1, 107, false, false, &supplies);
+		require(journal.find("[Met] Emition\r\n") != std::string::npos &&
+				dawn.progress_for_zone(7, 42, 775).completed == 1,
+			"Dawndale lost the foreign shared contact or awarded encounter credit");
+		auto wrong_forge = completion(dawn_flute.steps.front().contracts.front(),
+					      "dawn-wrong-forge-owner", 120);
+		wrong_forge.transaction.zone_number = 775;
+		wrong_forge.transaction.room_vnum = 40757;
+		require(dawn.record_completion(wrong_forge) == result::rejected,
+			"Dawndale took foreign forge ownership");
+		record(dawn, dawn_flute.steps.front().contracts.front(), "dawn-forge", 407, 40757);
+		journal = dawn.render_journal(7, 42, 775, 10, 1, 107, false, false, &supplies);
+		require(dawn_section(dawn_flute)
+						.find("[Recorded] " +
+						      dawn_flute.steps.front().text) !=
+					std::string::npos &&
+				dawn_section(dawn_flute)
+						.find("[Missing now] " +
+						      dawn_flute.steps[1].text) !=
+					std::string::npos,
+			"Dawndale foreign history restored spent flute proof");
+		record(dawn, dawn_astral.contracts.front(), "dawn-astral", 775, 77590);
+		require(dawn.progress_for_zone(7, 42, 775).completed == 2,
+			"Dawndale captain delivery counted its rival");
+		journal = dawn.render_journal(7, 42, 775, 10, 1, 108, false, false, &supplies);
+		require(dawn_section(dawn_rival).find("Next: " + dawn_rival.steps.back().text) !=
+				std::string::npos,
+			"Dawndale rival was completed by identical other-captain recipe");
+		// Synthetic service/referral projection, without executing guarded coin transactions.
+		for (const auto &entry : dawn_map.stories)
+			if (entry.category == "service")
+				record(dawn, entry.contracts.front(), entry.id.c_str(), 775, 77590);
+		for (const auto &excluded : dawn_map.exclusions)
+			record(dawn, excluded.first, "dawn-fossil-referral", 775, 77590);
+		require(dawn.progress_for_zone(7, 42, 775).completed == 2 &&
+				dawn.progress_for_zone(7, 42, 775).total == 9,
+			"Dawndale service/referral awarded quest credit");
+		service independent_dawn(catalog);
+		record(independent_dawn, dawn_final.contracts.front(), "dawn-supplied-final", 775,
+		       77627);
+		service restored_dawn(catalog);
+		require(restored_dawn.deserialize_state(independent_dawn.serialize_state(),
+							&error) &&
+				restored_dawn.progress_for_zone(7, 42, 775).completed == 1,
+			"Dawndale supplied final recovery invented four producer deliveries or settlement");
+		for (const auto &entry : dawn_map.stories)
+			if (entry.category != "service" && entry.id != dawn_final.id)
+				record(restored_dawn, entry.contracts.front(), entry.id.c_str(),
+				       775, 77590);
+		service recovered_dawn(catalog);
+		require(recovered_dawn.deserialize_state(restored_dawn.serialize_state(), &error) &&
+				recovered_dawn.progress_for_zone(7, 42, 775).completed == 9 &&
+				recovered_dawn.progress_for_zone(7, 42, 775).total == 9,
+			"Dawndale cold recovery counted services/referral, histories or narrated world effects");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

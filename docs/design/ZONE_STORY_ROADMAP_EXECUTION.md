@@ -101,9 +101,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 43 | The Scorched Valley | [Comprehensive source dossier](zone-stories/THE_SCORCHED_VALLEY.md): twenty blocks/nine deliveries/eleven addressed; 132 rooms/sixty mobs/fifty-five objects/no local shop, 211 resets/118 families; three literal assignments and shared keys/container/rifts/artifact/combat | Revision one: nine outcomes, twenty-two contacts/twenty-two optional checks; exact foreign proof and blood-to-four-colors-to-necklace | No native repair ships. Advisor source/recipient episode, foreign encounters, nested/access evidence, Yeenoghu dispatch/safety/balance, truthful clue/departure and rod/state/finale design pending |
 | 44 | Court of the Muse | [Comprehensive source dossier](zone-stories/COURT_OF_THE_MUSE.md): fifteen blocks/nine deliveries/six addressed; ninety-nine rooms/thirty-six mobs/forty-three objects/one shop, 209 resets/ninety-two families; shared teachers, doors, traps, portals, fall/current | Revision one: nine outcomes, twenty-five contacts/sixteen optional checks; four distinct seasonal producers/admission, twelve scales and exact independent requests | No native repair ships. Cave/pouch/trap decisions, competing dew/source/retiring episodes, actual access/key destruction/reset return and seasonal/audience endpoints pending |
 | 45 | Valley of the Snow Ogres | [Comprehensive source dossier](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md): fifteen blocks/nine exchanges/six addressed; one hundred rooms/forty-four mobs/thirty-eight objects, two hundred resets/eighty families; twelve literal assignments/shared switch and bounded surface source | Revision one: seven outcomes/one service/one refusal, sixteen contacts/fifteen optional checks; distinct shards, exact trophies and six-hide/full-fee armor | No native repair ships. Stalk/hide generation/renewal, mixed payment, control/access/foreign owner and burn/golem/toss/equipment fixes/endpoints pending |
-| 46–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 46 | The Mountain Valley of Dawndale | [Comprehensive source dossier](zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md): seventeen blocks/thirteen exchanges/four addressed; 150 rooms/sixty-nine mobs/sixty-six objects, 321 resets/175 families; automatic switches/shared teleport, bounded foreign sand/forge/book | Revision one: nine outcomes/three services/one referral, twenty-seven contacts/thirty-one optional checks; refugee preparations, rival bundles and foreign flute return | No native repair ships. Guarded coin purchase/mixed lens fee, key availability/shared caps/source content, fossil/Ender repairs and actual camp/tunnel/curse/install endpoints pending |
+| 47–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Mountain Valley of Dawndale (`airshipgrave`).
+The next area is The 222nd Layer of the Abyss (`juiblex`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -112,6 +113,8 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-DAWNDALE-SOURCE / KEY / PAYMENT | Coin-only 250-platinum city-key purchase is guarded; admission retains it. Office/alcove keys have 100-percent break declarations. Mixed sand/25-platinum lens service is guarded. Captain bundles each consume two sunlight vials and the book; three vials declared, book shares global cap one with an administrative source. Sand is a real Aravne death output. | Atomic accepted purchase/mixed settlement and key availability/office-alcove destruction; qualify normal/forced renewal and recovery before intentional cap/isolation repairs. Extend loose container recovery, liquid content/volume and personal source-versus-handoff evidence without bypassing active generation guards. |
+| ZSQ-DAWNDALE-CONTENT / WORLD EFFECTS | Fossil referral has no reviewed exact consumer. Ender declares `_vict_msg`, both packed paths expect `_victim_msg`. Refugee BOOM/camp/followers, drow tunnel, captain ritual/curse and telescope installation lack accepted terminals; great lens is not described as broken. Secret open rock switches clear each direction separately. | Builder-selected truthful fossil endpoint; separate message fix with all-audience proof. Define scoped actors/party, control/camp/tunnel/effect/reading/install endpoints, return and idempotent recovery before deeper credit. No actual native repair ships; future fixes need separate commits and news. |
 | ZSQ-SNOGRES-SUPPLY / FEES / OWNERSHIP | Stalk 87719 lacks an active producer. Four remorhaz have three hides/cap three, versus six-copy armor; inactive brass-old-1 does not supply the live world. Leppts is supplied from Surface 660001 and wanders, owning a Snow contract. Full fee is 2,500 platinum; mixed payment guarded. Mode zero alone does not settle renewal. | Choose sufficient intended stalk/hide generation and caps; qualify accepted renewal, retained/supplied proof and exact distinct weapons/full atomic payment. Keep active reset guards; improve already-discovered foreign owner referral without auto-discovering it. Preserve service/refusal non-credit classification. |
 | ZSQ-SNOGRES-ACCESS / ACTORS / EFFECTS | Push rock clears forward blocked state but secret/closed and a separate pit-fiend guard remain. Two real falling rooms have a lake alternative. Remorhaz burn damages the owner; golem counts 87743 but spawns 87734 and retreats to raw vnum 87798. Berserker is disconnected from normal combat; axe/whip and lich hunt are connected. Leggings move equipment directly. | Qualify actual controls/reveal/open/return. Separate target, helper/prototype/real-room/preflight and repop guard repairs; repair cadence/selection/continuation before enabling throws. Design accepted actor/effect/custody/reunion episodes with recovery and focused proofs. No native fix ships; later fixes need separate commits and explicit news. |
 | ZSQ-COURT-ACCESS / CONTENT / TRAPS | Cave locket clues actually key to book/dew; shared lookup permits both. Dew is also consumed for Spring. Pouch description conflicts with whole-flower text. Spring/Summer/Autumn tokens, autumn mask and diamond stud declare damage codes absent from trap dispatch; Winter has real cold pickup damage. Forward admission key breaks; reverse key zero is normally opened reciprocally but reset/restart is separate. | Choose truthful cave/pouch wording and intended supported trap data in separate fix/news commits. Qualify reveal/unlock/open, competing-use ordering, exact GET/retry/charge persistence, damage continuation, key destruction and ordinary versus restored-lock return. Do not infer all visits are stranded or treat unreset world-file four as secret. |
@@ -2239,3 +2242,52 @@ and other sixty-five maps are unchanged. Catalog: 66 maps/1688 achievements/
 1490 potential dailies/2224 rows. Two fallback achievement units are removed
 by service/refusal classification. Original order: forty-five source-comprehensive,
 175 pending. Continue with Dawndale. Active accounting remains mandatory.
+
+## The Mountain Valley of Dawndale completed source map — October 3, 2026
+
+The [dossier](zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md) explains all
+seventeen blocks/eleven Q/two QA/four M, thirteen exchanges, 150 rooms/eighty-three
+prose groups/twelve headers/twelve metadata/135 exit families, sixty-nine mobs,
+sixty-six objects and 321 resets/175 families. No local shop, literal procedure
+assignment or teacher flag. Shared switch, teleport, quest/key/container/trap,
+packed-message and reset paths were reviewed, with bounded foreign material,
+surface, Aravne death output, Emition forge and administrative book evidence.
+
+Revision one projects nine independent outcomes, three support services and
+one excluded fossil referral, twenty-seven contacts/all four addressed families
+and thirty-one optional checks. Portrait/stones/dust/device explains preparation;
+the key/device finale accepts supplied materials without four earlier histories.
+Both captains consume independent seven-copy/six-kind bundles. Whetstone returns
+a distinct same-named flute after Emition's foreign forge, with optional history.
+Treasure differs from coin piles/sack; portrait/bow/larvae have exact producers.
+Actual moonstone 34464 exists; local 77559 is an unused placeholder, not a missing
+reward. Retiring recipients remain separate from actual movement/settlement.
+
+**Pending repairs, none shipped:** choose a truthful fossil follow-up and fix
+Ender's `_vict_msg` mismatch separately with actual audience proof. Qualify the
+guarded 250-platinum coin-only key purchase and 25-platinum mixed lens service;
+ordinary admission retains the persistent city key, while office/alcove keys can break. Three sunlight vials do not establish
+four-copy captain supply. Scholar book/global cap one competes with an active
+administrative-library copy; forced boot resets bypass cap, so qualify ordinary
+renewal, retained supply and recovery before changing isolation or stock.
+Aravne sand is genuinely produced on death; accepted generation/recovery and
+post-placement callback continuation need qualification rather than a claim of
+missing source. Rock switches clear one direction of an already open secret
+passage; search/crossing/return remain separate. Cliff lore has no fall declaration.
+
+Expand exact loose container recovery and liquid content/volume semantics,
+atomic purchase/payment, learned reading/ritual and scoped world/party effects.
+Refugee BOOM/new camp/follower relocation, larvae tunnel, captain curse and lens
+installation need builder-owned endpoints and recovery before credit. Great-lens
+lore does not establish a broken telescope. Defense/captive/bounty lore has no
+reviewed extra terminal. Do not conflate delivery text with actual player effects.
+
+Production/native fixtures cover exact source/classification, competing bundles,
+one-versus-two vials, supplied final proof/optional histories, spent/worn material,
+foreign forge ownership, same-named flute kinds, read-only checks and independent
+cold recovery. Synthetic support receipts do not execute guarded coin settlement.
+All 2668 native definitions, revision-two fingerprint, registry and other sixty-six
+maps are unchanged. Catalog: 67 maps/1684 achievements/1489 potential dailies/
+2223 rows. Four fallback achievements/one daily/one row removed by classification.
+Original order: forty-six source-comprehensive, 174 pending. Continue with The
+222nd Layer of the Abyss (`juiblex`). Active accounting remains mandatory.
