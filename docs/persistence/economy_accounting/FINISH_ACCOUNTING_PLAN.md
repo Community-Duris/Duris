@@ -37,7 +37,7 @@ retry exhaustion, exact repair/restart and later native movement/season history.
 Strict production backends and current inactive creation journeys pass; the
 original 300-second native compile gate passes in 287.557 seconds with the
 same binary used for both-engine fault/recovery checks. These source-specific
-results exclude incoming remote changes (latest 100bee62f); local history integration
+results exclude incoming remote changes (current remote b84693f96); local history integration
 is blocked by the retained no-merge instruction and automatic approval review.
 Complete ordinary-drop producer/replay/copyover and all R1-R8 gates remain open.
 The bounded coin physical-publication/ACK and null-replay retention repair below
@@ -733,3 +733,47 @@ inputs, component artifacts, binaries/logs and owned SQL teardown/port rebind.
 Preserved fixture failures remain evidence, not production failures. Ordinary SQL
 cleanup, typed exact journal identity, restored-save integration, incoming0056 and
 broad qualification remain open. No R1-R8 gate or coverage status is promoted.
+
+### SQL cleanup candidate integration and native qualification
+
+The reviewed five-file SQL cleanup candidate is integrated after committed worker
+completion milestone dfc879598. Borrowed idle/autocommit/reconnect-disabled
+sessions report original-session cleanup proof; pooled owners retire unconfirmed
+connections, preserve consumed replacement ownership and ambiguous COMMIT, and
+retain original custody evidence when rollback is unconfirmed. Separate retained
+transaction cleanup precedes writer-fence release. Native buffer/result ownership
+is scoped by RAII. Recovery_apply and sustained lifecycle lock allocation remain
+separate work.
+
+Manifest `tmp/sql-cleanup-production-inputs.local.json`, SHA-256
+`efcb65d1faa86b6bd95eac6c576cf3b336033d26a01d0a16b5f46b475425de52`,
+freezes1,233 source inputs: four changed repository source/headers and one new
+SQL-only helper. All actual dependency-recorded header consumers are forced:
+47 SQL/46 flatfile objects. Source preparation first refused Windows path
+separator mismatch, then src-relative dependency parsing; both failed setup
+attempts are archived before source/native object mutation. Corrected setup
+matches exact dependency tokens and retains every consumer check.
+
+Unchanged ordinary13 and retained4 owners are registered as explicit manual SQL
+probes. Frozen AFTER drivers preserve original300/120 bounds, canonical0055
+schema settings, all source/binary/owner/case pins, three rejection guards and
+owned teardown/identity/port rebind. Strict builds and native AFTER qualification
+are pending. Source integration is not a solved SQL issue or R1-R8 acceptance.
+
+The user has now explicitly authorized the local Git merge needed to integrate
+experimental-accounting. Finish the current bounded SQL cleanup qualification
+and commit before integration; qualify the combined source before a normal push.
+GitHub PR merge, deployment and production activation remain unauthorized.
+
+Bounded ordinary/retained SQL transaction cleanup, original-session retirement,
+replacement lease ownership and native buffer/result lifetime are solved locally.
+The corrected source passes both native builds,34 actual engine fault cases,18
+maintained terminal invocations,14 maintained owners, both inactive SQL journeys
+and flat creation/save/restart. Final declaration0a0b5c5a is pinned in October3
+review. Recovery proof/lease and lifecycle exclusion/release remain open.
+
+Current two-stream ownership: primary owns Plans1-4 and shared coordinator,
+contracts, producer integration, writer registry/matrix and activation owner.
+The second user-coordinated agent owns Plan5 independent reconciliation, audit
+tooling, backup/restore evidence and release qualification. Integrate separately
+committed slices through narrow interface handoffs on one tested candidate.

@@ -27094,7 +27094,7 @@
       "sites": [
         [
           "src/player/player_snapshot_repository.c",
-          2295,
+          2298,
           "sql_economy"
         ]
       ],
@@ -56753,7 +56753,7 @@
     },
     {
       "path": "src/player/player_snapshot_repository.c",
-      "line": 2295,
+      "line": 2298,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner AS current_item SET item_revision=item_revision+1,state=\" +"
     },

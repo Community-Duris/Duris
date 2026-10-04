@@ -70,6 +70,9 @@ MANUAL_ONLY_TEST_NAMES = frozenset(
         "test_economic_accounting_item_reference_mysql.py",
         "test_player_save_item_reconcile_mysql.py",
         "test_player_spell_effect_receipt_mysql.py",
+        # Native exception probes require explicit artifacts and private SQL schemas.
+        "test_player_snapshot_exception_mysql.py",
+        "test_player_death_conflict_exception_mysql.py",
         # Owns a disposable SQL fixture and runs sanitizer cutover harnesses.
         "test_economic_sql_lifecycle_owner_contract.py",
         "test_mob_gold_dial_runtime.py",

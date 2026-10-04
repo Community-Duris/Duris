@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 WORKER = (SRC / "player_save_worker.c").read_text()
 WORKER_HEADER = (SRC / "player_save_worker.h").read_text()
 REPOSITORY = (SRC / "player_snapshot_repository.c").read_text()
+SQL_LEASE = (ROOT / "src/player/player_sql_transaction_cleanup.h").read_text()
 DIAGNOSTICS = (SRC / "actinf.c").read_text()
 
 assert "std::unordered_set<std::string> description_keys" in REPOSITORY
@@ -675,12 +676,16 @@ for contract in (
     "mysql_affected_rows(connection) != 1",
     "ambiguous_commit",
     "read_durable_revision",
-    "sql_pool_replace_connection",
 ):
     assert contract in REPOSITORY
 assert REPOSITORY.index("durable >= snapshot.revision") < REPOSITORY.index(
     "apply_components(connection, snapshot)"
 )
+assert "player_sql_pool_lease lease(sql_pool_acquire())" in REPOSITORY
+assert "lease.replace()" in REPOSITORY
+assert "connection_ = sql_pool_replace_connection(old)" in SQL_LEASE
+replacement = SQL_LEASE[SQL_LEASE.index("bool replace()") :]
+assert replacement.index("connection_ = nullptr") < replacement.index("sql_pool_replace_connection(old)")
 print("[PASS] repository locks revision before components and reconciles ambiguous commits")
 
 for component in (

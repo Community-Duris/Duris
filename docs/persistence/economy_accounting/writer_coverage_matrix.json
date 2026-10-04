@@ -30636,7 +30636,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2266
+          2269
         ],
         "file": "src/player/player_snapshot_repository.c",
         "function": "apply_death",
