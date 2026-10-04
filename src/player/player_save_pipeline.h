@@ -98,6 +98,14 @@ class player_save_pipeline_replay_gate
 	std::atomic<bool> replay_complete_{ false };
 };
 
+// Game-thread lifecycle API. Preparation establishes journal/recovery metadata
+// with admission and loads closed, without starting persistence threads. The
+// caller must complete restored-command ownership before opting into start.
+// Start preserves prepared holds; shutdown also accepts an unstarted pipeline.
+bool player_save_pipeline_prepare(const char *journal_directory,
+				  void (*verify_resolved_recovery)() = nullptr);
+bool player_save_pipeline_start(void);
+// Existing callers retain immediate preparation/start behavior.
 bool player_save_pipeline_init(const char *journal_directory,
 			       void (*verify_resolved_recovery)() = nullptr);
 void player_save_pipeline_shutdown(void);
