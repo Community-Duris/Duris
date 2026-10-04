@@ -2375,3 +2375,30 @@ inference can identify exact native contracts and declared producers; it cannot
 recover intended distinct-source, peaceful cure, experiment or rescue semantics
 from prose alone. Builder-authored sidecars retain that distinction and can be
 updated when actual custom behavior is integrated and qualified.
+
+## Kobold Settlement: guarded commissions and restored guardian episodes
+
+The [dossier](zone-stories/KOBOLD_SETTLEMENT.md) and
+[journal](../../areas/story/kobold.story.json) use the existing schema: one
+guarded spectacles story, three supporting services, optional material/history
+checks and sixteen real addressed aliases. Active, ready accounting remains
+mandatory for discovery, encounters, journals and new achievement/daily credit.
+Frozen obligations remain recoverable. No payment adapter or new event ships.
+
+| Capability | Concrete need | Implementation and acceptance |
+| --- | --- | --- |
+| Atomic mixed fees and overlapping inputs | Three Szxvu commissions combine coins/items; later spectacles recipe shares gems with earlier inspection and is selected first | Coordinate wallet debit, all roots, rewards, actor identity, frozen continuation and replay/recovery. Qualify gem-only versus gem+frames/full-fee branches, partial/busy/rejected/restarted attempts. Keep existing guards; material readiness cannot enable payment or authorize credit |
+| Admitted supply beyond normal live cap | Eight-nugget recipe versus five-live-copy G limit; shield needs two blocks/sixteen nuggets and separate fees | Qualify actual reset/save/reload/forced-repop accumulation and consumed quantity allocation. Builder chooses any source/cap correction after legitimate current routes are known; do not equate static mismatch with impossibility or proven renewal |
+| Custom death-pile and source/handoff evidence | Statue eye gems move into custom container1438; static corpse1463 independently supplies frames/journal | Capture committed actor/item/source-generation/ownership and transformed-container lineage. Qualify failure/return handling, equipment/cash, extraction and cold recovery before personal kill/recovery objectives. Supplied materials stay compatible; reset corpse names do not prove a player's death |
+| Learned translation and accepted access | Mound note, journal/parchment, raw bone-door speech, three switches and separate live priest barrier | Qualify exact addressed/examined clue, selected control, raw word/language, reciprocal state, actor conditions, successful command and arrival. Use typed accepted events; questions, aliases, possession, hums and visit counts do not prove access |
+| Forced travel, guardian combat and survival | Corrected priest sends west to pit; demon pulls from actual ledge and starts combat; golems/demon block escape | Capture NPC identity, movement cause/source/destination, selected target, accepted arrival/combat, interruption/death/reset and surviving escape. Distinguish blocked attempts and alternatives. The isolated native repair restores gameplay handlers; it does not add journal objectives |
+| Parent campaign and foreign/epic ownership | Smelt→shield and optional inspection→spectacles; imported tomb memory and epic stone have separate owners | Explicit all-stage summaries with optional supplied shortcuts, no service inflation, current material independence and one terminal outcome. Preserve ambassador mapping and existing typed epic settlement, rather than double crediting touch or foreign rewards |
+| Guarded legacy craft and builder-authored rod/inn decisions | Smith has ten menu choices but uses table index11, scans NPC inventory; parchment learning disabled. Rod pieces have no reviewed local supply/reassembly. Guard post1444 handles RENT | Separately qualify and review forge repairs/payment support before enabling it. Builder chooses rod sources/whole-rod outcome/piece allocation or retained lore, and confirms inn home/persistence policy before removing extra rent. Preserve current recipes/guards; all actual repairs require separate fix commits and prominent news/proof/limits |
+
+Dynamic inventory can identify exact native terms and declared sources, but
+cannot infer intended rod completion, original-source ownership, successful
+translated access or safe escape from prose alone. Builders update sidecars as
+custom semantics are actually integrated. The only native fix here is
+[02788c573](https://github.com/Community-Duris/Duris/commit/02788c5738a11963647ceb9b4b344463f4f57704),
+with executable actual-function evidence and a news entry. Cap, fees, forge,
+rod, inn and wording proposals remain pending.

@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 85 authored journals.
+2668 distinct Q contracts; 86 authored journals.
 
 Regenerate with:
 
@@ -123,7 +123,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Khildarak Stronghold (`khildarak`) | 2 | 8 | 0 | Yes | [1 × a steeders egg sack → native reward/response](../../areas/qst/khildarak.qst#L36) | archer, assoc_founder, devour, guild_guard, inn, khildarak_warhammer |
 | Killing Fields (`killing_fields`) | 1 | 2 | 0 | Fallback | [1 × a small note made of fine paper → native reward/response](../../areas/qst/killing_fields.qst#L14) | — |
 | Kimordril (`kimordril`) | 4 | 5 | 0 | Yes | [1 × a potato; 1 × a carrot; 1 × a cutting knife → native reward/response](../../areas/qst/kimordril.qst#L20) | archer, inn, kimordril_shout, money_changer, world_quest |
-| Kobold Settlement (`kobold`) | 4 | 6 | 2 | Fallback | [8 × a small nugget of silver → a large block of solid silver](../../areas/qst/kobold.qst#L65) | chicken, inn, item_switch, kobold_priest, stone_crumble, stone_golem |
+| Kobold Settlement (`kobold`) | 4 | 6 | 2 | Yes | [8 × a small nugget of silver → a large block of solid silver](../../areas/qst/kobold.qst#L65) | chicken, inn, item_switch, kobold_priest, stone_crumble, stone_golem |
 | Krethik Keep (`krethik`) | 3 | 2 | 0 | Fallback | [1 × a small note → native reward/response](../../areas/qst/krethik.qst#L34) | mindbreaker |
 | Lord Krimeneha's Mansion (`krimman`) | 9 | 9 | 4 | Yes | [1 × a boy's signet ring; 1 × a girl's broach; 1 × an elegant silver broach → a heavy iron key, a silver bastard sword](../../areas/qst/krimman.qst#L101) | — |
 | Labyrinth of No Return (`labyrinth`) | 3 | 8 | 0 | Fallback | [1 × a bat wing; 1 × a tuft of sasquatch hair; 1 × a beetle shell; other required items → a sigil of the Golden Flame](../../areas/qst/labyrinth.qst#L85) | — |

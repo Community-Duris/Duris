@@ -60,6 +60,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [3f1ecf2be](https://github.com/Community-Duris/Duris/commit/3f1ecf2be064a63321c0e0243b4168727cb079c2): Tower directions/passwords | South clues at 134011/134014 now say south; four locked magic keywords lose only trailing color resets, restoring plain Sargon/elemental passwords. | Player-facing: “The Tower of Darkness's south-facing shrine and stair clues now describe their actual directions. Its Sargon and elemental magic doors now accept the intended plain passwords.” Original source fails all six; actual C++ matching/reciprocal unlock passes, closed state retained. Live speech/LOOK/traversal remains unqualified. |
 | `0fff62e70` — Smoke vault key / Discontent targeting | Vault south return lock now uses rewarded key 139818; newly loaded Discontent accepts its own name while retaining old aliases. Actual production key/name regressions fail before and pass after; key settlement/live travel/existing-object migration remain unqualified. | **The Plane of Smoke's vault key now works from either side of the portcullis, and Discontent can be selected by its own name.** |
 | [5a2b93d6d](https://github.com/Community-Duris/Duris/commit/5a2b93d6d387e192ea501d6d6e5bbf71796e927b): Northern Lakes pile-of-bones clues | Cathedral clue now says east and pasture clue west at room75263, matching reciprocal D1/D3 routes. Exactly two native words change, in a separate fix commit with the focused regression. | **Northern Lakes' pile-of-bones exits now correctly point east to the cathedral and west to the pasture.** Both original clues fail; corrected source, reciprocal exits and exact native-byte scope pass. Live LOOK/traversal remains unqualified. |
+| [02788c573](https://github.com/Community-Duris/Duris/commit/02788c5738a11963647ceb9b4b344463f4f57704): Kobold temple guardians | Jkyl uses altar1481/pit1484, golems tomb1482, demon pit1484/ledge1483 and the actual room list. Seven native lines and the focused executable regression are isolated in the fix commit. | **Kobold Settlement's temple guardians now defend their actual altar, tomb and sacrificial pit, restoring the high priest's imp summoning and the pit demon's ledge attacks.** Original altar regression fails; repaired actual procedures, server build and formatting pass. Played combat/difficulty/movement remain unqualified. |
 
 ## Progress
 
@@ -129,9 +130,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 62 | Para-Elemental Plane of Smoke | [Comprehensive dossier](zone-stories/PARA_ELEMENTAL_PLANE_OF_SMOKE.md): all fourteen blocks/153 rooms/26 mobiles/36 objects/172 resets; foreign planar entrances, current-mobile supply and shared key/terrain/weapon/epic execution | Two stories/four services, twelve contacts/16 aliases/12 optional checks; exact two-kind bundles, optional routes, non-credit reversible jewelry | Shipped native fix 0fff62e70 corrects vault return key and Discontent alias. Negative-plane forge, permanent Power proc, key settlement, rare admitted supply/renewal and builder intent remain pending |
 | 63 | Fishermans Wharf | [Comprehensive dossier](zone-stories/FISHERMANS_WHARF.md): all thirteen blocks/70 rooms/23 mobiles/20 objects/119 resets, shop, ordinary Surface boundary, imported skull and shared fishing/breathing/key/fall execution | Five independent outcomes, thirteen contacts/44 aliases/10 optional checks; exact 8-root/four-copy bundles and optional bait/line history | No native repair. Fishing narration/XP precedes ownership grant; effect alternatives, source provenance, admitted supply, command-time fall/access and restricted foreign custody require qualification |
 | 64 | Northern Lakes and Settlements | [Comprehensive dossier](zone-stories/NORTHERN_LAKES.md): all fourteen blocks/219 rooms/63 mobiles/82 objects/414 resets, both shops, five foreign boundaries, imported visage/consumer and shared quest/reset/current/fall/boat execution | Six independent stories, thirteen contacts/20 aliases/9 optional checks; courier stage receipts stay optional with supplied exact materials | Separate fix 5a2b93d6d corrects two exit clues. Distinct-source scales, overlapping recipient/supplier, typed actor/current/fall episodes, campaign all-stage display and actual daily renewal need qualification |
-| 65–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 65 | Kobold Settlement | [Comprehensive dossier](zone-stories/KOBOLD_SETTLEMENT.md): all seventeen blocks/147 rooms/58 mobiles/66 objects/303 resets/three shops; ten forge rows, guardian/death/switch/epic/inn/shared paths and foreign closure | One guarded story/three services; sixteen contacts/16 aliases/7 optional checks; supplied materials and historical support receipts remain independent | Separate guardian fix 02788c573 restores actual rooms and ledge targeting. Atomic fees/overlapping recipe order, admitted supply, custom death/access/forced travel and legacy forge/rod/inn intent remain pending |
+| 66–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Kobold Settlement (`kobold`).
+The next area is Troll Caves (`troll_caves`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -3366,3 +3368,66 @@ dailies/2207 rows; all2668 definitions/fingerprint/revision two/registry/prior84
 maps unchanged. Original queue:64/220 complete,156 pending; Kobold Settlement
 next. Active, ready accounting is mandatory; frozen recovery stays separate.
 No DB/account/server operation, migration, deployment or merge.
+
+## Kobold Settlement completed source map — October 4, 2026
+
+The [dossier](zone-stories/KOBOLD_SETTLEMENT.md) reviews all seventeen blocks
+(13 M/4 Q; six addressed families/sixteen aliases, seven ambient), 147 rooms/
+116 prose groups/92 numeric exit families/158 text-keyword pairs, fifty-eight
+mobiles, sixty-six objects, 303 resets/201 exact argument families/150 parent
+families and all three shops. Full properties/memberships, all three ordinary
+foreign boundary rooms, imported items, global producers/consumers/713 teleport
+prototypes, nine literal local bindings, dynamic smith/ten forge rows, imported
+epic stone and relevant shared execution are reviewed.
+
+The [journal](../../areas/story/kobold.story.json) adds one guarded spectacles
+story and three supporting services, sixteen contacts and seven optional
+checks. Nuggets → smelt → two blocks → shield and statue gems + corpse frames
+→ spectacles are explained. Exact supplied materials skip producer/inspection
+history; an old receipt does not refill spent supplies or prove a first source,
+kill, learned language, unlocked door or safe escape. All mixed-fee offerings
+remain guarded with accounting active. Gem/frames share recipe inputs: later
+spectacles selection precedes inspection and can hit the unsupported fee.
+Support services do not count as quests/dailies. Classification deliberately
+removes three previous support achievement units; native definitions stay intact.
+
+**Separate actual repair:** [02788c573](https://github.com/Community-Duris/Duris/commit/02788c5738a11963647ceb9b4b344463f4f57704)
+restores guardian room numbers and the demon's ledge room-list traversal.
+News: **Kobold Settlement's temple guardians now defend their actual altar,
+tomb and sacrificial pit, restoring the high priest's imp summoning and the pit
+demon's ledge attacks.** Original source fails the altar regression. Repaired
+actual procedures pass barriers/pit, imp cadence/cap/failure, tomb/pit escape,
+proper ledge selection and immunity/chance conditions. Native changes occupy
+seven lines, with their executable regression in the isolated fix commit.
+Played combat, difficulty and movement remain unqualified. Prior repairs/news
+remain intact; all other findings below are plans, not shipped native fixes.
+
+Plans expand for atomic fee/material/reward settlement and overlapping-input
+selection, admitted supply across reset/save/reload, original versus handed-off
+items, custom death-pile lineage/failure/cash, accepted translated speech and
+switch/access, forced travel/guardian/escape episodes, epic versus foreign
+ownership and explicit all-stage parent views. Eight nuggets exceed the normal
+five-live-copy reset cap; saved/forced supply may differ, so no impossible-quest
+claim or cap change ships. Four rod pieces lack reviewed local supply/reassembly;
+builder intent must choose actual sources/outcome. A literal inn on guard post
+1444 adds RENT despite the real inn at1443; current home/persistence and policy
+need qualification before removal. Guarded legacy smith choice bounds/player
+inventory and disabled parchment learning need separate qualification/repair.
+
+Full catalog/source checks, actual C++ all-map/schema/file-loader journeys,
+accounting gates, server build, changed/staged formatting, whitespace and
+native/prior-map/link preservation are checked at publication. C++ coverage
+includes quantities, worn/loose items, supplied-route optional history, service
+exclusion, retained historical receipts, owner rejection, replay and cold
+recovery. Injected historical paid receipts do not qualify live fees. Actual
+gathering/handoff, offers/rewards, custom deaths, combat/travel/survival, words/
+doors, epic/ambassador/rent persistence and renewal remain unqualified.
+
+Catalog:86 maps/1622 achievements/1459 potential dailies/2207 rows. All2668
+native definitions/fingerprint/revision two/registry and prior85 maps remain
+unchanged. Original queue:65/220 complete,155 pending; Troll Caves next.
+Active, ready accounting is mandatory; frozen recovery stays separate. No
+DB/account/server operation, migration, deployment or merge. Earlier full PR
+checkpoint text is preserved in the [publication archive](ZONE_STORY_PR_CHECKPOINT_HISTORY.md)
+so the current PR can stay within its description size limit while retaining
+every earlier repair/news and pending-plan record.

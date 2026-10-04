@@ -2313,7 +2313,7 @@ assert sum(d["daily_eligible"] for d in definitions.values())==9
 assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
 assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
-assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1625
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1622
 sources=collections.defaultdict(list);parent=None;room=None
 for reset in crakkaro["reset_commands"]:
     c,v=reset["command"],reset["arguments"]
@@ -3519,7 +3519,63 @@ for direction,target,word,reverse in ((1,75223,'east',3),(3,75262,'west',1)):
     assert clue and re.search(r'\b'+word+r'\b',clue[1]), 'Northern Lakes pile-of-bones exit clue is reversed'
     assert re.search(r'\bD'+str(reverse)+r'\s+[^~]*~[^~]*~\s+0 0 75263\b',nlakes_rooms[target],re.S)
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes"):
+# Kobold: exact guarded commissions, optional services and physical source routes.
+kobold=inventory_module.area_evidence(ROOT,'kobold')
+mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='kobold')
+assert (mapping['schema_version'],mapping['revision'],mapping['coverage'])==(3,1,'complete')
+assert len(mapping['stories'])==4 and len(mapping['contacts'])==16 and not mapping['exclusions']
+assert collections.Counter(s['category'] for s in mapping['stories'])=={'service':3,'story':1}
+assert collections.Counter(t['kind'] for s in mapping['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':5,'completion':2}
+raw=[b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/kobold.qst']
+assert collections.Counter(b['kind'] for b in raw)=={'M':13,'Q':4} and len(kobold['dialogue'])==6
+by_line={b['line']:b for b in raw if 'binding' in b}
+for line,inputs,outputs in ((52,[('I',1448),('I',1448),('C',170000)],[('I',1451)]),(65,[('I',1447)]*8+[('C',10000)],[('I',1448)]),(85,[('I',1431)],[('I',1431)]),(93,[('C',20000),('I',1433),('I',1431)],[('I',1432)])):
+    b=by_line[line]
+    assert (b['giver_vnum'],b['give'],b['receive'],b['disappear'])==(1420,inputs,outputs,False)
+    d=next(r['definition'] for r in kobold['requests'] if r['block']['line']==line)
+    assert d['source_area']=='kobold' and d['zone_number']==14 and not d['daily_eligible']
+    assert d['daily_exclusion']==('Item exchange' if line==85 else 'Unsupported durable offering')
+stories={s['id']:s for s in mapping['stories']}
+assert {tuple(c.items()) for s in stories.values() for c in s['contracts']}=={tuple(b['binding'].items()) for b in by_line.values()}
+assert all(s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional') for s in stories.values())
+assert [(t['item_vnums'],t['count']) for t in stories['silver-smelting']['steps'] if t['kind']=='carried_item']==[([1447],8)]
+assert [(t['item_vnums'],t['count']) for t in stories['silver-shield']['steps'] if t['kind']=='carried_item']==[([1448],2)]
+assert stories['silver-shield']['steps'][0]['contracts']==[by_line[65]['binding']]
+assert stories['gem-spectacles']['steps'][0]['contracts']==[by_line[85]['binding']]
+assert [(t['item_vnums'],t['count']) for t in stories['gem-spectacles']['steps'] if t['kind']=='carried_item']==[([1431],1),([1433],1)]
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==14]
+assert len(units)==4 and sum(u['achievement'] for u in units)==1 and not any(u['daily_candidate'] for u in units)
+contacts={c['mob_vnum']:c for c in mapping['contacts']}
+assert contacts[1420]['topics']==['rod','rulership','tyxru','mine','mines','silver','fee','block','blocks','shield','nugget','nuggets','jewels','jewel','eyes','eye']
+assert sum(len(c['topics']) for c in contacts.values())==16 and contacts[1413]['keyword']=='maid'
+assert all(not contacts[v]['topics'] for v in (1418,1446,1447))
+guidance=' '.join(mapping['orientation']+[s['summary'] for s in mapping['stories']])
+for phrase in ('accounting','five','eight','frames','inspection','forge','pit','i>|uub','ambassador','rune-covered','reassembly'):
+    assert phrase in guidance,phrase
+rooms=dawndale_bodies('kobold','wld');objects=dawndale_bodies('kobold','obj');mobiles=dawndale_bodies('kobold','mob')
+assert (len(rooms),len(mobiles),len(objects),len(kobold['reset_commands']))==(147,58,66,303)
+assert collections.Counter(r['command'] for r in kobold['reset_commands'])=={'M':182,'E':42,'G':28,'O':23,'D':16,'P':12}
+assert len({(r['command'],tuple(r['arguments'])) for r in kobold['reset_commands']})==201
+assert all(objvalues(objects[v])[0]==15 for v in (1438,1463))
+assert objvalues(objects[1414])[0]==22
+assert all(objvalues(objects[v])[0]==8 and objvalues(objects[v])[11:19]==[0]*8 for v in (1454,1455,1456,1457))
+assert not any(r['command'] in 'OGEP' and r['arguments'][1] in (1453,1454,1455,1456,1457) for r in kobold['reset_commands'])
+resets={r['line']:r for r in kobold['reset_commands']}
+for line,c,args in ((91,'O',[0,1463,1,1476,100,0,0,0]),(92,'P',[1,1433,1,1463,100,0,0,0]),(93,'P',[1,1437,1,1463,100,0,0,0]),(103,'O',[0,358,1,1482,100,0,0,0]),(104,'O',[0,55440,1,1482,100,0,0,0]),(109,'M',[0,1420,1,1406,100,0,0,0]),(266,'M',[0,1433,1,1478,100,0,0,0]),(267,'E',[1,1431,1,19,100,0,0,0]),(271,'M',[0,1437,1,1481,100,0,0,0]),(278,'M',[0,1438,2,1482,100,0,0,0]),(281,'M',[0,1436,1,1484,100,0,0,0])):
+    assert (resets[line]['command'],resets[line]['arguments'])==(c,args)
+for line in (291,294,297,299,302):assert (resets[line]['command'],resets[line]['arguments'])==('G',[1,1447,5,0,100,0,0,0])
+for v,d,kind,key,target in ((1463,0,9,0,1469),(1469,2,9,0,1463),(1449,1,9,0,1470),(1470,3,1,0,1449),(1481,1,2,-2,1482),(1482,3,1,-1,1481),(1400,2,0,0,622130),(1542,1,0,0,816080)):
+    assert re.search(r'\bD'+str(d)+r'\s+[^~]*~[^~]*~\s+'+f'{kind} {key} {target}'+r'\b',rooms[v],re.S)
+assert all(not re.search(r'^\s*[FC]\s+-?\d+',b,re.M) for b in rooms.values())
+assert objvalues(objects[1421])[11:15]==[341,1463,0,1] and objvalues(objects[1425])[11:15]==[341,1469,2,1] and objvalues(objects[1427])[11:15]==[340,1449,1,0]
+foreign=[b for b in inventory_module.native_blocks(ROOT) if 'binding' in b and ('I',55440) in b['give']]
+assert [(b['giver_vnum'],b['source'],b['line']) for b in foreign]==[(55272,'areas/qst/wh.qst',3652)]
+assert foreign[0]['receive']==[('I',55362),('C',1000000),('I',55033)]
+wh=next(m for m in catalog['story_mappings'] if m['source_area']=='wh')
+assert any(foreign[0]['binding'] in s['contracts'] for s in wh['stories'])
+
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

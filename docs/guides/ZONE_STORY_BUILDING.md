@@ -1395,3 +1395,37 @@ and has a precise PR/news entry. Artek's empty bespoke response, Tamara source
 narration and inactive Melbh announcement naming remain pending builder intent
 or qualification. Keep those proposals distinct from fixed behavior. Active,
 ready accounting remains mandatory; frozen persistence/recovery stays separate.
+
+### Kobold Settlement: paid services, source limits and custom guardians
+
+The [dossier](../design/zone-stories/KOBOLD_SETTLEMENT.md) and
+[journal](../../areas/story/kobold.story.json) keep smelting, shield crafting and
+gem inspection as supporting services, with one guarded spectacles story.
+Earlier smelt/inspection receipts are optional; supplied exact materials skip
+history and spent materials stay missing. Coin fees are explanation until the
+accounting adapter is qualified, not a live readiness guarantee. None of these
+four contracts is a daily candidate. Service classification removes three
+support exchanges from the zone achievement count without editing native recipes.
+
+Review native selection order when recipes share inputs: boot prepends Q and
+G nodes, so spectacles can reach its unsupported coin goal before gem
+inspection. Qualify gem-only, gem+frames and full paid routes before changing
+selection. Eight nuggets versus a normal five-live-copy reset cap is a supply
+qualification lead; saved supplies and forced resets can differ. Do not label
+the commission impossible or silently change the cap.
+
+Use the actual placements and shared code for gates: switches clear blocking,
+raw translated speech unlocks the bone door, and Jkyl's barrier remains a
+separate actor condition. The repaired guardians use altar1481/tomb1482/
+pit1484 and ledge1483; the demon follows the room list. Custom death piles,
+forced arrivals, combat start and surviving escape need accepted causal events,
+not narration. Imported epic touch and ambassador memory keep their own credit
+authority. Rod lore without a source/reassembly endpoint and the guard-post
+inn binding need explicit builder decisions.
+
+The guardian change is isolated in fix02788c573 with original-fails/repaired-
+passes evidence and a prominent news sentence. Fees, caps, legacy forge,
+parchment learning, rod, inn and wording remain pending plans. Active, ready
+accounting is mandatory; frozen recovery stays separate. Preserve the
+[PR checkpoint archive](../design/ZONE_STORY_PR_CHECKPOINT_HISTORY.md) and prior
+repair/news records when shortening the current PR description.

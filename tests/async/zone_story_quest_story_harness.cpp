@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 85 &&
-				tracker.summary_for(7, 42).total == 1625,
+		require(catalog.story_mappings.size() == 86 &&
+				tracker.summary_for(7, 42).total == 1622,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -6645,6 +6645,112 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 313) &&
 					!recovered.has_discovered(7, 42, 352),
 				"Wharf cold recovery lost independent receipts or invented foreign discovery");
+		}
+
+		{
+			const auto &smelt = story_for("kobold", "silver-smelting");
+			const auto &shield = story_for("kobold", "silver-shield");
+			const auto &inspection = story_for("kobold", "gem-inspection");
+			const auto &spectacles = story_for("kobold", "gem-spectacles");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 14, 1400, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 14, 10, 1, 101, false, false)
+							.find(spectacles.title) ==
+						std::string::npos,
+				"Kobold discovery exposed the unseen smith's story");
+			require(journey.meet_npc(7, 42, 1420, 1406, 102) == result::applied,
+				"Kobold smith encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Kobold journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[1447] = 7;
+			supplies.carried[1448] = 1;
+			supplies.carried[1433] = 1;
+			supplies.carried[55440] = 1;
+			supplies.equipped[19] = 1431;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 14, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(smelt).find("[Missing now] " + smelt.steps[0].text) !=
+						std::string::npos &&
+					section(shield).find("[Missing now] " +
+							     shield.steps[1].text) !=
+						std::string::npos &&
+					section(spectacles)
+							.find("[Missing now] " +
+							      spectacles.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 14).completed == 0 &&
+					journey.progress_for_zone(7, 42, 14).total == 1 &&
+					journey.serialize_state() == before,
+				"Kobold partial quantities, worn gems, foreign memory or services fabricated quest completion");
+			supplies.carried[1447] = 8;
+			supplies.carried[1448] = 2;
+			supplies.carried[1431] = 1;
+			journal = journey.render_journal(7, 42, 14, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(smelt).find("[Ready now] " + smelt.steps[0].text) !=
+						std::string::npos &&
+					section(shield).find("[Ready now] " +
+							     shield.steps[1].text) !=
+						std::string::npos &&
+					section(spectacles)
+							.find("Next: " +
+							      spectacles.steps.back().text) !=
+						std::string::npos &&
+					section(spectacles)
+							.find("unavailable with accounting active") !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Kobold exact supplied materials required service history, lost payment guard or wrote acceptance");
+			record(journey, inspection.contracts.front(), "kobold-inspection", 14,
+			       1406);
+			record(journey, smelt.contracts.front(), "kobold-historical-smelt", 14,
+			       1406);
+			supplies.carried.erase(1431);
+			supplies.carried.erase(1448);
+			journal = journey.render_journal(7, 42, 14, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(shield).find("[Missing now] " + shield.steps[1].text) !=
+						std::string::npos &&
+					section(spectacles)
+							.find("[Missing now] " +
+							      spectacles.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 14).completed == 0,
+				"Kobold service receipt restored spent materials or counted as a quest achievement");
+			auto wrong_owner =
+				completion(spectacles.contracts.front(), "kobold-wrong-owner", 122);
+			wrong_owner.transaction.zone_number = 550;
+			wrong_owner.transaction.room_vnum = 1406;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Kobold receipt accepted foreign owner");
+			// Inject an already accepted historical receipt; this does not qualify live mixed fees.
+			record(journey, spectacles.contracts.front(),
+			       "kobold-historical-spectacles", 14, 1406);
+			auto replay = completion(spectacles.contracts.front(),
+						 "kobold-historical-spectacles", 120);
+			replay.transaction.zone_number = 14;
+			replay.transaction.room_vnum = 1406;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Kobold historical receipt replay duplicated completion");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 14).completed == 1 &&
+					recovered.progress_for_zone(7, 42, 14).total == 1 &&
+					recovered.evidence_for(inspection.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					!recovered.has_discovered(7, 42, 550),
+				"Kobold cold recovery lost retained receipts or invented foreign discovery");
 		}
 
 		{
