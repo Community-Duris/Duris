@@ -460,6 +460,8 @@ ordinary_drop_observation ordinary_drop_enrollment_owner::publish(
 		return observed(ordinary_drop_observation_status::refused, EINVAL);
 	if (top_of_objt < 0 || top_of_objt == INT_MAX)
 		return observed(ordinary_drop_observation_status::refused, EINVAL);
+	if (!recovery_object_templates_ready())
+		return observed(ordinary_drop_observation_status::unavailable, EAGAIN);
 	owner.runtime_.reserve(durable.identities.size());
 	for (size_t index = 0; index < durable.identities.size(); ++index)
 	{
@@ -498,7 +500,7 @@ ordinary_drop_observation ordinary_drop_enrollment_owner::publish(
 	// acquiring any pooled object. Runtime cache misses never invoke a parser.
 	for (const auto &literal : original.items)
 	{
-		const auto *prototype = find_object_template(literal.vnum);
+		const auto *prototype = find_recovery_object_template(literal.vnum);
 		if (!prototype)
 			return observed(ordinary_drop_observation_status::unsupported, ENOENT,
 					literal.object_uid);
@@ -621,7 +623,7 @@ ordinary_drop_observation ordinary_drop_enrollment_owner::publish(
 	if (fresh.status != ordinary_drop_observation_status::absent)
 		return fresh;
 	if (!session_current(owner.connection_, owner.session_) || obj_index != owner.index_ ||
-	    world[owner.room_].number <= 0 ||
+	    !recovery_object_templates_ready() || world[owner.room_].number <= 0 ||
 	    static_cast<uint64_t>(world[owner.room_].number) != payload.to_owner.id ||
 	    !critical_operation_id_equal(owner.command_.operation_id, owner.receipt_.operation_id))
 		return observed(ordinary_drop_observation_status::unavailable, ESTALE);
@@ -629,7 +631,7 @@ ordinary_drop_observation ordinary_drop_enrollment_owner::publish(
 	{
 		const auto &literal = original.items[index];
 		const auto *prototype = owner.prototypes_[index];
-		if (find_object_template(literal.vnum) != prototype ||
+		if (find_recovery_object_template(literal.vnum) != prototype ||
 		    prototype->R_num != owner.stages_[index].object_->R_num ||
 		    prototype->R_num < 0 || prototype->R_num > top_of_objt ||
 		    owner.index_[prototype->R_num].virtual_number != literal.vnum ||
