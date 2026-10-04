@@ -166,6 +166,74 @@ def require_currency_values(executor):
             raise RuntimeError("restore_currency_value_mismatch")
 
 
+def require_economic_coin_effect_integrity(executor):
+    """Validate retained coin witnesses without giving system books balances."""
+    coins = ("copper", "silver", "gold", "platinum")
+    ordinary = "SUBSTRING(e.account_key,19,2) IN (" + ",".join(
+        f"UNHEX('{kind:02x}00')" for kind in (1, 2, 3, 4, 5, 6, 11)) + ")"
+    zero = lambda size: f"UNHEX(REPEAT('00',{size}))"
+    checks = [("SELECT COUNT(*) FROM economic_accounting_account_effect e "
+               "JOIN economic_accounting_operation o ON o.operation_id=e.operation_id "
+               "WHERE OCTET_LENGTH(e.account_key)<>40 OR SUBSTRING(e.account_key,1,16)<>o.lineage "
+               f"OR SUBSTRING(e.account_key,1,16)={zero(16)} "
+               "OR SUBSTRING(e.account_key,17,2)<>UNHEX('0100') "
+               "OR SUBSTRING(e.account_key,19,2) NOT IN (" + ",".join(
+                   f"UNHEX('{kind:02x}00')" for kind in range(1, 12)) + ") "
+               f"OR SUBSTRING(e.account_key,21,8)={zero(8)} "
+               f"OR SUBSTRING(e.account_key,37,4)<>{zero(4)};",
+               "restore_economic_account_key_mismatch")]
+    # Canonical keys order by numeric kind, authority ID and context, not the
+    # little-endian byte order of their persisted representation.
+    def key_order(alias):
+        return "(" + ",".join(
+            f"CAST(CONV(HEX(REVERSE(SUBSTRING({alias}.account_key,{offset},{size}))),16,10) "
+            "AS DECIMAL(20,0))" for offset, size in ((19, 2), (21, 8), (29, 8))) + ")"
+    checks.append((
+        "SELECT COUNT(*) FROM economic_accounting_account_effect e "
+        "JOIN economic_accounting_account_effect prior ON prior.operation_id=e.operation_id "
+        "AND prior.account_index+1=e.account_index WHERE " + key_order("prior") + ">=" + key_order("e") + ";",
+        "restore_economic_account_key_mismatch"))
+    weighted = "+".join(f"CAST(p.delta_{coin} AS DECIMAL(65,0))*{weight}"
+                        for coin, weight in zip(coins, (1, 10, 100, 1000)))
+    checks.extend((
+        ("SELECT COUNT(*) FROM economic_accounting_coin_posting p WHERE p.event_index<>p.line_index OR "
+         "(" + " AND ".join(f"p.delta_{coin}=0" for coin in coins) + ") "
+         f"OR ({weighted})<>CAST(p.copper_value AS DECIMAL(65,0));",
+         "restore_economic_posting_value_mismatch"),
+        ("SELECT COUNT(*) FROM (SELECT operation_id,SUM(CAST(copper_value AS DECIMAL(65,0))) total "
+         "FROM economic_accounting_coin_posting GROUP BY operation_id) p WHERE p.total<>0;",
+         "restore_economic_root_unbalanced"),
+    ))
+    same = " AND ".join(f"e.before_{coin}=e.after_{coin}" for coin in coins)
+    invalid_holding = " OR ".join(f"e.{side}_{coin}<0" for side in ("before", "after") for coin in coins)
+    for side in ("before", "after"):
+        total = "+".join(f"CAST(e.{side}_{coin} AS DECIMAL(65,0))*{weight}"
+                         for coin, weight in zip(coins, (1, 10, 100, 1000)))
+        invalid_holding += f" OR ({total})>9223372036854775807"
+    system_zero = " AND ".join(f"e.{side}_{coin}=0" for side in ("before", "after") for coin in coins)
+    checks.append((
+        "SELECT COUNT(*) FROM economic_accounting_account_effect e WHERE "
+        f"({ordinary} AND ({invalid_holding} OR e.after_revision<e.before_revision "
+        f"OR (NOT ({same}) AND e.after_revision=e.before_revision))) "
+        f"OR (NOT ({ordinary}) AND (NOT ({system_zero}) OR e.before_revision<>0 OR e.after_revision<>0));",
+        "restore_economic_account_witness_mismatch"))
+    summed = ",".join(f"SUM(CAST(delta_{coin} AS DECIMAL(65,0))) delta_{coin}" for coin in coins)
+    mismatch = " OR ".join(
+        f"CAST(e.after_{coin} AS DECIMAL(65,0))-CAST(e.before_{coin} AS DECIMAL(65,0))"
+        f"<>COALESCE(p.delta_{coin},0)" for coin in coins)
+    checks.append((
+        "SELECT COUNT(*) FROM economic_accounting_account_effect e LEFT JOIN "
+        f"(SELECT operation_id,account_index,COUNT(*) n,{summed} FROM economic_accounting_coin_posting "
+        "GROUP BY operation_id,account_index) p ON p.operation_id=e.operation_id "
+        f"AND p.account_index=e.account_index WHERE ({ordinary} AND ({mismatch})) "
+        f"OR (COALESCE(p.n,0)=0 AND (NOT ({ordinary}) OR NOT ({same}) "
+        "OR e.after_revision<=e.before_revision));",
+        "restore_economic_account_delta_mismatch"))
+    for query, code in checks:
+        if executor.sql(query) != "0":
+            raise RuntimeError(code)
+
+
 def require_economic_evidence_integrity(executor):
     """Refuse lost or internally inconsistent retained economic evidence.
 
@@ -236,30 +304,10 @@ def require_economic_evidence_integrity(executor):
         "OR r.legacy_operation_id<>IF(r.child_index=0,r.operation_id,c.child_operation_id) "
         "OR i.operation_id IS NULL OR i.status<>1 OR i.result_code<>0 OR i.failure_stage<>0 "
         "OR i.committed_at IS NULL;", "restore_economic_item_link_mismatch"))
-    coins = ("copper", "silver", "gold", "platinum")
-    weighted = "+".join(f"CAST(p.delta_{coin} AS DECIMAL(65,0))*{weight}"
-                        for coin, weight in zip(coins, (1, 10, 100, 1000)))
-    checks.extend((
-        ("SELECT COUNT(*) FROM economic_accounting_coin_posting p WHERE p.event_index<>p.line_index "
-         f"OR ({weighted})<>CAST(p.copper_value AS DECIMAL(65,0));",
-         "restore_economic_posting_value_mismatch"),
-        ("SELECT COUNT(*) FROM (SELECT operation_id,SUM(CAST(copper_value AS DECIMAL(65,0))) total "
-         "FROM economic_accounting_coin_posting GROUP BY operation_id) p WHERE p.total<>0;",
-         "restore_economic_root_unbalanced"),
-    ))
-    summed = ",".join(f"SUM(CAST(delta_{coin} AS DECIMAL(65,0))) delta_{coin}" for coin in coins)
-    mismatch = " OR ".join(
-        f"CAST(e.after_{coin} AS DECIMAL(65,0))-CAST(e.before_{coin} AS DECIMAL(65,0))"
-        f"<>COALESCE(p.delta_{coin},0)" for coin in coins)
-    checks.append((
-        "SELECT COUNT(*) FROM economic_accounting_account_effect e LEFT JOIN "
-        f"(SELECT operation_id,account_index,{summed} FROM economic_accounting_coin_posting "
-        "GROUP BY operation_id,account_index) p ON p.operation_id=e.operation_id "
-        f"AND p.account_index=e.account_index WHERE {mismatch};",
-        "restore_economic_account_delta_mismatch"))
     for query, code in checks:
         if executor.sql(query) != "0":
             raise RuntimeError(code)
+    require_economic_coin_effect_integrity(executor)
 
 
 def main():
