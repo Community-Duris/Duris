@@ -4,6 +4,7 @@
 #include "persistence/economic_sql_shop_trade_transaction.h"
 #include "persistence/economic_sql_lifecycle_guard.h"
 #include "sql/sql_thread_init.h"
+#include "player/player_sql_transaction_cleanup.h"
 
 #include "economy/currency_command.h"
 #include "economy/currency_repository.h"
@@ -1551,8 +1552,8 @@ bool currency_repository_execute(MYSQL *connection, const critical_command &comm
 				      false);
 }
 
-critical_apply_result critical_command_repository_apply(MYSQL *connection,
-							const critical_command &command)
+static critical_apply_result apply_with_writer(MYSQL *connection, const critical_command &command,
+					       economic_sql_currency_writer_guard *pooled_writer)
 {
 	last_statement_error = 0;
 	const bool accounted_bank = accounted_bank_envelope(command);
@@ -1648,7 +1649,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	// These schema-v1 producers have no accounting admission. Serialize their
 	// whole transaction with maintenance, and refuse staged/active accounting.
 	// Keep the guard in this root scope through every commit/rollback and replay.
-	economic_sql_currency_writer_guard legacy_writer;
+	economic_sql_currency_writer_guard borrowed_writer;
+	auto &legacy_writer = pooled_writer ? *pooled_writer : borrowed_writer;
 	if ((item_command || coin_command || auction_command || collector_command ||
 	     corpse_command || restitution_command) &&
 	    !accounted_coin && !accounted_item && !accounted_collector && !accounted_shop)
@@ -2971,6 +2973,12 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	return applied;
 }
 
+critical_apply_result critical_command_repository_apply(MYSQL *connection,
+							const critical_command &command)
+{
+	return apply_with_writer(connection, command, nullptr);
+}
+
 bool critical_command_repository_begin_inbox_in_transaction(MYSQL *connection,
 							    const critical_command &command)
 {
@@ -3018,15 +3026,81 @@ critical_apply_result critical_command_repository_apply_from_pool(const critical
 		mysql_thread_end();
 		return { critical_apply_outcome::retryable_failure, 0, ETIMEDOUT };
 	}
-	critical_apply_result applied = critical_command_repository_apply(connection, command);
-	if (applied.outcome == critical_apply_outcome::ambiguous_commit ||
-	    connection_error(applied.error_code))
+	critical_apply_result applied{};
+	bool clean_transaction = false;
+	{
+		economic_sql_currency_writer_guard writer;
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup transaction_owner(connection, cleanup);
+		const auto idle_error = player_sql_idle_error(connection);
+		if (idle_error)
+			applied = { critical_apply_outcome::retryable_failure, 0, idle_error };
+		else
+		{
+			transaction_owner.starting();
+			try
+			{
+				applied = apply_with_writer(connection, command, &writer);
+			}
+			catch (const std::bad_alloc &)
+			{
+				// An exception may follow a sent COMMIT. Reconcile the original ID.
+				applied = { critical_apply_outcome::ambiguous_commit, 0, ENOMEM };
+			}
+			catch (...)
+			{
+				applied = { critical_apply_outcome::ambiguous_commit, 0, EIO };
+			}
+			transaction_owner.finish();
+			clean_transaction = cleanup.disposition ==
+						    player_sql_cleanup_disposition::idle_verified &&
+					    !cleanup.cleanup_error;
+		}
+		if (!writer.release())
+		{
+			if (writer.retire_pooled_session())
+				connection = nullptr;
+			else
+				sql_pool_discard_connection(connection);
+		}
+		// Both owners unwind while the handle is still alive. A failed exact
+		// retirement cannot leave a guard dereferencing a released pool handle.
+	}
+	if (connection && !clean_transaction)
+		sql_pool_discard_connection(connection);
+	if (connection && (applied.outcome == critical_apply_outcome::ambiguous_commit ||
+			   connection_error(applied.error_code)))
 	{
 		MYSQL *replacement = sql_pool_replace_connection(connection);
 		connection = replacement;
 	}
+	if (applied.outcome == critical_apply_outcome::ambiguous_commit && !connection)
+		connection = sql_pool_acquire();
 	if (applied.outcome == critical_apply_outcome::ambiguous_commit && connection)
-		applied = critical_command_repository_reconcile(connection, command);
+	{
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup owner(connection, cleanup);
+		if (!player_sql_idle_error(connection))
+		{
+			owner.starting();
+			try
+			{
+				const auto reconciled =
+					critical_command_repository_reconcile(connection, command);
+				if (reconciled.outcome == critical_apply_outcome::already_applied ||
+				    reconciled.outcome == critical_apply_outcome::applied ||
+				    reconciled.outcome == critical_apply_outcome::terminal_failure)
+					applied = reconciled;
+			}
+			catch (...)
+			{ /* Preserve the original uncertain outcome. */
+			}
+			owner.finish();
+		}
+		if (cleanup.disposition != player_sql_cleanup_disposition::idle_verified ||
+		    cleanup.cleanup_error)
+			sql_pool_discard_connection(connection);
+	}
 	sql_pool_release(connection);
 	mysql_thread_end();
 	return applied;

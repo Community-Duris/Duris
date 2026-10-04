@@ -19,7 +19,7 @@ class critical_command_coordinator_owner final
 	static bool acquire_cutover_lease(uint64_t timeout_msec, uint64_t *generation,
 					  uint64_t *lease_id);
 	static bool validate_cutover_lease(uint64_t generation, uint64_t lease_id);
-	static void release_cutover_lease(uint64_t generation, uint64_t lease_id);
+	static bool release_cutover_lease(uint64_t generation, uint64_t lease_id);
 	static bool begin_cutover_transaction(uint64_t generation, uint64_t lease_id,
 					      const void *connection, unsigned long session);
 	static bool validate_cutover_transaction(uint64_t generation, uint64_t lease_id,

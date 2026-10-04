@@ -2,6 +2,7 @@
 #define PLAYER_SQL_TRANSACTION_CLEANUP_H
 
 #include "sql/sql_pool.h"
+#include "persistence/economic_sql_lifecycle_guard.h"
 #include <mysql/mysql.h>
 #include <cerrno>
 #include <type_traits>
@@ -173,12 +174,21 @@ class player_sql_pool_lease
 		reusable_ = reusable_ && mysql_thread_id(connection_) == proof.original_session;
 #endif
 	}
+	bool retire_writer(economic_sql_currency_writer_guard &writer) noexcept
+	{
+		if (!connection_ || writer.connection_ != connection_ ||
+		    !writer.retire_pooled_session())
+			return false;
+		connection_ = nullptr;
+		reusable_ = false;
+		return true;
+	}
 	bool replace()
 	{
 		MYSQL *old = connection_;
 		connection_ = nullptr;
 		reusable_ = false;
-		connection_ = sql_pool_replace_connection(old);
+		connection_ = old ? sql_pool_replace_connection(old) : sql_pool_acquire();
 		return connection_ != nullptr;
 	}
 };

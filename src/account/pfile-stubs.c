@@ -146,6 +146,14 @@ bool sql_begin_transaction()
 // The offline pfile binary owns no SQL session or economic writer admission.
 MYSQL *DB = nullptr;
 economic_sql_currency_writer_guard::~economic_sql_currency_writer_guard() = default;
+bool economic_sql_currency_writer_guard::release() noexcept
+{
+	return true;
+}
+bool economic_sql_currency_writer_guard::retire_pooled_session() noexcept
+{
+	return false;
+}
 unsigned int
 economic_sql_currency_writer_guard::acquire(MYSQL *, economic_sql_currency_writer_guard *) noexcept
 {
