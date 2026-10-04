@@ -27,6 +27,7 @@
 #include "sql/sql_telemetry_connection.h"
 #include "sql/sql_exclusion_guard.h"
 #include "sql/sql_economic_runtime.h"
+#include "economy/economic_gameplay_authority.h"
 #include "player/player_save_replay_ownership.h"
 #include "player/player_save_pipeline.h"
 #ifndef __NO_MYSQL__
@@ -2462,6 +2463,9 @@ int sql_save_player_core(P_char ch)
 	if (IS_MORPH(ch))
 		ch = MORPH_ORIG(ch);
 	p = &ch->player;
+	if (!epoch && economic_gameplay_authority::active() &&
+	    !player_save_pipeline_save_admitted(GET_PID(ch)))
+		return 0;
 	player_save_execution_guard::resident_claim residence;
 	std::optional<player_save_execution_guard::execution_scope> scope;
 	std::optional<player_save_execution_guard::permit> execution;

@@ -2805,6 +2805,19 @@ bool item_movement_transaction_prepare_sql_drop(P_char actor, P_obj root,
 #endif
 }
 
+void item_movement_transaction_cancel_drop_preparations(void)
+{
+	for (auto &request : drop_preparations)
+		if (request.active)
+		{
+			// Admission transfers the token into pending before clearing this
+			// preparation. Cancellation cannot release an admitted or uncertain
+			// original: literal_inventory_cancel explicitly refuses held tokens.
+			(void)player_save_pipeline_literal_inventory_cancel(request.token);
+			request = {};
+		}
+}
+
 void item_movement_transaction_drop_prepare_pulse(void)
 {
 #ifndef __NO_MYSQL__

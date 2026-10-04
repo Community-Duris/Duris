@@ -198,6 +198,10 @@ using player_save_journal_terminal_fn = void (*)(const player_snapshot &snapshot
 bool player_save_worker_init(player_save_apply_fn apply, void *context,
 			     unsigned int worker_threads = PLAYER_SAVE_WORKER_DEFAULT_THREADS);
 void player_save_worker_shutdown(void);
+// Lifecycle owner only. Count actual retained jobs/results, not live threads.
+bool player_save_worker_idle(void) noexcept;
+// Refuse before stopping unless all job, ready and completion owners are gone.
+bool player_save_worker_shutdown_if_idle(void);
 bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
 					  player_save_journal_ack_fn acknowledge, void *context,
 					  player_save_journal_terminal_fn terminal = nullptr);

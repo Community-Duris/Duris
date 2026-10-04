@@ -31,6 +31,16 @@ inline bool valid_epoch_locked(uint64_t epoch) noexcept
 {
 	return epoch && epoch == ownership_epoch && !integrity_failed;
 }
+inline bool ownership_epoch_quiescent_locked(uint64_t epoch) noexcept
+{
+	if (!valid_epoch_locked(epoch) || active_permits || !permits.empty() ||
+	    !owned_pids.empty() || !resident_claims.empty())
+		return false;
+	for (const auto &hold : holds)
+		if (hold.pid)
+			return false;
+	return true;
+}
 inline void erase_idle_locked(int pid) noexcept
 {
 	const auto found = owned_pids.find(pid);
@@ -128,16 +138,19 @@ inline bool begin_ownership_epoch(uint64_t *out) noexcept
 inline bool end_ownership_epoch(uint64_t epoch) noexcept
 {
 	std::lock_guard<std::mutex> lock(detail::mutex);
-	if (!detail::valid_epoch_locked(epoch) || detail::active_permits ||
-	    !detail::permits.empty() || !detail::owned_pids.empty() ||
-	    !detail::resident_claims.empty())
+	if (!detail::ownership_epoch_quiescent_locked(epoch))
 		return false;
-	for (const auto &hold : detail::holds)
-		if (hold.pid)
-			return false;
 	detail::ownership_epoch = 0;
 	detail::changed_locked();
 	return true;
+}
+
+// Pure observation only; the lifecycle owner still ends the same epoch after
+// stopping idle participants and rechecking their retained native work.
+inline bool ownership_epoch_quiescent(uint64_t epoch) noexcept
+{
+	std::lock_guard<std::mutex> lock(detail::mutex);
+	return detail::ownership_epoch_quiescent_locked(epoch);
 }
 
 // Return the actual epoch even after integrity refusal; callers must not turn a

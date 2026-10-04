@@ -90,6 +90,9 @@ bool item_movement_transaction_prepare_sql_drop(P_char actor, P_obj root,
 						const void *context, size_t context_size,
 						item_movement_reject *reject);
 void item_movement_transaction_drop_prepare_pulse(void);
+// Lifecycle cancellation of unadmitted preparations only. Their ordinary save
+// bodies remain owned by the pipeline/worker; admitted original holds are untouched.
+void item_movement_transaction_cancel_drop_preparations(void);
 
 struct item_movement_health
 {
