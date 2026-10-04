@@ -1047,8 +1047,78 @@ static int partial_save_matrix()
 #endif
 }
 
-int main()
+// Read-only export of the real handler's literal checkpoint, while the
+// disposable journey's inbox-insert barrier prevents physical mutation.
+static int export_live_drop_source(const char *pid_text, const char *root_text)
 {
+	guard_room_fixture();
+	assert(mysql_library_init(0, nullptr, nullptr) == 0);
+	char *end = nullptr;
+	const auto parsed = std::strtoul(pid_text, &end, 10);
+	assert(end && !*end && parsed > 0 && parsed <= INT32_MAX);
+	const auto pid = static_cast<int32_t>(parsed);
+	end = nullptr;
+	const auto root = std::strtoull(root_text, &end, 10);
+	assert(end && !*end && root);
+	MYSQL *connection = open_pool_test_connection();
+	assert(connection);
+	execute(connection,
+		"SELECT account_name FROM player_data WHERE pid=" + std::to_string(pid));
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> account(
+		mysql_store_result(connection), mysql_free_result);
+	assert(account && mysql_num_fields(account.get()) == 1);
+	const auto row = mysql_fetch_row(account.get());
+	assert(row && row[0]);
+	const auto lengths = mysql_fetch_lengths(account.get());
+	player_load_request request{};
+	request.request_id = static_cast<uint64_t>(pid);
+	request.pid = pid;
+	request.account_name.assign(row[0], lengths[0]);
+	assert(!mysql_fetch_row(account.get()) && !mysql_errno(connection));
+	account.reset();
+	request.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+	const auto source = player_load_repository_execute(connection, request);
+	assert(source.outcome == player_load_outcome::applied &&
+	       source.snapshot.items.size() == source.item_identities.size());
+	std::vector<player_item_snapshot> exact;
+	std::vector<size_t> indices;
+	for (size_t index = 0; index < source.item_identities.size(); ++index)
+		if (source.item_identities[index].root_item_uid == root)
+		{
+			assert(source.item_identities[index].owner.type ==
+				       item_owner_type::player &&
+			       source.item_identities[index].owner.id ==
+				       static_cast<uint64_t>(pid));
+			assert(source.snapshot.items[index].string_mask ==
+			       (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3));
+			indices.push_back(index);
+			exact.push_back(source.snapshot.items[index]);
+		}
+	assert(exact.size() >= 2 && exact[0].object_uid == root && exact[0].vnum == 377);
+	for (auto &item : exact)
+		if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+		{
+			const auto found = std::find(indices.begin(), indices.end(),
+						     static_cast<size_t>(item.parent_index));
+			assert(found != indices.end());
+			item.parent_index = static_cast<int32_t>(found - indices.begin());
+		}
+	const auto encoded = encode_exact_graph(exact);
+	std::printf("ROOM_ITEM_PAYLOAD_SEED uid=%llu payload=",
+		    static_cast<unsigned long long>(root));
+	for (uint8_t byte : encoded)
+		std::printf("%02x", byte);
+	std::printf("\n");
+	mysql_close(connection);
+	mysql_library_end();
+	return 0;
+}
+
+int main(int argc, char **argv)
+{
+	if (argc == 4 && !std::strcmp(argv[1], "--export-live-drop-source"))
+		return export_live_drop_source(argv[2], argv[3]);
+	assert(argc == 1);
 	guard_room_fixture();
 	assert(mysql_library_init(0, nullptr, nullptr) == 0);
 	if (partial_matrix_enabled())
