@@ -28,6 +28,8 @@ if (os.environ.get("TEST_DB_DISPOSABLE") != "1" or
         os.environ.get("DB_NAME") != "duris_restore" or
         not os.environ.get("DB_SOCKET", "").startswith("/plan5-restore-")):
     raise SystemExit("explicit fresh disposable restore daemon/socket required")
+if not os.environ.get("DURIS_PLAN5_COIN_FIXTURE"):
+    raise SystemExit("native EAI1/EAP1 fixture required; use test_restore_economic_coin_effects.py")
 
 settings = {"unix_socket": os.environ["DB_SOCKET"], "user": os.environ["DB_USER"],
             "password": os.environ["DB_PASSWD"], "autocommit": True,
@@ -46,7 +48,8 @@ native_blocks = []
 fixture = os.environ.get("DURIS_PLAN5_COIN_FIXTURE")
 if fixture:
     fixture_path = Path(fixture).resolve()
-    assert fixture_path.is_relative_to((ROOT / "bin/tests/plan5-sql-coin-effects").resolve())
+    assert any(fixture_path.is_relative_to((ROOT / directory).resolve()) for directory in
+               ("bin/tests/plan5-sql-coin-effects", "bin/tests/plan5-sql-canonical-evidence"))
     payload = fixture_path.read_bytes()
     assert len(payload) <= 1024 * 1024
     offset = 0
@@ -93,7 +96,9 @@ class Executor:
         assert query.startswith("SELECT "), query
         with reader.cursor() as cursor:
             cursor.execute(query)
-            return str(cursor.fetchone()[0])
+            rows = cursor.fetchall()
+            assert all(len(row) == 1 for row in rows), query
+            return "\n".join(str(row[0]) for row in rows)
 
 
 def old_money_checks():
@@ -144,6 +149,50 @@ def damaged(query, repair, code, params=None, repair_params=None, broken_fk=Fals
     admitted()
     assert captured() == before, code
     print("refused without mutation: " + code, flush=True)
+
+
+canonical_cuts = []
+
+
+def canonical_cut(label, changes, repairs, code, full=False):
+    original = captured()
+    try:
+        for query, params in changes:
+            execute(query, params)
+        cut = captured()
+        try:
+            if full:
+                main_result()
+            else:
+                with reader.cursor() as cursor:
+                    cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+                    cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
+                qualifier.economic_restore_evidence.require_integrity(Executor())
+        except RuntimeError as error:
+            assert str(error) == code, (label, str(error), code)
+        else:
+            assert code is None, (label, "corrupt canonical evidence was admitted", code)
+        finally:
+            reader.rollback()
+        assert captured() == cut, label + ": audit changed authority"
+    finally:
+        for query, params in repairs:
+            execute(query, params)
+    assert captured() == original, label + ": disposable fixture was not restored"
+    canonical_cuts.append({"label": label, "code": code, "full_entry": full})
+    print("CANONICAL_CUT " + json.dumps(canonical_cuts[-1], sort_keys=True), flush=True)
+
+
+def canonical_field(table, field, changed, code, condition="", full=False, operation=OP):
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT " + field + " FROM " + table + " WHERE operation_id=%s" + condition,
+                       (operation,))
+        rows = cursor.fetchall()
+        assert len(rows) == 1
+        original = rows[0][0]
+    query = "UPDATE " + table + " SET " + field + "=%s WHERE operation_id=%s" + condition
+    canonical_cut(table + "." + field, [(query, (changed, operation))],
+                  [(query, (original, operation))], code, full)
 
 
 try:
@@ -197,11 +246,10 @@ try:
             "intent_digest,domain_digest,plan_digest,canonical_intent,canonical_plan,outcome,result_code,"
             "account_count,posting_count,child_count,item_event_count,before_witness_count,after_witness_count) "
             "VALUES(%s,%s,%s,1,1,1,1,2,1,38,%s,%s,%s,%s,%s,%s,1,0,2,2,0,0,0,0)",
-            (OP, LINEAGE, EPOCH, SOURCE,
-             hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + native_blocks[0]).digest() if native_blocks else bytes(32),
-             native_blocks[0][192:224] if native_blocks else bytes(32),
-             hashlib.sha256(native_blocks[1]).digest() if native_blocks else bytes(32),
-             native_blocks[0] if native_blocks else bytes(256), native_blocks[1] if native_blocks else bytes(256)))
+             (OP, LINEAGE, EPOCH, SOURCE,
+              hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + native_blocks[0]).digest(),
+              native_blocks[0][192:224], hashlib.sha256(native_blocks[1]).digest(),
+              native_blocks[0], native_blocks[1]))
     keys = [LINEAGE + struct.pack("<HHQQ4x", 1, kind, lifetime, 0)
             for kind, lifetime in ((1, 7), (9, 1))]
     for index, amount in ((0, 7), (1, 0)):
@@ -220,12 +268,20 @@ try:
             "intent_digest,domain_digest,outcome,result_code,canonical_intent,"
             "account_count,posting_count,child_count,item_event_count,before_witness_count,after_witness_count) "
             "VALUES(%s,%s,%s,1,1,1,1,1,1,18,%s,%s,%s,2,211,%s,0,0,0,0,0,0)",
-            (REJECTED, LINEAGE, EPOCH, native_blocks[4][112:160] if native_blocks else None,
-             hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + native_blocks[4]).digest() if native_blocks else bytes(32),
-             native_blocks[4][192:224] if native_blocks else bytes(32), native_blocks[4] if native_blocks else bytes(256)))
+             (REJECTED, LINEAGE, EPOCH, native_blocks[4][112:160],
+              hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + native_blocks[4]).digest(),
+              native_blocks[4][192:224], native_blocks[4]))
     before = captured()
     old_money_checks()
     admitted()
+    if os.environ.get("DURIS_PLAN5_CANONICAL_EVIDENCE") == "1":
+        assert native_blocks, "canonical checks require actual native capsules"
+        damaged("UPDATE economic_accounting_operation SET canonical_intent=CONCAT(UNHEX('00'),"
+                "SUBSTRING(canonical_intent,2)) WHERE operation_id=%s",
+                "UPDATE economic_accounting_operation SET canonical_intent=%s WHERE operation_id=%s",
+                "restore_economic_intent_mismatch", (OP,), (native_blocks[0], OP))
+        if os.environ.get("DURIS_PLAN5_CANONICAL_RED") == "1":
+            raise SystemExit(0)
     execute("DELETE FROM economic_accounting_coin_posting WHERE operation_id=%s AND line_index=1", (OP,))
     old_money_checks()  # Native money still agrees; the retained root is damaged.
     refused("restore_economic_posting_count_mismatch")
@@ -282,7 +338,7 @@ try:
     execute("INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,root_item_uid,"
             "from_owner_type,from_owner_id,from_owner_context_id,to_owner_type,to_owner_id,"
             "to_owner_context_id,item_revision,from_owner_revision,to_owner_revision,reason_type,source_site) "
-            "VALUES(%s,0,99,99,1,42,0,2,4,0,2,1,2,1,1)", (CHILD,))
+            "VALUES(%s,0,99,99,1,42,0,3,4,0,2,1,2,1,1)", (CHILD,))
     execute("INSERT INTO economic_accounting_item_reference VALUES(%s,0,0,1,99,1,2,%s,0)", (OP, CHILD))
     execute("UPDATE economic_accounting_operation SET child_count=1,item_event_count=1 WHERE operation_id=%s", (OP,))
     execute("UPDATE economic_accounting_coin_posting SET child_index=1")
@@ -330,6 +386,101 @@ try:
         execute("UPDATE economic_accounting_operation SET canonical_plan=%s,plan_digest=%s WHERE operation_id=%s",
                 (native_blocks[3], hashlib.sha256(native_blocks[3]).digest(), OP))
     admitted()  # Full uint64 counters are compared without subtraction wrap.
+    if os.environ.get("DURIS_PLAN5_CANONICAL_EVIDENCE") == "1":
+        prefix = "restore_economic_"
+        for field in ("intent_digest", "domain_digest", "plan_digest"):
+            canonical_field("economic_accounting_operation", field, bytes([99]) * 32,
+                            prefix + ("plan" if field == "plan_digest" else "intent") + "_mismatch")
+        canonical_field("economic_accounting_operation", "canonical_intent", bytes(256),
+                        prefix + "intent_mismatch", operation=REJECTED)
+        for field, value in (("writer_id", 2), ("policy_version", 2), ("compiler_version", 2),
+                             ("actor_kind", 1), ("actor_id", 2), ("reason", 39),
+                             ("original_operation_id", OP)):
+            canonical_field("economic_accounting_operation", field, value, prefix + "metadata_mismatch")
+        for field in ("account_count", "posting_count", "child_count", "before_witness_count",
+                      "after_witness_count", "item_event_count"):
+            value = scalar("SELECT " + field + " FROM economic_accounting_operation WHERE operation_id=UNHEX('" + OP.hex() + "')")
+            canonical_field("economic_accounting_operation", field, value + 1,
+                            prefix + "canonical_count_mismatch", full=field == "before_witness_count")
+        canonical_field("economic_accounting_account_effect", "account_key",
+                        LINEAGE + struct.pack("<HHQQ4x", 1, 1, 8, 0),
+                        prefix + "canonical_account_mismatch", " AND account_index=0")
+        canonical_field("economic_accounting_account_effect", "after_revision", 2,
+                        prefix + "canonical_account_mismatch", " AND account_index=0")
+        canonical_field("economic_accounting_coin_posting", "delta_copper", 8,
+                        prefix + "canonical_posting_mismatch", " AND line_index=0")
+        canonical_field("economic_accounting_coin_posting", "child_index", 0,
+                        prefix + "canonical_posting_mismatch", " AND line_index=0")
+        for field in ("domain_id", "discriminator"):
+            canonical_field("economic_accounting_child", field, 2,
+                            prefix + "canonical_child_mismatch", full=field == "domain_id")
+        canonical_field("economic_accounting_item_reference", "before_revision", 1,
+                        prefix + "canonical_item_mismatch")
+        for field, value in (("root_item_uid", 98), ("parent_item_uid", 99),
+                             ("from_owner_id", 43), ("to_owner_type", 2),
+                             ("to_owner_id", 5), ("from_equipment_slot", 1), ("to_equipment_slot", 1)):
+            canonical_field("item_ownership_ledger", field, value, prefix + "canonical_custody_mismatch",
+                            full=field == "root_item_uid", operation=CHILD)
+        # These are owner aggregate counters, not EAP1 item revisions.
+        canonical_field("item_ownership_ledger", "from_owner_revision", 123, None, operation=CHILD)
+        plan = native_blocks[3]
+        for label, changed in (("truncated-plan", plan[:-1]), ("trailing-plan", plan + bytes(1)),
+                               ("plan-4MiB-bound", plan + bytes(4 * 1024 * 1024 - len(plan)))):
+            query = "UPDATE economic_accounting_operation SET canonical_plan=%s,plan_digest=%s WHERE operation_id=%s"
+            canonical_cut(label, [(query, (changed, hashlib.sha256(changed).digest(), OP))],
+                          [(query, (plan, hashlib.sha256(plan).digest(), OP))], prefix + "plan_mismatch")
+        changes = [("UPDATE economic_accounting_account_effect SET after_copper=%s WHERE operation_id=%s AND account_index=0", (8, OP)),
+                   ("UPDATE economic_accounting_coin_posting SET delta_copper=%s,copper_value=%s WHERE operation_id=%s AND line_index=0", (8, 8, OP)),
+                   ("UPDATE economic_accounting_coin_posting SET delta_copper=%s,copper_value=%s WHERE operation_id=%s AND line_index=1", (-8, -8, OP))]
+        repairs = [(query, tuple(7 if value == 8 else -7 if value == -8 else value for value in params))
+                   for query, params in changes]
+        canonical_cut("balanced-forged-projections", changes, repairs,
+                      prefix + "canonical_account_mismatch", full=True)
+        oracle_rows = [json.loads(line) for line in Path(fixture).with_name("native-decode-sql.jsonl").read_bytes().splitlines()]
+        maximum = bytes.fromhex(next(row["bytes"] for row in oracle_rows if row["name"] == "intent-8192"))
+        maximum_digest = hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + maximum).digest()
+        paired = plan[:152] + maximum_digest + plan[184:]
+        query = "UPDATE economic_accounting_operation SET canonical_intent=%s,intent_digest=%s,canonical_plan=%s,plan_digest=%s WHERE operation_id=%s"
+        canonical_cut("native-intent-8192-bound", [(query, (maximum, maximum_digest, paired, hashlib.sha256(paired).digest(), OP))],
+                      [(query, (native_blocks[0], hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + native_blocks[0]).digest(),
+                                plan, hashlib.sha256(plan).digest(), OP))], None)
+        # Traverse more than one 256-ID page using native zero-effect capsules.
+        # This is a quiescent structural cut, not a real writer workload or watermark.
+        empty_intent = bytes.fromhex(next(row["bytes"] for row in oracle_rows if row["name"] == "no-source-intent"))
+        empty_plan = bytes.fromhex(next(row["bytes"] for row in oracle_rows if row["name"] == "no-source-plan"))
+        page_original = captured()
+        added = []
+        try:
+            for value in range(1, 258):
+                operation = value.to_bytes(16, "big")
+                frozen = empty_intent[:64] + operation + empty_intent[80:]
+                intent_digest = hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + frozen).digest()
+                encoded = empty_plan[:40] + operation + empty_plan[56:152] + intent_digest + empty_plan[184:]
+                execute("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,command_type,schema_version,"
+                        "payload_version,status,result_payload,committed_at) VALUES(%s,%s,%s,1,2,1,1,'',CURRENT_TIMESTAMP(6))",
+                        (operation, bytes(32), bytes(32)))
+                added.append(operation)
+                execute("INSERT INTO economic_accounting_operation(operation_id,lineage,epoch,accounting_version,writer_id,"
+                        "policy_version,compiler_version,actor_kind,actor_id,reason,intent_digest,domain_digest,plan_digest,"
+                        "canonical_intent,canonical_plan,outcome,result_code,account_count,posting_count,child_count,"
+                        "item_event_count,before_witness_count,after_witness_count) "
+                        "VALUES(%s,%s,%s,1,1,1,1,1,1,32,%s,%s,%s,%s,%s,1,0,0,0,0,0,0,0)",
+                        (operation, LINEAGE, EPOCH, intent_digest, frozen[192:224], hashlib.sha256(encoded).digest(), frozen, encoded))
+            canonical_cut("259-root-two-page-cut", [], [], None, full=True)
+            canonical_field("economic_accounting_operation", "canonical_intent", bytes(256),
+                            prefix + "intent_mismatch", full=True, operation=added[-1])
+        finally:
+            for operation in added:
+                execute("DELETE FROM economic_accounting_operation WHERE operation_id=%s", (operation,))
+                execute("DELETE FROM critical_operation_inbox WHERE operation_id=%s", (operation,))
+        assert captured() == page_original
+        admitted()
+        print("CANONICAL_RESTORE_QUALIFIED " + json.dumps({"cuts": len(canonical_cuts),
+              "refusals": sum(row["code"] is not None for row in canonical_cuts),
+              "full_entry_cuts": sum(row["full_entry"] for row in canonical_cuts),
+              "page_roots": 259, "intent_bound": 8192, "plan_bound": 4 * 1024 * 1024,
+              "authority_unchanged": True, "schema_head": "0056_spell_ward_durability",
+              "production_access": False}, sort_keys=True), flush=True)
     if native_blocks:
         cases = [json.loads(block) for block in native_blocks[5:]]
         qualified, constrained = 0, 0
