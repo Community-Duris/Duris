@@ -16,6 +16,7 @@ import struct
 import sys
 
 from reconcile_economy_accounting import MAX_INPUT_BYTES, MAX_ROWS, account_key, copper
+from economic_restore_evidence import decode_intent, decode_plan
 
 HEADER_BYTES = 192
 HOLDING_BYTES = 112
@@ -119,6 +120,61 @@ def decode_witness(row: dict, lineage: bytes, epoch: bytes, opening: bytes) -> t
     return holdings, items
 
 
+def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> None:
+    """Bind all EAB1 bytes and their opening projections to a committed root."""
+    try:
+        blob = row["canonical_witness"]
+        operation = hashlib.sha256(blob[48:64] + struct.pack("<I", 0x42415345) + blob[72:80]).digest()[:16]
+        source = struct.pack("<HH", 10, 1) + blob[48:64] + epoch + blob[72:80] + bytes(4)
+        expected = (lineage, epoch, operation, bytes(16), 1, 4, 1, 1, 2,
+                    unsigned(blob[64:72]), 38, source)
+        root = (row["root_lineage"], row["root_epoch"], row["operation_id"],
+                row["original_operation_id"] or bytes(16),
+                *(row[name] for name in ("accounting_version", "writer_id", "policy_version",
+                                         "compiler_version", "actor_kind", "actor_id", "reason")),
+                row["source_event"])
+        if (root != expected or row["original_operation_id"] is not None or
+                row["witness_version"] != 1 or row["inbox_revision"] != row["book_revision"] or
+                (row["inbox_type"], row["inbox_schema"], row["inbox_payload"], row["inbox_result_payload"]) !=
+                (20, 2, 1, b"")):
+            raise OriginError("EAB1 committed root mismatch")
+        intent = decode_intent(row["canonical_intent"])
+        plan = decode_plan(row["canonical_plan"])
+        payload = b"EBC1" + struct.pack("<HHII", 1, 48, len(blob), 0) + hashlib.sha256(blob).digest()
+        domain = hashlib.sha256(b"DURIS-ECONOMIC-DOMAIN-V1\0" + struct.pack("<HHI", 20, 1, 48) + payload).digest()
+        if (len(row["canonical_intent"]) != 256 or intent["metadata"] != expected or
+                plan["metadata"] != expected or intent["domain_digest"] != domain or
+                plan["domain_digest"] != domain or row["domain_digest"] != domain or
+                intent["intent_digest"] != plan["intent_digest"] or
+                row["intent_digest"] != intent["intent_digest"] or row["plan_digest"] != plan["plan_digest"]):
+            raise OriginError("EAB1 committed root mismatch")
+        holdings, items = struct.unpack_from("<II", blob, 184)
+        effects, postings, equity = [], [], []
+        for index in range(holdings):
+            record = blob[192 + index * 112:192 + (index + 1) * 112]
+            amounts = struct.unpack_from("<4q", record, 40)
+            effects.append(record[:40] + bytes(32) + record[40:72] + struct.pack("<QQ", 0, 1))
+            value = copper(amounts)
+            if value:
+                postings.append(struct.pack("<IHH4qq", len(postings), index, 0, *amounts, value))
+                equity.append((amounts, value))
+        if equity:
+            effects.append(blob[80:120] + bytes(80))
+            for amounts, value in equity:
+                postings.append(struct.pack("<IHH4qq", len(postings), holdings, 0,
+                                            *(-amount for amount in amounts), -value))
+        snapshots = [blob[192 + holdings * 112 + index * 88:192 + holdings * 112 + index * 88 + 56] + bytes(8)
+                     for index in range(items)]
+        counts = (len(effects), len(postings), 0, items, items, 0)
+        if (plan["counts"] != counts or
+                tuple(row[name] for name in ("account_count", "posting_count", "child_count",
+                                              "before_witness_count", "after_witness_count", "item_event_count")) != counts or
+                row["canonical_plan"][256:] != b"".join(effects + postings + snapshots + snapshots)):
+            raise OriginError("EAB1 committed root mismatch")
+    except (ValueError, KeyError, TypeError, struct.error) as error:
+        raise OriginError("EAB1 committed root mismatch") from error
+
+
 def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
     """Read verified origins within a caller-owned consistent read-only cut."""
     identity(lineage, "lineage")
@@ -146,8 +202,10 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
     if type(control["revision"]) is not int or control["revision"] < 1:
         raise OriginError("baseline has no committed opening witness")
     cursor.execute(
-        "SELECT COUNT(*) AS row_count,COALESCE(SUM(OCTET_LENGTH(canonical_witness)),0) "
-        "AS blob_bytes FROM economic_baseline_witness WHERE lineage=%s AND epoch=%s",
+        "SELECT COUNT(*) AS row_count,COALESCE(SUM(OCTET_LENGTH(w.canonical_witness)+"
+        "COALESCE(OCTET_LENGTH(o.canonical_intent),0)+COALESCE(OCTET_LENGTH(o.canonical_plan),0)),0) "
+        "AS blob_bytes FROM economic_baseline_witness w LEFT JOIN economic_accounting_operation o "
+        "ON o.operation_id=w.operation_id WHERE w.lineage=%s AND w.epoch=%s",
         (lineage, epoch))
     bounds = cursor.fetchone()
     if (bounds is None or bounds["row_count"] > MAX_ROWS or
@@ -155,7 +213,13 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
         raise OriginError("baseline witness source exceeds audit input limit")
     cursor.execute(
         "SELECT w.operation_id,w.book_revision,w.holding_count,w.item_count,"
-        "w.witness_digest,w.canonical_witness,o.reason,o.outcome,o.result_code,"
+        "w.witness_digest,w.canonical_witness,w.witness_version,o.reason,o.outcome,o.result_code,"
+        "o.lineage AS root_lineage,o.epoch AS root_epoch,o.original_operation_id,"
+        "o.accounting_version,o.writer_id,o.policy_version,o.compiler_version,o.actor_kind,o.actor_id,"
+        "o.source_event,o.intent_digest,o.domain_digest,o.plan_digest,o.canonical_intent,o.canonical_plan,"
+        "o.account_count,o.posting_count,o.child_count,o.item_event_count,o.before_witness_count,o.after_witness_count,"
+        "i.durable_revision AS inbox_revision,i.command_type AS inbox_type,i.schema_version AS inbox_schema,"
+        "i.payload_version AS inbox_payload,i.result_payload AS inbox_result_payload,"
         "i.status AS inbox_status,i.result_code AS inbox_result,"
         "i.failure_stage AS inbox_failure_stage,"
         "(i.committed_at IS NOT NULL) AS inbox_committed_at_present "
@@ -180,6 +244,7 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
                 row["inbox_committed_at_present"] != 1):
             raise OriginError("uncommitted or noncanonical baseline witness")
         batch_holdings, batch_items = decode_witness(row, lineage, epoch, opening)
+        verify_baseline_root(row, lineage, epoch)
         for holding in batch_holdings:
             key = holding["account_key"]
             lifetime = account_key(key)[2]
