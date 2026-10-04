@@ -1,11 +1,29 @@
 # Accounting review status — 2026-10-04
 
-Status: **source implementation continues; qualification, activation and release
-remain blocked**. `coverage_complete=False`. R1–R8 and every applicable major-plan
+Status: **Plan 1 qualification is underway; activation and release remain
+blocked**. `coverage_complete=False`. R1–R8 and every applicable major-plan
 acceptance gate remain required. This checkpoint supersedes the October 3 source
 preparation status, not its bounded historical test evidence.
 
 ## Integrated candidate and ownership
+
+Production source through `9fabe54bb` passes both strict server builds. The
+four compile corrections preserve existing behavior. All eleven existing
+component owners now have passing source-bound results; seven stale fixture
+closures/oracles were repaired without removing original cases or limits.
+The 35 prepared actual worker/journal guard cases pass in both backend modes.
+Real pooled bank reply-loss/retained-ACK qualification passes on MySQL 8.0.46
+and MariaDB 10.11.14. Coin session cleanliness, item topology expectation and
+lifecycle fixture closure require targeted reruns. The prepared native SQL
+startup/guard and checked-release owners compile; execution remains pending.
+These results do not complete Plan 1 or qualify actual active ordinary-drop
+publication/restart. See the consolidated report for exact inputs and logs.
+
+Plan5 `e694798f6` and `bbb72ecff` are integrated as `47aa60de0` and
+`4fdbb7033`: independent baseline zero-effect checks and database-wide orphan
+reservation inventory. The fifth orphan coverage count is mandatory; old
+four-count snapshots require recapture. Peer engine evidence remains specific
+to its original native tree, not the combined candidate.
 
 Latest Plan5 slice `a5d26b658` is imported as `cd0fbebb6`; see
 [its projection report](PLAN5_SQL_BASELINE_PROJECTION_SLICE_2026-10-04.md).
@@ -42,9 +60,12 @@ records a rehashed-witness RED and independent committed-root binding, with
 both-engine evidence restricted to its own inputs. Existing native case
 registration covers the updated owner; combined qualification remains deferred.
 
-The source milestone candidate through `97fef7a09` includes the thirty-one slices
+The source milestone candidate through `9fabe54bb` includes the thirty-one slices
 below, plus the local Plan5 integrations described above. Plan5's reports remain evidence of
 its own inputs, not of this combined source candidate. Root checkout WIP is preserved.
+Four subsequent compile-only corrections are recorded in the consolidated report:
+`e13c96201`, `bd4b174d3`, `e9c3e1eaa`, and `9fabe54bb`. Qualification fixture
+milestones are separately committed through `add7f5619`.
 
 Primary owns Plans1–4, shared contracts/coordinator, producers, registry/matrix
 and activation. The separate codex/accounting-plan5 owner retains independent
@@ -93,12 +114,13 @@ Existing healthy inactive behavior and the declined spell change are preserved.
 
 ## Prepared evidence and execution cadence
 
-The user requests testing when each major plan is ready. This checkpoint runs no
-new compiler, AST, native, SQL, gameplay, migration, service or recovery checks.
-Only source review, formatting and diff hygiene were performed. New source commits
-are unqualified and have not been pushed as qualified milestones.
+The user requests testing when each major plan is ready. Plan 1's batch now runs
+the existing native owners and both builds; measured results are recorded above
+and in the consolidated report. Initial source-only statements below retain
+their original preparation scopes. The combined source has not been declared
+qualified or pushed as a qualified milestone.
 
-Private frozen inputs and cases are prepared, not executed:
+Original private preparation inventory (not a current execution status):
 critical cleanup seven groups; save guard 35 leaf and 14 pipeline cases; runtime
 root census ten groups; marker 546-input closures; receipt publication 30 unchanged
 craft cases plus 19 ordinary cases; allocator eight cases; discard-only constructor
@@ -107,6 +129,8 @@ per corrected V2 variant. Exact pins and controlled-leaf
 limits are in
 the linked reports. A missing BEFORE API/compile failure is unsupported, not a
 semantic RED. Original case/aggregate/compile budgets and maintained oracles remain.
+The leaf guard's 35 cases now pass in each backend mode; the repaired 14-case
+pipeline and 22-case checked-release owners compile but have not run on SQL yet.
 Later combined-candidate qualification must refresh consumed source pins; these
 isolated frozen families do not establish current-head acceptance or route coverage.
 

@@ -49,10 +49,14 @@ their closed state is not evidence of qualified coverage. Link focused PRs and
 current proof to the appropriate #490 section, preserving file-owner handoffs,
 backend limitations and the tested revision before checking off acceptance.
 
-## Current source preparation checkpoint
+## Current implementation and qualification checkpoint
 
 The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
-remote histories and unqualified primary source through `97fef7a09`. The
+remote histories and primary production source through `9fabe54bb`. Both strict
+server builds pass, as do the existing focused components and 35 worker/journal
+guard cases per backend. Real bank coordinator/pool qualification passes on both
+SQL engines. Coin/item/lifecycle reruns and actual production publication/recovery
+acceptance remain open; no major-plan completion is claimed. The
 [consolidated save/recovery report](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md)
 retains the exact slices, source-established gaps and evidence limits.
 
@@ -79,17 +83,20 @@ R6 and cannot select an epoch before every plan supplies complete evidence.
 
 Plan5 projection audit `a5d26b658` is imported as `cd0fbebb6`, after its claim/root
 binding slices. Existing central native registrations cover those updated owners.
+Zero-effect and orphan-reservation slices `e694798f6`/`bbb72ecff` are integrated
+as `47aa60de0`/`4fdbb7033`. Orphan coverage now requires the fifth reservation
+count; existing four-count snapshots must be recaptured by the updated exporter.
 Peer evidence qualifies its own consumed inputs; intact native world holdings/items
 remain absent and exports partial. Marker-v2 and mandatory `.elr` independent
 inventory/restore/export/lifecycle consumers, command-preimage binding and full
 release qualification remain Plan5 handoffs. Primary retains native formats,
 cutover/complete-source authority and all remaining Plans1–4 writer integration.
 
-Every new primary slice remains source-only and unqualified. Historical semantic
-registry/matrix anchors remain unpromoted. Testing stays deferred until each major
-plan is ready; Plan 1 is now source-ready and its qualification batch is authorized.
-No new passing compiler/native/gameplay/recovery claim or milestone push has been
-made. Preserve original BEFORE sources, oracles, budgets and
+The combined primary implementation remains unqualified as a major plan.
+Historical semantic registry/matrix anchors remain unpromoted. Testing stays
+deferred until each major plan is ready; Plan 1's batch is now running with the
+partial passing results stated above. No qualified milestone push has been made.
+Preserve original BEFORE sources, oracles, budgets and
 all applicable R1–R8 requirements, including day-one routes and full backend parity.
 
 ## Current implementation and qualification

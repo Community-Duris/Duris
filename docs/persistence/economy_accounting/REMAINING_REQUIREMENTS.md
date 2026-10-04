@@ -10,6 +10,12 @@ and qualification status. The older continuation retains historical evidence. Th
 executable work plans. A component test or source reference is not a qualified
 player journey.
 
+Plan 1's major qualification batch is underway on production source `9fabe54bb`.
+Both strict builds, focused components, worker/journal guard cases and both-engine
+bank coordinator/pool checks pass within their stated scopes. Coin/item/lifecycle
+reruns and native production publication/recovery remain open. No R1–R8 or
+major-plan acceptance gate is waived or marked complete by these partial results.
+
 ## Product boundary
 
 Account all durable player-facing money and item economy mutations. Money means
