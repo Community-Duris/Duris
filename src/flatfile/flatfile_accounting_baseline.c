@@ -288,6 +288,19 @@ bucket load(const std::string &root, const head &value, size_t slot,
 	in.done();
 	return result;
 }
+std::array<bucket, FLATFILE_BASELINE_BUCKETS>
+load_indexes(const std::string &root, const head &book,
+	     const flatfile_accounting_staging_view *view = nullptr)
+{
+	std::array<bucket, FLATFILE_BASELINE_BUCKETS> indexes;
+	for (size_t slot = 0; slot < indexes.size(); ++slot)
+	{
+		indexes[slot] = load(root, book, slot, view);
+		need(book.revision || indexes[slot].empty());
+	}
+	return indexes;
+}
+
 bucket reservations(const economic_prepared_baseline &prepared)
 {
 	bucket result;
@@ -421,16 +434,11 @@ flatfile_accounting_status flatfile_accounting_baseline_lookup(const std::string
 			bytes encoded;
 			checked(economic_plan_encode(plan, &encoded));
 			need(encoded == retained.plan);
-			std::array<bucket, FLATFILE_BASELINE_BUCKETS> indexes;
-			std::array<bool, FLATFILE_BASELINE_BUCKETS> loaded = {};
+			const auto indexes = load_indexes(root, book);
 			for (const auto &entry : reservations(*prepared))
 			{
 				const auto slot = entry.id % FLATFILE_BASELINE_BUCKETS;
-				if (!loaded[slot])
-				{
-					indexes[slot] = load(root, book, slot);
-					loaded[slot] = true;
-				}
+
 				const auto found = std::lower_bound(
 					indexes[slot].begin(), indexes[slot].end(), entry, less);
 				need(found != indexes[slot].end() && found->kind == entry.kind &&
@@ -458,6 +466,27 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_stag
 	const economic_account_key &opening, const critical_operation_id &creating_operation,
 	operations *ops, std::string *error, flatfile_accounting_staging_view *view)
 {
+	return initialize_with_origin_staged(
+		root, lock, lineage, epoch, opening, creating_operation, ops, error, view,
+		flatfile_baseline_initialization_origin::baseline_participant);
+}
+flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_lifecycle_staged(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const economic_account_key &opening, const critical_operation_id &creating_operation,
+	operations *ops, std::string *error, flatfile_accounting_staging_view *view)
+{
+	return initialize_with_origin_staged(
+		root, lock, lineage, epoch, opening, creating_operation, ops, error, view,
+		flatfile_baseline_initialization_origin::lifecycle_owner);
+}
+flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_with_origin_staged(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const economic_account_key &opening, const critical_operation_id &creating_operation,
+	operations *ops, std::string *error, flatfile_accounting_staging_view *view,
+	flatfile_baseline_initialization_origin origin)
+{
 	return guarded(
 		[&]
 		{
@@ -468,24 +497,39 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_stag
 			if (view)
 				authority(view->begin(root, lock, ops));
 			const auto retained = membership(root, lock, lineage, epoch, view);
+			need(origin ==
+				     flatfile_baseline_initialization_origin::baseline_participant ||
+			     origin == flatfile_baseline_initialization_origin::lifecycle_owner);
+			if (origin == flatfile_baseline_initialization_origin::lifecycle_owner)
+				need(retained.creating_operation.bytes ==
+						     creating_operation.bytes &&
+					     retained.transition_kind == 1,
+				     status::conflict);
 			if (retained.baseline_initialization ==
 			    flatfile_baseline_initialization::initialized)
 			{
+				// Historical unknown generic retries stay unknown. A lifecycle
+				// install cannot adopt unknown or generic initialization as its own.
+				need(retained.initialization_origin == origin ||
+					     (origin == flatfile_baseline_initialization_origin::
+								baseline_participant &&
+					      retained.initialization_origin ==
+						      flatfile_baseline_initialization_origin::
+							      legacy_unknown),
+				     status::conflict);
 				need(retained.baseline_initializing_operation.bytes ==
 						     creating_operation.bytes &&
 					     economic_account_key_equal(retained.baseline_opening,
 									opening),
 				     status::conflict);
 				const auto book = load(root, lock, lineage, epoch, view);
-				for (size_t slot = 0; slot < FLATFILE_BASELINE_BUCKETS; ++slot)
-				{
-					const auto entries = load(root, book, slot, view);
-					need(book.revision || entries.empty());
-				}
+				(void)load_indexes(root, book, view);
 				throw failure{ status::already_exists };
 			}
 			need(retained.baseline_initialization ==
 			     flatfile_baseline_initialization::never_initialized);
+			need(retained.initialization_origin ==
+			     flatfile_baseline_initialization_origin::legacy_unknown);
 			room(*ops);
 			need(ops->size() + FLATFILE_BASELINE_BUCKETS + 3 <=
 				     flatfile_authority_transaction_maximum_operations,
@@ -514,10 +558,10 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_stag
 			append(result, base + "head.ebc", encode(book), candidate_view.get());
 			// Marker, catalog hash and complete empty book publish atomically.
 			authority(flatfile_accounting_authority_storage::
-					  stage_baseline_initialization_staged(
+					  stage_baseline_initialization_with_origin_staged(
 						  root, lock, control.revision, lineage, epoch,
 						  opening, creating_operation, &result, error,
-						  candidate_view.get()));
+						  candidate_view.get(), origin));
 			room(result);
 			if (view)
 				authority(view->adopt(*candidate_view));
@@ -656,6 +700,22 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::stage_staged(
 				*ops = std::move(result);
 			if (verified_revision)
 				*verified_revision = record.durable_revision;
+		},
+		error);
+}
+
+flatfile_accounting_status flatfile_accounting_baseline_storage::verify_structure_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const economic_account_key &opening, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			need(lock.matches(root));
+			const auto book = load(root, lock, lineage, epoch);
+			need(economic_account_key_equal(book.opening, opening));
+			(void)load_indexes(root, book);
 		},
 		error);
 }

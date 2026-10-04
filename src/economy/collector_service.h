@@ -20,6 +20,12 @@ struct collector_service_health
 	uint64_t materialization_failures = 0;
 };
 
+struct critical_command;
+// Register only the original accounted SQL purchase during prepared startup.
+// A genuine later coordinator completion supplies the seal; this never derives
+// one from the result-only outbox or publishes before native proof/guarded ACK.
+bool collector_service_restore_replayed_purchase(const critical_command &) noexcept;
+
 void collector_service_command(P_char character, char *arguments, int command);
 void collector_service_pulse(void);
 // Reconcile a player-load/reconnect after the inventory graph is hydrated.

@@ -55,6 +55,7 @@ DORMANT_WRITERS = {
     "player.confiscate_all_dormant": "Compiled bulk rent confiscation helper has no in-tree callsite; its direct inventory extraction requires bounded UID retirement if revived.",
 }
 NON_WRITERS = {
+    "coin.restored_pile_rendering": "Compares retained opening/result literals on detached stack-local objects; no UID admission or native holding change.",
     "recovery.ordinary_drop_graph_reconstruction": "Reconstructs only an entirely absent graph from exact original receipt/current SQL authority using retained UIDs and literals. Projection enrollment changes global/index/room/runtime caches without economic issuance, destruction or ACK.",
     "recovery.inert_literal_eligibility": "Pure bounded classification of literal/prototype eligibility; no allocation, pool access, hydration, native mutation or enrollment permission.",
     'recovery.sql_ordinary_drop_receipt_observation': 'Reads exact committed inbox, historical economic root/payload and outbox inside caller-owned native locks; no native mutation, missing-command apply or transaction/ACK ownership.',
@@ -162,6 +163,8 @@ NON_WRITERS = {
     "special.flying_citadel_unreachable_move": "flying_citadel returns FALSE unconditionally before the room-to-room object movement; the two calls cannot execute in this build.",
 }
 PROJECTION_ROUTES = {
+    "coin.restored_balance_projection": "Copies verified current native wallet/shared-bank vectors into exact original live bodies under retained receipt/current authority; no new posting.",
+    "coin.restored_room_projection": "Projects an original-UID committed room pile, including private inert-stage hydration and global/room enrollment not represented by scanner hits; complete native authority and guarded ACK remain mandatory.",
     "coin.retained_room_projection": "Publishes a committed original-UID ordinary-room pile with retained exact literal/custody/result checks. Uncertain handler/materializer stages remain held; no second accounting root is created.",
     "recovery.sql_exact_room_hydration": "Projects a complete literal graph after successful schema-2 provenance, current season, UID/revision/topology and exact staged-byte checks; no accounting root is created.",
     "recovery.sql_exact_room_placement": "Installs retained placement without replaying decay, falling, redirection or gameplay drop effects; no new custody or issuance is authorized.",

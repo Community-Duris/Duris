@@ -31,6 +31,12 @@ enum class flatfile_baseline_initialization : uint8_t
 	never_initialized = 1,
 	initialized = 2,
 };
+enum class flatfile_baseline_initialization_origin : uint8_t
+{
+	legacy_unknown = 0,
+	baseline_participant = 1,
+	lifecycle_owner = 2,
+};
 struct flatfile_economic_epoch
 {
 	critical_operation_id epoch = {}, predecessor = {}, creating_operation = {};
@@ -42,6 +48,9 @@ struct flatfile_economic_epoch
 		flatfile_baseline_initialization::legacy_unknown;
 	critical_operation_id baseline_initializing_operation = {};
 	economic_account_key baseline_opening = {};
+	// Catalogs v1/v2 retain unknown origin; only a native participant stamps it.
+	flatfile_baseline_initialization_origin initialization_origin =
+		flatfile_baseline_initialization_origin::legacy_unknown;
 };
 struct flatfile_economic_control
 {
@@ -108,6 +117,13 @@ class flatfile_accounting_authority_storage
 	friend class flatfile_accounting_test_access;
 #endif
 	using operations = std::vector<flatfile_authority_operation>;
+	// Full bounded current metadata census, including retired mappings and renamed
+	// bank tombstones. No current native balance or activation authority implied.
+	static unsigned int read_all_mappings_locked(const std::string &,
+						     const flatfile_authority_lock &,
+						     std::vector<flatfile_economic_mapping> *,
+						     std::string *);
+
 	static unsigned int read_control(const std::string &, const flatfile_authority_lock &,
 					 const flatfile_accounting_staging_view *,
 					 flatfile_economic_control *, std::string *);
@@ -171,6 +187,12 @@ class flatfile_accounting_authority_storage
 		const critical_operation_id &, const critical_operation_id &,
 		const economic_account_key &, const critical_operation_id &, operations *,
 		std::string *, flatfile_accounting_staging_view *);
+	static unsigned int stage_baseline_initialization_with_origin_staged(
+		const std::string &, const flatfile_authority_lock &, uint64_t,
+		const critical_operation_id &, const critical_operation_id &,
+		const economic_account_key &, const critical_operation_id &, operations *,
+		std::string *, flatfile_accounting_staging_view *,
+		flatfile_baseline_initialization_origin);
 	static unsigned int select_epoch(const std::string &, const flatfile_authority_lock &,
 					 uint64_t expected_revision, bool active,
 					 const critical_operation_id &operation, operations *,

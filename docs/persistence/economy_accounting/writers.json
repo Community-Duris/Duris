@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source_commit": "5f542e9cf769dfa7ef89e28ce4845d7495d4e1b3",
-  "census_complete": true,
+  "census_complete": false,
   "writers": [
     {
       "id": "account.cleanup_temp_char",
@@ -207,7 +207,7 @@
       ],
       "native_effects": {
         "holding_effect": "No coin balance changes.",
-        "custody_effect": "Direct child item custody is moved to the duplicate root\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s prior parent or the player inventory before the exact reward root is retired; a failed promotion leaves the children and root intact.",
+        "custody_effect": "Direct child item custody is moved to the duplicate rootÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s prior parent or the player inventory before the exact reward root is retired; a failed promotion leaves the children and root intact.",
         "native_state_targets": [
           "direct child item UIDs and player_items parent links",
           "duplicate reward UID and player_items projection"
@@ -1548,7 +1548,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "The periodic monolith proc adds a duplicate room monolith\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s charge count to the survivor and extracts the duplicate.",
+      "classification": "The periodic monolith proc adds a duplicate room monolithÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s charge count to the survivor and extracts the duplicate.",
       "authority_boundary": "Bind both UIDs, source charge payload, resulting charge count and duplicate retirement atomically; avoid charge duplication on replay.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -1579,7 +1579,7 @@
       "reachability_evidence": "Registered object vnum 354 scans its room on CMD_PERIODIC for another object of the same template.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "The periodic monolith proc adds a duplicate room monolith\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s charge count to the survivor and extracts the duplicate.",
+        "custody_effect": "The periodic monolith proc adds a duplicate room monolithÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s charge count to the survivor and extracts the duplicate.",
         "native_state_targets": [
           "surviving monolith payload",
           "duplicate monolith UID/tombstone"
@@ -6045,7 +6045,7 @@
       "id": "combat.disarm_slot_relink",
       "symbol": "do_disarm",
       "reason": "item_move",
-      "classification": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s carrying list; its owner UID stays with that character.",
+      "classification": "Successful disarm or a severe fumble moves the equipped weapon into the same characterÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s carrying list; its owner UID stays with that character.",
       "authority_boundary": "Verify exact weapon UID, same player/NPC owner and non-stale equipment slot before live relink; do not create a second ownership event.",
       "reachability_evidence": "Registered do_disarm selects a worn weapon on victim or actor and both branches use obj_to_char(unequip_char(...)).",
       "sites": [
@@ -6062,7 +6062,7 @@
       ],
       "native_effects": {
         "holding_effect": "No coin balance change at these sites.",
-        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s carrying list; its owner UID stays with that character.",
+        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same characterÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s carrying list; its owner UID stays with that character.",
         "native_state_targets": [
           "same-character equipment and inventory slots",
           "selected item UID/owner"
@@ -6729,13 +6729,13 @@
       "id": "craft.make_lock_payload",
       "symbol": "make_lock",
       "reason": "item_move",
-      "classification": "A successful make lock changes an existing container\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s lock flags/value or a door pair\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+      "classification": "A successful make lock changes an existing containerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s lock flags/value or a door pairÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
       "authority_boundary": "Bind exact target item UID/revision or door identity with the consumed template UID and source operation; reject before altering either state.",
       "reachability_evidence": "do_make dispatches make_lock; lines 3136-3138 and 3154-3171 mutate the target immediately before yank_make_item.",
       "sites": [],
       "native_effects": {
         "holding_effect": "No coin balance change at these sites.",
-        "custody_effect": "A successful make lock changes an existing container\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s lock flags/value or a door pair\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+        "custody_effect": "A successful make lock changes an existing containerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s lock flags/value or a door pairÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
         "native_state_targets": [
           "live container payload or door state",
           "item payload/revision if admitted"
@@ -18073,7 +18073,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Reads and frees a fresh prototype only to rebuild the already modified source item\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s description.",
+      "classification": "Reads and frees a fresh prototype only to rebuild the already modified source itemÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s description.",
       "authority_boundary": "Keep the temporary template unpublished; description change belongs to the retained source UID revision.",
       "current_support": "Actual production-function sanitizers qualify missing-template refusal before payment/item/material mutation, exact probe release on rejected debit, ordinary description rebuilding and the encrusted path without a template. Compound retained-item durability remains unverified.",
       "backends": {
@@ -18114,7 +18114,7 @@
       "reachability_evidence": "modenhance is called from enhancement command, NPC death/reset hook or boot index construction as described.",
       "native_effects": {
         "holding_effect": "Enhancement fee and material-generated usage change only where the named route includes them.",
-        "custody_effect": "Reads and frees a fresh prototype only to rebuild the already modified source item\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s description.",
+        "custody_effect": "Reads and frees a fresh prototype only to rebuild the already modified source itemÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s description.",
         "native_state_targets": [
           "player/NPC inventory and item payload",
           "item_current_owner and item_ownership_ledger for admitted UID",
@@ -25689,7 +25689,7 @@
       "id": "movement.drag_room_relink",
       "symbol": "do_drag",
       "reason": "item_move",
-      "classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s new room with the same UID.",
+      "classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actorÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s new room with the same UID.",
       "authority_boundary": "Require selected old room and new room identities, exact item UID, source movement receipt and non-stale corpse ownership before publishing the room relink.",
       "reachability_evidence": "do_drag calls command_interpreter to move the actor, then checks the object is still in the old room before direct obj_from_room/obj_to_room.",
       "sites": [
@@ -25706,7 +25706,7 @@
       ],
       "native_effects": {
         "holding_effect": "No coin balance change at these call sites.",
-        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s new room with the same UID.",
+        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actorÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s new room with the same UID.",
         "native_state_targets": [
           "old and new live room contents",
           "item_current_owner room identity and corpse location"
@@ -26973,7 +26973,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "The second confiscation branch\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
+      "classification": "The second confiscation branchÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
       "authority_boundary": "Keep the disabled branch unreachable or source-classify it anew if enabled.",
       "current_support": "Source review only; selected identity, reachability or projection proof unverified.",
       "backends": {
@@ -27007,7 +27007,7 @@
       "reachability_evidence": "confiscate_item source branch reviewed; save, restore or disabled compile path is described in classification.",
       "native_effects": {
         "holding_effect": "No coin balance change at these item sites; terminal saved wallet data is handled by separate authority routes.",
-        "custody_effect": "The second confiscation branch\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
+        "custody_effect": "The second confiscation branchÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
         "native_state_targets": [
           "live player/pet item and equipment graph",
           "legacy item save buffer or selected SQL/flatfile authority",
@@ -28666,7 +28666,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "Catalog restore frees staged objects after collection allocation or partial publication failure, without retiring saved UID authority.",
-      "authority_boundary": "Clear only this attempt\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attemptÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -28767,7 +28767,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "Corpse materialization frees a detached candidate graph when prototype, money or lifecycle hydration fails; saved custody is not retired.",
-      "authority_boundary": "Clear only this attempt\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attemptÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -28872,7 +28872,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "discard_staged frees candidate corpse/room objects and money piles after a failed flat-file restore attempt; saved custody stays authoritative.",
-      "authority_boundary": "Clear only this attempt\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attemptÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -28972,7 +28972,7 @@
       "owner": "primary / #482",
       "coverage": "legacy",
       "classification": "Room-item materialization frees detached item candidates when coin-pile allocation fails; saved room custody is not retired.",
-      "authority_boundary": "Clear only this attempt\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s runtime UID projections and leave saved source, owner revision and custody history intact.",
+      "authority_boundary": "Clear only this attemptÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s runtime UID projections and leave saved source, owner revision and custody history intact.",
       "current_support": "Source review only; selected identity and rollback/projection proof unverified.",
       "backends": {
         "mysql": {
@@ -29217,7 +29217,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Pet save\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
+      "classification": "Pet saveÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
       "authority_boundary": "Keep the disabled extraction unreachable or require a typed retirement root if enabled.",
       "current_support": "Source review only; selected identity, reachability or projection proof unverified.",
       "backends": {
@@ -29251,7 +29251,7 @@
       "reachability_evidence": "writePet source branch reviewed; save, restore or disabled compile path is described in classification.",
       "native_effects": {
         "holding_effect": "No coin balance change at these item sites; terminal saved wallet data is handled by separate authority routes.",
-        "custody_effect": "Pet save\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
+        "custody_effect": "Pet saveÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
         "native_state_targets": [
           "live player/pet item and equipment graph",
           "legacy item save buffer or selected SQL/flatfile authority",
@@ -34258,7 +34258,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "The gloves proc unequips the struck character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s weapon into the same character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s carrying list.",
+      "classification": "The gloves proc unequips the struck characterÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s weapon into the same characterÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s carrying list.",
       "authority_boundary": "Match the weapon UID, owner and slot before and after the live relink; do not mint or retire the item.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -34294,7 +34294,7 @@
       "reachability_evidence": "Registered object vnum 192 handles CMD_GOTHIT and can reach the non-NODROP weapon branch.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "The gloves proc unequips the struck character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s weapon into the same character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s carrying list.",
+        "custody_effect": "The gloves proc unequips the struck characterÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s weapon into the same characterÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s carrying list.",
         "native_state_targets": [
           "victim equipment slot",
           "victim carrying list",
@@ -35396,7 +35396,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Io\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+      "classification": "IoÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
       "authority_boundary": "Issue the new rose UID once and link both NPC grant and intended recipient handoff to a source-qualified root; verify do_give result.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -35432,7 +35432,7 @@
       "reachability_evidence": "Registered mob vnum 444 reaches this idle room-presence branch when Vareena is found.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "Io\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+        "custody_effect": "IoÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
         "native_state_targets": [
           "fresh rose UID",
           "assistant inventory",
@@ -37656,7 +37656,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s inventory.",
+      "classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the openerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s inventory.",
       "authority_boundary": "Bind chest UID, random reward count, each new potion UID and player custody to one source-qualified root.",
       "current_support": "Source review only; selected UID authority and backend gameplay qualification unverified.",
       "backends": {
@@ -37692,7 +37692,7 @@
       "reachability_evidence": "Registered chest vnum 1270 and an explicit do_open caller reach the CMD_OPEN reward loop.",
       "native_effects": {
         "holding_effect": "No coin balance changes at these call sites.",
-        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s inventory.",
+        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the openerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s inventory.",
         "native_state_targets": [
           "chest UID",
           "new potion UIDs",
@@ -45896,7 +45896,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Malformed rich runtime state discards only this load attempt\u00e2\u20ac\u2122s materialized object graph; durable player item rows remain unchanged.",
+      "classification": "Malformed rich runtime state discards only this load attemptâ€™s materialized object graph; durable player item rows remain unchanged.",
       "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
       "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
       "backends": {
@@ -46441,9 +46441,9 @@
       "integration_issue": 490,
       "owner": "primary / shared recovery integration",
       "coverage": "legacy",
-      "classification": "Allocates a private discard-only object from a complete retained SQL literal. Assigns the supplied existing UID without issuance, registry admission, global lists/counts, native holdings or custody effects. Prepared prototype identity is a caller prerequisite; unsupported behavior refuses before acquisition.",
-      "authority_boundary": "Private memory projection only; current SQL epoch/custody/literal authority, full physical graph proof and final enrollment require a separate owner. No new accounting root.",
-      "current_support": "Source-only opt-in prerequisite without production caller or ownership-release API; native fixtures unexecuted, backend/gameplay/recovery qualification unverified.",
+      "classification": "Allocates private discard-only literal memory from retained SQL or flat native payload with the existing UID. No UID issuance, registry admission, global lists/counts or durable holdings/custody effect occurs during staging; separate private validated owners may subsequently enroll it.",
+      "authority_boundary": "Private discard-only stage memory; separate original receipt/current SQL or flat native authority and full physical graph proof own final enrollment. No new accounting root or public ownership-release authority.",
+      "current_support": "Integrated typed ordinary-drop and coin recovery callers with private friend-controlled release/enrollment; source classification only, full native/backend/gameplay/recovery qualification remains unverified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -46461,7 +46461,7 @@
       "test_candidates": [],
       "sites": [],
       "evidence": [],
-      "reachability_evidence": "Prepared new module has no in-tree production caller. Final enrollment/publication is not implemented. Semantic classification is pending current-source census/site reanchoring."
+      "reachability_evidence": "ordinary_drop_recovery and coin_physical_recovery consume private inert stages; prepare_inert_money_stage now has a production source caller. Final enrollment is private to the validated recovery owners and not executable qualification."
     },
     {
       "id": "recovery.inert_literal_cleanup",
@@ -46472,8 +46472,8 @@
       "owner": "primary / shared recovery integration",
       "coverage": "legacy",
       "classification": "Returns private unpublished pooled memory and owned strings/description nodes. No extraction, normal object/effect/procedure/event callback or runtime/native custody retirement occurs.",
-      "authority_boundary": "Private memory projection only; current SQL epoch/custody/literal authority, full physical graph proof and final enrollment require a separate owner. No new accounting root.",
-      "current_support": "Source-only opt-in prerequisite without production caller or ownership-release API; native fixtures unexecuted, backend/gameplay/recovery qualification unverified.",
+      "authority_boundary": "Private discard-only stage memory; separate original receipt/current SQL or flat native authority and full physical graph proof own final enrollment. No new accounting root or public ownership-release authority.",
+      "current_support": "Integrated typed ordinary-drop and coin recovery callers with private friend-controlled release/enrollment; source classification only, full native/backend/gameplay/recovery qualification remains unverified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -46491,7 +46491,7 @@
       "test_candidates": [],
       "sites": [],
       "evidence": [],
-      "reachability_evidence": "Prepared new module has no in-tree production caller. Final enrollment/publication is not implemented. Semantic classification is pending current-source census/site reanchoring."
+      "reachability_evidence": "ordinary_drop_recovery and coin_physical_recovery consume private inert stages; prepare_inert_money_stage now has a production source caller. Final enrollment is private to the validated recovery owners and not executable qualification."
     },
     {
       "id": "recovery.sql_ordinary_drop_receipt_observation",
@@ -46672,6 +46672,165 @@
       "sites": [],
       "evidence": [],
       "reachability_evidence": "Opt-in source implementation has no production integration. Current-source semantic census/site reanchoring and executable qualification remain pending."
+    },
+    {
+      "id": "coin.restored_pile_rendering",
+      "path": "src/economy/coin_physical_recovery.c",
+      "symbol": "opening_matches",
+      "reason": "coin_transfer",
+      "integration_issue": 490,
+      "owner": "primary / #490",
+      "coverage": "legacy",
+      "classification": "Stack-local detached opening/result pile renderer compares canonical literals, weight and denominations without changing any native holding or admitting a UID.",
+      "authority_boundary": "Exact original command/completion plus locked SQL or flat native lifetime, balance, custody and room literal proof precede projection and the private guarded ACK owner.",
+      "current_support": "Integrated source classification only; original major-plan native/gameplay/backend/restart qualification remains pending.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_coin_physical_publication.py"
+      ],
+      "sites": [
+        [
+          "src/economy/coin_physical_recovery.c",
+          213,
+          "coin_bulk_mutation"
+        ],
+        [
+          "src/economy/coin_physical_recovery.c",
+          221,
+          "coin_bulk_mutation"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "currency_transaction retained physical publication calls coin_physical_recovery_publish; the private projection owner is integrated. Enrollment uses retained original UID and private inert-stage release; scanner inventory alone cannot establish qualification."
+    },
+    {
+      "id": "coin.restored_balance_projection",
+      "path": "src/economy/coin_physical_recovery.c",
+      "symbol": "project_bodies",
+      "reason": "coin_transfer",
+      "integration_issue": 490,
+      "owner": "primary / #490",
+      "coverage": "legacy",
+      "classification": "Copies locked verified current native wallet/shared-bank vectors into the exact original player bodies after complete retained/current receipt and PID authority proof; no new financial effect or root.",
+      "authority_boundary": "Exact original command/completion plus locked SQL or flat native lifetime, balance, custody and room literal proof precede projection and the private guarded ACK owner.",
+      "current_support": "Integrated source classification only; original major-plan native/gameplay/backend/restart qualification remains pending.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_coin_physical_publication.py"
+      ],
+      "sites": [
+        [
+          "src/economy/coin_physical_recovery.c",
+          798,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/coin_physical_recovery.c",
+          799,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/coin_physical_recovery.c",
+          800,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/coin_physical_recovery.c",
+          801,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/coin_physical_recovery.c",
+          807,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/coin_physical_recovery.c",
+          809,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/coin_physical_recovery.c",
+          811,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/coin_physical_recovery.c",
+          813,
+          "coin_assignment"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "currency_transaction retained physical publication calls coin_physical_recovery_publish; the private projection owner is integrated. Enrollment uses retained original UID and private inert-stage release; scanner inventory alone cannot establish qualification."
+    },
+    {
+      "id": "coin.restored_room_projection",
+      "path": "src/economy/coin_physical_recovery.c",
+      "symbol": "project",
+      "reason": "coin_transfer",
+      "integration_issue": 490,
+      "owner": "primary / #490",
+      "coverage": "legacy",
+      "classification": "Projects the committed original-UID ordinary-room pile result after retained/current native proof. Includes private coin_physical_recovery_owner::enroll: original-UID runtime hydration and direct room/global linking plus prototype count; these enrollment effects have no lexical scanner occurrence. No issuance or new durable holding/custody event is inferred.",
+      "authority_boundary": "Exact original command/completion plus locked SQL or flat native lifetime, balance, custody and room literal proof precede projection and the private guarded ACK owner.",
+      "current_support": "Integrated source classification only; original major-plan native/gameplay/backend/restart qualification remains pending.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_coin_physical_publication.py"
+      ],
+      "sites": [
+        [
+          "src/economy/coin_physical_recovery.c",
+          954,
+          "coin_bulk_mutation"
+        ],
+        [
+          "src/economy/coin_physical_recovery.c",
+          949,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "currency_transaction retained physical publication calls coin_physical_recovery_publish; the private projection owner is integrated. Enrollment uses retained original UID and private inert-stage release; scanner inventory alone cannot establish qualification."
     }
   ],
   "census": [
@@ -63582,6 +63741,78 @@
       "line": 247,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, keeper);"
+    },
+    {
+      "path": "src/economy/coin_physical_recovery.c",
+      "line": 798,
+      "family": "coin_assignment",
+      "excerpt": "GET_COPPER(character) = static_cast<int>(state.balances.wallet.amount[0]);"
+    },
+    {
+      "path": "src/economy/coin_physical_recovery.c",
+      "line": 799,
+      "family": "coin_assignment",
+      "excerpt": "GET_SILVER(character) = static_cast<int>(state.balances.wallet.amount[1]);"
+    },
+    {
+      "path": "src/economy/coin_physical_recovery.c",
+      "line": 800,
+      "family": "coin_assignment",
+      "excerpt": "GET_GOLD(character) = static_cast<int>(state.balances.wallet.amount[2]);"
+    },
+    {
+      "path": "src/economy/coin_physical_recovery.c",
+      "line": 801,
+      "family": "coin_assignment",
+      "excerpt": "GET_PLATINUM(character) = static_cast<int>(state.balances.wallet.amount[3]);"
+    },
+    {
+      "path": "src/economy/coin_physical_recovery.c",
+      "line": 807,
+      "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_COPPER(character) ="
+    },
+    {
+      "path": "src/economy/coin_physical_recovery.c",
+      "line": 809,
+      "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_SILVER(character) ="
+    },
+    {
+      "path": "src/economy/coin_physical_recovery.c",
+      "line": 811,
+      "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_GOLD(character) ="
+    },
+    {
+      "path": "src/economy/coin_physical_recovery.c",
+      "line": 813,
+      "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_PLATINUM(character) ="
+    },
+    {
+      "path": "src/economy/coin_physical_recovery.c",
+      "line": 213,
+      "family": "coin_bulk_mutation",
+      "excerpt": "add_coins(&rendered.object, 0, 0, 0, 0);"
+    },
+    {
+      "path": "src/economy/coin_physical_recovery.c",
+      "line": 221,
+      "family": "coin_bulk_mutation",
+      "excerpt": "add_coins(&rendered.object, 0, 0, 0, 0);"
+    },
+    {
+      "path": "src/economy/coin_physical_recovery.c",
+      "line": 954,
+      "family": "coin_bulk_mutation",
+      "excerpt": "add_coins(actual.object, 0, 0, 0, 0);"
+    },
+    {
+      "path": "src/economy/coin_physical_recovery.c",
+      "line": 949,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(actual.object, FALSE);"
     }
   ],
   "retired_routes_551_661": [
@@ -63630,9 +63861,57 @@
     "evidence": "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
   },
+  "candidate_worktree_evidence": {
+    "base_commit": "621ba722b2cd9ac49297062c54662a0f4b9ac532",
+    "status": "source_integrated_unqualified",
+    "scope": "39 production-source inputs plus central lifecycle validator/manifest; coin/collector and native v3 flat startup are source-integrated only. No compiler/native/gameplay qualification or complete census claim.",
+    "source_pins": {
+      "src/Makefile": "a1001cc386ac461f54dbf98b03b5b177eae378529333ee87c15ac32f9c54ef6d",
+      "src/economy/coin_physical_recovery.c": "a64e8f47c814aeb34c11ea3e6051f2527b3d2b80da5963a9a0175b149d30b8ae",
+      "src/economy/coin_physical_recovery.h": "c68cc556958cc45b8e71260824f4ac717d060cd7750bd45d57a45b798bccaf9a",
+      "src/economy/collector_purchase_publication.c": "7ca24ec6b64fb1a1a12517d39efa26bf39629f01b475ac972c507a98a9800f36",
+      "src/economy/collector_repository.c": "4a4467a8330a9b25e3d417b147834ed231558acceeafe4736754d0681acf57fd",
+      "src/economy/collector_repository.h": "2b5cea486a07731dd3066231d0b8eead7781a5d047d25e6c066ea9b79b791866",
+      "src/economy/collector_service.c": "6745b7195d6a3fea29d1c055361b5cc7946d89425d4869fc8d2d9edf87bf1da9",
+      "src/economy/collector_service.h": "93e570d53700b31019ac9e981e737d2a1f2361bcc4fe82be021677e4fee42d2c",
+      "src/economy/collector_transaction.c": "f0dfb12bcfc4b1efc6369e0bc19d9b15d4e07543360320df5614a34d19bf8ddf",
+      "src/economy/collector_transaction.h": "e079d6188874f2cc05b73a7aaf919fef077d8445070074cbad8ea5f1ce2b44b9",
+      "src/economy/currency_transaction.c": "4e505f698b8c266bac8b16f31e31a75e059e93a43fe1b40dbf9d23884f6152c7",
+      "src/economy/currency_transaction.h": "fa8fa610b7af6b485575cebb22d3fab61f7adc8abdd480585ce1549795516035",
+      "src/economy/economic_command_admission.c": "4d19e7292b9da2286ef7149b78e301fd8f7e4678a6f4540e79fa7d32364f79d7",
+      "src/economy/economic_command_admission.h": "b39124f83bc383a4b00aec2f70c1d8bac6a3515a5ee531f6f92104b9b5b2e072",
+      "src/economy/economic_gameplay_authority.c": "6ae1f4de8b6d7c01b0715971a603d22d29d164a0f31cd589ebe70c2de9fee813",
+      "src/economy/economic_gameplay_authority.h": "1f6c4bbddf3d8c48927d1730b0f6646e4fb00bb371259ea87b22fc22f681774a",
+      "src/flatfile/flatfile_accounting_coin_transaction.c": "33bb8a2ff118f56e014334407a4e692f0cf6c13129d5c423a0801b556328deb6",
+      "src/flatfile/flatfile_accounting_coin_transaction.h": "5748b372071de1d681b2d81886439b3975382454462aa95f00451d034c483329",
+      "src/flatfile/flatfile_player_repository.c": "efc58eb49106a20d0a533d5a71592b8c257fcbf7b17ced077a4421c409f9c93a",
+      "src/net/comm.c": "0a74166be1f5e32248a672fa6029a7b4c51982aafbf203e1748b749c487aa103",
+      "src/persistence/critical_command.c": "7aa70842722b523573cc75e8ecabccfe44e8705353cb16a2a43089f43fc38556",
+      "src/persistence/critical_command_coordinator.c": "3d45e3913f6bdea35f4b0ced31a98a7fcdf8cf18ec316e4ffb04083693448afb",
+      "src/persistence/critical_command_coordinator.h": "8b3157873ab3277c87106908d5bd32c025e59469fee2a372c0cf1ff09adc8c27",
+      "src/persistence/critical_command_repository.c": "7b4ea4a96fc58f8deb5a8c5cce4b19218049667289c3b7fd63a0bf6fd72544ee",
+      "src/persistence/critical_command_repository.h": "157fb58754a939a1a93108ab6b80609924c3fc51e2239419fc3852616f82ccdd",
+      "src/player/inert_item_stage.c": "3f62fecb86f85419aa3598500093e6f000abc8c6b22ef4748040d27261ab221b",
+      "src/player/inert_item_stage.h": "8f389331e401b16d85712cec8323e1fe5bf7ef9fbc2f4f163769ec9dcfc40be4",
+      "src/player/player_save_execution_guard.h": "91e9f23b2e37fd922df47df9e657db5810b34adba080a9dc170e6f417240e2ce",
+      "src/player/player_save_pipeline.c": "694a72833a14d72c59ab313d17d818ffede3104cbf2e35fd6c56847d6cfad50d",
+      "src/player/player_save_pipeline.h": "890d36897cde73775541704051b5fe33115a28a350aff2150c5de54ee66f39e0",
+      "src/player/player_snapshot_repository.c": "58d5bbd01c3b48d496369b92b64178d6d5e0ec3ce4c30efca22eed3d09e8eb8f",
+      "src/flatfile/flatfile_accounting_authority.h": "cc0d3ac9580c5ec586b1809818160e15725370eeea98c7b7d6abf2d5e53149c7",
+      "src/flatfile/flatfile_accounting_authority.c": "887e40389a376bfc8ae635f9ea38b9fb2a24e4c7189d421fded745ad9644f00c",
+      "src/flatfile/flatfile_accounting_baseline.h": "998e8272a511b8299e40035b6432b8c018cd82dd46b5b98ae43d56c3f9c7345a",
+      "src/flatfile/flatfile_accounting_baseline.c": "477745c7587704b9c644578b00cfe7dd35f41a1eadeb7c60935543d676213c6b",
+      "src/flatfile/flatfile_accounting_lifecycle_transaction.c": "f5828b2fdb91ab66ba95928a34fefae4182a0b37b204fd9c2d71ba6e41bce098",
+      "scripts/validate_data_lifecycle.py": "948868127e84196d4998159c58e9114a8bdb0eaead2495d0d9da0f86d5f904ca",
+      "migrations/data_lifecycle_manifest.json": "b37efc35e5865e466a5623e11f1f43f587d63ffa3de25acfe769faec79508fbf",
+      "src/flatfile/flatfile_accounting_lifecycle_transaction.h": "fe491f88ad0fa3bd9f64077345c226d039c1b022c928f8b405c135199b0d273b",
+      "src/flatfile/flatfile_economic_runtime.c": "a0ced8bfd8d6e1611086388c0e5fe4987aaea7c96c0ffd2e7c27401574c7363c",
+      "src/flatfile/flatfile_economic_runtime.h": "68ec558f35fb45e539fa3269cd0523af6c4d1facb7ea7f70281d45ff6c294cdf"
+    }
+  },
   "pending_source_integration": {
     "candidate_commit": "9fabe54bb0146d174a47690902fe00cb06eb5f62",
-    "status": "Production source through 9fabe54bb includes the 31 reviewed integration slices and four behavior-preserving strict compile corrections. Existing Plan1 qualification is underway: both strict server builds, eleven focused component owners, 35 worker/journal guard cases per backend, and real pooled bank reply-loss/retained ACK on both SQL engines pass within their input scopes. Item topology fixture expectation and maintained lifecycle link closure now pass both native engines (fdd27c681 and 1dc242ed5). Coin fixture lifetime (80565e8a7) and22 prepared checked-release cases now pass both engines within their exact inputs. All14 prepared startup/held-save cases now pass both engines with original admission and ID-only refusal assertions. All18 current-source recovery-session cases now pass both native engines with original assertions and bounds; actual native publication/recovery remains open, with no Plan1 completion claim. Inactive behavior and unsupported enabled refusals remain unchanged. No optional framework, receipt ledger or acceptance gate was added; no production authority was activated. Full R1-R8, writer/day-one coverage, activation/verifier and active copyover remain required. Plan5 zero-effect e694798f6 and orphan-reservation bbb72ecff are integrated as 47aa60de0 and 4fdbb7033; exporter/consumer require the fifth orphan coverage count. Peer evidence qualifies only its consumed inputs. Historical census/source anchors and rows are preserved; coverage_complete remains false and release blocked. Latest bounded milestone: complete-world ordinary-drop equipment census now skips empty fixed wear slots before charging the unchanged one-million actual-reference cap. Both strict incremental production builds pass; actual ordinary drop, original UID/literal/custody, guarded ACK and two full native cold boots per engine pass on MariaDB10.11.14 and MySQL8.0.46 (135/169 seconds within original600). Owned fixture identity, schema absence, process stop and port reuse pass. Existing failures remain retained. Maintain the executed regression and consolidate original Plan1 acceptance next. Plans2-4 private source proposals and combined Plan5 qualification remain unfinished. Historical writer anchors, candidate_commit and qualified=false remain unchanged; this scoped gate is not complete accounting coverage or production activation.",
+    "status": "Plan1 original independent acceptance is qualified at8586ba589 and its recorded frozen production inputs, including maintained both-engine real ordinary-drop/guarded ACK/two cold boots. Plan5 baseline-marker readers/request are imported atdb682ade5; combined qualification remains open. The next31-file coin/collector/shared-owner source candidate is integrated and independently source-reviewed, but compiler/native/gameplay/recovery/backend qualification is pending the original major-plan batches. Central flat coin admission stays closed; flat active bootstrap, other ordinary/item/domain writers, executable registry evidence, activation-owner and full R1-R8 remain unfinished. Inactive source branches, declined spell path and safety gates are preserved; no production authority was activated. Historical source anchors/census/candidate_commit and qualified=false are retained; source inventory does not establish release readiness. The native v3 origin and retained flat runtime/startup/shutdown source slice is now integrated and reviewed, not natively qualified; matching independent Plan5 v3 reader and original compatibility/fault/gameplay batches remain pending. Peer present-file lifecycle audit 9306818b5 is imported/pushed in621ba722b. Central flat coin admission stays closed.",
     "qualified": false,
     "prepared_nonwriter_routes": [
       "recovery.inert_literal_staging",

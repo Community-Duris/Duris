@@ -10,6 +10,10 @@
 #include "player/player_quarantine_recovery.h"
 #include "sql/item_extra_descr_codec.h"
 #include "sql/sql_pool.h"
+#ifdef __NO_MYSQL__
+#include "flatfile/flatfile_player_repository.h"
+#include "persistence/persistence_mode.h"
+#endif
 
 #include <mysql/mysql.h>
 
@@ -2491,10 +2495,42 @@ bool player_snapshot_repository_observe_covered_revision(
 	proof->revision_ = 0;
 	proof->reservation_ = nullptr;
 #ifdef __NO_MYSQL__
-	(void)pid;
-	(void)reservation;
-	(void)proof;
-	return false;
+	if (!reservation.matches_pid(pid))
+		return false;
+	try
+	{
+		const char *selected_root = persistence_mode_flatfile_root();
+		if (!selected_root || !*selected_root)
+			return false;
+		const std::string root(selected_root);
+		player_revision_t revision = 0;
+		{
+			// Match the native snapshot writer: player lock precedes authority.
+			flatfile_player_snapshot_lock snapshot_lock;
+			flatfile_authority_lock authority;
+			std::string error;
+			player_snapshot native;
+			if (!snapshot_lock.acquire(root, pid, &error) ||
+			    !authority.acquire(root, &error) ||
+			    flatfile_authority_transaction_recover(root, authority, &error) !=
+				    flatfile_authority_transaction_result::ok ||
+			    flatfile_player_snapshot_read(root, pid, &native, &error) !=
+				    flatfile_player_load_result::ok ||
+			    native.pid != pid || !reservation.matches_pid(pid))
+				return false;
+			revision = native.revision;
+		}
+		if (!reservation.matches_pid(pid))
+			return false;
+		proof->pid_ = pid;
+		proof->revision_ = revision;
+		proof->reservation_ = &reservation;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
 #else
 	if (!reservation.matches_pid(pid))
 		return false;

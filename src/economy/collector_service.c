@@ -13,11 +13,13 @@
 #include "economy/collector_runtime.h"
 #include "economy/collector_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_mode.h"
 #include "player/player_load_items.h"
 #include "player/player_snapshot_codec.h"
+#include "player/player_snapshot_capture.h"
 
 #include <algorithm>
 #include <array>
@@ -32,6 +34,7 @@
 #include <new>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 extern P_obj object_list;
@@ -412,6 +415,9 @@ bool live_item_belongs_to_player(P_obj object, P_char character)
 	       (OBJ_CARRIED_BY(outer, character) || OBJ_WORN_BY(outer, character));
 }
 
+void purchase_completed(P_char character, bool committed, const collector_command_result &result,
+			unsigned int error_code, const collector_command_payload &payload);
+
 bool materialize_purchase(P_char character, const collector_command_result &result,
 			  const collector_command_payload &payload)
 {
@@ -461,6 +467,149 @@ bool materialize_purchase(P_char character, const collector_command_result &resu
 		materialized->db_item_id = 0;
 	}
 	return true;
+}
+
+// Called ONLY inside the primary-owned accounted collector native proof/save
+// owner. This local handler never turns a receipt or cache lookup into authority.
+bool purchase_effect(P_char character, const collector_command_result &result,
+		     const collector_command_payload &payload,
+		     collector_purchase_publication_state &state)
+{
+	if (!character || !IS_PC(character) || !character->only.pc ||
+	    static_cast<uint32_t>(GET_PID(character)) != payload.actor_pid ||
+	    std::strcmp(get_account_name_safe(character), payload.account_name.data()) ||
+	    character->player.racewar != payload.racewar || state.receipt_conflict ||
+	    result.action != collector_action::purchase || payload.item_count != 1)
+		return false;
+	const uint64_t body_id = character->runtime_id;
+	std::vector<player_item_snapshot> items;
+	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &items) != player_snapshot_codec_result::ok ||
+	    items.size() != 1 || items[0].object_uid != payload.selected_item_uid ||
+	    items[0].parent_index != PLAYER_SNAPSHOT_NO_PARENT || items[0].equipment_slot != 0)
+		return false;
+	P_obj selected = nullptr;
+	std::unordered_set<P_obj> seen;
+	for (P_obj object = object_list; object; object = object->next)
+	{
+		if (seen.size() >= 1000000 || !seen.insert(object).second)
+			return false;
+		if (object->obj_uid == payload.selected_item_uid)
+		{
+			if (selected)
+				return false;
+			selected = object;
+		}
+	}
+	if (!selected)
+	{
+		if (state.materializer_started)
+			// Partial failure is an unresolved original effect, not permission to
+			// repeat native placement/bookkeeping merely because the UID vanished.
+			return false;
+		const item_owner_identity owner = { item_owner_type::player, payload.actor_pid, 0 };
+		const bool flat = persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY;
+		const uint32_t row = flat ? 1 : result.materialized_item_id;
+		if (!row)
+			return false;
+		std::vector<player_load_item_identity> identities = {
+			{ row, 0, 1, PLAYER_LOAD_ITEM_OVERRIDE_ALL, result.entry.uid,
+			  result.entry.uid, 0, owner, result.entry.item_revision,
+			  result.to_owner_revision, item_custody_state::active }
+		};
+		player_load_item_materialize_metrics metrics{};
+		state.materializer_started = true;
+		if (!player_load_item_graph_materialize_for_owner(character, items, identities,
+								  owner, result.to_owner_revision,
+								  false, true, &metrics))
+			return false;
+		state.materializer_returned = true;
+		// Reenter verification after successful native return, not materialization.
+		return purchase_effect(find_player_by_pid(payload.actor_pid), result, payload,
+				       state);
+	}
+	if (state.materializer_started && !state.materializer_returned)
+		return false;
+	if (!OBJ_CARRIED_BY(selected, character) || selected->contains)
+		return false;
+	const bool flat = persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY;
+	if (flat && state.materializer_returned)
+		selected->db_item_id = 0;
+	if (selected->db_item_id != (flat ? 0 : result.materialized_item_id))
+		return false;
+	if (state.materializer_returned)
+		// The unique UID/body/root/row checks above bind this completed native
+		// materializer, including retry after an allocation failure in recapture.
+		// Its legacy tail defaulted zero keys after complete_snapshot_state; only
+		// this accounted owner restores the canonical key before literal proof.
+		selected->g_key = items[0].generated_key;
+	std::vector<player_item_snapshot> actual;
+	size_t estimated = 0;
+	std::vector<uint8_t> actual_bytes, expected_bytes;
+	// Preserve existing canonical collector mask/prototype-reference semantics.
+	// Masked strings are compared exactly; unstrung text stays prototype-derived.
+	if (player_item_snapshot_tree_capture(selected, &actual, &estimated) !=
+		    player_snapshot_capture_result::ok ||
+	    actual.size() != 1 ||
+	    player_item_snapshot_list_encode(actual, &actual_bytes) !=
+		    player_snapshot_codec_result::ok ||
+	    player_item_snapshot_list_encode(items, &expected_bytes) !=
+		    player_snapshot_codec_result::ok ||
+	    actual_bytes != expected_bytes)
+		return false;
+	// Native proof owner has already checked all foreign physical link surfaces;
+	// this is only the selected literal/root runtime projection, never a census.
+	std::vector<item_ownership_runtime_entry> runtime;
+	const item_ownership_runtime_entry desired = {
+		payload.selected_item_uid, payload.selected_item_uid,  0,
+		payload.to_owner,	   result.entry.item_revision, result.to_owner_revision,
+		payload.items[0].vnum,	   item_custody_state::active
+	};
+	// This callback runs under the native owner: these are current locked
+	// revisions, not a replay of the original transition's optimistic counters.
+	if (!item_ownership_runtime_hydrate_many_atomic(&desired, 1) ||
+	    !item_ownership_runtime_hydrate_owner(payload.from_owner, result.from_owner_revision) ||
+	    !item_ownership_runtime_snapshot_root(payload.selected_item_uid, 2, &runtime) ||
+	    runtime.size() != 1 || runtime[0].item_uid != payload.selected_item_uid ||
+	    runtime[0].root_item_uid != payload.selected_item_uid || runtime[0].parent_item_uid ||
+	    !item_owner_identity_equal(runtime[0].owner, payload.to_owner) ||
+	    runtime[0].item_revision != result.entry.item_revision ||
+	    runtime[0].vnum != payload.items[0].vnum ||
+	    runtime[0].state != item_custody_state::active)
+		return false;
+	// Re-resolve before projection: no character pointer survives an async pulse.
+	P_char current = find_player_by_pid(payload.actor_pid);
+	if (!current || current != character || current->runtime_id != body_id ||
+	    std::strcmp(get_account_name_safe(current), payload.account_name.data()) ||
+	    current->player.racewar != payload.racewar || state.receipt_conflict)
+		return false;
+	if (!currency_transaction_publish_balances(current, payload.account_name.data(),
+						   payload.racewar, result.wallet, result.bank,
+						   result.wallet_revision, result.bank_revision) ||
+	    !collector_runtime_publish(result) || state.receipt_conflict)
+		return false;
+	current = find_player_by_pid(payload.actor_pid);
+	return current && current->runtime_id == body_id && current->only.pc &&
+	       !std::strcmp(get_account_name_safe(current), payload.account_name.data()) &&
+	       current->player.racewar == payload.racewar;
+}
+
+void purchase_accounted_completed(P_char character, bool committed,
+				  const collector_command_result &result, unsigned int error_code,
+				  const collector_command_payload &payload)
+{
+	if (!committed)
+	{
+		purchase_completed(character, false, result, error_code, payload);
+		return;
+	}
+	++health.committed_purchases;
+	if (character)
+	{
+		const std::string price = currency_text(result.entry.price_value);
+		send_to_char_f(character, "You buy back %s for %s.\r\n", "your antiquity",
+			       price.c_str());
+	}
 }
 
 bool queue_purchase_fallback(const collector_command_result &result,
@@ -701,8 +850,15 @@ void handle_found(P_char character, const pending_detail &request,
 		report_prepare_failure(character, prepared);
 		return;
 	}
-	if (!payload || !collector_transaction_submit_identified(character, request.operation_id,
-								 *payload, purchase_completed))
+	const bool submitted =
+		payload &&
+		(economic_gameplay_authority::active() ?
+			 collector_transaction_submit_purchase_identified(
+				 character, request.operation_id, *payload, runtime_entry,
+				 purchase_effect, purchase_accounted_completed) :
+			 collector_transaction_submit_identified(character, request.operation_id,
+								 *payload, purchase_completed));
+	if (!submitted)
 	{
 		++health.rejected_purchases;
 		send_to_char("The collector could not queue that purchase; nothing changed.\r\n",
@@ -760,6 +916,12 @@ void handle_detail_result(collector_listing_result result)
 	}
 }
 } // namespace
+
+bool collector_service_restore_replayed_purchase(const critical_command &original) noexcept
+{
+	return collector_purchase_cold_restore_owner::restore(original, purchase_effect,
+							      purchase_accounted_completed);
+}
 
 void collector_service_command(P_char character, char *arguments, int command)
 {
