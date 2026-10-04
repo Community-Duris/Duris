@@ -138,7 +138,7 @@ compound variant carried mutation children/custody effects forbidden for a
 baseline. Both engines correctly refused it after this fix; the attempt took
 340.248 seconds with two failures and zero skips. The 3,026 native decoder
 decisions had already passed. The fixture now has a separate native-encoded
-`--restore-history` mode using reason-1 transfer metadata and coherent bank/
+`--restore-history` mode using reason-3 transfer metadata and coherent bank/
 wallet effects. The SQL worker derives its metadata and effects from those
 native bytes. The actor-kind corruption uses a value different from that new
 control. Original decoder/coin oracle bytes and semantics remain pinned.
@@ -165,6 +165,16 @@ plus the initial full-entry intent refusal, and 32 coin oracles (30 audited,
 two explicit constraint refusals). The forged rows reach
 `restore_economic_canonical_account_mismatch`; the native maximum-size intent
 passes. These are structural/component cuts, not real economic writers.
+
+**Diagnostic correction:** the original `NATIVE_RESTORE_HISTORY` output
+hard-coded `ordinary_reason: 1`. The native `coin_transfer` enum, EAI1/EAP1 bytes
+and seeded SQL metadata are all reason 3; the capsule and SQL checks above passed
+against those actual values. The diagnostic now reads the native plan's reason.
+`tmp/plan5/restore-reason-diagnostic-evidence.json` binds the correction to an
+isolated check of the exact previously qualified native artifacts. Original logs,
+manifests and bytes remain preserved. The full native/database results above
+remain pinned to their original source; this display correction does not claim
+a new full compatibility run.
 
 That first attempt reused the older canonical artifact directory and replaced
 its two engine logs. The exact original logs were recovered from the protected
