@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 90 &&
-				tracker.summary_for(7, 42).total == 1612,
+		require(catalog.story_mappings.size() == 91 &&
+				tracker.summary_for(7, 42).total == 1606,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -6913,6 +6913,188 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 760) &&
 					!recovered.has_discovered(7, 42, 758),
 				"Myrabolus cold recovery lost independent outcomes, counted supports/rewards or invented foreign discovery");
+		}
+
+		{
+			const auto &ball = story_for("surfacekeeps", "mystardala-crystal-ball");
+			const auto &seers = story_for("surfacekeeps", "mystardala-paired-trophies");
+			const auto &head = story_for("surfacekeeps", "ungalen-white-dragon");
+			const auto &ale = story_for("surfacekeeps", "ungalen-ale");
+			const auto &fresh = story_for("surfacekeeps", "tok-fresh-osquip");
+			const auto &feather = story_for("surfacekeeps", "tok-gloomwing-feather");
+			const auto &stronger =
+				story_for("surfacekeeps", "tok-stronger-gloomwing-feather");
+			const auto &band = story_for("surfacekeeps", "glendarla-lost-band");
+			const auto &parts = story_for("surfacekeeps", "gulranor-ten-body-parts");
+			const auto &glasses =
+				story_for("surfacekeeps", "permanent-blue-eyeglasses");
+			const auto &scale = story_for("surfacekeeps", "ungalen-scale-referral");
+			const auto &boar = story_for("surfacekeeps", "boar-meat-service");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1200, 121680, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 1200, 10, 1, 101, false,
+							       false)
+							.find(seers.title) == std::string::npos,
+				"Depths discovery exposed an unseen giver's story");
+			for (const auto &actor : { std::pair<int, int>{ 120013, 120823 },
+						   { 120016, 123133 },
+						   { 120035, 121220 },
+						   { 120040, 121680 },
+						   { 120052, 120823 },
+						   { 120065, 121359 },
+						   { 120066, 120823 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 102) ==
+						result::applied,
+					"Depths source encounter fixture failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Depths journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[8] = 9;
+			supplies.carried[55021] = 1;
+			supplies.carried[120055] = 1;
+			supplies.carried[120052] = 1;
+			supplies.carried[120015] = 1;
+			supplies.carried[120016] = 1;
+			supplies.carried[55033] = 1;
+			supplies.carried[500104] = 1;
+			supplies.equipped[16] = 500121;
+			supplies.equipped[17] = 8;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 1200, 10, 1, 103, false, false,
+							 &supplies);
+			for (const auto *entry : { &parts, &fresh, &head, &stronger, &glasses })
+				require(section(*entry).find("[Missing now] " +
+							     entry->steps[0].text) !=
+						std::string::npos,
+					"Depths nine loose parts, worn part, rotting corpse, wrong head/feather/glasses invented readiness");
+			require(section(feather).find("Next: " + feather.steps.back().text) !=
+						std::string::npos &&
+					section(seers).find("[Missing now] " +
+							    seers.steps[2].text) !=
+						std::string::npos &&
+					section(boar).find("currently unavailable") !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 1200).completed == 0 &&
+					journey.progress_for_zone(7, 42, 1200).total == 9 &&
+					journey.serialize_state() == before,
+				"Depths current supplies, equipped trophy or paid provision invented history/credit");
+			supplies.carried[8] = 10;
+			supplies.carried[120051] = 1;
+			supplies.carried[83376] = 1;
+			supplies.carried[120053] = 1;
+			supplies.carried[120014] = 1;
+			supplies.carried[120038] = 1;
+			supplies.carried[500121] = 1;
+			supplies.carried[120049] = 1;
+			for (const auto kind : { 83118, 83172, 83428, 83417 })
+			{
+				for (const auto other : { 83118, 83172, 83428, 83417 })
+					supplies.carried.erase(other);
+				supplies.carried[kind] = 1;
+				journal = journey.render_journal(7, 42, 1200, 10, 1, 104, false,
+								 false, &supplies);
+				require(section(ale).find("[Ready now] " + ale.steps[0].text) !=
+							std::string::npos &&
+						section(ale).find("Next: " +
+								  ale.steps.back().text) !=
+							std::string::npos,
+					"Depths brew alternative required all four kinds");
+			}
+			for (const auto *entry :
+			     { &parts, &fresh, &head, &stronger, &glasses, &seers, &band })
+			{
+				require(section(*entry).find("Next: " + entry->steps.back().text) !=
+						std::string::npos,
+					"Depths supplied exact materials required personal carving, source kills or earlier seer history");
+				for (const auto &step : entry->steps)
+					if (step.kind == "carried_item")
+						require(section(*entry).find("[Ready now] " +
+									     step.text) !=
+								std::string::npos,
+							"Depths exact supplied roots failed current material readiness");
+			}
+			require(journey.serialize_state() == before,
+				"Depths readiness read wrote progression state");
+			service supplied(catalog);
+			record(supplied, seers.contracts.front(), "depths-supplied-seers", 1200,
+			       123133);
+			record(supplied, parts.contracts.front(), "depths-supplied-parts", 1200,
+			       120823);
+			require(supplied.progress_for_zone(7, 42, 1200).completed == 2 &&
+					supplied.evidence_for(ball.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					!supplied.has_discovered(7, 42, 831) &&
+					!supplied.has_discovered(7, 42, 5000),
+				"Depths supplied trophies/parts invented foreign discovery, earlier ball receipt or multiple reward credit");
+			record(journey, ball.contracts.front(), "depths-ball", 1200, 123133);
+			supplies.carried.erase(120038);
+			journal = journey.render_journal(7, 42, 1200, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(seers).find("[Missing now] " + seers.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 1200).completed == 1 &&
+					journey.evidence_for(seers.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Depths optional dagger receipt restored a spent dagger or finished the later mission");
+			auto wrong_owner =
+				completion(parts.contracts.front(), "depths-wrong-owner", 122);
+			wrong_owner.transaction.zone_number = 831;
+			wrong_owner.transaction.room_vnum = 120823;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Depths foreign body-part/source zone took ownership of local delivery");
+			record(journey, glasses.contracts.front(), "depths-glasses-support", 1200,
+			       121220);
+			record(journey, scale.contracts.front(), "depths-scale-support", 1200,
+			       121680);
+			require(journey.progress_for_zone(7, 42, 1200).completed == 1 &&
+					journey.evidence_for(glasses.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					journey.evidence_for(scale.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Depths support offerings inflated achievements or lost receipts");
+			for (std::size_t index = 0; index < ale.contracts.size(); ++index)
+			{
+				const auto txid =
+					std::string("depths-brew-") + std::to_string(index);
+				record(journey, ale.contracts[index], txid.c_str(), 1200, 121680);
+				require(journey.progress_for_zone(7, 42, 1200).completed == 2 &&
+						journey.evidence_for(ale.contracts[index], 2)
+								.successful_attempts == 1,
+					"Depths alternative brew lost native receipt or counted another parent outcome");
+			}
+			for (const auto *entry :
+			     { &seers, &head, &fresh, &feather, &stronger, &band, &parts })
+			{
+				const auto txid = std::string("depths-outcome-") + entry->id;
+				record(journey, entry->contracts.front(), txid.c_str(), 1200,
+				       123133);
+			}
+			const auto parts_txid = std::string("depths-outcome-") + parts.id;
+			auto replay = completion(parts.contracts.front(), parts_txid.c_str(), 120);
+			replay.transaction.zone_number = 1200;
+			replay.transaction.room_vnum = 123133;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Depths token/two identical bomb reward replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 1200).completed == 9 &&
+					recovered.progress_for_zone(7, 42, 1200).total == 9 &&
+					recovered.evidence_for(parts.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(scale.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					!recovered.has_discovered(7, 42, 831) &&
+					!recovered.has_discovered(7, 42, 5000),
+				"Depths cold recovery lost outcomes/receipts, inflated alternative/reward credit or invented foreign discovery");
 		}
 
 		{

@@ -137,9 +137,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 67 | Centaur Villages | [Comprehensive dossier](zone-stories/CENTAUR_VILLAGES.md): all eleven blocks/100 rooms/29 mobiles/31 objects/199 resets,117 exact/125 parent families; dynamic switches/teachers, actual hidden-name lookup/current/fall/offer/retirement and foreign closure | Four stories/three services; eight contacts/8 aliases/16 optional checks; two distinct roots of one half kind, optional supplied and reset sources, independent current/history | Separate six-direction clue fix e456b3403. Active source/selection/movement/two-root/two-output settlement, Hateeu retirement/reappearance and renewal remain unqualified; new semantic access/knowledge/effect episodes require accepted proof |
 | 68 | Enclave of the Opal Phoenix | [Comprehensive dossier](zone-stories/OPAL_PHOENIX.md): all6 blocks/76 rooms/18 mobiles/24 objects/84 resets/76 exact and parent families; actual hidden selection/search/key, indexed item/XP/D1, shop/teacher/inn and bounded foreign closure | Three outcomes, nine contacts/8 aliases/4 optional checks; supplied optional student route, independent forest reagent and exact hidden-source distinctions | Separate sand70823 visibility fix ac8e2de48. Live source/handoff/search/key/GET, items+XP, recipient/stock removal/reappearance, service/rent and renewal remain unqualified; richer accepted episodes are planned |
 | 69 | Myrabolus | [Comprehensive dossier](zone-stories/MYRABOLUS.md): all17 blocks/188 rooms/78 mobiles/62 objects/316 resets,257 exact/272 parent families; two shops, literal/computed/imported handlers and bounded foreign closure | Thirteen stories/three support entries,21 contacts/4 aliases/24 optional checks; exact returned-note/new-half, same-name study/parts, four treasure allocations, awake Alexis and supplied shortcuts | No native repair. Missing treasury kind, Roland/load-room/set/wording intent, shared denied crew-payment ordering and admitted fee/source/access/reward/recipient/renewal episodes remain plans |
-| 70–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 70 | The Depths of Duris | [Comprehensive dossier](zone-stories/THE_DEPTHS_OF_DURIS.md): all103 blocks/2645 rooms/75 mobiles/60 objects/611 resets,406 exact/530 parent families; ten shops, custom death/decay/CARVE and bounded foreign closure | Nine outcomes/three services,17 contacts/109 aliases/15 optional checks; four brew alternatives, same-name feather kinds, ten loose roots and supplied seer shortcuts | No native repair. Six absent destinations, wall/stair intent, blue/pink wording and unplaced residents remain proposals; accepted source/part mutation/publication/expiry/payment/reward/retirement/renewal qualification remains open |
+| 71–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Depths of Duris (`surfacekeeps`).
+The next area is IceCrag Castle (`icecrag`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -3728,3 +3729,58 @@ all2668 native definitions/fingerprint/revision two/registry/prior89 maps and
 native content/code remain unchanged. Queue69/220 comprehensive,151 pending;
 The Depths of Duris next. Active-ready accounting remains mandatory,frozen
 recovery separate. No DB/account/server operation,migration,deployment or merge.
+
+
+## Priority 70 checkpoint: The Depths of Duris
+
+The [comprehensive dossier](zone-stories/THE_DEPTHS_OF_DURIS.md) closes source
+review for the complete 103-block/2645-room area, 75 mobiles/60 objects, 611 resets
+(406 exact/530 parent-aware families),ten shops, custom/source/computed service
+bindings and bounded imported/foreign dependencies. Fifteen native offerings
+become nine outcomes and three support entries with 17 contacts, all 109 addressed
+aliases and 15 optional checks. The generated audit and inventory are refreshed.
+
+Mystardala's crystal-ball and dagger+trophy stages accept supplied exact inputs;
+her narrated wielded-dagger kills are not native predicates. Hidden ball chest
+requires its exact tiny key and resists picking. Ungalen's four brew choices
+retain distinct rewards/receipts but one parent outcome; Naltem's foreign five
+brews remain ALL ingredients. Tok's ordinary and stronger same-name feather
+kinds are separate, and both have actual foreign sources. Fresh osquip custom
+death/expiry differs from ordinary corpse, cooked steak and rotting replacement.
+Glendarla's band return records no Borik rescue. Gulranor takes ten separate
+kind 8 roots, rather than ten victims, and grants three indexed rewards including
+two identical smoke bombs before retiring. CARVE creates inside the corpse;
+first recovery, GET, handoff and mutation/expiry lineage are still untracked.
+
+**Precise expansion:** accepted corpse/actor/generation/part/tool/UID source
+transactions, intentional failed carving costs versus allocation/publication
+failure, first source versus supplied custody, periodic transformation lineage,
+ANY versus ALL allocation, frozen per-index item/coin/XP settlement and actual
+recipient/reset/supply episodes. No new event/schema, economic adapter or runtime
+API is implied by source guidance. Accounting must be active and ready for new
+progression; frozen recovery remains separate.
+
+**Native repairs:** none ships here. Six exits lack active destination rooms;
+renumbering deletes them. Builder intent must choose restoration, replacement
+or obsolete-row removal. The wall/stair guard note at 121257, two blue glasses'
+pink descriptions and three unplaced residents receive balanced review plans.
+These pending proposals do not belong in shipped-fix news. Earlier separate
+native fix commits and their prominent news/proof/limits remain preserved.
+
+**Validation:** focused exact-source checks and all 91 Python/C++ schema/file-
+loader/projection tests cover nine/ten loose parts, wrong/rotting/equipped kinds,
+supplied shortcuts, spent materials versus optional receipts, OR brews/supports,
+owner rejection, one credit for multiple rewards, replay and cold recovery.
+Full production source/catalog/inventory/audit regression, maintained server
+build, changed/staged formatting, whitespace, link/original-queue checks and
+exact preservation guards passed before publication. Final player-copy and
+current-material assertions also pass against the refreshed catalog.
+These are source/projection checks; native CARVE/death/access/GET/payment/live
+settlement and actual renewal remain unqualified.
+
+Current catalog:91 maps/1606 achievement units/1454 potential dailies/2204 rows.
+All 2668 definitions, fingerprint, revision two, registry, prior90 maps and all native
+world/quest/source/service bytes stay unchanged. Original roadmap is **70/220
+source-comprehensive, 150 pending**. IceCrag Castle is next. The full goal remains
+active. No accounting activation, DB/server operation, migration, deployment or
+merge occurred.

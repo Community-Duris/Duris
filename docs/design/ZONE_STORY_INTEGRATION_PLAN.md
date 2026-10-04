@@ -2489,3 +2489,27 @@ new publication/credit; frozen recovery retains its separate obligation path.
 Queue69/220 source-comprehensive,151 pending. This checkpoint adds no runtime
 event/API/schema, payment service or accounting activation. Played semantic
 episodes and persistence/renewal remain qualification work.
+
+## The Depths of Duris: carving, expiring proof and exact alternatives
+
+The [comprehensive source dossier](zone-stories/THE_DEPTHS_OF_DURIS.md) and
+[journal](../../areas/story/surfacekeeps.story.json) classify fifteen offerings
+as nine outcomes and three support entries. Active, ready accounting remains
+required for new discovery, encounters, journals and achievement/daily credit;
+frozen economic obligations retain their independent recovery path.
+
+| Capability | Concrete requirement | Acceptance / implementation plan |
+| --- | --- | --- |
+| Corpse crafting and admitted acquisition | CARVE mutates humanoid corpse parts, can spend them on failure, creates kind 8 inside the corpse and needs a later GET | Freeze actor/corpse generation/selected part/tool/attempt, intentional failure cost and exact new UID. Couple successful part/weight mutation to admitted publication; distinguish allocation/placement failure from a legitimate failed skill roll. Record later source GET separately from handoff, then qualify denial/busy/partial/replay/restart. Do not claim a new item from command text alone |
+| First recovery, mutation and expiry lineage | Osquip custom death publishes fresh120051 to the room; periodic procedure replaces it with rotting55021, including carried/nested locations | Stable death/source/actor/UID/custody and replacement lineage, accepted publication/extraction and actual expiry episode; personal kill, first-source recovery, supplied possession and consumed turn-in are separate predicates. Qualify periodic jitter, carried/nested/room replacement, missing prototype, interruption and recovery. Avoid a guaranteed wall-clock timer |
+| Kind, runtime type and same names | Carved arms/legs become weapons while keeping kind 8; two feather kinds share names; three eyeglass variants differ | Bind offerings to exact kinds and distinct loose owned UIDs. Preserve runtime type/aliases as presentation, not substitutions. Qualify nine versus ten roots, duplicate selection, worn/nested/root admission, both feather sources and wrong/rotting kinds |
+| Alternative offers, different payouts and one outcome | Ungalen accepts one of four brews with four native reward schedules; Naltem abroad needs five distinct brews together | Local ANY receipt/current-kind readiness versus foreign ALL ingredients, exact per-contract immutable rewards and owner. One local parent outcome, independently retained native attempts, no four-fold credit. Future full-stage presentation needs supplied entry points, material allocation and optional foreign history |
+| Optional prior history and narrated restrictions | Mystardala's final recipe takes dagger+staff+bracelet; prose asks for wielded-dagger kills | Keep supplied materials legal and earlier dagger receipt optional. A receipt cannot replace spent current materials. Personal equipment-at-kill/campaign evidence requires a builder-selected accepted predicate, credited actor/source/episode and failure policy; do not introduce it from prose |
+| Indexed rewards, XP and retiring actors | Ten body parts yield token plus two separate identical smoke bombs; nominal coin/XP rewards and D1 actors | Freeze offered roots/credited PIDs/runtime reward indices; qualify each economic entitlement/publication/save, partial/busy/rejected/replayed output, retained receipts and cold recovery without giver. Record actual removal/reset generation and admitted renewed supply separately from daily candidacy |
+| Hidden/pickproof access and physical map scope | Mystic Tower chest requires exact hidden key; map walls block ordinary entry; NPC dispersal edges are not player entrances | Capture reveal/perception, selected key/custody, lock/open state, admitted GET/arrival and reset state. Preserve canonical owner while auditing physical routes and foreign source dependencies. Six absent destinations need builder intent before native topology edits |
+| Fair repair and news handoff | Six dangling exits, wall/stair builder note, blue/pink description and unplaced prototypes have differing evidence | Keep pending proposals distinct from shipped fixes. Every actual native repair needs a clear separate fix commit, trigger/before-after proof, material limits and prominent player-facing news text. No Depths repair ships with this journal |
+
+The original queue is 70/220 source-comprehensive, 150 pending. These are precise
+adapter and qualification requirements; this checkpoint adds no runtime API,
+event/schema, payment adapter, native recipe or world effect. Live CARVE/death/
+source/access/offer/reward/expiry/retirement/persistence journeys remain open.

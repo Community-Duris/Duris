@@ -15,8 +15,26 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1458
-assert report['mapped_area_count'] == 90 and report['eligible_by_zone']['162'] == 4
+assert report["daily_unit_count"] == 1454
+assert report['mapped_area_count'] == 91 and report['eligible_by_zone']['162'] == 4
+depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
+assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
+assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
+assert report['eligible_by_zone']['1200'] == 9
+assert sum(s['category'] == 'service' for s in depths['stories']) == 3
+assert sum(len(c['topics']) for c in depths['contacts']) == 109
+assert sum(len(s['contracts']) for s in depths['stories']) == 15
+assert sum(t.get('optional', False) for s in depths['stories'] for t in s['steps']) == 15
+depths_stories = {s['id']: s for s in depths['stories']}
+assert len(depths_stories['ungalen-ale']['contracts']) == 4
+assert depths_stories['ungalen-ale']['steps'][0]['item_vnums'] == [83118, 83172, 83428, 83417]
+assert depths_stories['gulranor-ten-body-parts']['steps'][0]['count'] == 10
+assert depths_stories['gulranor-ten-body-parts']['steps'][0]['item_vnums'] == [8]
+assert depths_stories['mystardala-paired-trophies']['steps'][0]['contracts'] == depths_stories['mystardala-crystal-ball']['contracts']
+assert depths_stories['mystardala-paired-trophies']['steps'][0]['optional']
+assert all(t.get('optional') for s in depths['stories'] for t in s['steps'][:-1])
+assert all(s['steps'][-1]['contracts'] == s['contracts'] for s in depths['stories'])
+
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'
 assert len(tower['stories']) == 4 and len(tower['contacts']) == 14 and not tower['exclusions']

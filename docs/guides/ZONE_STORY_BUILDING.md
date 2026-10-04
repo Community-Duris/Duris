@@ -1540,3 +1540,40 @@ pending builder decisions. New launch/rescue/healing/fate/mount endings need
 explicit accepted effect adapters. **No native repair ships in this checkpoint.**
 Later actual fixes must have clear separate commits, concrete before/after
 proof and prominent news sentences; keep journal guidance and proposals distinct.
+
+## Building Depths-style corpse, alternate and expiring stories
+
+Use the [Depths dossier](../design/zone-stories/THE_DEPTHS_OF_DURIS.md) and
+[authored journal](../../areas/story/surfacekeeps.story.json) for fifteen native
+bindings, nine outcomes, three services and source-aware guidance. Accounting
+must be active and ready. Discovery is separate; all 109 conversation aliases
+are clues rather than individual learned-keyword achievements.
+
+Map ten body parts as ten distinct loose roots of the exact kind. CARVE places
+new pieces inside a corpse; GET is a separate step. Nine ordinary part choices
+are not ten victims, and arms/legs changing runtime type do not change their
+kind. A custom death proof can start on the ground and later become another
+kind: distinguish first source recovery, supplied possession and expiry lineage.
+The current journal shows materials and accepted offerings; it cannot prove
+personal carving, personal kills or a first recovery from command text.
+
+Group Ungalen's four brew recipes as one ANY outcome, retaining each native
+receipt and payout. Keep Tok's two identically named feather kinds distinct.
+Naltem's foreign five-brew ALL recipe owns its own receipt. Current materials
+are optional hints, not credit. Supplied dagger+trophies skip Mystardala's
+earlier ball exchange; optional history never restores spent supplies or adds
+a wielded-dagger kill requirement that the native recipe does not contain.
+
+Guide SEARCH, hidden tiny key, UNLOCK/OPEN and ball GET for the pickproof chest;
+show paths/places to players while keeping numeric evidence in builder docs.
+Source cap/chance, map walls, NPC dispersal and a missing destination are distinct
+facts. Six dangling edges and wall/stair placement need builder intent; blue
+items' pink prose is a possible narrow wording repair. No native repair ships
+here. Any later fix needs a separate clear commit and prominent PR/news evidence.
+
+For future custom integrations, declare accepted source/corpse/generation/part/
+actor/tool/UID lineage, publication/transfer/expiry, mandatory versus supplied
+policy, indexed rewards and actual recipient retirement. Qualify intended failed
+carving costs separately from allocation/placement failure, then busy/partial/
+replay/restart. Never author unsupported CARVE/kill/rescue/expiry steps as though
+schema-three readiness already records them.
