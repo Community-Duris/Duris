@@ -27,7 +27,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 
 def native_fixture() -> dict[str, Path]:
-    work = ROOT / "bin/tests/plan5-retention-qualified-native"
+    work = ROOT / "bin/tests/plan5-retention-canonical-native"
     work.mkdir(mode=0o700, parents=True, exist_ok=True)
     source = work / "probe.cpp"
     source.write_text(r'''#include "economy/economic_accounting_intent.h"
@@ -96,6 +96,7 @@ def run(server: Path) -> None:
     import persistence_restore as restore
     from economic_sql_audit_snapshot import read_evidence
     from reconcile_economy_accounting import Reconciler, view
+    import qualify_database_restore as qualifier
     import run_mysql_account_deletion_journey as account_journey
     import run_mysql_deletion_journey as character_journey
     import test_flatfile_combat_journey as journey
@@ -139,10 +140,22 @@ def run(server: Path) -> None:
                             cursor.execute("SELECT VERSION() AS version")
                             version = cursor.fetchone()["version"]
                         for name, module in (("account", account_journey), ("character", character_journey)):
-                            state = {"seeded": False, "captures": 0, "cold_restarts": 0,
+                            state = {"seeded": False, "captures": 0, "cold_restarts": 0, "canonical_faults": 0,
                                      "verified": False, "pids": [], "op_ids": []}
                             reader_password = secrets.token_hex(24)
                             reader_name = "retention_" + name
+
+                            def captured_history(cursor, prefix=""):
+                                rows = []
+                                for table in ("economic_lineage_state", "economic_epoch",
+                                              "economic_accounting_operation", "economic_accounting_source_claim"):
+                                    cursor.execute("SELECT * FROM " + prefix + table + " ORDER BY 1,2")
+                                    rows.append(cursor.fetchall())
+                                op_ids = (b"\x07" * 16, *state["op_ids"])
+                                cursor.execute("SELECT * FROM " + prefix + "critical_operation_inbox WHERE operation_id IN (" +
+                                               ",".join(["%s"] * len(op_ids)) + ") ORDER BY operation_id", op_ids)
+                                rows.append(cursor.fetchall())
+                                return rows
 
                             def retained_cut(label, fixture_append=False):
                                 schema = state["schema"]
@@ -154,16 +167,16 @@ def run(server: Path) -> None:
                                 try:
                                     cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
                                     cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
+                                    class Executor:
+                                        def sql(self, query):
+                                            assert query.startswith("SELECT "), query
+                                            cursor.execute(query)
+                                            values = cursor.fetchall()
+                                            assert all(len(row) == 1 for row in values)
+                                            return "\n".join(str(next(iter(row.values()))) for row in values)
+                                    qualifier.require_economic_evidence_integrity(Executor())
                                     cut = read_evidence(cursor, b"\x11" * 16, b"\x22" * 16, True)
-                                    rows = []
-                                    for table in ("economic_lineage_state", "economic_epoch",
-                                                  "economic_accounting_operation", "economic_accounting_source_claim"):
-                                        cursor.execute("SELECT * FROM " + table + " ORDER BY 1,2")
-                                        rows.append(cursor.fetchall())
-                                    op_ids = (b"\x07" * 16, *state["op_ids"])
-                                    cursor.execute("SELECT * FROM critical_operation_inbox WHERE operation_id IN (" +
-                                                   ",".join(["%s"] * len(op_ids)) + ") ORDER BY operation_id", op_ids)
-                                    rows.append(cursor.fetchall())
+                                    rows = captured_history(cursor)
                                     cursor.execute("SELECT COUNT(*) AS active FROM economic_lineage_state WHERE active_epoch IS NOT NULL")
                                     assert cursor.fetchone()["active"] == 0
                                     cursor.execute("SELECT COUNT(*) AS staged FROM economic_sql_lifecycle_installation WHERE phase IN (1,2)")
@@ -172,10 +185,10 @@ def run(server: Path) -> None:
                                     connection.rollback()
                                     cursor.close()
                                     reader.close()
-                                connection.rollback.assert_called_once_with()
-                                cursor.close.assert_called_once_with()
-                                assert all(call.args[0].upper().startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
-                                           for call in cursor.execute.call_args_list)
+                                    connection.rollback.assert_called_once_with()
+                                    cursor.close.assert_called_once_with()
+                                    assert all(call.args[0].upper().startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
+                                               for call in cursor.execute.call_args_list)
                                 snapshot = {"schema_version": 1, "lineage": "11" * 16, "epoch": "22" * 16,
                                             "complete": False, "quiescent": False, "backend": "retention_fixture",
                                             "native": {"holdings": [], "items": []}, **cut}
@@ -205,6 +218,7 @@ def run(server: Path) -> None:
                                       "label": label, "roots": len(cut["operations"]), "claims": len(cut["source_claims"]),
                                       "prior_rows_unchanged": True, "fixture_append": fixture_append,
                                       "select_only": True, "rollback": 1, "cursor_close": 1,
+                                      "canonical_economic_integrity": True,
                                       "incomplete_refusals": report["exception_counts"]}), flush=True)
 
                             def create_with_history(client, *args, **kwargs):
@@ -231,7 +245,7 @@ def run(server: Path) -> None:
                                     retained_cut("before-next-identity-seed")
                                 outputs = [real_check_output([str(binary), str(pid)], env=sanitizer_env) for binary in binaries.values()]
                                 assert outputs[0] == outputs[1]
-                                artifact = ROOT / "bin/tests/plan5-retention-qualified-native" / (engine + "-" + name + "-" + str(pid) + ".bin")
+                                artifact = ROOT / "bin/tests/plan5-retention-canonical-native" / (engine + "-" + name + "-" + str(pid) + ".bin")
                                 artifact.write_bytes(outputs[0])
                                 print("RETENTION_NATIVE_CASE " + json.dumps({"engine": engine, "journey": name, "pid": pid,
                                       "encoded_sha256": hashlib.sha256(outputs[0]).hexdigest(),
@@ -310,6 +324,35 @@ def run(server: Path) -> None:
                             def observe_output(args, *positional, **kwargs):
                                 text = kwargs.get("input")
                                 if state["seeded"] and isinstance(text, str) and text == "DROP DATABASE " + state["schema"]:
+                                    # The private fixture owner introduces one legal-SQL
+                                    # metadata mismatch after native erasure. The observer
+                                    # must refuse and leave the damaged rows unchanged.
+                                    prefix = state["schema"] + "."
+                                    with admin.cursor() as cursor:
+                                        original = captured_history(cursor, prefix)
+                                        actor = next(row["actor_id"] for row in original[2]
+                                                     if row["operation_id"] == state["op_ids"][0])
+                                        query = "UPDATE " + prefix + "economic_accounting_operation SET actor_id=%s WHERE operation_id=%s"
+                                        cursor.execute(query, (actor + 1, state["op_ids"][0]))
+                                        damaged = captured_history(cursor, prefix)
+                                        count = state["captures"]
+                                        try:
+                                            try:
+                                                retained_cut("corrupt-retained-actor")
+                                            except RuntimeError as error:
+                                                assert str(error) == "restore_economic_metadata_mismatch", str(error)
+                                            else:
+                                                raise AssertionError("corrupt retained actor passed canonical qualification")
+                                            assert captured_history(cursor, prefix) == damaged
+                                            assert state["captures"] == count
+                                        finally:
+                                            cursor.execute(query, (actor, state["op_ids"][0]))
+                                        assert captured_history(cursor, prefix) == original
+                                    state["canonical_faults"] += 1
+                                    print("RETENTION_CANONICAL_FAULT " + json.dumps({"engine": engine,
+                                          "journey": name, "field": "actor_id", "boundary": "after-native-erasure-and-cold-restart",
+                                          "code": "restore_economic_metadata_mismatch", "authority_unchanged": True,
+                                          "fixture_restored": True, "select_only": True, "rollback": 1, "cursor_close": 1}), flush=True)
                                     retained_cut("after-deletion-and-restart")
                                     with admin.cursor() as cursor:
                                         cursor.execute("SELECT COUNT(*) AS players FROM " + state["schema"] + ".player_data WHERE pid IN (" +
@@ -330,11 +373,15 @@ def run(server: Path) -> None:
                                     mock.patch.object(subprocess, "check_output", side_effect=observe_output):
                                 module.run(server)
                             assert state["seeded"] and state["verified"]
+                            assert state["canonical_faults"] == 1
                             result = {"engine": engine, "version": version, "journey": name,
                                       "captures": state["captures"], "cold_restarts": state["cold_restarts"],
                                       "pids": state["pids"], "retained_roots": len(state["op_ids"]),
                                       "retained_claims": len(state["pids"]), "inactive": True,
                                       "native_erasure_boundary": True, "seeded_evidence": True,
+                                      "canonical_economic_integrity": True,
+                                      "canonical_qualified_captures": state["captures"],
+                                      "canonical_refusals": state["canonical_faults"],
                                       "typed_active_erasure_qualified": False}
                             completed.append(result)
                             print("RETENTION_JOURNEY " + json.dumps(result, sort_keys=True), flush=True)
