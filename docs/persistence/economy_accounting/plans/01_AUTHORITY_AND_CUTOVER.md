@@ -423,12 +423,20 @@ failures/four controls become20 after passes per native mode, with unchanged8
 parking regressions each, both strict incremental builds and maintained owners.
 Actual inactive MariaDB/MySQL journeys/follow-ups and flatfile restart/relog pass;
 final declaration20a99f56 pins exact evidence in October3 review. This closes
-retained admission only. Pulse still consumes a result before retry/promotion
-queue allocations. Promotion
-can then lose an original receipt-bearing completion after its real journal ACK.
-Stage cancelable queue ownership and an empty job before moving input or changing
-revision/receipt state; fault-injected native tests must establish each failure
-and exact recovery. Separately, result-queue allocation in worker_main can throw
+retained admission only. Retry/pending promotion now has separate paired component
+qualification:11 before failures/four controls become15 passes per backend,
+including real native set/deque growth and quest/spell/craft completion receipts.
+Cancelable readiness is staged before result consumption or health/revision/receipt
+mutation. Failed allocation retains the exact front for a later pulse; successful
+staging makes later queue calls allocation-free. Failed promotion removes only
+newly staged readiness. Unchanged20 admission/eight parking regressions also pass
+per mode. Declaration36ec8996 pins the seven artifacts and every case log; strict
+incremental builds, nine maintained owners,14 validations/30 contracts and matrix
+pass. Actual inactive MariaDB/MySQL save/death/crash/copyover journeys and native
+follow-ups pass; flatfile creation/save/restart/relog passes133.956 seconds. Final
+declaration1c6b2a43 pins source/binaries/logs/cases/owned teardown. This bounded
+scheduling prerequisite is solved locally.
+Separately, result-queue allocation in worker_main can throw
 after journal ACK. Ready-queue repairs cannot qualify completion-delivery safety.
 
 Separate source review identifies unresolved-replay proof retention: an earlier

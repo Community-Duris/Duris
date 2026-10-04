@@ -2227,3 +2227,88 @@ Preserve new ward semantics and earlier durable-only death-descendant evidence
 on eventual authorized integration. Local qualification remains source/schema
 0055 only; combined incoming/0056 checks are pending. No history integration or
 push was performed under the retained no-merge restriction.
+
+### Retained worker retry and pending promotion: bounded issue qualified locally
+
+The frozen15-case scheduling owner links actual worker/revision/codec/journal/
+observability with controlled apply and real journal ACK. Its first strict native
+compile failed on an int-to-unsigned conditional in the fixture; no behavioral
+case ran. Original owner, compile argv/attempt and log remain preserved in
+`tmp/worker-scheduling-before-qualified-artifact-v1.local.json`, SHA-256
+`d7e1d9cd78ad59b4593d8dc2b753f0afcb9ea10431ed4aae4bd779fd7aa6ff4f`.
+The correction changes the fixture error-code type only and retains every oracle.
+
+Qualified BEFORE declaration
+`tmp/worker-scheduling-before-qualified-artifact-v2.local.json`, SHA-256
+`6f700fb4981da8f840eb9089c0ebd07328e2959d4f8a0ddd3ac40666864b3d06`,
+records11 semantic failures/four controls. The40.022-second native compile is
+within its original300-second budget; aggregate cases remain within120 seconds.
+Actual native ready-set node/rehash and deque-block growth allocations reproduce
+escaping exceptions after the deliverable result or revision/receipt ownership
+has changed, including typed quest/spell/craft completions after real journal ACK.
+
+The repair stages cancelable readiness under the worker mutex before consuming
+results or changing health, retries, revisions or receipt ownership. Failed queue
+allocation returns the already completed prefix and retains the original front
+for a later pulse. Existing-entry scheduling explicitly avoids allocation;
+completion moves are statically checked nothrow. Failed pending promotion cancels
+only newly staged readiness. No typed component-mask or SQL behavior changes.
+The scheduling15 cases, unchanged20-case admission and8-case parking regressions
+pass on both backend builds (86 AFTER cases overall). Seven immutable artifacts,
+case logs, compiler argv and wrong-SHA/backend/source guards are pinned by
+`tmp/worker-scheduling-qualified-artifact.local.json`, SHA-256
+`36ec899671943bc65aad8ccec12bca0ed6bc1c975cf2c6655459137756c4a160`.
+Native compiles remain within300 seconds and each aggregate runtime within120;
+no gate was expanded. Both strict incremental server builds pass with the changed
+worker translation unit forced, in16 SQL/9 flatfile seconds. Nine maintained
+owners,14 validations/30 contracts and nonmutating coverage matrix pass.
+
+Actual inactive MariaDB13523e02 and MySQLa7367c8c journeys pass elapsed/quiet/
+repeated saves, linkloss, quit/restart, death/reload, crash recovery and live
+copyover. Actual native item reconciliation/partial-forest allocation and
+spell/quest receipt follow-ups also pass. Flatfile creation/save/coldrestart/relog
+passes133.956 seconds within the unchanged600-second wrapper. Final declaration
+`tmp/worker-scheduling-final-milestone.local.json`, SHA-256
+`1c6b2a43a50d08adbfb87e27328202d3c97116a6d553536da5c52da1754ddcf6`,
+reverifies all source/artifact/binary/log/case pins, clang-format18, owned SQL
+schema/server teardown and port rebind. This bounded scheduling issue is solved
+locally; no active accounting or integrated restored-save behavior is claimed.
+
+Only worker.c changes among the1,232 frozen production inputs. Current manifest
+`tmp/worker-scheduling-production-inputs.local.json` has SHA-256
+`2576febfc2c3a1de1eec6052d79fe0104c99b67b5cacf9e0ed5404509496e692`.
+This source/schema0055 milestone excludes incoming0056 integration and does not
+qualify result-queue push allocation, typed exact journal identity, ordinary SQL
+transaction/lease cleanup, restored-save production wiring or full R1-R8.
+
+### Ordinary SQL exception cleanup owner: prepared, not executed
+
+The independent proposed owner now has13 cases linking eight actual production
+units: repository/codec/journal, extra-description codec, observability, death
+conflict, SQL lifecycle guard and pool. It covers real START/DML allocation,
+real COMMIT with hidden reply and replacement-readback allocation, failed original
+ROLLBACK, consumed-null replacement, borrowed transaction/autocommit/reconnect
+refusal, custody-conflict continuation and separate malloc-buffer/MYSQL_RES faults.
+This is preparation only; source transaction/lease/resource cleanup is not fixed.
+
+Read-only fixture review caught a unique-name seed collision, an early description
+failure that prevented the pet test, missing actual reconnect-option readback and
+a failed-cleanup oracle that could accept stale durable proof. Deterministic PID
+names, independent resource cases, option readback and exact genuine custody
+failure/witness plus below-request revision checks correct those setup/oracle
+gaps. Draft snapshots and preparation receipts remain preserved; no native
+failure is inferred from a static review or previous draft.
+
+Frozen runner SHA-256
+`b1da8dbe2369749c3ece9b6e234d19fa995663039f52cc2e008cf9840b38e863`;
+harness SHA-256
+`2af04b1d2490e6e43614788a2724fb98883973892eda265322efc6294b4d8ae1`.
+`tmp/player-snapshot-exception-prepared-artifact-v3.local.json`, SHA-256
+`605e7d71a800409f7a87c73e289393fd1c1494e32acf69acd1441528828fee38`,
+records527 inputs, AST/clang-format18 and14 negative disposable-target guards.
+Proposed300-second compile/120-second aggregate bounds remain unmeasured and do
+not relabel older600-second compilation gates. Native compile and actual private
+MySQL/MariaDB cases are pending. Synthetic craft entitlement rows exercise the
+repository seam rather than producer provenance; controlled ROLLBACK failure does
+not establish successful cleanup. Worker/pipeline, producer/coordinator, general
+allocator sweep, death evidence transaction sweep and incoming0056 are excluded.

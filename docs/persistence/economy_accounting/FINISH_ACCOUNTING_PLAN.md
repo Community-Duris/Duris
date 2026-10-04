@@ -689,3 +689,20 @@ is solved locally. Scheduling/retry/promotion, result delivery, typed mask ident
 SQL lease cleanup and restored-save integration remain separate. Fresh remote
 3dbb8bc83 adds ward0056; combined-source qualification and history integration
 are pending under the no-merge restriction. No R1-R8 or coverage gate is promoted.
+
+Worker retry/pending promotion now has paired component qualification separate
+from admission:11 before failures/four controls become15 passes per backend mode.
+Queue growth is staged before consuming results or mutating retries, revisions,
+receipts or counters; allocation refusal retains the original front. The same
+frozen cases assert exact later delivery and real journal ACK. Unchanged20-case
+admission/eight-case parking owners also pass per mode (86 AFTER cases overall).
+Component declaration36ec8996 and source manifest2576febf pin artifacts and all
+1,232 production inputs, with only worker.c changed. Both strict incremental
+server builds, nine maintained owners,14 validations/30 contracts and nonmutating
+matrix pass. Actual inactive MariaDB/MySQL save/death/crash/copyover journeys and
+native follow-ups pass; flatfile creation/save/restart/relog passes133.956 seconds.
+Final declaration1c6b2a43 pins exact source, binaries, logs, cases and owned SQL
+teardown/port rebind. This bounded scheduling issue is solved locally.
+Results-push allocation, typed exact journal identity, SQL
+transaction/lease cleanup, restored-save integration and current-remote/broad
+qualification remain open. No R1-R8 requirement is marked complete.
