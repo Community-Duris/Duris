@@ -544,3 +544,161 @@ inputs, component artifacts, binaries/logs and owned SQL teardown/port rebind.
 Preserved fixture failures remain evidence, not production failures. Ordinary SQL
 cleanup, typed exact journal identity, restored-save integration, incoming0056 and
 broad qualification remain open. No R1-R8 gate or coverage status is promoted.
+
+### SQL cleanup candidate integration and native qualification
+
+The reviewed five-file SQL cleanup candidate is integrated after committed worker
+completion milestone dfc879598. Borrowed idle/autocommit/reconnect-disabled
+sessions report original-session cleanup proof; pooled owners retire unconfirmed
+connections, preserve consumed replacement ownership and ambiguous COMMIT, and
+retain original custody evidence when rollback is unconfirmed. Separate retained
+transaction cleanup precedes writer-fence release. Native buffer/result ownership
+is scoped by RAII. Recovery_apply and sustained lifecycle lock allocation remain
+separate work.
+
+Manifest `tmp/sql-cleanup-production-inputs.local.json`, SHA-256
+`efcb65d1faa86b6bd95eac6c576cf3b336033d26a01d0a16b5f46b475425de52`,
+freezes1,233 source inputs: four changed repository source/headers and one new
+SQL-only helper. All actual dependency-recorded header consumers are forced:
+47 SQL/46 flatfile objects. Source preparation first refused Windows path
+separator mismatch, then src-relative dependency parsing; both failed setup
+attempts are archived before source/native object mutation. Corrected setup
+matches exact dependency tokens and retains every consumer check.
+
+Unchanged ordinary13 and retained4 owners are registered as explicit manual SQL
+probes. Frozen AFTER drivers preserve original300/120 bounds, canonical0055
+schema settings, all source/binary/owner/case pins, three rejection guards and
+owned teardown/identity/port rebind. Strict builds and native AFTER qualification
+are pending. Source integration is not a solved SQL issue or R1-R8 acceptance.
+
+### Follow-up recovery and lifecycle ownership gaps (source review only)
+
+Recovery must cover the whole borrowing/proof/lease boundary, not only
+`player_snapshot_repository_recovery_apply`. Its cleanup is installed after
+START, ignores rollback and lacks reconnect-disabled/original-session checks.
+`player_quarantine_recovery.c::sql_proof` can accept an otherwise valid row proof
+after unconfirmed rollback; journal recovery_resolve can then remove quarantine.
+`prepare_sql` shares unchecked cleanup. Boot revalidate_selected chooses pool
+reuse by mysql_errno rather than demonstrated original-session cleanup.
+Use the SQL-specific cleanup/lease primitives through resume and proof, preserving
+all archive/backend-generation/creation/UID/component/state comparisons. Refuse
+successful verification when cleanup is unconfirmed; revision alone is not proof.
+Native reproduction is pending: actual START reply loss, DML allocation/rollback,
+proof allocation plus persistent rollback refusal, valid proof with both rollback
+attempts refused, real pooled boot revalidation and ambiguous COMMIT/exact retry.
+Exact preparation/archive/journal/SQL rows, quarantine fence and lease witnesses
+are required. No ordinary post-successful-COMMIT allocation seam was found; do
+not manufacture such a BEFORE claim.
+
+Separate lifecycle work is required in economic_sql_lifecycle_guard.c. Lock and
+unlock allocate SQL strings inside uncaught noexcept acquisitions/destructors.
+Acquisition publishes local authority before SQL ownership is transferred; a
+possibly successful GET_LOCK needs tentative original-session ownership. Unlock
+ignores verified release before clearing local exclusion/coordinator ownership.
+Use bounded stack SQL/allocation-free parsing and checked same-session release,
+keeping SQL outside authority mutexes and SQL/local/coordinator release order.
+Uncertain release must retain exclusion and support retry; catch-and-ignore is
+insufficient. Native sustained-allocation, partial acquisition, lost lock reply,
+failed release, independent lock ownership and unrelated-admission proofs remain
+pending. These source findings are separate milestones; current frozen SQL cleanup
+candidate and0055 source pins remain unchanged. No schema or R1-R8 gate promotion.
+
+### SQL cleanup public-header regression and corrected qualification
+
+The revised maintained gate passes worker/pipeline/journal/quarantine/recovery,
+then diagnostics exposes a real dependency regression: public recovery headers
+transitively include the SQL pool helper, whose `<mysql.h>` needs native SQL flags.
+The unchanged generic staff diagnostic command intentionally has only `-Isrc`;
+adding SQL flags would conceal this coupling. A read-only architect confirms all
+public cleanup uses are pointers and concrete cleanup objects occur only in the
+two repository implementations/helper.
+
+Both public repository headers now forward-declare player_sql_cleanup; both .c
+implementations explicitly include the private helper. Existing mysql/mysql.h,
+overload signatures/noexcept and the helper's enum/struct/RAII behavior remain
+unchanged. No extra metadata header is added (production inventory stays1,233).
+The first candidate source/34 passing actual SQL cases remain immutable evidence
+for their original closure, not the corrected source. Header repair preparation
+first applied the snapshot pair before refusing mixed-CRLF conflict matching;
+second preparation refused the already applied pair. Complete four-file targets
+were then checked against pinned original/corrected LF states before completion.
+The original failure and integration receipt are preserved.
+
+Corrected-source maintained checks, all affected header-consumer strict builds,
+unchanged17 cases per real engine, maintained terminal matrix and actual inactive
+gameplay/recovery must pass before this SQL issue is declared solved. No accounting
+activation, wallet-root item inclusion, declined spell-path retry or R1-R8 promotion.
+
+
+### Corrected SQL cleanup regression qualification and integration authorization
+
+All14 maintained owners now pass on the corrected header closure: worker,
+pipeline, journal, quarantined dispatcher, phase01 recovery, diagnostics, writer
+route/site/coverage contracts, root harness, real death selector, evidence codec,
+journal lifecycle and cold-load fence. Root discovery first refused a stale exact
+manual-only set after the two explicitly supplied SQL artifact owners were added;
+only those two expected names change. Original failure/owner and exact repair
+receipt remain archived; discovery exclusion, serialized-resource, timeout,
+cancellation and signal tests remain intact (seven behavioral cases pass).
+
+Maintained terminal qualification passes on both actual engines:18 native command
+invocations in10 fresh canonical0055 schema groups. The independent declaration
+`tmp/sql-cleanup-header-maintained-terminal-qualified-v1.local.json` is SHA-256
+`ff2115b6d5840614f9dfdab2e4f3c72f91b0fdca28be02f7940d8b89d53b9d03`.
+It binds527 native/source/owner inputs, sanitizer binary, original600-second
+compile/group limits, exact group DROP and explicit schema absence, owned process
+identity/stop and port rebind. Typed quest/spell internal replay remains distinct
+from typed cold restart; this owner uses controlled pool stubs. Current14 contract
+fixtures,30 accounting tests and nonmutating matrix check also pass. Seven changed
+C/C++ source/header/owner files pass nonmutating clang-format18 fixpoints.
+Corrected-source actual inactive gameplay and final milestone declaration remain
+pending; these component results do not solve full accounting qualification.
+
+The user explicitly approved the previously blocked local Git merge to integrate
+new experimental-accounting commits. Preserve this authorization separately from
+GitHub PR merge/deploy/production activation, which remain prohibited. Complete
+and commit the bounded SQL cleanup issue first; then refresh and integrate both
+histories locally, qualify the combined source, and push normally. Previously
+recorded rejection and source-specific qualification remain historical evidence;
+no unauthorized history mutation or divergent push was attempted.
+
+
+### Bounded ordinary/retained SQL cleanup solved locally
+
+Final declaration `tmp/sql-cleanup-header-final-milestone-v1.local.json`, SHA-256
+`0a0b5c5a4e683119db303a478c92dea956060a87a85d9782b1ba20e353865aaf`,
+rechecks all1,233 current/frozen production inputs, paired BEFORE and corrected
+AFTER artifact/binary/owner/log/support pins, strict builds,14 maintained owners,
+14 accounting fixtures/30 contracts, matrix and seven format fixpoints. Both
+actual engines pass13 ordinary+4 retained fault cases (34 total); the separate
+maintained terminal matrix passes18 native invocations/10 fresh schema groups.
+Original300/120 fault-owner and600 terminal/build budgets remain unchanged.
+
+The current strict SQL server passes real inactive save/death/crash/livecopyover
+journeys plus actual item/partial-forest/OOM/spell/quest persistence follow-ups on
+MariaDB7c1b354b (195.605 seconds) and MySQL35ef7379 (297.333), within1200 each.
+Journey-owned schema drops leave no wrapper leftovers; independent baseline
+schema equality/absence, owned PID/session/executable/datadir stop and port rebind
+pass. Current strict flatfile creation/save/coldrestart/relog passes132.529 seconds
+within600. Accounting scanner/contract checks ran on Windows; native compilers,
+owners/builds and gameplay ran in WSL. A final declaration first refused a raw
+Windows log path in WSL; exact scoped alias mapping corrected the verifier without
+rerunning or weakening qualification. Original prepared versions/refusal remain
+preserved. This bounded transaction/lease/resource cleanup issue is solved locally.
+
+Pooled owners retire unconfirmed original-session cleanup and preserve replacement
+ownership; borrowed callers retain responsibility for their handles. Custody
+conflict diagnostics survive failed rollback and the separate retained transaction
+is cleaned before writer-fence release. Ambiguous COMMIT remains ambiguous.
+Recovery preparation/proof/lease, lifecycle release/exclusion, typed exact journal
+identity and restored-save production wiring remain separate unfinished work.
+Canonical0055 results exclude incoming0056 until integration and requalification.
+Coverage remains false/releaseBLOCKED; no R1-R8 or activation gate is promoted.
+
+The user now assigns Plans1-4/shared coordinator/contracts/producers/registry/
+matrix/activation to this primary stream. A separate user-coordinated agent owns
+Plan5 independent reconciliation/audit/backup-restore/release qualification. Return
+narrow interface requests and independently committed slices for integration on
+one tested candidate; do not duplicate Plan5 mutation/tooling work. Local Git
+integration is explicitly authorized; GitHub PR merge/deploy/production activation
+remain prohibited. Normal milestone publication follows combined-source checks.
