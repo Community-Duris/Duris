@@ -82,6 +82,15 @@ enum class item_movement_reject
 const char *item_movement_reject_name(item_movement_reject reason);
 bool item_movement_reject_is_transient(item_movement_reject reason);
 
+// SQL schema-2 ordinary single-root drop only. Preparation owns identities and
+// the literal checkpoint, never a character/object pointer across pulses. The
+// completion is notification-only, after physical publication, ACK and release.
+bool item_movement_transaction_prepare_sql_drop(P_char actor, P_obj root,
+						item_movement_completion_fn completion,
+						const void *context, size_t context_size,
+						item_movement_reject *reject);
+void item_movement_transaction_drop_prepare_pulse(void);
+
 struct item_movement_health
 {
 	uint64_t pending;

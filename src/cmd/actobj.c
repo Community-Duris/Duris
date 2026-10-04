@@ -641,6 +641,57 @@ void item_drop_completion(P_char actor, bool committed, const item_transfer_resu
 	publish_player_drop(actor, object, context.room, context.floor_hint, context.quiet);
 }
 
+#ifndef __NO_MYSQL__
+void sql_drop_notification(P_char actor, bool committed, const item_transfer_result &, unsigned int,
+			   const uint8_t *encoded, size_t encoded_size)
+{
+	if (!actor || !encoded || encoded_size != sizeof(drop_movement_context))
+		return;
+	drop_movement_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed)
+	{
+		send_to_char("The item remains in your inventory; its drop did not commit.\r\n",
+			     actor);
+		return;
+	}
+	P_obj object = find_live_item_uid(context.item_uid);
+	if (!object || context.room < 0 || context.room > top_of_world ||
+	    !OBJ_IN_ROOM(object, context.room))
+		return;
+	// Native publication and its original ACK have already completed. This
+	// callback never unlinks, places, hydrates custody or starts another drop.
+	if (!context.quiet)
+	{
+		act("You drop $p.", FALSE, actor, object, 0, TO_CHAR);
+		if (actor->in_room == context.room)
+			act("$n drops $p.", FALSE, actor, object, 0, TO_ROOM);
+	}
+	if (context.floor_hint)
+		redis_log_floor_drop(object, world[context.room].number);
+	if (IS_TRUSTED(actor))
+	{
+		wizlog(GET_LEVEL(actor), "%s drops %s [%d].", J_NAME(actor),
+		       object->short_description, world[context.room].number);
+		logit(LOG_WIZ, "%s drops %s [%d].", J_NAME(actor), object->short_description,
+		      world[context.room].number);
+		sql_log(actor, WIZLOG, "Dropped %s", object->short_description);
+	}
+	else if (IS_ARTIFACT(object))
+	{
+		wizlog(56, "%s dropping artifact %s (%d) in room %d.", J_NAME(actor),
+		       object->short_description, obj_index[object->R_num].virtual_number,
+		       world[context.room].number);
+		logit(LOG_OBJ, "%s dropping artifact %s (%d) in room %d.", J_NAME(actor),
+		      object->short_description, obj_index[object->R_num].virtual_number,
+		      world[context.room].number);
+	}
+	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
+							     PLAYER_COMPONENT_EQUIPMENT |
+							     PLAYER_COMPONENT_INVENTORY);
+}
+#endif
+
 /*
  * A refused submission used to collapse eight predicates into one sentence, which told
  * neither the player nor the log which of them fired.  Split the two classes that differ
@@ -881,6 +932,11 @@ bool submit_player_drop(P_char ch, P_obj object, item_movement_reject *reject)
 	const drop_movement_context context = { object->obj_uid, ch->in_room,
 						reason == item_transfer_reason::player_drop ? 1 : 0,
 						0 };
+#ifndef __NO_MYSQL__
+	if (economic_gameplay_authority::active() && reason == item_transfer_reason::player_drop)
+		return item_movement_transaction_prepare_sql_drop(
+			ch, object, sql_drop_notification, &context, sizeof(context), reject);
+#endif
 	return item_movement_transaction_submit(ch, object, NULL, source, destination, reason,
 						reason_id, item_drop_completion, &context,
 						sizeof(context), NULL, reject);

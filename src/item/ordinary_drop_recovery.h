@@ -41,4 +41,28 @@ ordinary_drop_observation
 ordinary_drop_recovery_publish(const critical_command &original_command,
 			       const critical_completion &sealed_completion) noexcept;
 
+// Retained by the original movement entry. Native handlers may have completed
+// only part of their bookkeeping when they throw; graph placement alone cannot
+// erase that distinction. Only the synchronous publisher mutates these stages.
+class ordinary_drop_live_publication_state
+{
+    public:
+	ordinary_drop_live_publication_state() noexcept = default;
+
+    private:
+	friend class ordinary_drop_live_publication_owner;
+	critical_operation_id operation_ = {};
+	uint64_t actor_runtime_id_ = 0;
+	bool bound_ = false;
+	bool departure_started_ = false, departure_returned_ = false;
+	bool placement_started_ = false, placement_returned_ = false;
+};
+
+// Publish the original carried graph under fresh native custody and receipt
+// authority. No all-absent construction occurs. Retained stages prevent repeating
+// native handler effects across cleanup, registry or ACK retries.
+ordinary_drop_observation ordinary_drop_recovery_publish_live(
+	const critical_command &original_command, const critical_completion &sealed_completion,
+	uint64_t actor_runtime_id, ordinary_drop_live_publication_state &state) noexcept;
+
 #endif

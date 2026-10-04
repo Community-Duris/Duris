@@ -241,3 +241,56 @@ Source review, changed-line formatting and diff hygiene passed. No schema, new
 economic operation, fixture family or acceptance gate was added. No compiler,
 tests, SQL, services, gameplay or recovery checks ran; qualification stays deferred
 to major-plan readiness. Ownership remains disabled and Plan 1 remains unfinished.
+
+## Unsupported maintenance refusal
+
+`c542a2642` closes source-established native ownership bypasses in character
+deletion, account deletion and pwipe. Enabled ownership refuses before native
+mutation; the account confirmation also refuses before installing its deletion
+fence or closing sessions. An already-fenced request retains its state. Epoch-zero
+behavior remains unchanged. This supplies Plan 1's permitted unsupported-route
+behavior, not R8's complete economic deletion/reset implementation. Source review,
+changed-line formatting and diff hygiene passed; milestone tests remain deferred.
+
+## Live ordinary-drop producer integration
+
+The actual ordinary SQL drop previously supplied only a void physical callback
+and did not consume the full-literal inventory checkpoint. Generic movement could
+advance the runtime registry before proving live placement. These are source-
+established missing production connections; no new runtime RED was executed.
+
+The active, already-authoritative single-root drop now owns a bounded preparation
+entry containing identities, destination and notification bytes. It captures the
+literal inventory, waits for its native acknowledgement and recaptures the complete
+root before admission. Canonical command storage and pending-entry allocation
+precede binding the original checkpoint hold and coordinator publication submission.
+No character/object pointer is retained across preparation pulses. The game loop
+drives preparation before completion delivery. Inactive behavior and unsupported
+locker, bulk, money, corpse and unowned-root routes retain their existing behavior.
+
+Specialized publication precedes generic registry application. The existing native
+owner freshly locks current custody and literal room payloads and verifies the
+original receipt. Its complete physical/runtime census proves the carried graph
+before calling the existing unlink and placement handlers. Retained handler stages
+avoid repeated effects after completed departure or placement; detached/placed
+retries can proceed without an actor. Unconfirmed handler completion remains held.
+Runtime publication uses the existing atomic hydration operation and an existing
+source-owner counter key, followed by fresh exact target verification and confirmed
+same-session SQL cleanup. Ordinary older per-item source owner revisions remain
+valid under their original owner counter, including moving two separate roots.
+
+The movement owner retains the original command, receipt, checkpoint and operation
+through publication, ACK and exact hold release. A successful ACK is not repeated
+if release must retry. Definitive admission refusal can retry release alone;
+uncertain admission retains the original. Post-ACK callbacks only notify and write
+existing floor hints; they do not unlink, place or change custody. Deterministic
+placement preflight does not consume the native falling RNG.
+
+The six production source files are actobj C, movement C/H, ordinary-drop recovery
+C/H and comm C. Independent source review, changed-line formatting and diff hygiene
+passed. No compiler, tests, SQL, gameplay, persistence or recovery checks ran.
+Maintained link closures and actual native/player journeys remain for the major-
+plan qualification batch. This source slice is unqualified; no new schema,
+framework, fixture family or acceptance gate was added. Ownership remains disabled;
+clean lifecycle closure, supported native metadata ownership, authentic cutover,
+flatfile parity and Plan 1 acceptance remain open.

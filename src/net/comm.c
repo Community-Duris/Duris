@@ -2156,6 +2156,7 @@ static void run_event_phase(game_loop_pulse_context &ctx)
 	}
 
 	item_creation_grant_prepare_pulse();
+	item_movement_transaction_drop_prepare_pulse();
 	artifact_mana_pulse();
 	device_actions_pulse();
 
