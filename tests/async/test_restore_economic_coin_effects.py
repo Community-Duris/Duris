@@ -83,7 +83,9 @@ class RestoreCoinEffectsTests(unittest.TestCase):
         sql_fixture = histories[0][:-8196] + results[0][corpus_offset:]
         fixture_path = work / "restore-history.bin"
         fixture_path.write_bytes(sql_fixture)
-        print("NATIVE_RESTORE_HISTORY " + json.dumps({"modes": 2, "ordinary_reason": 1,
+        history_plan_start = 8 + struct.unpack_from("<I", histories[0], 0)[0]
+        print("NATIVE_RESTORE_HISTORY " + json.dumps({"modes": 2,
+              "ordinary_reason": struct.unpack_from("<H", histories[0], history_plan_start + 96)[0],
               "history_sha256": hashlib.sha256(histories[0]).hexdigest(),
               "maximum_intent_sha256": hashlib.sha256(maximum_intent).hexdigest(),
               "sql_fixture_sha256": hashlib.sha256(sql_fixture).hexdigest()}, sort_keys=True), flush=True)
