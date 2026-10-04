@@ -2313,7 +2313,7 @@ assert sum(d["daily_eligible"] for d in definitions.values())==9
 assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
 assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
-assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1638
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1637
 sources=collections.defaultdict(list);parent=None;room=None
 for reset in crakkaro["reset_commands"]:
     c,v=reset["command"],reset["arguments"]
@@ -2645,7 +2645,86 @@ assert 'return TRUE' not in acer and 'recharm_ch' in acer
 assert '#define THARKUN_ARTIS 1' in (ROOT/'src/core/config.h').read_text()
 assert all(not any(r['command'] in 'OGEP' and r['arguments'][1]==v for r in tower['reset_commands']) for v in (16200,16262,16263,16268,16274))
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow"):
+# Tempest Court: exact foreign bundles, independent fragments and equivalent family return.
+tempest=inventory_module.area_evidence(ROOT,'airp')
+tempest_map=next(m for m in catalog['story_mappings'] if m['source_area']=='airp')
+assert tempest_map['schema_version']==3 and tempest_map['revision']==1 and tempest_map['coverage']=='complete'
+assert len(tempest_map['contacts'])==21 and len(tempest_map['stories'])==7 and not tempest_map['exclusions']
+assert all(s['category']=='story' for s in tempest_map['stories'])
+assert collections.Counter(t['kind'] for s in tempest_map['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':25,'completion':3}
+raw=[b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/airp.qst']
+assert collections.Counter(b['kind'] for b in raw)=={'Q':8,'M':17,'MA':1}
+by_line={r['block']['line']:r['block'] for r in tempest['requests']}
+for line,giver,inputs,reward,disappear in (
+    (14,131615,[131627],131628,0),(261,131651,[131627],131628,0),
+    (98,131616,[55553,8735,70976,88304,97066,131617,138268,138515,131647],131650,1),
+    (152,131618,[131609,131610,131611],131612,0),(165,131621,[131615],131636,0),
+    (186,131630,[131642,131643,131644,131645,131646],131647,0),
+    (205,131635,[131605],131627,1),(240,131637,[131647,96000,96012,96055],131648,0)):
+    b=by_line[line]
+    assert b['giver_vnum']==giver and b['give']==[('I',v) for v in inputs] and b['receive']==[('I',reward)]
+    assert b['binding']['completion_key'].endswith('disappear='+str(disappear))
+stories={s['id']:s for s in tempest_map['stories']}
+assert stories['alhajib-medallion-eyepiece']['contracts']==[by_line[n]['binding'] for n in (14,261)]
+assert stories['alhajib-medallion-eyepiece']['steps'][0]['contracts']==[by_line[205]['binding']]
+for id,line in (('north-wind-cloudseeker',98),('fearfrost-thrym-hammer',240)):
+    entry=stories[id]
+    assert entry['steps'][0]['contracts']==[by_line[186]['binding']] and entry['steps'][0]['optional']
+    assert {t['item_vnums'][0] for t in entry['steps'][1:-1]}=={v for k,v in by_line[line]['give']}
+assert [t['item_vnums'] for t in stories['chan-maelstrom-fragment']['steps'][:-1]]==[[131612],[131642],[131643],[131644],[131645],[131646]]
+assert all(s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional') for s in tempest_map['stories'])
+defs={r['block']['line']:r['definition'] for r in tempest['requests']}
+assert sum(d['daily_eligible'] for d in defs.values())==6
+assert all(not defs[n]['daily_eligible'] and defs[n]['daily_exclusion']=='Story-only quest' for n in (98,205))
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==1316]
+assert len(units)==7 and all(u['achievement'] for u in units) and sum(u['daily_candidate'] for u in units)==5
+contacts={c['mob_vnum']:c for c in tempest_map['contacts']}
+for b in raw:
+    if b['kind'] in ('M','MA'):
+        safe={a for a in b['body'][0].split('~')[0].split() if re.fullmatch('[a-z0-9_-]+',a)}
+        assert safe<=set(contacts[b['giver_vnum']]['topics'])
+assert "si'ciltron" in contacts[131616]['description'] and {'galzron','ecthius'}<=set(contacts[131618]['topics'])
+assert tempest['zone']['reset_mode']==0
+assert collections.Counter(r['command'] for r in tempest['reset_commands'])=={'M':192,'E':39,'D':30,'O':17,'G':15,'F':8,'R':6}
+assert len(tempest['mobs'])==52 and len(tempest['items'])==63
+objects=dawndale_bodies('airp','obj');rooms=dawndale_bodies('airp','wld');mobs=dawndale_bodies('airp','mob')
+assert set(rooms)==set(range(131600,131800)) and not (ROOT/'areas/shp/airp.shp').exists()
+assert all(not int(b.split('~')[4].split()[0])&32768 for b in mobs.values())
+assert objvalues(objects[131650])[0]==9
+assert objvalues(objects[131605])[0]==18 and objvalues(objects[131605])[12]==0
+assert objvalues(objects[131612])[0]==18 and objvalues(objects[131612])[12]==0
+assert objvalues(objects[131608])[0]==18 and objvalues(objects[131608])[12]==2
+for v,target in ((131600,131610),(131601,131605),(131603,131736),(131604,131720),(131606,131751),(131607,131730),(131613,131768),(131614,131647)):
+    assert objvalues(objects[v])[0]==25 and objvalues(objects[v])[11:15]==[target,7,-1,0]
+assert objvalues(objects[131641])[11:15]==[1823,0,0,0]
+assert re.search(r'\bT\s+3576\s+5\s+500\s+31',objects[131602]) and not 3576&1
+assert sum(r['command']=='O' and r['arguments'][1]==131602 for r in tempest['reset_commands'])==8
+for room,direction,key,target in ((131600,5,0,24422),(131740,0,131605,131741),(131754,1,131608,131760),(131768,5,131612,131769)):
+    assert re.search(r'\bD'+str(direction)+r'\s+[^~]*~[^~]*~\s+\d+ '+str(key)+' '+str(target)+r'\b',rooms[room],re.S)
+sources=collections.defaultdict(list);owner=None;room=None;followers=0
+for r in tempest['reset_commands']:
+    c,v=r['command'],r['arguments']
+    if c in 'MFR':
+        owner,room=v[1],v[3]
+        followers=followers+1 if c=='F' else 0
+    if c in 'GE':sources[v[1]].append((c,owner,room,v[2],v[3],v[4],followers))
+assert sources[131608]==[('G',131602,131759,1,0,100,2)]
+for item,mob in ((131642,131623),(131643,131625),(131644,131624),(131645,131627),(131646,131626)):
+    assert sources[item]==[('G' if item==131645 else 'E',mob,131633,1,0 if item==131645 else 18,100,0)]
+assert {s[2] for s in sources[131658] if s[1]==131605} >= {131602,131624,131641,131669,131680,131723}
+assert sources[131609][0][1:3]==(131636,131767) and sources[131610][0][1:3]==(131631,131748)
+assert sources[131611][0][1:3]==(131611,131628) and sources[131615][0][1:3]==(131619,131613)
+assert not any(r['command'] in 'MFR' and r['arguments'][1]==131615 for r in tempest['reset_commands'])
+assert all(not any(r['command'] in 'OGEP' and r['arguments'][1]==v for r in tempest['reset_commands']) for v in (131651,131652,131654,131655,131656,131659,131660,131661,131662))
+assert not re.search(r'\bD\d',rooms[131797]+rooms[131799])
+assert {(a['kind'],a['vnum'],a['function']) for a in tempest['special_assignments']}=={('obj',131616,'dagger_of_wind')}
+blocks=inventory_module.native_blocks(ROOT)
+wisp=[b for b in blocks if b['giver_vnum']==55151 and b['give']==[('I',93011)]]
+assert len(wisp)==1 and set(wisp[0]['receive'])=={('I',v) for v in range(55550,55555)}
+cloak=[b for b in blocks if b['giver_vnum']==138545 and b['give']==[('I',138514)]]
+assert len(cloak)==1 and cloak[0]['receive']==[('I',138515)] and cloak[0]['binding']['completion_key'].endswith('disappear=1')
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

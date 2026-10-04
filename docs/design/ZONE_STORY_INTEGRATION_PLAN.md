@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 75 authored journals, accounting-gated player surfaces, starter/town
+**Status: 76 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -1854,3 +1854,56 @@ this is a pending repair, not a shipped improvement.
 | Zone checkpoint | Revision | Native classification | Source map | Daily policy | Required qualification |
 | --- | --- | --- | --- | --- | --- |
 | The Transparent Tower | 1 | Four independent outcomes; all four exchanges | [Comprehensive dossier](zone-stories/TRNSPTOW.md); fourteen contacts/eleven optional checks | One existing candidate; companion same-kind exchanges remain excluded from dailies | Durable access/command/epic/source/ALL/escape episodes, actual supply/boss/travel and pending intent-dependent repairs |
+
+## Tempest Court completed source map — October 4, 2026
+
+The [comprehensive dossier](zone-stories/TEMPEST_COURT.md) reviews all 26 native
+blocks (eight Q/seventeen M/one addressed MA), 200 rooms, 52 mobiles, 63 objects,
+307 resets/135 families, the active wind dagger, relevant shared execution and
+bounded foreign sources/consumers. The [journal](../../areas/story/airp.story.json)
+adds seven outcomes/eight contracts, 21 contacts and 28 optional checks
+(25 carried, three receipts). Equivalent Al'Hajib recipients share one outcome;
+five units retain native daily shape. Rescue and Cloudseeker retire recipients
+under reset mode zero and remain story-only. All 2668 native definitions and
+revision-two fingerprint stay unchanged.
+
+Progression explains the actual smoke-key cell/rescue/medallion route, three
+different lord essences for the palace key, Ixteal heart, five distinct Duke
+essences and the consumed fragment's two independent later bundles. Cloudseeker
+needs nine exact loose roots, Fearfrost four; supplied proofs fit without
+personal foreign journeys, kills or optional producer history. F/R source
+ownership, flying/mount/perception restrictions, actual ENTER portals and
+key retention/breakage are documented. Earlier receipts do not restore stock.
+The MA family is addressed dialogue with a room audience; the apostrophe topic
+is preserved in prose despite the current structured-token limitation.
+
+Expand accepted reset generation/current supply and NPC/container custody,
+first recovery/transfer, unlock/arrival/perception, material allocation/branch
+attempts, scoped ALL/actor restoration and committed epic-touch integration.
+Active accounting intentionally refuses legacy reset item issuance without
+owned generation. Nominal rare M chances do not guarantee normal unforced
+renewal. Preserve the guard and qualify actual admission before daily assignment.
+Promised eyepiece upgrades, empty cloud portal, missing lightning movement bit,
+sealed rare staging, orphan cells/branches and unplaced divine/attack prototypes
+have balanced builder-intent/repair plans; they are **pending findings**.
+
+**Actual native repair ships separately:** [dc586e34c](https://github.com/Community-Duris/Duris/commit/dc586e34c75fea9dc4016416cc95bd1637499e63)
+corrects exactly two direction words: Si'Ciltron's return door now says east;
+the prison's two cells are described north and south. Each original clue fails
+the focused source regression, repaired clues and exact-byte scope pass.
+Live LOOK/traversal remains unqualified. **Player news:** “The Tempest Court's
+war-chamber return door and prison-cell directions now match their actual exits.”
+This fix is distinct from journal authoring and all pending repair proposals.
+
+Focused source and actual C++ fixtures cover exact kinds/counts, loose versus
+worn proof, supplied acceptance, independent fragment consumers/equivalent
+recipients, optional history, read-only rendering, replay and cold recovery.
+Live access/source/combat/rare retirement/epic/persistence remain unqualified.
+Catalog: 76 maps/1637 achievement units/1464 potential dailies/2211 rows;
+grouping Al'Hajib removes one duplicate unit. Original order: 55/220 complete,
+165 pending; The Caverns of Armageddon is next. Active, ready accounting is
+mandatory. No migration, DB/account/server operation, deployment or merge.
+
+| Zone checkpoint | Revision | Native classification | Source map | Daily policy | Required qualification |
+| --- | --- | --- | --- | --- | --- |
+| The Tempest Court | 1 | Seven outcomes; eight exact bindings, equivalent Al'Hajib recipients | [Comprehensive dossier](zone-stories/TEMPEST_COURT.md); 21 contacts/28 optional checks | Five native-shaped candidates; disappearing-recipient rescue/Cloudseeker remain story-only | Admitted reset supply, exact source/access/arrival/allocation/actor/epic events; upgrade/portal/trap/staging intent; separate two-word native direction repair |

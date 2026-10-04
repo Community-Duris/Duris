@@ -117513,6 +117513,716 @@
     {
       "contacts": [
         {
+          "description": "Zieflia starts in the northern force cell. Give the smoke key for her medallion and departure; the receipt does not implement a traveling escort.",
+          "keyword": "zieflia",
+          "mob_vnum": 131635,
+          "name": "Zieflia",
+          "topics": []
+        },
+        {
+          "description": "The currently reset Al'Hajib starts in the mist courtyard. Ask zieflia or medallion. Supplied medallions fit; the gem-upgrade promise lacks an established active implementation.",
+          "keyword": "djinni",
+          "mob_vnum": 131651,
+          "name": "Al'Hajib",
+          "topics": [
+            "zieflia",
+            "hi",
+            "medallion"
+          ]
+        },
+        {
+          "description": "The older Al'Hajib has the same medallion exchange but no active declared spawn. It is an equivalent recipient, not another required family rescue.",
+          "keyword": "djinni",
+          "mob_vnum": 131615,
+          "name": "Al'Hajib",
+          "topics": [
+            "zieflia",
+            "medallion"
+          ]
+        },
+        {
+          "description": "The north wind starts on the ethereal Cloudwalk. Ask seeker for all nine materials. The source keyword si'ciltron also works in native dialogue; punctuation prevents exposing it as a structured topic. Addressed yan dialogue speaks to the room.",
+          "keyword": "north",
+          "mob_vnum": 131616,
+          "name": "the north wind",
+          "topics": [
+            "akadi",
+            "aurilium",
+            "yan",
+            "yan-c-bin",
+            "ecthius",
+            "galzron",
+            "cloud",
+            "seeker"
+          ]
+        },
+        {
+          "description": "Aurilium starts in the Cloudwalk near lightning. Ask key or akadi, or the native si'ciltron keyword, about his brothers. Three different essences yield a key; no unchaining is recorded.",
+          "keyword": "aurilium",
+          "mob_vnum": 131618,
+          "name": "Aurilium",
+          "topics": [
+            "galzron",
+            "ecthius",
+            "key",
+            "akadi"
+          ]
+        },
+        {
+          "description": "Darthikya starts in the mist fortress and hunts Ixteal. His native recipe accepts the exact heart for frost gauntlets despite blank exchange prose.",
+          "keyword": "githyanki",
+          "mob_vnum": 131621,
+          "name": "Darthikya, the Githyanki Hunter",
+          "topics": []
+        },
+        {
+          "description": "Chan starts in the palace but is naturally invisible. Ask maelstrom after actually perceiving her. Five distinct essences yield one fragment; no new visibility-state change is asserted from narration.",
+          "keyword": "chan",
+          "mob_vnum": 131630,
+          "name": "Chan, the Dark Tempest",
+          "topics": [
+            "solution",
+            "hi",
+            "maelstrom"
+          ]
+        },
+        {
+          "description": "Fearfrost starts in the palace. Ask blessing or maelstrom. His hammer exchange competes with Cloudseeker for the actual fragment and requires three exact foreign proofs.",
+          "keyword": "fearfrost",
+          "mob_vnum": 131637,
+          "name": "Fearfrost",
+          "topics": [
+            "something",
+            "hi",
+            "blessing",
+            "maelstrom"
+          ]
+        },
+        {
+          "description": "Si'Ciltron starts behind the closed mist door in his war chamber, carrying the essence of mist. The real return is east.",
+          "keyword": "noble",
+          "mob_vnum": 131611,
+          "name": "Si'Ciltron",
+          "topics": []
+        },
+        {
+          "description": "Galzron starts behind the smoke wall with both the smoke essence and the key to Zieflia's northern cell. The wall's two reset sides have different secret states.",
+          "keyword": "galzron",
+          "mob_vnum": 131631,
+          "name": "Galzron",
+          "topics": []
+        },
+        {
+          "description": "Ecthius starts in the cold ice-and-steel chamber with the frost essence. The barracks follower carries the office key, whose normal use can break it.",
+          "keyword": "ecthius",
+          "mob_vnum": 131636,
+          "name": "Ecthius",
+          "topics": []
+        },
+        {
+          "description": "Ixteal starts on the Cloudwalk with his heart; declared rare admission and current custody are separate from the later accepted delivery.",
+          "keyword": "ixteal",
+          "mob_vnum": 131619,
+          "name": "Ixteal",
+          "topics": []
+        },
+        {
+          "description": "Aerial servants occur throughout the court. The steel frost key belongs to the second following servant in the barracks, not every servant or the leading guard.",
+          "keyword": "blue",
+          "mob_vnum": 131602,
+          "name": "an aerial servant",
+          "topics": []
+        },
+        {
+          "description": "Amophar starts in the mist guest room with the neck-worn essence of the Four Storms. Rare admission and roaming can change availability.",
+          "keyword": "amophar",
+          "mob_vnum": 131623,
+          "name": "Amophar, the Wind Duke",
+          "topics": []
+        },
+        {
+          "description": "Icosiol starts in the mist guest room with the neck-worn essence of the Winds of Fate; it differs from the other four kinds.",
+          "keyword": "icosiol",
+          "mob_vnum": 131625,
+          "name": "Icosiol, the Wind Duke",
+          "topics": []
+        },
+        {
+          "description": "Zosiel starts in the mist guest room with the neck-worn essence of the Great Maelstrom; it differs from the fragment Chan creates.",
+          "keyword": "zosiel",
+          "mob_vnum": 131624,
+          "name": "Zosiel, the Wind Duke",
+          "topics": []
+        },
+        {
+          "description": "Emoniel starts in the mist guest room carrying the essence of the Boundless Blue; it is an inventory grant rather than neck equipment.",
+          "keyword": "emoniel",
+          "mob_vnum": 131627,
+          "name": "Emoniel, the Wind Duke",
+          "topics": []
+        },
+        {
+          "description": "Uriel starts in the mist guest room with the neck-worn essence of the Unseen Breeze; Cloudseeker is a different later reward.",
+          "keyword": "uriel",
+          "mob_vnum": 131626,
+          "name": "Uriel, the Wind Duke",
+          "topics": []
+        },
+        {
+          "description": "Akadi starts in the central palace with the north-wind cloak, an imported epic rune, weapons and a bound wind dagger. Her defeat or epic settlement is separate from delivery receipts.",
+          "keyword": "akadi",
+          "mob_vnum": 131648,
+          "name": "Akadi",
+          "topics": []
+        },
+        {
+          "description": "Yan-C-Bin has a declared load in the sealed rare-load room. His conflict with Akadi is lore; active dispersal and a restoration endpoint remain unqualified.",
+          "keyword": "something",
+          "mob_vnum": 131620,
+          "name": "Yan-C-Bin",
+          "topics": []
+        },
+        {
+          "description": "Ellacarzel is declared in the other sealed rare-load room with Yan-C-Bin. There is no local native delivery or configured ordinary dispersal route for the angel.",
+          "keyword": "ellacarzel",
+          "mob_vnum": 131601,
+          "name": "Ellacarzel, Angel of the Clouds",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Discover the Tempest Court and follow Zieflia's family rescue, Aurilium's palace key, Ixteal's heart and the five Wind Dukes' Maelstrom essences. Choose how to spend each fragment on Cloudseeker or Fearfrost's hammer. Seven outcomes explain exact acceptance and optional source preparation; active, ready accounting is required.",
+      "orientation": [
+        "Active, ready accounting is required for zone discovery, visible NPC encounters, journal progress and new daily credit. The first visit is its own zone discovery achievement. Current material checks and journal reading do not award credit.",
+        "The ordinary boundary is the Plane of Air courtyard up to the Cloudwalk. Most local routes use air-plane terrain: entering requires flight or levitation; moving horizontally from it requires flight, while levitation supports up/down. The acting mount must meet the movement requirements. Encountered actors can move away from declared starting rooms.",
+        "Use ENTER on the actual planar portals: Cloudwalk to mist fortress and back; smoke fortress to its prison tower and back; smoke to ice-and-steel fortress and back; mist-tower top to palace top and back. These eight portals have unlimited charges. The top of the palace still has a locked downward door requiring Aurilium's key on the ordinary approach.",
+        "For Zieflia, find and open the smoke wall to Galzron. His smoke key opens her northern force cell without a normal-unlock break chance. Then give it to her for the medallion; that exchange consumes the key and retires her. Return the medallion to the current Al'Hajib in the mist courtyard for the sapphire eyepiece. The older Al'Hajib is an equivalent inactive source identity.",
+        "Aurilium wants frost from Ecthius, smoke from Galzron and mist from Si'Ciltron: one of each exact kind. The barracks frost key belongs to the second following aerial servant, and can break on normal unlocking. The persistent rewarded palace key fits the downward entrance; its receipt does not prove personal kills, unchaining Aurilium or defeating Akadi.",
+        "Darthikya accepts Ixteal's heart for frost gauntlets. Ixteal and several recipients have nominal rare mobile resets, which ordinary unforced resets currently skip. Starting-room clues, global limits, current custody and admitted reset generations govern real availability.",
+        "Chan requires five distinct Wind Duke essences. The Dukes start together in the mist fortress guest room, not the final palace; four wear their proof at the neck while Emoniel carries his. Chan starts inside the palace and is naturally invisible. Find and perceive the actual recipient before addressed dialogue or delivery.",
+        "Chan's fragment is consumed by two different requests. Cloudseeker needs eight exact wind relics plus a fragment; Fearfrost needs a fragment plus Frostbite, Mistweave and Thrym's token. A prior fragment receipt cannot spend the same object twice. Both independent rewards can be recorded if you obtain separate supplies; no permanent exclusive branch is invented.",
+        "Cloudseeker materials come from Winterhaven's Lancer bundle, Lair of the Gibberling King, the Hall of Knighthood, the Charcoal Palace, IceCrag Castle, Akadi, the Jade Empire and the Savannah Watcher. The same wisp and katana have other consumers. Use each item's exact name and source hint; personal completion of those foreign stories is optional when proof is supplied.",
+        "All native offerings here are complete exact bundles of loose carried items, without coin fees. Wearing or holding a weapon, cloak, boots, token or essence does not satisfy the native offering search. Optional source/history aids are not hidden prerequisites, and earlier receipts do not restore consumed objects.",
+        "ASK/TELL topics explain lore without awarding separate keyword achievements. The yan/yan-c-bin MA family is still addressed dialogue, with a room audience. Native si'ciltron topics are explained in prose because structured topic tokens cannot contain the apostrophe.",
+        "Seven named outcomes cover all eight native recipes. The two Al'Hajib recipients share one outcome. Rescue and Cloudseeker retire their recipients in reset mode zero and remain story-only. The five remaining candidate units still need evidence of current access, supply and player suitability before daily assignment.",
+        "The palace epic rune uses the existing committed epic-touch result and its accounting/group/reset policy. It is separate from a key receipt, a personal Akadi defeat or full liberation. Active accounting refuses legacy reset item issuance without an owned generation, so declared loot is not guaranteed replenishment.",
+        "The sapphire eyepiece has a native upgrade promise and four unused gem-set prototypes, but no established active upgrade recipe or source. Divine sparks, extra encoded Air Attack prototypes, sealed rare-load rooms and quasi-plane dead ends remain integration or builder-intent findings, not invented story terminals.",
+        "The courtyard cloud portal declares the Troll Hills as its destination but has command zero and zero charges; do not depend on it for ENTER return. The eight upper-cloud lightning objects lack the movement-trigger bit; restoring that hazard needs builder intent and balance qualification. Normal return through the Plane of Air boundary remains a separately qualified route."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "airp",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:131605;receive=I:131627;disappear=1",
+              "giver_vnum": 131635
+            }
+          ],
+          "id": "zieflia-rescue",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Galzron starts in the smoky chamber behind the smoke wall and carries both this key and the essence of smoke. Use the key at the northern force bars, then offer it to Zieflia in that cell. Normal unlocking leaves the key; this accepted exchange consumes it. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131605",
+              "item_vnums": [
+                131605
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a key of pure smoke"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:131605;receive=I:131627;disappear=1",
+                  "giver_vnum": 131635
+                }
+              ],
+              "hint": "Offer the complete exact bundle together from loose carried inventory to the actual recipient. This receipt records only this named outcome. Current supplies, earlier optional receipts, defeat, travel, learning and the wider campaign are separate facts.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted Zieflia's rescue medallion exchange"
+            }
+          ],
+          "summary": "Find Galzron beyond the smoke wall for the smoke key. It unlocks Zieflia's northern force cell; normal use does not consume it. Give the key to Zieflia for her medallion and her departure. The separate southern cell has no specified key. This disappearing-recipient outcome is story-only under reset mode zero.",
+          "title": "Zieflia's rescue medallion"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:131627;receive=I:131628;disappear=0",
+              "giver_vnum": 131615
+            },
+            {
+              "completion_key": "give=I:131627;receive=I:131628;disappear=0",
+              "giver_vnum": 131651
+            }
+          ],
+          "id": "alhajib-medallion-eyepiece",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:131605;receive=I:131627;disappear=1",
+                  "giver_vnum": 131635
+                }
+              ],
+              "hint": "Optional personal receipt. Supplied matching proof fits without this history. Earlier acceptance does not replenish consumed materials or prove the source of the current object.",
+              "id": "producer-205",
+              "kind": "completion",
+              "optional": true,
+              "text": "Earlier Zieflia rescue exchange recorded"
+            },
+            {
+              "count": 1,
+              "hint": "Zieflia gives this medallion for the smoke key before departing. Al'Hajib accepts its kind even when supplied by another player; he does not enforce your personal rescue or source history. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131627",
+              "item_vnums": [
+                131627
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the medallion of the Djinn"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:131627;receive=I:131628;disappear=0",
+                  "giver_vnum": 131615
+                },
+                {
+                  "completion_key": "give=I:131627;receive=I:131628;disappear=0",
+                  "giver_vnum": 131651
+                }
+              ],
+              "hint": "Offer the complete exact bundle together from loose carried inventory to the actual recipient. This receipt records only this named outcome. Current supplies, earlier optional receipts, defeat, travel, learning and the wider campaign are separate facts.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted Al'Hajib's sapphire eyepiece exchange"
+            }
+          ],
+          "summary": "Return Zieflia's medallion to Al'Hajib for the sapphire eyepiece. The currently reset recipient is in the mist courtyard. Both native Al'Hajib identities represent alternatives for this single outcome; the older identity has no active declared spawn. Personal rescue is optional, and the promised gem upgrades have no established active recipe.",
+          "title": "Al'Hajib's sapphire eyepiece"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:131609,I:131610,I:131611;receive=I:131612;disappear=0",
+              "giver_vnum": 131618
+            }
+          ],
+          "id": "aurilium-palace-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Ecthius starts in the cold chamber of the ice-and-steel fortress with this essence. The office door uses the steel frost key carried by the second following aerial servant in the barracks; that key has a two-percent normal-unlock break chance. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131609",
+              "item_vnums": [
+                131609
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the essence of frost"
+            },
+            {
+              "count": 1,
+              "hint": "Galzron starts in the smoky chamber beyond the smoke wall with this essence and the separate smoke prison key. Smoke and mist essences are different item kinds. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131610",
+              "item_vnums": [
+                131610
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the essense of smoke"
+            },
+            {
+              "count": 1,
+              "hint": "Si'Ciltron starts in the war chamber beyond the closed mist door with this essence. The return door goes east into the fortress hall. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131611",
+              "item_vnums": [
+                131611
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the essense of mist"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:131609,I:131610,I:131611;receive=I:131612;disappear=0",
+                  "giver_vnum": 131618
+                }
+              ],
+              "hint": "Offer the complete exact bundle together from loose carried inventory to the actual recipient. This receipt records only this named outcome. Current supplies, earlier optional receipts, defeat, travel, learning and the wider campaign are separate facts.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted Aurilium's palace key exchange"
+            }
+          ],
+          "summary": "Meet the chained Lord of Lightning and bring three different essences: frost, smoke and mist. Their exact kinds yield the key for the downward palace door beyond the mist-tower portal. This exchange does not unchain Aurilium or certify killing his brothers or Akadi.",
+          "title": "Aurilium's palace key"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:131615;receive=I:131636;disappear=0",
+              "giver_vnum": 131621
+            }
+          ],
+          "id": "darthikya-ixteal-heart",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Ixteal starts on the ethereal Cloudwalk and carries his heart. His nominal reset chance is fifty percent, and Darthikya's is seventy-five percent; availability needs an actual admitted generation, not a promise of daily stock. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131615",
+              "item_vnums": [
+                131615
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the heart of ixteal"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:131615;receive=I:131636;disappear=0",
+                  "giver_vnum": 131621
+                }
+              ],
+              "hint": "Offer the complete exact bundle together from loose carried inventory to the actual recipient. This receipt records only this named outcome. Current supplies, earlier optional receipts, defeat, travel, learning and the wider campaign are separate facts.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted Darthikya's frost gauntlets exchange"
+            }
+          ],
+          "summary": "Darthikya hunts Ixteal. Offer Ixteal's heart for the frost gauntlets. Both actors can move; declared reset rooms are starting clues. This blank-narration native exchange records the delivery, without manufacturing a recorded hunt.",
+          "title": "Darthikya's frost gauntlets"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:131642,I:131643,I:131644,I:131645,I:131646;receive=I:131647;disappear=0",
+              "giver_vnum": 131630
+            }
+          ],
+          "id": "chan-maelstrom-fragment",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Aurilium gives this persistent key for the frost, smoke and mist essences. It fits the downward door from the top of the palace reached through the mist-tower portal. This optional carried check is guidance for the ordinary recipient route; supplied materials do not require your personal key receipt. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131612",
+              "item_vnums": [
+                131612
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the key to the Palace of Tempests"
+            },
+            {
+              "count": 1,
+              "hint": "Amophar carries the essence of the Four Storms, normally equipped at his neck. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131642",
+              "item_vnums": [
+                131642
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the swirling essence of the Four Storms"
+            },
+            {
+              "count": 1,
+              "hint": "Icosiol carries the essence of the Winds of Fate, normally equipped at his neck. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131643",
+              "item_vnums": [
+                131643
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the swirling essence of the Winds of Fate"
+            },
+            {
+              "count": 1,
+              "hint": "Zosiel carries the essence of the Great Maelstrom, normally equipped at his neck. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131644",
+              "item_vnums": [
+                131644
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the swirling essence of the Great Maelstrom"
+            },
+            {
+              "count": 1,
+              "hint": "Emoniel carries the essence of the Boundless Blue in inventory. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131645",
+              "item_vnums": [
+                131645
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the swirling essence of the Boundless Blue"
+            },
+            {
+              "count": 1,
+              "hint": "Uriel carries the essence of the Unseen Breeze, normally equipped at his neck. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131646",
+              "item_vnums": [
+                131646
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the swirling essence of the Unseen Breeze"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:131642,I:131643,I:131644,I:131645,I:131646;receive=I:131647;disappear=0",
+                  "giver_vnum": 131630
+                }
+              ],
+              "hint": "Offer the complete exact bundle together from loose carried inventory to the actual recipient. This receipt records only this named outcome. Current supplies, earlier optional receipts, defeat, travel, learning and the wider campaign are separate facts.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted Chan's Maelstrom fragment exchange"
+            }
+          ],
+          "summary": "Find the Dark Tempest in the palace; actual perception matters because she is naturally invisible. Bring one exact essence from each of five Wind Dukes for one fragment. The Dukes start together in the mist fortress guest room, and may move. Five copies of one essence do not fit. The fragment is a consumed ingredient in two different later rewards.",
+          "title": "Chan's Maelstrom fragment"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:8735,I:55553,I:70976,I:88304,I:97066,I:131617,I:131647,I:138268,I:138515;receive=I:131650;disappear=1",
+              "giver_vnum": 131616
+            }
+          ],
+          "id": "north-wind-cloudseeker",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:131642,I:131643,I:131644,I:131645,I:131646;receive=I:131647;disappear=0",
+                  "giver_vnum": 131630
+                }
+              ],
+              "hint": "Optional personal receipt. Supplied matching proof fits without this history. Earlier acceptance does not replenish consumed materials or prove the source of the current object.",
+              "id": "producer-186",
+              "kind": "completion",
+              "optional": true,
+              "text": "Earlier Chan fragment exchange recorded"
+            },
+            {
+              "count": 1,
+              "hint": "Lancer in Winterhaven trades a gem studded dragon hide for five different wisps, including this wisp of wind. The red dragon in the Treasure Caves equips the hide. Other wisp consumers compete for the same item. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-55553",
+              "item_vnums": [
+                55553
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a wisp of wind"
+            },
+            {
+              "count": 1,
+              "hint": "A Blood Horde archer in Lair of the Gibberling King equips the living breeze. It is a footwear object despite its elemental name. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-8735",
+              "item_vnums": [
+                8735
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a living breeze"
+            },
+            {
+              "count": 1,
+              "hint": "Zephron in the Hall of Knighthood equips the boots of the four winds. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-70976",
+              "item_vnums": [
+                70976
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the boots of the four winds"
+            },
+            {
+              "count": 1,
+              "hint": "Aeolyn, emissary of Yan-c-bin in the Charcoal Palace, equips the imperceptible cloak. Her declared mobile load is fifty percent and needs admitted availability. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-88304",
+              "item_vnums": [
+                88304
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry an imperceptible cloak of the winds"
+            },
+            {
+              "count": 1,
+              "hint": "The shroud of ethereal winds is placed in IceCrag Castle's icy vault. The vault has no ordinary exit in the current room definition; the foreign journey requires separate access/return qualification. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-97066",
+              "item_vnums": [
+                97066
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a shroud of ethereal winds"
+            },
+            {
+              "count": 1,
+              "hint": "Akadi in the Palace of Tempests equips the cloak of the north wind. Aurilium's key fits the ordinary downward palace entrance. A supplied cloak does not certify personally defeating her. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131617",
+              "item_vnums": [
+                131617
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the frost-covered cloak of the north wind"
+            },
+            {
+              "count": 1,
+              "hint": "Lord Hanyo in the Jade Empire equips the katana called The North Wind. It also serves other sword and music exchanges; reserve the actual object for your chosen reward. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-138268",
+              "item_vnums": [
+                138268
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a katana called 'The North Wind'"
+            },
+            {
+              "count": 1,
+              "hint": "The Watcher of the Contest in the Savannah of Broken Trusts trades the crystallized Kahir essence for this cloak, then departs. The ghostly remnants of the Kahir carry that essence. This local reward does not require your personal foreign receipt. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-138515",
+              "item_vnums": [
+                138515
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the cloak of the ageless spirit of the wind"
+            },
+            {
+              "count": 1,
+              "hint": "Chan merges one of each of the five different Wind Duke essences. Both Cloudseeker and Fearfrost consume one fragment; one physical fragment cannot be spent twice. Her earlier receipt does not reserve or restore it. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131647",
+              "item_vnums": [
+                131647
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the chaotic elemental fragment of the Maelstrom"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:8735,I:55553,I:70976,I:88304,I:97066,I:131617,I:131647,I:138268,I:138515;receive=I:131650;disappear=1",
+                  "giver_vnum": 131616
+                }
+              ],
+              "hint": "Offer the complete exact bundle together from loose carried inventory to the actual recipient. This receipt records only this named outcome. Current supplies, earlier optional receipts, defeat, travel, learning and the wider campaign are separate facts.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted Cloudseeker exchange"
+            }
+          ],
+          "summary": "The north wind asks for eight different wind relics plus one Maelstrom fragment: nine loose roots together. Several relics have foreign sources and other uses. Acceptance yields wearable Cloudseeker and retires the old elemental; this is a story-only outcome under reset mode zero, rather than a new following cloud NPC or proof of personally completing every foreign story.",
+          "title": "Cloudseeker"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:96000,I:96012,I:96055,I:131647;receive=I:131648;disappear=0",
+              "giver_vnum": 131637
+            }
+          ],
+          "id": "fearfrost-thrym-hammer",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:131642,I:131643,I:131644,I:131645,I:131646;receive=I:131647;disappear=0",
+                  "giver_vnum": 131630
+                }
+              ],
+              "hint": "Optional personal receipt. Supplied matching proof fits without this history. Earlier acceptance does not replenish consumed materials or prove the source of the current object.",
+              "id": "producer-186",
+              "kind": "completion",
+              "optional": true,
+              "text": "Earlier Chan fragment exchange recorded"
+            },
+            {
+              "count": 1,
+              "hint": "Chan merges one of each of the five different Wind Duke essences. Both Cloudseeker and Fearfrost consume one fragment; one physical fragment cannot be spent twice. Her earlier receipt does not reserve or restore it. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-131647",
+              "item_vnums": [
+                131647
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the chaotic elemental fragment of the Maelstrom"
+            },
+            {
+              "count": 1,
+              "hint": "Thrym in Jotunheim equips Frostbite on a nominal forty-percent item load; admitted current supply and global cap matter. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-96000",
+              "item_vnums": [
+                96000
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a great axe named 'Frostbite'"
+            },
+            {
+              "count": 1,
+              "hint": "Utgard-Loki in Jotunheim equips Mistweave. Its smoke combat effect does not create another quest objective. Remove it from equipment before offering it. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-96012",
+              "item_vnums": [
+                96012
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a huge adamantium mace named 'Mistweave'"
+            },
+            {
+              "count": 1,
+              "hint": "Thrym's high priest in Jotunheim equips the secret token of eternal allegiance. Actual perception and recovery matter; it is not an extra currency fee. Recover the exact kind into loose carried inventory before offering it. Supplied matching proof is accepted; this check does not record first recovery, a personal kill, source or successful access.",
+              "id": "material-96055",
+              "item_vnums": [
+                96055
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a token of allegiance to Thrym"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:96000,I:96012,I:96055,I:131647;receive=I:131648;disappear=0",
+                  "giver_vnum": 131637
+                }
+              ],
+              "hint": "Offer the complete exact bundle together from loose carried inventory to the actual recipient. This receipt records only this named outcome. Current supplies, earlier optional receipts, defeat, travel, learning and the wider campaign are separate facts.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted Fearfrost's hammer exchange"
+            }
+          ],
+          "summary": "Find Fearfrost in the palace and bring a Maelstrom fragment, Frostbite, Mistweave and Thrym's token of allegiance together. The three other proofs come from Jotunheim. The fragment is consumed here instead of in Cloudseeker unless you obtain another. Acceptance yields his hammer without recording a journey home, divine blessing or destruction of an elemental.",
+          "title": "Fearfrost's hammer"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Temple of the Knight. Faith and ascending advice is ambient dialogue, without a learned-topic achievement.",
           "keyword": "knight",
           "mob_vnum": 132568,

@@ -1011,3 +1011,47 @@ Aceralde pulse registration, illusion wording, unplaced trash stone bindings
 and orphan desk/sign/portal remain pending intent/qualification findings.
 No native Tower repair ships. Actual future fixes require clear separate fix
 commits and PR/news trigger, before/after, validation and remaining limits.
+
+### Tempest Court: exact multi-zone supplies and consumed branches
+
+The [dossier](../design/zone-stories/TEMPEST_COURT.md) and
+[journal](../../areas/story/airp.story.json) map all eight contracts into seven
+outcomes, with 21 contacts and 28 optional checks. Equivalent Al'Hajib recipients
+share an outcome. The native recipe, not rescue narration, defines acceptance.
+Zieflia and Cloudseeker are story-only because D1 combines with reset mode zero.
+
+Trace ordered reset ownership: F changes the active NPC to each follower; the
+frost key belongs to the second following aerial servant. R changes E/G's
+target to the mount, so the six living tempests carry the following swords.
+Keep actor/prototype/generation/source custody distinct from reset comments.
+Active accounting refuses legacy reset item issuance without admitted generation;
+nominal rare loads and cap/percentage declarations do not prove current supply.
+
+Each of Chan's five essences is a different item kind. Cloudseeker consumes nine
+roots; Fearfrost consumes four, including the same fragment kind. Model the
+fragment as a consumed material and optional producer receipt, not a persistent
+campaign key. Permit separate supplies for both rewards. Foreign wisp/katana
+consumers compete for actual objects but are not required predecessor stories.
+Supplied proofs fit without personal foreign completion or first recovery.
+
+Explain actual flight/mount/perception, hidden-side reset state, ENTER portals
+and the palace's downward key door. Zero-break smoke/palace keys differ from the
+two-percent frost key. Successful use and later recipe consumption are different
+facts. Plan accepted unlock/arrival and UID/transfer events before awarding access
+or source achievements. Current loose carried snapshots remain read-only aids.
+
+Preserve addressed MA room-audience semantics. The sanitized index drops two
+families with si'ciltron; keep the native apostrophe topic in prose, and expose
+valid galzron/ecthius aliases without pretending that typing a word proves learning.
+Add lossless auditing and punctuation-capable builder tokens to the future plan.
+
+Define scoped ALL, actor departure/escort/restoration, divine/visibility effects
+and episode ownership before claiming full liberation, god restoration or foreign
+journeys. Use existing committed epic-touch settlement rather than another payout.
+Eyepiece upgrade promises/prototypes, an empty portal, lightning trigger bits and
+sealed rare staging require selected builder intent and actual qualification.
+
+The two actual Tempest direction corrections ship in separate fix dc586e34c,
+with original-fails/repaired-passes proof and exact two-word scope. News wording
+and remaining live LOOK/traversal limits are explicit in the dossier/register.
+Do not advertise pending proposals or journal hints as shipped native repairs.

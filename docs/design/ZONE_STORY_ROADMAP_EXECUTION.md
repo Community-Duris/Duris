@@ -45,6 +45,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 
 | Fix reference | Shipped behavior | News treatment |
 | --- | --- | --- |
+| [dc586e34c](https://github.com/Community-Duris/Duris/commit/dc586e34c75fea9dc4016416cc95bd1637499e63): Tempest Court directions | Inspecting Si'Ciltron's return mist door now says east; the prison describes its actual north and south cells. Exactly two native words change; reciprocal exits and all other native bytes are preserved. | Player-facing: “The Tempest Court's war-chamber return door and prison-cell directions now match their actual exits.” Each original clue fails the focused regression; corrected clues/exact-byte scope pass. Live LOOK/traversal remains unqualified. |
 | [f5d5b2a5c](https://github.com/Community-Duris/Duris/commit/f5d5b2a5ccfbb9fccc8f5570079dd3394c74ed54): Rift Valley Jungle / Moonhollow directions | Five description words now match reciprocal exits: wall cave south, office west, armory east, forge south and branch home north. Exits, locks, recipes and resets are unchanged. | Player-facing: “Moonhollow's wall, guard office, armory, forge and canopy-home directions now match their actual exits.” Original source regression fails; all five repaired routes and exact native-byte scope pass. Live LOOK/traversal remains unqualified. |
 | [b1ff082bc](https://github.com/Community-Duris/Duris/commit/b1ff082bc03ae579aceec97b5d3ebd878bf2eea7): Desolate Master trial directions | Endurance's button is described on the southern wall and Courage's on the western wall, matching their real controls. Only two description words changed. | Player-facing: “Desolate's Master trial now gives the correct button directions in the Tests of Endurance and Courage.” Original-fails/repaired-passes source and exact-byte checks passed; live trial journey remains unqualified. |
 | [b0e4ea60a](https://github.com/Community-Duris/Duris/commit/b0e4ea60a9937da5fd1789edd43402cb59672ef5): quest journal naming | Journals/dailies qualify duplicate area names with the source area, and lookup accepts those exact qualified alternatives. Previously the ambiguity prompt could request a full name that was still ambiguous. | Player-facing: “Quest journals now distinguish areas that share the same name.” Feature/journey lookup regression evidence is recorded in the qualification document. |
@@ -112,9 +113,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 52 | Desolate | [Comprehensive source dossier](zone-stories/DESOLATE.md): all twelve blocks/eleven Q/one addressed M, 168 rooms/114 mobs/92 objects/three shops, 400 resets/289 families; direct Master/computed teacher, container/fee/control/phase and foreign letter execution | Revision one: nine stories/two services, 27 contacts/16 optional checks, eight story daily candidates | Separate native south/west trial-button text fix ships with original-fails/repaired-passes source proof and news; missing stock/other intent pending. Atomic fee, content-tree preview/predicates, control/phase/trial/effect and foreign scope planned |
 | 53 | Rift Valley Jungle | [Comprehensive dossier](zone-stories/RFTJNGLE.md): 65 blocks, 470 rooms/220 mobs/220 objects/eight shops/828 resets; direct procedural hosts/computed teachers, source instances/secret search/paired portals/foreign boundaries | 12 outcomes/12 services/3 excluded contracts, 49 contacts/30 optional checks; 11 story candidates | Separate five-direction native fix/news ships; 15-root batch/seven fees guarded, plot/dragon/historical boundary pending; provenance/role/travel/actor/AND/procedural lifecycle planned |
 | 54 | The Transparent Tower | [Comprehensive dossier](zone-stories/TRNSPTOW.md): all thirty blocks/100 rooms/40 mobs/75 objects/208 resets; five specials, fragile keys, command portals and imported epic/artifact roles | Four outcomes/fourteen contacts/eleven optional checks; one daily candidate | No native repair ships; pulse/misdirection/shortcut/trash intent pending. Accepted source/access/command/epic/ALL/escape evidence planned |
-| 55–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 55 | The Tempest Court | [Comprehensive dossier](zone-stories/TEMPEST_COURT.md): all 26 blocks/200 rooms/52 mobs/63 objects/307 resets; full active dagger, shared execution and foreign proof chains | Seven outcomes/eight contracts, 21 contacts/28 optional checks; five candidates, supplied proof and fragment allocation | Separate two-word direction fix ships; upgrade/portal/lightning/dispersal intent pending. Source-generation/access/branch/actor/epic/ALL events and live supply qualification planned |
+| 56–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Tempest Court (`airp`).
+The next area is The Caverns of Armageddon (`hunt`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -2742,3 +2744,52 @@ with actual-procedure original-fails/repaired-passes consecutive/overlapping
 victim, room/carried, identity, single-destruction and accounting/recovery tests.
 No live crash or player loss was reproduced. The source finding remains pending
 and must not appear as a shipped repair/news claim.
+
+## Tempest Court completed source map — October 4, 2026
+
+The [comprehensive dossier](zone-stories/TEMPEST_COURT.md) reviews all 26 native
+blocks (eight Q/seventeen M/one addressed MA), 200 rooms, 52 mobiles, 63 objects,
+307 resets/135 families, the active wind dagger, relevant shared execution and
+bounded foreign sources/consumers. The [journal](../../areas/story/airp.story.json)
+adds seven outcomes/eight contracts, 21 contacts and 28 optional checks
+(25 carried, three receipts). Equivalent Al'Hajib recipients share one outcome;
+five units retain native daily shape. Rescue and Cloudseeker retire recipients
+under reset mode zero and remain story-only. All 2668 native definitions and
+revision-two fingerprint stay unchanged.
+
+Progression explains the actual smoke-key cell/rescue/medallion route, three
+different lord essences for the palace key, Ixteal heart, five distinct Duke
+essences and the consumed fragment's two independent later bundles. Cloudseeker
+needs nine exact loose roots, Fearfrost four; supplied proofs fit without
+personal foreign journeys, kills or optional producer history. F/R source
+ownership, flying/mount/perception restrictions, actual ENTER portals and
+key retention/breakage are documented. Earlier receipts do not restore stock.
+The MA family is addressed dialogue with a room audience; the apostrophe topic
+is preserved in prose despite the current structured-token limitation.
+
+Expand accepted reset generation/current supply and NPC/container custody,
+first recovery/transfer, unlock/arrival/perception, material allocation/branch
+attempts, scoped ALL/actor restoration and committed epic-touch integration.
+Active accounting intentionally refuses legacy reset item issuance without
+owned generation. Nominal rare M chances do not guarantee normal unforced
+renewal. Preserve the guard and qualify actual admission before daily assignment.
+Promised eyepiece upgrades, empty cloud portal, missing lightning movement bit,
+sealed rare staging, orphan cells/branches and unplaced divine/attack prototypes
+have balanced builder-intent/repair plans; they are **pending findings**.
+
+**Actual native repair ships separately:** [dc586e34c](https://github.com/Community-Duris/Duris/commit/dc586e34c75fea9dc4016416cc95bd1637499e63)
+corrects exactly two direction words: Si'Ciltron's return door now says east;
+the prison's two cells are described north and south. Each original clue fails
+the focused source regression, repaired clues and exact-byte scope pass.
+Live LOOK/traversal remains unqualified. **Player news:** “The Tempest Court's
+war-chamber return door and prison-cell directions now match their actual exits.”
+This fix is distinct from journal authoring and all pending repair proposals.
+
+Focused source and actual C++ fixtures cover exact kinds/counts, loose versus
+worn proof, supplied acceptance, independent fragment consumers/equivalent
+recipients, optional history, read-only rendering, replay and cold recovery.
+Live access/source/combat/rare retirement/epic/persistence remain unqualified.
+Catalog: 76 maps/1637 achievement units/1464 potential dailies/2211 rows;
+grouping Al'Hajib removes one duplicate unit. Original order: 55/220 complete,
+165 pending; The Caverns of Armageddon is next. Active, ready accounting is
+mandatory. No migration, DB/account/server operation, deployment or merge.

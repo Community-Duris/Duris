@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 75 &&
-				tracker.summary_for(7, 42).total == 1638,
+		require(catalog.story_mappings.size() == 76 &&
+				tracker.summary_for(7, 42).total == 1637,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -5466,6 +5466,145 @@ int main(int argc, char **argv)
 					recovered.progress_for_zone(7, 42, 162).completed == 4 &&
 					recovered.progress_for_zone(7, 42, 162).total == 4,
 				"Tower cold recovery added puzzle, epic or escape outcomes");
+		}
+
+		{
+			const auto &map = *std::find_if(catalog.story_mappings.begin(),
+							catalog.story_mappings.end(),
+							[](const auto &m)
+							{ return m.source_area == "airp"; });
+			const auto &rescue = story_for("airp", "zieflia-rescue");
+			const auto &family = story_for("airp", "alhajib-medallion-eyepiece");
+			const auto &key = story_for("airp", "aurilium-palace-key");
+			const auto &heart = story_for("airp", "darthikya-ixteal-heart");
+			const auto &chan = story_for("airp", "chan-maelstrom-fragment");
+			const auto &cloud = story_for("airp", "north-wind-cloudseeker");
+			const auto &fear = story_for("airp", "fearfrost-thrym-hammer");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1316, 131600, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 1316, 10, 1, 101, false,
+							       false)
+							.find("] " + cloud.title + "\r\n") ==
+						std::string::npos,
+				"Tempest discovery exposed an unmet recipient");
+			for (const auto &contact : map.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 131600, 102) ==
+						result::applied,
+					"Tempest contact encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Tempest journal section missing");
+				const auto end = journal.find("\r\n[", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[131642] = 5;
+			supplies.equipped[16] = 131615;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 1316, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(chan).find("[Ready now] " + chan.steps[1].text) !=
+						std::string::npos &&
+					section(chan).find("[Missing now] " + chan.steps[2].text) !=
+						std::string::npos &&
+					section(heart).find("[Missing now] " +
+							    heart.steps[0].text) !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 1316).completed == 0,
+				"Tempest duplicate essence, worn heart or rendering invented readiness/credit");
+			supplies = {};
+			for (int v : { 131642, 131643, 131644, 131645, 131646 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 1316, 10, 1, 104, false, false,
+							 &supplies);
+			for (size_t i = 1; i <= 5; ++i)
+				require(section(chan).find("[Ready now] " + chan.steps[i].text) !=
+						std::string::npos,
+					"Tempest distinct Duke essence was not ready");
+			require(section(chan).find("[Missing now] " + chan.steps[0].text) !=
+						std::string::npos &&
+					section(chan).find("Next: " + chan.steps.back().text) !=
+						std::string::npos,
+				"Tempest supplied essences required a personal palace key");
+			supplies = {};
+			for (int v : { 55553, 8735, 70976, 88304, 97066, 131617, 138268, 138515,
+				       131647, 96000, 96012, 96055 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 1316, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &entry : { cloud, fear })
+			{
+				for (size_t i = 1; i + 1 < entry.steps.size(); ++i)
+					require(section(entry).find("[Ready now] " +
+								    entry.steps[i].text) !=
+							std::string::npos,
+						"Tempest supplied exact foreign bundle was not ready");
+				require(section(entry).find("Next: " + entry.steps.back().text) !=
+						std::string::npos,
+					"Tempest optional producer history became a prerequisite");
+			}
+			supplies.carried.erase(96012);
+			supplies.equipped[16] = 96012;
+			journal = journey.render_journal(7, 42, 1316, 10, 1, 106, false, false,
+							 &supplies);
+			require(section(fear).find("[Missing now] " + fear.steps[3].text) !=
+					std::string::npos,
+				"Tempest equipped Mistweave satisfied the loose offering aid");
+			record(journey, cloud.contracts.front(), "tempest-supplied-cloud", 1316,
+			       131643);
+			require(journey.progress_for_zone(7, 42, 1316).completed == 1 &&
+					journey.evidence_for(chan.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(fear.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(key.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Tempest Cloudseeker narration created producer, key or hammer credit");
+			supplies.carried.erase(131647);
+			journal = journey.render_journal(7, 42, 1316, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(fear).find("[Missing now] " + fear.steps[1].text) !=
+					std::string::npos,
+				"Tempest Cloudseeker receipt replenished the consumed fragment");
+			record(journey, chan.contracts.front(), "tempest-chan", 1316, 131772);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 1316, 10, 1, 122, false, false,
+							 &supplies);
+			require(section(fear).find("[Recorded] " + fear.steps[0].text) !=
+						std::string::npos &&
+					section(fear).find("[Missing now] " + fear.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 1316).completed == 2,
+				"Tempest optional producer receipt restored stock or completed the hammer");
+			record(journey, fear.contracts.front(), "tempest-separate-hammer", 1316,
+			       131772);
+			record(journey, family.contracts.front(), "tempest-old-family", 1316,
+			       131654);
+			record(journey, family.contracts.back(), "tempest-current-family", 1316,
+			       131654);
+			require(journey.progress_for_zone(7, 42, 1316).completed == 4 &&
+					journey.evidence_for(rescue.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Tempest equivalent Al'Hajib recipients doubled credit or invented personal rescue");
+			for (const auto &entry : { rescue, key, heart })
+				record(journey, entry.contracts.front(), entry.id.c_str(), 1316,
+				       131600);
+			auto replay =
+				completion(cloud.contracts.front(), "tempest-supplied-cloud", 120);
+			replay.transaction.zone_number = 1316;
+			replay.transaction.room_vnum = 131643;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Tempest receipt replay was not idempotent");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 1316).completed == 7 &&
+					recovered.progress_for_zone(7, 42, 1316).total == 7,
+				"Tempest cold recovery changed seven outcomes or added access, god or upgrade credit");
 		}
 
 		std::cout
