@@ -1506,3 +1506,37 @@ Trading/epic teaching stay unavailable with active accounting; ordinary rent
 has independent admission/save rules. Spell/faction/exam/bridge prose does not
 invent an accepted effect. Keep source repairs/news separate from journals,
 future spelling/effect choices and saved-instance operational remediation.
+
+## Myrabolus: returns can carry a story, and names do not establish identity
+
+The [complete example](../design/zone-stories/MYRABOLUS.md) maps13 outcomes
+and3 support entries,21 contacts/all4 aliases and24 optional checks.
+Markam returns the note kind **and adds a new half**, so its receipt is a
+story stage. Balance only replaces/refers a letter; its receipt is support.
+The native daily returned-input exclusion stays conservative. Classify each
+actual result; do not globally turn inspections into achievements or dailies.
+
+Original study76068 and delivery copy76069 share names/aliases but differ in
+kinds. Two keystone halves also share a name but need distinct kinds. The
+foreign producer receipt can be an optional completion check without changing
+ownership; supplied exact inputs skip it. Same-kind returns are new reward
+instances, not proof of original UID continuity or fresh inventory.
+
+Successful SEARCH of a hidden/invisible source needs actual perception; a
+transient half/key can dissolve on DROP, and100% key break is an intentional
+cost. Awake dispatch requires waking Alexis. These are source/access hints,
+not supported semantic objectives. A quest item called a chest is not an
+OPEN container, a fixed FLOAT life raft is not the requested boat, and an
+item monkey is not a living pet. Keep exact type/flag/UID/source roles clear.
+
+Review actual computed and imported bindings: Andryn’s smith, Roland’s epic,
+the counter’s guarded locker entry, rotating spell fountain and alarm ward
+all exist beyond local literal leads. The Master adapter table’s longbow
+membership is not proof that the longbow is bound. Crew payment ordering,
+guarded fees and source renewal require accepted continuations and qualification.
+
+Missing treasury kind, unrewarded Roland/load-room intent and wording remain
+pending builder decisions. New launch/rescue/healing/fate/mount endings need
+explicit accepted effect adapters. **No native repair ships in this checkpoint.**
+Later actual fixes must have clear separate commits, concrete before/after
+proof and prominent news sentences; keep journal guidance and proposals distinct.

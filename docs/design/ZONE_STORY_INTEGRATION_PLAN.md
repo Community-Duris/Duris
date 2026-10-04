@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 81 authored journals, accounting-gated player surfaces, starter/town
+**Status: 90 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -2467,3 +2467,25 @@ The original queue is68/220 source-comprehensive,152 pending. Actual semantic
 episodes and gameplay qualification remain implementation work; this checkpoint
 adds no runtime event/API/schema/economic service. Saved secret-sand remediation
 requires an independently reviewed owner-approved operational change.
+
+## Myrabolus: returned materials, perception and distinct foreign continuations
+
+The [complete dossier](zone-stories/MYRABOLUS.md) and
+[journal](../../areas/story/mira.story.json) reuse schema-three exact outcomes
+and optional current/history checks. Accounting must be active and ready for
+new publication/credit; frozen recovery retains its separate obligation path.
+
+| Capability | Concrete source requirement | Plan / acceptance evidence |
+| --- | --- | --- |
+| Returning material versus meaningful stage | Markam returns parchment plus new half and departs; Balance only refers letter | Keep authored story/service independent from conservative native daily policy. Track original input UID, indexed same-kind replacement/new output, disposal and recipient retirement; optional history never refills spent stock |
+| Exact same-name and cross-owner materials | Study76068 versus76069; different half kinds; four treasure recipients; item/NPC monkey; local/Hunt givers | Preserve kind/UID/owner, first-source-versus-handoff reason, producer lineage and allocation. Foreign optional receipts add guidance without duplicating achievements; terminal delivery does not prove full campaign |
+| Perception and actor state | SECRET+INVISIBLE half needs successful see/search; transient half/key; Alexis must be awake | Record successful reveal, actual chosen alias/UID and admitted actor/recipient state. Qualify detection, blind/dark, worn/nested input, wake/interrupt, DROP destruction and later selection; don't infer knowledge or recovery from possession |
+| Access cost versus world/arrival state | Gold/assembled key100% break, asymmetric treasury key, locked palace/observatory, foreign return shortcut | Keep reveal/custody, accepted destruction, lock/open pre/post and actual travel/arrival separate. Cover busy/rejection, another opener, supplied key/notes and reset; keep native costs until evidence justifies a separate repair |
+| Guarded fees and service settlement | Scale+C50000, smith/trade/epic/locker/tickets guarded; crew ignores denied debit | Implement identified atomic material/wallet/reward and wallet/ship continuations before effect/persistence publication. Qualify unavailable/reject/busy, funds/auth/skills/docking, concurrent state, indexed rewards, replay/cold recovery. Retain guards; ordinary inn save has separate rules |
+| Physical affiliation and source renewal | Roland/Ethan load-room wandering, two foreign dispersal entrances, rare/capped alternative loot, two D1 recipients | Model actual NPC/generation/physical location versus canonical owner and visible encounter; qualify source admission, disappearance/reappearance, fresh material and daily episode. Do not relocate actors based on house prose alone |
+| Builder-selected narrative endings | Sunweaver launch/explosives, wounded residents, stable animals, Maveriss fate and balance restoration lack local accepted terminals | Add explicit per-area semantic effect/campaign adapters with actor scope, ALL-stage/choice/failure/return policy, durable accepted identity and evidence. Current prose remains guidance, without invented objectives |
+| Fair repairs and imported procedure scope | Missing treasury2267, drawer wording, unrewarded Roland, direct seven-kind versus adapter table; locker/pool/alarm imports | Builder decides intended restoration/role/membership first. Each later actual repair gets separate fix/news proof; imported optional effects need their own accepted events, not hand-in receipts. No native repair is shipped by this source checkpoint |
+
+Queue69/220 source-comprehensive,151 pending. This checkpoint adds no runtime
+event/API/schema, payment service or accounting activation. Played semantic
+episodes and persistence/renewal remain qualification work.

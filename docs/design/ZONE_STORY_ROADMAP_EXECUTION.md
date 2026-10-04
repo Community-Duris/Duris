@@ -136,9 +136,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 66 | Troll Caves | [Comprehensive dossier](zone-stories/TROLL_CAVES.md): all ten blocks/82 rooms/28 mobiles/37 objects/193 resets, 142 exact/152 parent families, computed smith/teacher/switch/teleport and foreign stock | One story/four services; eight contacts/9 aliases/8 optional checks; exact same-name kinds, supplied materials and producer history independent | No native repair. Atomic fees, wand mismatch, secret control returns, PUNCH sign/foreign copy, guarded forge and accepted source/travel/fall/survival/renewal qualification remain plans |
 | 67 | Centaur Villages | [Comprehensive dossier](zone-stories/CENTAUR_VILLAGES.md): all eleven blocks/100 rooms/29 mobiles/31 objects/199 resets,117 exact/125 parent families; dynamic switches/teachers, actual hidden-name lookup/current/fall/offer/retirement and foreign closure | Four stories/three services; eight contacts/8 aliases/16 optional checks; two distinct roots of one half kind, optional supplied and reset sources, independent current/history | Separate six-direction clue fix e456b3403. Active source/selection/movement/two-root/two-output settlement, Hateeu retirement/reappearance and renewal remain unqualified; new semantic access/knowledge/effect episodes require accepted proof |
 | 68 | Enclave of the Opal Phoenix | [Comprehensive dossier](zone-stories/OPAL_PHOENIX.md): all6 blocks/76 rooms/18 mobiles/24 objects/84 resets/76 exact and parent families; actual hidden selection/search/key, indexed item/XP/D1, shop/teacher/inn and bounded foreign closure | Three outcomes, nine contacts/8 aliases/4 optional checks; supplied optional student route, independent forest reagent and exact hidden-source distinctions | Separate sand70823 visibility fix ac8e2de48. Live source/handoff/search/key/GET, items+XP, recipient/stock removal/reappearance, service/rent and renewal remain unqualified; richer accepted episodes are planned |
-| 69–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 69 | Myrabolus | [Comprehensive dossier](zone-stories/MYRABOLUS.md): all17 blocks/188 rooms/78 mobiles/62 objects/316 resets,257 exact/272 parent families; two shops, literal/computed/imported handlers and bounded foreign closure | Thirteen stories/three support entries,21 contacts/4 aliases/24 optional checks; exact returned-note/new-half, same-name study/parts, four treasure allocations, awake Alexis and supplied shortcuts | No native repair. Missing treasury kind, Roland/load-room/set/wording intent, shared denied crew-payment ordering and admitted fee/source/access/reward/recipient/renewal episodes remain plans |
+| 70–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Myrabolus (`mira`).
+The next area is The Depths of Duris (`surfacekeeps`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -3654,3 +3655,76 @@ dailies/2207 rows; all2668 definitions/fingerprint/revision two/registry and
 prior88 maps unchanged. Original queue68/220 complete152 pending; Myrabolus
 next. Accounting active and ready remains mandatory; frozen recovery separate.
 No DB/account/server operation, migration, deployment or merge.
+
+## Myrabolus completed source map — October 4, 2026
+
+The [dossier](zone-stories/MYRABOLUS.md) reviews all17 blocks(16Q/1M),188
+rooms/127 complete prose groups/27 headers/31 metadata/168 numeric exit
+families/16 full text-keyword pairs,78 mobiles,62 objects,two shops and316
+resets(M181/D44/E38/G22/O13/F13/P3/R2),all257 exact/272 parent-aware families.
+All properties/memberships/containers/gear/positions/flags/caps,local and
+imported literal procedures,computed teacher/smith/inn bindings,actual shared
+offering/recovery/zero-reward/items+coins/D1/visibility/search/key/transient/
+awake/wake/movement/reset/services and bounded active global dependencies/
+713 teleport prototypes/eight full foreign boundary bodies close the source
+review. Generated evidence alone does not establish that closure.
+
+The [journal](../../areas/story/mira.story.json) maps13 outcomes/3 support
+entries,21 contacts/4 aliases and24 optional checks(21 current materials,
+3 earlier receipts). Markam’s returned note also grants a new half and is a
+story stage; Balance’s same-kind referral and Roland’s blank unrewarded head
+offering remain support. Andryn’s guarded paid armor is separate from the
+keystone. Native definitions/daily policy are preserved;12 authored story
+candidates remain,without proving available supply or renewal. Rigid’s foreign
+producer receipt is optional; wrong same-name original study76068 does not
+replace delivery76069. Two different half kinds and all3 token kinds are
+required. Four treasure recipients and all other deliveries are independent.
+
+Real gold-key/chest/crate, palace-key/secret Sunweaver/hatch, invisible-secret
+knight half/transient assembled key, observatory-key/paired ENTER portals,
+letter/drawer and secret den sources are explained. Normal100% key break is
+a deliberate access cost; world unlock can precede accepted destruction.
+Alexis starts asleep without a raw magical-sleep barrier; WAKE enables native
+awake dispatch. Boat431 differs from fixed FLOAT life-raft container82546,
+and lost-monkey item13365 differs from living local NPC82542. Same-kind returns
+do not preserve original UID. No terminal rescue, launch, healing, mount-return
+or world-balance effect is invented from prose. Each indexed reward/removal,
+current custody, actual reset and renewal differ from one accepted receipt.
+
+**No native zone/quest/service repair ships in this checkpoint.** Missing
+treasury2267 is confirmed absent from active prototypes and its reset is
+disabled by renumbering; builder chooses restoration/replacement/removal.
+Unrewarded local Roland, empty houses/load-room wanderers and stub connections,
+drawer/open versus closed wording and Master-set membership need intent and
+qualification. The direct quiver proc has7 legacy kinds; the separate8-kind
+adapter does not prove a bound longbow proc. Preserve legitimate hidden,
+invisible,transient and key-cost semantics; do not globally clear flags.
+Any later implemented native repair requires its own explicit fix/news record.
+
+Andryn’s computed FORGE,Rico/Shantil commerce,epic purchases,paid locker entry
+and ferry tickets remain accounting-guarded. Actual inn rent uses independent
+admission/terminal save. Imported counter3097 has a locker hook; fountain72
+rotates a DRINK spell; mechanism54 is a real alarm ward,not another delivery.
+Crew HIRE ignores denied SUB_MONEY before changing crew/chief and queuing save,
+an existing shared gap also recorded for Verspin. Plan identified admitted
+wallet/ship continuations and qualification before any service completion
+claim. No service is required by the item-only stories.
+
+Expand accepted original-source/handoff/replacement UID lineage,perception/
+successful reveal/selection,transient custody/access cost,awake actor,physical
+affiliation versus owner,ALL-stage versus terminal supplied shortcut,competing
+treasure/material allocation,indexed item+currency and recipient/reset/daily
+episodes. New custom fate/launch/healing/mount endings require builder-defined
+accepted effects and failure/return policy. Existing optional hints/history
+do not implement those richer semantic events.
+
+Focused source assertions,C++all90-map/schema/file-loader/projection journeys,
+maintained build,changed/staged formatting,whitespace,native/catalog/prior-map
+and local-link preservation are checked at publication. Local source/projection
+proof does not qualify actual acquisition/handoff/search/perception/key/wake/
+offer/items+coins/removal/reset,services/rent/storage/ferry,persistence or daily
+renewal. Catalog90 maps/1612 achievements/1458 potential dailies/2207 rows;
+all2668 native definitions/fingerprint/revision two/registry/prior89 maps and
+native content/code remain unchanged. Queue69/220 comprehensive,151 pending;
+The Depths of Duris next. Active-ready accounting remains mandatory,frozen
+recovery separate. No DB/account/server operation,migration,deployment or merge.

@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 89 &&
-				tracker.summary_for(7, 42).total == 1615,
+		require(catalog.story_mappings.size() == 90 &&
+				tracker.summary_for(7, 42).total == 1612,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -6751,6 +6751,168 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 933) &&
 					!recovered.has_discovered(7, 42, 5000),
 				"Opal cold recovery lost independent receipts or invented foreign discovery/extra output credit");
+		}
+
+		{
+			const auto &study = story_for("mira", "xavier-planetary-study");
+			const auto &halves = story_for("mira", "andryn-keystone");
+			const auto &markam = story_for("mira", "markam-parchment");
+			const auto &portal = story_for("mira", "xavier-portal-key");
+			const auto &raft = story_for("mira", "officer-raft-sap");
+			const auto &trophies = story_for("mira", "balance-paired-trophies");
+			const auto &tokens = story_for("mira", "balance-three-tokens");
+			const auto &armor = story_for("mira", "andryn-dragon-armor");
+			const auto &roland = story_for("mira", "roland-head-offering");
+			const auto &letter = story_for("mira", "balance-letter-referral");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 825, 82500, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 825, 10, 1, 101, false, false)
+							.find(study.title) == std::string::npos,
+				"Myrabolus discovery exposed an unseen giver's story");
+			for (const auto &actor : { std::pair<int, int>{ 82507, 82550 },
+						   { 82518, 82590 },
+						   { 82538, 82618 },
+						   { 82565, 82661 },
+						   { 82569, 82686 },
+						   { 82500, 82667 },
+						   { 82515, 82589 },
+						   { 82516, 82591 },
+						   { 82522, 82601 },
+						   { 82537, 82625 },
+						   { 82543, 82570 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 102) ==
+						result::applied,
+					"Myrabolus source encounter fixture failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Myrabolus journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[76068] = 1;
+			supplies.carried[82518] = 2;
+			supplies.carried[82546] = 1;
+			supplies.carried[82550] = 1;
+			supplies.carried[82549] = 1;
+			supplies.equipped[16] = 82547;
+			supplies.carried[75825] = 3;
+			supplies.carried[82542] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 825, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(study).find("[Missing now] " + study.steps[1].text) !=
+						std::string::npos &&
+					section(halves).find("[Missing now] " +
+							     halves.steps[2].text) !=
+						std::string::npos &&
+					section(raft).find("[Missing now] " + raft.steps[0].text) !=
+						std::string::npos &&
+					section(trophies).find("[Missing now] " +
+							       trophies.steps[0].text) !=
+						std::string::npos &&
+					section(tokens).find("[Missing now] " +
+							     tokens.steps[1].text) !=
+						std::string::npos &&
+					section(armor).find("Turn-in currently unavailable") !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 825).completed == 0 &&
+					journey.progress_for_zone(7, 42, 825).total == 13 &&
+					journey.serialize_state() == before,
+				"Myrabolus wrong same-name kinds, duplicate halves/tokens, life raft, worn staff or fee invented readiness/credit");
+			supplies.carried[76069] = 1;
+			supplies.carried[82519] = 1;
+			supplies.carried[431] = 1;
+			supplies.carried[82547] = 1;
+			supplies.carried[75826] = 1;
+			supplies.carried[75834] = 1;
+			journal = journey.render_journal(7, 42, 825, 10, 1, 104, false, false,
+							 &supplies);
+			for (const auto *entry : { &study, &halves, &raft, &trophies, &tokens })
+				require(section(*entry).find("Next: " + entry->steps.back().text) !=
+						std::string::npos,
+					"Myrabolus supplied exact materials required personal source/producer history");
+			require(journey.serialize_state() == before,
+				"Myrabolus current-material read wrote progression state");
+			service supplied(catalog);
+			record(supplied, study.contracts.front(), "mira-supplied-study", 825,
+			       82550);
+			record(supplied, tokens.contracts.front(), "mira-supplied-tokens", 825,
+			       82686);
+			require(supplied.progress_for_zone(7, 42, 825).completed == 2 &&
+					supplied.evidence_for(study.steps[0].contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.evidence_for(trophies.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					!supplied.has_discovered(7, 42, 760) &&
+					!supplied.has_discovered(7, 42, 758),
+				"Myrabolus supplied study/tokens invented foreign source history or multiple reward credit");
+			record(journey, markam.contracts.front(), "mira-markam", 825, 82618);
+			supplies.carried.erase(82517);
+			supplies.carried.erase(82518);
+			journal = journey.render_journal(7, 42, 825, 10, 1, 121, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 825).completed == 1 &&
+					section(portal).find("[Missing now] " +
+							     portal.steps[1].text) !=
+						std::string::npos &&
+					section(halves).find("[Missing now] " +
+							     halves.steps[1].text) !=
+						std::string::npos &&
+					journey.evidence_for(portal.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Myrabolus returned-note receipt restored spent supplies or completed later stories");
+			auto wrong_owner =
+				completion(tokens.contracts.front(), "mira-wrong-owner", 122);
+			wrong_owner.transaction.zone_number = 758;
+			wrong_owner.transaction.room_vnum = 82686;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Myrabolus foreign source zone took ownership of the local token delivery");
+			record(journey, roland.contracts.front(), "mira-unrewarded-offering", 825,
+			       82667);
+			record(journey, letter.contracts.front(), "mira-returned-letter", 825,
+			       82686);
+			require(journey.progress_for_zone(7, 42, 825).completed == 1 &&
+					journey.evidence_for(roland.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					journey.evidence_for(letter.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Myrabolus support offerings lost receipts or inflated story achievements");
+			for (const auto *id :
+			     { "xavier-portal-key", "xavier-krazzi-head", "xavier-planetary-study",
+			       "rico-treasure", "random-treasure", "andryn-keystone",
+			       "decker-treasure", "alexis-treasure", "lost-monkey",
+			       "officer-raft-sap", "balance-paired-trophies",
+			       "balance-three-tokens" })
+			{
+				const auto &entry = story_for("mira", id);
+				const auto txid = std::string("mira-outcome-") + id;
+				record(journey, entry.contracts.front(), txid.c_str(), 825, 82686);
+			}
+			auto replay = completion(tokens.contracts.front(),
+						 "mira-outcome-balance-three-tokens", 120);
+			replay.transaction.zone_number = 825;
+			replay.transaction.room_vnum = 82686;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Myrabolus multi-reward receipt replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 825).completed == 13 &&
+					recovered.progress_for_zone(7, 42, 825).total == 13 &&
+					recovered.evidence_for(tokens.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(markam.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(armor.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					!recovered.has_discovered(7, 42, 760) &&
+					!recovered.has_discovered(7, 42, 758),
+				"Myrabolus cold recovery lost independent outcomes, counted supports/rewards or invented foreign discovery");
 		}
 
 		{
