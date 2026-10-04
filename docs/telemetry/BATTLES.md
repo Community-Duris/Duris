@@ -1087,20 +1087,19 @@ crypto heap calls during native reads; digest computation uses stack-owned SHA
 state. The runtime fixture also executes the absent native catalog/arena-symbol
 case. This does not qualify a complete server performance or persistence journey.
 
-The separately versioned record/SQL/outage/replay contract is now implemented
-below. **Remaining expectation:** connect these values to reviewed entry/change
-boundaries with cached snapshots, rate limits and explicit unknown coverage;
-retain and publish matching observations; qualify actual personal-local
-source/readback/performance journeys.
-The current reader is not called from per-hit hooks. Durable matching dimensions,
-reviewed equipment/support classification, complete resistance/prevention,
-effective-property coverage and arena outcomes remain unfinished under #258.
+The separately versioned record/SQL/outage/replay contract and bounded cached
+capture are implemented below. Full reads are gated before gear/epic scans,
+including callbacks that execute on each hit. Retained matching observations,
+report publication and actual personal-local source/readback/performance remain
+required. Complete reviewed equipment/support classification,
+resistance/prevention, effective-property coverage and arena outcomes remain
+unfinished under #258.
 
 ## Durable selected combat build observations
 
 Record kind **12**, `battle_build`, stores definition-**1** selected observations
-from the version-1 native reader. This implements the storage and loss contract;
-live boundary capture and report publication remain pending. The existing
+from the version-1 native reader. The runtime now captures bounded native entry,
+change and periodic points; report publication remains pending. The existing
 transport, worker, typed column descriptor, private writer and reviewed incident
 registrar handle this family. No separate service or storage transport is added.
 
@@ -1199,11 +1198,101 @@ and register schema-5 loss evidence using a restricted reviewer. The private
 writer journey covers all twelve families, exact replay, lost acknowledgements,
 NULL separation, immutable configuration qualification and quarantine evidence.
 
-**Next executable expectation:** wire bounded entry/change/periodic capture into
-the existing native battle associations with a fixed cache, sequence allocation,
-rate limits and explicit loss/recovery points. Then retain the matching points
-and publish them under a new versioned comparison definition with schema-5 loss
-coverage, preserving current definition-5 meaning. Qualify the actual
-personal-local gameplay/readback/performance journey. Complete reviewed native
-context/classification, typed outcomes and the four balance suites remain open
-under #258; the durable contract does not complete those requirements.
+## Native cached build capture
+
+Accepted hostile/support observations and proven same-room formal-group
+presence now sample the current native actor build after admission to the shared
+battle. Context callbacks can sample an existing association; they do not create
+a battle. The runtime uses the same reader, kind-12 contract, control reserve,
+worker and private SQL writer. Every attempted point uses a fresh process-wide
+context sequence, including attempts that fail queue admission. A later recovery
+reads current values under a new key instead of replaying an earlier snapshot
+as current context.
+
+The game thread keeps **512 fixed cache entries**. Each entry binds an opaque
+character address, its runtime lifetime and the original battle/live actor
+identity. Successful entry, configuration, recovery and periodic observations
+are emitted even when selected values are equal. Accepted mutations coalesce
+into a dirty flag; at the next observation an unchanged selected profile emits
+no duplicate point. Comparison uses named selected fields, excluding only the
+point clock/sequence/boundary and association revision/fact. Availability and
+quality are part of the comparison. Leaving or closing a battle forgets the
+relevant entry. A reused address or changed native lifetime obtains fresh
+context rather than another actor's cached build.
+
+| Capture work | Bound and behavior |
+| --- | --- |
+| Full native reads | At most **16 per one-second window** across the runtime. Admission checks run before gear/epic hashing. |
+| Reads for a cached actor | The existing qualified `context_segments_per_minute` cap, normally **8 per 60-second window**. Equal dirty reads consume this budget too. Leave/close forgets the entry; the process-wide limit remains. |
+| Periodic interval | At least `max(config.interval_usec, 10 seconds)`, normally **60 seconds** with the default telemetry interval. Active callbacks also observe due samples. |
+| Empty gap markers | At most **16 per one-second window**. A successfully emitted gap is not repeated until its reason/configuration/battle changes or the source recovers. Marker suppression latches context-overflow quality for subsequent points. |
+| Periodic selection and lifetime resolution | A rotating selection of at most **16 entries**; one live-world pass of at most **4,096 nodes**. Cached addresses are never dereferenced. The found character must match its runtime lifetime and current association actor identity/kind. |
+
+These are bounded sampling windows, not promises that every change is captured.
+Capacity refusal, missing source and configuration withdrawal produce empty
+unavailable records where marker admission permits. Unavailable profiles clear
+all gear/epic fingerprints and selected values. Configuration withdrawal also
+clears configuration/build/content identity. A subsequent accepted point uses
+current state and explicit recovery/configuration context. Build-only queue loss
+stays on this family; it does not erase otherwise measured damage or control
+coverage. Periodic capture runs after battle expiry and never advances engagement
+time, participation, roster exposure or the collector's measured prefix.
+
+Equipment changes mark the cache after successful `equip_char`/`unequip_char`
+mutation. Effective-state changes mark it after `affect_total` completes; the
+deferred `balance_affects` scheduler alone does not publish incomplete values.
+The dirty hook copies no profile, writes no SQL and emits no record. The point
+clock is the subsequent observation clock, not an asserted exact mutation time.
+Periodic samples cover selected values without requiring every native writer to
+have a new hook. Exact intermediate gear/stat combinations, every epic/resource
+mutation, buff origin, applied proc contribution and continuous build validity
+are not established by this capture path.
+
+The extended gameplay fixture qualifies real reader-to-runtime records,
+gear/learned-epic changes, equal-profile coalescing, independently cleared
+invalid gear, configuration withdrawal/recovery, NPC/pet lifetime separation,
+a freed cached character, a temporarily unresolvable live PC, periodic recovery,
+actor/global/marker caps and queue-loss recovery with fresh keys. It confirms
+that capture cannot keep an inactive battle alive and that build-only loss
+preserves measured contribution coverage. Normal and fresh ASan/UBSan runs pass.
+The maintained server build, both runtime lifecycle/outage/exhaustion variants,
+58 history/source/publication regressions and standalone header contracts pass.
+The actual equipment-entry fixture also proves rejected equipment does not mark
+a build change.
+
+On both disposable full-65-step **MariaDB 10.11.14** and **MySQL 8.0.46** chains,
+the actual runtime/worker/private-writer journey stores **20 points** with exact
+values for all **110 selected fields**, including both digests, signed values,
+empty gaps and association/configuration references. Existing published battle
+rows remain unchanged. The established **123 facts / 38 packets / 28 verified
+contribution links**, **112/112 damage**, and fresh **8/8 accepted control**
+publication, rollback, drift/restoration, retained source and private roles
+continue to qualify. This is an executable adapter/persistence proof; the
+game-service fixture seams and future pulse clocks do not establish a running
+personal-server or performance journey.
+
+The additional maintained local commands are:
+
+```sh
+python3 tests/async/test_telemetry_gameplay_adapters.py
+python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize
+python3 tests/async/test_issue590_hidden_pet_items.py
+python3 tests/async/test_telemetry_runtime_integration.py
+python3 tests/async/test_telemetry_runtime_outage.py
+python3 tests/async/test_telemetry_runtime_exhaustion.py
+make -C src
+bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
+```
+
+**Next executable expectation:** retain exact kind-12 observations and publish
+them under a separately versioned comparison definition with independent
+schema-5 loss coverage. Verify association packets, aliases, point clocks,
+configuration, selected availability and sampling gaps before comparing actors;
+preserve current definition-5 meaning and published generations. Then qualify
+the actual personal-local gameplay/readback/performance journey. Complete
+reviewed native context/classification, typed outcomes, distinct PvE attempts,
+progression/portfolio additions, the four balance suites/statistical exports and
+#487 reward compatibility remain open under #258. All seven final acceptance
+requirements keep their unfinished portions; production/staging access is
+unnecessary.

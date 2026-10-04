@@ -15,6 +15,21 @@ from test_telemetry_combat_hooks import function
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def verify_build_mutation_hooks() -> None:
+    handler = (ROOT / "src/world/handler.c").read_text()
+    for signature in ("void equip_char(", "P_obj unequip_char("):
+        body = function(handler, signature)
+        assert body.count("telemetry_runtime_game_battle_build_changed(ch);") == 1
+        assert body.index("telemetry_runtime_game_battle_build_changed(ch);") > body.index(
+            "SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT)")
+    affects = (ROOT / "src/magic/affects.c").read_text()
+    body = function(affects, "char affect_total(")
+    assert body.index("telemetry_runtime_game_battle_build_changed(ch);") > body.index(
+        "all_affects(ch, TRUE)")
+    assert "telemetry_runtime_game_battle_build_changed" not in function(affects, "void balance_affects(")
+    assert "affect_total(ch, TRUE);" in function(affects, "void event_balance_affects(")
+
+
 def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bool = False) -> None:
     # Execute the maintained helper bodies with the game-service seams in the
     # existing harness; the actual runtime/worker/writer remain linked below.
@@ -46,6 +61,7 @@ def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bo
                 "telemetry_activity.c",
                 "telemetry_battle.c",
                 "telemetry_battle_contribution.c",
+                "telemetry_battle_build_observation.c",
                 "telemetry_battle_contract.c",
                 "telemetry_combat_summary.c",
                 "telemetry_config.c",
@@ -122,6 +138,7 @@ def verify_native_build_context(executable: Path) -> None:
 
 
 def main(*, sanitize: bool = False) -> None:
+    verify_build_mutation_hooks()
     artifacts = ROOT / "bin/tests"
     artifacts.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="telemetry-gameplay-", dir=artifacts) as directory:

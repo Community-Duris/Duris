@@ -25,6 +25,17 @@ static int runtime_test_random(unsigned char *bytes, int count)
 
 namespace
 {
+void check_build_sequence_exhaustion()
+{
+	R.battle_build.next_sequence = std::numeric_limits<telemetry_sequence>::max();
+	assert(next_build_sequence() == std::numeric_limits<telemetry_sequence>::max());
+	assert(next_build_sequence() == 0U && next_build_sequence() == 0U);
+	assert(R.battle_build.next_sequence == 0U &&
+	       (R.battle_build.quality_flags & TELEMETRY_QUALITY_SEQUENCE_GAP));
+	R.battle_build = {};
+	std::puts("build context sequence exhaustion: refuses permanently without key wrap/reuse");
+}
+
 void check_copyover_caller_ack_race()
 {
 	R.flush_completed.store(0U);
@@ -434,6 +445,7 @@ void check_exhausted_lifecycle(bool exiting, bool reattaching = false)
 
 int main()
 {
+	check_build_sequence_exhaustion();
 	check_identity_fail_closed();
 	check_copyover_caller_ack_race();
 	check_copyover_generation_barrier_recovery();

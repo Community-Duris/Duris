@@ -34,8 +34,8 @@ work. A future production deployment is a separate operational decision.
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
 | #487: economic projection compatibility | Pending audit and implementation | Reuse current accounting reconciliation where it meets acceptance; project canonical earned receipts without counting compatibility ledgers, transfers or openings as new rewards. |
 | #258: local observational acceptance and final runbook | In progress | Initial readiness/capacity recovery is implemented and qualified in executable fixtures. Remaining: dedicated roles/catalog, real session/progression readback, normal gameplay/save, failure/recovery and a single reproducible local qualification command. |
-| Native compact build snapshot reader | Reader qualified; boundary capture pending | Version-1 value reader preserves exact class masks/spec, base/effective resources/stats, fixed equipment declarations, learned epic skill fingerprints, bounded listed effects and independent arena room/roster observations. The 440-byte snapshot has explicit unavailable/partial families. Normal/ASan/UBSan, both runtime lifecycle variants, 58 history/publication regressions, canonical fingerprint checks and the maintained server build pass. The selected durable contract is qualified below; cached boundary capture, publication, complete reviewed classification and actual personal-server evidence remain required. See [BATTLES.md](BATTLES.md#native-combat-build-snapshot-reader). |
-| Durable selected build observations and loss review | Storage contract qualified; capture/publication pending | Kind 12 has 110 typed selected fields, a 447-byte portable encoding and a 448-byte C++ payload. Migration 0065 adds guarded columns, exact logical replay and nine checks; DMSTLJ04 and independent private incident schema 5 retain build loss without changing older histories. Native/Python contract and ASan/UBSan, all-twelve-family writer, both full-65-step SQL chains, permissions, replay, lost acknowledgements, NULL separation and drift/restoration are locally qualified. Existing definitions 1/2/3/5 skip the new family with their meanings preserved. No live boundary emitter or new build report is active. See [BATTLES.md](BATTLES.md#durable-selected-combat-build-observations). |
+| Native compact build snapshot reader | Reader and cached capture qualified | Version-1 value reader preserves exact class masks/spec, base/effective resources/stats, fixed equipment declarations, learned epic skill fingerprints, bounded listed effects and independent arena room/roster observations. The 440-byte snapshot has explicit unavailable/partial families. A fixed cache gates entry/change/configuration/periodic/recovery reads before gear/epic scans, including combat callbacks. Normal/ASan/UBSan, lifetime/cap/queue-loss checks, both runtime variants, history/publication regressions and the server build pass. Complete reviewed classification, report publication and actual personal-server evidence remain required. See [BATTLES.md](BATTLES.md#native-cached-build-capture). |
+| Durable selected build observations and loss review | Storage and native capture qualified; publication pending | Kind 12 has 110 typed fields, a 447-byte portable encoding and a 448-byte C++ payload. Migration 0065, exact logical replay, DMSTLJ04 and independent private incident schema 5 remain qualified. Native cached capture now supplies fresh point keys and empty unavailable markers. Both full-65-step SQL journeys persist 20 actual reader/runtime/worker points with exact values and association/configuration references. Existing definitions 1/2/3/5 retain their meanings; new build publication remains required. See [BATTLES.md](BATTLES.md#native-cached-build-capture). |
 
 ## Qualified first-layer checks
 
@@ -1343,11 +1343,10 @@ Prototype procs, dynamic equipment effects, complete resistance mechanics,
 buff/support ownership, match generations/outcomes and the complete effective
 property catalog remain outside this observed subset.
 
-The separately versioned selected record/writer/outage/replay contract is now
-implemented in the following delivery. **Next executable expectation:** add
-reviewed entry/change capture with cached snapshots, caps and unknown coverage;
-retain and publish these matching values; run the actual personal-local
-gameplay/readback/performance journey. Use the
+The separately versioned selected record/writer/outage/replay contract and
+bounded cached capture are implemented in the following deliveries. The
+remaining expectation is to retain and publish matching values and run the
+actual personal-local gameplay/readback/performance journey. Use the
 existing bounded telemetry transport, private writer, loss inventory and
 publication machinery. Commands and field mappings are in
 [BATTLES.md](BATTLES.md#native-combat-build-snapshot-reader). All seven accepted
@@ -1436,15 +1435,80 @@ changed C/C++ formatting, manifest validators and maintained `make -C src -j1`
 also pass. SQL databases/reviewer roles are removed and owned database fixtures
 stopped; MySQL retains the existing no-native-AIO fixture workaround.
 
-**Next executable expectation:** implement bounded native entry/change/periodic
-capture with a fixed actor cache, fresh context sequence, caps and explicit
-loss/recovery points. Retain exact matching observations and publish a separately
-versioned comparison definition with schema-5 loss coverage, preserving existing
-definition-5 meaning. Then qualify actual personal-local gameplay, readback and
-performance. This delivery supplies a durable contract, not a live boundary
-emitter or the full balance suites. Complete reviewed context/classification,
-typed outcomes, distinct PvE attempts, progression/portfolio additions, the four
-suites/statistical exports, #487 compatibility and the final personal-server gate
-remain open. All seven final requirements keep their unfinished portions; no
-production or staging access is needed. Commands and field meaning are in
+The bounded native capture expectation is qualified by the following delivery.
+Retained-source/publication, the full balance suites and actual personal-server
+acceptance remain open. Commands and field meaning are in
 [BATTLES.md](BATTLES.md#durable-selected-combat-build-observations).
+
+## Native cached build capture
+
+The runtime now connects the selected native reader to actual shared battle
+associations. Accepted hostile/support observations, proven same-room formal
+presence and existing-actor context callbacks capture entry/change/configuration,
+periodic and recovery points. The original kind-12 writer, portable layout,
+migration 0065, outage version 4 and private incident schema 5 are unchanged.
+This delivery adds no migration or report definition.
+
+A **512-entry fixed cache** binds opaque addresses to native runtime lifetimes
+and live actor/battle identities. Full reads are limited before gear/epic hashing
+to **16 per second** globally and the qualified per-entry context cap, normally
+**8 per 60-second window**. Equal dirty reads also consume this budget. Dirty
+marks coalesce; named-field comparison suppresses equal selected profiles.
+Periodic capture uses `max(config.interval_usec, 10 seconds)`, normally **60
+seconds**. It selects at most **16 cache entries** and resolves them through one
+live-world pass of at most **4,096 nodes**, verifying runtime and association
+identity without dereferencing cached pointers. It runs after expiry and never
+extends measured engagement or participation.
+
+Successful equipment changes and completed `affect_total` recalculation mark
+existing cache entries. The hook copies no build and emits no record; the next
+observation samples current state. Deferred scheduling alone does not claim
+completed values. Snapshot clocks are observation times, not exact mutation
+times or continuous validity. Source, rate and configuration gaps clear profiles
+and digests. Configuration gaps clear configuration/build/content IDs as well.
+Empty markers have their own **16-per-second** admission budget; suppression
+latches context-overflow quality. Build-only queue loss retains independent
+quality and cannot degrade otherwise measured damage/control coverage. Every
+attempted point obtains a fresh process-wide sequence; recovery reads current
+values with a fresh key.
+
+The existing gameplay suite now qualifies gear/epic changes, equal coalescing,
+invalid gear with known stats retained, configuration changes and withdrawal,
+NPC/pet lifetime separation at a reused address, a freed cached character,
+temporary world-list loss and recovery, periodic samples, expiry, actor/global
+read and marker caps, and saturated-queue recovery without key reuse. The
+equipment fixture qualifies accepted versus rejected mutation marking. Normal
+and fresh **ASan/UBSan** gameplay runs pass, along with both runtime
+lifecycle/outage/exhaustion variants, **58** history/source/publication tests,
+standalone header/golden contracts, changed-line formatting and the maintained
+server `make -C src -j1` build.
+
+Both full-65-step disposable **MariaDB 10.11.14** and **MySQL 8.0.46** chains
+qualify **20 actual native reader/runtime/worker/private-writer points**. All
+**110 selected fields**, digests, signed values, partial families, empty gaps and
+association/configuration references match exactly. Existing published rows
+remain unchanged. The previous source/publication journey preserves **123 facts
+/ 38 packets / 28 verified links**, **112/112 damage**, and fresh **8/8 accepted
+control**, including bounded retained source, private roles, rollback, lost
+acknowledgements and drift/restoration. Schema fingerprints remain the head-65
+values above. Owned databases and reviewer roles are removed, database fixtures
+stopped and the existing MySQL no-native-AIO workaround retained.
+
+This qualification still uses gameplay objects and game-service seams in an
+executable fixture, including explicit future pulse clocks. It does not establish
+a full personal-server session/save/readback or performance journey, complete
+native effect classification, continuous build exposure or a new build report.
+TSan remains unsupported on the local runner as previously recorded.
+
+**Next executable expectation:** retain exact kind-12 observations and publish
+them under a separately versioned comparison definition with independent
+schema-5 loss coverage. Verify packet/alias, point-time, configuration,
+availability and sampling-gap evidence before comparisons; preserve current
+definition-5 meaning and published generations. Then qualify actual
+personal-local gameplay/readback/performance. Complete native context and typed
+outcomes, distinct PvE attempts/objectives/reward linkage, rested/assistance and
+portfolio additions, four complete balance suites/statistical exports and #487
+canonical economic compatibility remain required. All seven final accepted
+requirements retain their unfinished portions; production or staging access is
+unnecessary. See [BATTLES.md](BATTLES.md#native-cached-build-capture) for exact
+boundaries, limits and maintained local commands.

@@ -1802,6 +1802,7 @@ char affect_total(P_char ch, int kill_ch)
 			StartRegen(ch, regen_resource::ward);
 	}
 
+	telemetry_runtime_game_battle_build_changed(ch);
 	return FALSE;
 }
 

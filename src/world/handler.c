@@ -2293,6 +2293,7 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 
 	mark_char_or_owner_dirty(ch);
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+	telemetry_runtime_game_battle_build_changed(ch);
 }
 
 // Removes an object from a char's equipped slot [pos].
@@ -2335,6 +2336,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 
 	mark_char_or_owner_dirty(ch);
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+	telemetry_runtime_game_battle_build_changed(ch);
 
 	return (obj);
 }

@@ -25,6 +25,7 @@ from test_telemetry_incidents import runtime_fingerprint
 sys.path.insert(0, str(ROOT / "scripts/telemetry"))
 import battle_contract
 import battle_contribution_contract
+import battle_build_contract
 import battle_source as retained_source
 import battle_history
 import battle_publication
@@ -35,6 +36,45 @@ from db_access import (RAW_COLUMNS, AmbiguousCommit, ConnectionSettings, Generat
 from rollup_definitions import RollupTarget, PUBLICATION_BUILDING, PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED
 from rollup_engine import RollupEngine, RollupBounds, BoundsExceeded, SemanticError
 from test_telemetry_observations import ownership
+
+
+def qualify_native_build_storage(query, executable, run_environment, export):
+    """Actual cached reader/worker/writer values; retained reports remain sealed."""
+    origin = query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"]
+    public = query("SELECT * FROM telemetry_rollup_battle_row ORDER BY definition_version,generation,environment_id,season_id,row_kind,row_key")
+    subprocess.run([str(executable), "--native-build-sql"], cwd=ROOT,
+        env=dict(run_environment, TELEMETRY_BUILD_CAPTURE_EXPORT=str(export)), check=True, timeout=30)
+    emitted = [json.loads(line) for line in export.read_text(encoding="utf-8").splitlines()]
+    for row in emitted:
+        for name, _, signed in battle_build_contract.FIELD_LAYOUT:
+            if signed is None:
+                row[name] = bytes.fromhex(row[name])
+        battle_build_contract.validate_raw_observation(row)
+    receipt = lambda row: (row["boot_id"], row["process_id"], row["record_seq"])
+    stored = query("SELECT " + ",".join(RAW_COLUMNS) +
+        " FROM telemetry_interval WHERE record_kind=12 AND ingest_id>%s ORDER BY boot_id,process_id,record_seq", (origin,))
+    assert len(stored) == len(emitted) == 20
+    for expected, raw in zip(sorted(emitted, key=receipt), stored, strict=True):
+        assert all(raw[name] == value for name, value in expected.items()), "native build/SQL field drift"
+        battle_build_contract.validate_raw_observation(raw)
+        basis = query("SELECT " + ",".join(RAW_COLUMNS) + " FROM telemetry_interval WHERE record_kind=10 AND "
+            "battle_boot_id=%s AND battle_process_id=%s AND battle_seq=%s AND "
+            "battle_revision=%s AND battle_fact_sequence=%s", tuple(raw[name] for name in (
+                "bctx_battle_boot_id", "bctx_battle_process_id", "bctx_battle_seq",
+                "bctx_association_revision", "bctx_association_fact_sequence")))
+        assert len(basis) == 1 and basis[0]["battle_at_monotonic_usec"] <= raw["bctx_at_monotonic_usec"]
+        if raw["bctx_config_id"]:
+            config = query("SELECT build_version,content_version,environment_id,season_id FROM telemetry_config WHERE config_id=%s", (raw["bctx_config_id"],))
+            assert len(config) == 1 and tuple(config[0][name] for name in (
+                "build_version", "content_version", "environment_id", "season_id")) == tuple(raw[name] for name in (
+                    "bctx_build_version", "bctx_content_version", "bctx_environment_id", "bctx_season_id"))
+    assert query("SELECT * FROM telemetry_rollup_battle_row ORDER BY definition_version,generation,environment_id,season_id,row_kind,row_key") == public
+    assert query("SELECT COUNT(*) AS n FROM telemetry_quarantine")[0]["n"] == 0
+    return dict(native_build_capture=True, native_build_records=20, native_build_fields=110,
+        native_build_sql_exact=True, native_build_exact_association=True,
+        native_build_configuration_gaps=True, native_build_partial_families=True,
+        native_build_periodic_lifetime_safe=True, native_build_retained_publication=False,
+        native_build_running_server=False)
 
 
 def qualify_native_control_publication(query, rollup, reporter, executable, run_environment, export):
@@ -787,6 +827,8 @@ def qualify() -> None:
                 battle_field_count=70, native_runtime=True, actual_worker=True,
                 native_sql_writer=True, private_writer=True, running_server=False)
             result.update(persistence)
+            result.update(qualify_native_build_storage(query, executable, run_environment,
+                export.with_name("builds.jsonl")))
             if artifact := os.environ.get("TELEMETRY_BATTLE_RUNTIME_RESULT"):
                 Path(artifact).write_text(json.dumps(result, indent=2) + "\n")
             print(json.dumps(result, sort_keys=True), flush=True)

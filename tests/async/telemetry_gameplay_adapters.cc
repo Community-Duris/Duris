@@ -4,6 +4,7 @@
 #include "telemetry/telemetry_battle_contract.h"
 #include "telemetry/telemetry_battle_contribution.h"
 #include "telemetry/telemetry_battle_build_context.h"
+#include "telemetry/telemetry_battle_build_observation.h"
 #include "combat/arena.h"
 #include "telemetry/telemetry_transport_private.h"
 #include "core/structs.h"
@@ -127,6 +128,7 @@ struct fake_repository
 	std::vector<telemetry_combat_summary_payload> combat;
 	std::vector<telemetry_record> battles;
 	std::vector<telemetry_record> contributions;
+	std::vector<telemetry_record> builds;
 };
 
 telemetry_repository_outcome fake_init(void *context, telemetry_repository_config config) noexcept
@@ -193,6 +195,11 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 		{
 			assert(telemetry_record_is_valid(records[index]));
 			fake->contributions.push_back(records[index]);
+		}
+		if (records[index].header.kind == telemetry_record_kind::battle_build)
+		{
+			assert(telemetry_record_is_valid(records[index]));
+			fake->builds.push_back(records[index]);
 		}
 		if (records[index].header.kind == telemetry_record_kind::interval &&
 		    records[index].payload.interval.context == telemetry_activity_context::combat)
@@ -2711,6 +2718,494 @@ fake_repository check_native_control_capture(bool use_native = false, bool expor
 	return fake;
 }
 
+void export_native_build_capture(const fake_repository &fake)
+{
+	const char *path = std::getenv("TELEMETRY_BUILD_CAPTURE_EXPORT");
+	if (!path)
+		return;
+	auto *file = std::fopen(path, "wb");
+	assert(file);
+	for (const auto &record : fake.builds)
+	{
+		std::fprintf(
+			file,
+			"{\"boot_id\":%llu,\"process_id\":%llu,\"record_seq\":%llu,\"record_kind\":12,\"schema_version\":1,\"occurrence_utc_usec\":%lld",
+			static_cast<unsigned long long>(record.header.key.producer.boot_id),
+			static_cast<unsigned long long>(record.header.key.producer.process_id),
+			static_cast<unsigned long long>(record.header.key.record_seq),
+			static_cast<long long>(record.header.occurrence_utc_usec));
+#define TELEMETRY_BUILD_FIELD(name, member, width, is_signed)                             \
+	if constexpr (is_signed)                                                          \
+		std::fprintf(file, ",\"" #name "\":%lld",                                 \
+			     static_cast<long long>(record.payload.battle_build.member)); \
+	else                                                                              \
+		std::fprintf(file, ",\"" #name "\":%llu",                                 \
+			     static_cast<unsigned long long>(record.payload.battle_build.member));
+#define TELEMETRY_BUILD_BYTES(name, member, width)           \
+	std::fprintf(file, ",\"" #name "\":\"");             \
+	for (auto byte : record.payload.battle_build.member) \
+		std::fprintf(file, "%02x", byte);            \
+	std::fputc('"', file);
+#include "telemetry/telemetry_battle_build_fields.inc"
+#undef TELEMETRY_BUILD_FIELD
+#undef TELEMETRY_BUILD_BYTES
+		std::fputs("}\n", file);
+	}
+	assert(std::fclose(file) == 0);
+}
+
+void check_native_build_capture(bool use_native = false, bool export_capture = false)
+{
+	fake_repository fake{};
+	fake.use_native = use_native;
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	auto options = enabled_options();
+	options.config.context_segments_per_minute = 64U;
+	options.config.build_version = 7U;
+	options.config.content_version = 11U;
+	assert(telemetry_config_compute_fingerprint(options.config, options.config.fingerprint,
+						    sizeof(options.config.fingerprint)));
+	options.config.config_id = telemetry_config_id_from_fingerprint(
+		options.config.fingerprint, sizeof(options.config.fingerprint));
+	telemetry_test_start_runtime(options);
+	const auto config = telemetry_config_snapshot_copy();
+	room_data room{};
+	zone_data zone{};
+	zone.number = 1977;
+	world = &room;
+	zone_table = &zone;
+	top_of_world = top_of_zone_table = 0;
+	char_data player{}, target{}, present{};
+	pc_only_data player_pc{}, target_pc{}, present_pc{};
+	player.only.pc = &player_pc;
+	target.only.pc = &target_pc;
+	present.only.pc = &present_pc;
+	player_pc.pid = 8971;
+	target_pc.pid = 8972;
+	present_pc.pid = 8973;
+	for (auto *actor : { &player, &target, &present })
+	{
+		actor->runtime_id = allocate_character_runtime_id();
+		actor->in_room = 0;
+		actor->player.level = 51;
+		actor->player.m_class = 3U;
+		actor->player.race = RACE_HUMAN;
+		actor->player.racewar = 2U;
+	}
+	player.player.secondary_class = 4U;
+	player.player.spec = 3U;
+	player.base_stats.Str = 100;
+	player.curr_stats.Str = 130;
+	player.points.base_hit = 1000;
+	player.points.max_hit = 2000;
+	player.points.hit = 1800;
+	obj_data weapon{};
+	weapon.type = ITEM_WEAPON;
+	weapon.condition = 90;
+	weapon.affected[0] = { APPLY_DAMROLL, 7 };
+	player.equipment[0] = &weapon;
+	skills[SKILL_TOUGHNESS].name = "fixture epic";
+	skills[SKILL_TOUGHNESS].targets = TAR_SKILL | TAR_EPIC;
+	player_pc.skills[SKILL_TOUGHNESS].learned = 40;
+	group_list last{ &present, nullptr }, group{ &player, &last };
+	player.group = present.group = &group;
+	character_list = &player;
+	player.next = &target;
+	target.next = &present;
+	assert(telemetry_runtime_game_combat_engage(&player, &target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	for (unsigned hit = 0U; hit < 100U; ++hit)
+		telemetry_runtime_game_combat_damage(&player, &target, 1U, 0U);
+	// First observed change copies the actual new selected values.
+	weapon.condition = 91;
+	player.curr_stats.Str = 140;
+	telemetry_runtime_game_battle_build_changed(&player);
+	assert(telemetry_runtime_game_battle_context(&player).records_emitted == 1U);
+	// Coalescing an equal mutation still consumes one bounded read, no point.
+	telemetry_runtime_game_battle_build_changed(&player);
+	assert(telemetry_runtime_game_battle_context(&player).records_emitted == 0U);
+	player_pc.skills[SKILL_TOUGHNESS].learned = 41;
+	telemetry_runtime_game_battle_build_changed(&player);
+	assert(telemetry_runtime_game_battle_context(&player).records_emitted == 1U);
+	player.equipment[1] = &weapon;
+	telemetry_runtime_game_battle_build_changed(&player);
+	assert(telemetry_runtime_game_battle_context(&player).records_emitted == 1U);
+	player.equipment[1] = nullptr;
+	telemetry_runtime_game_battle_build_changed(&player);
+	assert(telemetry_runtime_game_battle_context(&player).records_emitted == 1U);
+	// A new qualified config publishes a fresh point under its exact identity.
+	auto changed = config;
+	++changed.revision;
+	++changed.content_version;
+	assert(telemetry_config_compute_fingerprint(changed, changed.fingerprint,
+						    sizeof(changed.fingerprint)));
+	changed.config_id = telemetry_config_id_from_fingerprint(changed.fingerprint,
+								 sizeof(changed.fingerprint));
+	assert(telemetry_config_publish(changed).outcome == telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_game_battle_context(&player).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	// Withdrawal has no retained profile or fictitious config/build/content.
+	telemetry_config_reload_observer(telemetry_config_global_state());
+	assert(telemetry_runtime_game_battle_context(&player).outcome ==
+	       telemetry_runtime_outcome::invalid);
+	++changed.revision;
+	++changed.policy_version;
+	assert(telemetry_config_compute_fingerprint(changed, changed.fingerprint,
+						    sizeof(changed.fingerprint)));
+	changed.config_id = telemetry_config_id_from_fingerprint(changed.fingerprint,
+								 sizeof(changed.fingerprint));
+	assert(telemetry_config_publish(changed).outcome == telemetry_runtime_outcome::accepted);
+	telemetry_config_reload_request_clear(telemetry_config_global_state());
+	assert(telemetry_runtime_game_battle_context(&player).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	// A live NPC vanishes without its ordinary teardown callback. The cache
+	// keeps only an opaque address, so the later world scan cannot read it.
+	auto missing = std::make_unique<char_data>();
+	npc_only_data npc_only{};
+	missing->specials.act = ACT_ISNPC;
+	missing->only.npc = &npc_only;
+	missing->runtime_id = allocate_character_runtime_id();
+	missing->in_room = 0;
+	missing->player.level = 15;
+	const auto old_npc_id = TELEMETRY_BATTLE_NPC_GENERATION_TAG | missing->runtime_id;
+	present.next = missing.get();
+	telemetry_runtime_game_combat_damage(&player, missing.get(), 1U, 0U);
+	assert(telemetry_runtime_game_battle_leave(missing.get()).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	missing->runtime_id = allocate_character_runtime_id();
+	missing->player.level = 31;
+	const auto missing_id = TELEMETRY_BATTLE_NPC_GENERATION_TAG | missing->runtime_id;
+	fixture_pet = missing.get();
+	fixture_pet_master = &player;
+	telemetry_runtime_game_combat_damage(&player, missing.get(), 1U, 0U);
+	fixture_pet = fixture_pet_master = nullptr;
+	present.next = nullptr;
+	missing.reset();
+	player.next = &present; // A live PC also becomes temporarily unresolvable.
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_pulse({ now + 11'000'000U, utc + 11'000'000, 0U, 0U }).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	player.next = &target;
+	assert(telemetry_runtime_pulse({ now + 12'000'000U, utc + 12'000'000, 0U, 0U }).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	// Complete the fixture's future clock before shutdown. Build sampling does
+	// not keep the battle alive or extend its measured engagement prefix.
+	assert(telemetry_runtime_pulse({ now + 50'000'000U, utc + 50'000'000, 0U, 0U }).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	std::set<telemetry_sequence> sequences;
+	unsigned entries = 0U, mutations = 0U, configs = 0U, withdrawn = 0U, resumed = 0U,
+		 periodic = 0U, missing_points = 0U, target_gaps = 0U, lifetime_points = 0U;
+	telemetry_battle_build_observation first{}, gear{}, epic{}, partial{};
+	for (const auto &record : fake.builds)
+	{
+		const auto &value = record.payload.battle_build;
+		assert(sequences.insert(value.sequence).second);
+		assert(std::any_of(fake.battles.begin(), fake.battles.end(),
+				   [&](const auto &basis)
+				   {
+					   const auto &fact = basis.payload.battle;
+					   return fact.battle.sequence == value.battle.sequence &&
+						  fact.revision == value.association_revision &&
+						  fact.fact_sequence ==
+							  value.association_fact_sequence &&
+						  fact.at_monotonic_usec <= value.at_monotonic_usec;
+				   }));
+		if (value.boundary == telemetry_battle_build_boundary::actor_entry)
+		{
+			++entries;
+			if (value.actor_id == 8971U)
+				first = value;
+			if (value.actor_id == old_npc_id)
+			{
+				assert(value.actor_kind == telemetry_combat_actor_kind::npc &&
+				       value.level == 15U);
+				++lifetime_points;
+			}
+			if (value.actor_id == missing_id)
+			{
+				assert(value.actor_kind == telemetry_combat_actor_kind::pet &&
+				       value.level == 31U && value.primary_class_mask == 0U &&
+				       !(value.available & TELEMETRY_BUILD_LEARNED_EPICS));
+				++lifetime_points;
+			}
+		}
+		if (value.boundary == telemetry_battle_build_boundary::actor_changed)
+		{
+			++mutations;
+			if (mutations == 1U)
+				gear = value;
+			if (mutations == 2U)
+				epic = value;
+			if (mutations == 3U)
+				partial = value;
+		}
+		configs += value.boundary == telemetry_battle_build_boundary::configuration_changed;
+		resumed += value.boundary == telemetry_battle_build_boundary::source_resumed;
+		periodic += value.boundary == telemetry_battle_build_boundary::periodic_sample;
+		if (value.boundary == telemetry_battle_build_boundary::configuration_unavailable)
+		{
+			++withdrawn;
+			assert(value.config_id == 0U && value.build_version == 0U &&
+			       value.content_version == 0U);
+		}
+		if (value.actor_id == missing_id &&
+		    value.boundary == telemetry_battle_build_boundary::source_unavailable)
+			++missing_points;
+		if (value.actor_id == 8972U &&
+		    value.boundary == telemetry_battle_build_boundary::source_unavailable)
+			++target_gaps;
+		if (value.status == telemetry_battle_build_status::unavailable)
+			assert(telemetry_battle_build_detail::empty_profile(value));
+	}
+	assert(entries == 5U && mutations == 4U && configs == 1U && withdrawn == 3U &&
+	       resumed == 3U && periodic == 2U && missing_points == 1U && target_gaps == 1U &&
+	       lifetime_points == 2U);
+	assert(first.primary_class_mask == 3U && first.secondary_class_mask == 4U &&
+	       first.specialization == 3U && first.base_stats[0] == 100 &&
+	       first.effective_stats[0] == 130 && first.current_resources[0] == 1800 &&
+	       first.base_resources[0] == 1000 && first.effective_resources[0] == 2000 &&
+	       first.equipment_counts[0] == 1U);
+	assert(gear.effective_stats[0] == 140 &&
+	       std::memcmp(first.equipment_digest, gear.equipment_digest, 32U) != 0 &&
+	       std::memcmp(first.epic_digest, gear.epic_digest, 32U) == 0);
+	assert(std::memcmp(gear.epic_digest, epic.epic_digest, 32U) != 0);
+	assert(!(partial.available & TELEMETRY_BUILD_FIXED_EQUIPMENT) &&
+	       partial.effective_stats[0] == 140 &&
+	       (partial.context_quality & TELEMETRY_BUILD_EQUIPMENT_INVALID));
+	assert(std::count_if(fake.battles.begin(), fake.battles.end(),
+			     [](const auto &record) {
+				     return record.payload.battle.kind ==
+					    telemetry_battle_fact_kind::close;
+			     }) == 1);
+	if (export_capture)
+		export_native_build_capture(fake);
+	character_list = nullptr;
+	world = nullptr;
+	zone_table = nullptr;
+	top_of_world = top_of_zone_table = -1;
+	skills[SKILL_TOUGHNESS] = {};
+	std::printf(
+		"PASS: native build capture exact association, gear/epic changes, partial families, config withdrawal/recovery, periodic lifetime safety; records=%zu\n",
+		fake.builds.size());
+}
+
+void check_native_build_limits()
+{
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	auto options = enabled_options();
+	options.config.context_segments_per_minute = 2U;
+	assert(telemetry_config_compute_fingerprint(options.config, options.config.fingerprint,
+						    sizeof(options.config.fingerprint)));
+	options.config.config_id = telemetry_config_id_from_fingerprint(
+		options.config.fingerprint, sizeof(options.config.fingerprint));
+	telemetry_test_start_runtime(options);
+	room_data room{};
+	zone_data zone{};
+	zone.number = 1978;
+	world = &room;
+	zone_table = &zone;
+	top_of_world = top_of_zone_table = 0;
+	char_data player{}, target{};
+	pc_only_data pc{}, target_pc{};
+	pc.pid = 8991;
+	target_pc.pid = 8992;
+	player.only.pc = &pc;
+	target.only.pc = &target_pc;
+	player.in_room = target.in_room = 0;
+	assert(telemetry_runtime_game_combat_engage(&player, &target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	++player.curr_stats.Str;
+	telemetry_runtime_game_battle_build_changed(&player);
+	assert(telemetry_runtime_game_battle_context(&player).records_emitted == 1U);
+	++player.curr_stats.Str;
+	telemetry_runtime_game_battle_build_changed(&player);
+	assert(telemetry_runtime_game_battle_context(&player).records_emitted == 1U);
+	for (unsigned attempt = 0U; attempt < 100U; ++attempt)
+	{
+		++player.curr_stats.Str;
+		telemetry_runtime_game_battle_build_changed(&player);
+		assert(telemetry_runtime_game_battle_context(&player).records_emitted == 0U);
+	}
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	assert(fake.builds.size() == 4U);
+	const auto &gap = fake.builds.back().payload.battle_build;
+	assert(gap.boundary == telemetry_battle_build_boundary::rate_limit &&
+	       telemetry_battle_build_detail::empty_profile(gap));
+	world = nullptr;
+	zone_table = nullptr;
+	top_of_world = top_of_zone_table = -1;
+	std::puts(
+		"PASS: bounded native actor sampling emits one empty rate-limit gap during mutation churn");
+}
+
+void check_native_build_global_limit()
+{
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	telemetry_test_start_runtime(enabled_options());
+	room_data room{};
+	zone_data zone{};
+	zone.number = 1979;
+	world = &room;
+	zone_table = &zone;
+	top_of_world = top_of_zone_table = 0;
+	char_data player{}, targets[20]{};
+	pc_only_data pc{};
+	npc_only_data npc_data[20]{};
+	pc.pid = 8993;
+	player.only.pc = &pc;
+	player.in_room = 0;
+	for (std::size_t index = 0U; index < 20U; ++index)
+	{
+		auto &target = targets[index];
+		target.specials.act = ACT_ISNPC;
+		target.only.npc = &npc_data[index];
+		target.runtime_id = allocate_character_runtime_id();
+		target.in_room = 0;
+		// Separate live components avoid the shared collector's 16-actor cap.
+		assert(telemetry_runtime_game_battle_leave(&player).outcome ==
+		       telemetry_runtime_outcome::accepted);
+		assert(telemetry_runtime_game_combat_engage(&player, &target).outcome ==
+		       telemetry_runtime_outcome::accepted);
+	}
+	// Full scans are bounded before entry capture. A later current observation
+	// recovers unknown points using newly allocated logical keys.
+	std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+	for (auto &target : targets)
+		assert(telemetry_runtime_game_battle_context(&target).outcome ==
+		       telemetry_runtime_outcome::accepted);
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	unsigned initial = 0U, gaps = 0U, resumed = 0U;
+	std::set<telemetry_sequence> sequences;
+	for (const auto &record : fake.builds)
+	{
+		const auto &value = record.payload.battle_build;
+		assert(sequences.insert(value.sequence).second);
+		initial += value.boundary == telemetry_battle_build_boundary::actor_entry;
+		gaps += value.boundary == telemetry_battle_build_boundary::rate_limit;
+		resumed += value.boundary == telemetry_battle_build_boundary::source_resumed;
+	}
+	assert(initial == 20U && gaps == 16U && resumed == 8U);
+	world = nullptr;
+	zone_table = nullptr;
+	top_of_world = top_of_zone_table = -1;
+	std::puts(
+		"PASS: native global read and marker budgets bound burst entries and recover fresh contexts");
+}
+
+void check_native_build_queue_loss()
+{
+	fake_repository fake{};
+	worker_entered.store(false);
+	release_worker.store(false);
+	const telemetry_transport_repository_binding repository = { fake_init, blocking_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	telemetry_test_start_runtime(enabled_options());
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+	while (!worker_entered.load() && std::chrono::steady_clock::now() < deadline)
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	assert(worker_entered.load());
+	room_data room{};
+	zone_data zone{};
+	zone.number = 1980;
+	world = &room;
+	zone_table = &zone;
+	top_of_world = top_of_zone_table = 0;
+	char_data player{}, target{}, churn{};
+	pc_only_data pc{}, target_pc{}, churn_pc{};
+	pc.pid = 8994;
+	target_pc.pid = 8995;
+	churn_pc.pid = 8996;
+	player.only.pc = &pc;
+	target.only.pc = &target_pc;
+	churn.only.pc = &churn_pc;
+	player.in_room = target.in_room = 0;
+	churn.in_room = -1;
+	telemetry_runtime_game_combat_damage(&player, &target, 5U, 0U);
+	descriptor_data descriptor{};
+	descriptor.connected = CON_PLAYING;
+	bool full = false;
+	for (unsigned attempt = 0U; attempt < 8192U; ++attempt)
+	{
+		const auto entered = telemetry_runtime_game_enter(&churn, &descriptor);
+		(void)telemetry_runtime_game_session_exit(&churn, &descriptor,
+							  telemetry_session_end_reason::logout);
+		if (entered.records_dropped)
+		{
+			full = true;
+			break;
+		}
+	}
+	assert(full);
+	++player.curr_stats.Str;
+	telemetry_runtime_game_battle_build_changed(&player);
+	const auto refused = telemetry_runtime_game_battle_context(&player);
+	assert(refused.outcome == telemetry_runtime_outcome::queue_full &&
+	       refused.records_dropped == 1U);
+	release_worker.store(true);
+	const auto drain = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+	while (telemetry_transport_health_copy().queue_depth != 0U &&
+	       std::chrono::steady_clock::now() < drain)
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	assert(telemetry_transport_health_copy().queue_depth == 0U);
+	assert(telemetry_runtime_game_battle_context(&player).records_emitted == 1U);
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	assert(fake.builds.size() == 3U);
+	const auto &recovered = fake.builds.back().payload.battle_build;
+	assert(recovered.actor_id == 8994U && recovered.sequence == 4U &&
+	       recovered.boundary == telemetry_battle_build_boundary::source_resumed &&
+	       (recovered.quality_flags & TELEMETRY_QUALITY_QUEUE_DROP));
+	assert(fake.contributions.size() == 2U);
+	for (const auto &record : fake.contributions)
+		assert(!(record.payload.battle_contribution.quality_flags &
+			 TELEMETRY_QUALITY_QUEUE_DROP));
+	world = nullptr;
+	zone_table = nullptr;
+	top_of_world = top_of_zone_table = -1;
+	std::puts(
+		"PASS: refused build keys are never reused and build loss preserves measured contribution coverage");
+}
+
 } // namespace
 
 int main(int argc, char **argv)
@@ -2727,7 +3222,17 @@ int main(int argc, char **argv)
 		check_native_control_capture(false, true);
 		return 0;
 	}
+	if (argc == 2 && std::strcmp(argv[1], "--native-build-capture") == 0)
+	{
+		check_native_build_capture(false, true);
+		return 0;
+	}
 #ifdef TELEMETRY_TEST_NATIVE_BATTLE_SQL
+	if (argc == 2 && std::strcmp(argv[1], "--native-build-sql") == 0)
+	{
+		check_native_build_capture(true, true);
+		return 0;
+	}
 	if (argc == 2 && std::strcmp(argv[1], "--native-control-sql") == 0)
 	{
 		check_native_control_capture(true, true);
@@ -2746,6 +3251,9 @@ int main(int argc, char **argv)
 	assert(CRYPTO_set_mem_functions(fixture_crypto_malloc, fixture_crypto_realloc,
 					fixture_crypto_free) == 1);
 	check_native_build_context();
+	check_native_build_capture();
+	check_native_build_limits();
+	check_native_build_global_limit();
 	check_native_battle_context();
 	check_native_shared_battle_capture();
 	check_native_control_capture();
@@ -2754,6 +3262,7 @@ int main(int argc, char **argv)
 	check_deferred_startup_presence();
 	check_resume_capacity_rollback();
 	check_resume_queue_pressure();
+	check_native_build_queue_loss();
 	check_environment_options();
 	check_disabled_game_path();
 	check_enabled_game_path();

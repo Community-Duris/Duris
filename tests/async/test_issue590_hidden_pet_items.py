@@ -38,6 +38,7 @@ HARNESS = r'''
 #include "combat/training_dummy.h"
 #include "combat/attack_continuation.h"
 #include "economy/collector_presence.h"
+#include "telemetry/telemetry_runtime.h"
 #include <string>
 using std::string;
 #include <cassert>
@@ -80,6 +81,10 @@ void world_activity_object_enter(P_obj object) {
 int char_light(P_char) { return 0; }
 int room_light(int, int) { return 0; }
 void mark_char_or_owner_dirty(P_char) {}
+static unsigned telemetry_build_marks;
+void telemetry_runtime_game_battle_build_changed(const char_data *) noexcept {
+    ++telemetry_build_marks;
+}
 void act(const char *, int, P_char, P_obj, void *, int) {}
 obj_affect *get_obj_affect(P_obj, int) { return nullptr; }
 int encumbrance_weight(int weight) { return weight; }
@@ -199,6 +204,7 @@ int main() {
     hidden.next_content = nullptr; pet.carrying = nullptr;
     equip_char(&pet,&hidden,PRIMARY_WEAPON,9);
     assert(!pet.equipment[PRIMARY_WEAPON] && pet.carrying == &hidden);
+    assert(telemetry_build_marks == 0);
     assert(OBJ_CARRIED_BY(&hidden,&pet) && hidden.obj_uid == 59001);
     // Restore/charm normalization preserves UID, graph and owner, not a grant
     // to the player. Repeated normalization is harmless.
@@ -219,6 +225,7 @@ int main() {
     visible.loc_p = LOC_NOWHERE; visible.loc.wearing = nullptr; linked = true;
     equip_char(&pet,&visible,HOLD,9);
     assert(pet.equipment[HOLD] == &visible);
+    assert(telemetry_build_marks == 2);
     // charm_generic may add a follower before establishing LNK_PET. Execute
     // the actual setup boundary: early normalization is a no-op, post-link
     // normalization must retain the same hidden graph in the pet's inventory.

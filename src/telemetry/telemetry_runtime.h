@@ -387,12 +387,16 @@ void telemetry_runtime_game_group_changed(struct group_list *) noexcept;
  * not start a battle or allocate an authenticated session. */
 bool telemetry_runtime_game_battle_actor(const struct char_data *,
 					 telemetry_battle_actor_context *) noexcept;
-/* Game-thread bounded value snapshot for future battle context capture. Call at
+/* Game-thread bounded value snapshot used by cached battle context capture. Call at
  * reviewed entry/change boundaries, never once per hit. Missing families remain
  * unavailable, and refusal clears the result. Does not emit a record, create a
  * session/battle, establish buff ownership or infer an arena match/outcome. */
 bool telemetry_runtime_game_battle_build_context(const struct char_data *,
 						 telemetry_battle_build_context *) noexcept;
+/* Mark selected native state after an accepted mutation. This copies no build,
+ * emits no record and starts no battle; the next bounded observation samples
+ * the live state. Repeated marks coalesce while capture is rate limited. */
+void telemetry_runtime_game_battle_build_changed(const struct char_data *) noexcept;
 /* Proves actual same-room, same formal-roster presence. The association engine
  * separately requires the source to be an already active battle participant. */
 bool telemetry_runtime_game_battle_group_presence(const struct char_data *,
