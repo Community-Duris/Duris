@@ -51,6 +51,13 @@ backend limitations and the tested revision before checking off acceptance.
 
 ## Current implementation and qualification checkpoint
 
+Plan1 independent acceptance is published in8586ba589; Plan5 baseline-marker
+readers and its lifecycle handoff are imported in db682ade5. Reviewed31-file
+coin/collector/shared-owner source integration now follows that qualified base.
+Those new inputs are unqualified; testing stays batched at major-plan readiness.
+Flat active bootstrap and remaining money/item/domain writers are still required.
+
+
 The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
 remote histories and primary production source through `9fabe54bb`, plus the
 qualified ordinary-drop equipment-census correction. Both strict server builds,
@@ -58,8 +65,10 @@ focused components, 35 worker/journal guard cases per backend, bank/coin/item
 coordinator/pool, lifecycle, 22 checked-release, 14 startup and 18 recovery-session
 cases pass within their recorded input scopes. The actual ordinary drop now passes
 guarded ACK and two complete native cold boots on each SQL engine. The maintained
-gameplay regression and independent Plan 1 acceptance consolidation are next;
-Plans 2–4, combined Plan 5 and full R1–R8 release acceptance remain unfinished. The
+gameplay regression now passes both engines against the current source, and
+Plan 1's original independent acceptance is complete within those recorded scopes.
+Plans 2–4, combined Plan 5, activation-owner integration and full R1–R8 release
+acceptance remain unfinished. The
 [consolidated save/recovery report](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md)
 retains the exact slices, source-established gaps and evidence limits.
 
@@ -929,3 +938,14 @@ for the permitted disposable synthetic-coverage fixture; no new production CLI
 or Plan5 waiver is needed. Plan1 remains incomplete. Continue original Plans2-4
 producer work in parallel; private collector and inert-money proposals remain
 unintegrated/unqualified and do not promote writer coverage or release readiness.
+
+
+### Current flat runtime/origin source handoff
+
+After the source-only 6379c713a shared-owner milestone and peer lifecycle-reader
+import 621ba722b, native v3 initialization origin, protected lifecycle-file
+registration, retained flat startup/current-source census and trusted shutdown
+are integrated as source-only work. Matching independent v3 consumption and
+original major-plan native/gameplay/recovery qualification remain pending.
+Central flat coin admission stays closed. No required route, inactive safety
+behavior, declined spell-path decision or original acceptance gate is changed.

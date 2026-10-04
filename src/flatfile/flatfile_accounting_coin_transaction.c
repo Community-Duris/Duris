@@ -502,6 +502,40 @@ critical_apply_result completion(const flatfile_accounting_record &record, bool 
 }
 }
 
+critical_apply_result flatfile_accounting_coin_transaction::verify_retained_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_command &original) noexcept
+{
+	try
+	{
+		need(!root.empty() && lock.matches(root), EINVAL);
+		// Validate the caller's original typed identity before recovering lookup.
+		// The lookup compares its canonical bytes to the immutable retained root.
+		(void)decode(original);
+		flatfile_accounting_record retained;
+		const auto lookup =
+			flatfile_accounting_lookup(root, lock, original, &retained, nullptr);
+		if (lookup == flatfile_accounting_status::not_found)
+			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+		checked(lookup);
+		verify(root, lock, retained);
+		return completion(retained, true);
+	}
+	catch (const failure &error)
+	{
+		// This is unavailable proof, not an authenticated business rejection.
+		return { critical_apply_outcome::retryable_failure, 0, error.code };
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
+	}
+	catch (...)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, EFAULT };
+	}
+}
+
 critical_apply_result flatfile_accounting_coin_transaction::apply(const std::string &root,
 								  const critical_command &command)
 {

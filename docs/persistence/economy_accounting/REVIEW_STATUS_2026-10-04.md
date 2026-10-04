@@ -1,7 +1,7 @@
 # Accounting review status — 2026-10-04
 
-Status: **Plan 1 qualification is underway; activation and release remain
-blocked**. `coverage_complete=False`. R1–R8 and every applicable major-plan
+Status: **Plan 1's original independent acceptance is complete; activation and
+release remain blocked**. `coverage_complete=False`. R1–R8 and every applicable major-plan
 acceptance gate remain required. This checkpoint supersedes the October 3 source
 preparation status, not its bounded historical test evidence.
 
@@ -16,12 +16,32 @@ payload/custody, guarded ACK and two full-world cold boots pass on MariaDB
 10.11.14 (135 seconds) and MySQL 8.0.46 (169 seconds), within the original 600
 seconds per engine; Redis is disabled and all owned cleanup checks pass.
 See the consolidated report for exact inputs and preserved failed runs.
-Maintained gameplay-regression integration and original Plan 1 acceptance
-consolidation are next. Plans 2–4 remain source work, not qualified coverage.
+The maintained gameplay regression now passes both engines (113/154 seconds),
+against the same current production closure, with all original assertions and
+limits. Plan1 independent acceptance is consolidated in its owning plan.
+Plans 2–4 remain source work, not qualified coverage.
 
 Plan5 retained namespace slice `7f64e1890` is imported and normally pushed in
 `b21b0c28d`. Its reader now retains original lineage/epoch joins and detects
 missing inactive namespaces; peer native evidence remains input-specific.
+
+Plan1 maintained regression and independent acceptance are published in
+`8586ba589`. Plan5 baseline-marker reader `d929fad52` and its lifecycle-discovery
+request `42594db01` are integrated and normally pushed in `db682ade5`, with exact
+remote readback. All eight imported files match the peer input; Python AST and
+diff checks pass. Its native results qualify the peer's consumed tree only;
+combined Plan5 qualification remains open. The narrow native origin decision is
+recorded in the imported handoff as source prepared and unqualified.
+
+Plans2/4 reviewed coin, collector admission/domain/publication, runtime payload,
+cold registration and offline publication slices are now source-integrated as
+one31-file candidate. Independent seam review passes, including both retained
+SQL proofs and corrected native object registration. No compiler or runtime
+qualification is claimed for these new inputs. The Plan1 milestone remains
+qualified at its original8586ba589 production closure; evidence is not relabeled
+for these later shared changes. Flat active bootstrap, remaining ordinary/item/domain writers, registry
+evidence and the original major-plan acceptance remain required. Testing stays
+batched at each major plan's readiness; no source inventory can close these gates.
 
 Peer `3b076856a` and `559dbd6fe` are imported as `67922f9e0` and `c8f593617`.
 The diagnostic now reads the native reason bytes; canonical retention checks
@@ -48,10 +68,9 @@ on both engines. Private expectation repairs preserve closed pre-start mutation,
 closed post-start registration, retained original holds and explicit resume;
 ID-only acknowledgements cannot release restored ownership. Original failures
 remain preserved. All18 current-source recovery-session cases now pass on both
-engines, including inspection failures and late lease retirement. The actual
-ordinary-drop gameplay/two-cold-boot journey remains required and unfinished.
-These results do not complete Plan 1 or qualify actual active ordinary-drop
-publication/restart. See the consolidated report for exact inputs and logs.
+engines, including inspection failures and late lease retirement. At that earlier checkpoint the actual ordinary-drop journey remained unfinished;
+the later maintained both-engine result above supersedes that gap. These older
+component results alone did not establish Plan1 acceptance. See the consolidated report for exact inputs and logs.
 
 Plan5 `e694798f6` and `bbb72ecff` are integrated as `47aa60de0` and
 `4fdbb7033`: independent baseline zero-effect checks and database-wide orphan
@@ -321,3 +340,19 @@ number of source helpers or prepared cases. These two new issues have separate
 local source commits; no compiler/tests/native/SQL/gameplay/AST qualification or
 verified milestone push occurred. The goal remains active and merge readiness
 is unproven.
+
+
+## Latest source integration after the independent Plan1 milestone
+
+The normally pushed 6379c713a coin/collector/shared-owner milestone is source
+reviewed, not natively qualified. Independent Plan5 present-file lifecycle audit
+9306818b5 is imported and normally pushed in 621ba722b; eight exact peer blobs,
+two Python AST inputs and diff hygiene pass. Combined native qualification is open.
+
+The next 14-input native origin/flat runtime milestone integrates catalog v3,
+protected lifecycle-file registration, full retained/current startup proof and
+trusted same-process shutdown. Source review and formatting pass. Current Plan5
+v1/v2 readers do not yet qualify v3; original compatibility/fault/gameplay checks
+stay deferred to major-plan readiness. Central flat coin admission stays closed,
+inactive behavior and SQL qualification scope are preserved, and remaining money,
+item/domain writers plus activation-owner and release evidence remain required.

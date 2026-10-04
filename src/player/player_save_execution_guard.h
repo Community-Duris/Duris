@@ -275,6 +275,44 @@ inline bool install_hold(int pid, const critical_operation_id &operation,
 	return true;
 }
 
+// The pipeline installs a live typed publication hold only after proving no
+// ordinary execution/residence remains. Prepared replay registration is separate.
+inline bool install_live_publication_hold(int pid, const critical_operation_id &operation,
+					  uint64_t *generation) noexcept
+{
+	if (pid <= 0 || !generation || critical_operation_id_is_zero(operation))
+		return false;
+	std::lock_guard<std::mutex> lock(detail::mutex);
+	if (!detail::ownership_epoch || detail::integrity_failed || detail::registration_open ||
+	    detail::permits.count(pid))
+		return false;
+	const auto owner = detail::owned_pids.find(pid);
+	if (owner != detail::owned_pids.end() &&
+	    (owner->second.claims || owner->second.ticket || owner->second.reserved ||
+	     owner->second.scope_owner))
+		return false;
+	detail::held_pid *available = nullptr;
+	for (auto &hold : detail::holds)
+	{
+		if (hold.pid == pid || (hold.pid && hold.operation.bytes == operation.bytes))
+		{
+			if (hold.pid != pid || hold.operation.bytes != operation.bytes)
+				return false;
+			*generation = hold.generation;
+			return true;
+		}
+		if (!hold.pid && !available)
+			available = &hold;
+	}
+	if (!available || detail::next_generation == std::numeric_limits<uint64_t>::max() ||
+	    detail::ownership_change == std::numeric_limits<uint64_t>::max())
+		return false;
+	*available = { pid, operation, ++detail::next_generation };
+	*generation = available->generation;
+	detail::changed_locked();
+	return true;
+}
+
 inline void poison_integrity() noexcept
 {
 	std::lock_guard<std::mutex> lock(detail::mutex);

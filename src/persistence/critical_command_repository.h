@@ -20,6 +20,17 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 critical_apply_result
 critical_command_repository_verify_creation_in_transaction(MYSQL *connection,
 							   const critical_command &command);
+// Read-only retained definitive schema-2 coin receipt. Caller must own a
+// reconnect-disabled transaction and acquire current native/accounting authority
+// locks in native order BEFORE invoking this historical proof. Reads a nonlocking
+// committed inbox snapshot; never STARTs/COMMITs/ROLLBACKs or executes a missing
+// operation. Missing/uncommitted receipts retain retry; changed identity refuses.
+// Successful and authentic rejected roots preserve their exact retained result,
+// durable revision and source/destination failure stage after accounting/outbox
+// verification. This does not establish current native custody or grant ACK.
+critical_apply_result
+critical_command_repository_verify_coin_in_transaction(MYSQL *connection,
+						       const critical_command &command) noexcept;
 // Read-only retained definitive schema-2 ordinary-drop receipt. Caller must own
 // a reconnect-disabled transaction and acquire current lineage/season/room/
 // custody/payload locks in native order BEFORE invoking this historical proof.
@@ -30,6 +41,11 @@ critical_command_repository_verify_creation_in_transaction(MYSQL *connection,
 // rejected accounting/root/outbox/native movement/payload absence is verified.
 // This does not establish current source custody or permit publication/ACK.
 critical_apply_result critical_command_repository_verify_ordinary_drop_in_transaction(
+	MYSQL *connection, const critical_command &command) noexcept;
+// Historical collector purchase proof only. Caller already owns current
+// lifetime/catalog/listing/wallet/custody locks on its original transaction.
+// Only a fully verified stored rejection returns terminal_failure.
+critical_apply_result critical_command_repository_verify_collector_purchase_in_transaction(
 	MYSQL *connection, const critical_command &command) noexcept;
 critical_apply_result critical_command_repository_apply_from_pool(const critical_command &command,
 								  void *context);

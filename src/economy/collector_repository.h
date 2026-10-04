@@ -46,6 +46,22 @@ struct collector_repository_locked_before
 	uint64_t to_owner_revision = 0;
 };
 
+// Current locked native projection, distinct from the historical completion.
+// Caller owns economic lifetime locks and the reconnect-disabled transaction.
+// The reader never applies a purchase or manufactures an absent owner key.
+// Successful singleton payload proof includes exact existing runtime and
+// item-properties encodings, not only the scalar/affect/description rows.
+struct collector_purchase_current_projection
+{
+	collector_command_result result = {};
+	uint64_t player_save_revision = 0;
+	uint32_t bank_id = 0;
+};
+bool collector_repository_read_purchase_projection(
+	MYSQL *connection, const critical_command &command,
+	const collector_command_result &original_result, unsigned int original_result_code,
+	collector_purchase_current_projection *projection) noexcept;
+
 // Read-only restart bootstrap. The implementation uses bounded buffered reads
 // so a validation failure never leaves unread packets on a pooled connection.
 // On failure, catalog is unchanged and errno carries an errno/MySQL-style code.
@@ -98,7 +114,8 @@ bool collector_repository_execute(MYSQL *connection, const critical_command &com
 // Schema-2 singleton purchase, expiry, and held cancellation only. The caller
 // owns the SQL transaction, locked economic lifetime mapping, accounting root,
 // receipt, outbox, and rollback on any failure. Other collector actions refuse
-// before domain mutation. The legacy entry point remains schema-1 only.
+// before domain mutation. Accounted purchase payload extensions are written
+// in this same transaction. The legacy entry point remains schema-1 only.
 bool collector_repository_execute_accounted(MYSQL *connection, const critical_command &command,
 					    collector_command_result *result,
 					    unsigned int *result_code, bool *mutation_applied,

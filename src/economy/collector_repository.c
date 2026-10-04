@@ -14,11 +14,13 @@
 #include <cstring>
 #include <cstdlib>
 #include <limits>
+#include <memory>
 #include <mysql.h>
 #include <new>
 #include <set>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <strings.h>
 #include <unordered_set>
 #include <vector>
@@ -1025,7 +1027,7 @@ currency_vector canonical_wallet(int64_t value)
 }
 
 bool lock_wallet(MYSQL *connection, const collector_command_payload &payload, wallet_state *state,
-		 unsigned int *result_code)
+		 unsigned int *result_code, bool current_projection = false)
 {
 	const std::string account =
 		escape(connection, payload.account_name.data(),
@@ -1061,7 +1063,7 @@ bool lock_wallet(MYSQL *connection, const collector_command_payload &payload, wa
 		state->wallet.amount[index] = static_cast<int64_t>(values[index + 1]);
 	}
 	state->wallet_revision = values[5];
-	if (state->wallet_revision != payload.expected_wallet_revision)
+	if (!current_projection && state->wallet_revision != payload.expected_wallet_revision)
 	{
 		*result_code = ESTALE;
 		return true;
@@ -1096,7 +1098,7 @@ bool lock_wallet(MYSQL *connection, const collector_command_payload &payload, wa
 		state->bank.amount[index] = static_cast<int64_t>(bank[index + 1]);
 	}
 	state->bank_revision = bank[5];
-	if (state->bank_revision != payload.expected_bank_revision)
+	if (!current_projection && state->bank_revision != payload.expected_bank_revision)
 		*result_code = ESTALE;
 	return true;
 }
@@ -1183,8 +1185,54 @@ std::string optional_string(MYSQL *connection, const player_item_snapshot &item,
 	return item.string_mask & mask ? quote(connection, value) : "NULL";
 }
 
+struct purchase_runtime_encoding
+{
+	std::string properties;
+	std::string payload;
+};
+
+// Reuse the ordinary save representation; placement remains native-row/custody
+// authority. The standalone payload retains state absent from the base columns.
+bool encode_purchase_runtime(const player_item_snapshot &item, purchase_runtime_encoding *encoded)
+{
+	if (!encoded)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	try
+	{
+		purchase_runtime_encoding candidate;
+		const auto properties = player_item_properties_encode(
+			item.extra2_flags, item.dynamic_affects, &candidate.properties);
+		player_item_snapshot standalone = item;
+		standalone.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		std::vector<uint8_t> runtime;
+		const auto state = player_item_snapshot_list_encode({ standalone }, &runtime);
+		const auto failure = properties != player_snapshot_codec_result::ok ? properties :
+										      state;
+		if (failure != player_snapshot_codec_result::ok)
+		{
+			errno = failure == player_snapshot_codec_result::allocation_failure ?
+					ENOMEM :
+				failure == player_snapshot_codec_result::limit_exceeded ? E2BIG :
+											  EINVAL;
+			return false;
+		}
+		candidate.payload.assign(reinterpret_cast<const char *>(runtime.data()),
+					 runtime.size());
+		*encoded = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+}
+
 bool insert_player_item(MYSQL *connection, uint32_t pid, const player_item_snapshot &item,
-			uint32_t *database_id, unsigned int *result_code)
+			uint32_t *database_id, unsigned int *result_code, bool persist_runtime)
 {
 	if (!database_id)
 	{
@@ -1192,6 +1240,9 @@ bool insert_player_item(MYSQL *connection, uint32_t pid, const player_item_snaps
 		return false;
 	}
 	*database_id = 0;
+	purchase_runtime_encoding runtime;
+	if (persist_runtime && !encode_purchase_runtime(item, &runtime))
+		return false;
 	if (!execute(connection, "SELECT id FROM player_items WHERE obj_uid=" +
 					 std::to_string(item.object_uid) + " FOR UPDATE"))
 		return false;
@@ -1209,10 +1260,12 @@ bool insert_player_item(MYSQL *connection, uint32_t pid, const player_item_snaps
 	sql << "INSERT INTO player_items(pid,vnum,equip_slot,container_id,quantity,weight,cost,"
 	       "timer,extra_flags,wear_flags,item_type,value0,value1,value2,value3,value4,value5,"
 	       "value6,value7,name,short_descr,description,action_descr,bitvector1,bitvector2,"
-	       "bitvector3,bitvector4,bitvector5,item_material,obj_uid,item_condition) VALUES("
-	    << pid << ',' << item.vnum << ",0,NULL,1," << item.weight << ',' << item.cost << ','
-	    << item.timers[0] << ',' << item.extra_flags << ',' << item.wear_flags << ','
-	    << static_cast<int>(item.type);
+	       "bitvector3,bitvector4,bitvector5,item_material,obj_uid,item_condition";
+	if (persist_runtime)
+		sql << ",item_properties";
+	sql << ") VALUES(" << pid << ',' << item.vnum << ",0,NULL,1," << item.weight << ','
+	    << item.cost << ',' << item.timers[0] << ',' << item.extra_flags << ','
+	    << item.wear_flags << ',' << static_cast<int>(item.type);
 	for (int32_t value : item.values)
 		sql << ',' << value;
 	sql << ',' << optional_string(connection, item, 1, item.name) << ','
@@ -1222,7 +1275,10 @@ bool insert_player_item(MYSQL *connection, uint32_t pid, const player_item_snaps
 	for (uint64_t bitvector : item.bitvectors)
 		sql << ',' << bitvector;
 	sql << ',' << static_cast<int>(item.material) << ',' << item.object_uid << ','
-	    << item.condition << ')';
+	    << item.condition;
+	if (persist_runtime)
+		sql << ',' << quote(connection, runtime.properties);
+	sql << ')';
 	if (!execute(connection, sql.str()))
 		return false;
 	const uint64_t item_id = mysql_insert_id(connection);
@@ -1232,6 +1288,11 @@ bool insert_player_item(MYSQL *connection, uint32_t pid, const player_item_snaps
 		return false;
 	}
 	*database_id = static_cast<uint32_t>(item_id);
+	if (persist_runtime &&
+	    !execute(connection, "INSERT INTO player_item_runtime_state(item_id,payload) VALUES(" +
+					 std::to_string(item_id) + "," +
+					 quote(connection, runtime.payload) + ")"))
+		return false;
 	std::unordered_set<uint64_t> affect_keys;
 	for (const auto &affect : item.affects)
 		if (affect[0] || affect[1])
@@ -2129,7 +2190,8 @@ namespace
 bool collector_repository_execute_impl(MYSQL *connection, const critical_command &command,
 				       collector_command_result *result, unsigned int *result_code,
 				       bool *mutation_applied,
-				       collector_repository_locked_before *before)
+				       collector_repository_locked_before *before,
+				       bool persist_purchase_runtime)
 {
 	collector_command_payload payload = {};
 	if (!connection || !result || !result_code || !mutation_applied ||
@@ -2338,7 +2400,8 @@ bool collector_repository_execute_impl(MYSQL *connection, const critical_command
 		if (payload.action == collector_action::purchase)
 		{
 			if (!insert_player_item(connection, payload.actor_pid, exact_item,
-						&result->materialized_item_id, result_code))
+						&result->materialized_item_id, result_code,
+						persist_purchase_runtime))
 				return false;
 			if (*result_code)
 				return true;
@@ -2381,7 +2444,7 @@ bool collector_repository_execute(MYSQL *connection, const critical_command &com
 		return false;
 	}
 	return collector_repository_execute_impl(connection, command, result, result_code,
-						 mutation_applied, nullptr);
+						 mutation_applied, nullptr, false);
 }
 
 bool collector_repository_execute_accounted(MYSQL *connection, const critical_command &command,
@@ -2420,6 +2483,311 @@ bool collector_repository_execute_accounted(MYSQL *connection, const critical_co
 		return false;
 	}
 	return collector_repository_execute_impl(connection, command, result, result_code,
-						 mutation_applied, before);
+						 mutation_applied, before, true);
+#endif
+}
+
+#ifndef __NO_MYSQL__
+namespace
+{
+using purchase_rows = std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)>;
+purchase_rows purchase_read(MYSQL *connection, const std::string &query)
+{
+	if (!execute(connection, query))
+		return { nullptr, mysql_free_result };
+	return { mysql_store_result(connection), mysql_free_result };
+}
+
+bool purchase_native_item_matches(MYSQL *connection, uint32_t pid, const player_item_snapshot &item,
+				  uint32_t expected_id)
+{
+	// Match the accounted writer's base fields and both existing extensions,
+	// including prototype-reference NULL strings and exact canonical payload bytes.
+	purchase_runtime_encoding runtime;
+	if (!encode_purchase_runtime(item, &runtime))
+		return false;
+	std::ostringstream predicate;
+	predicate << "pid=" << pid << " AND vnum=" << item.vnum
+		  << " AND equip_slot=0 AND container_id IS NULL AND quantity=1 AND weight="
+		  << item.weight << " AND cost=" << item.cost << " AND timer=" << item.timers[0]
+		  << " AND extra_flags=" << item.extra_flags
+		  << " AND wear_flags=" << item.wear_flags
+		  << " AND item_type=" << static_cast<int>(item.type);
+	for (size_t i = 0; i < item.values.size(); ++i)
+		predicate << " AND value" << i << '=' << item.values[i];
+	for (const auto &[column, mask, value] :
+	     { std::tuple{ "name", 1, &item.name },
+	       std::tuple{ "short_descr", 4, &item.short_description },
+	       std::tuple{ "description", 2, &item.description },
+	       std::tuple{ "action_descr", 8, &item.action_description } })
+		predicate << " AND " << column
+			  << (item.string_mask & mask ? " <=> BINARY " : " <=> ")
+			  << optional_string(connection, item, mask, *value);
+	for (size_t i = 0; i < item.bitvectors.size(); ++i)
+		predicate << " AND bitvector" << i + 1 << '=' << item.bitvectors[i];
+	predicate << " AND item_material=" << static_cast<int>(item.material)
+		  << " AND item_condition=" << item.condition
+		  << " AND OCTET_LENGTH(item_properties)=" << runtime.properties.size()
+		  << " AND item_properties <=> BINARY " << quote(connection, runtime.properties);
+	auto rows = purchase_read(
+		connection, "SELECT id,(" + predicate.str() + ") FROM player_items WHERE obj_uid=" +
+				    std::to_string(item.object_uid) + " LIMIT 2 FOR UPDATE");
+	MYSQL_ROW row = rows ? mysql_fetch_row(rows.get()) : nullptr;
+	uint64_t id = 0;
+	if (!row || mysql_num_rows(rows.get()) != 1 || !parse_u64(row[0], &id) ||
+	    id != expected_id || !row[1] || strcmp(row[1], "1"))
+		return false;
+	// Only bounded scalar results cross the client boundary: an oversized or
+	// noncanonical stored extension cannot cause an unbounded blob allocation.
+	rows = purchase_read(
+		connection,
+		"SELECT item_id,(OCTET_LENGTH(payload)=" + std::to_string(runtime.payload.size()) +
+			" AND payload <=> BINARY " + quote(connection, runtime.payload) +
+			") FROM player_item_runtime_state WHERE item_id=" + std::to_string(id) +
+			" LIMIT 2 FOR UPDATE");
+	row = rows ? mysql_fetch_row(rows.get()) : nullptr;
+	uint64_t runtime_id = 0;
+	if (!row || mysql_num_rows(rows.get()) != 1 || !parse_u64(row[0], &runtime_id) ||
+	    runtime_id != id || !row[1] || strcmp(row[1], "1"))
+		return false;
+	rows = purchase_read(connection, "SELECT id FROM player_items WHERE container_id=" +
+						 std::to_string(id) + " LIMIT 1 FOR UPDATE");
+	if (!rows || mysql_num_rows(rows.get()))
+		return false;
+	std::set<std::pair<int64_t, int64_t>> expected_affects, actual_affects;
+	for (const auto &affect : item.affects)
+		if (affect[0] || affect[1])
+			expected_affects.emplace(affect[0], affect[1]);
+	rows = purchase_read(connection,
+			     "SELECT location,modifier FROM player_item_affects WHERE item_id=" +
+				     std::to_string(id) + " LIMIT " +
+				     std::to_string(expected_affects.size() + 1) + " FOR UPDATE");
+	if (!rows || mysql_num_rows(rows.get()) != expected_affects.size())
+		return false;
+	while ((row = mysql_fetch_row(rows.get())))
+	{
+		int64_t location = 0, modifier = 0;
+		if (!parse_i64(row[0], &location) || !parse_i64(row[1], &modifier) ||
+		    !actual_affects.emplace(location, modifier).second)
+			return false;
+	}
+	if (actual_affects != expected_affects)
+		return false;
+	std::set<std::pair<std::string, std::string>> expected_descriptions, actual_descriptions;
+	for (const auto &description : item.extra_descriptions)
+	{
+		if (description.keyword.empty())
+			continue;
+		std::string encoded = description.description;
+		if (description.spellbook)
+		{
+			std::ostringstream text;
+			text << '[';
+			for (size_t i = 0; i < description.spell_ids.size(); ++i)
+				text << (i ? "," : "") << description.spell_ids[i];
+			text << ']';
+			encoded = text.str();
+		}
+		expected_descriptions.emplace(description.keyword, std::move(encoded));
+	}
+	size_t max_description = 0;
+	for (const auto &description : expected_descriptions)
+		max_description = std::max(max_description, description.second.size());
+	rows = purchase_read(
+		connection,
+		"SELECT LEFT(keyword," + std::to_string(PLAYER_SNAPSHOT_MAX_STRING_BYTES + 1) +
+			"),LEFT(description," + std::to_string(max_description + 1) +
+			"),OCTET_LENGTH(keyword),OCTET_LENGTH(description) FROM player_item_extra_descr WHERE item_id=" +
+			std::to_string(id) + " LIMIT " +
+			std::to_string(expected_descriptions.size() + 1) + " FOR UPDATE");
+	if (!rows || mysql_num_rows(rows.get()) != expected_descriptions.size())
+		return false;
+	while ((row = mysql_fetch_row(rows.get())))
+	{
+		const auto *lengths = mysql_fetch_lengths(rows.get());
+		uint64_t keyword_length = 0, description_length = 0;
+		if (!lengths || !row[0] || !row[1] || !parse_u64(row[2], &keyword_length) ||
+		    !parse_u64(row[3], &description_length) || keyword_length != lengths[0] ||
+		    description_length != lengths[1] ||
+		    keyword_length > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
+		    description_length > max_description ||
+		    !actual_descriptions
+			     .emplace(std::string(row[0], lengths[0]),
+				      std::string(row[1], lengths[1]))
+			     .second)
+			return false;
+	}
+	return actual_descriptions == expected_descriptions;
+}
+}
+#endif
+
+bool collector_repository_read_purchase_projection(
+	MYSQL *connection, const critical_command &command,
+	const collector_command_result &original_result, unsigned int original_result_code,
+	collector_purchase_current_projection *projection) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)original_result;
+	(void)original_result_code;
+	(void)projection;
+	errno = ENOTSUP;
+	return false;
+#else
+	try
+	{
+		collector_command_payload payload{};
+		if (!connection || !projection ||
+		    !(connection->server_status & SERVER_STATUS_IN_TRANS) ||
+		    !collector_command_decode_payload(command, &payload) ||
+		    payload.action != collector_action::purchase || payload.item_count != 1)
+		{
+			errno = EINVAL;
+			return false;
+		}
+		catalog_state catalog;
+		listing_state listing;
+		wallet_state wallet;
+		unsigned int code = 0;
+		if (!load_catalog(connection, &catalog) ||
+		    !load_listing(connection, payload.listing, true, &listing, &code) || code ||
+		    !lock_wallet(connection, payload, &wallet, &code, true) || code)
+		{
+			if (code)
+				errno = static_cast<int>(code);
+			return false;
+		}
+		collector_purchase_current_projection candidate;
+		candidate.result = original_result;
+		candidate.bank_id = wallet.bank_id;
+		candidate.result.wallet = wallet.wallet;
+		candidate.result.bank = wallet.bank;
+		candidate.result.wallet_revision = wallet.wallet_revision;
+		candidate.result.bank_revision = wallet.bank_revision;
+		candidate.result.catalog_revision = catalog.revision;
+		candidate.result.entry = listing.entry;
+		uint64_t from_revision = 0, to_revision = 0;
+		const bool from_first = owner_less(payload.from_owner, payload.to_owner);
+		// A no-effect preflight rejection can precede destination-key creation.
+		// Only current held source custody is projected; no target is fabricated.
+		if (original_result_code ?
+			    !lock_owner(connection, payload.from_owner, &from_revision) :
+			    !(from_first ?
+				      (lock_owner(connection, payload.from_owner, &from_revision) &&
+				       lock_owner(connection, payload.to_owner, &to_revision)) :
+				      (lock_owner(connection, payload.to_owner, &to_revision) &&
+				       lock_owner(connection, payload.from_owner, &from_revision))))
+			return false;
+		candidate.result.from_owner_revision = from_revision;
+		candidate.result.to_owner_revision = to_revision;
+		auto rows = purchase_read(
+			connection,
+			"SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),owner_type,owner_id,"
+			"owner_context_id,item_revision,vnum,state FROM item_current_owner WHERE item_uid=" +
+				std::to_string(payload.selected_item_uid) +
+				" OR root_item_uid=" + std::to_string(payload.selected_item_uid) +
+				" OR parent_item_uid=" + std::to_string(payload.selected_item_uid) +
+				" ORDER BY item_uid LIMIT 2 FOR UPDATE");
+		MYSQL_ROW row = rows ? mysql_fetch_row(rows.get()) : nullptr;
+		uint64_t values[9]{};
+		bool valid = row && mysql_num_rows(rows.get()) == 1;
+		for (size_t i = 0; valid && i < 9; ++i)
+			valid = parse_u64(row[i], &values[i]);
+		const auto owner = original_result_code ? payload.from_owner : payload.to_owner;
+		const auto item_revision = original_result_code ?
+						   listing.entry.item_revision :
+						   original_result.entry.item_revision;
+		valid = valid && values[0] == payload.selected_item_uid && values[1] == values[0] &&
+			!values[2] && values[3] == static_cast<uint64_t>(owner.type) &&
+			values[4] == owner.id && values[5] == owner.context_id &&
+			values[6] == item_revision &&
+			values[7] == static_cast<uint64_t>(payload.items[0].vnum) &&
+			values[8] == static_cast<uint64_t>(item_custody_state::active);
+		std::array<uint8_t, collector::encoded_record_bytes> actual_record{},
+			expected_record{};
+		if (!valid || listing.entry.uid != payload.selected_item_uid ||
+		    (!original_result_code &&
+		     (collector::record_encode(listing.entry, &actual_record) !=
+			      collector::codec_result::ok ||
+		      collector::record_encode(original_result.entry, &expected_record) !=
+			      collector::codec_result::ok ||
+		      actual_record != expected_record ||
+		      catalog.revision < original_result.catalog_revision ||
+		      from_revision < original_result.from_owner_revision ||
+		      to_revision < original_result.to_owner_revision ||
+		      wallet.wallet_revision != original_result.wallet_revision ||
+		      wallet.wallet.amount != original_result.wallet.amount ||
+		      wallet.bank_revision < original_result.bank_revision ||
+		      (wallet.bank_revision == original_result.bank_revision &&
+		       wallet.bank.amount != original_result.bank.amount))) ||
+		    (original_result_code && (listing.entry.status != collector::state::collected &&
+					      listing.entry.status != collector::state::available)))
+		{
+			errno = ESTALE;
+			return false;
+		}
+		rows.reset();
+		std::vector<player_item_snapshot> literals;
+		if (player_item_snapshot_list_decode(listing.item_blob.data(),
+						     listing.item_blob.size(), &literals) !=
+			    player_snapshot_codec_result::ok ||
+		    literals.size() != 1 || literals[0].object_uid != payload.selected_item_uid ||
+		    literals[0].vnum != payload.items[0].vnum ||
+		    literals[0].parent_index != PLAYER_SNAPSHOT_NO_PARENT ||
+		    literals[0].equipment_slot != 0)
+		{
+			errno = EAGAIN;
+			return false;
+		}
+		if (!original_result_code)
+		{
+			if (listing.item_blob.size() != payload.item_blob_size ||
+			    !std::equal(listing.item_blob.begin(), listing.item_blob.end(),
+					payload.item_blob.begin()) ||
+			    !purchase_native_item_matches(connection, payload.actor_pid,
+							  literals[0],
+							  original_result.materialized_item_id))
+			{
+				errno = errno ? errno : ESTALE;
+				return false;
+			}
+		}
+		else
+		{
+			rows = purchase_read(connection,
+					     "SELECT id FROM player_items WHERE obj_uid=" +
+						     std::to_string(payload.selected_item_uid) +
+						     " LIMIT 1 FOR UPDATE");
+			if (!rows || mysql_num_rows(rows.get()))
+			{
+				errno = ESTALE;
+				return false;
+			}
+		}
+		rows = purchase_read(connection,
+				     "SELECT save_revision FROM player_data WHERE pid=" +
+					     std::to_string(payload.actor_pid) + " FOR UPDATE");
+		row = rows ? mysql_fetch_row(rows.get()) : nullptr;
+		if (!row || mysql_num_rows(rows.get()) != 1 ||
+		    !parse_u64(row[0], &candidate.player_save_revision))
+		{
+			errno = EBADMSG;
+			return false;
+		}
+		*projection = candidate;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	catch (...)
+	{
+		errno = EIO;
+		return false;
+	}
 #endif
 }

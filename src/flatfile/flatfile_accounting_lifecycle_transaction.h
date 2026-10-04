@@ -84,6 +84,18 @@ struct flatfile_accounting_lifecycle_receipt
 // boundary producer or production activation wiring is supplied by this owner.
 class flatfile_accounting_lifecycle_transaction
 {
+    private:
+	friend bool flatfile_economic_runtime_start() noexcept;
+	// Borrow identity -> authority locks through current-source enumeration and
+	// projection publication. May finish existing authenticated shared/domain
+	// recovery; never installs a baseline, stages new images or selects an epoch.
+	// Valid absent/inactive returns active_out=false. Failure leaves output and
+	// absent gameplay projection unchanged; known lifecycle origin is mandatory.
+	static unsigned int recover_runtime_locked(const std::string &root,
+						   const flatfile_identity_lock &identity_lock,
+						   const flatfile_authority_lock &lock,
+						   bool *active_out, std::string *error) noexcept;
+
     public:
 	static unsigned int capture_native_sources_locked(
 		const std::string &root, const flatfile_identity_lock &identity_lock,
