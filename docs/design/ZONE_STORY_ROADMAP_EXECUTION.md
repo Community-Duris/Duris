@@ -107,9 +107,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 49 | The Mountain of Peril Peaks | [Comprehensive source dossier](zone-stories/THE_MOUNTAIN_OF_PERIL_PEAKS.md): all 21 blocks/ten deliveries/eleven addressed; 196 rooms/162 mobs/85 objects/two shops, 297 resets/236 families, automatic switches/shared travel and reciprocal Mountain Tracks boundaries | Revision one: ten outcomes, 28 contacts/16 optional checks; ten potential dailies, exact parts and three optional intermediate histories | No native repair ships. Companion-fate finale, causal source/custody, accepted controls/key/arrival and scoped campaigns pending; ring/book, aliases and dormant content need builder decisions |
 | 50 | Crakkaros' Liar | [Comprehensive source dossier](zone-stories/CRAKKAROS_LIAR.md): all twenty blocks/eleven QA/nine MA; 372 rooms/37 mobs/68 objects, 501 resets/199 families, mounted centaur, shared P/switch/key execution and inactive ocean boundary | Revision one: six stories/five services, 29 contacts/27 optional checks; five authored story daily candidates, nine native candidates unchanged | No native repair ships. Fourteen-root guard versus seventeen furs, R owner extraction, actual shelf custody, secret/key/retiring episodes and finale adapters planned; sculpture/aliases/reverse key/exterior intent pending |
 | 51 | Rogue Plains | [Comprehensive source dossier](zone-stories/ROGUE_PLAINS.md): all twelve blocks/nine Q/three addressed M; 158 rooms/58 mobs/57 objects, 223 resets/127 families, direct Master procedure, mount/container/portal/aerial execution and foreign Balance owner | Revision one: seven outcomes, 24 contacts/16 optional checks; seven grouped story daily candidates, nine native candidates unchanged | No native repair ships. Accepted source/effect/access/reset episodes and R/owner extraction planned; identical proof, sword/hammer wording, meat/wand/set intent and historical northern connection need builder qualification |
-| 52–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 52 | Desolate | [Comprehensive source dossier](zone-stories/DESOLATE.md): all twelve blocks/eleven Q/one addressed M, 168 rooms/114 mobs/92 objects/three shops, 400 resets/289 families; direct Master/computed teacher, container/fee/control/phase and foreign letter execution | Revision one: nine stories/two services, 27 contacts/16 optional checks, eight story daily candidates | Separate native south/west trial-button text fix ships with original-fails/repaired-passes source proof and news; missing stock/other intent pending. Atomic fee, content-tree preview/predicates, control/phase/trial/effect and foreign scope planned |
+| 53–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Desolate (`desolate`).
+The next area is Rift Valley Jungle (`rftjngle`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -118,6 +119,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-DESOLATE-PAYMENT / TREE / PHASE / TRIAL | Rod + wheel + five platinum is guarded; monkey container holds a separately required chain. Timed random exit changes north route and zone flags. Secret switches clear one side; trial controls lack ordered/defeat terminal; foreign referral returns original letter. | Nine outcomes/two services and optional histories ship. Add atomic wallet/item/reward/recovery, destructive descendant preview, content predicates, accepted targeted controls/arrival, phase generation/episode and scoped trial/foreign AND campaigns. Native south/west direction repair ships separately with news; three absent stock refs and other intent remain pending. |
 | ZSQ-ROGUE-ALTERNATIVES / FOREIGN / EFFECT | Two giant recipes each give one outcome; distinct promises/flesh share visible names. Sijona resolves through foreign Balance; sigil uses direct seven-member slot counting, unlike eight-member adapter. Containers are pickable; mounts change actual E/G ownership. | OR outcomes plus separately optional producer histories ship; native owner preserved. Expand causal UID/source/custody, R/rider/owner, successful key/pick/portal/aerial/actual set effects and resetting/retiring episodes. Wording, aliases, item/set intent and historical route are proposed decisions, not shipped repairs. |
 | ZSQ-CRAKKARO-BATCH / MOUNT / CONTENT | Seventeen-fur reward is beyond fourteen-root durable support; mounted centaur is omitted by M/F-only sources and post-R E/G belongs to the mount. Four required badges plus unrelated badge look identical; P selects actual same-prototype container. Sculpture expects absent block; exterior room only exists in inactive ocean maps. | Versioned bounded batch/recovery, committed UID/source/custody and R/rider/owner extraction; qualified key/control/arrival/retiring/reset episodes and builder-selected AND finale. Separate future native badge/key/control/route decisions and news proof; none ships here. |
 | ZSQ-NEXUS-COMPANION / ACCESS / CONTENT | Traveler requests companion fate after medallion, but no later Q exists. Five companions are placed in a connected load room and can wander. Medallion, NPC-carried same-named emeralds and portals are distinct prerequisites; ring promise contradicts actual prayer book. | Builder designs investigation/report/rescue; add causal source/custody, accepted control/key/arrival and scoped AND episodes with supplied-proof branches. Qualify exposed controls, stock/reset and surviving instances. Separate builder-reviewed clue/alias/dormant-content fixes and news proof; none ships here. |
@@ -2574,3 +2576,66 @@ wandering patrol, access/return, orc renewal, foreign delivery, spell and set
 lifecycle remain unqualified. Queue: 51/220 source-comprehensive, 169 pending;
 Desolate (`desolate`) is next. No database/account/server operation, native repair,
 generated-world edit, activation or merge occurred; the full roadmap remains active.
+
+## Desolate completed source map — October 4, 2026
+
+The [dossier](zone-stories/DESOLATE.md) covers all twelve native blocks/eleven
+Q/one addressed M, 168 rooms/143 prose/nineteen headers/twenty-two metadata/135
+exit families, 114 mobiles/92 objects/three shops and 400 resets/289 families.
+Direct Master/computed teacher, shared item-only quest acceptance/tree extraction,
+mixed-fee guards, actual switches/portals/falls/mount ownership, timed invasion
+route and bounded foreign letter/referral/source/boundary evidence were reviewed.
+
+Revision one maps nine stories/two services, twenty-seven contacts and sixteen
+optional checks (twelve materials, four earlier receipts). Tankard filling is a
+supply service; the halfling is its separate story. The monkey container holds
+the minotaur's chain: extract that chain before the destructive hand-in. Rod +
+broken wheel + five platinum is guarded; supplied repaired wheel still fits the
+retiring driver. Hand + storm badge differs from the delegate's armageddon badge.
+The original Myrabolus letter/referral remains foreign-owned optional history.
+Native nine candidates stay unchanged; eight authored story candidates remain.
+
+**Implemented native repair, separate commit and news:**
+`b1ff082bc03ae579aceec97b5d3ebd878bf2eea7`, `fix: correct Desolate Master trial
+button directions`. Endurance look text formerly said east while its button/exit
+is south; Courage formerly said east while its button/exit is west. Two room
+descriptions now agree. Focused source test fails on original prose and passes
+after repair, comparing actual control values/placement/blocked exits/resets.
+No rules, switches, guardians or rewards changed. **News:** “Desolate's Master
+trial now gives the correct button directions in the Tests of Endurance and
+Courage.” Live look/control/return remains unqualified.
+
+**Expanded plan:** accepted atomic wallet + item-tree + reward/receipt/recipient
+transactions with rejection/replay/reconnect/crash proof; coin-only commerce;
+preview/reject-or-consent policy for valuable descendants of destructive roots;
+content predicates for actual drink fullness rather than vnum; successful targeted
+secret control/reveal/open/pass and return; ordered scoped guardian/trial attempts;
+actual set equip/effect/cleanup; world-control route generation, normal/invaded
+owner and causal episode lifecycle; foreign scoped AND campaigns without duplicate
+credit. Static completion lists remain OR and current material checks remain
+loose-carried kind checks. Do not add unsupported fields or imply live endpoints.
+
+The random-exit object has twenty-percent reset admission, then a scheduled
+hundred-percent callback when valid. It reroutes north into Desolate Under Fire,
+rewrites target south and changes closed flags; current static discovery does
+not capture that phase. Desolate Under Fire retains its priority-92 owner review.
+Master controls do not require recorded kills; Speed rogues are in an upstairs
+side room, final north returns to start. Joust/betting has no active local terminal.
+
+**Pending native findings:** trinket shop/G stock 6070/6109/6110 is absent from
+static prototypes; unresolved G commands are disabled. Confirm intended restored
+or replacement stock before fixing both sources and validating commerce. This
+does not establish a boot crash or broken delivery recipe. Closed-drawer/open
+prose, fullness, container affordances, collar spelling and campaign endings need
+builder decisions. Proposed payment support is not a shipped quest repair.
+
+Verification: exact source/classification/fees/ownership/controls/phase and missing
+stock; actual C++ encounter/wrong badges/nested-worn-spent proof/supplied branches,
+independent receipts/no read mutation/replay/cold recovery; catalog/daily report,
+tracking/accounting gates, maintained build, formatting/whitespace and links.
+Catalog: 73 maps/1654 achievements/1471 potential dailies/2216 rows. All 2668
+native definitions/revision two/fingerprint/registry and seventy-two prior
+journals remain unchanged. Live acquisition/hand-ins, mixed payment, wandering,
+trial/phase/fall/return/set and renewal remain unqualified. 52/220 source maps
+complete, 168 pending; Rift Valley Jungle is next. No DB/account/server operation,
+generated-world edit, activation or merge; the full roadmap remains active.

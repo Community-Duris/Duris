@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 72 &&
-				tracker.summary_for(7, 42).total == 1656,
+		require(catalog.story_mappings.size() == 73 &&
+				tracker.summary_for(7, 42).total == 1654,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -5074,6 +5074,143 @@ int main(int argc, char **argv)
 					recovered.progress_for_zone(7, 42, 758).completed == 7 &&
 					recovered.progress_for_zone(7, 42, 758).total == 7,
 				"Rogue cold recovery changed grouped outcome totals");
+		}
+
+		{
+			const auto &map = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &mapping)
+				{ return mapping.source_area == "desolate"; });
+			const auto &ale = story_for("desolate", "halfling-ale");
+			const auto &fill = story_for("desolate", "mercenary-tankard");
+			const auto &chain = story_for("desolate", "minotaur-lost-chain");
+			const auto &monkey = story_for("desolate", "hunter-lost-monkey");
+			const auto &repair = story_for("desolate", "scotson-wheel-repair");
+			const auto &driver = story_for("desolate", "driver-repaired-wheel");
+			const auto &mayor = story_for("desolate", "beregan-two-threats");
+			const auto &delegate = story_for("desolate", "delegate-armageddon");
+			const auto &letter = story_for("desolate", "seraphim-letter");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 222, 22200, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 222, 10, 1, 101, false, false)
+							.find("] " + monkey.title + "\r\n") ==
+						std::string::npos,
+				"Desolate discovery exposed an unmet request");
+			for (const auto &contact : map.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 22200, 102) ==
+						result::applied,
+					"Desolate source, teacher or foreign referral contact failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Desolate journal section missing");
+				const auto end = journal.find("\r\n[", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[22214] = 1;
+			supplies.carried[22216] = 2;
+			supplies.carried[22284] = 1;
+			supplies.carried[22228] = 1;
+			supplies.equipped[5] = 22237;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 222, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(monkey).find("[Ready now] " + monkey.steps.front().text) !=
+						std::string::npos &&
+					section(chain).find("[Missing now] " +
+							    chain.steps.front().text) !=
+						std::string::npos &&
+					section(mayor).find("[Missing now] " +
+							    mayor.steps[1].text) !=
+						std::string::npos &&
+					section(delegate).find("[Ready now] " +
+							       delegate.steps.front().text) !=
+						std::string::npos &&
+					section(ale).find("[Missing now] " + ale.steps[1].text) !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 222).completed == 0,
+				"Desolate container, wrong badge, decorative ale or Master armor invented proof or credit");
+			record(journey, fill.contracts.front(), "desolate-fill-service", 222,
+			       22281);
+			journal = journey.render_journal(7, 42, 222, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(ale).find("[Recorded] " + ale.steps[0].text) !=
+						std::string::npos &&
+					section(ale).find("[Missing now] " + ale.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 222).completed == 0,
+				"Desolate supply service created story credit or restored spent ale");
+			record(journey, chain.contracts.front(), "desolate-chain-history", 222,
+			       22259);
+			supplies.equipped[18] = 22220;
+			supplies.carried[22231] = 1;
+			journal = journey.render_journal(7, 42, 222, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(repair).find("[Recorded] " + repair.steps[0].text) !=
+						std::string::npos &&
+					section(repair).find("[Missing now] " +
+							     repair.steps[1].text) !=
+						std::string::npos &&
+					section(driver).find("[Pending] " + driver.steps[0].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 222).completed == 1,
+				"Desolate earlier receipt or worn rod supplied a payable repair or repaired wheel");
+			for (int item : { 22215, 22220, 22230, 22251, 22283, 82543 })
+				supplies.carried[item] = 1;
+			journal = journey.render_journal(7, 42, 222, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto *entry : { &ale, &driver, &mayor, &letter })
+				require(section(*entry).find("Next: " + entry->steps.back().text) !=
+						std::string::npos,
+					"Desolate exact supplied proof required personal producer history");
+			require(section(letter).find("[Pending] " + letter.steps[0].text) !=
+					std::string::npos,
+				"Desolate supplied letter invented foreign referral history");
+			record(journey, letter.steps[0].contracts.front(),
+			       "desolate-foreign-letter", 825, 82686);
+			supplies.carried.erase(82543);
+			supplies.equipped[18] = 82543;
+			journal = journey.render_journal(7, 42, 222, 10, 1, 107, false, false,
+							 &supplies);
+			require(section(letter).find("[Recorded] " + letter.steps[0].text) !=
+						std::string::npos &&
+					section(letter).find("[Missing now] " +
+							     letter.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 222).completed == 1,
+				"Desolate foreign receipt restored spent or worn original letter or gave local credit");
+			service supplied(catalog);
+			record(supplied, driver.contracts.front(), "desolate-supplied-wheel", 222,
+			       22206);
+			record(supplied, letter.contracts.front(), "desolate-supplied-letter", 222,
+			       22367);
+			require(supplied.evidence_for(repair.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.evidence_for(letter.steps[0].contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.progress_for_zone(7, 42, 222).completed == 2 &&
+					supplied.progress_for_zone(7, 42, 222).total == 9,
+				"Desolate supplied materials completed guarded producer, foreign referral or trial");
+			for (const auto &entry : map.stories)
+				if (entry.id != driver.id && entry.id != letter.id)
+					record(supplied, entry.contracts.front(), entry.id.c_str(),
+					       222, 22200);
+			auto replay = completion(driver.contracts.front(),
+						 "desolate-supplied-wheel", 120);
+			replay.transaction.zone_number = 222;
+			replay.transaction.room_vnum = 22206;
+			require(supplied.record_completion(replay) == result::already_applied,
+				"Desolate retiring-driver receipt replay was not idempotent");
+			service recovered(catalog);
+			require(recovered.deserialize_state(supplied.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 222).completed == 9 &&
+					recovered.progress_for_zone(7, 42, 222).total == 9,
+				"Desolate cold recovery changed story/service outcome totals");
 		}
 
 		std::cout

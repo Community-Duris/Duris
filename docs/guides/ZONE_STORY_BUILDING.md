@@ -872,3 +872,47 @@ and accepted durable corpse transformation/control are separate stages. Follow
 the committed corpse/pet outcome, including hostile awakening and recovery, if
 a future builder defines a raising objective. Never award it from a charge use,
 the reward receipt or an unrelated newborn-dracolich reset.
+
+### Desolate: destructive containers, mixed fees and changing world routes
+
+The [source dossier](../design/zone-stories/DESOLATE.md) and
+[sidecar](../../areas/story/desolate.story.json) show nine outcomes/two services
+covering eleven exchanges, twenty-seven contacts and sixteen optional checks.
+The fill-tankard service can supply a separate story. Optional minotaur/smith/
+driver and foreign letter histories explain progression without requiring personal
+production when supplied proof fits. Distinct badges retain actual source/owner.
+
+Inspect object trees before authoring recovery hints. The monkey is an item
+container with another quest's chain inside it. Its accepted destructive turn-in
+consumes remaining children. Warn the player to remove that chain; loose-carried
+readiness sees neither contained proof nor valuable unrequired descendants.
+Plan transaction-backed previews and an explicit reject/preserve/consent policy
+for descendants, with nested/reconnect/recovery proof. Do not silently retain
+items while accounting says they were destroyed, or invent live-animal rescue.
+
+Rod + broken wheel + five platinum is a mixed recipe currently guarded with
+accounting active. Preserve the fee and supplied repaired-wheel branch. Plan one
+atomic item/wallet/reward/receipt/recipient operation, not independent debits;
+coin-only purchase needs its appropriate commerce route. Native drink matching
+uses kind rather than fullness: add real content predicates and accepted state
+events before using drink-state readiness or changing the current offering.
+
+Secret switches clear one blocked side; non-secret trial controls clear both.
+Closed/secret still requires successful find/open/pass. Named tests do not impose
+recorded guardian defeats, and the final button returns to the start. Define
+attempt-scoped accepted controls, actual arrival/defeat/order/return and reset
+policy before a gauntlet achievement. Equipment loot and real Master set effects
+need their own committed equip/effect/cleanup/recovery evidence.
+
+A reset-admitted timed random exit reroutes normal Desolate into the separately
+owned invaded zone, changes closed flags and rewrites the target return exit.
+Extract actual route generation/episode and accepted world-control transitions;
+static prose and normal-zone receipts do not identify phase completion. Preserve
+foreign ownership and builder-defined scoped AND campaigns. Dynamic scans find
+these dependencies; source and executable lifecycle review still decide meaning.
+
+Native Endurance/Courage direction text is corrected in separate `fix` commit
+`b1ff082bc03ae579aceec97b5d3ebd878bf2eea7`, with original-fails/repaired-passes
+source proof and explicit PR/news. Three absent shop-stock references and other
+presentation/intent decisions are pending proposals. Keep implemented fixes,
+guidance and new capability plans clearly distinct when reporting zone changes.

@@ -2313,7 +2313,7 @@ assert sum(d["daily_eligible"] for d in definitions.values())==9
 assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
 assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
-assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1656
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1654
 sources=collections.defaultdict(list);parent=None;room=None
 for reset in crakkaro["reset_commands"]:
     c,v=reset["command"],reset["arguments"]
@@ -2422,7 +2422,88 @@ adapter=(ROOT/"src/specs/specs.set_equipment.c").read_text(encoding="utf8")
 assert "22063, 22237, 22621, 45530, 45531, 75857, 82545, 82559" in adapter
 assert "no actual native" in (ROOT/"docs/design/zone-stories/ROGUE_PLAINS.md").read_text(encoding="utf8")
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai"):
+# Desolate preserves nested supply, guarded fees, distinct proofs and foreign ownership.
+desolate=inventory_module.area_evidence(ROOT,"desolate")
+desolate_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="desolate")
+desolate_stories={s["id"]:s for s in desolate_map["stories"]}
+assert (desolate_map["schema_version"],desolate_map["revision"],desolate_map["coverage"])==(3,1,"complete")
+assert len(desolate_stories)==11 and len(desolate_map["contacts"])==27 and not desolate_map["exclusions"]
+assert collections.Counter(s["category"] for s in desolate_stories.values())=={"story":9,"service":2}
+assert collections.Counter(t["kind"] for entry in desolate_stories.values() for t in entry["steps"] if t.get("optional"))=={"carried_item":12,"completion":4}
+assert (len(desolate["requests"]),len(desolate["dialogue"]),len(desolate["mobs"]),len(desolate["items"]),len(desolate["reset_commands"]))==(11,1,114,92,400)
+assert collections.Counter(b["kind"] for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/desolate.qst")=={"Q":11,"M":1}
+by_line={r["block"]["line"]:r["block"] for r in desolate["requests"]}
+for line,required,reward,disappear in ((2,[("I",22230)],[("C",50000)],0),
+    (10,[("I",22215)],[("C",10000),("I",22220)],0),
+    (29,[("I",22229)],[("I",22230)],0),(39,[("I",22214)],[("I",22269),("C",15000)],0),
+    (49,[("I",22251)],[("I",22252)],1),(61,[("I",22284),("I",22283)],[("I",22288)],0),
+    (70,[("I",22216)],[("I",22286)],0),
+    (81,[("I",22220),("I",22231),("C",5000)],[("I",22251)],0),
+    (92,[("C",10000)],[("I",22255)],1),(102,[("I",22211)],[("I",22250)],0),
+    (111,[("I",82543)],[("I",22289),("C",10000)],0)):
+    assert by_line[line]["give"]==required and by_line[line]["receive"]==reward
+    assert by_line[line]["binding"]["completion_key"].endswith("disappear="+str(disappear))
+bindings=[b for entry in desolate_stories.values() for b in entry["contracts"]]
+assert len(bindings)==11 and {tuple(sorted(b.items())) for b in bindings}=={tuple(sorted(b["binding"].items())) for b in by_line.values()}
+assert all(t["optional"] for entry in desolate_stories.values() for t in entry["steps"][:-1])
+assert all(entry["steps"][-1]["contracts"]==entry["contracts"] for entry in desolate_stories.values())
+assert desolate_stories["mercenary-tankard"]["category"]==desolate_stories["merchant-potion"]["category"]=="service"
+assert desolate_stories["halfling-ale"]["steps"][0]["contracts"]==[by_line[29]["binding"]]
+assert desolate_stories["scotson-wheel-repair"]["steps"][0]["contracts"]==[by_line[10]["binding"]]
+assert desolate_stories["driver-repaired-wheel"]["steps"][0]["contracts"]==[by_line[81]["binding"]]
+assert [t["item_vnums"] for t in desolate_stories["beregan-two-threats"]["steps"][:-1]]==[[22284],[22283]]
+assert [t["item_vnums"] for t in desolate_stories["scotson-wheel-repair"]["steps"][1:-1]]==[[22220],[22231]]
+assert "guarded" in desolate_stories["scotson-wheel-repair"]["summary"]
+foreign=[b for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/mira.qst" and b["line"]==126]
+assert len(foreign)==1 and foreign[0]["give"]==foreign[0]["receive"]==[("I",82543)]
+assert foreign[0]["giver_vnum"]==82569 and desolate_stories["seraphim-letter"]["steps"][0]["contracts"]==[foreign[0]["binding"]]
+assert all(b["giver_vnum"]!=82569 for b in bindings)
+contacts={c["mob_vnum"]:c for c in desolate_map["contacts"]}
+assert contacts[22234]["topics"]==["ale"] and contacts[22219]["topics"]==["level"]
+assert contacts[82569]["topics"]==["hi","hello","howdy","hey"]
+assert desolate["special_assignments"]==[{"kind":"obj","vnum":22237,"function":"master_set","source":"src/specs/specs.assign.c","line":1340}]
+assert desolate["zone"]["reset_mode"]==2
+definitions={r["block"]["line"]:r["definition"] for r in desolate["requests"]}
+assert sum(d["daily_eligible"] for d in definitions.values())==9
+assert not definitions[81]["daily_eligible"] and definitions[81]["daily_exclusion"]=="Unsupported durable offering"
+assert not definitions[92]["daily_eligible"] and definitions[92]["daily_exclusion"]=="No repeatable item offering"
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==222]
+assert len(units)==11 and sum(u["achievement"] for u in units)==9 and sum(u["daily_candidate"] for u in units)==8
+assert collections.Counter(r["command"] for r in desolate["reset_commands"])=={"M":195,"E":61,"D":60,"O":45,"G":24,"F":9,"P":4,"R":2}
+sources=collections.defaultdict(list);parent=None;room=None
+for reset in desolate["reset_commands"]:
+    c,v=reset["command"],reset["arguments"]
+    if c in "MFR":parent,room=v[1],v[3]
+    elif c in "GE":sources[v[1]].append((c,parent,room,v[2],v[3]))
+    elif c=="P":sources[v[1]].append((c,v[3],None,v[2],None))
+assert sources[22215]==[("P",22214,None,1,None)] and sources[22211]==[("P",22209,None,1,None)]
+assert sources[22229]==[("E",22268,22319,1,18)]
+assert sources[22216]==[("E",22239,22224,1,24)] and sources[22283]==[("E",22306,22365,1,24)]
+assert sources[22284]==[("G",22296,22342,1,0)]
+assert all(not any(r["command"] in "OGEP" and r["arguments"][1]==v for r in desolate["reset_commands"]) for v in (22220,22230,22251))
+objects=dawndale_bodies("desolate","obj");world=dawndale_bodies("desolate","wld")
+assert len(world)==168 and len(objects)==92
+assert objvalues(objects[22214])[0]==15 and objvalues(objects[22214])[11:15]==[100,5,0,100]
+assert objvalues(objects[22230])[0]==17 and objvalues(objects[22230])[11:15]==[10,10,1,0]
+assert objvalues(objects[22228])[0]==objvalues(objects[22229])[0]==13
+assert objvalues(objects[22208])[11:15]==[1000,15,22210,1000] and not (objvalues(objects[22208])[12]&16)
+assert objvalues(objects[22291])[11:15]==[100,77302,0,0]
+assert any(r["command"]=="O" and r["arguments"]==[0,22291,1,22200,20,0,0,0] for r in desolate["reset_commands"])
+for control,room,direction,destination in ((22223,22309,1,22310),(22224,22310,1,22311),
+    (22247,22311,2,22312),(22248,22312,3,22313),(22236,22313,3,22314),(22249,22314,0,22309)):
+    assert objvalues(objects[control])[11:15]==[270,room,direction,0]
+    assert re.search(rf"D{direction}\s*[^~]*~\s*[^~]*~\s*8 0 {destination}",world[room])
+assert objvalues(objects[22276])[11:15]==[340,22263,5,0] and objvalues(objects[22275])[11:15]==[270,22264,4,0]
+assert any(r["command"]=="D" and r["arguments"][1:4]==[22263,5,13] for r in desolate["reset_commands"])
+assert any(r["command"]=="D" and r["arguments"][1:4]==[22264,4,13] for r in desolate["reset_commands"])
+assert objvalues(objects[22204])[11:15]==[22309,7,-1,0] and objvalues(objects[22222])[11:15]==[22273,7,-1,0]
+assert len([r for r in desolate["reset_commands"] if r["command"]=="M" and r["arguments"][1:4]==[22255,3,22315]])==3
+_,all_mobs,all_items=inventory_module.inventory(ROOT)
+assert all(v not in all_items for v in (6070,6109,6110))
+assert all(str(v) in (ROOT/"areas/shp/desolate.shp").read_text(encoding="utf8") and v in sources for v in (6070,6109,6110))
+assert "Shipped native repair" in (ROOT/"docs/design/zone-stories/DESOLATE.md").read_text(encoding="utf8")
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

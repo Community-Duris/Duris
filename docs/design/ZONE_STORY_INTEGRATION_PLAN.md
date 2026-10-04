@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 72 authored journals, accounting-gated player surfaces, starter/town
+**Status: 73 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -615,6 +615,21 @@ passage. Refugee BOOM/new camp, follower relocation, drow tunneling, captain
 curse/ritual and telescope installation need builder-selected accepted endpoints.
 Fossil follow-up and Ender's victim-message key are pending content repairs.
 No native repair or accounting activation ships with this journal.
+
+Desolate's [comprehensive dossier](zone-stories/DESOLATE.md) adds nine story
+outcomes and two services across all eleven exchanges, twenty-seven contacts and
+sixteen optional checks (twelve materials, four earlier receipts). Empty tankard
+→ ale → halfling; chain inside monkey → rod → guarded five-platinum wheel repair
+→ retiring driver; distinct hand/storm versus armageddon proofs; bones → collar;
+foreign-owned Balance referral → original letter → Seraphim. Supplied proofs
+remain valid. Expand atomic mixed/coin-only payments, destructive container-tree
+previews, content predicates, accepted secret controls/trial/return/set effects,
+world-control invasion episodes and scoped foreign campaigns. Three missing shop
+stock references remain pending. **Actual native repair:** Master Endurance and
+Courage button directions now match south/west, in separate fix commit
+`b1ff082bc03ae579aceec97b5d3ebd878bf2eea7`, with original-fails/repaired-passes
+source proof and explicit PR/news handoff. Catalog: 73 maps/1654 achievements/
+1471 potential dailies/2216 rows; native definitions/identity remain unchanged.
 
 Rogue Plains' [comprehensive dossier](zone-stories/ROGUE_PLAINS.md) adds seven
 story outcomes covering all nine exchanges, twenty-four contacts/all three
@@ -1411,7 +1426,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 169 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 168 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1434,6 +1449,13 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
 
 
+- [x] Complete Desolate's eleven-exchange/one-addressed source dossier:
+  nine outcomes/two services, twenty-seven contacts and sixteen optional checks;
+  nested monkey/chain custody, guarded wheel fee, distinct badges, foreign letter,
+  actual trial switches/mounts and timed invaded route. Expand accepted payments,
+  destructive previews, control/phase/attempt/effect events. Separate native
+  button-direction repair ships with source proof and clear PR/news handoff;
+  missing shop stock and other presentation/intent decisions remain pending.
 - [x] Complete Rogue Plains' nine-exchange/three-addressed source dossier:
   seven grouped outcomes, twenty-four contacts and sixteen optional checks;
   giant alternatives/distinct promises, four flesh kinds, supplied partial soul,
@@ -1737,6 +1759,7 @@ contract classification; it does not claim complete objective coverage.
 | The Mountain of Peril Peaks | 1 | Complete: ten outcomes cover all ten deliveries | [Source-comprehensive dossier](zone-stories/THE_MOUNTAIN_OF_PERIL_PEAKS.md); twenty-eight contacts/all eleven addressed families and sixteen optional checks | Ten potential candidates; source/custody/access and companion finale remain unqualified | Three linked errands, distinct beast parts, medallion/emerald prerequisites and exact portals. Ring/book and dormant/alias decisions pending; no native repair ships |
 | Crakkaros' Liar | 1 | Complete: six stories/five services cover all eleven exchanges | [Source-comprehensive dossier](zone-stories/CRAKKAROS_LIAR.md); twenty-nine contacts/all nine addressed families and twenty-seven optional checks | Five authored story candidates; nine native candidates unchanged, fur guarded and woman story only | Mount-aware sources, actual shelf custody, bounded batch/recovery and successful access/finale events planned; sculpture/alias/key/exterior decisions pending, no native repair ships |
 | Rogue Plains | 1 | Complete: seven story outcomes cover all nine exchanges | [Source-comprehensive dossier](zone-stories/ROGUE_PLAINS.md); twenty-four contacts/all three addressed families and sixteen optional checks | Seven grouped candidates; nine native candidates unchanged, orc renewal unqualified | Foreign owner, distinct source proof, R/owner extraction, accepted access/actual set effects/reset episodes planned; native wording/type/set/route intent pending, no native repair ships |
+| Desolate | 1 | Complete: nine story outcomes/two services cover eleven exchanges | [Source-comprehensive dossier](zone-stories/DESOLATE.md); 27 contacts/16 optional checks | Eight story candidates; nine native candidates unchanged, mixed fee guarded | Atomic fee/content-tree/control/phase/trial/effect and foreign-scope work planned; south/west button-direction repair ships separately with news, three absent shop references pending |
 
 ## Twin Towers evidence and decisions
 
