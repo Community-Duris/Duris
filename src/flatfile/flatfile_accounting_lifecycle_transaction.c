@@ -579,6 +579,10 @@ bool retry_retained_lifecycle(const std::string &root, const flatfile_authority_
 	const auto epoch_error = flatfile_economic_epoch_read(root, lock, request.lineage,
 							      request.epoch, &current_epoch, error);
 	need(!epoch_error, epoch_error);
+	// Receipt v1 stays canonical. Origin is authenticated by the retained catalog,
+	// never inferred from the surviving sibling receipt or promoted from history.
+	need(current_epoch.initialization_origin !=
+	     flatfile_baseline_initialization_origin::baseline_participant);
 	need(same_epoch(current_epoch, retained.epoch));
 	critical_command original;
 	checked(critical_command_decode(retained.baseline_command.data(),
@@ -1036,7 +1040,7 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 			need(control.last_epoch.bytes == request.epoch.bytes, ESTALE);
 			// Initialize baseline storage namespace for this epoch.
 			flatfile_accounting_status init_status =
-				flatfile_accounting_baseline_storage::initialize_staged(
+				flatfile_accounting_baseline_storage::initialize_lifecycle_staged(
 					root, lock, request.lineage, request.epoch, opening_account,
 					request.operation_id, &ops, error, &view);
 			if (init_status != flatfile_accounting_status::ok &&

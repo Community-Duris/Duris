@@ -95,7 +95,7 @@ reader unwrap(const bytes &encoded, const char *magic, uint32_t *catalog_version
 	auto prefix = in.take(8);
 	need(!memcmp(prefix.data(), magic, 8));
 	const auto version = in.number(4);
-	need((version == 1 || (catalog_version && version == 2)) &&
+	need((version == 1 || (catalog_version && (version == 2 || version == 3))) &&
 	     in.number(4) == encoded.size() - 48);
 	if (catalog_version)
 		*catalog_version = version;
@@ -258,6 +258,7 @@ void validate_epochs(const critical_operation_id &lineage, const epochs &values)
 {
 	need(values.size() <= FLATFILE_ECONOMIC_MAX_EPOCHS, ENOSPC);
 	std::set<std::array<uint8_t, 16>> identities;
+	std::set<std::array<uint8_t, 16>> lifecycle_operations;
 	critical_operation_id previous = {};
 	for (size_t i = 0; i < values.size(); ++i)
 	{
@@ -270,6 +271,19 @@ void validate_epochs(const critical_operation_id &lineage, const epochs &values)
 		need(state == flatfile_baseline_initialization::legacy_unknown ||
 		     state == flatfile_baseline_initialization::never_initialized ||
 		     state == flatfile_baseline_initialization::initialized);
+		const auto origin = value.initialization_origin;
+		need(origin == flatfile_baseline_initialization_origin::legacy_unknown ||
+		     origin == flatfile_baseline_initialization_origin::baseline_participant ||
+		     origin == flatfile_baseline_initialization_origin::lifecycle_owner);
+		need(origin == flatfile_baseline_initialization_origin::legacy_unknown ||
+		     state == flatfile_baseline_initialization::initialized);
+		if (origin == flatfile_baseline_initialization_origin::lifecycle_owner)
+			need(value.baseline_initializing_operation.bytes ==
+				     value.creating_operation.bytes &&
+			     value.transition_kind == 1 &&
+			     lifecycle_operations
+				     .insert(value.baseline_initializing_operation.bytes)
+				     .second);
 		if (state == flatfile_baseline_initialization::initialized)
 			need(nonzero(value.baseline_initializing_operation) &&
 			     economic_account_key_valid(value.baseline_opening) &&
@@ -301,7 +315,8 @@ bytes encode_epochs(const critical_operation_id &lineage, const epochs &values)
 		raw(out, value.transition_digest);
 		raw(out, value.creating_operation.bytes);
 		number(out, static_cast<uint8_t>(value.baseline_initialization), 1);
-		number(out, 0, 7);
+		number(out, static_cast<uint8_t>(value.initialization_origin), 1);
+		number(out, 0, 6);
 		raw(out, value.baseline_initializing_operation.bytes);
 		std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES> opening = {};
 		if (value.baseline_initialization == flatfile_baseline_initialization::initialized)
@@ -309,7 +324,7 @@ bytes encode_epochs(const critical_operation_id &lineage, const epochs &values)
 			     economic_accounting_error::ok);
 		raw(out, opening);
 	}
-	return envelope("DURECE1", out, 2);
+	return envelope("DURECE1", out, 3);
 }
 epochs load_epochs(const std::string &root, const flatfile_economic_control &control,
 		   const flatfile_accounting_staging_view *view = nullptr)
@@ -334,11 +349,19 @@ epochs load_epochs(const std::string &root, const flatfile_economic_control &con
 		need(in.number(6) == 0);
 		value.transition_digest = in.fixed<32>();
 		value.creating_operation = in.id();
-		if (version == 2)
+		if (version >= 2)
 		{
 			value.baseline_initialization =
 				static_cast<flatfile_baseline_initialization>(in.number(1));
-			need(in.number(7) == 0);
+			if (version == 3)
+			{
+				value.initialization_origin =
+					static_cast<flatfile_baseline_initialization_origin>(
+						in.number(1));
+				need(in.number(6) == 0);
+			}
+			else
+				need(in.number(7) == 0);
 			value.baseline_initializing_operation = in.id();
 			auto opening = in.take(ECONOMIC_ACCOUNT_KEY_BYTES);
 			if (value.baseline_initialization ==
@@ -1222,8 +1245,10 @@ unsigned int flatfile_accounting_authority_storage::append_epoch_staged(
 			changing(control, expected, epoch.creating_operation);
 			auto values = load_epochs(root, control, view);
 			need(values.size() < FLATFILE_ECONOMIC_MAX_EPOCHS, ENOSPC);
-			// Callers cannot supply an initialized marker or invent its proof.
-			need(epoch.baseline_initialization ==
+			// Callers cannot supply an initialized marker or its participant origin.
+			need(epoch.initialization_origin ==
+					     flatfile_baseline_initialization_origin::legacy_unknown &&
+				     epoch.baseline_initialization ==
 					     flatfile_baseline_initialization::legacy_unknown &&
 				     !nonzero(epoch.baseline_initializing_operation) &&
 				     !nonzero(epoch.baseline_opening.lineage) &&
@@ -1259,6 +1284,18 @@ unsigned int flatfile_accounting_authority_storage::stage_baseline_initializatio
 	const economic_account_key &opening, const critical_operation_id &operation,
 	operations *out, std::string *error, flatfile_accounting_staging_view *view)
 {
+	return stage_baseline_initialization_with_origin_staged(
+		root, lock, expected, lineage, epoch, opening, operation, out, error, view,
+		flatfile_baseline_initialization_origin::baseline_participant);
+}
+unsigned int
+flatfile_accounting_authority_storage::stage_baseline_initialization_with_origin_staged(
+	const std::string &root, const flatfile_authority_lock &lock, uint64_t expected,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const economic_account_key &opening, const critical_operation_id &operation,
+	operations *out, std::string *error, flatfile_accounting_staging_view *view,
+	flatfile_baseline_initialization_origin origin)
+{
 	return guarded(
 		[&]
 		{
@@ -1268,6 +1305,10 @@ unsigned int flatfile_accounting_authority_storage::stage_baseline_initializatio
 				need(!code, code);
 			}
 			recover(root, lock);
+			need(origin == flatfile_baseline_initialization_origin::baseline_participant ||
+				     origin ==
+					     flatfile_baseline_initialization_origin::lifecycle_owner,
+			     EINVAL);
 			need(out && nonzero(lineage) && nonzero(epoch) &&
 				     economic_account_key_valid(opening) &&
 				     opening.kind == economic_account_kind::opening &&
@@ -1283,6 +1324,10 @@ unsigned int flatfile_accounting_authority_storage::stage_baseline_initializatio
 			need(at->baseline_initialization ==
 				     flatfile_baseline_initialization::never_initialized,
 			     EILSEQ);
+			need(at->initialization_origin ==
+				     flatfile_baseline_initialization_origin::legacy_unknown,
+			     EILSEQ);
+			at->initialization_origin = origin;
 			at->baseline_initialization = flatfile_baseline_initialization::initialized;
 			at->baseline_initializing_operation = operation;
 			at->baseline_opening = opening;
