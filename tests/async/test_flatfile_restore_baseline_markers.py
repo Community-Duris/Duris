@@ -57,6 +57,7 @@ def main():
         "scripts/qualify_flatfile_economic_authority.h",
         "scripts/qualify_flatfile_economic_baseline.h",
         "scripts/qualify_flatfile_economic_records.h", "scripts/qualify_flatfile_restore.cpp",
+        "scripts/qualify_flatfile_economic_lifecycle.h",
         "scripts/build_restore_qualifier.py", "tests/async/flatfile_restore_authority_fixture.cpp",
         "tests/async/test_flatfile_restore_economic_authority.py",
         "tests/async/test_flatfile_restore_baseline_markers.py")}
@@ -117,7 +118,8 @@ int main(int argc, char **argv) {
             if valid:
                 assert json.loads(operator.stdout) == {
                     "legacy_unknown_epochs": expected[0], "never_initialized_epochs": expected[1],
-                    "initialized_epochs": expected[2], "baseline_provenance_complete": bool(expected[3])}
+                    "initialized_epochs": expected[2], "baseline_provenance_complete": bool(expected[3]),
+                    "lifecycle_receipts": 0}
                 assert not operator.stderr
             else:
                 assert not operator.stdout and operator.stderr == "native_restore_qualification_failed\n"
