@@ -28,6 +28,28 @@ operation scope fields remain present. The CLI exit status still reflects the
 whole audit. Coverage describes the supplied snapshot; it does not qualify the
 writer matrix or assert that an empty price/provenance view exhausts history.
 
+The bounded `--view prices` query combines selected-epoch roots with captured
+`native.lineage_realized_prices`. Each row contains only `epoch`,
+`operation_id`, numeric `reason`, and persisted `price_copper`. It includes
+committed roots with exact integer prices in 0..INT64_MAX, including zero;
+rejected/unknown outcomes and invalid or missing prices are omitted from the
+price rows while their audit findings remain in the global exception count.
+Exact projections are counted once; conflicting projections remain visible.
+Rows sort lexically by epoch and operation ID, then numerically by reason and
+price; this order does not claim epoch chronology. The row limit is applied
+after deduplication and the full count remains available at `--limit 0`.
+
+Price coverage adds `lineage_history_available` and `realized_price_coverage`.
+History is available only when both retained rows and their coverage were
+captured. The coverage object preserves the exporter's `column_available`,
+`candidate_rows`, and `missing_price_rows`; it is `null` when unavailable.
+Candidate rows count captured roots before filtering and deduplication, so they
+can differ from the displayed price count. Existing snapshots without the
+paired history fields continue to display selected-epoch prices. An empty
+captured history, unavailable history, missing price column, and missing
+committed price remain distinguishable. These fields describe the supplied
+cut; they neither certify complete economic history nor authorize a repair.
+
 Use `--view operation --operation-id <32 lowercase hex digits>` to inspect an
 exact root ID in an existing export. The bounded, ID-only records include root
 metadata, account effects, postings, child IDs, item references, receipts,
@@ -172,7 +194,8 @@ that a present source identity describes the correct gameplay event.
   is an explicit unassigned-history exception; this count cannot assign it to a
   particular lineage.
 - `native.lineage_realized_prices` and `native.realized_price_coverage`: all
-  shop buy/sell roots across the selected lineage, including outcome and the
+  shop buy/sell, collector purchase and auction bid roots across the selected
+  lineage, including outcome and the
   persisted copper price. SQL schema migration 0046 adds the nullable field;
   committed shop buys/sales retain their frozen command price in the same
   operation transaction. The exporter detects older schemas or missing
