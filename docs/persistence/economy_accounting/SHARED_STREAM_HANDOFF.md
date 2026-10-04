@@ -8,12 +8,15 @@ on `codex/accounting-plan5`.
 Shared interface changes require a narrow field/invariant/consumer/test handoff;
 no independent shared-type, migration, coordinator or registry edits.
 
-Latest native source candidate `012c32e24` includes transaction-scoped drop
-receipt proof, pure cache peek, complete existing-graph observation, private
-cache-only absent reconstruction and immutable native lifecycle receipt/retry.
+Latest primary source candidate `6ef8abb88` includes the earlier receipt/cache/
+ordinary-graph/lifecycle prerequisites plus complete boot prototype lookup and
+connected capture-to-final-receipt save residence. Epoch ownership remains
+disabled; direct/native/journal participation, fresh reserved replay, complete
+census, lifecycle completion and clean critical ACK are still required.
 Primary integrated bounded maintainer work with independent architect review;
-shared registry classifications follow in76588bc86. Source review is not native
-qualification. No new compiler/tests/SQL/gameplay/services/recovery or push ran;
+registry classifications remain unqualified pending major-plan evidence. Source review is not native
+qualification. Plan5 canonical restore slice57d4d99b2 is imported as e5a458f70 with its own-input
+evidence limits. No new primary compiler/tests/SQL/gameplay/services/recovery or push ran;
 testing stays deferred to major-plan readiness. Earlier schedules below retain
 their dated ownership context rather than implying those agents are still active.
 
