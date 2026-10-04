@@ -157,6 +157,97 @@ bool coin_has_physical_endpoint(const coin_transfer_payload &payload)
 	       payload.destination.change.type == critical_command_type::item_transfer;
 }
 
+// Decode checks the result's wire shape. Bind every physical transfer result
+// to its original command before any live wallet or bank projection can run.
+// The unchanged bank vector is supplied by the authoritative immutable receipt:
+// this command stores its revision and zero delta, not its opening balances.
+bool coin_physical_result_matches(const coin_transfer_payload &payload,
+				  const coin_transfer_result &result)
+try
+{
+	const coin_transfer_endpoint *endpoints[] = { &payload.source, &payload.destination };
+	for (size_t index = 0; index < 2; ++index)
+	{
+		const auto &endpoint = *endpoints[index];
+		if (endpoint.change.type == critical_command_type::account_bank)
+		{
+			currency_command_payload wallet = {};
+			const auto &balances = result.wallets[index];
+			if (!currency_command_decode_payload(endpoint.change, &wallet) ||
+			    wallet.reason != currency_reason_type::coin_transfer ||
+			    endpoint.change.expected_revisions[0].revision == UINT64_MAX ||
+			    endpoint.change.expected_revisions[1].revision == UINT64_MAX ||
+			    balances.wallet_revision !=
+				    endpoint.change.expected_revisions[0].revision + 1 ||
+			    balances.bank_revision !=
+				    endpoint.change.expected_revisions[1].revision + 1)
+				return false;
+			for (size_t denomination = 0; denomination < endpoint.after.size();
+			     ++denomination)
+				if (endpoint.before[denomination] < 0 ||
+				    endpoint.after[denomination] < 0 ||
+				    wallet.bank_delta.amount[denomination] ||
+				    wallet.wallet_delta.amount[denomination] !=
+					    static_cast<int64_t>(endpoint.after[denomination]) -
+						    endpoint.before[denomination] ||
+				    balances.wallet.amount[denomination] !=
+					    endpoint.after[denomination] ||
+				    balances.bank.amount[denomination] < 0 ||
+				    balances.bank.amount[denomination] > INT_MAX)
+					return false;
+			continue;
+		}
+		if (endpoint.change.type != critical_command_type::item_transfer)
+			return false;
+		// A second pile sharing owner rows must use the source's committed
+		// owner revision, exactly as the atomic executor does.
+		critical_command change;
+		const critical_command *original = &endpoint.change;
+		if (index && payload.source.change.type == critical_command_type::item_transfer)
+		{
+			if (!coin_transfer_command_destination_after_source(payload, result,
+									    &change))
+				return false;
+			original = &change;
+		}
+		item_transfer_payload pile = {};
+		if (!item_transfer_command_decode_payload(*original, &pile) ||
+		    pile.item_count != 1 || pile.multi_root ||
+		    pile.items[0].item_uid != pile.selected_item_uid ||
+		    pile.expected_from_revision == UINT64_MAX ||
+		    pile.expected_to_revision == UINT64_MAX)
+			return false;
+		const bool creation = pile.from_owner.type == item_owner_type::system;
+		const uint64_t item_revision = creation ? 1 :
+							  pile.items[0].expected_item_revision + 1;
+		const auto &committed = result.piles[index];
+		if (!item_revision || committed.root_item_uid != item_transfer_result_root(pile) ||
+		    !committed.root_item_uid || committed.item_count != 1 ||
+		    committed.max_item_revision != item_revision || committed.corpse_revision ||
+		    committed.collector_catalog_changed ||
+		    committed.from_owner_revision != pile.expected_from_revision + 1 ||
+		    committed.to_owner_revision !=
+			    (item_owner_identity_equal(pile.from_owner, pile.to_owner) ?
+				     committed.from_owner_revision :
+				     pile.expected_to_revision + 1))
+			return false;
+	}
+	return true;
+}
+catch (const std::bad_alloc &)
+{
+	return false;
+}
+
+bool coin_body_identity_matches(P_char character, const currency_command_payload &wallet)
+{
+	return character && IS_PC(character) && character->only.pc &&
+	       static_cast<uint32_t>(GET_PID(character)) == wallet.pid &&
+	       !std::strcmp(currency_transaction_account_name(character),
+			    wallet.account_name.data()) &&
+	       character->player.racewar == wallet.racewar;
+}
+
 bool coin_body_matches(P_char character, const currency_command_result &result)
 {
 	return character && character->only.pc &&
@@ -198,6 +289,17 @@ bool publish_accounted_coin(std::unordered_map<std::string, pending_currency>::i
 	if (committed && physical)
 	{
 		actor = live_wallet_by_pid(entry.pid);
+		const size_t wallet_index =
+			entry.coin->source.change.type == critical_command_type::account_bank ? 0 :
+												1;
+		currency_command_payload wallet = {};
+		if (!currency_command_decode_payload(wallet_index ? entry.coin->destination.change :
+								    entry.coin->source.change,
+						     &wallet))
+			return retain_unresolved_publication(entry, "invalid_coin_endpoint", true);
+		if (actor && !coin_body_identity_matches(actor, wallet))
+			return retain_unresolved_publication(entry, "coin_body_authority_conflict",
+							     false);
 		// Journal recovery has no live callback/context. Its immutable command
 		// does not prove a native pile exists; retain it until typed publication
 		// recovery is implemented. A legacy composite callback is not proof.
@@ -218,6 +320,10 @@ bool publish_accounted_coin(std::unordered_map<std::string, pending_currency>::i
 		if (entry.disposition_blocked ||
 		    currency_publication_state_is_blocked(entry.publication_state))
 			return false;
+		P_char current = live_wallet_by_pid(entry.pid);
+		if (current && !coin_body_identity_matches(current, wallet))
+			return retain_unresolved_publication(entry, "coin_body_authority_conflict",
+							     false);
 		if (!published)
 		{
 			// Each dispatch bounds work to one attempt. A lifetime retry cap would
@@ -226,10 +332,6 @@ bool publish_accounted_coin(std::unordered_map<std::string, pending_currency>::i
 			return false;
 		}
 		entry.coin_physical_published = true;
-		P_char current = live_wallet_by_pid(entry.pid);
-		const size_t wallet_index =
-			entry.coin->source.change.type == critical_command_type::account_bank ? 0 :
-												1;
 		if (!current || current->runtime_id != entry.coin_wallet_body_ids[wallet_index] ||
 		    !coin_body_matches(current, result.wallets[wallet_index]))
 		{
@@ -305,6 +407,9 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 	{
 		return retain_unresolved_publication(entry, "invalid_coin_result", true);
 	}
+	if (committed && entry.publication_required && coin_has_physical_endpoint(*entry.coin) &&
+	    !coin_physical_result_matches(*entry.coin, result))
+		return retain_unresolved_publication(entry, "invalid_coin_result", true);
 	coin_transfer_stale_result stale = {};
 	const bool stale_receipt_expected =
 		!committed && completed.error_code == ESTALE &&
@@ -359,6 +464,10 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 					return retain_unresolved_publication(
 						entry, "invalid_coin_endpoint", true);
 				P_char current = coin_wallet_by_pid(wallet.pid);
+				if (coin_has_physical_endpoint(*entry.coin) && current &&
+				    !coin_body_identity_matches(current, wallet))
+					return retain_unresolved_publication(
+						entry, "coin_body_authority_conflict", false);
 				if (current &&
 				    (current->runtime_id != entry.coin_wallet_body_ids[index] ||
 				     !coin_body_matches(current, result.wallets[index])))
@@ -417,9 +526,7 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 				    (character->only.pc->wallet_revision >
 					     balances.wallet_revision ||
 				     character->only.pc->bank_revision > balances.bank_revision ||
-				     std::strcmp(currency_transaction_account_name(character),
-						 wallet.account_name.data()) ||
-				     character->player.racewar != wallet.racewar))
+				     !coin_body_identity_matches(character, wallet)))
 					return retain_unresolved_publication(
 						entry, "coin_body_authority_conflict", false);
 				// Only unloaded endpoints need a fresh load. Publish retained bodies
@@ -436,11 +543,20 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 								balances.bank_revision))
 					return retain_unresolved_publication(
 						entry, "invalid_coin_live_bank", true);
+				if (entry.publication_required &&
+				    coin_has_physical_endpoint(*entry.coin) &&
+				    (entry.disposition_blocked ||
+				     currency_publication_state_is_blocked(entry.publication_state)))
+					return false;
 				entry.coin_wallet_body_ids[index] = body_id;
 				if (entry.publication_required &&
 				    coin_has_physical_endpoint(*entry.coin))
 				{
 					P_char current = coin_wallet_by_pid(wallet.pid);
+					if (current && !coin_body_identity_matches(current, wallet))
+						return retain_unresolved_publication(
+							entry, "coin_body_authority_conflict",
+							false);
 					if (current && (current->runtime_id != body_id ||
 							!coin_body_matches(current, balances)))
 					{

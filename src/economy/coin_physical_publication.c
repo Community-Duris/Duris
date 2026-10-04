@@ -117,6 +117,7 @@ bool source_matches(P_obj money, const coin_transfer_endpoint &endpoint,
 	    actual[0].extra_descriptions.size() != 1 || !rendered.detail.description ||
 	    actual[0].description != rendered.object.description ||
 	    actual[0].short_description != rendered.object.short_description ||
+	    actual[0].weight != rendered.object.weight ||
 	    actual[0].extra_descriptions[0].description != rendered.detail.description)
 		return false;
 	std::copy(endpoint.after.begin(), endpoint.after.end(), rendered.object.value);
