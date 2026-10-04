@@ -25,7 +25,8 @@ class RestoreCoinEffectsTests(unittest.TestCase):
         import pymysql
 
         canonical = os.environ.get("DURIS_PLAN5_CANONICAL_EVIDENCE") == "1"
-        work = ROOT / ("bin/tests/plan5-sql-canonical-evidence" if canonical else "bin/tests/plan5-sql-coin-effects")
+        work = ROOT / ("bin/tests/plan5-sql-baseline-restore-canonical" if canonical else
+                       "bin/tests/plan5-sql-baseline-restore-coins")
         work.mkdir(mode=0o700, parents=True, exist_ok=True)
         sources = ["tests/async/restore_coin_effects_fixture.cpp",
                    "src/economy/economic_accounting_plan.c", "src/economy/economic_accounting_types.c",
@@ -65,6 +66,27 @@ class RestoreCoinEffectsTests(unittest.TestCase):
         print("NATIVE_RESTORE_COIN_CASES " + json.dumps({
             "cases": len(cases), "accepted": sum(row["accepted"] for row in cases),
             "account_kinds": 11, "modes": 2, "wire_plans": 3, "wire_intents": 2}, sort_keys=True), flush=True)
+        histories = []
+        for mode in ("sql", "flatfile"):
+            history = subprocess.check_output([str(work / ("fixture-" + mode)), "--restore-history"],
+                                              env=environment, timeout=60)
+            histories.append(history)
+            (work / ("history-" + mode + ".bin")).write_bytes(history)
+        self.assertEqual(histories[0], histories[1])
+        maximum_intent = histories[0][-8192:]
+        self.assertEqual(struct.unpack_from("<I", histories[0], len(histories[0]) - 8196)[0], 8192)
+        self.assertEqual(maximum_intent[:4], b"EAI1")
+        (work / "history-max-intent.bin").write_bytes(maximum_intent)
+        # Keep the original decoder/coin oracle corpus. Generic SQL restore
+        # history must have a valid transfer root, not a witness-less baseline.
+        corpus_offset = sum(4 + len(block) for block in blocks[:5])
+        sql_fixture = histories[0][:-8196] + results[0][corpus_offset:]
+        fixture_path = work / "restore-history.bin"
+        fixture_path.write_bytes(sql_fixture)
+        print("NATIVE_RESTORE_HISTORY " + json.dumps({"modes": 2, "ordinary_reason": 1,
+              "history_sha256": hashlib.sha256(histories[0]).hexdigest(),
+              "maximum_intent_sha256": hashlib.sha256(maximum_intent).hexdigest(),
+              "sql_fixture_sha256": hashlib.sha256(sql_fixture).hexdigest()}, sort_keys=True), flush=True)
         if canonical:
             import economic_restore_evidence as evidence
             decoded = []
@@ -109,7 +131,7 @@ class RestoreCoinEffectsTests(unittest.TestCase):
                             owner.close()
                         run_environment = dict(private, DB_USER="root", DB_PASSWD="plan5-private-coin-root", MYSQL_PWD="plan5-private-coin-root",
                                                DB_HOST="127.0.0.1", ENVIRONMENT="test", TEST_DB_DISPOSABLE="1",
-                                               DURIS_PLAN5_COIN_FIXTURE=str(work / "native-sql.bin"),
+                                               DURIS_PLAN5_COIN_FIXTURE=str(fixture_path),
                                                DURIS_PLAN5_CANONICAL_EVIDENCE=str(int(canonical)),
                                                DURIS_PLAN5_CANONICAL_RED=os.environ.get("DURIS_PLAN5_CANONICAL_RED", "0"))
                         # Preserve output as it arrives, including a timeout or
