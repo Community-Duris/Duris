@@ -67,6 +67,7 @@ def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bo
                 "telemetry_battle.c",
                 "telemetry_battle_contribution.c",
                 "telemetry_battle_build_observation.c",
+                "telemetry_control.c",
                 "telemetry_battle_contract.c",
                 "telemetry_combat_summary.c",
                 "telemetry_config.c",

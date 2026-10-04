@@ -7,6 +7,7 @@
 #include "telemetry/telemetry_battle_contract.h"
 #include "telemetry/telemetry_battle_contribution.h"
 #include "telemetry/telemetry_battle_build_observation.h"
+#include "telemetry/telemetry_control.h"
 #include "persistence/persistence_mode.h"
 
 #include <atomic>
@@ -579,6 +580,48 @@ static telemetry_record build_record(telemetry_sequence receipt, telemetry_seque
 	return record;
 }
 
+static telemetry_record control_record(std::uint64_t receipt, telemetry_sequence sequence = 1U)
+{
+	const auto context = contribution_record(receipt).payload.battle_contribution.context;
+	const auto &config = normal_interval_configs[0].payload.configuration.config;
+	telemetry_record record{};
+	record.header = { TELEMETRY_SCHEMA_VERSION,
+			  telemetry_record_kind::control,
+			  0U,
+			  { context.battle.producer, receipt },
+			  TELEMETRY_UTC_UNKNOWN };
+	auto &value = record.payload.control;
+	value.producer = context.battle.producer;
+	value.scope = context.scope;
+	value.sequence = sequence;
+	value.source = value.target = { context.actor.actor,	      context.actor.session,
+					context.actor.dimensions,     context.actor.group_key,
+					context.actor.group_revision, context.actor.context_version,
+					context.actor.quality_flags };
+	value.source_association = value.target_association = { context.battle.sequence,
+								context.association_revision,
+								context.association_fact_sequence };
+	value.last_target_association_revision = context.association_revision;
+	value.last_target_association_fact_sequence = context.association_fact_sequence;
+	value.start_usec = value.at_usec = value.decision_usec = 100U;
+	value.start_utc_usec = value.at_utc_usec = value.decision_utc_usec = TELEMETRY_UTC_UNKNOWN;
+	value.build_version = config.build_version;
+	value.content_version = config.content_version;
+	value.quality_flags = context.actor.quality_flags | context.quality_flags;
+	value.configured_ticks = -25;
+	value.definition_version = TELEMETRY_CONTROL_DEFINITION_VERSION;
+	value.producer_version = TELEMETRY_CONTROL_PRODUCER_VERSION;
+	value.flags = TELEMETRY_CONTROL_SELF;
+	value.after_mask = 4U;
+	value.state_available = TELEMETRY_CONTROL_STATE_MASK;
+	value.kind = telemetry_control_kind::resolution;
+	value.family = telemetry_control_family::major_paralysis;
+	value.result = telemetry_control_result::applied;
+	value.boundary = telemetry_control_boundary::attempt_resolved;
+	CHECK(telemetry_record_is_valid(record));
+	return record;
+}
+
 static telemetry_record record_kind_fixture(telemetry_record_kind kind)
 {
 	switch (kind)
@@ -609,6 +652,8 @@ static telemetry_record record_kind_fixture(telemetry_record_kind kind)
 		return contribution_record(7311U);
 	case telemetry_record_kind::battle_build:
 		return build_record(7312U);
+	case telemetry_record_kind::control:
+		return control_record(7313U);
 	default:
 		CHECK(false);
 		return {};
@@ -655,6 +700,9 @@ static void change_one_field(telemetry_record &record)
 	case telemetry_record_kind::battle_build:
 		++record.payload.battle_build.current_resources[0];
 		break;
+	case telemetry_record_kind::control:
+		++record.payload.control.configured_ticks;
+		break;
 	default:
 		CHECK(false);
 	}
@@ -663,7 +711,7 @@ static void change_one_field(telemetry_record &record)
 
 static void every_record_kind_round_trip_tests()
 {
-	for (unsigned int number = 1U; number <= 12U; ++number)
+	for (unsigned int number = 1U; number <= 13U; ++number)
 	{
 		const auto kind = static_cast<telemetry_record_kind>(number);
 		std::string label = "record-kind:" + std::to_string(number);
@@ -1223,6 +1271,92 @@ static void build_storage_tests()
 	expect_one(refused, telemetry_apply_outcome::quarantined_invalid);
 	std::puts(
 		"Battle build SQL storage: PASS (110 exact fields and digests, signed values, lost acknowledgement, replay, NULL families, scope and empty gaps)");
+}
+
+static void control_storage_tests()
+{
+	case_name = "typed control fields retain exact declarations and lost-ack replay";
+	reset_fixture();
+	seed_config();
+	auto original = control_record(46000U);
+	fault = fault_kind::commit_lost_committed;
+	CHECK(telemetry_repository_apply(&original, 1U).outcome ==
+	      telemetry_batch_outcome::commit_ambiguous);
+	expect_one(original, telemetry_apply_outcome::duplicate_identical);
+	const auto &p = original.payload.control;
+	std::string predicate =
+		"SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=13 AND record_seq=46000";
+#define TELEMETRY_CONTROL_FIELD(name, member, width, signed_value) \
+	predicate += " AND " #name "=" + battle_number(p.member);
+#include "telemetry/telemetry_control_fields.inc"
+#undef TELEMETRY_CONTROL_FIELD
+	CHECK(scalar(predicate.c_str()) == 1U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_session") == 0U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=13 AND "
+		     "(duration_usec IS NOT NULL OR combat_damage_dealt IS NOT NULL OR encounter_event IS NOT NULL "
+		     "OR ownership_account_token IS NOT NULL OR battle_boot_id IS NOT NULL OR bc_battle_boot_id IS NOT NULL "
+		     "OR bctx_battle_boot_id IS NOT NULL)") == 0U);
+	auto conflict = original;
+	++conflict.payload.control.configured_ticks;
+	expect_one(conflict, telemetry_apply_outcome::duplicate_conflict);
+	conflict = original;
+	conflict.header.key.record_seq = 46100U;
+	expect_one(conflict, telemetry_apply_outcome::duplicate_conflict);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_seq=46100") == 0U);
+	case_name = "control configuration, header binding and actor reserved bytes remain exact";
+	for (unsigned mutation = 0U; mutation < 9U; ++mutation)
+	{
+		auto invalid = control_record(46200U + mutation, 10U + mutation);
+		auto &v = invalid.payload.control;
+		if (mutation == 0U)
+			++v.scope.environment_id;
+		if (mutation == 1U)
+			++v.scope.season_id;
+		if (mutation == 2U)
+			++v.scope.config_id;
+		if (mutation == 3U)
+			++v.scope.classifier_version;
+		if (mutation == 4U)
+			++v.scope.policy_version;
+		if (mutation == 5U)
+			++v.build_version;
+		if (mutation == 6U)
+			++v.content_version;
+		if (mutation == 7U)
+			++invalid.header.occurrence_utc_usec;
+		if (mutation == 8U)
+			v.target.actor.reserved[0] = 1U;
+		expect_one(invalid, telemetry_apply_outcome::rejected_invalid);
+	}
+	case_name = "unknown control configuration clears source, state and declarations";
+	auto gap = control_record(46300U, 30U);
+	auto &v = gap.payload.control;
+	v.source = {};
+	v.source_association = {};
+	v.scope.config_id = 0U;
+	v.scope.classifier_version = v.scope.policy_version = v.build_version = v.content_version =
+		0U;
+	v.before_mask = v.after_mask = v.state_available = v.duration_coverage = v.flags = 0U;
+	v.configured_ticks = 0;
+	v.kind = telemetry_control_kind::source_gap;
+	v.family = telemetry_control_family::unknown;
+	v.result = telemetry_control_result::unknown;
+	v.boundary = telemetry_control_boundary::configuration_unavailable;
+	v.quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+	CHECK(telemetry_record_is_valid(gap));
+	expect_one(gap, telemetry_apply_outcome::applied);
+	expect_one(gap, telemetry_apply_outcome::duplicate_identical);
+	case_name = "typed control SQL refusal retains canonical quarantine evidence";
+	auto refused = control_record(46400U, 40U);
+	fault = fault_kind::invalid_data;
+	expect_one(refused, telemetry_apply_outcome::quarantined_invalid);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_quarantine WHERE record_kind=13 AND record_seq=46400 "
+		     "AND OCTET_LENGTH(payload_sha256)=32 AND OCTET_LENGTH(record_payload)=488") ==
+	      1U);
+	fault = fault_kind::invalid_data;
+	expect_one(refused, telemetry_apply_outcome::quarantined_invalid);
+	std::puts(
+		"Typed control SQL storage: PASS (76 exact fields, signed ticks, lost acknowledgement, replay, NULL families, configuration, empty gaps and quarantine)");
 }
 
 static void typed_extension_mapping_tests()
@@ -2039,6 +2173,7 @@ int main()
 	shared_battle_storage_tests();
 	contribution_storage_tests();
 	build_storage_tests();
+	control_storage_tests();
 	typed_extension_mapping_tests();
 	config_and_scope_tests();
 	global_scope_tests();
@@ -2052,7 +2187,7 @@ int main()
 	shutdown_fixture();
 	mysql_close(observer);
 	std::puts(
-		"SQL repository runtime: PASS (record kinds 1-12, 10 golden fixtures, and focused "
+		"SQL repository runtime: PASS (record kinds 1-13, 10 golden fixtures, and focused "
 		"failure/isolation regressions)");
 }
 #endif

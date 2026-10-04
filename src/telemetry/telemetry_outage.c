@@ -22,12 +22,14 @@ constexpr const char *LOCK = "outages.owner";
 constexpr unsigned char LEGACY_MAGIC[] = { 'D', 'M', 'S', 'T', 'L', 'J', '0', '1' };
 constexpr unsigned char BATTLE_MAGIC[] = { 'D', 'M', 'S', 'T', 'L', 'J', '0', '2' };
 constexpr unsigned char CONTRIBUTION_MAGIC[] = { 'D', 'M', 'S', 'T', 'L', 'J', '0', '3' };
-constexpr unsigned char MAGIC[] = { 'D', 'M', 'S', 'T', 'L', 'J', '0', '4' };
+constexpr unsigned char BUILD_MAGIC[] = { 'D', 'M', 'S', 'T', 'L', 'J', '0', '4' };
+constexpr unsigned char MAGIC[] = { 'D', 'M', 'S', 'T', 'L', 'J', '0', '5' };
 using words = std::array<std::uint64_t, TELEMETRY_OUTAGE_DISK_WORDS>;
 constexpr std::uint64_t LEGACY_KINDS = (std::uint64_t{ 1U } << 10U) - 2U;
 constexpr std::uint64_t BATTLE_KINDS = (std::uint64_t{ 1U } << 11U) - 2U;
 constexpr std::uint64_t CONTRIBUTION_KINDS = (std::uint64_t{ 1U } << 12U) - 2U;
-constexpr std::uint64_t KNOWN_KINDS = (std::uint64_t{ 1U } << 13U) - 2U;
+constexpr std::uint64_t BUILD_KINDS = (std::uint64_t{ 1U } << 13U) - 2U;
+constexpr std::uint64_t KNOWN_KINDS = (std::uint64_t{ 1U } << 14U) - 2U;
 words encode(const telemetry_outage_observation &value);
 
 struct file_guard
@@ -281,11 +283,13 @@ telemetry_outage_result load(telemetry_outage_journal &j, const char *name, bool
 				    0;
 	const bool contribution_version =
 		std::memcmp(data.data(), CONTRIBUTION_MAGIC, sizeof(CONTRIBUTION_MAGIC)) == 0;
+	const bool build_version = std::memcmp(data.data(), BUILD_MAGIC, sizeof(BUILD_MAGIC)) == 0;
 	const auto known_kinds = legacy		      ? LEGACY_KINDS :
 				 battle_version	      ? BATTLE_KINDS :
 				 contribution_version ? CONTRIBUTION_KINDS :
+				 build_version	      ? BUILD_KINDS :
 							KNOWN_KINDS;
-	if ((!legacy && !battle_version && !contribution_version &&
+	if ((!legacy && !battle_version && !contribution_version && !build_version &&
 	     std::memcmp(data.data(), MAGIC, sizeof(MAGIC)) != 0) ||
 	    std::memcmp(data.data() + data.size() - sizeof(digest), digest, sizeof(digest)) != 0)
 		return failure(j, telemetry_outage_result::corrupt, EBADMSG);

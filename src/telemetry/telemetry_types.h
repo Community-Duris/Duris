@@ -74,6 +74,7 @@ enum class telemetry_record_kind : std::uint8_t
 	battle = 10,
 	battle_contribution = 11,
 	battle_build = 12,
+	control = 13,
 };
 
 /* Observed authenticated descriptor ownership; preparation alone emits no fact. */
@@ -1162,6 +1163,139 @@ static_assert(std::is_standard_layout_v<telemetry_battle_build_observation>);
 static_assert(sizeof(telemetry_battle_build_observation) + sizeof(telemetry_record_header) <=
 	      TELEMETRY_RECORD_MAX_BYTES);
 
+/* Reviewed control results and target-state intervals are a separate value
+ * domain. Application operations and elapsed target time have different units;
+ * a target interval never assigns its duration to a guessed caster. */
+inline constexpr std::uint16_t TELEMETRY_CONTROL_DEFINITION_VERSION = 1U;
+inline constexpr std::uint16_t TELEMETRY_CONTROL_PRODUCER_VERSION = 1U;
+inline constexpr std::uint16_t TELEMETRY_CONTROL_STATE_MASK = 255U;
+
+enum class telemetry_control_family : std::uint8_t
+{
+	unknown = 0,
+	blindness = 1,
+	stun = 2,
+	major_paralysis = 3,
+	minor_paralysis = 4,
+	slow = 5,
+	sleep = 6,
+	silence = 7,
+	entangle = 8,
+};
+
+enum class telemetry_control_result : std::uint8_t
+{
+	unknown = 0,
+	applied = 1,
+	saved = 2,
+	resisted = 3,
+	immune = 4,
+	already_present = 5,
+	movement_protection = 6,
+	target_protected = 7,
+	source_ineligible = 8,
+	target_ineligible = 9,
+	location_ineligible = 10,
+	level_ineligible = 11,
+	class_ineligible = 12,
+	percentage_rejected = 13,
+	unclassified_rejection = 14,
+};
+
+enum class telemetry_control_kind : std::uint8_t
+{
+	resolution = 1,
+	state_entry = 2,
+	state_interval = 3,
+	source_gap = 4,
+};
+
+enum class telemetry_control_boundary : std::uint8_t
+{
+	actor_entry = 1,
+	state_changed = 2,
+	periodic_observation = 3,
+	context_changed = 4,
+	actor_left = 5,
+	battle_ended = 6,
+	source_unavailable = 7,
+	configuration_unavailable = 8,
+	clock_discontinuity = 9,
+	capacity_refused = 10,
+	attempt_resolved = 11,
+};
+
+inline constexpr std::uint16_t TELEMETRY_CONTROL_TRUSTED_SOURCE = 1U;
+inline constexpr std::uint16_t TELEMETRY_CONTROL_NEGATIVE_LEVEL = 2U;
+inline constexpr std::uint16_t TELEMETRY_CONTROL_SAVE_BYPASSED = 4U;
+inline constexpr std::uint16_t TELEMETRY_CONTROL_SLEEP_REFRESH = 8U;
+inline constexpr std::uint16_t TELEMETRY_CONTROL_HALF_STUN = 16U;
+inline constexpr std::uint16_t TELEMETRY_CONTROL_SELF = 32U;
+inline constexpr std::uint16_t TELEMETRY_CONTROL_FLAGS = 63U;
+
+/* The session and native group/dimensions are observations, not authenticated
+ * account/controller authority. The optional association reference is resolved
+ * against complete retained battle packets by the publisher. */
+struct telemetry_control_actor_context
+{
+	telemetry_combat_actor_ref actor;
+	telemetry_session_id session;
+	telemetry_dimensions dimensions;
+	telemetry_id group_key;
+	std::uint16_t group_revision;
+	std::uint16_t context_version;
+	telemetry_quality_mask quality_flags;
+};
+
+struct telemetry_control_association
+{
+	telemetry_sequence battle_sequence;
+	telemetry_revision revision;
+	std::uint32_t fact_sequence;
+};
+
+struct telemetry_control_observation
+{
+	telemetry_producer_id producer;
+	telemetry_encounter_source scope;
+	telemetry_sequence sequence;
+	telemetry_sequence previous_state_sequence;
+	telemetry_control_actor_context source;
+	telemetry_control_actor_context target;
+	telemetry_control_association source_association;
+	telemetry_control_association target_association;
+	telemetry_revision last_target_association_revision;
+	std::uint32_t last_target_association_fact_sequence;
+	telemetry_monotonic_usec start_usec;
+	telemetry_utc_usec start_utc_usec;
+	telemetry_monotonic_usec at_usec;
+	telemetry_utc_usec at_utc_usec;
+	telemetry_monotonic_usec decision_usec;
+	telemetry_utc_usec decision_utc_usec;
+	std::uint32_t build_version;
+	std::uint32_t content_version;
+	telemetry_quality_mask quality_flags;
+	/* Native scheduler ticks, not measured microseconds; never a duration
+	 * denominator. Negative/zero accepted declarations retain their value. */
+	std::int32_t configured_ticks;
+	std::uint16_t definition_version;
+	std::uint16_t producer_version;
+	std::uint16_t flags;
+	std::uint16_t before_mask;
+	std::uint16_t after_mask;
+	std::uint16_t state_available;
+	std::uint16_t duration_coverage;
+	telemetry_control_kind kind;
+	telemetry_control_family family;
+	telemetry_control_result result;
+	telemetry_control_boundary boundary;
+};
+
+static_assert(std::is_trivially_copyable_v<telemetry_control_observation>);
+static_assert(std::is_standard_layout_v<telemetry_control_observation>);
+static_assert(sizeof(telemetry_control_observation) + sizeof(telemetry_record_header) <=
+	      TELEMETRY_RECORD_MAX_BYTES);
+
 union telemetry_record_payload
 {
 	telemetry_interval_payload interval;
@@ -1176,6 +1310,7 @@ union telemetry_record_payload
 	telemetry_battle_fact battle;
 	telemetry_battle_contribution_payload battle_contribution;
 	telemetry_battle_build_observation battle_build;
+	telemetry_control_observation control;
 };
 
 /* Fixed-size tagged value.  The active payload is selected by header.kind. */
@@ -1248,9 +1383,11 @@ constexpr bool telemetry_record_kind_is_valid(telemetry_record_kind kind) noexce
 	       kind == telemetry_record_kind::combat_summary ||
 	       kind == telemetry_record_kind::ownership || kind == telemetry_record_kind::battle ||
 	       kind == telemetry_record_kind::battle_contribution ||
-	       kind == telemetry_record_kind::battle_build;
+	       kind == telemetry_record_kind::battle_build ||
+	       kind == telemetry_record_kind::control;
 }
 
+/* Per-attempt/state control detail does not consume the lifecycle reserve. */
 constexpr bool telemetry_record_kind_is_control(telemetry_record_kind kind) noexcept
 {
 	return kind == telemetry_record_kind::session_lifecycle ||
@@ -2418,6 +2555,156 @@ telemetry_battle_build_observation_is_valid(const telemetry_battle_build_observa
 	       v.arena_team == 0U && v.arena_player_flags == 0;
 }
 
+namespace telemetry_control_validation_detail
+{
+using actor_context = telemetry_control_actor_context;
+using association = telemetry_control_association;
+using kind = telemetry_control_kind;
+using family = telemetry_control_family;
+using result = telemetry_control_result;
+using boundary = telemetry_control_boundary;
+constexpr bool actor_valid(const actor_context &v) noexcept
+{
+	telemetry_battle_actor_context a{};
+	a.actor = v.actor;
+	a.session = v.session;
+	a.dimensions = v.dimensions;
+	a.group_key = v.group_key;
+	a.group_revision = v.group_revision;
+	a.context_version = v.context_version;
+	a.quality_flags = v.quality_flags;
+	return telemetry_battle_actor_context_is_valid(a);
+}
+
+constexpr bool actor_zero(const actor_context &v) noexcept
+{
+	telemetry_battle_actor_context a{};
+	a.actor = v.actor;
+	a.session = v.session;
+	a.dimensions = v.dimensions;
+	a.group_key = v.group_key;
+	a.group_revision = v.group_revision;
+	a.context_version = v.context_version;
+	a.quality_flags = v.quality_flags;
+	return telemetry_battle_actor_context_is_zero(a);
+}
+
+constexpr bool association_valid(const association &v) noexcept
+{
+	return (v.battle_sequence == 0U && v.revision == 0U && v.fact_sequence == 0U) ||
+	       (v.battle_sequence != 0U && v.revision != 0U && v.fact_sequence != 0U);
+}
+
+constexpr bool association_zero(const association &v) noexcept
+{
+	return v.battle_sequence == 0U && v.revision == 0U && v.fact_sequence == 0U;
+}
+
+} // namespace telemetry_control_validation_detail
+
+constexpr bool
+telemetry_control_observation_is_valid(const telemetry_control_observation &v) noexcept
+{
+	using namespace telemetry_control_validation_detail;
+	const bool configuration_unknown = v.kind == kind::source_gap &&
+					   v.boundary == boundary::configuration_unavailable;
+	if (configuration_unknown ? v.scope.config_id != 0U || v.scope.classifier_version != 0U ||
+					    v.scope.policy_version != 0U || v.build_version != 0U ||
+					    v.content_version != 0U :
+				    !telemetry_encounter_source_is_valid(v.scope) ||
+					    v.build_version == 0U || v.content_version == 0U)
+		return false;
+	if (!telemetry_producer_id_is_valid(v.producer) || v.sequence == 0U ||
+	    v.scope.environment_id == 0U || v.scope.season_id == 0U || v.scope.group_key != 0U ||
+	    v.scope.zone_vnum != -1 ||
+	    v.definition_version != TELEMETRY_CONTROL_DEFINITION_VERSION ||
+	    v.producer_version != TELEMETRY_CONTROL_PRODUCER_VERSION || !actor_valid(v.target) ||
+	    !association_valid(v.source_association) || !association_valid(v.target_association) ||
+	    !telemetry_quality_mask_is_valid(v.quality_flags) ||
+	    ((v.source.quality_flags | v.target.quality_flags) & ~v.quality_flags) != 0U ||
+	    (v.flags & ~TELEMETRY_CONTROL_FLAGS) != 0U ||
+	    ((v.before_mask | v.after_mask | v.state_available | v.duration_coverage) &
+	     ~TELEMETRY_CONTROL_STATE_MASK) != 0U ||
+	    v.start_usec > v.at_usec || v.at_usec > v.decision_usec ||
+	    v.previous_state_sequence >= v.sequence || v.boundary < boundary::actor_entry ||
+	    v.boundary > boundary::attempt_resolved)
+		return false;
+	if (association_zero(v.target_association) ?
+		    v.last_target_association_revision != 0U ||
+			    v.last_target_association_fact_sequence != 0U :
+		    v.last_target_association_revision < v.target_association.revision ||
+			    v.last_target_association_fact_sequence <
+				    v.target_association.fact_sequence ||
+			    (v.last_target_association_fact_sequence ==
+				     v.target_association.fact_sequence &&
+			     v.last_target_association_revision != v.target_association.revision))
+		return false;
+	if ((v.start_utc_usec != TELEMETRY_UTC_UNKNOWN && v.at_utc_usec != TELEMETRY_UTC_UNKNOWN &&
+	     v.at_utc_usec < v.start_utc_usec) ||
+	    (v.at_utc_usec != TELEMETRY_UTC_UNKNOWN &&
+	     v.decision_utc_usec != TELEMETRY_UTC_UNKNOWN && v.decision_utc_usec < v.at_utc_usec))
+		if (!(v.quality_flags & TELEMETRY_QUALITY_CLOCK_DISCONTINUITY))
+			return false;
+	if (v.kind == kind::resolution)
+	{
+		const bool self = v.source.actor.actor_id == v.target.actor.actor_id &&
+				  v.source.actor.kind == v.target.actor.kind;
+		if (!actor_valid(v.source) || v.previous_state_sequence != 0U ||
+		    v.boundary != boundary::attempt_resolved || v.start_usec != v.at_usec ||
+		    v.at_usec != v.decision_usec || v.start_utc_usec != v.at_utc_usec ||
+		    v.at_utc_usec != v.decision_utc_usec || v.family < family::blindness ||
+		    v.family > family::entangle || v.result < result::applied ||
+		    v.result > result::unclassified_rejection ||
+		    v.state_available != TELEMETRY_CONTROL_STATE_MASK ||
+		    v.duration_coverage != 0U ||
+		    v.last_target_association_revision != v.target_association.revision ||
+		    v.last_target_association_fact_sequence != v.target_association.fact_sequence ||
+		    static_cast<bool>(v.flags & TELEMETRY_CONTROL_SELF) != self)
+			return false;
+		if (v.result != result::applied)
+			return v.configured_ticks == 0 &&
+			       (v.flags &
+				(TELEMETRY_CONTROL_SAVE_BYPASSED | TELEMETRY_CONTROL_SLEEP_REFRESH |
+				 TELEMETRY_CONTROL_HALF_STUN)) == 0U;
+		const auto effect = v.family == family::entangle ?
+					    136U :
+					    1U << (static_cast<unsigned>(v.family) - 1U);
+		return (v.after_mask & effect) != 0U &&
+		       (!(v.flags & TELEMETRY_CONTROL_SLEEP_REFRESH) ||
+			(v.family == family::sleep && (v.before_mask & 32U))) &&
+		       (!(v.flags & TELEMETRY_CONTROL_HALF_STUN) || v.family == family::stun) &&
+		       (!(v.flags & TELEMETRY_CONTROL_SAVE_BYPASSED) || v.family == family::stun ||
+			v.family == family::major_paralysis || v.family == family::sleep);
+	}
+	if (!actor_zero(v.source) || !association_zero(v.source_association) ||
+	    v.family != family::unknown || v.result != result::unknown || v.flags != 0U ||
+	    v.configured_ticks != 0 || v.boundary == boundary::attempt_resolved)
+		return false;
+	if (v.kind == kind::source_gap)
+		return v.state_available == 0U && v.duration_coverage == 0U &&
+		       v.before_mask == 0U && v.after_mask == 0U &&
+		       (v.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN) != 0U &&
+		       v.boundary >= boundary::source_unavailable;
+	if (v.state_available != TELEMETRY_CONTROL_STATE_MASK ||
+	    (v.duration_coverage != TELEMETRY_CONTROL_STATE_MASK &&
+	     !(v.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN)) ||
+	    association_zero(v.target_association))
+		return false;
+	if (v.kind == kind::state_entry)
+		return v.previous_state_sequence == 0U && v.start_usec == v.at_usec &&
+		       v.at_usec == v.decision_usec && v.start_utc_usec == v.at_utc_usec &&
+		       v.at_utc_usec == v.decision_utc_usec && v.before_mask == v.after_mask &&
+		       v.last_target_association_revision == v.target_association.revision &&
+		       v.last_target_association_fact_sequence ==
+			       v.target_association.fact_sequence &&
+		       (v.boundary == boundary::actor_entry ||
+			v.boundary == boundary::context_changed);
+	return v.kind == kind::state_interval && v.previous_state_sequence != 0U &&
+	       v.boundary >= boundary::state_changed && v.boundary <= boundary::capacity_refused &&
+	       (v.at_usec == v.decision_usec ||
+		(v.quality_flags & TELEMETRY_QUALITY_UNCLOSED_TAIL) != 0U);
+}
+
 /* The switch reads only the union member selected by header.kind. */
 constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcept
 {
@@ -2472,6 +2759,14 @@ constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcep
 		       record.header.key.producer.process_id ==
 			       record.payload.battle_build.battle.producer.process_id &&
 		       record.header.occurrence_utc_usec == record.payload.battle_build.at_utc_usec;
+	case telemetry_record_kind::control:
+		return telemetry_control_observation_is_valid(record.payload.control) &&
+		       record.header.key.producer.boot_id ==
+			       record.payload.control.producer.boot_id &&
+		       record.header.key.producer.process_id ==
+			       record.payload.control.producer.process_id &&
+		       record.header.occurrence_utc_usec ==
+			       record.payload.control.decision_utc_usec;
 	case telemetry_record_kind::invalid:
 		break;
 	}

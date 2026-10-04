@@ -27,6 +27,7 @@ REGISTRY_SCHEMAS = {
     3: ((1 << 11) - 2, 10, "telemetry_incident_registry_v3", "telemetry_incident_v3"),
     4: ((1 << 12) - 2, 11, "telemetry_incident_registry_v4", "telemetry_incident_v4"),
     5: ((1 << 13) - 2, 12, "telemetry_incident_registry_v5", "telemetry_incident_v5"),
+    6: ((1 << 14) - 2, 13, "telemetry_incident_registry_v6", "telemetry_incident_v6"),
 }
 QUALITY_INCIDENT_GAP = 1 << 27
 QUALITY_INVENTORY_UNKNOWN = 1 << 28
@@ -77,7 +78,7 @@ def schema_contract(version: Any) -> tuple[int, int, str, str]:
 def generation_schema(definition_version: int) -> int:
     if type(definition_version) is not int or not 1 <= definition_version < (1 << 32):
         raise IncidentError("invalid_definition_version")
-    return 5 if definition_version >= 6 else 4 if definition_version == 5 else 3 if definition_version == 4 else 2 if definition_version == 3 else 1
+    return 6 if definition_version >= 7 else 5 if definition_version == 6 else 4 if definition_version == 5 else 3 if definition_version == 4 else 2 if definition_version == 3 else 1
 
 
 def _stored_digest(value: Any, *, nullable: bool = False) -> bytes | None:

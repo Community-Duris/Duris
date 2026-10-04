@@ -14,6 +14,7 @@ def compile_harness(executable, sanitize=False):
                '-I', str(ROOT / 'src'),
                str(ROOT / 'tests/async/telemetry_battle_contribution_harness.cc'),
                str(ROOT / 'src/telemetry/telemetry_battle_contribution.c'),
+               str(ROOT / 'src/telemetry/telemetry_control.c'),
                str(ROOT / 'src/telemetry/telemetry_battle.c'),
                str(ROOT / 'src/telemetry/telemetry_battle_contract.c'), '-o', str(executable)]
     if sanitize:

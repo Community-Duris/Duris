@@ -3244,19 +3244,36 @@ void update_damage_data()
 //   The victim is not blinded if it's !blind.
 bool blind(P_char ch, P_char victim, int duration)
 {
+	const auto before = telemetry_runtime_game_control_mask(victim);
+	const auto record_result = [ch, victim, before](telemetry_control_result result,
+							std::int32_t ticks = 0,
+							std::uint16_t flags = 0U)
+	{
+		telemetry_runtime_game_combat_control_result(ch, victim,
+							     telemetry_control_family::blindness,
+							     result, before, ticks, flags | (0U));
+	};
 	struct affected_type af;
 
-	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
+	if (!IS_ALIVE(ch))
 	{
+		record_result(telemetry_control_result::source_ineligible);
+		return FALSE;
+	}
+	if (!IS_ALIVE(victim))
+	{
+		record_result(telemetry_control_result::target_ineligible);
 		return FALSE;
 	}
 	if (IS_SET(victim->specials.affected_by5, AFF5_NOBLIND))
 	{
+		record_result(telemetry_control_result::immune);
 		return FALSE;
 	}
 
 	if (IS_AFFECTED(victim, AFF_BLIND))
 	{
+		record_result(telemetry_control_result::already_present);
 		act("&+L$N &+Lis already blind as a bat!", TRUE, ch, 0, victim, TO_CHAR);
 		send_to_char("Your eyes hurt briefly, but the feeling dissipates.\r\n", victim);
 		return FALSE;
@@ -3264,11 +3281,13 @@ bool blind(P_char ch, P_char victim, int duration)
 	// Parasites and slime are immune to blindness. Nov08 -Lucrot
 	if (GET_RACE(victim) == RACE_PARASITE || GET_RACE(victim) == RACE_SLIME)
 	{
+		record_result(telemetry_control_result::immune);
 		return FALSE;
 	}
 
-	if (!has_innate(victim, INNATE_EYELESS) && !isname("_noblind_", GET_NAME(victim)) &&
-	    !IS_TRUSTED(victim))
+	const bool blind_immune = has_innate(victim, INNATE_EYELESS) ||
+				  isname("_noblind_", GET_NAME(victim));
+	if (!blind_immune && !IS_TRUSTED(victim))
 	{
 		act("&+L$n &+Lseems to be blinded!", TRUE, victim, 0, 0, TO_ROOM);
 		send_to_char("&+LYou have been blinded!\r\n", victim);
@@ -3282,26 +3301,40 @@ bool blind(P_char ch, P_char victim, int duration)
 		affect_to_char(victim, &af);
 		telemetry_runtime_game_combat_control(ch, victim, 1U,
 						      TELEMETRY_COMBAT_MODIFIER_NONE);
+		record_result(telemetry_control_result::applied, af.duration, 0U);
 		return TRUE;
 	}
 
+	record_result(blind_immune ? telemetry_control_result::immune :
+				     telemetry_control_result::target_protected);
 	return FALSE;
 }
 
 //---------------------------------------------------------------------------------
 void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 {
+	const auto before = telemetry_runtime_game_control_mask(stunnee);
+	const auto record_result = [stunner, stunnee, before](telemetry_control_result result,
+							      std::int32_t ticks = 0,
+							      std::uint16_t flags = 0U)
+	{
+		telemetry_runtime_game_combat_control_result(stunner, stunnee,
+							     telemetry_control_family::stun, result,
+							     before, ticks, flags | (0U));
+	};
 	struct affected_type af;
 	int attlevel = GET_LEVEL(stunner), deflevel = GET_LEVEL(stunnee);
 
 	if (!IS_ALIVE(stunnee))
 	{
+		record_result(telemetry_control_result::target_ineligible);
 		return;
 	}
 
 	// Elite mobs are !stun. Oct08 -Lucrot
 	if (IS_ELITE(stunnee))
 	{
+		record_result(telemetry_control_result::immune);
 		return;
 	}
 
@@ -3312,12 +3345,14 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 	{
 		if (!number(0, (int)BOUNDED(0, (60 - deflevel), 59)))
 		{
+			record_result(telemetry_control_result::immune);
 			return;
 		}
 	}
 
 	if (IS_AFFECTED2(stunnee, AFF2_STUNNED))
 	{
+		record_result(telemetry_control_result::already_present);
 		send_to_char("&+wIf you could get more stunned you would.\r\n", stunnee);
 		return;
 	}
@@ -3341,6 +3376,7 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 			affect_to_char(stunnee, &af);
 			telemetry_runtime_game_combat_control(stunner, stunnee, 1U,
 							      TELEMETRY_COMBAT_MODIFIER_NONE);
+			record_result(telemetry_control_result::applied, af.duration, 0U);
 
 			send_to_char("&+wThe world starts spinning, and your ears are ringing!\r\n",
 				     stunnee);
@@ -3358,6 +3394,8 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 			affect_to_char(stunnee, &af);
 			telemetry_runtime_game_combat_control(stunner, stunnee, 1U,
 							      TELEMETRY_COMBAT_MODIFIER_NONE);
+			record_result(telemetry_control_result::applied, af.duration,
+				      TELEMETRY_CONTROL_HALF_STUN);
 
 			send_to_char(
 				"&+wWow that &+Rsmarts... &+Wbut you manage to recover quickly!\r\n",
@@ -3368,6 +3406,8 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 				stop_fighting(stunnee);
 			}
 		}
+		else
+			record_result(telemetry_control_result::saved);
 	}
 	else
 	{
@@ -3379,6 +3419,8 @@ void Stun(P_char stunnee, P_char stunner, int duration, bool Fear_Check)
 		affect_to_char(stunnee, &af);
 		telemetry_runtime_game_combat_control(stunner, stunnee, 1U,
 						      TELEMETRY_COMBAT_MODIFIER_NONE);
+		record_result(telemetry_control_result::applied, af.duration,
+			      TELEMETRY_CONTROL_SAVE_BYPASSED);
 
 		send_to_char("&+wThe world starts spinning, and your ears are ringing!\r\n",
 			     stunnee);

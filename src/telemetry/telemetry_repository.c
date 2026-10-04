@@ -526,6 +526,15 @@ fields record_fields(const telemetry_record &record)
 #undef TELEMETRY_BUILD_BYTES
 		break;
 	}
+	case telemetry_record_kind::control:
+	{
+		const auto &p = record.payload.control;
+#define TELEMETRY_CONTROL_FIELD(name, member, width, signed_value) \
+	number(values, telemetry_column_id::name, p.member);
+#include "telemetry/telemetry_control_fields.inc"
+#undef TELEMETRY_CONTROL_FIELD
+		break;
+	}
 	case telemetry_record_kind::coverage_gap:
 	{
 		const auto &p = record.payload.gap;
@@ -673,6 +682,12 @@ std::string signature(const telemetry_record &record)
 	case telemetry_record_kind::configuration:
 		value += ':' + std::to_string(record.payload.configuration.config.reserved);
 		value += ':' + std::to_string(record.payload.configuration.config.schema_version);
+		break;
+	case telemetry_record_kind::control:
+		for (auto byte : record.payload.control.source.actor.reserved)
+			value += ':' + std::to_string(byte);
+		for (auto byte : record.payload.control.target.actor.reserved)
+			value += ':' + std::to_string(byte);
 		break;
 	default:
 		break;
@@ -1042,6 +1057,37 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 					    " FROM telemetry_config WHERE environment_id=" +
 					    std::to_string(p.environment_id) +
 					    " AND config_id=" + std::to_string(p.config_id));
+			auto row = mysql_fetch_row(config.get());
+			if (!row || !equal_row(row, expected))
+				return telemetry_apply_outcome::rejected_invalid;
+		}
+	}
+
+	if (record.header.kind == telemetry_record_kind::control)
+	{
+		const auto &p = record.payload.control;
+		fields logical_key;
+		number(logical_key, telemetry_column_id::ctl_boot_id, p.producer.boot_id);
+		number(logical_key, telemetry_column_id::ctl_process_id, p.producer.process_id);
+		number(logical_key, telemetry_column_id::ctl_sequence, p.sequence);
+		auto existing =
+			query("SELECT 1 FROM telemetry_interval WHERE " + where(logical_key));
+		if (mysql_fetch_row(existing.get()))
+			return telemetry_apply_outcome::duplicate_conflict;
+		if (p.scope.config_id != 0U)
+		{
+			fields expected;
+			number(expected, telemetry_column_id::season_id, p.scope.season_id);
+			number(expected, telemetry_column_id::classifier_version,
+			       p.scope.classifier_version);
+			number(expected, telemetry_column_id::policy_version,
+			       p.scope.policy_version);
+			number(expected, telemetry_column_id::build_version, p.build_version);
+			number(expected, telemetry_column_id::content_version, p.content_version);
+			auto config = query("SELECT " + names(expected, true) +
+					    " FROM telemetry_config WHERE environment_id=" +
+					    std::to_string(p.scope.environment_id) +
+					    " AND config_id=" + std::to_string(p.scope.config_id));
 			auto row = mysql_fetch_row(config.get());
 			if (!row || !equal_row(row, expected))
 				return telemetry_apply_outcome::rejected_invalid;

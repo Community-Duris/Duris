@@ -427,10 +427,17 @@ void telemetry_runtime_game_combat_healing(struct char_data *healer, struct char
 					   std::uint32_t modifier_flags) noexcept;
 /* Accepted applications only, after affect mutation and before combat teardown.
  * Self effects observe an existing battle and never establish a hostile edge.
- * Native control producers are blind/Stun; duration/resistance remain unobserved. */
+ * The typed result API records separately reviewed native rejection paths. */
 void telemetry_runtime_game_combat_control(struct char_data *source, struct char_data *target,
 					   std::uint16_t applications,
 					   std::uint32_t modifier_flags) noexcept;
+/* Selected effective flag banks, read without changing gameplay. Elapsed state
+ * is partial until the producer inventory covers every selected mutation. */
+std::uint16_t telemetry_runtime_game_control_mask(const struct char_data *target) noexcept;
+void telemetry_runtime_game_combat_control_result(
+	struct char_data *source, struct char_data *target, telemetry_control_family family,
+	telemetry_control_result result, std::uint16_t before_mask, std::int32_t configured_ticks,
+	std::uint16_t flags) noexcept;
 void telemetry_runtime_game_combat_cast_attempt(struct char_data *caster, int spell) noexcept;
 void telemetry_runtime_game_combat_cast_complete(struct char_data *caster) noexcept;
 void telemetry_runtime_game_combat_cast_abort(struct char_data *caster) noexcept;

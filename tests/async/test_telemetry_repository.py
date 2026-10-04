@@ -63,7 +63,8 @@ def repository_mapping_contract() -> None:
     serializer_lines, macro = [], False
     for line in repository.splitlines():
         if line.startswith(("#define FIELD", "#define TELEMETRY_BATTLE_FIELD", "#define TELEMETRY_BC_FIELD",
-                            "#define TELEMETRY_BUILD_FIELD", "#define TELEMETRY_BUILD_BYTES")):
+                            "#define TELEMETRY_BUILD_FIELD", "#define TELEMETRY_BUILD_BYTES",
+                            "#define TELEMETRY_CONTROL_FIELD")):
             macro = True
         if not macro:
             serializer_lines.append(line)
@@ -159,7 +160,7 @@ def sql_environment() -> tuple[dict[str, str], list[str], str]:
         raise RuntimeError("disposable SQL fixture is missing: " + ", ".join(missing))
     host = os.environ["TELEMETRY_REPOSITORY_HOST"]
     database = os.environ["TELEMETRY_REPOSITORY_DATABASE"]
-    if not DATABASE_PATTERN.fullmatch(database):
+    if not DATABASE_PATTERN.fullmatch(database) or len(database) > 64:
         raise RuntimeError("disposable SQL fixture database name is not uniquely test-scoped")
     if host != "127.0.0.1":
         raise RuntimeError("disposable SQL fixture host must be explicit TCP loopback")
@@ -241,6 +242,7 @@ def fixture_safety_contract() -> None:
     for field, value in (("TELEMETRY_REPOSITORY_HOST", "production.example"),
                          ("TELEMETRY_REPOSITORY_HOST", "localhost"),
                          ("TELEMETRY_REPOSITORY_DATABASE", "duris"),
+                         ("TELEMETRY_REPOSITORY_DATABASE", "duris_telemetry_test_" + "a" * 45),
                          ("TELEMETRY_REPOSITORY_PORT", "0"),
                          ("TELEMETRY_REPOSITORY_PORT", "65536"),
                          ("TELEMETRY_REPOSITORY_PORT", "invalid"),
@@ -257,7 +259,7 @@ def fixture_safety_contract() -> None:
         environment, command, database = sql_environment()
         assert "DB_SOCKET" not in environment and "MYSQL_UNIX_PORT" not in environment
         assert "--protocol=tcp" in command and database == safe["TELEMETRY_REPOSITORY_DATABASE"]
-    print("Fixture target safety: PASS (seven unsafe targets refused, inherited sockets removed)", flush=True)
+    print("Fixture target safety: PASS (eight unsafe targets refused, inherited sockets removed)", flush=True)
 
 
 def drop_sql_fixture(environment: dict[str, str], command: list[str], database: str) -> None:
@@ -367,6 +369,7 @@ def main():
         battle_sources = [str(ROOT / "src/telemetry/telemetry_battle.c"),
                           str(ROOT / "src/telemetry/telemetry_battle_contribution.c"),
                           str(ROOT / "src/telemetry/telemetry_battle_build_observation.c"),
+                          str(ROOT / "src/telemetry/telemetry_control.c"),
                           str(ROOT / "src/telemetry/telemetry_battle_contract.c")]
         harness = str(ROOT / "tests/async/telemetry_repository_harness.cc")
         no_sql = tmp / "no_mysql"

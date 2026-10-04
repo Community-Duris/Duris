@@ -284,3 +284,24 @@ build observations. A future build comparison definition must explicitly consume
 schema-5 coverage and qualify its retained-source and atomic publication path.
 Neither a reviewed inventory nor an unavailable build marker reconstructs the
 missing profile or establishes continuous context between observed points.
+
+## Typed control-loss review contract
+
+Migration `0067_telemetry_typed_control` adds independent schema-6 tables
+`telemetry_incident_registry_v6` and `telemetry_incident_v6` for families 1–13.
+Schemas 1–5 keep their original limits and review histories. The packet bounds
+remain 64 incidents and 128 KiB, and the template CLI still defaults to schema 1.
+Select schema 6 explicitly with `--registry-schema-version 6`.
+
+Kind-13 post-fix references use the committed receipt's actual producer, kind,
+occurrence and `ctl_environment_id`/`ctl_season_id`. Missing, mismatched or
+cross-scope references are refused. The restricted reviewer needs SELECT/INSERT
+on the two v6 tables and bounded SELECT on raw telemetry; the game writer has no
+review authority. Atomic registration, lost-reply reconciliation and metadata/
+detail rollback use the existing registrar.
+
+The lifecycle inventory now contains 262 database tables. Definitions 5 and 6
+continue to consume schemas 4 and 5 respectively. Schema-6 review does not
+activate control publication or reconstruct missing effects, attempts or
+duration. See [CONTROL_OBSERVATIONS.md](CONTROL_OBSERVATIONS.md) for its producer
+and coverage limits.

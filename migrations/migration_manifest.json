@@ -838,6 +838,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "b607a89b91674eda67d3d71f4d87e5c6e0d02b5537bc573e5697487ccdd5aa7a",
       "verify_checksum": "f21db7966c37fb7b73ec75d3df1cd74d5b6880dc9934aaf7514c2e2a2cd0500d"
+    },
+    {
+      "id": "0067_telemetry_typed_control",
+      "sequence": 67,
+      "description": "Persist typed control resolutions and target intervals with exact replay and independent incident schema 6",
+      "apply": "immutable/0067_telemetry_typed_control.sql",
+      "verify": "immutable/0067_telemetry_typed_control.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "fccaba3f8c7c2480b555178334d598b7b1c929a0f3df8cec1e2942e6baf08638",
+      "verify_checksum": "7f2e23bd872b74adf1bc0355e0b01247b483aebbb450d68f82e7cc79ee466808"
     }
   ]
 }

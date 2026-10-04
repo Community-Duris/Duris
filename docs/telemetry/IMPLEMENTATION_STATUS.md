@@ -10,8 +10,8 @@ work. A future production deployment is a separate operational decision.
 
 | Requirement | State | Evidence or remaining work |
 | --- | --- | --- |
-| #561: full writer startup contract | Implemented and locally qualified | Validate every current writer column, type, signedness, width, nullable/default semantics, InnoDB engine and 15 required indexes. Exercise effective SELECT/INSERT/session UPDATE with zero-row statements and rollback. Reject admission until the worker qualifies; later transient outages retain buffering. |
-| #565: shared serialization/schema descriptor | Implemented and locally qualified | `telemetry_columns.inc` supplies the column identities used by serializers and startup validation. Preserve all record kinds 1–12, admitted replay keys and column prefixes. Reserved/padding/absent union fields and sink-generated fields have explicit exclusions. |
+| #561: full writer startup contract | Implemented and locally qualified | Validate every current writer column, type, signedness, width, nullable/default semantics, InnoDB engine and 16 required indexes. Exercise effective SELECT/INSERT/session UPDATE with zero-row statements and rollback. Reject admission until the worker qualifies; later transient outages retain buffering. |
+| #565: shared serialization/schema descriptor | Implemented and locally qualified | `telemetry_columns.inc` supplies the column identities used by serializers and startup validation. Preserve all record kinds 1–13, admitted replay keys and column prefixes. Reserved/padding/absent union fields and sink-generated fields have explicit exclusions. |
 | #566: durable outage/loss evidence | Implemented and locally qualified | Worker registration before SQL initialization/admission; protected exclusive checksummed storage; bounded coherent samples; clean drain versus known abandonment and unknown tails; real restart/exec/SIGKILL and storage-failure tests. Offline read-only export preserves unknown ends. See [OUTAGE_STORAGE.md](OUTAGE_STORAGE.md) and the qualified #567 report integration below. |
 | #567: reviewed incident coverage | Implemented and locally qualified | Consecutive retained inventory versions, nullable unknown ends, committed first verified post-fix references, explicit backlog/reconstruction dispositions and atomic published coverage snapshots. Reports preserve gaps, source uncertainty and bounded private-role separation. Full local MariaDB/MySQL chains, capacity, digest/permission negatives, lost commit replies and unchanged v1 totals qualified. Historical facts require evidence; synthetic fixtures do not establish a real incident history. See [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Initial session qualification/capacity recovery | Implemented and locally qualified | Existing descriptor sweep and context/evidence adapters retry missing entry. Deferred copyover retains one handoff in descriptor memory; supplied keys/totals/revision survive. No earlier unobserved time or human activity is invented. True capacity refusal rolls back IDs; lifecycle queue loss retains admitted IDs. See [SESSION_LIFECYCLE.md](SESSION_LIFECYCLE.md). |
@@ -29,7 +29,8 @@ work. A future production deployment is a separate operational decision.
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Accepted blindness and stun applications | Implemented and locally qualified | Actual `blind`/`Stun` success boundaries feed the existing bounded kind-11 accumulator after effect mutation and before teardown. New segments declare producer mask 31; older unavailable control remains NULL. Normal/ASan/UBSan, 58 history/publication regressions and both full-64-step native-writer SQL journeys preserve eight applications/eight received through eight verified published segments. Source-service seams, partial producer coverage and unobserved duration/resistance remain explicit. See [BATTLES.md](BATTLES.md#accepted-blindness-and-stun-control-capture). |
 | Expanded accepted status-control applications | Implemented and locally qualified | Actual major/minor paralysis, slow, sleep, silence and entangle success boundaries feed the existing kind-11 accumulator after mutation. The separate fresh journey preserves 17 accepted applications/17 received, 28 native source rows and eight published segments; the original blindness/Stun journey remains eight/eight. Normal/ASan/UBSan, 66 history/publication regressions and both full-66-step native-writer SQL journeys qualify the added producers and unchanged earlier publications. Counts include accepted refreshes; segment modifier flags are unions and cannot apportion self/external totals. Typed attempts, resistance, immunity, duration and complete producer coverage remain required. See [BATTLES.md](BATTLES.md#expanded-accepted-status-control-capture). |
-| Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/accepted-control/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Definition 5 publishes these observations with exact association/alias/source and independent loss coverage. Accepted control covers `blind`/`Stun`, major/minor paralysis, slow, sleep, silence and entangle; remaining effect producers, typed attempts/resistance/immunity/duration, prevention and faction exposure remain required. Complete build/power/arena comparisons, typed outcomes, the full balance suites and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
+| Typed control resolution and target-state storage | Partially implemented and locally qualified | Kind 13 preserves exact per-operation outcomes from the maintained selected-control helpers/spell bodies and separate overlap-safe target-state prefixes. The independent 76-field codec, bounded accumulator, private writer, full 67-step storage chains and schema-6 incident review are qualified. Native state coverage remains explicitly partial; complete mutation/removal inventory, retained control publication and personal-server duration journeys remain required. See [CONTROL_OBSERVATIONS.md](CONTROL_OBSERVATIONS.md). |
+| Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/accepted-control/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Definition 5 publishes these observations with exact association/alias/source and independent loss coverage. Kind-13 selected-control results now distinguish applied, saved, resisted, immune and other rejection boundaries. Complete effect producers/removals, qualified duration, retained control publication, prevention and faction exposure remain required. Complete build/power/arena comparisons, typed outcomes, the full balance suites and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
@@ -1562,7 +1563,7 @@ increment. These executable gameplay objects and service seams still do not
 establish personal-server authentication/save/readback or measured performance.
 All seven final accepted requirements retain unfinished portions.
 
-**Next executable expectation:** complete typed control attempts, resistance,
+**Historical expectation at retained-build delivery (superseded below):** complete typed control attempts, resistance,
 immunity and overlap-safe duration, the remaining native prevention/faction and
 typed death/escape/objective producers and battle reports, then qualify actual
 personal-local gameplay/readback/performance.
@@ -1600,3 +1601,91 @@ These fixtures use game-service seams; actual personal-server effect, save,
 readback and performance journeys remain required. All seven final requirements
 retain unfinished portions. See [BATTLES.md](BATTLES.md#expanded-accepted-status-control-capture)
 for the exact source catalog, semantics and maintained local commands.
+
+## Typed control resolutions and target-state storage
+
+Record family 13 separates individual resolved operations from observed target
+state. Its exact 76-field encoding is 368 bytes, with a 408-byte payload inside
+the unchanged 488-byte telemetry record. The fixed 512-target accumulator uses
+213,048 bytes, allocates no memory on events and retains no game pointers.
+Overlaps share one target timeline. Entry, change, context/configuration cuts,
+departure, battle closure and explicit loss seal only actual observed prefixes.
+Delivery recovery starts from a cleared gap and fresh baseline. Sequence keys
+never wrap or repeat, and a UTC regression remains marked after UTC recovers.
+
+The native `blind`/`Stun` helpers and major/minor paralysis, slow, sleep, silence
+and entangle spell bodies preserve the branch that actually ran. The expanded
+fixture captures **56 typed resolutions**, **18 accepted operations** and
+**12 distinct rejection reasons**, including saving, resistance, immunity,
+movement protection, refresh, bypass and the untimed bound branch. Existing
+kind-11 **17/17** and original **8/8** accepted-application journeys keep their
+meanings. Rejected outside targets remain unassociated; those result points
+create no battle edge, enrollment or merge. Configured ticks are declarations,
+including signed native values, and do not establish elapsed time.
+
+Live target-state reads use the existing bounded cached build pass, with no
+additional world traversal. They have zero duration coverage and explicit
+`CONTEXT_UNKNOWN` while the full native mutation/removal inventory is incomplete.
+Blindness, slow and other selected flags have different action restrictions;
+their union cannot yet be published as time unable to act. Outer blindness
+spell gates and the remaining selected-status sources still need qualification.
+
+Migration `0067_telemetry_typed_control` adds nullable columns, the logical
+sequence index and exact insert/update validation triggers. Moving the eight
+specific validation rules into triggers avoids MariaDB's table-definition
+metadata limit. Verification and runtime fingerprints cover exact trigger bodies
+while preserving operator grouping, SQL mode, event, timing and order. Both
+**MariaDB 10.11.14** and **MySQL 8.0.46** pass the **67-step / 262-table** storage
+chain, all **455 payload-column** checks, exact cross-language values, inactive
+NULL separation, logical uniqueness, scoped private incident review, atomic
+rollback, guarded reruns and column/index/trigger drift with exact restoration.
+Migrations 1–66 and all three previously supported history prefixes are unchanged.
+The independently reviewed family-13 inventory is incident schema 6; old
+schemas 1–5 stay sealed. New outage journals use `DMSTLJ05`, preserving read-only
+compatibility with versions 1–4 and the protected lifecycle queue reserve.
+
+Fresh and restored metadata fingerprints are:
+
+- MariaDB 10.11.14:
+  `b10fdf14f7f327e33d1b01e18ec5ce40d907d116e0f13d9f5bc323895d8ee559`.
+- MySQL 8.0.46:
+  `0d96a65461760b07fdd068e20a47e0289d3e704baa769ad0a1b6b069596687b8`.
+
+The **164-test** focused Python suite passes. Its new mixed-stream regression
+validates control rows before advancing existing report cursors, preserves
+definitions 1/2/3/5/6 and rejects malformed controls, unknown families, changed
+receipts and exceeded byte budgets. Pure and actual gameplay fixtures pass
+normally and under fresh ASan/UBSan. Runtime lifecycle/outage/exhaustion,
+standalone header contracts, changed-line formatting and the maintained server
+build pass. Definition 7 is still unavailable; this increment does not retain
+or publish control comparisons.
+
+Both complete **67-step** private-writer and native runtime/queue/worker/SQL
+journeys also pass. Exact readback preserves every control field for the
+**56/18/12** resolution fixture and explicitly partial target states. Existing
+**123 association facts / 38 packets / 28 contribution links**, **112/112 damage**,
+accepted-control **8/8 and 17/17**, and **20 native build points / 110 fields**
+retain their qualified meanings through source retention and atomic publication.
+Private roles, bounded reports, rollback, lost acknowledgements, corrected
+reviews, immutable old generations and exact schema restoration pass. The dated
+fixture preserves and restores the complete mixed receipt namespace. Owned
+temporary databases/reviewer users were removed and SQL fixtures stopped.
+
+The PR base has independently added alchemy publication, room item payload and
+ward durability migrations at sequences 54–56. PR #683 currently requires
+integration that preserves both immutable histories and qualifies their common
+runtime schema; the owned 67-step qualification does not establish that merged
+schema. Actual personal-server authentication/effect/save/readback and measured
+performance also remain required. All seven final #258 requirements remain open.
+
+**Next executable expectation:** reconcile the current PR base and immutable
+migration lineages, complete the native selected-status mutation/removal
+inventory and duration qualification, retain exact controls and publish reviewed
+comparisons under a new definition, then finish native prevention/faction,
+typed death/escape/objective evidence and complete battle reports. Distinct PvE
+attempts/objectives/failure/recovery/interruption and committed rewards,
+rested/assistance/milestone/switching/portfolio additions, all four balance suites
+and statistical exports, #487 economic compatibility and the real personal-local
+gameplay/persistence/performance gate remain required. Production or staging
+access is unnecessary. See [CONTROL_OBSERVATIONS.md](CONTROL_OBSERVATIONS.md)
+for exact semantics, limits and maintained local commands.

@@ -1,6 +1,7 @@
 #include "telemetry/telemetry_battle.h"
 #include "telemetry/telemetry_battle_contract.h"
 #include "telemetry/telemetry_battle_contribution.h"
+#include "telemetry/telemetry_control.h"
 
 #include <cassert>
 #include <array>
@@ -42,6 +43,7 @@ constexpr auto maximum = std::numeric_limits<std::uint64_t>::max();
 constexpr telemetry_utc_usec epoch = 1'700'000'000'000'000LL;
 unsigned fixture_sequence = 0U;
 std::FILE *contract_export = nullptr;
+std::FILE *control_export = nullptr;
 
 template <class Callable> auto checked(Callable call)
 {
@@ -830,12 +832,291 @@ void intrinsic_contract()
 	assert(!telemetry_battle_contribution_same_key(v, changed));
 }
 
-int verify_file(const char *path)
+telemetry_control_actor_context control_actor(const context &c)
+{
+	return { c.actor.actor,	       c.actor.session,	       c.actor.dimensions,
+		 c.actor.group_key,    c.actor.group_revision, c.actor.context_version,
+		 c.actor.quality_flags };
+}
+
+telemetry_control_observation control_point(telemetry_monotonic_usec time, std::uint16_t mask,
+					    int pid = 72)
+{
+	telemetry_control_observation v{};
+	v.producer = producer;
+	v.scope = scope;
+	v.target = control_actor(player(pid));
+	v.target_association = { 1U, 1U, 5U };
+	v.last_target_association_revision = 1U;
+	v.last_target_association_fact_sequence = 5U;
+	v.start_usec = v.at_usec = v.decision_usec = time;
+	v.start_utc_usec = v.at_utc_usec = v.decision_utc_usec = epoch + time;
+	v.build_version = 7U;
+	v.content_version = 9U;
+	v.definition_version = TELEMETRY_CONTROL_DEFINITION_VERSION;
+	v.producer_version = TELEMETRY_CONTROL_PRODUCER_VERSION;
+	v.before_mask = v.after_mask = mask;
+	v.state_available = v.duration_coverage = TELEMETRY_CONTROL_STATE_MASK;
+	v.kind = telemetry_control_kind::state_entry;
+	v.boundary = telemetry_control_boundary::actor_entry;
+	return v;
+}
+
+void export_control(const telemetry_control_observation &v, unsigned scenario)
+{
+	if (!control_export)
+		return;
+	std::array<std::uint8_t, TELEMETRY_CONTROL_WIRE_BYTES> wire{};
+	assert(telemetry_control_observation_encode(v, wire.data(), wire.size()));
+	std::fprintf(control_export, "{\"case\":%u,\"wire\":\"", scenario);
+	for (auto byte : wire)
+		std::fprintf(control_export, "%02x", static_cast<unsigned>(byte));
+	std::fprintf(control_export, "\",\"fields\":{");
+	bool comma = false;
+#define TELEMETRY_CONTROL_FIELD(name, member, width, signed_value)                               \
+	std::fprintf(control_export, comma ? ",\"%s\":" : "\"%s\":", #name);                     \
+	if constexpr (signed_value)                                                              \
+		std::fprintf(control_export, "%lld", static_cast<long long>(v.member));          \
+	else                                                                                     \
+		std::fprintf(control_export, "%llu", static_cast<unsigned long long>(v.member)); \
+	comma = true;
+#include "telemetry/telemetry_control_fields.inc"
+#undef TELEMETRY_CONTROL_FIELD
+	std::fprintf(control_export, "}}\n");
+}
+
+struct control_fixture
+{
+	std::unique_ptr<telemetry_control_state> state =
+		std::make_unique<telemetry_control_state>();
+	std::vector<telemetry_control_observation> rows;
+	std::vector<telemetry_control_observation> attempted;
+	unsigned rejected = 0U;
+	unsigned scenario;
+	explicit control_fixture(unsigned id)
+		: scenario(id)
+	{
+		rows.reserve(2'000U);
+		attempted.reserve(2'000U);
+		assert(telemetry_control_state_init(state.get(), producer, 11U, 22U));
+	}
+	static bool sink(void *opaque, const telemetry_control_observation &v) noexcept
+	{
+		auto &f = *static_cast<control_fixture *>(opaque);
+		assert(telemetry_control_observation_is_valid(v));
+		telemetry_record record{};
+		record.header.schema_version = TELEMETRY_SCHEMA_VERSION;
+		record.header.kind = telemetry_record_kind::control;
+		record.header.key = { v.producer, v.sequence };
+		record.header.occurrence_utc_usec = v.decision_utc_usec;
+		record.payload.control = v;
+		assert(telemetry_record_is_valid(record) && sizeof(record) == 488U &&
+		       !telemetry_record_kind_is_control(record.header.kind));
+		auto detached = record;
+		detached.header.key.producer.process_id ^= 1U;
+		assert(!telemetry_record_is_valid(detached));
+		detached = record;
+		detached.header.occurrence_utc_usec ^= 1LL;
+		assert(!telemetry_record_is_valid(detached));
+		f.attempted.push_back(v);
+		if (f.rejected)
+		{
+			--f.rejected;
+			return false;
+		}
+		f.rows.push_back(v);
+		export_control(v, f.scenario);
+		return true;
+	}
+	telemetry_control_update observe(const telemetry_control_observation &v)
+	{
+		return checked([&]
+			       { return telemetry_control_observe(state.get(), v, sink, this); });
+	}
+	telemetry_control_update close(telemetry_monotonic_usec decision, int pid = 72)
+	{
+		return checked(
+			[&]
+			{
+				return telemetry_control_close(
+					state.get(), key(player(pid)), decision, epoch + decision,
+					telemetry_control_boundary::actor_left, sink, this);
+			});
+	}
+};
+
+void typed_control_results_and_intervals()
+{
+	using control_outcome = telemetry_control_outcome;
+	using control_kind = telemetry_control_kind;
+	using control_result = telemetry_control_result;
+	control_fixture operations(1U);
+	for (unsigned family_id = 1U; family_id <= 8U; ++family_id)
+		for (unsigned result_id = 1U; result_id <= 14U; ++result_id)
+		{
+			auto v = control_point(family_id * 100U + result_id, 0U);
+			v.source = control_actor(player(42));
+			v.source_association = { 1U, 1U, 5U };
+			v.kind = control_kind::resolution;
+			v.family = static_cast<telemetry_control_family>(family_id);
+			v.result = static_cast<control_result>(result_id);
+			v.boundary = telemetry_control_boundary::attempt_resolved;
+			v.duration_coverage = 0U;
+			if (v.result == control_result::applied)
+			{
+				v.after_mask = family_id == 8U ? 128U : 1U << (family_id - 1U);
+				v.configured_ticks = -10;
+			}
+			assert(operations.observe(v).rows_accepted == 1U);
+		}
+	assert(operations.rows.size() == 112U);
+	for (const auto &v : operations.rows)
+	{
+		assert(v.kind == control_kind::resolution && v.duration_coverage == 0U);
+		assert(v.sequence && v.previous_state_sequence == 0U);
+	}
+
+	control_fixture overlaps(2U);
+	assert(overlaps.observe(control_point(100U, 0U)).rows_accepted == 1U);
+	for (auto [time, mask] : { std::pair{ 200U, 4U }, std::pair{ 300U, 12U },
+				   std::pair{ 400U, 8U }, std::pair{ 500U, 0U } })
+		assert(overlaps.observe(control_point(time, mask)).rows_accepted == 1U);
+	assert(overlaps.observe(control_point(550U, 0U)).outcome == control_outcome::idempotent);
+	assert(overlaps.close(600U).rows_accepted == 1U);
+	std::uint64_t union_time = 0U, major_time = 0U, minor_time = 0U;
+	telemetry_sequence parent = 0U;
+	telemetry_monotonic_usec end_time = 100U;
+	for (const auto &v : overlaps.rows)
+	{
+		assert(v.source.actor.actor_id == 0U && v.source_association.battle_sequence == 0U);
+		if (v.kind == control_kind::state_interval)
+		{
+			assert(v.previous_state_sequence == parent && v.start_usec == end_time);
+			const auto duration = v.at_usec - v.start_usec;
+			union_time += v.before_mask ? duration : 0U;
+			major_time += v.before_mask & 4U ? duration : 0U;
+			minor_time += v.before_mask & 8U ? duration : 0U;
+		}
+		parent = v.sequence;
+		end_time = v.at_usec;
+	}
+	assert(union_time == 300U && major_time == 200U && minor_time == 200U);
+	assert(overlaps.rows.back().at_usec == 550U && overlaps.rows.back().decision_usec == 600U &&
+	       (overlaps.rows.back().quality_flags & TELEMETRY_QUALITY_UNCLOSED_TAIL));
+	assert(overlaps.close(601U).outcome == control_outcome::not_found);
+
+	control_fixture refresh(3U);
+	assert(refresh.observe(control_point(100U, 32U)).rows_accepted == 1U);
+	assert(refresh.observe(control_point(200U, 32U)).rows_attempted == 0U);
+	assert(refresh.observe(control_point(300U, 32U)).rows_attempted == 0U);
+	assert(refresh.observe(control_point(400U, 0U)).rows_accepted == 1U);
+	assert(refresh.rows.size() == 2U && refresh.rows.back().start_usec == 100U &&
+	       refresh.rows.back().at_usec == 400U && refresh.rows.back().before_mask == 32U);
+
+	control_fixture context_cut(4U);
+	context_cut.observe(control_point(100U, 2U));
+	context_cut.observe(control_point(200U, 2U));
+	auto point = control_point(400U, 2U);
+	point.scope.config_id = 44U;
+	point.target.group_key = TELEMETRY_GROUP_GENERATION_TAG | 7U;
+	point.target.group_revision = 1U;
+	point.target_association = { 1U, 2U, 15U };
+	point.last_target_association_revision = 2U;
+	point.last_target_association_fact_sequence = 15U;
+	assert(context_cut.observe(point).rows_accepted == 2U);
+	assert(context_cut.rows[1].at_usec == 200U && context_cut.rows[1].decision_usec == 400U &&
+	       context_cut.rows[2].start_usec == 400U &&
+	       context_cut.rows[2].previous_state_sequence == 0U);
+	point.start_usec = point.at_usec = point.decision_usec = 450U;
+	point.start_utc_usec = point.at_utc_usec = point.decision_utc_usec = epoch + 450U;
+	point.before_mask = point.after_mask = 0U;
+	assert(context_cut.observe(point).rows_accepted == 1U);
+	assert(context_cut.rows.back().at_usec - context_cut.rows.back().start_usec == 50U);
+
+	control_fixture loss(5U);
+	loss.rejected = 1U;
+	assert(loss.observe(control_point(100U, 4U)).outcome == control_outcome::sink_rejected);
+	assert(loss.observe(control_point(200U, 4U)).rows_accepted == 2U);
+	assert(loss.rows[0].kind == control_kind::source_gap &&
+	       loss.rows[0].state_available == 0U && loss.rows[0].before_mask == 0U &&
+	       loss.rows[0].after_mask == 0U);
+	assert(loss.rows[1].kind == control_kind::state_entry && loss.rows[1].sequence == 3U &&
+	       loss.rows[1].previous_state_sequence == 0U);
+	assert(loss.observe(control_point(300U, 0U)).rows_accepted == 1U);
+	assert(loss.rows.back().start_usec == 200U && loss.rows.back().at_usec == 300U);
+
+	control_fixture refusal(6U);
+	auto good = control_point(100U, 4U);
+	good.target_association = { 1U, 2U, 15U };
+	good.last_target_association_revision = 2U;
+	good.last_target_association_fact_sequence = 15U;
+	assert(refusal.observe(good).rows_accepted == 1U);
+	const auto before = *refusal.state;
+	assert(refusal.observe(control_point(200U, 4U)).outcome == control_outcome::invalid);
+	assert(refusal.state->next_sequence == before.next_sequence &&
+	       refusal.state->latest_decision_usec == before.latest_decision_usec);
+	auto conflicting = good;
+	conflicting.target_association.revision = conflicting.last_target_association_revision = 3U;
+	assert(refusal.observe(conflicting).outcome == control_outcome::invalid);
+	conflicting = good;
+	conflicting.target.dimensions.race_id = 99U;
+	assert(refusal.observe(conflicting).outcome == control_outcome::invalid);
+	assert(refusal.state->next_sequence == before.next_sequence &&
+	       refusal.state->latest_decision_usec == before.latest_decision_usec);
+	good.start_usec = good.at_usec = good.decision_usec = 99U;
+	good.start_utc_usec = good.at_utc_usec = good.decision_utc_usec = epoch + 99U;
+	assert(refusal.observe(good).quality_flags & TELEMETRY_QUALITY_CLOCK_DISCONTINUITY);
+	assert(refusal.state->next_sequence == before.next_sequence);
+	good = control_point(200U, 4U);
+	good.target_association = { 1U, 2U, 15U };
+	good.last_target_association_revision = 2U;
+	good.last_target_association_fact_sequence = 15U;
+	good.start_utc_usec = good.at_utc_usec = good.decision_utc_usec = epoch - 1U;
+	assert(refusal.observe(good).outcome == control_outcome::idempotent);
+	assert(refusal.close(300U).rows_accepted == 1U);
+	assert(refusal.rows.back().quality_flags & TELEMETRY_QUALITY_CLOCK_DISCONTINUITY);
+
+	control_fixture capacity(7U);
+	for (std::size_t index = 0U; index < TELEMETRY_CONTROL_MAX_TARGETS; ++index)
+		assert(capacity.observe(control_point(100U + index, 4U, 1000 + index))
+			       .rows_accepted == 1U);
+	assert(capacity.observe(control_point(700U, 4U, 9999)).outcome ==
+	       control_outcome::capacity_full);
+	assert(capacity.rows.back().kind == control_kind::source_gap &&
+	       capacity.rows.back().boundary == telemetry_control_boundary::capacity_refused);
+	assert(capacity.close(800U, 1000).rows_accepted == 1U);
+	assert(capacity.observe(control_point(900U, 4U, 9999)).rows_accepted == 1U);
+	assert(capacity.rows.back().kind == control_kind::state_entry &&
+	       capacity.rows.back().start_usec == 900U);
+
+	control_fixture exhaustion(8U);
+	exhaustion.state->next_sequence = maximum;
+	assert(exhaustion.observe(control_point(100U, 4U)).rows_accepted == 1U);
+	assert(exhaustion.rows[0].sequence == maximum && exhaustion.state->next_sequence == 0U);
+	assert(exhaustion.observe(control_point(200U, 4U)).outcome ==
+	       control_outcome::sequence_exhausted);
+	assert(exhaustion.attempted.size() == 1U);
+	control_fixture recovered_clock(9U);
+	recovered_clock.observe(control_point(100U, 4U));
+	recovered_clock.observe(control_point(200U, 4U));
+	auto regressed = control_point(300U, 4U);
+	regressed.start_utc_usec = regressed.at_utc_usec = regressed.decision_utc_usec =
+		epoch + 150U;
+	assert(recovered_clock.observe(regressed).outcome == control_outcome::idempotent);
+	recovered_clock.observe(control_point(400U, 0U));
+	assert(recovered_clock.rows.back().quality_flags & TELEMETRY_QUALITY_CLOCK_DISCONTINUITY);
+	std::printf(
+		"Typed control passed: 112 results, disjoint overlap/refresh/context/loss/clock/capacity/exhaustion; payload=%zu, wire=%zu, state=%zu bytes; no event-time allocation.\n",
+		sizeof(telemetry_control_observation), TELEMETRY_CONTROL_WIRE_BYTES,
+		sizeof(telemetry_control_state));
+}
+
+template <bool Control = false> int verify_file(const char *path)
 {
 	std::FILE *input = std::fopen(path, "rb");
 	if (!input)
 		return 2;
-	std::array<std::uint8_t, TELEMETRY_BATTLE_CONTRIBUTION_WIRE_BYTES + 1U> bytes{}, encoded{};
+	std::array<std::uint8_t, TELEMETRY_RECORD_MAX_BYTES + 1U> bytes{}, encoded{};
 	std::array<std::uint8_t, 4U> header{};
 	for (;;)
 	{
@@ -855,29 +1136,49 @@ int verify_file(const char *path)
 			std::fclose(input);
 			return 2;
 		}
-		payload value{};
+		std::conditional_t<Control, telemetry_control_observation, payload> value{};
 		value.sequence = 999U;
 		const auto valid = checked(
-			[&] {
-				return telemetry_battle_contribution_decode(bytes.data(), length,
-									    &value);
+			[&]
+			{
+				if constexpr (Control)
+					return telemetry_control_observation_decode(bytes.data(),
+										    length, &value);
+				else
+					return telemetry_battle_contribution_decode(bytes.data(),
+										    length, &value);
 			});
 		if (valid)
 		{
 			assert(checked(
-				[&] {
-					return telemetry_battle_contribution_encode(
-						value, encoded.data(), length);
+				[&]
+				{
+					if constexpr (Control)
+						return telemetry_control_observation_encode(
+							value, encoded.data(), length);
+					else
+						return telemetry_battle_contribution_encode(
+							value, encoded.data(), length);
 				}));
 			for (std::size_t i = 0U; i < length; ++i)
 				assert(bytes[i] == encoded[i]);
 		}
 		else
 		{
+			if constexpr (Control)
+			{
+#define TELEMETRY_CONTROL_FIELD(name, member, width, signed_value) \
+	assert(static_cast<std::uint64_t>(value.member) == 0U);
+#include "telemetry/telemetry_control_fields.inc"
+#undef TELEMETRY_CONTROL_FIELD
+			}
+			else
+			{
 #define TELEMETRY_BC_FIELD(name, member, width, signed_value) \
 	assert(static_cast<std::uint64_t>(value.member) == 0U);
 #include "telemetry/telemetry_battle_contribution_fields.inc"
 #undef TELEMETRY_BC_FIELD
+			}
 		}
 		std::printf("%u\n", static_cast<unsigned>(valid));
 	}
@@ -889,10 +1190,18 @@ int main(int argc, char **argv)
 {
 	if (argc == 3 && std::string_view(argv[1]) == "--verify")
 		return verify_file(argv[2]);
+	if (argc == 3 && std::string_view(argv[1]) == "--verify-control")
+		return verify_file<true>(argv[2]);
 	if (argc == 3 && std::string_view(argv[1]) == "--export")
 	{
 		contract_export = std::fopen(argv[2], "wb");
 		if (!contract_export)
+			return 2;
+	}
+	else if (argc == 3 && std::string_view(argv[1]) == "--export-control")
+	{
+		control_export = std::fopen(argv[2], "wb");
+		if (!control_export)
 			return 2;
 	}
 	else if (argc != 1)
@@ -907,10 +1216,13 @@ int main(int argc, char **argv)
 	sequence_overflow_and_saturation();
 	sink_loss_is_explicit();
 	intrinsic_contract();
+	typed_control_results_and_intervals();
 	std::printf(
 		"Battle contributions passed: 10 journeys; payload=%zu, wire=%zu, state=%zu bytes; no event-time allocation.\n",
 		sizeof(payload), TELEMETRY_BATTLE_CONTRIBUTION_WIRE_BYTES,
 		sizeof(telemetry_battle_contribution_state));
 	if (contract_export && std::fclose(contract_export) != 0)
+		return 2;
+	if (control_export && std::fclose(control_export) != 0)
 		return 2;
 }

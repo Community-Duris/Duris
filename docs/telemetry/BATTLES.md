@@ -1457,6 +1457,8 @@ The maintained commands remain
 `python3 tests/async/test_telemetry_gameplay_adapters.py`, its `--sanitize` variant,
 `python3 tests/async/test_telemetry_battle_history.py` and the explicitly configured
 disposable `python3 tests/async/test_telemetry_battle_runtime_sql.py --sql-fixture`.
-Typed control attempts/results and overlap-safe duration, remaining reviewed
-effect/prevention producers, faction exposure, typed outcomes and all seven final
-acceptance requirements retain unfinished portions under #258.
+The subsequent [typed control contract](CONTROL_OBSERVATIONS.md) adds kind-13
+resolutions and separate target-state evidence while retaining these kind-11
+meanings. Live duration coverage, the complete producer inventory, retained
+control publication, prevention, faction exposure, typed outcomes and all seven
+final acceptance requirements retain unfinished portions under #258.

@@ -174,6 +174,7 @@ struct fake_repository
 	std::vector<telemetry_record> battles;
 	std::vector<telemetry_record> contributions;
 	std::vector<telemetry_record> builds;
+	std::vector<telemetry_record> controls;
 };
 
 telemetry_repository_outcome fake_init(void *context, telemetry_repository_config config) noexcept
@@ -245,6 +246,11 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 		{
 			assert(telemetry_record_is_valid(records[index]));
 			fake->builds.push_back(records[index]);
+		}
+		if (records[index].header.kind == telemetry_record_kind::control)
+		{
+			assert(telemetry_record_is_valid(records[index]));
+			fake->controls.push_back(records[index]);
 		}
 		if (records[index].header.kind == telemetry_record_kind::interval &&
 		    records[index].payload.interval.context == telemetry_activity_context::combat)
@@ -2131,8 +2137,39 @@ fake_repository check_native_inactivity_contributions(bool use_native)
 	return fake;
 }
 
+void export_native_control_capture(const fake_repository &fake)
+{
+	const char *path = std::getenv("TELEMETRY_CONTROL_CAPTURE_EXPORT");
+	if (!path)
+		return;
+	auto *output = std::fopen(path, "wb");
+	assert(output);
+	for (const auto &record : fake.controls)
+	{
+		std::fprintf(
+			output,
+			"{\"boot_id\":%llu,\"process_id\":%llu,\"record_seq\":%llu,\"record_kind\":13,\"schema_version\":1,\"occurrence_utc_usec\":%lld",
+			static_cast<unsigned long long>(record.header.key.producer.boot_id),
+			static_cast<unsigned long long>(record.header.key.producer.process_id),
+			static_cast<unsigned long long>(record.header.key.record_seq),
+			static_cast<long long>(record.header.occurrence_utc_usec));
+#define TELEMETRY_CONTROL_FIELD(name, member, width, is_signed)                      \
+	if constexpr (is_signed)                                                     \
+		std::fprintf(output, ",\"" #name "\":%lld",                          \
+			     static_cast<long long>(record.payload.control.member)); \
+	else                                                                         \
+		std::fprintf(output, ",\"" #name "\":%llu",                          \
+			     static_cast<unsigned long long>(record.payload.control.member));
+#include "telemetry/telemetry_control_fields.inc"
+#undef TELEMETRY_CONTROL_FIELD
+		std::fputs("}\n", output);
+	}
+	assert(std::fclose(output) == 0);
+}
+
 void export_native_battle_capture(const fake_repository &fake)
 {
+	export_native_control_capture(fake);
 	const char *export_path = std::getenv("TELEMETRY_BATTLE_CAPTURE_EXPORT");
 	if (export_path)
 	{
@@ -3079,6 +3116,68 @@ fake_repository check_native_expanded_control_capture(bool use_native = false,
 	}
 	assert(starts == 1U && applications == 17U && received == applications && self == 1U &&
 	       pet_segments == 1U && npc_segments == 1U);
+	unsigned resolutions = 0U, applied = 0U, rejected_outside = 0U, refreshes = 0U,
+		 bypassed = 0U, bound = 0U, declared_silence = 0U;
+	std::set<telemetry_control_result> rejections;
+	for (const auto &record : fake.controls)
+	{
+		const auto &value = record.payload.control;
+		assert(value.duration_coverage == 0U);
+		if (value.kind != telemetry_control_kind::resolution)
+		{
+			assert(value.source.actor.actor_id == 0U &&
+			       value.target.actor.actor_id != 8973U &&
+			       (value.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN));
+			continue;
+		}
+		++resolutions;
+		applied += value.result == telemetry_control_result::applied;
+		refreshes += (value.flags & TELEMETRY_CONTROL_SLEEP_REFRESH) != 0U;
+		bypassed += (value.flags & TELEMETRY_CONTROL_SAVE_BYPASSED) != 0U;
+		if (value.result != telemetry_control_result::applied)
+		{
+			assert(value.configured_ticks == 0 && !(value.flags & 28U));
+			rejections.insert(value.result);
+			if (value.target.actor.actor_id == 8973U)
+			{
+				assert(value.source_association.battle_sequence == 0U &&
+				       value.target_association.battle_sequence == 0U);
+				++rejected_outside;
+			}
+		}
+		if (value.family == telemetry_control_family::entangle &&
+		    value.result == telemetry_control_result::applied && (value.after_mask & 128U))
+		{
+			assert(value.configured_ticks == 0);
+			++bound;
+		}
+		if (value.family == telemetry_control_family::silence &&
+		    value.result == telemetry_control_result::applied)
+		{
+			assert(value.configured_ticks == 10 * WAIT_SEC ||
+			       value.configured_ticks == 8 * WAIT_SEC ||
+			       value.configured_ticks == 5 * WAIT_SEC ||
+			       value.configured_ticks == 3 * WAIT_SEC);
+			++declared_silence;
+		}
+	}
+	assert(resolutions == fixture_control_call && applied == 18U && rejected_outside > 20U &&
+	       refreshes == 1U && bypassed == 3U && bound == 1U && declared_silence == 4U);
+	for (const auto expected :
+	     { telemetry_control_result::saved, telemetry_control_result::resisted,
+	       telemetry_control_result::immune, telemetry_control_result::already_present,
+	       telemetry_control_result::movement_protection,
+	       telemetry_control_result::target_protected,
+	       telemetry_control_result::source_ineligible,
+	       telemetry_control_result::target_ineligible,
+	       telemetry_control_result::location_ineligible,
+	       telemetry_control_result::level_ineligible,
+	       telemetry_control_result::class_ineligible,
+	       telemetry_control_result::percentage_rejected })
+		assert(rejections.contains(expected));
+	std::printf(
+		"PASS: %u native typed resolutions, %u accepted, 12 actual rejection reasons, refresh/bypass/bound declarations and partial target-state coverage\n",
+		resolutions, applied);
 	if (export_capture)
 		export_native_battle_capture(fake);
 	fixture_pet = fixture_pet_master = nullptr;

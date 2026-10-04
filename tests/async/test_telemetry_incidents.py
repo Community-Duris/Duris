@@ -41,13 +41,14 @@ def project(p: dict, start=100, end=200):
 
 
 class IncidentSemantics(unittest.TestCase):
-    def test_cli_templates_include_build_schema_without_changing_the_default(self):
+    def test_cli_templates_include_control_schema_without_changing_the_default(self):
         command = [sys.executable, str(ROOT / "scripts/telemetry/incident.py"), "--template"]
-        for arguments, version in (([], 1), (["--registry-schema-version", "5"], 5)):
+        for arguments, version in (([], 1), (["--registry-schema-version", "5"], 5),
+                                   (["--registry-schema-version", "6"], 6)):
             result = subprocess.run(command + arguments, check=True, capture_output=True,
                                     text=True, timeout=10)
             self.assertEqual(json.loads(result.stdout)["registry_schema_version"], version)
-        refused = subprocess.run(command + ["--registry-schema-version", "6"],
+        refused = subprocess.run(command + ["--registry-schema-version", "7"],
                                  capture_output=True, text=True, timeout=10)
         self.assertEqual(refused.returncode, 2)
 
@@ -79,12 +80,30 @@ class IncidentSemantics(unittest.TestCase):
         self.assertNotEqual(first["packet_digest"], second["packet_digest"])
         with self.assertRaisesRegex(incident.IncidentError, "stored_inventory_digest_mismatch"):
             incident.validate_stored(first, rows, registry_schema_version=2)
-        self.assertEqual([incident.generation_schema(v) for v in (1, 2, 3, 4, 5, 6)], [1, 1, 2, 3, 4, 5])
-        for version in (True, 0, 6, "2", None):
+        self.assertEqual([incident.generation_schema(v) for v in (1, 2, 3, 4, 5, 6, 7)], [1, 1, 2, 3, 4, 5, 6])
+        for version in (True, 0, 7, "2", None):
             with self.assertRaises(incident.IncidentError):
                 incident.template(version)
         p = packet(2)
         p["incidents"][0]["record_kind_mask"] = 1 << 10
+        with self.assertRaisesRegex(incident.IncidentError, "unknown_record_family"):
+            incident.validate_packet(p)
+
+    def test_control_review_is_explicit_and_sealed_from_earlier_inventories(self):
+        p = packet(6)
+        p["incidents"][0].update(record_kind_mask=1 << 13, fix_reference_digest="44" * 32,
+            first_verified_postfix=dict(boot_id=11, process_id=22, record_seq=34,
+                                       record_kind=13, occurrence_utc_usec=None))
+        meta, rows = incident.validate_packet(p)
+        incident.validate_stored(meta, rows, registry_schema_version=6)
+        self.assertEqual(incident.schema_contract(6),
+            (16382, 13, "telemetry_incident_registry_v6", "telemetry_incident_v6"))
+        for schema in (1, 2, 3, 4, 5):
+            p["registry_schema_version"] = schema
+            with self.assertRaisesRegex(incident.IncidentError, "unknown_record_family"):
+                incident.validate_packet(p)
+        p["registry_schema_version"] = 6
+        p["incidents"][0]["record_kind_mask"] = 1 << 14
         with self.assertRaisesRegex(incident.IncidentError, "unknown_record_family"):
             incident.validate_packet(p)
 

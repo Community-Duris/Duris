@@ -14,6 +14,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from scripts.telemetry import battle_contribution_contract as contract
+from scripts.telemetry import control_contract as control
 from test_telemetry_battle_contributions import compile_harness
 
 
@@ -204,6 +205,206 @@ class ContributionContractTests(unittest.TestCase):
             self.assertEqual(result.identity_inputs, [])
             with self.assertRaises(SemanticError):
                 build_page_contributions([dict(raw, bc_effective_healing=21)], target)
+
+
+class ControlContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        artifacts = ROOT / "bin/tests"
+        artifacts.mkdir(parents=True, exist_ok=True)
+        cls.directory = tempfile.TemporaryDirectory(prefix="telemetry-control-contract-", dir=artifacts)
+        cls.path = Path(cls.directory.name)
+        cls.native = cls.path / "controls"
+        compile_harness(cls.native)
+        exported = cls.path / "controls.jsonl"
+        subprocess.run([str(cls.native), "--export-control", str(exported)], check=True, timeout=60)
+        cls.sources = tuple(json.loads(line) for line in exported.read_text(encoding="ascii").splitlines())
+        cls.rows = tuple(item["fields"] for item in cls.sources)
+        cls.value = next(row for row in cls.rows if row["ctl_kind"] == 1 and
+                         row["ctl_family"] == 3 and row["ctl_result"] == 1)
+        cls.interval = next(item["fields"] for item in cls.sources if item["case"] == 2 and
+                            item["fields"]["ctl_before_mask"] == 12)
+        cls.gap = next(row for row in cls.rows if row["ctl_kind"] == 4)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.directory.cleanup()
+
+    def test_exact_raw_binding_and_inactive_families(self):
+        row = dict(self.value, boot_id=self.value["ctl_boot_id"],
+            process_id=self.value["ctl_process_id"], record_seq=55, record_kind=13,
+            schema_version=1, occurrence_utc_usec=self.value["ctl_decision_utc_usec"],
+            ingest_id=1, ingested_utc_usec=100, bc_damage_dealt=None)
+        self.assertEqual(control.validate_raw_observation(row), self.value)
+        for field, value in (("boot_id", row["boot_id"] + 1), ("process_id", 0),
+            ("record_seq", False), ("record_kind", 12), ("schema_version", 2),
+            ("occurrence_utc_usec", 0), ("bc_damage_dealt", 0),
+            ("bctx_equipment_digest", bytes(32)), ("ctl_after_mask", None)):
+            with self.subTest(field=field), self.assertRaises(control.ControlContractError):
+                control.validate_raw_observation(dict(row, **{field: value}))
+
+    def native_results(self, rows=None, wires=None):
+        if wires is None:
+            wires = [b"".join(row[name].to_bytes(width, "big", signed=signed)
+                     for name, width, signed in control.FIELD_LAYOUT) for row in rows]
+        path = self.path / "verify-control.bin"
+        with path.open("wb") as output:
+            for wire in wires:
+                output.write(len(wire).to_bytes(4, "big"))
+                output.write(wire)
+        result = subprocess.run([str(self.native), "--verify-control", str(path)],
+            capture_output=True, text=True, check=True, timeout=30)
+        values = [line == "1" for line in result.stdout.splitlines()]
+        self.assertEqual(len(values), len(wires))
+        return values
+
+    def agrees(self, rows):
+        expected = []
+        for row in rows:
+            try:
+                control.validate_observation(row)
+            except control.ControlContractError:
+                expected.append(False)
+            else:
+                expected.append(True)
+        self.assertEqual(self.native_results(rows), expected)
+        return expected
+
+    def test_every_actual_accumulator_field_round_trips(self):
+        self.assertTrue(self.sources)
+        keys = set()
+        for item in self.sources:
+            row, wire = item["fields"], bytes.fromhex(item["wire"])
+            self.assertEqual(control.decode_observation(wire), row)
+            self.assertEqual(control.encode_observation(row), wire)
+            key = item["case"], control.observation_key(row)
+            self.assertNotIn(key, keys)
+            keys.add(key)
+        self.assertEqual(self.native_results(list(self.rows)), [True] * len(self.rows))
+        self.assertEqual(self.value["ctl_configured_ticks"], -10)
+        self.assertTrue(any(row["ctl_sequence"] == (1 << 64) - 1 for row in self.rows))
+
+    def test_independent_named_layout_and_exact_width(self):
+        descriptor = (ROOT / "src/telemetry/telemetry_control_fields.inc").read_text()
+        actual = tuple((name, int(width), signed == "true") for name, width, signed in re.findall(
+            r"TELEMETRY_CONTROL_FIELD\((\w+),\s*[\w.]+,\s*(\d+),\s*(true|false)\)", descriptor))
+        self.assertEqual(actual, control.FIELD_LAYOUT)
+        self.assertEqual(len(actual), 76)
+        self.assertEqual(control.WIRE_BYTES, 368)
+        self.assertLessEqual(control.WIRE_BYTES + 40, 512)
+
+    def test_application_units_overlap_refresh_and_censored_prefix(self):
+        resolutions = [item["fields"] for item in self.sources if item["case"] == 1]
+        self.assertEqual(len(resolutions), 112)
+        self.assertEqual(sum(row["ctl_result"] == 1 for row in resolutions), 8)
+        self.assertTrue(all(row["ctl_duration_coverage"] == 0 and
+            row["ctl_start_usec"] == row["ctl_at_usec"] == row["ctl_decision_usec"] for row in resolutions))
+        intervals = [item["fields"] for item in self.sources if item["case"] == 2 and
+                     item["fields"]["ctl_kind"] == 3]
+        union = sum(row["ctl_at_usec"] - row["ctl_start_usec"] for row in intervals if row["ctl_before_mask"])
+        major = sum(row["ctl_at_usec"] - row["ctl_start_usec"] for row in intervals if row["ctl_before_mask"] & 4)
+        minor = sum(row["ctl_at_usec"] - row["ctl_start_usec"] for row in intervals if row["ctl_before_mask"] & 8)
+        self.assertEqual((union, major, minor), (300, 200, 200))
+        self.assertEqual((intervals[-1]["ctl_at_usec"], intervals[-1]["ctl_decision_usec"]), (550, 600))
+        self.assertTrue(all(row["ctl_source_actor_id"] == 0 and row["ctl_family"] == 0 for row in intervals))
+        refresh = [item["fields"] for item in self.sources if item["case"] == 3]
+        self.assertEqual(len(refresh), 2)
+        self.assertEqual((refresh[-1]["ctl_start_usec"], refresh[-1]["ctl_at_usec"]), (100, 400))
+        cuts = [item["fields"] for item in self.sources if item["case"] == 4]
+        self.assertEqual((cuts[1]["ctl_at_usec"], cuts[1]["ctl_decision_usec"], cuts[2]["ctl_start_usec"]),
+                         (200, 400, 400))
+
+    def test_semantic_corruption_and_state_source_confusion_refuse(self):
+        changes = {
+            "ctl_boot_id": 0, "ctl_sequence": 0, "ctl_environment_id": 0,
+            "ctl_config_id": 0, "ctl_build_version": 0, "ctl_content_version": 0,
+            "ctl_scope_zone_vnum": 0, "ctl_scope_group_key": 1,
+            "ctl_definition_version": 2, "ctl_producer_version": 2,
+            "ctl_source_actor_pid": -1, "ctl_target_actor_id": 0,
+            "ctl_target_owner_subject_id": 999, "ctl_target_actor_kind": 3,
+            "ctl_target_context_version": 0, "ctl_target_zone_vnum": -2,
+            "ctl_source_session_boot_id": 0, "ctl_target_session_seq": 0,
+            "ctl_target_association_revision": 0, "ctl_last_target_association_revision": 0,
+            "ctl_target_group_key": 1 << 63, "ctl_target_group_revision": 1,
+            "ctl_quality_flags": 1024, "ctl_target_quality_flags": 1,
+            "ctl_state_available": 0, "ctl_duration_coverage": 255,
+            "ctl_before_mask": 256, "ctl_after_mask": 0, "ctl_flags": 64,
+            "ctl_family": 0, "ctl_result": 0, "ctl_kind": 5, "ctl_boundary": 1,
+            "ctl_previous_state_sequence": 1, "ctl_start_usec": self.value["ctl_at_usec"] + 1,
+        }
+        rows = [dict(self.value, **{name: value}) for name, value in changes.items()]
+        self.assertEqual(self.agrees(rows), [False] * len(rows))
+        interval_rows = [dict(self.interval, **{name: value}) for name, value in {
+            "ctl_previous_state_sequence": 0, "ctl_flags": 32, "ctl_family": 1,
+            "ctl_result": 1, "ctl_source_actor_id": 42, "ctl_configured_ticks": 1,
+            "ctl_last_target_association_revision": 0, "ctl_duration_coverage": 0,
+        }.items()]
+        self.assertEqual(self.agrees(interval_rows), [False] * len(interval_rows))
+
+    def test_known_gates_bypasses_and_unassociated_operations(self):
+        rows = [dict(self.value, ctl_result=result, ctl_after_mask=0, ctl_configured_ticks=0)
+                for result in range(2, 15)]
+        rows.append(dict(self.value, ctl_flags=1 | 2 | 4))
+        rows.append(dict(self.value, ctl_family=2, ctl_after_mask=2, ctl_flags=16))
+        rows.append(dict(self.value, ctl_family=6, ctl_before_mask=32, ctl_after_mask=32, ctl_flags=8 | 4))
+        rows.extend(dict(self.value, ctl_family=8, ctl_after_mask=mask) for mask in (8, 128))
+        unassociated = dict(self.value)
+        for prefix in ("source", "target"):
+            for name in ("battle_seq", "association_revision", "association_fact_sequence"):
+                unassociated["ctl_" + prefix + "_" + name] = 0
+        unassociated["ctl_last_target_association_revision"] = 0
+        unassociated["ctl_last_target_association_fact_sequence"] = 0
+        rows.append(unassociated)
+        self.assertEqual(self.agrees(rows), [True] * len(rows))
+        self.assertEqual(self.agrees([dict(self.value, ctl_flags=8), dict(self.value, ctl_flags=16),
+            dict(rows[0], ctl_configured_ticks=10), dict(rows[0], ctl_flags=4),
+            dict(self.value, ctl_flags=32)]), [False] * 5)
+
+    def test_gap_recovery_unknown_clocks_partial_duration_and_live_actors(self):
+        gap = dict(self.gap, ctl_boundary=8)
+        for name in ("config_id", "classifier_version", "policy_version", "build_version", "content_version"):
+            gap["ctl_" + name] = 0
+        partial = dict(self.interval, ctl_duration_coverage=12, ctl_quality_flags=1)
+        unknown = dict(self.interval)
+        for name in ("start", "at", "decision"):
+            unknown["ctl_" + name + "_utc_usec"] = control.UTC_UNKNOWN
+        npc = dict(self.value, ctl_target_actor_id=(1 << 63) | 999,
+            ctl_target_actor_pid=-1, ctl_target_actor_kind=3, ctl_target_owner_subject_id=0,
+            ctl_target_session_boot_id=0, ctl_target_session_process_id=0, ctl_target_session_seq=0)
+        pet = dict(npc, ctl_target_actor_kind=2, ctl_target_owner_subject_id=42)
+        self_effect = dict(self.value, ctl_flags=32)
+        for name in control.FIELDS:
+            if name.startswith("ctl_source_"):
+                self_effect[name] = self.value[name.replace("ctl_source_", "ctl_target_", 1)]
+        self.assertEqual(self.agrees([gap, partial, unknown, npc, pet, self_effect]), [True] * 6)
+        self.assertEqual(self.agrees([dict(gap, ctl_before_mask=4), dict(gap, ctl_after_mask=4),
+            dict(gap, ctl_state_available=255), dict(gap, ctl_content_version=1),
+            dict(self.gap, ctl_quality_flags=0), dict(npc, ctl_target_actor_id=999),
+            dict(pet, ctl_target_owner_subject_id=0)]), [False] * 7)
+        recovery = [item["fields"] for item in self.sources if item["case"] == 5]
+        self.assertEqual([row["ctl_kind"] for row in recovery], [4, 2, 3])
+        self.assertEqual(recovery[1]["ctl_previous_state_sequence"], 0)
+        self.assertEqual(recovery[-1]["ctl_at_usec"] - recovery[-1]["ctl_start_usec"], 100)
+
+    def test_numeric_boundaries_and_strict_wire_shapes_agree(self):
+        rows = []
+        for name, width, signed in control.FIELD_LAYOUT:
+            limit = 1 << (width * 8 - int(signed))
+            for candidate in sorted({0, 1, limit - 1, -limit if signed else 0}):
+                rows.append(dict(self.value, **{name: candidate}))
+            for invalid in (True, None, "0", 1.0, limit, -limit - 1 if signed else -1):
+                with self.assertRaises(control.ControlContractError):
+                    control.validate_observation(dict(self.value, **{name: invalid}))
+        self.agrees(rows)
+        wire = control.encode_observation(self.value)
+        malformed = [b"", wire[:-1], wire + b"\0"]
+        self.assertEqual(self.native_results(wires=malformed), [False] * 3)
+        for data in malformed + [None, [], memoryview(wire)]:
+            with self.assertRaises(control.ControlContractError):
+                control.decode_observation(data)
+        for row in (None, [], {}, dict(self.value, extra=0)):
+            with self.assertRaises(control.ControlContractError):
+                control.validate_observation(row)
 
 
 if __name__ == "__main__":

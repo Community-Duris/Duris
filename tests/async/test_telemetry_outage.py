@@ -36,13 +36,14 @@ def main() -> None:
             command = [sys.executable, str(ROOT / "scripts/telemetry/outage.py"), str(evidence)]
             exported = subprocess.run(command, check=True, text=True, capture_output=True, timeout=10)
             packet = json.loads(exported.stdout)
-            assert packet["ledger_version"] == 4
+            assert packet["ledger_version"] == 5
             assert packet["producer_count"] == 2 and packet["generation"] == 4
             previous, current = packet["observations"]
             assert "ownership" in previous["record_families"]
             assert "battle" in previous["record_families"]
             assert "battle_contribution" in previous["record_families"]
             assert "battle_build" in previous["record_families"]
+            assert "control" in previous["record_families"]
             assert previous["phase"] == "unknown_tail" and previous["tail_end_utc_usec"] is None
             assert previous["tail_end_monotonic_usec"] is None and previous["observed_monotonic_usec"] == 400
             assert previous["rejected_detail_admissions"] == 3 and previous["unattempted_records"] == 4
@@ -51,7 +52,8 @@ def main() -> None:
             assert (evidence / "outages.ledger").read_bytes() == before
             # Every earlier version retains its own family limit, including
             # both masks; a valid checksum cannot widen a sealed descriptor.
-            for version, kind in ((1, 10), (1, 11), (2, 11), (1, 12), (2, 12), (3, 12)):
+            for version, kind in ((1, 10), (1, 11), (2, 11), (1, 12), (2, 12), (3, 12),
+                                  (1, 13), (2, 13), (3, 13), (4, 13)):
                 for field in (9, 36):
                     incompatible = bytearray(before)
                     incompatible[7] = ord(str(version))
@@ -62,7 +64,22 @@ def main() -> None:
                     refused = subprocess.run(command, text=True, capture_output=True, timeout=10)
                     assert refused.returncode == 2
                     assert (evidence / "outages.ledger").read_bytes() == incompatible
-            v3 = bytearray(before)
+            v4 = bytearray(before)
+            v4[7] = ord("4")
+            for index in range(packet["producer_count"]):
+                for field in (9, 36):
+                    offset = 32 + (index * 40 + field) * 8
+                    mask = int.from_bytes(v4[offset:offset + 8], "big") & ~(1 << 13)
+                    v4[offset:offset + 8] = mask.to_bytes(8, "big")
+            v4[-32:] = hashlib.sha256(v4[:-32]).digest()
+            (evidence / "outages.ledger").write_bytes(v4)
+            exported = subprocess.run(command, check=True, text=True, capture_output=True, timeout=10)
+            older = json.loads(exported.stdout)
+            assert older["ledger_version"] == 4 and older["producer_count"] == 2
+            assert "battle_build" in older["observations"][0]["record_families"]
+            assert "control" not in older["observations"][0]["record_families"]
+            assert (evidence / "outages.ledger").read_bytes() == v4
+            v3 = bytearray(v4)
             v3[7] = ord("3")
             for index in range(packet["producer_count"]):
                 for field in (9, 36):
@@ -77,7 +94,7 @@ def main() -> None:
             assert "battle_contribution" in older["observations"][0]["record_families"]
             assert "battle_build" not in older["observations"][0]["record_families"]
             assert (evidence / "outages.ledger").read_bytes() == v3
-            v2 = bytearray(before)
+            v2 = bytearray(v4)
             v2[7] = ord("2")
             for index in range(packet["producer_count"]):
                 for field in (9, 36):
@@ -92,7 +109,7 @@ def main() -> None:
             assert "battle" in older["observations"][0]["record_families"]
             assert "battle_contribution" not in older["observations"][0]["record_families"]
             assert (evidence / "outages.ledger").read_bytes() == v2
-            legacy = bytearray(before)
+            legacy = bytearray(v4)
             legacy[7] = ord("1")
             for index in range(packet["producer_count"]):
                 for field in (9, 36):
@@ -110,7 +127,7 @@ def main() -> None:
             subprocess.run([str(binary), "--upgrade-fixture", str(evidence)], check=True, timeout=10)
             exported = subprocess.run(command, check=True, text=True, capture_output=True, timeout=10)
             upgraded = json.loads(exported.stdout)
-            assert upgraded["ledger_version"] == 4 and upgraded["producer_count"] == 3
+            assert upgraded["ledger_version"] == 5 and upgraded["producer_count"] == 3
             assert upgraded["observations"][:2] == old["observations"]
             pending = evidence / "outages.pending"
             pending.write_bytes(b"interrupted")

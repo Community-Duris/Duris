@@ -26,6 +26,7 @@ sys.path.insert(0, str(ROOT / "scripts/telemetry"))
 import battle_contract
 import battle_contribution_contract
 import battle_build_contract
+import control_contract
 import battle_source as retained_source
 import battle_history
 import battle_publication
@@ -307,8 +308,10 @@ def qualify_native_build_publication(query, environment, command, name, origin):
 def qualify_native_control_publication(query, rollup, reporter, executable, run_environment, export, *, expanded=False):
     origin = query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"]
     applications = 17 if expanded else 8
+    typed_export = export.with_name(export.stem + "-typed.jsonl")
     subprocess.run([str(executable), "--native-expanded-control-sql" if expanded else "--native-control-sql"], cwd=ROOT,
-        env=dict(run_environment, TELEMETRY_BATTLE_CAPTURE_EXPORT=str(export)), check=True, timeout=30)
+        env=dict(run_environment, TELEMETRY_BATTLE_CAPTURE_EXPORT=str(export),
+                 TELEMETRY_CONTROL_CAPTURE_EXPORT=str(typed_export)), check=True, timeout=30)
     emitted = [json.loads(line) for line in export.read_text(encoding="utf-8").splitlines()]
     stored = query("SELECT " + ",".join(RAW_COLUMNS) +
         " FROM telemetry_interval WHERE ingest_id>%s AND record_kind IN (10,11) ORDER BY boot_id,process_id,record_seq", (origin,))
@@ -357,6 +360,41 @@ def qualify_native_control_publication(query, rollup, reporter, executable, run_
         qualified = {name.replace("native_control_", "native_expanded_control_", 1): value for name, value in qualified.items()}
         qualified["native_expanded_control_source_helpers"] = ["spell_" + name for name in
             ("major_paralysis", "minor_paralysis", "slow", "sleep", "silence", "entangle")]
+    typed = [json.loads(line) for line in typed_export.read_text(encoding="utf-8").splitlines()]
+    typed.sort(key=lambda row: (row["boot_id"], row["process_id"], row["record_seq"]))
+    typed_stored = query("SELECT " + ",".join(RAW_COLUMNS) +
+        " FROM telemetry_interval WHERE ingest_id>%s AND record_kind=13 ORDER BY boot_id,process_id,record_seq", (origin,))
+    assert len(typed) == len(typed_stored) > 0
+    for observed, row in zip(typed, typed_stored, strict=True):
+        assert all(row[column] == value for column, value in observed.items()), "native typed control source/SQL drift"
+        control_contract.validate_raw_observation(row)
+        if row["ctl_config_id"]:
+            config = query("SELECT environment_id,season_id,classifier_version,policy_version,build_version,content_version "
+                           "FROM telemetry_config WHERE config_id=%s", (row["ctl_config_id"],))
+            assert len(config) == 1
+            assert tuple(config[0][name] for name in ("environment_id", "season_id", "classifier_version",
+                "policy_version", "build_version", "content_version")) == tuple(row["ctl_" + name] for name in (
+                "environment_id", "season_id", "classifier_version", "policy_version", "build_version", "content_version"))
+    resolutions = [row for row in typed_stored if row["ctl_kind"] == 1]
+    states = [row for row in typed_stored if row["ctl_kind"] != 1]
+    assert resolutions and states
+    assert all(row["ctl_duration_coverage"] == 0 and row["ctl_quality_flags"] & 1 and
+               row["ctl_source_actor_id"] == 0 for row in states)
+    if expanded:
+        assert len(resolutions) == 56 and sum(row["ctl_result"] == 1 for row in resolutions) == 18
+        assert len({row["ctl_result"] for row in resolutions if row["ctl_result"] != 1}) == 12
+        outside = [row for row in resolutions if row["ctl_target_actor_id"] == 8973]
+        rejected_outside = [row for row in outside if row["ctl_result"] != 1]
+        accepted_outside = [row for row in outside if row["ctl_result"] == 1]
+        assert len(rejected_outside) > 20 and all(row["ctl_source_battle_seq"] == 0 and
+            row["ctl_target_battle_seq"] == 0 for row in outside)
+        assert len(accepted_outside) == 1 and accepted_outside[0]["ctl_source_actor_id"] == 8973
+        assert accepted_outside[0]["ctl_family"] == 6 and accepted_outside[0]["ctl_flags"] & 32
+        assert all(row["ctl_target_actor_id"] != 8973 for row in states)
+        qualified.update(native_typed_control_records=len(typed_stored), native_typed_control_fields=76,
+            native_typed_control_resolutions=56, native_typed_control_accepted=18,
+            native_typed_control_rejection_reasons=12, native_typed_control_sql_exact=True,
+            native_typed_control_rejected_target_not_enrolled=True, native_typed_control_state_duration_partial=True)
     return qualified
 
 
@@ -806,8 +844,11 @@ def qualify_persisted_source(query, environment, command, name, history, executa
             review_evidence_digest="b" * 64, reviewed_from_utc_usec=epoch + first - 1,
             reviewed_through_utc_usec=epoch + last + 1, incidents=[])
         assert reviewer.register_incident_packet(loss_packet)["status"] == "registered"
-        raw_original = query("SELECT " + ",".join(RAW_COLUMNS) + " FROM telemetry_interval WHERE record_kind IN (9,10,11) ORDER BY ingest_id")
-        query("DELETE FROM telemetry_interval WHERE record_kind IN (9,10,11)")
+        # The dated fixture replaces receipts in this owned database. Preserve
+        # every raw family: unselected control detail shares the producer's
+        # receipt namespace and must not collide with the separately dated rows.
+        raw_original = query("SELECT " + ",".join(RAW_COLUMNS) + " FROM telemetry_interval ORDER BY ingest_id")
+        query("DELETE FROM telemetry_interval")
         for row in dated.facts:
             names = [name for name in row if name != "ingest_id"]
             query("INSERT INTO telemetry_interval (" + ",".join(names) + ") VALUES (" + ",".join(["%s"] * len(names)) + ")",
@@ -851,9 +892,10 @@ def qualify_persisted_source(query, environment, command, name, history, executa
         assert old["battle_exposure"].rows == reviewed_exposure.rows
         assert old["battle_exposure"].coverage.battle_coverage == reviewed_exposure.coverage.battle_coverage
         assert old["battle_exposure"].coverage.incident_coverage == reviewed_exposure.coverage.incident_coverage
-        query("DELETE FROM telemetry_interval WHERE record_kind IN (9,10,11)")
+        query("DELETE FROM telemetry_interval")
         for row in raw_original:
             query(raw_insert, tuple(row[name] for name in RAW_COLUMNS))
+        assert query("SELECT " + ",".join(RAW_COLUMNS) + " FROM telemetry_interval ORDER BY ingest_id") == raw_original
 
         publication_schema = ROOT / "migrations/immutable/0064_telemetry_battle_publication.sql"
         def apply_publication():
