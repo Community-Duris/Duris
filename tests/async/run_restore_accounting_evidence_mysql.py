@@ -49,7 +49,7 @@ fixture = os.environ.get("DURIS_PLAN5_COIN_FIXTURE")
 if fixture:
     fixture_path = Path(fixture).resolve()
     assert any(fixture_path.is_relative_to((ROOT / directory).resolve()) for directory in
-               ("bin/tests/plan5-sql-coin-effects", "bin/tests/plan5-sql-canonical-evidence"))
+               ("bin/tests/plan5-sql-baseline-restore-coins", "bin/tests/plan5-sql-baseline-restore-canonical"))
     payload = fixture_path.read_bytes()
     assert len(payload) <= 1024 * 1024
     offset = 0
@@ -245,18 +245,18 @@ try:
             "writer_id,policy_version,compiler_version,actor_kind,actor_id,reason,source_event,"
             "intent_digest,domain_digest,plan_digest,canonical_intent,canonical_plan,outcome,result_code,"
             "account_count,posting_count,child_count,item_event_count,before_witness_count,after_witness_count) "
-            "VALUES(%s,%s,%s,1,1,1,1,2,1,38,%s,%s,%s,%s,%s,%s,1,0,2,2,0,0,0,0)",
-             (OP, LINEAGE, EPOCH, SOURCE,
+            "VALUES(%s,%s,%s,1,1,1,1,%s,1,%s,%s,%s,%s,%s,%s,%s,1,0,2,2,0,0,0,0)",
+             (OP, LINEAGE, EPOCH, native_blocks[1][72], struct.unpack_from("<H", native_blocks[1], 96)[0], SOURCE,
               hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + native_blocks[0]).digest(),
               native_blocks[0][192:224], hashlib.sha256(native_blocks[1]).digest(),
               native_blocks[0], native_blocks[1]))
-    keys = [LINEAGE + struct.pack("<HHQQ4x", 1, kind, lifetime, 0)
-            for kind, lifetime in ((1, 7), (9, 1))]
-    for index, amount in ((0, 7), (1, 0)):
+    for index in range(2):
+        effect = native_blocks[1][256 + index * 120:256 + (index + 1) * 120]
         execute("INSERT INTO economic_accounting_account_effect(operation_id,account_index,account_key,"
                 "before_copper,before_silver,before_gold,before_platinum,after_copper,after_silver,"
                 "after_gold,after_platinum,before_revision,after_revision) "
-                "VALUES(%s,%s,%s,0,0,0,0,%s,0,0,0,0,%s)", (OP, index, keys[index], amount, int(index == 0)))
+                "VALUES(" + ",".join(["%s"] * 13) + ")",
+                (OP, index, effect[:40], *struct.unpack_from("<8qQQ", effect, 40)))
         execute("INSERT INTO economic_accounting_coin_posting VALUES(%s,%s,%s,%s,0,%s,0,0,0,%s)",
                 (OP, index, index, index, 7 if index == 0 else -7, 7 if index == 0 else -7))
     execute("INSERT INTO economic_accounting_source_claim VALUES(%s,%s,%s,1)", (LINEAGE, SOURCE, OP))
@@ -394,7 +394,7 @@ try:
         canonical_field("economic_accounting_operation", "canonical_intent", bytes(256),
                         prefix + "intent_mismatch", operation=REJECTED)
         for field, value in (("writer_id", 2), ("policy_version", 2), ("compiler_version", 2),
-                             ("actor_kind", 1), ("actor_id", 2), ("reason", 39),
+                             ("actor_kind", 2), ("actor_id", 2), ("reason", 39),
                              ("original_operation_id", OP)):
             canonical_field("economic_accounting_operation", field, value, prefix + "metadata_mismatch")
         for field in ("account_count", "posting_count", "child_count", "before_witness_count",
@@ -430,6 +430,7 @@ try:
             canonical_cut(label, [(query, (changed, hashlib.sha256(changed).digest(), OP))],
                           [(query, (plan, hashlib.sha256(plan).digest(), OP))], prefix + "plan_mismatch")
         changes = [("UPDATE economic_accounting_account_effect SET after_copper=%s WHERE operation_id=%s AND account_index=0", (8, OP)),
+                   ("UPDATE economic_accounting_account_effect SET before_copper=%s WHERE operation_id=%s AND account_index=1", (8, OP)),
                    ("UPDATE economic_accounting_coin_posting SET delta_copper=%s,copper_value=%s WHERE operation_id=%s AND line_index=0", (8, 8, OP)),
                    ("UPDATE economic_accounting_coin_posting SET delta_copper=%s,copper_value=%s WHERE operation_id=%s AND line_index=1", (-8, -8, OP))]
         repairs = [(query, tuple(7 if value == 8 else -7 if value == -8 else value for value in params))
@@ -437,7 +438,8 @@ try:
         canonical_cut("balanced-forged-projections", changes, repairs,
                       prefix + "canonical_account_mismatch", full=True)
         oracle_rows = [json.loads(line) for line in Path(fixture).with_name("native-decode-sql.jsonl").read_bytes().splitlines()]
-        maximum = bytes.fromhex(next(row["bytes"] for row in oracle_rows if row["name"] == "intent-8192"))
+        maximum = fixture_path.with_name("history-max-intent.bin").read_bytes()
+        assert len(maximum) == 8192 and maximum[:4] == b"EAI1"
         maximum_digest = hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + maximum).digest()
         paired = plan[:152] + maximum_digest + plan[184:]
         query = "UPDATE economic_accounting_operation SET canonical_intent=%s,intent_digest=%s,canonical_plan=%s,plan_digest=%s WHERE operation_id=%s"

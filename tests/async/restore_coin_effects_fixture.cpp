@@ -235,7 +235,8 @@ static void decoder_corpus(const economic_accounting_plan &base,
 int main(int argc, char **argv)
 {
 	const bool corpus = argc == 2 && std::string(argv[1]) == "--decode-corpus";
-	assert(argc == 1 || corpus);
+	const bool history = argc == 2 && std::string(argv[1]) == "--restore-history";
+	assert(argc == 1 || corpus || history);
 	std::vector<std::pair<bool, std::vector<uint8_t>>> goldens;
 	auto emit = [&](bool intent, const std::vector<uint8_t> &bytes)
 	{
@@ -248,16 +249,25 @@ int main(int argc, char **argv)
 	meta.lineage = id(0x11);
 	meta.epoch = id(0x22);
 	meta.operation_id = id(0x33);
-	meta.actor_kind = economic_actor_kind::operator_action;
+	meta.actor_kind = history ? economic_actor_kind::domain :
+				    economic_actor_kind::operator_action;
 	meta.actor_id = 1;
 	meta.writer_id = 1;
-	meta.reason = economic_reason::baseline;
-	meta.source_event = { economic_source_kind::baseline, id(0x44), meta.epoch, 0, 0 };
+	meta.reason = history ? economic_reason::coin_transfer : economic_reason::baseline;
+	meta.source_event = { history ? economic_source_kind::lifecycle :
+					economic_source_kind::baseline,
+			      id(0x44), meta.epoch, 0, 0 };
 	base.accounts = {
 		{ { meta.lineage, economic_account_kind::wallet, 7, 0 }, {}, { 7, 0, 0, 0 }, 0, 1 },
 		{ { meta.lineage, economic_account_kind::opening, 1, 0 }, {}, {}, 0, 0 }
 	};
 	base.postings = { { 0, 0, 0, { 7, 0, 0, 0 }, 7 }, { 1, 1, 0, { -7, 0, 0, 0 }, -7 } };
+	if (history)
+		base.accounts[1] = { { meta.lineage, economic_account_kind::bank, 8, 0 },
+				     { 7, 0, 0, 0 },
+				     {},
+				     0,
+				     1 };
 	economic_frozen_intent intent;
 	intent.admission.metadata = meta;
 	intent.command_binding[0] = 21;
@@ -306,6 +316,14 @@ int main(int argc, char **argv)
 						   meta.epoch, 7, 0 };
 	assert(economic_intent_encode(intent, &frozen) == economic_accounting_error::ok);
 	emit(true, frozen);
+	if (history)
+	{
+		intent.admission.metadata = meta;
+		intent.admission.facts.assign(8192 - 256, 0x5a);
+		assert(economic_intent_encode(intent, &frozen) == economic_accounting_error::ok);
+		emit(true, frozen);
+		return 0;
+	}
 	if (corpus)
 	{
 		decoder_corpus(base, goldens);

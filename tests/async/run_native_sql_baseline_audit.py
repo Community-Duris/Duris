@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Read native baseline claims from a freshly bootstrapped private socket."""
 import hashlib
+import contextlib
+import io
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 
 import pymysql
 
@@ -13,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import economic_sql_audit_snapshot as exporter
 import migration_runner as migrations
+import qualify_database_restore as restore_qualifier
 from reconcile_economy_accounting import Reconciler, view
 from economic_sql_audit_origins import OriginError
 
@@ -21,7 +25,7 @@ if (os.environ.get("TEST_DB_DISPOSABLE") != "1" or os.environ.get("ENVIRONMENT")
         not os.environ.get("DB_SOCKET", "").startswith("/plan5-restore-baseline-")):
     raise SystemExit("fresh private baseline daemon/socket required")
 fixture = Path(os.environ["DURIS_PLAN5_BASELINE_FIXTURE"]).resolve()
-assert fixture.is_relative_to((ROOT / "bin/tests/plan5-baseline-reservation-orphans").resolve())
+assert fixture.is_relative_to((ROOT / "bin/tests/plan5-baseline-sql-restore").resolve())
 settings = dict(unix_socket=os.environ["DB_SOCKET"], user=os.environ["DB_USER"],
                 password=os.environ["DB_PASSWD"], database="duris_restore", autocommit=True,
                 cursorclass=pymysql.cursors.DictCursor, read_timeout=30, write_timeout=30)
@@ -40,8 +44,8 @@ def execute(query, params=()):
         cursor.execute(query, params)
 
 
-def captured():
-    with owner.cursor() as cursor:
+def captured(connection=owner):
+    with connection.cursor() as cursor:
         result = {}
         for table in TABLES:
             cursor.execute("SELECT * FROM " + table + " ORDER BY 1")
@@ -113,6 +117,52 @@ try:
     assert all(row["baseline_witness"]["source_event"] == row["source_event"]
                for row in snapshot["source_claims"])
     intact = captured()
+
+    def restore_qualification():
+        before = captured()
+        try:
+            with contextlib.redirect_stdout(io.StringIO()) as output:
+                restore_qualifier.main()
+            assert json.loads(output.getvalue()) == {"history": "ok", "reconciliation": "ok"}
+        finally:
+            assert captured() == before, "restore qualification changed authority"
+
+    restore_qualification()
+    witness = intact["economic_baseline_witness"][0]
+    execute("UPDATE economic_baseline_witness SET witness_digest=%s WHERE operation_id=%s",
+            (bytes([99]) * 32, witness["operation_id"]))
+    try:
+        try:
+            restore_qualification()
+        except RuntimeError as error:
+            assert str(error) == "restore_economic_baseline_witness_mismatch", str(error)
+        else:
+            raise AssertionError("corrupt native EAB1 witness was qualified by the full SQL restore gate")
+    finally:
+        execute("UPDATE economic_baseline_witness SET witness_digest=%s WHERE operation_id=%s",
+                (witness["witness_digest"], witness["operation_id"]))
+    assert captured() == intact
+    print("RESTORE_BASELINE_FULL_DIGEST_REFUSAL passed", flush=True)
+
+    def restore_evidence():
+        before = captured()
+        with reader.cursor() as cursor:
+            cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+            cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
+            class Executor:
+                def sql(self, query):
+                    assert query.startswith("SELECT "), query
+                    cursor.execute(query)
+                    rows = cursor.fetchall()
+                    assert all(len(row) == 1 for row in rows)
+                    return "\n".join(str(next(iter(row.values()))) for row in rows)
+            try:
+                restore_qualifier.require_economic_evidence_integrity(Executor())
+            finally:
+                reader.rollback()
+                assert captured() == before, "independent restore reader changed authority"
+
+    restore_evidence()
     cuts = []
     constraints = []
 
@@ -156,12 +206,19 @@ try:
                     original_snapshot = json.dumps(damaged_snapshot, sort_keys=True)
                     probe(damaged_snapshot)
                     assert json.dumps(damaged_snapshot, sort_keys=True) == original_snapshot
+            try:
+                restore_evidence()
+            except RuntimeError as error:
+                restore_code = str(error)
+                assert restore_code.startswith("restore_economic_"), (label, restore_code)
+            else:
+                raise AssertionError(label + ": corrupt baseline passed independent restore qualification")
             assert captured() == damaged, label + ": reader changed authority"
         finally:
             fixture_changes(repairs, broken_fk)
         assert captured() == original, label + ": disposable fixture was not restored"
         cuts.append({"label": label, "findings": findings, "refusal": refusal,
-                     "damaged_import": broken_fk})
+                     "damaged_import": broken_fk, "restore_refusal": restore_code})
         print("BASELINE_CUT " + json.dumps(cuts[-1], sort_keys=True), flush=True)
 
     def field(label, table, column, operation, changed, findings=None, refusal=None, broken_fk=False):
@@ -499,12 +556,79 @@ try:
     replayed = subprocess.check_output([str(fixture), "--reconcile"], env=dict(os.environ), timeout=120)
     assert replayed == encoded and captured() == intact
     print("NATIVE_BASELINE_REPLAY " + replayed.decode().strip(), flush=True)
+    restore_qualification()
+    # An initialized empty book is valid inactive history, with no witness yet.
+    empty_epoch = bytes([96]) * 16
+    control = intact["economic_baseline_control"][0]
+    execute("INSERT INTO economic_epoch(lineage,epoch,ordinal,transition_kind,transition_digest,creating_operation_id) "
+            "VALUES(%s,%s,3,1,%s,%s)", (lineage, empty_epoch, bytes([1]) * 32, creator))
+    execute("INSERT INTO economic_baseline_control(lineage,epoch,opening_account,creating_operation_id) VALUES(%s,%s,%s,%s)",
+            (lineage, empty_epoch, control["opening_account"], creator))
+    try:
+        restore_qualification()
+        execute("UPDATE economic_baseline_control SET opening_account=%s WHERE lineage=%s AND epoch=%s",
+                (bytes([97]) * 16 + control["opening_account"][16:], lineage, empty_epoch))
+        try:
+            restore_qualification()
+        except RuntimeError as error:
+            assert str(error) == "restore_economic_baseline_book_mismatch", str(error)
+        else:
+            raise AssertionError("foreign empty-book opening was qualified")
+        execute("UPDATE economic_baseline_control SET opening_account=%s WHERE lineage=%s AND epoch=%s",
+                (control["opening_account"], lineage, empty_epoch))
+        restore_qualification()
+    finally:
+        execute("DELETE FROM economic_baseline_control WHERE lineage=%s AND epoch=%s", (lineage, empty_epoch))
+        execute("DELETE FROM economic_epoch WHERE lineage=%s AND epoch=%s", (lineage, empty_epoch))
+    assert captured() == intact
+    print("RESTORE_BASELINE_EMPTY_BOOK admitted_inactive_foreign_opening_refused_unchanged", flush=True)
     sibling_environment = dict(os.environ, ECONOMIC_ACCOUNTING_DISPOSABLE_SCHEMA="1", DB_PASSWORD=settings["password"])
     subprocess.run([sys.executable, "-u", str(ROOT / "tests/async/run_economic_sql_audit_snapshot_mysql.py")],
                    env=sibling_environment, check=True, timeout=900)
     assert captured() == intact
+    dump_path = fixture.parent / (engine_name + "-baseline.sql")
+    with dump_path.open("wb") as output:
+        result = subprocess.run(["mysqldump", "--no-defaults", "--protocol=socket",
+            "--socket=" + settings["unix_socket"], "--user=" + settings["user"],
+            "--single-transaction", "--skip-lock-tables", "--hex-blob", "--routines", "--triggers",
+            "--events", "duris_restore"], env=dict(os.environ), stdout=output, stderr=subprocess.PIPE,
+            timeout=180)
+    assert result.returncode == 0, result.stderr
+    assert 0 < dump_path.stat().st_size < 32 * 1024 * 1024
+    assert captured() == intact
+    import persistence_restore as restore
+    with tempfile.TemporaryDirectory(prefix="plan5-restore-baseline-clone-", dir="/") as directory:
+        candidate = Path(directory) / engine_name
+        candidate.mkdir(mode=0o700)
+        with restore.private_database(candidate, engine_name) as clone:
+            with dump_path.open("rb") as payload:
+                result = subprocess.run(["mysql", "--no-defaults", "--protocol=socket",
+                    "--socket=" + clone["DB_SOCKET"], "--user=" + clone["DB_USER"], "duris_restore"],
+                    env=clone, stdin=payload, capture_output=True, timeout=180)
+            assert result.returncode == 0, result.stderr
+            connection = pymysql.connect(unix_socket=clone["DB_SOCKET"], user=clone["DB_USER"],
+                password=clone["DB_PASSWD"], database="duris_restore", autocommit=True,
+                cursorclass=pymysql.cursors.DictCursor)
+            try:
+                assert captured(connection) == intact
+                result = subprocess.run([sys.executable, str(ROOT / "scripts/qualify_database_restore.py")],
+                    env=clone, capture_output=True, timeout=120)
+                assert result.returncode == 0, result.stderr
+                assert json.loads(result.stdout) == {"history": "ok", "reconciliation": "ok"}
+                replay_env = dict(clone, TEST_DB_DISPOSABLE="1", ENVIRONMENT="test",
+                                  ASAN_OPTIONS=os.environ["ASAN_OPTIONS"], UBSAN_OPTIONS=os.environ["UBSAN_OPTIONS"])
+                cold_replay = subprocess.check_output([str(fixture), "--reconcile"], env=replay_env, timeout=120)
+                assert cold_replay == encoded and captured(connection) == intact
+            finally:
+                connection.close()
+    assert captured() == intact
+    print("RESTORE_BASELINE_COLD_CLONE " + json.dumps({"engine": engine_name,
+          "dump_sha256": hashlib.sha256(dump_path.read_bytes()).hexdigest(), "dump_bytes": dump_path.stat().st_size,
+          "books": 2, "tables_unchanged": len(TABLES), "full_qualifier": True, "exact_native_replay": True,
+          "active_epoch_null": True, "complete_world_capture": False}, sort_keys=True), flush=True)
     print("NATIVE_BASELINE_AUDIT_QUALIFIED " + json.dumps({"baseline_claims": 2, "epochs": 2,
           "cuts": len(cuts), "constraint_refusals": len(constraints),
+          "restore_refusals": len(cuts), "native_baseline_dump_import": True,
           "authority_unchanged": True, "activation": False,
           "production_access": False, "complete_native_capture": False}, sort_keys=True), flush=True)
 finally:
