@@ -1,0 +1,641 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "fields_between",
+  "coverage": "complete",
+  "introduction": "Trace Timmy’s letter from the ruined farmhouse to his mother, explore the wildmage tower, and follow the raiders’ requests for exact materials. Keep five different heads, two independent uses of scarce alloy, real access keys and the portable rift visible as separate steps.",
+  "orientation": [
+    "Follow the Surface foothills path south into the open fields. Timmy’s damaged farmhouse is reached with ENTER farmhouse, and ENTER door returns to the fields. His mouse form is not a promise of a completed transformation or rescue.",
+    "Two independent requests consume dark mithril: Timmy needs one bar to write home, while the professor needs another bar together with the crunching torture box. The raider weaponsmith’s bar is uncommon; one earlier receipt or one spent bar cannot satisfy both. Bars in the laboratory description are scenery.",
+    "Timmy’s letter can be returned to his mother when she emerges into the Scorched Valley stable. She can wander, and Timmy can be absent. An exact supplied letter skips Timmy’s earlier alloy exchange. His mother’s acceptance is a Fields Between outcome even across the zone boundary; neither receipt proves a reunion.",
+    "Climb the bramble hill to the locked southern tower entrance. The sorcerer walrus-giant carries the thorny key, which survives ordinary unlocking. This entrance can also be picked; access through an open door needs no personal key history. The tower’s study, laboratory, kitchen and lower wildmage doors are visible and closed.",
+    "For the brewer, recover the exact manuscript worn as a shield by the tower’s monkeys and the banana clump carried by the octopus cook. Bring both together. The hungry ape, loose quills and paper are not their sources. Ask the bored troll brewer about food or book; the bored ogre raiders are different actors.",
+    "Grog wants five different hidden head items: elements, nature, creatures, space-and-time and great wildmage. Bring all five together. Their similar names do not make them interchangeable; ordinary carved heads do not substitute. Supplied exact heads need no personal kills or earlier tower journey.",
+    "The vampire outside the great wildmage’s chamber carries the spiral key. It survives ordinary unlocking of the locked southern pickproof door. The thorny key fits the tower entrance instead. Inside, TOUCH the rune-covered stone belongs to the epic system, and the memory supports a foreign Winterhaven request.",
+    "The small circular rift is a hidden portable item placed on the floor of the space-and-time wildmage’s room. The living dimensional-rift creature on the stairs does not drop it. ENTER the small rift reaches a looping dark place; walking any ordinary direction loops there. ENTER gateway returns to the fields entrance.",
+    "Grog’s orc shaman bodyguard accepts that exact small rift for a band of the winds. Offering consumes the rift; use it before offering if you want its journey. His promised departure has no separate confirmed escape. The coil carried by the dark beast beyond the rift has no local accepted exchange.",
+    "A secret break in the foliage connects the overgrown fields eastward into the raider woods. SEARCH and open it when needed. In the camp, the ruffian at the bar carries Grox’s orders and the mess-hall cook carries the seasoned boy’s body. Deliver both together. Grog’s eastern hut door is separately closed.",
+    "The professor asks for the torturer’s crunching box and a dark-mithril bar as inspiration for tipped boots. His injury and chant are reward narration. The raider smith’s repair talk and vampire’s serving talk do not configure shops; captive wildmages and the wildmagical landscape do not create additional rescue or restoration quests.",
+    "The brewer’s fez can be taken to his depressed troll brother in Juiblex’s barracks for a separate foreign reward. Grog’s own head is one of three different heads requested by Tallin’s advisor in Scorched Valley. These foreign receipts keep their owning zones and do not award another Fields Between outcome.",
+    "Foreign seekers can arrive in the fields from inaccessible loading rooms: the seeker from Torg belongs to Scorched Valley, while Blaxor and Marvin belong to Juiblex. Their requests do not become local quests because of their location. The great chamber’s described permanent rift has no matching placed portal; use the verified small-rift route instead.",
+    "Carry exact materials loose; worn, nested, spent or handed-away copies remain missing. Questions and source recovery explain progress without granting each keyword an achievement. Only accepted exact exchanges record outcomes. Active, ready accounting is required for all new discovery, encounter, journal, achievement and daily credit; frozen reward recovery remains separate."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 71036,
+      "name": "Grox",
+      "keyword": "grox",
+      "description": "At the captain’s quarters in the raider camp. Ask orders or gift. Needs orders AND the prepared boy’s body together; gives the spiked mask of luck.",
+      "topics": [
+        "grog",
+        "orders",
+        "order",
+        "ape",
+        "human",
+        "body",
+        "gift"
+      ]
+    },
+    {
+      "mob_vnum": 71037,
+      "name": "a drunk, yet bored troll",
+      "keyword": "bored",
+      "description": "At the small brewery. This recipient is the bored troll brewer. Ask food, book or entertainment; bring the manuscript AND banana clump. The bored ogre raiders are different actors.",
+      "topics": [
+        "bored",
+        "drunk",
+        "entertainment",
+        "bannana",
+        "food",
+        "bananna",
+        "intellectual",
+        "stimulation",
+        "book",
+        "read",
+        "reading"
+      ]
+    },
+    {
+      "mob_vnum": 71038,
+      "name": "Grog",
+      "keyword": "grog",
+      "description": "At the leader’s hut beyond the closed eastern door and two-headed dog. Ask heads or task for the five-kind request, or story for Tallin and Torg lore. His own head also supports a separate Scorched Valley request.",
+      "topics": [
+        "tallin",
+        "torg",
+        "son",
+        "goddess",
+        "godess",
+        "spawn",
+        "story",
+        "stories",
+        "grog",
+        "raider",
+        "head",
+        "heads",
+        "wildmage",
+        "wild",
+        "mage",
+        "zooox",
+        "problem",
+        "task",
+        "grox"
+      ]
+    },
+    {
+      "mob_vnum": 71040,
+      "name": "the orc shaman bodyguard",
+      "keyword": "bodyguard",
+      "description": "The orc shaman follows Grog with two burly ogre guards. Ask free or way. Needs the small circular rift; ordinary bullied orc shamans elsewhere do not accept it.",
+      "topics": [
+        "free",
+        "way",
+        "bully",
+        "picked",
+        "on",
+        "orc",
+        "shaman",
+        "problem",
+        "bodyguard",
+        "out",
+        "freedom",
+        "camp"
+      ]
+    },
+    {
+      "mob_vnum": 71056,
+      "name": "the wildhaired professor",
+      "keyword": "professor",
+      "description": "In the tower laboratory behind its closed southern door. Ask devious, torture or weaponsmith. Needs the crunching box AND dark mithril for tipped boots; his scene does not provide loose mithril stock.",
+      "topics": [
+        "learn",
+        "interest",
+        "dark",
+        "different",
+        "bored",
+        "boring",
+        "devious",
+        "torture",
+        "weapons",
+        "weapon",
+        "torturer",
+        "weaponsmith"
+      ]
+    },
+    {
+      "mob_vnum": 71065,
+      "name": "a rather upset looking mouse",
+      "keyword": "upset",
+      "description": "May be present inside the beaten-up farmhouse. ENTER farmhouse to reach him and ENTER door to leave. Ask upset, mouse or mithril. He accepts one dark-mithril bar for a letter and then leaves.",
+      "topics": [
+        "upset",
+        "scared",
+        "sad",
+        "mouse",
+        "shy",
+        "sadness",
+        "mithril",
+        "dark",
+        "professor"
+      ]
+    },
+    {
+      "mob_vnum": 71066,
+      "name": "the mother in despair",
+      "keyword": "mother",
+      "description": "May emerge into the Scorched Valley stable from an inaccessible loading room. Ask son, timmy or crying. Bring Timmy’s exact letter for Sorrow; her exchange remains owned by The Fields Between.",
+      "topics": [
+        "cries",
+        "crying",
+        "cry",
+        "sad",
+        "upset",
+        "son",
+        "timmy",
+        "husband",
+        "death",
+        "ambition",
+        "ambitionsj"
+      ]
+    },
+    {
+      "mob_vnum": 71027,
+      "name": "a sorcerer walrus-giant",
+      "keyword": "walrus",
+      "description": "At the locked southern tower entrance. Carries the hidden thorny key; it survives ordinary unlocking. This key differs from the spiral key for the great wildmage’s chamber.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71028,
+      "name": "a horde of semi-intelligent monkeys",
+      "keyword": "monkeys",
+      "description": "In the study west of the first stairwell landing, behind a closed door. Wears the manuscript as a shield and holds quills. Only the exact manuscript and banana clump satisfy the brewer.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71041,
+      "name": "an octopus whirling knives",
+      "keyword": "octopus",
+      "description": "In the tower kitchen east of the next stairwell landing, behind a closed door. Carries the banana clump. The hungry ape shares the kitchen without that supply.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71044,
+      "name": "a vampire serving drinks",
+      "keyword": "vampire",
+      "description": "Outside the great wildmage’s chamber with the partying creatures. Carries the spiral key for the locked southern pickproof chamber door. The serving-drinks description does not configure a shop.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71046,
+      "name": "the wildmage of the elements",
+      "keyword": "wildmage",
+      "description": "The elements wildmage in the western upper chamber carries one of Grog’s five distinct hidden heads.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71047,
+      "name": "the wildmage of nature",
+      "keyword": "nature",
+      "description": "The nature wildmage in the eastern upper chamber carries a different hidden head for Grog.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71048,
+      "name": "the wildmage of creatures",
+      "keyword": "wildmage",
+      "description": "The creatures wildmage in the eastern chamber off the next upper landing carries a third hidden head. Its native command keywords include wildmage and elements.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71049,
+      "name": "the wildmage of space and time",
+      "keyword": "wildmage",
+      "description": "The space-and-time wildmage in the western chamber off the next upper landing carries a fourth hidden head. The portable small rift is placed on this room’s floor.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71050,
+      "name": "the great wildmage",
+      "keyword": "great",
+      "description": "In the great wildmage’s chamber beyond the locked pickproof southern door. Carries the fifth hidden head and wears magical vines. TOUCH the rune-covered stone is a separate epic system; the chamber’s memory supports a foreign request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71051,
+      "name": "the weaponsmith of the raiders",
+      "keyword": "weaponsmith",
+      "description": "In the raider smithy. May carry one uncommon dark-mithril bar. One bar is consumed by either the professor or Timmy; completing both requires separate stock. No repair shop is configured.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71052,
+      "name": "the hobgoblin cook",
+      "keyword": "cook",
+      "description": "In the raider mess hall. Carries the exact seasoned boy’s body requested by Grox; ordinary corpses and cooking do not produce this item.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71055,
+      "name": "the giant torturer",
+      "keyword": "torturer",
+      "description": "In the hut north of the raider campfires. Carries the crunching torture box requested by the professor. The nearby captive wildmages have no accepted local rescue exchange.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71035,
+      "name": "a hobgoblin ruffian",
+      "keyword": "ruffian",
+      "description": "At the raider bar. Carries the hidden orders from Grog; no personal receipt from Grog is needed for Grox to accept those exact orders.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71067,
+      "name": "a globulous dimensional rift",
+      "keyword": "dimensional",
+      "description": "The living dimensional-rift creature on the tower stairs is different from the portable small circular rift on the space-and-time room’s floor. Defeating this creature does not produce the requested item.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 71068,
+      "name": "a dark shadowy beast",
+      "keyword": "beast",
+      "description": "Through the small circular rift, in the looping dark place. Carries a coil of darkness. ENTER gateway leads back to the fields entrance; the coil is loot without a local accepted quest.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "grox-orders-and-gift",
+      "title": "Grox: deliver the orders and gift",
+      "category": "story",
+      "summary": "Bring Grox the orders from Grog and the exact seasoned body of a young boy together for the spiked mask of luck. Neither material alone satisfies his request. The body is a prepared quest item, rather than an ordinary corpse.",
+      "contracts": [
+        {
+          "giver_vnum": 71036,
+          "completion_key": "give=I:71007,I:71008;receive=I:71020;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "orders",
+          "text": "Carry the orders from Grog",
+          "kind": "carried_item",
+          "item_vnums": [
+            71007
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The hobgoblin ruffian starts carrying the hidden orders at the raider bar. Grog does not hand these orders out through a separate exchange. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "gift",
+          "text": "Carry the seasoned body of a young boy",
+          "kind": "carried_item",
+          "item_vnums": [
+            71008
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The hobgoblin cook starts carrying this exact prepared item in the raider mess hall. Ordinary corpses, carved parts and cooking other meat do not substitute. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this exact exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71036,
+              "completion_key": "give=I:71007,I:71008;receive=I:71020;disappear=0"
+            }
+          ],
+          "hint": "Only acceptance records this outcome. Questions, materials ready now, recovery and travel are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access."
+        }
+      ]
+    },
+    {
+      "id": "brewer-manuscript-and-bananas",
+      "title": "The brewer: bring reading and bananas",
+      "category": "story",
+      "summary": "Bring the drunk, bored troll brewer the monkey manuscript and the clump of overripe bananas together for his fez of clarity. The manuscript and bananas are exact quest items. His brother in the abyss has a separate request for this fez.",
+      "contracts": [
+        {
+          "giver_vnum": 71037,
+          "completion_key": "give=I:71005,I:71016;receive=I:71024;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "manuscript",
+          "text": "Carry the manuscript written by monkeys",
+          "kind": "carried_item",
+          "item_vnums": [
+            71005
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The horde of semi-intelligent monkeys in the tower study wears the manuscript as a shield. Recover the exact item and remove it if equipped. The monkeys’ quills and the study’s paper are not substitute manuscripts. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "bananas",
+          "text": "Carry the clump of overripe bananas",
+          "kind": "carried_item",
+          "item_vnums": [
+            71016
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The octopus cook in the tower kitchen starts with these bananas. The hungry ape there does not supply them. Ask the brewer about food or book; the food topic works without guessing his misspelled banana keywords. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this exact exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71037,
+              "completion_key": "give=I:71005,I:71016;receive=I:71024;disappear=0"
+            }
+          ],
+          "hint": "Only acceptance records this outcome. Questions, materials ready now, recovery and travel are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access."
+        }
+      ]
+    },
+    {
+      "id": "grog-five-wildmage-heads",
+      "title": "Grog: recover five different wildmage heads",
+      "category": "story",
+      "summary": "Bring Grog one head from each of the elements, nature, creatures, space-and-time and great wildmages together for the bloody crown of wildmage heads. Five copies of one head do not substitute. The captured mage in his reward narration is not an additional rescue or spellcasting objective.",
+      "contracts": [
+        {
+          "giver_vnum": 71038,
+          "completion_key": "give=I:71010,I:71011,I:71012,I:71013,I:71014;receive=I:71017;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "tower-key",
+          "text": "Optional tower supply route: carry the thorny key",
+          "kind": "carried_item",
+          "item_vnums": [
+            71003
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The sorcerer walrus-giant outside the tower carries this hidden key. It opens the locked southern tower entrance and survives ordinary unlocking. Supplied heads need no personal key or tower journey. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "spiral-key",
+          "text": "Optional great-wildmage route: carry the spiral key",
+          "kind": "carried_item",
+          "item_vnums": [
+            71026
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The vampire serving drinks outside the great wildmage’s chamber carries this key. It opens the locked southern, pickproof door and survives ordinary unlocking. The thorny key fits the tower entrance instead. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "elements-head",
+          "text": "Carry the elements wildmage’s head",
+          "kind": "carried_item",
+          "item_vnums": [
+            71010
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The elements wildmage starts carrying this hidden head in the western chamber off the first upper landing. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "nature-head",
+          "text": "Carry the nature wildmage’s head",
+          "kind": "carried_item",
+          "item_vnums": [
+            71011
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The nature wildmage starts carrying this hidden head in the eastern chamber off the first upper landing. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "creatures-head",
+          "text": "Carry the creatures wildmage’s head",
+          "kind": "carried_item",
+          "item_vnums": [
+            71012
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The creatures wildmage starts carrying this hidden head in the eastern chamber off the next upper landing. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "space-time-head",
+          "text": "Carry the space-and-time wildmage’s head",
+          "kind": "carried_item",
+          "item_vnums": [
+            71013
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The space-and-time wildmage starts carrying this hidden head in the western chamber off the next upper landing. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "great-head",
+          "text": "Carry the great wildmage’s head",
+          "kind": "carried_item",
+          "item_vnums": [
+            71014
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The great wildmage starts carrying this hidden head beyond the locked southern chamber door. Other head copies or ordinary carved heads do not replace this fifth kind. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this exact exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71038,
+              "completion_key": "give=I:71010,I:71011,I:71012,I:71013,I:71014;receive=I:71017;disappear=0"
+            }
+          ],
+          "hint": "Only acceptance records this outcome. Questions, materials ready now, recovery and travel are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access."
+        }
+      ]
+    },
+    {
+      "id": "shaman-portable-rift",
+      "title": "The shaman bodyguard: offer a way out",
+      "category": "story",
+      "summary": "Bring Grog’s orc shaman bodyguard the small circular rift for a band of the winds. This exact portable rift is separate from the living dimensional-rift creature. Acceptance records the offering; his promised escape has no separate completed journey or removal.",
+      "contracts": [
+        {
+          "giver_vnum": 71040,
+          "completion_key": "give=I:71030;receive=I:71033;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "rift",
+          "text": "Carry the small circular rift",
+          "kind": "carried_item",
+          "item_vnums": [
+            71030
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Find this hidden, portable rift on the floor of the space-and-time wildmage’s room. The living dimensional rift downstairs does not drop it. ENTER the small rift leads to a looping dark place; ENTER gateway returns to the fields entrance. Offering consumes the rift, so use it before offering if you want that journey. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this exact exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71040,
+              "completion_key": "give=I:71030;receive=I:71033;disappear=0"
+            }
+          ],
+          "hint": "Only acceptance records this outcome. Questions, materials ready now, recovery and travel are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access."
+        }
+      ]
+    },
+    {
+      "id": "professor-devious-invention",
+      "title": "The professor: inspire a devious invention",
+      "category": "story",
+      "summary": "Bring the wildhaired professor the crunching torture box and a dark-mithril bar together for dark-mithril tipped boots. This is an item-only request for inspiration. The same alloy is independently needed by Timmy; one consumed bar cannot serve both requests.",
+      "contracts": [
+        {
+          "giver_vnum": 71056,
+          "completion_key": "give=I:71021,I:71022;receive=I:71023;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "box",
+          "text": "Carry the open-ended crunching box",
+          "kind": "carried_item",
+          "item_vnums": [
+            71022
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The giant torturer starts carrying this box in his hut near the raider campfires. Its hand injury is reward narration, rather than a required player action. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "mithril",
+          "text": "Carry a bar of dark mithril",
+          "kind": "carried_item",
+          "item_vnums": [
+            71021
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The raider weaponsmith may begin with one bar; his supply is uncommon. Bars described in the professor’s laboratory are scenery. Reserve another exact bar if you also want to help Timmy. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this exact exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71056,
+              "completion_key": "give=I:71021,I:71022;receive=I:71023;disappear=0"
+            }
+          ],
+          "hint": "Only acceptance records this outcome. Questions, materials ready now, recovery and travel are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access."
+        }
+      ]
+    },
+    {
+      "id": "timmy-dark-mithril",
+      "title": "Timmy: help the transformed boy write home",
+      "category": "story",
+      "summary": "Give the upset mouse in the farmhouse one dark-mithril bar for his letter to his parents. Timmy leaves after acceptance. The receipt records helping him obtain the alloy and letter; it does not prove that the professor restored him to human form.",
+      "contracts": [
+        {
+          "giver_vnum": 71065,
+          "completion_key": "give=I:71021;receive=I:71027;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "mithril",
+          "text": "Carry a bar of dark mithril for Timmy",
+          "kind": "carried_item",
+          "item_vnums": [
+            71021
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The raider weaponsmith may carry this uncommon alloy. The professor needs a separate bar with his torture box. Timmy is not guaranteed to be present in the farmhouse; bring an exact supplied bar if available. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this exact exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71065,
+              "completion_key": "give=I:71021;receive=I:71027;disappear=1"
+            }
+          ],
+          "hint": "Only acceptance records this outcome. Questions, materials ready now, recovery and travel are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access."
+        }
+      ]
+    },
+    {
+      "id": "mother-timmy-letter",
+      "title": "His mother: deliver Timmy’s letter",
+      "category": "story",
+      "summary": "Bring the mother in despair Timmy’s exact letter for the veil named Sorrow. She may emerge into the Scorched Valley stable and wander from there. The exchange belongs to The Fields Between even when she is met in the neighboring zone. Her thanks do not record a reunion or human restoration.",
+      "contracts": [
+        {
+          "giver_vnum": 71066,
+          "completion_key": "give=I:71027;receive=I:71028;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "optional-timmy-route",
+          "text": "Optional earlier route: help Timmy obtain the alloy",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71065,
+              "completion_key": "give=I:71021;receive=I:71027;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Timmy gives the letter for a dark-mithril bar and leaves. An exact supplied letter skips this history. Earlier acceptance never replaces a letter spent or handed away."
+        },
+        {
+          "id": "letter",
+          "text": "Carry the letter written by a mouse",
+          "kind": "carried_item",
+          "item_vnums": [
+            71027
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Timmy’s alloy exchange supplies this exact letter. Find his mother when present near the Scorched Valley stable; do not enter her inaccessible loading room. Delivering the letter does not require your own earlier alloy receipt. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete this exact exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 71066,
+              "completion_key": "give=I:71027;receive=I:71028;disappear=0"
+            }
+          ],
+          "hint": "Only acceptance records this outcome. Questions, materials ready now, recovery and travel are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

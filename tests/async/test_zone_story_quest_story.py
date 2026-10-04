@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1449
-assert report['mapped_area_count'] == 96 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 97 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -112,6 +112,17 @@ assert tundra['stories'][5]['steps'][0]['contracts'][0]['giver_vnum'] == 29444
 assert [t['item_vnums'] for t in tundra['stories'][0]['steps'] if t['kind'] == 'carried_item'] == [[13708], [13709], [13710], [13711]]
 assert [t['item_vnums'] for t in tundra['stories'][5]['steps'] if t['kind'] == 'carried_item'] == [[334], [318], [319]]
 assert all(t.get('optional') for s in tundra['stories'] for t in s['steps'][:-1])
+
+fields_between=next(m for m in catalog['story_mappings'] if m['source_area']=='fields_between')
+assert (fields_between['schema_version'],fields_between['revision'],fields_between['coverage'])==(3,1,'complete')
+assert len(fields_between['stories'])==7 and len(fields_between['contacts'])==22 and not fields_between['exclusions']
+assert all(s['category']=='story' for s in fields_between['stories'])
+assert report['eligible_by_zone']['710']==7
+assert sum(len(c['topics']) for c in fields_between['contacts'])==81
+assert sum(t.get('optional',False) for s in fields_between['stories'] for t in s['steps'])==17
+assert fields_between['stories'][6]['steps'][0]['contracts']==fields_between['stories'][5]['contracts']
+assert [t['item_vnums'] for t in fields_between['stories'][2]['steps'] if t['kind']=='carried_item']==[[71003],[71026],[71010],[71011],[71012],[71013],[71014]]
+assert all(t.get('optional') for s in fields_between['stories'] for t in s['steps'][:-1])
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

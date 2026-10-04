@@ -147,9 +147,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 74 | Ixarkon | [Comprehensive dossier](zone-stories/IXARKON.md): all18 blocks/201 rooms/51 mobiles/44 objects/385 resets/five shops and complete shared/foreign closure | Revision2 upgrades existing three identities: two stories/one service;16 contacts/22 aliases/four optional checks. Independent spore and amulet returns; optional paid banker route and supplied amulet | Native direction clues repaired separately in7baa78c3c. Mixed fee guards, absent veil ingress/guarded binding, random arrival, open bridge controller, source custody and actual rescue/peace/renewal remain plans |
 | 75 | Du'Maathe Castle | [Comprehensive dossier](zone-stories/DU_MAATHE_CASTLE.md): all21 blocks/506 rooms/92 mobiles/49 objects/419 resets/one shop and bounded foreign/shared closure | New schema3/revision1: four lord stories/four potion services;15 contacts/15 aliases/14 optional checks. Exact two-input/three-output granular batch and distinct keys; supplied potion/tooth branches | Separate one-word parapet repair45bb3c948. Missing blue horn, foreign price mismatch/fee guards, loader/reset visibility, consumed recipe lineage and actual potion/campaign/renewal predicates remain plans |
 | 76 | Tundra | [Comprehensive dossier](zone-stories/TUNDRA.md): all20 blocks/175 rooms/26 mobiles/32 objects/246 resets/one shop and bounded foreign/shared closure | New schema3/revision1: six stories/one paid armor service;16 contacts/16 aliases/14 optional checks. Four different books → snowy boots → Eleadora; three seafood kinds → fishbone key; independent gland/shell rewards and head retirement | No native repair. Branch/trap availability, inactive/signposted routes, land-coded docks, absent fish shop, paid guards, partial foreign supply, actual switch/key/source and campaign/renewal remain plans |
-| 77–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 77 | The Fields Between | [Comprehensive dossier](zone-stories/FIELDS_BETWEEN.md): all17 blocks/153 rooms/68 mobiles/33 objects/286 resets and bounded foreign/shared closure | New schema3/revision1: seven stories;22 contacts/81 aliases/17 optional checks. Timmy alloy → letter → roaming mother; shared mithril, manuscript/bananas, orders/gift, five distinct heads and portable-rift offering | Actual pickup repair is separate fix05eeca928 with news below. Roaming/ownership, source lineage, portal consumption, narration versus campaign and unresolved prose remain plans |
+| 78–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Fields Between (`fields_between`).
+The next area is The Town of Moregeeth (`goblinht`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -158,6 +159,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-FIELDS-BETWEEN-SHARED-SUPPLY / PORTAL / OWNERSHIP / CAMPAIGN | Two consumers share scarce alloy; floor portal is consumed; mother crosses into Scorched Valley; foreign seekers retain foreign ownership; narration promises unconfirmed escape, transformation and reunion. | Seven outcomes ship as source guidance/projection. Isolated pickup fix05eeca928 is actual repair; qualify admitted sources, transfer, ENTER/offer, actor roaming/retirement, ownership, settlement and renewal. Builder decides other prose/controller intent. |
 | ZSQ-TUNDRA-AVAILABILITY / FISHING / ROUTES / MIRROR / ALL-INPUTS | Eleadora head retires giver; actors can wander into loading traps. Dock is land and fishmonger lacks a shop; signposted/legacy routes are unusable. Four books and three seafood kinds need ALL; Bom supplies only two seafood kinds. Mirror automatically binds PUSH with asymmetric reset state. | Six stories/one service ship as guidance/projection. Builder chooses availability/shop/route intent before isolated native fixes. Qualify actual catch/source, partial foreign supply, shared switch/keys, paid order, actor retirement and daily renewal. No native Tundra repair ships. |
 | ZSQ-MNTCASTL-SUPPLY / BATCH / LOADED-STATE / CAMPAIGN | Exact blue horn has no active producer; granular batch consumes sand and foreign recipe for three outputs. Foreign clothing prices disagree with captions and paid routes remain guarded. Raw hidden bits are discarded by loader; D resets determine actual gate visibility. | Four stories/four services ship as guidance/projection. Builder selects horn/price/visibility intent; qualify indexed input/output lineage, actual SEARCH/UNLOCK/key break and potion use/foreign campaign before new objectives. One-word parapet repair ships separately. |
 | ZSQ-IXARKON-FEE / VEIL / BRIDGE / CAMPAIGN | The red cap plus1000platinum preparation is blocked under active accounting; sealed veil chamber has no ordinary ingress and assigned room19890 is absent. Bridge starts open and its one-way unblocking switches cannot retract it. | Two stories/one supporting service ship as guidance/projection. Design atomic fee settlement, guarded intended ingress and accepted random arrival/restoration, controller semantics and explicit rescue/peace endpoints. Direction text alone is repaired separately. |
@@ -4148,3 +4150,53 @@ remain intact. Queue: **76/220 source-comprehensive,144 pending; The Fields
 Between next**. Active, ready accounting remains mandatory; frozen recovery
 remains separate. The full goal remains active. No accounting activation,
 DB/server operation, migration, deployment or merge occurred.
+
+
+## Priority 77 checkpoint: The Fields Between
+
+The [comprehensive dossier](zone-stories/FIELDS_BETWEEN.md) closes all17 native
+blocks (tenM/sevenQ),153 rooms/77 complete prose families/nine headers/
+428 exact exits/16 exit-text families/no extras,68 mobiles,33 objects and286
+resets/273 exact/273 parent-aware families. All ten addressed families/81 aliases
+are included. No local shop, inn, teacher, literal assignment or switch supplies
+an omitted quest. Four unlimited ENTER portals, imported epic stone359/memory
+55435, all713 active portal prototypes, six boundary edges/full neighbors and
+foreign follow-on/dispatched requests were reviewed in their bounded scope.
+
+Seven stories/22 contacts/17 optional checks preserve seven item-only outcomes
+and daily candidates, including Timmy's D retirement. Optional current access
+keys and materials never force personal source history. Timmy's alloy → letter
+→ mother is the only local reward-to-input chain; supplied letters skip history.
+Professor needs a separate alloy bar AND torture box. Five distinct hidden heads
+are ALL, despite similar names; manuscript is worn as a shield and bananas are
+carried by the octopus. Orders AND prepared body are another exact bundle.
+Mother can emerge into Scorched Valley; receipt ownership stays Fields Between.
+Seeker/Marvin requests, advisor's three heads, brewer's foreign fez continuation,
+Winterhaven memory and epic TOUCH remain their own systems/owners.
+
+**Actual native repair, separate fix [05eeca928](https://github.com/Community-Duris/Duris/commit/05eeca928):
+Fix Fields Between shaman quest rift pickup.** Before, the requested small
+circular rift lacked TAKE and weighed1,000,000 despite portable prose. Exactly
+two prototype fields now give TAKE and weight one. Source placement, visibility,
+unlimited ENTER destination/return gateway, request and reward are retained.
+Original-data regression fails; repaired data and other fixed portals pass.
+Played pickup/offer/settlement remains unqualified; saved instances are not
+rewritten. **News-ready:** “The Fields Between's small circular rift can now be
+picked up and delivered to Grog's shaman bodyguard for his quest.”
+
+Pending proposals are separate: narrated escape/transform/reunion lacks durable
+world transitions; permanent chamber-rift prose has no placed portal; portable
+rift slain lore differs from floor reset; troll caption says ogre, two mages
+share elements aliases and foreign dispatch prose has a stale room number.
+Builder selects clarification or intended source/controller behavior before
+other native changes. Preserve intentional scarcity and supplied/public routes.
+
+Focused source/schema/C++ projections, full production regression, maintained
+build, changed/staged formatting, links, original queue, all2668 definitions,
+fingerprint/content revision/registry/prior96 maps and exact prior PR/repair
+preservation are required. Synthetic receipts do not qualify native play or
+database persistence. Catalog:97 journals/1596 achievement units/1449 potential
+dailies/2203 rows. Queue: **77/220 source-comprehensive,143 pending; The Town
+of Moregeeth next**. The full goal remains active. Active, ready accounting is
+mandatory; frozen recovery remains separate. No accounting activation, DB/server
+operation, migration, deployment or merge occurred.

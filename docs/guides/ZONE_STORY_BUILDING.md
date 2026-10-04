@@ -1787,3 +1787,31 @@ No native Tundra repair ships with this journal. Builder decisions about shops,
 routes, sectors, rarity and captions belong in the dossier; implemented native
 fixes need a separate clear commit and PR/news proof. All new tracking requires
 active, ready accounting; frozen obligations retain separate recovery.
+
+
+## Fields Between example: shared stock and a roaming chain
+
+The [dossier](../design/zone-stories/FIELDS_BETWEEN.md) and
+[sidecar](../../areas/story/fields_between.story.json) show seven exact outcomes.
+Timmy and the professor each consume a dark-mithril bar; the professor also
+needs a torture box. Explain uncommon shared supply without changing its odds.
+Timmy's letter history is optional when an exact supplied letter reaches his
+mother. She can be physically in Scorched Valley while her receipt belongs to
+Fields Between; foreign seekers keep foreign owners.
+
+Name all five different head kinds even when their native names look alike.
+The monkey manuscript is actually worn as a shield; bananas and the prepared
+body are miscellaneous quest items. Guide exact loose custody without inventing
+reading, eating, corpse creation or personal victory prerequisites.
+
+Trace automatic type25 ENTER behavior alongside resets. The small circular
+rift is placed on the floor, distinct from the living rift creature. ENTER
+reaches a looping room and its gateway returns to the fields; offering consumes
+the portable rift. Native pickup fix05eeca928 is separate, narrowly changes TAKE
+and weight and has a news-ready note. Other source-description discrepancies
+remain pending builder choices. Narrated escape, human restoration and reunion
+need explicit durable campaign adapters before completion credit.
+
+Active, ready accounting remains mandatory. Current availability, source versus
+gift, portal travel, actor retirement and reset renewal need actual admitted
+state. Synthetic receipts establish projection/replay/recovery behavior only.

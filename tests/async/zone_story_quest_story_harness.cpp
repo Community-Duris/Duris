@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 96 &&
+		require(catalog.story_mappings.size() == 97 &&
 				tracker.summary_for(7, 42).total == 1596,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7549,6 +7549,173 @@ int main(int argc, char **argv)
 					recovered.has_discovered(7, 42, 5000) &&
 					!recovered.has_discovered(7, 42, 530),
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
+		}
+
+		{
+			const auto &grox = story_for("fields_between", "grox-orders-and-gift");
+			const auto &brewer =
+				story_for("fields_between", "brewer-manuscript-and-bananas");
+			const auto &heads = story_for("fields_between", "grog-five-wildmage-heads");
+			const auto &rift = story_for("fields_between", "shaman-portable-rift");
+			const auto &professor =
+				story_for("fields_between", "professor-devious-invention");
+			const auto &timmy = story_for("fields_between", "timmy-dark-mithril");
+			const auto &mother = story_for("fields_between", "mother-timmy-letter");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 710, 71001, 100, "arrival") ==
+					result::applied,
+				"Fields discovery failed");
+			require(journey.render_journal(7, 42, 710, 10, 1, 101, false, false)
+						.find(timmy.title) == std::string::npos,
+				"Fields discovery exposed unmet Timmy");
+			for (const auto &actor :
+			     { std::pair{ 71036, 71148 }, std::pair{ 71037, 71147 },
+			       std::pair{ 71038, 71151 }, std::pair{ 71040, 71151 },
+			       std::pair{ 71056, 71116 }, std::pair{ 71065, 71104 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 102) ==
+						result::applied,
+					"Fields encounter failed");
+			require(journey.discover_zone(7, 42, 712, 71265, 103, "arrival") ==
+						result::applied &&
+					journey.meet_npc(7, 42, 71066, 71265, 104) ==
+						result::applied,
+				"Fields neighboring mother encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Fields section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[71010] = 5;
+			supplies.carried[71007] = 1;
+			supplies.equipped[1] = 71005;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 710, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(heads).find("[Ready now] " + heads.steps[2].text) !=
+					std::string::npos,
+				"Fields exact elements head missing");
+			for (size_t i : { 3U, 4U, 5U, 6U })
+				require(section(heads).find("[Missing now] " +
+							    heads.steps[i].text) !=
+						std::string::npos,
+					"Fields duplicate head replaced another kind");
+			require(section(grox).find("[Missing now] " + grox.steps[1].text) !=
+						std::string::npos &&
+					section(brewer).find("[Missing now] " +
+							     brewer.steps[0].text) !=
+						std::string::npos,
+				"Fields partial orders or worn manuscript satisfied bundle");
+			for (int kind : { 71008, 71005, 71016, 71011, 71012, 71013, 71014, 71030,
+					  71022, 71021, 71027 })
+				supplies.carried[kind] = 1;
+			journal = journey.render_journal(7, 42, 710, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto *entry :
+			     { &grox, &brewer, &heads, &rift, &professor, &timmy, &mother })
+				for (const auto &step : entry->steps)
+					if (step.kind == "carried_item" &&
+					    step.item_vnums.front() != 71003 &&
+					    step.item_vnums.front() != 71026)
+						require(section(*entry).find("[Ready now] " +
+									     step.text) !=
+								std::string::npos,
+							"Fields supplied materials forced source history");
+			require(section(heads).find("[Missing now] " + heads.steps[0].text) !=
+						std::string::npos &&
+					section(heads).find("[Missing now] " +
+							    heads.steps[1].text) !=
+						std::string::npos,
+				"Fields supplied heads fabricated keys");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 710).completed == 0 &&
+					journey.progress_for_zone(7, 42, 710).total == 7,
+				"Fields read/materials awarded completion");
+			service supplied(catalog);
+			record(supplied, mother.contracts.front(), "fields-supplied-letter", 710,
+			       71265);
+			require(supplied.progress_for_zone(7, 42, 710).completed == 1 &&
+					supplied.evidence_for(timmy.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Fields supplied letter forced Timmy history");
+			const auto fez = std::find_if(
+				catalog.definitions.begin(), catalog.definitions.end(),
+				[](const auto &d)
+				{
+					return d.giver_vnum == 87518 &&
+					       d.completion_key ==
+						       "676976653d493a37313032343b726563656976653d493a38373539343b6469736170706561723d30";
+				});
+			require(fez != catalog.definitions.end(),
+				"Fields foreign fez contract missing");
+			// Synthetic receipts test projection, not actual pickup/ENTER/offer,
+			// source visibility, item settlement, restoration or actor retirement.
+			record(journey, fez->definition_id, "fields-foreign-fez", 875, 87588);
+			require(journey.progress_for_zone(7, 42, 710).completed == 0,
+				"Fields foreign continuation awarded local credit");
+			record(journey, timmy.contracts.front(), "fields-timmy-alloy", 710, 71104);
+			supplies.carried.erase(71021);
+			supplies.carried.erase(71027);
+			journal = journey.render_journal(7, 42, 710, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(professor).find("[Missing now] " +
+							professor.steps[1].text) !=
+						std::string::npos &&
+					section(timmy).find("[Missing now] " +
+							    timmy.steps[0].text) !=
+						std::string::npos &&
+					section(mother).find("[Missing now] " +
+							     mother.steps[1].text) !=
+						std::string::npos,
+				"Fields earlier receipt restored shared alloy or spent letter");
+			require(journey.progress_for_zone(7, 42, 710).completed == 1 &&
+					journey.evidence_for(professor.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(mother.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Fields alloy history completed independent professor/mother");
+			auto wrong =
+				completion(mother.contracts.front(), "fields-wrong-owner", 122);
+			wrong.transaction.zone_number = 712;
+			wrong.transaction.room_vnum = 71265;
+			require(journey.record_completion(wrong) == result::rejected,
+				"Fields roaming mother changed canonical owner");
+			for (const auto &entry :
+			     { std::pair{ &grox, 71148 }, std::pair{ &brewer, 71147 },
+			       std::pair{ &heads, 71151 }, std::pair{ &rift, 71151 },
+			       std::pair{ &professor, 71116 }, std::pair{ &mother, 71265 } })
+			{
+				const auto id = std::string("fields-outcome-") + entry.first->id;
+				record(journey, entry.first->contracts.front(), id.c_str(), 710,
+				       entry.second);
+			}
+			supplies.carried.erase(71030);
+			journal = journey.render_journal(7, 42, 710, 10, 1, 123, false, false,
+							 &supplies);
+			require(section(rift).find("[Missing now] " + rift.steps[0].text) !=
+					std::string::npos,
+				"Fields offered portal was restored by history");
+			auto replay =
+				completion(timmy.contracts.front(), "fields-timmy-alloy", 120);
+			replay.transaction.zone_number = 710;
+			replay.transaction.room_vnum = 71104;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Fields retiring receipt replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 710).completed == 7 &&
+					recovered.progress_for_zone(7, 42, 710).total == 7 &&
+					recovered.evidence_for(timmy.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(mother.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(fez->definition_id, 2)
+							.successful_attempts == 1,
+				"Fields cold recovery lost distinct local/foreign outcomes");
 		}
 
 		{

@@ -2706,3 +2706,26 @@ limitations and a short player-facing news sentence. Proposed repairs stay
 clearly pending. Active, ready accounting remains a prerequisite for new
 discovery, encounter, journal, achievement and daily credit; frozen recovery
 remains separate.
+
+
+## Fields Between: shared scarce stock and portable quest portals
+
+The [complete dossier](zone-stories/FIELDS_BETWEEN.md) adds seven independent
+stories and a separately committed native pickup repair. A static journal can
+explain each exact request; deeper progress needs admitted semantic facts.
+
+| Requirement | Concrete evidence | Implementation/qualification plan |
+| --- | --- | --- |
+| Shared scarce material | Weaponsmith's33-percent/cap-one dark mithril feeds Timmy and professor separately | Track current roots and consumed quantities per accepted exchange; expose absence honestly. Qualify supplied copies, second stock, concurrent offers, reset lineage and spent history; preserve builder scarcity. |
+| Portable quest portal | Rift71030 is floor-reset, ENTER-enabled and consumed by shaman's exchange; living rift is a different actor | Keep actual pickup repair05eeca928 separate/news-ready. Qualify visibility/capacity, durable pickup, ENTER/return and offering/recovery. Freeze selected root/command/destination before personal travel credit. |
+| Canonical owner across physical zones | Mother moves to Scorched Valley; seeker and Marvin move into Fields Between with foreign requests | Retain physical-discovery/accounting guard; refer to already discovered owner journal without auto-discovering it. Qualify roaming/absence, multiple owners, encounter hints, acceptance, retirement and rollback. |
+| Exact bundles and ambiguous names | Five different head kinds; manuscript worn as shield; bananas/prepared body type13 | Show every material row and native acceptance. Qualify duplicate kinds, worn/nested roots, partial offers, supplied copies and indexed reward lineage; do not infer CARVE/BOOK/FOOD from names. |
+| Optional chain versus campaign | Mithril produces letter; mother accepts supplied letter. Captions promise escape, reunion and restoration | Keep earlier history optional and current letter required. Builder chooses clarified narration or explicit all-stage campaign with durable actor/world state, prerequisites, compensation and recovery. |
+| Descriptions without executable bindings | Great-room permanent rift, slain-rift lore, wrong species caption/aliases, stale dispatch number | Record as pending intent decisions. Any chosen native repair needs a separate named commit, original-fails/repaired-passes proof and prominent news; do not invent destinations, rescue controllers or kill gates. |
+
+Player cards should show separate scarce-alloy rows, five different heads,
+Timmy's optional history, mother's real neighboring encounter and portal
+consumption beside the next action. Keep historical completion separate from
+materials ready now. Active, ready accounting is required for all new tracking;
+frozen recovery remains separate. Synthetic projections do not qualify played
+pickup, offers, settlement, movement, campaign state or daily renewal.
