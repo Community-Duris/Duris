@@ -3073,3 +3073,25 @@ Original300-second compile/30-second per-case bounds remain unchanged/unmeasured
 Use the preserved6b6b7c10c candidate for correction-specific paired checks; initial
 physical adapter absence/compile failure is not semantic BEFORE evidence. Actual
 producer/backend/restart qualification remains required.
+
+
+Phased-startup V1 owner preparation is frozen PREPARED_UNEXECUTED:9 cases with
+24 actual production units plus harness,523 source headers and4 private inputs
+(551 inputs total). Private source snapshot tmp/save-startup-phase-prepared-v1/source-inputs
+manifest SHA-256c100f85640fc5dca95fe0a3a5c7a2a411ae48a18b401872b4ec9ef27de97d8bf
+(LF553d2353656f146482afc0c05432b63f64769aeaaf9850d0efff5ebb1996e085).
+Receipt tmp/save-startup-phase-prepared-v1.local.json is SHA-256
+56daccad81fda368817da4cd83110bd0a266e8faa32fdec403c493a96de81d37.
+Runner1c222a8cc7dc61762a964d21978a04e7a000ec2dd3adeca0fd8030d4987e6d94;
+harness218f8baf252b37cb119b85d9b8e862ff028c535413e7eb21d52d4e71be6d54b4.
+
+Cases cover closed preparation/shutdown, duplicate lifecycle, both worker-thread
+creation faults, dispatcher fault with exact-hold retry, genuine retained-slot
+hook refusal, verification callback failure/retry and legacy immediate startup.
+The inherited600-second compile/120-second aggregate bounds are unchanged;
+new-owner performance, pthread interposition and native link closure are uncalibrated.
+BEFORE uses a labeled actual legacy-init mapping; API absence/compile failure is
+not semantic RED. Hook refusal retains its genuine parked slot and does not invent
+repair authority. Manual restored registration/release and unrelated-PID replay
+are not production critical-ACK wiring or restored-save deferral qualification.
+No compiler, native, AST, SQL, services or tests ran.
