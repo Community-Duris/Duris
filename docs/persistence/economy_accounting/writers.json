@@ -63631,8 +63631,8 @@
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
   },
   "pending_source_integration": {
-    "candidate_commit": "4e5faf66a977d78f6b81c0af19235ac40d43c205",
-    "status": "Source integration through6d42ad788 connects positive-PID synchronous save residence/native cleanup, phased SQL startup and actor-independent restored ordinary-drop publication with private guarded ACK, fresh affected-PID journal/control census and release-driven reserved revisit. Ownership remains disabled. PID-zero/caller-owned transactions, other native writers and serialized shutdown, legitimate overlapping-save/rejected-outcome disposition, complete ordinary graph/live-producer coverage, authentic baseline/cutover/pause and major-plan qualification remain pending. Plan5 native baseline claim audit17b824618 is integrated in ad504f5c0 and its native cases registered in4e5faf66a; qualification applies only to peer inputs. Historical census/source anchors and prior rows are preserved; no current coverage or qualification claim.",
+    "candidate_commit": "e99468f937861db8301ea5bcb95116202091b8ee",
+    "status": "Source integration throughe99468f93 connects positive-PID synchronous save residence/native cleanup, phased SQL startup and actor-independent restored ordinary-drop publication with private guarded ACK, fresh affected-PID journal/control census, covered receipt-free ordinary-frame retirement from locked native save_revision and release-driven reserved revisit. No ordinary receipt schema or new acceptance gate. Ownership remains disabled. PID-zero/caller-owned transactions, other native writers and serialized shutdown, uncovered-save/rejected-outcome disposition, complete ordinary graph/live-producer coverage, authentic baseline/cutover/pause and major-plan qualification remain pending. Plan5 native baseline claim audit17b824618 is integrated in ad504f5c0 and its native cases registered in4e5faf66a; qualification applies only to peer inputs. Historical census/source anchors and prior rows are preserved; no current coverage or qualification claim.",
     "qualified": false,
     "prepared_nonwriter_routes": [
       "recovery.inert_literal_staging",
@@ -63641,7 +63641,9 @@
       "recovery.runtime_owner_revision_observation",
       "recovery.ordinary_drop_graph_observation",
       "recovery.inert_literal_eligibility",
-      "recovery.ordinary_drop_graph_reconstruction"
+      "recovery.ordinary_drop_graph_reconstruction",
+      "recovery.ordinary_save_revision_observation",
+      "recovery.covered_ordinary_save_retirement"
     ],
     "pending_interface_sources": [
       "src/player/player_save_replay_ownership.h",
@@ -63652,6 +63654,7 @@
       "src/player/player_save_journal.c",
       "src/player/player_save_journal.h",
       "src/player/player_snapshot_repository.c",
+      "src/player/player_snapshot_repository.h",
       "src/player/player_death_conflict_repository.c",
       "src/player/player_quarantine_recovery.c",
       "src/player/player_quarantine_recovery.h",

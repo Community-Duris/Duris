@@ -284,3 +284,13 @@ Primary registered its claim and origin cases in4e5faf66a, once per internally
 executed engine pair, with explicit opt-in and required-case/skip enforcement.
 Registration is unexecuted; unchanged original budgets remain required. Marker-v2,
 `.elr`, command-preimage and whole-candidate release handoffs remain open.
+
+Primary source `e99468f93` connects covered ordinary-save ordering into the
+restored drop owner. It reuses locked native `player_data.save_revision` and
+existing stale-save retirement; no ordinary snapshot receipt ledger/schema or
+new acceptance gate is added. The exact held reservation spans observation,
+confirmed cleanup, exact-byte journal retirement and fresh census. Uncovered and
+operation-bearing originals retain existing requirements. Source review and
+format/diff checks passed; no new qualification or milestone push. This adds no
+Plan5 native economic evidence input. Keep implementation within the group's
+R1–R8 and the five plans' stated acceptance.

@@ -52,14 +52,18 @@ backend limitations and the tested revision before checking off acceptance.
 ## Current source preparation checkpoint
 
 The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
-remote histories and unqualified source milestones through6d42ad788. New source
+remote histories and unqualified source milestones through `e99468f93`. New source
 prerequisites cover allocation-safe publication cleanup, checkpoint-spanning save
 execution guards, bounded runtime UID-root census, authority-bound native baseline
 initialization markers, ordinary item receipt sealing with ACK-only conflict
 repair, nonfatal inert allocation/discard-only construction and staged flatfile
 lifecycle composition. Source review and frozen private fixtures do not complete these plans.
 Later exact-request worker wake and post-hold-release notification preparation
-are recorded at the same checkpoint; production recovery remains unconnected.
+are recorded at the same checkpoint. The restored SQL-drop production chain is
+connected, including covered ordinary-frame ordering under existing native save
+revision authority. Production ownership enable, remaining route integration and
+major-plan qualification are still open. No extra receipt schema or release gate
+is required for already-obsolete receipt-free ordinary projections.
 Transaction-scoped ordinary-drop receipt proof, pure runtime owner-cache peek
 and actor-independent existing-graph observation are now implemented but
 unqualified. They create no retained construction or ACK capability. Three new

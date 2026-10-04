@@ -31,7 +31,7 @@ Native exact replay/claim reconciliation and damage cuts qualify its consumed
 inputs only; fixture holdings/items remain absent and export remains partial.
 Shared native case registration is committed in `4e5faf66a`, unexecuted.
 
-The source milestone candidate through `6d42ad788` includes the twenty-three slices
+The source milestone candidate through `e99468f93` includes the twenty-four slices
 below, plus the local Plan5 integrations described above. Plan5's reports remain evidence of
 its own inputs, not of this combined source candidate. Root checkout WIP is preserved.
 
@@ -67,6 +67,7 @@ Parallel specialists use bounded file ownership; primary integrates and reviews.
 | `258f27b95` | [Outer SQL mutation gates](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#outer-sql-mutation-boundaries): death-conflict and quarantine owners borrow before native work; pooled admission spans lease disposal/replacement and recovery spans journal resolution. | Source only; actual caller residence, other native writers, serial lifecycle, complete census/critical ACK and production startup/revisit remain open. |
 | `bef2f797f` | [Positive-PID synchronous save owner](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#positive-pid-synchronous-save-owner): claims/scopes span pre-save mutations, SQL, exact-session cleanup and restoration/posthooks; pet participant borrows. | Source only; PID-zero, caller-owned transactions, direct migration/independent writers and native qualification remain open. |
 | `6d42ad788` | [Restored ordinary-drop production integration](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#restored-ordinary-drop-production-integration): phased SQL startup, actor-independent movement dispatch, fresh journal/control census, original-slot reserved native publication and coordinator-guarded ACK/hold clear/wake/revisit. | Ownership disabled; complete writer/shutdown integration, legitimate overlapping-save/rejected-outcome disposition, full graph/live-producer coverage and qualification remain open. |
+| `e99468f93` | [Covered ordinary-save ordering](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#covered-ordinary-save-ordering): native locked save revision and confirmed session cleanup permit exact-original retirement of already-obsolete receipt-free frames under the held publication reservation. | No new economic receipt/schema/gate; uncovered and operation-bearing frames retain existing recovery requirements. Ownership, complete production route and major-plan qualification remain open. |
 
 Source reviewers found no remaining blocker in each slice's stated narrow scope.
 This is source review, not native/build/gameplay/persistence/recovery acceptance.
