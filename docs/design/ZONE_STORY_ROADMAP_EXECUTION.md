@@ -65,6 +65,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [ac8e2de48](https://github.com/Community-Duris/Duris/commit/ac8e2de48f3aba3915d95abb7ee1d0fefd580f14): Opal Phoenix sand hand-in | Newly instantiated student sand70823 clears only SECRET, allowing ordinary mortal inventory display and named selection for Alazia. All other prototype bytes/native contracts are preserved; hidden chest/key/intestines retain their search paths. Separate fix commit with actual production-function regression. | **Opal Phoenix’s student sand reward is now visible and can be selected for Alazia’s delivery quest.** Original flags fail; corrected aliases and both lookup modes pass under ASan/UBSan, with negative hidden/blind/wrong/ordinal controls. Full played offering and existing saved-item remediation remain unqualified. |
 | [208a56840](https://github.com/Community-Duris/Duris/commit/208a56840acb100fc20dbec4b0af9a80a6cd0914): Cloister Mahr acceptance caption | Brother Mahr accepts adamantite tablet 67100 for recommendation 67101; the acceptance caption now says tablet instead of letter. Exactly one native word changes, in a separate fix commit with its focused regression. Requirements, rewards, departure and all other native bytes remain intact. | **Brother Mahr now correctly identifies the intruder's tablet when accepting it, making the Cloister's recommendation quest clearer.** Original wording fails; corrected caption/contract and exact-byte scope pass. Played turn-in/settlement remains unqualified. |
 | [7baa78c3c](https://github.com/Community-Duris/Duris/commit/7baa78c3c8ee67a2059c314e6372f5ae1843e989): Ixarkon direction clues | LOOK descriptions in11 rooms now match12 reciprocal routes: slave pens, garden path, tower gate, camp approaches, sandstone passage, Rockspire tunnel, dwelling and water cavern. Exactly12 direction words change; all routes/metadata/quests/resets remain intact. | **Ixarkon's slave pens, fungal gardens, towers, camp approaches, Rockspire tunnels and water cavern now give directions that match their exits.** Original12 clue checks fail; corrected clues, reciprocal exits/door metadata and exact native scope pass. Live LOOK/traversal remains unqualified. |
+| [45bb3c948](https://github.com/Community-Duris/Duris/commit/45bb3c94896411cb06ce835b42824da8144d7936): Du'Maathe northwest parapet clue | LOOK at37248 now says north rather than south, agreeing with the title and northern/western reciprocal wall roads. Exactly one native word changes; all other bytes remain intact. | **Du'Maathe Castle's northwest parapet now correctly identifies its position in the room description.** Original clue fails; corrected clue/title/reciprocal routes and retained southwestern corner pass. Live LOOK/traversal remains unqualified. |
 
 ## Progress
 
@@ -144,9 +145,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 72 | Father Tel's Holy Cloister | [Comprehensive dossier](zone-stories/FATHER_TELS_HOLY_CLOISTER.md): all 36 blocks, 71 rooms, 24 mobiles, 31 objects and 113 resets; four automatically bound switches, complete shared and foreign source closure | Seven stories/one supporting rejection; 16 contacts/28 aliases/11 optional checks. Exact robes/tablet/head/tome/note/egg and paired ring/poison, supplied shortcuts and actual access actions | Separate Mahr tablet-caption fix 208a56840. Formal admission, lore/source mismatch, ten-minute mission and orphan intent remain proposals; accepted source/trap/control/search/key/XP/settlement/renewal qualification remains open |
 | 73 | The Ruins of Turolopolis | [Comprehensive dossier](zone-stories/RUINS_OF_TUROLOPOLIS.md): all25 blocks/154 rooms/42 mobiles/56 objects/199 resets, all six type25 portals and complete shared/foreign source closure | Six stories;26 contacts/39 aliases/12 optional checks. Exact five-colour ALL memorial → lesser blade + caecilia stinger → upgrade; independent horn, letter, ooze and skull offerings | No native repair ships. Minotaur source/recipient generation, foreign Lothrell home-journal navigation, rare dispersal/sink, rescue/purification intent and accepted access/custody/XP/coin/renewal qualification remain plans |
 | 74 | Ixarkon | [Comprehensive dossier](zone-stories/IXARKON.md): all18 blocks/201 rooms/51 mobiles/44 objects/385 resets/five shops and complete shared/foreign closure | Revision2 upgrades existing three identities: two stories/one service;16 contacts/22 aliases/four optional checks. Independent spore and amulet returns; optional paid banker route and supplied amulet | Native direction clues repaired separately in7baa78c3c. Mixed fee guards, absent veil ingress/guarded binding, random arrival, open bridge controller, source custody and actual rescue/peace/renewal remain plans |
-| 75–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 75 | Du'Maathe Castle | [Comprehensive dossier](zone-stories/DU_MAATHE_CASTLE.md): all21 blocks/506 rooms/92 mobiles/49 objects/419 resets/one shop and bounded foreign/shared closure | New schema3/revision1: four lord stories/four potion services;15 contacts/15 aliases/14 optional checks. Exact two-input/three-output granular batch and distinct keys; supplied potion/tooth branches | Separate one-word parapet repair45bb3c948. Missing blue horn, foreign price mismatch/fee guards, loader/reset visibility, consumed recipe lineage and actual potion/campaign/renewal predicates remain plans |
+| 76–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Du'Maathe Castle (`mntcastl`).
+The next area is Tundra (`tundra`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -155,6 +157,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-MNTCASTL-SUPPLY / BATCH / LOADED-STATE / CAMPAIGN | Exact blue horn has no active producer; granular batch consumes sand and foreign recipe for three outputs. Foreign clothing prices disagree with captions and paid routes remain guarded. Raw hidden bits are discarded by loader; D resets determine actual gate visibility. | Four stories/four services ship as guidance/projection. Builder selects horn/price/visibility intent; qualify indexed input/output lineage, actual SEARCH/UNLOCK/key break and potion use/foreign campaign before new objectives. One-word parapet repair ships separately. |
 | ZSQ-IXARKON-FEE / VEIL / BRIDGE / CAMPAIGN | The red cap plus1000platinum preparation is blocked under active accounting; sealed veil chamber has no ordinary ingress and assigned room19890 is absent. Bridge starts open and its one-way unblocking switches cannot retract it. | Two stories/one supporting service ship as guidance/projection. Design atomic fee settlement, guarded intended ingress and accepted random arrival/restoration, controller semantics and explicit rescue/peace endpoints. Direction text alone is repaired separately. |
 | ZSQ-TUROLOPOLIS-ALL / GENERATION / FOREIGN / CAMPAIGN | Five different badge keys are required together; minotaur holds the emissary letter but retires after blue ooze, discarding remaining stock. Lothrell loads in Surface while the accepted memorial belongs to71. Rare recipients can disperse into public rooms or a no-exit sink. | Six independent offerings ship as guidance/projection. Add exact key/root custody, source/recipient-generation branches, truthful home-journal links and accepted movement/rescue/purification predicates before campaign or renewal credit. Native repairs remain builder-selected proposals; none ships here. |
 | ZSQ-CLOISTER-REFUSAL / SWITCH / TRAP / CAMPAIGN | Tel's recommendation exchange is an unconditional refusal with same-kind replacement; auto-bound no-show switches use SAY/PUSH, and secret exits need subsequent local SEARCH. Egg trap can consume a charge and hurt the player without accepted pickup. Supplied note/ring bypass earlier producers; three competing egg requests retain separate owners. | Seven stories/one rejection ship. Add accepted UID/source/custody, precise switch/search/door/trap generations, indexed replacement/XP settlement and builder-owned ALL/ANY campaigns. Mahr's one-word caption fix/news ships separately; formal admission, source clues, deadline and orphan intent remain proposals. |
@@ -4039,4 +4042,53 @@ all prior actual repair/news/accounting blocks remain verbatim in this PR.
 Queue: **74/220 source-comprehensive,146 pending; Du'Maathe Castle next**.
 Active, ready accounting remains mandatory; frozen recovery remains separate.
 The full goal stays active. No accounting activation, DB/server operation,
+migration, deployment or merge occurred.
+
+
+## Priority 75 checkpoint: Du'Maathe Castle
+
+The [comprehensive dossier](zone-stories/DU_MAATHE_CASTLE.md) closes all21
+blocks (13M/eightQ),506 rooms/126 full prose families/20 headers/1224 exits,
+92 mobiles,49 objects,one shop and419 resets/303 exact/312 parent-aware
+families. Twelve addressed families have15 aliases; qc_action80 stays ambient.
+Two inns and table-bound epic teacher Carmotee were distinguished from flags.
+Bounded foreign review covers hermit/clothing recipe dependencies and sources,
+Alatorin totem continuation, full Surface/Pit boundary rooms, tooth-key neighbour
+and foreign resets, all keyed foreign exits and all713 portals. It is not a
+new comprehensive Podaling-area or Pit-of-Dragons pass.
+
+The new schema3/revision1 journal has four independent lord outcomes and four
+supporting potion services,15 contacts and14 optional checks:11 present materials
+and three historical receipts. Sand AND consumed foreign recipe produce three
+granular potions; the lord accepts one. Supplied potion/tooth routes need no
+earlier local craft/gem receipt. Foreign hermit and Alatorin exchanges retain
+canonical ownership. Wrong horns/shop wand, worn or spent materials and earlier
+key history do not manufacture current custody or personal source recovery.
+
+No active exact blue-horn producer was found. Foreign clothing crafts quote9/6
+platinum but accept1000/500copper, and paid input/epic purchases remain guarded
+with active accounting. Loader discards high exit-state bits: waterfall and
+prison portal start visible, whereas northern prison wall and catacomb gate
+are secret through actual D resets. Described underwater rooms retain indoor
+sector; drawbridge/collapse/ward/healing/notebook lore has no corresponding
+quest endpoint. Builder selects source/price/visibility/controller/campaign intent
+before separate native repairs. Accepted material/output lineage, key break,
+personal source, actual quaff/spell/arrival and renewal remain qualification work.
+
+Actual repair45bb3c948 changes exactly one direction word at the northwest
+parapet, with original-fails/repaired-passes clue/title/reciprocal-route proof.
+All other native bytes are preserved. Repair/news wording is prominent in the
+ledger, dossier and PR; none of the proposed mechanic fixes is claimed shipped.
+
+Focused source/Python/C++ projections, full production regression, maintained
+build, changed/staged formatting, source links, original queue, definitions,
+fingerprint/revision/registry/prior94 journals and exact PR preservation checks
+are required before publication. Synthetic receipts do not qualify played native
+source/craft/unlock/reward/foreign movement/reset/daily renewal.
+
+Catalog:95 journals/1597 achievement units/1449 potential dailies/2203 rows;
+all2668 definitions/fingerprint/content revision/registry and prior94 journals
+remain intact. Queue: **75/220 source-comprehensive,145 pending; Tundra next**.
+Active, ready accounting remains mandatory; frozen recovery remains separate.
+The full goal remains active. No accounting activation, DB/server operation,
 migration, deployment or merge occurred.

@@ -15,8 +15,8 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1453
-assert report['mapped_area_count'] == 94 and report['eligible_by_zone']['162'] == 4
+assert report["daily_unit_count"] == 1449
+assert report['mapped_area_count'] == 95 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -86,6 +86,19 @@ assert sum(t.get('optional', False) for s in ixarkon['stories'] for t in s['step
 assert ixarkon['stories'][1]['steps'][0]['contracts'] == ixarkon['stories'][2]['contracts']
 assert [t['item_vnums'] for s in ixarkon['stories'] for t in s['steps'] if t['kind'] == 'carried_item'] == [[96431], [96434], [96414]]
 assert all(t.get('optional') for s in ixarkon['stories'] for t in s['steps'][:-1])
+
+mntcastl = next(m for m in catalog['story_mappings'] if m['source_area'] == 'mntcastl')
+assert (mntcastl['schema_version'], mntcastl['revision'], mntcastl['coverage']) == (3, 1, 'complete')
+assert len(mntcastl['stories']) == 8 and len(mntcastl['contacts']) == 15 and not mntcastl['exclusions']
+assert [s['category'] for s in mntcastl['stories']] == ['story'] * 4 + ['service'] * 4
+assert report['eligible_by_zone']['371'] == 4
+assert sum(len(c['topics']) for c in mntcastl['contacts']) == 15
+assert sum(t.get('optional', False) for s in mntcastl['stories'] for t in s['steps']) == 14
+assert mntcastl['stories'][1]['steps'][0]['contracts'] == mntcastl['stories'][4]['contracts']
+assert mntcastl['stories'][3]['steps'][0]['contracts'] == mntcastl['stories'][2]['contracts']
+assert mntcastl['stories'][4]['steps'][0]['contracts'][0]['giver_vnum'] == 97901
+assert [t['item_vnums'] for t in mntcastl['stories'][4]['steps'] if t['kind'] == 'carried_item'] == [[37106], [97903]]
+assert all(t.get('optional') for s in mntcastl['stories'] for t in s['steps'][:-1])
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

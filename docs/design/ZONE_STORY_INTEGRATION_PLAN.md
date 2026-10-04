@@ -2647,3 +2647,28 @@ paid-route explanation beside the supplied-amulet shortcut. Access lore, service
 limitations and future campaign endpoints need their own accepted facts; static
 mapping cannot discover intended hidden mechanics automatically. Require active,
 ready accounting for all new tracking and keep frozen recovery separate.
+
+
+## Du'Maathe Castle: consumed foreign recipes and actual loaded prerequisites
+
+[Du'Maathe's complete dossier](zone-stories/DU_MAATHE_CASTLE.md) closes
+priority75 with four stories and four supporting services. One native parapet
+direction word ships in separate fix45bb3c948; the following remain plans.
+
+| Capability | Concrete requirement | Implementation/qualification plan |
+| --- | --- | --- |
+| Source availability versus accepted kind | Lord accepts blue horn but no active exact producer exists; supplied stock remains valid | Builder selects intended sapphire producer/cap and a separate reset/grant repair. Track admitted source identity and donor transfer independently; do not infer a kill or fabricate a drop from prototype existence |
+| Consumed recipe and repeated batch output | Sand AND foreign scroll consumed for three granular potions; lord later consumes one | Atomically select both roots; freeze all three indexed outputs and source/recipe/batch lineage. Qualify partial allocation, exact replay, retry, supplied ingredients, custody changes and cold recovery |
+| Foreign dependency and fee | Hermit receives both clothes; podaling Q fees1000/500copper conflict with9/6platinum captions | Preserve canonical owner and optional history. Builder selects intended price and repairs captions/contracts separately. Paid paths stay guarded until material/wallet/output settlement is qualified; supplied clothes/recipe skip them |
+| Decoded gate state | World loader masks to two door bits; D controls visibility/locks. Waterfall is open, prison portal visible, northern wall/catacomb secret | Add a loader-aware audit projection of door type plus reset state/keys. Never infer SECRET/CLOSED/LOCKED from raw high bits. Qualify exact search/unlock/open movement and reciprocal/reset conflicts before objectives or visibility repairs |
+| Key life and distinct access | Onyx, decayed and tooth keys break on ordinary successful unlock; golden catacomb key survives | Freeze selected key/root, door/reset generation and actual state transition; separate current custody from history. Preserve picking/public/supplied branches; foreign arrival needs an owned actual movement event |
+| Described mechanism versus accepted effect | Indoor underwater prose, bridge chains/collapse warnings, spoken cell wards and restorative pools have no bound quest controller | Builder chooses scenery or explicit mechanics. Add precise controller/hazard/spell/arrival events and failure/restart tests before requiring swim, PULL, ward words or healing outcomes |
+| Craft versus use and campaign | Real potion values, narrated rehabilitation/fire/prophecy and foreign dragon gate | Qualify admitted potion consumption/spell outcomes separately from crafting. Define optional-source ALL/ANY campaign and actual foreign victory/NPC restoration endpoints before larger achievement credit |
+| Automatic service and paid guards | Carmotee table installs epic teacher despite absent ACT_TEACHER; purchase refuses active accounting | Inspect tables/assignment loops as well as literal bindings and flags. Advertise service availability; retain active-ready tracking and frozen recovery boundaries |
+
+Cards should show four named lord outcomes, four preparation recipes, both
+granular inputs and three outputs, missing-current-material statuses, optional
+local/foreign history and supplied-item shortcuts. Make wrong horn/rod identity,
+consumed recipe, key breakage and unavailable paid dependency visible beside
+the action. Static sidecars encode reviewed intent; they cannot dynamically
+invent missing sources, controllers, secret flags or campaign endpoints.

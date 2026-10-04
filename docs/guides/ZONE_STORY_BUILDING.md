@@ -1721,3 +1721,33 @@ rooms ship in separate fix commit7baa78c3c, with reciprocal-route regression,
 exact scope, before/after table and news sentence. Future mechanic repairs need
 their own separate fix evidence. All new progress requires active, ready
 accounting; frozen reward recovery remains separate.
+
+
+## Du'Maathe example: exact batches and loader-aware access
+
+The [Du'Maathe dossier](../design/zone-stories/DU_MAATHE_CASTLE.md) and
+[schema-three sidecar](../../areas/story/mntcastl.story.json) classify four
+lord outcomes and four supporting potion services. Keep sand AND the foreign
+recipe separate; the native exchange consumes both for three granular potions.
+An earlier batch receipt is optional for a supplied lord potion. Foreign hermit
+history is optional for a supplied recipe and retains the foreign owner.
+Neither history restores spent current material or proves first source recovery.
+
+Read the loader and D resets before writing access steps: raw high hidden bits
+are discarded. The waterfall and prison portal start visible; the northern
+prison wall and catacomb gate are secret through D resets. The onyx, decayed
+and tooth keys break on ordinary successful unlocking; the golden catacomb key
+does not. Actual public/picked/supplied alternatives remain valid. Described
+water, bridge controllers and spoken wards are not automatic prerequisites.
+
+Do not invent a sapphire drop for the unresolved blue-tinged horn. The crystal
+dragon's white horn, onyx dragon's blackened horn and shop iron wand are distinct
+items. The white flower's hiding place requires no gardener belt. Explain paid
+foreign clothing and epic-skill unavailability under active accounting, including
+valid supplied alternatives. Keep actual potion use, dragon victory, NPC healing,
+prison rescue and notebook research out of completion until explicit events exist.
+
+Native repairs need their own scope and news proof: separate fix45bb3c948
+corrects one northwest-parapet direction word; source, price, visibility and
+campaign findings are still plans. All new progress requires active, ready
+accounting; frozen obligations retain their separate recovery path.
