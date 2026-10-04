@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The shaman's requested small rift must be an ordinary portable quest item."""
+"""Preserve the original fixed rift; quest prose must not enable a portable escape."""
 import argparse
 from pathlib import Path
 import re
@@ -22,8 +22,8 @@ rift = objects[71030]
 parts = rift.split("~", 4)
 values = [list(map(int, line.split())) for line in parts[4].strip().splitlines()[:3]]
 assert "easy to pick up" in parts[2]
-assert values[0][0] == 25 and values[0][7] == 1, "Small quest rift lacks ITEM_TAKE"
-assert values[2][0] == 1, "Small quest rift has an uncarryable weight"
+assert values[0][0] == 25 and values[0][7] == 0, "Quest mapping must not enable ITEM_TAKE on this unlimited portal"
+assert values[2][0] == 1000000, "Quest mapping must preserve the original rift weight"
 assert values[1] == [71153, 7, -1, 0, 0, 0, 0, 0]
 assert values[0][6] == 8392712 and values[0][8:] == [32768, 0, 0]
 quests = bodies(ROOT / "areas/qst/fields_between.qst")
@@ -40,4 +40,4 @@ for vnum, destination in [(71001, 71104), (71002, 71014), (71031, 71001)]:
 rooms = bodies(ROOT / "areas/wld/fields_between.wld")
 assert not re.search(r"\bD\d", rooms[71104])
 assert len(re.findall(r"0 0 71153", rooms[71153])) == 6
-print("Fields Between: small rift is takeable/weight one; exact shaman exchange, floor source, unlimited ENTER route and fixed return portals retained.")
+print("Fields Between: original non-takeable/million-weight rift restored; fixed ENTER route, shaman recipe and other portal restrictions retained. Portable quest delivery remains unresolved.")
