@@ -3433,6 +3433,13 @@ policy=(ROOT/'src/item/item_command_policy.c').read_text(encoding='utf8')
 assert 'ITEM_NODROP' not in policy[policy.index('bool item_command_uses_durable_ownership'):policy.index('bool item_command_object_is_takeable')]
 
 
+# Northern Lakes: the two pile-of-bones clues match actual reciprocal exits.
+nlakes_rooms=dawndale_bodies('nlakes','wld')
+for direction,target,word,reverse in ((1,75223,'east',3),(3,75262,'west',1)):
+    clue=re.search(r'\bD'+str(direction)+r'\s+([^~]*)~[^~]*~\s+0 0 '+str(target)+r'\b',nlakes_rooms[75263],re.S)
+    assert clue and re.search(r'\b'+word+r'\b',clue[1]), 'Northern Lakes pile-of-bones exit clue is reversed'
+    assert re.search(r'\bD'+str(reverse)+r'\s+[^~]*~[^~]*~\s+0 0 75263\b',nlakes_rooms[target],re.S)
+
 for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
