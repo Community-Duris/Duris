@@ -53,6 +53,9 @@ struct player_save_journal_health
 	bool record_limit_exceeded;
 };
 
+// The serial lifecycle initializes before ownership enable, and closes after
+// verified handoff/end. Enabled epochs refuse namespace reinitialization/clear;
+// these checks do not replace serialization of begin/end with lifecycle calls.
 bool player_save_journal_init(const char *directory,
 			      size_t quota_bytes = PLAYER_SAVE_JOURNAL_MAX_BYTES);
 void player_save_journal_shutdown(void);
@@ -91,8 +94,12 @@ player_save_journal_collect_retained(std::vector<player_save_journal_retained_fr
 // replay_deferred keeps the existing global replay/load gate closed. The caller
 // must reinstall durable authority before reopen/replay and retain a later wake.
 // Installed private execution holds now independently fence ordinary/exact
-// checkpoints; the per-pass marker alone is neither a resident hold nor proof
-// of clean census, critical publication ACK authority or eventual wake delivery.
+// checkpoints. In an enabled ownership epoch, this pass reserves each available
+// PID, rereads original frames after reservation, scopes callbacks individually
+// and aggregate checkpointing separately. Busy/held/new unreserved PIDs retain
+// their frames. Reservations live through checkpoint; callbacks run outside the
+// journal mutex. This is not a complete native mutation census, critical ACK or
+// a production revisit owner. Ownership remains disabled until those integrate.
 player_save_journal_result player_save_journal_replay(player_save_apply_fn apply, void *context);
 player_save_journal_health player_save_journal_health_copy(void);
 

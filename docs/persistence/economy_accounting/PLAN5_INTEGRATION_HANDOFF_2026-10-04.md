@@ -8,7 +8,16 @@ No new combined-candidate tests ran. External reports and native input trees
 remain branch-specific evidence, not qualification of the primary candidate.
 The later Plan5 `fcdb1afd8` restore-coin slice is integrated in `8d1be035d`;
 its native tree `d9a9610f3` evidence does not qualify the current combined source.
-Fresh remote readback still shows Plan5 fcdb1afd8 and experimental f7d26eaa7.
+Latest remote readback shows Plan5 `57d4d99b2` and experimental `f7d26eaa7`.
+Canonical capsule restore slice57d4d99b2 is cherry-picked as e5a458f70; its
+independent EAI1/EAP1 decoder, SQL restore checks and native decision fixture
+do not change primary-owned contracts or migrations. The peer report's
+3,026 native decisions and both-engine evidence retain their original inputs;
+no combined-candidate qualification ran. Native command-preimage binding and
+baseline reconciliation parity remain open. Primary source through6ef8abb88
+connects save residence, but keeps epoch ownership disabled pending native
+journal/direct writers, reserved replay, lifecycle/census and critical ACK.
+Marker-v2 and mandatory `.elr` independent consumers still belong to Plan5.
 
 Independent read-only specialist/architect source reviews found these remaining
 gates for the Plan 5 owner. Counterexamples below are predictions from source,
@@ -110,3 +119,9 @@ is accepted; no compiler/native/flatfile recovery or broad release result follow
 Keep major-plan testing cadence, original budgets and all R1–R8 gates. Native
 boundary authority, complete holdings/items, activation and compatibility remain
 primary prerequisites. New format evidence is not full Plan1 or Plan5 completion.
+
+Primary follow-on source95d03d02f connects reserved fresh journal replay and
+separate callback/checkpoint scopes, refusing enabled missing/corrupt namespaces.
+Ownership stays disabled; complete native callers/census, serial lifecycle, actual
+revisit/startup, critical ACK and major-plan qualification remain required. No
+new compiler/tests/native/SQL/gameplay/services or qualified push occurred.
