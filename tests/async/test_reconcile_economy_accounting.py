@@ -3,6 +3,7 @@
 
 import copy
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -13,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 from reconcile_economy_accounting import (MAX_INPUT_BYTES, MAX_ROWS, NATIVE_COVERAGE_EXCEPTIONS,
                                           ORPHAN_EVIDENCE_SOURCES,
-                                          Reconciler, SnapshotError, view)  # noqa: E402
+                                          Reconciler, SnapshotError, account_key, view)  # noqa: E402
 
 LINEAGE = "11" * 16
 EPOCH = "22" * 16
@@ -22,10 +23,10 @@ SOURCE = "44" * 48
 LEGACY = "55" * 16
 
 
-def key(kind, identity):
+def key(kind, identity, context=0):
     return (bytes.fromhex(LINEAGE) + (1).to_bytes(2, "little") +
             kind.to_bytes(2, "little") + identity.to_bytes(8, "little") +
-            (0).to_bytes(8, "little") + bytes(4)).hex()
+            context.to_bytes(8, "little") + bytes(4)).hex()
 
 
 WALLET = key(1, 7)
@@ -105,6 +106,47 @@ def creation_snapshot():
     return snapshot
 
 
+def stake_snapshot(terminal=False):
+    """Retained finite-round evidence fixture; no game producer or activation."""
+    snapshot = clean_snapshot()
+    stake = key(11, 700, 7)
+    source = (b"\x06\x00\x01\x00" + bytes.fromhex("71" * 16) +
+              bytes.fromhex("72" * 16) + (7).to_bytes(8, "little") + bytes(4)).hex()
+    snapshot["operations"][0].update(reason=18, source_event=source, item_event_count=0)
+    snapshot["source_claims"][0]["source_event"] = source
+    snapshot["native"]["holdings"][1].update(account_key=stake, revision=1)
+    snapshot["account_origins"][1].update(account_key=stake, origin="creation", revision=0)
+    snapshot["effects"][1].update(account_key=stake, before_revision=0, after_revision=1)
+    for name in ("item_origins", "item_references", "ownership_events"):
+        snapshot[name] = []
+    snapshot["native"]["items"] = []
+    if terminal:
+        terminal_id = "66" * 16
+        terminal_source = source[:-8] + "01000000"
+        snapshot["operations"].append({**snapshot["operations"][0], "operation_id": terminal_id,
+                                       "reason": 19, "original_operation_id": OP,
+                                       "source_event": terminal_source})
+        snapshot["source_claims"].append({"lineage": LINEAGE, "source_event": terminal_source,
+                                          "operation_id": terminal_id})
+        snapshot["receipts"].append({**snapshot["receipts"][0], "operation_id": terminal_id})
+        snapshot["effects"].extend([
+            {**snapshot["effects"][0], "operation_id": terminal_id,
+             "before": [7, 0, 0, 0], "after": [10, 0, 0, 0],
+             "before_revision": 2, "after_revision": 3},
+            {**snapshot["effects"][1], "operation_id": terminal_id,
+             "before": [3, 0, 0, 0], "after": [0, 0, 0, 0],
+             "before_revision": 1, "after_revision": 2}])
+        snapshot["postings"].extend([
+            {**snapshot["postings"][0], "operation_id": terminal_id,
+             "delta": [3, 0, 0, 0], "copper_value": 3},
+            {**snapshot["postings"][1], "operation_id": terminal_id,
+             "delta": [-3, 0, 0, 0], "copper_value": -3}])
+        snapshot["account_origins"][1]["retired_by"] = terminal_id
+        snapshot["native"]["holdings"] = [{**snapshot["native"]["holdings"][0],
+                                             "balance": [10, 0, 0, 0], "revision": 3}]
+    return snapshot
+
+
 class ReconciliationTests(unittest.TestCase):
     def codes(self, snapshot):
         before = copy.deepcopy(snapshot)
@@ -112,6 +154,102 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(snapshot, before, "audit must leave its input untouched")
         self.assertEqual(sum(report["exception_counts"].values()), report["exception_count"])
         return set(report["exception_counts"])
+
+    def test_native_account_kind_range_and_unsigned_stake_identity(self):
+        for kind in range(1, 12):
+            for identity, context in ((1, 0), (2**64 - 1, 2**64 - 1)):
+                with self.subTest(kind=kind, identity=identity, context=context):
+                    self.assertEqual(account_key(key(kind, identity, context)),
+                                     (LINEAGE, kind, identity, context))
+        for kind in (0, 12, 65535):
+            with self.subTest(kind=kind):
+                with self.assertRaisesRegex(SnapshotError, "invalid account key"):
+                    account_key(key(kind, 1))
+
+    def test_retained_stake_is_an_ordinary_holding_through_terminal_outcome(self):
+        for terminal in (False, True):
+            with self.subTest(terminal=terminal):
+                self.assertEqual(self.codes(stake_snapshot(terminal)), set())
+        unauthorized = stake_snapshot()
+        unauthorized["operations"][0]["reason"] = 1
+        self.assertIn("unauthorized_counterparty", self.codes(unauthorized))
+
+    def test_stake_money_history_and_native_disagreement_are_reported(self):
+        def stale(s):
+            s["native"]["holdings"][1]["balance"][0] += 1
+        def history(s):
+            s["effects"][1]["before_revision"] = 1
+        def postings(s):
+            s["postings"][1].update(delta=[2, 0, 0, 0], copper_value=2)
+        def negative(s):
+            s["effects"][1]["after"] = [-3, 0, 0, 0]
+            s["native"]["holdings"][1]["balance"] = [-3, 0, 0, 0]
+        def no_origin(s):
+            s["account_origins"].pop()
+        def no_native(s):
+            s["native"]["holdings"].pop()
+        for code, mutation in (("stale_native_balance", stale), ("broken_account_history", history),
+                               ("account_effect_posting_mismatch", postings),
+                               ("negative_holding", negative), ("unknown_opening", no_origin),
+                               ("missing_native_holding", no_native)):
+            with self.subTest(code=code):
+                snapshot = stake_snapshot()
+                mutation(snapshot)
+                self.assertIn(code, self.codes(snapshot))
+        retired = stake_snapshot(True)
+        retired["native"]["holdings"].append({"account_key": key(11, 700, 7),
+                                                "balance": [0, 0, 0, 0], "revision": 2})
+        self.assertIn("retired_native_holding", self.codes(retired))
+        nonzero = stake_snapshot(True)
+        nonzero["effects"][-1]["after"] = [1, 0, 0, 0]
+        self.assertIn("retired_nonzero_holding", self.codes(nonzero))
+
+    def test_stake_does_not_expand_persistent_mapping_kinds(self):
+        stake = key(11, 700, 7)
+        native = {"mapping_creations": [{"mapping_id": 700, "account_key": stake,
+                                        "account_kind": 11, "context_id": 7, "native_id": 7,
+                                        "active_native_id": 7, "creating_operation_id": None}],
+                  "mapping_creation_roots": [], "mapping_creation_coverage": {
+                      "rows": 1, "creator_rows": 0, "root_rows": 0, "missing_roots": 0}}
+        with self.assertRaisesRegex(SnapshotError, "invalid mapping creation row"):
+            Reconciler().audit_mapping_creations("disposable", LINEAGE, native, {})
+        snapshot = clean_snapshot()
+        snapshot["native"]["retired_mappings"] = [{
+            "mapping_id": 700, "account_key": stake, "native_id": 7, "active_native_id": None,
+            "retiring_operation_id": OP, "operation_lineage": LINEAGE, "operation_epoch": EPOCH,
+            "operation_outcome": "committed", "operation_result_code": 0}]
+        snapshot["native"]["retirement_coverage"].update(rows=1, current_epoch_rows=1,
+                                                           unmatched_current_epoch_rows=1)
+        with self.assertRaisesRegex(SnapshotError, "invalid retired mapping"):
+            Reconciler().audit(snapshot)
+
+    def test_stake_operator_lookup_remains_bounded_and_retains_global_refusal(self):
+        snapshot = stake_snapshot()
+        snapshot["complete"] = False
+        snapshot["native"]["holdings"][1]["alias"] = "private-stake-alias"
+        before = copy.deepcopy(snapshot)
+        report = Reconciler().audit(snapshot)
+        stake = key(11, 700, 7)
+        for limit in (0, 1, 100):
+            with self.subTest(limit=limit):
+                result = view(snapshot, report, "holdings", limit, holding_key=stake)
+                self.assertEqual(result["count"], 1)
+                self.assertEqual(result["truncated"], limit == 0)
+                self.assertFalse(result["coverage"]["complete"])
+                if limit:
+                    self.assertEqual(result["rows"][0]["balance"], (3, 0, 0, 0))
+                self.assertNotIn("private-stake-alias", json.dumps(result))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "partial.json"
+            payload = json.dumps(snapshot).encode()
+            path.write_bytes(payload)
+            result = subprocess.run([sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                     str(path), "--view", "holdings", "--account-key", stake],
+                                    capture_output=True, text=True, timeout=30)
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertEqual(json.loads(result.stdout)["count"], 1)
+            self.assertEqual(path.read_bytes(), payload)
+        self.assertEqual(snapshot, before)
 
     def test_clean_snapshot_and_erased_alias(self):
         snapshot = clean_snapshot()
@@ -1582,6 +1720,220 @@ class ReconciliationTests(unittest.TestCase):
             result = subprocess.run(command, capture_output=True, text=True, check=False)
             self.assertEqual(result.returncode, 2, result.stderr)
             self.assertIn("limit exceeded", result.stderr)
+
+
+
+
+def native_stake_sql():
+    """Native structural fixture and SELECT-only SQL proof, without gameplay."""
+    import hashlib
+    import os
+    import struct
+    from unittest import mock
+    import pymysql
+    import migration_runner as migrations
+    import persistence_restore as restore
+    import economic_sql_audit_snapshot as exporter
+    sys.path.insert(0, str(ROOT / "tests/async"))
+    from test_persistence_backup_integration import sql
+    read_evidence = exporter.read_evidence
+    root = ROOT
+    work=root/'bin/tests/plan5-stake-sql'
+    work.mkdir(mode=0o700,parents=True,exist_ok=True)
+    source=work/'probe.cpp'
+    source.write_text('''#include "economy/economic_accounting_intent.h"
+    #include <cassert>
+    #include <iostream>
+    critical_operation_id id(uint8_t value) { critical_operation_id result; result.bytes.fill(value); return result; }
+    void output(const std::vector<uint8_t> &bytes) {
+        for (size_t i=0;i<4;++i) std::cout.put(static_cast<char>(bytes.size() >> (i*8)));
+        std::cout.write(reinterpret_cast<const char *>(bytes.data()), bytes.size());
+    }
+    int main() {
+        economic_accounting_plan p;
+        auto &m=p.metadata;
+        m.lineage=id(0x11); m.epoch=id(0x22); m.operation_id=id(0x33);
+        m.actor_kind=economic_actor_kind::domain; m.actor_id=7; m.writer_id=1;
+        m.reason=economic_reason::gambling_stake;
+        m.source_event={economic_source_kind::gambling_round,id(0x71),id(0x72),7,0};
+        p.accounts={{{m.lineage,economic_account_kind::wallet,7,0},{10,0,0,0},{7,0,0,0},1,2},
+                    {{m.lineage,economic_account_kind::gambling_stake,700,7},{},{3,0,0,0},0,1}};
+        p.postings={{0,0,0,{-3,0,0,0},-3},{1,1,0,{3,0,0,0},3}};
+        for (size_t step=0;step<2;++step) {
+            economic_frozen_intent intent;
+            intent.admission.metadata=m; intent.command_binding[0]=21; intent.domain_digest[0]=22;
+            std::vector<uint8_t> frozen,encoded;
+            assert(economic_intent_encode(intent,&frozen)==economic_accounting_error::ok);
+            assert(economic_intent_digest(intent,&m.intent_digest)==economic_accounting_error::ok);
+            m.domain_digest=intent.domain_digest;
+            assert(economic_plan_encode(p,&encoded)==economic_accounting_error::ok);
+            economic_accounting_plan decoded;
+            assert(economic_plan_decode(encoded,&decoded)==economic_accounting_error::ok);
+            output(frozen); output(encoded);
+            m.original_operation_id=m.operation_id; m.operation_id=id(0x66);
+            m.reason=economic_reason::gambling_payout; m.source_event->slot=1;
+            p.accounts[0].before={7,0,0,0}; p.accounts[0].after={10,0,0,0};
+            p.accounts[0].before_revision=2; p.accounts[0].after_revision=3;
+            p.accounts[1].before={3,0,0,0}; p.accounts[1].after={};
+            p.accounts[1].before_revision=1; p.accounts[1].after_revision=2;
+            p.postings[0].delta={3,0,0,0}; p.postings[0].copper=3;
+            p.postings[1].delta={-3,0,0,0}; p.postings[1].copper=-3;
+        }
+    }
+    ''')
+    sources=['src/economy/economic_accounting_plan.c','src/economy/economic_accounting_types.c',
+             'src/economy/economic_accounting_intent.c','src/persistence/critical_command.c',
+             'src/item/item_transfer_command.c','src/item/craft_pouch_mutation.c',
+             'src/combat/chaos_pouch_ledger.c','src/player/player_snapshot_codec.c']
+    environment=dict(os.environ,ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1')
+    outputs=[]
+    for mode in ('sql','flatfile'):
+        binary=work/('probe-'+mode)
+        command=['g++','-std=c++20','-Wall','-Wextra','-Wpedantic','-Werror','-O1','-g',
+                 '-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie','-no-pie','-Isrc',
+                 str(source),*[str(root/name) for name in sources],'-lcrypto','-o',str(binary)]
+        if mode=='flatfile': command.insert(1,'-D__NO_MYSQL__')
+        subprocess.run(command,check=True)
+        result=subprocess.check_output([str(binary)],env=environment)
+        (work/('native-'+mode+'.bin')).write_bytes(result)
+        outputs.append(result)
+        print('NATIVE_STAKE '+mode+' '+json.dumps({'binary':hashlib.sha256(binary.read_bytes()).hexdigest(),
+              'encoded':hashlib.sha256(result).hexdigest()},sort_keys=True),flush=True)
+    assert outputs[0]==outputs[1]
+    blocks=[]
+    payload=outputs[0]
+    offset=0
+    while offset<len(payload):
+        size,=struct.unpack_from('<I',payload,offset); offset+=4
+        blocks.append(payload[offset:offset+size]); offset+=size
+    assert len(blocks)==4 and offset==len(payload)
+    batches=list(zip(blocks[::2],blocks[1::2]))
+    assert [b[1][:4] for b in batches]==[b'EAP1']*2
+    for frozen,plan in batches:
+        assert frozen[:4]==b'EAI1' and plan[152:184]==hashlib.sha256(b'DURIS-ECONOMIC-INTENT-V1\0'+frozen).digest()
+        assert account_key(plan[376:416].hex())==(LINEAGE,11,700,7)
+
+    with tempfile.TemporaryDirectory(prefix='duris-stake-audit-sql-') as directory:
+        base=Path(directory)
+        for engine in ('mariadb','mysql'):
+            candidate=base/engine; candidate.mkdir(mode=0o700)
+            with restore.private_database(candidate,engine) as env:
+                version=sql(env,'SELECT VERSION()')
+                assert 'MariaDB' in version if engine=='mariadb' else version.startswith('8.0.') and 'MariaDB' not in version
+                sql(env,payload=(root/'migrations/bootstrap_multithread_safe.sql').read_bytes())
+                with mock.patch.dict(os.environ,env,clear=True):
+                    manifest=migrations.load_manifest(); executor=migrations.MysqlExecutor(manifest)
+                    executor.adopt('fresh_bootstrap'); migrations.run_pending(manifest,executor)
+                assert sql(env,'SELECT sequence_number,migration_id FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1')=='56\t0056_spell_ward_durability'
+                print('STAKE_SQL_SCHEMA '+engine+' '+version+' through=0056',flush=True)
+                owner=pymysql.connect(unix_socket=env['DB_SOCKET'],user='root',database='duris_restore',
+                                      autocommit=True,cursorclass=pymysql.cursors.DictCursor)
+                try:
+                    def insert(table,fields):
+                        with owner.cursor() as cursor:
+                            cursor.execute('INSERT INTO '+table+' ('+','.join(fields)+') VALUES ('+
+                                           ','.join(['%s']*len(fields))+')',tuple(fields.values()))
+                    creator=bytes([7])*16
+                    insert('critical_operation_inbox',dict(operation_id=creator,command_hash=bytes([1])*32,
+                           keys_hash=bytes([2])*32,command_type=1,schema_version=1,payload_version=1,status=1,result_payload=b''))
+                    insert('economic_epoch',dict(lineage=bytes.fromhex(LINEAGE),epoch=bytes.fromhex(EPOCH),ordinal=1,
+                           transition_kind=1,transition_digest=bytes([3])*32,creating_operation_id=creator))
+                    insert('economic_lineage_state',dict(lineage=bytes.fromhex(LINEAGE),active_epoch=None))
+                    with owner.cursor() as cursor:
+                        cursor.execute("CREATE USER 'stake_reader'@'localhost' IDENTIFIED BY 'disposable-stake-reader'")
+                        cursor.execute("GRANT SELECT ON duris_restore.* TO 'stake_reader'@'localhost'")
+                    reader=pymysql.connect(unix_socket=env['DB_SOCKET'],user='stake_reader',password='disposable-stake-reader',
+                                           database='duris_restore',autocommit=True,cursorclass=pymysql.cursors.DictCursor)
+                    try:
+                        with reader.cursor() as cursor:
+                            try: cursor.execute('UPDATE economic_lineage_state SET revision=revision')
+                            except pymysql.MySQLError as error: assert error.args[0]==1142
+                            else: raise AssertionError('SELECT-only permission is missing')
+                        def rows():
+                            with owner.cursor() as cursor:
+                                result=[]
+                                for table in ('economic_lineage_state','economic_epoch','critical_operation_inbox',
+                                              'economic_accounting_operation','economic_accounting_account_effect',
+                                              'economic_accounting_coin_posting','economic_accounting_source_claim'):
+                                    cursor.execute('SELECT * FROM '+table+' ORDER BY 1,2'); result.append(cursor.fetchall())
+                                return result
+                        def audit(terminal,expected=()):
+                            before=rows(); oracle=stake_snapshot(terminal)
+                            original=copy.deepcopy(oracle)
+                            cursor=mock.Mock(wraps=reader.cursor()); connection=mock.Mock(wraps=reader)
+                            connection.cursor.return_value=cursor
+                            try:
+                                cursor.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
+                                cursor.execute('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY')
+                                cut=read_evidence(cursor,bytes.fromhex(LINEAGE),bytes.fromhex(EPOCH),True)
+                            finally:
+                                connection.rollback(); cursor.close()
+                            connection.rollback.assert_called_once_with(); cursor.close.assert_called_once_with()
+                            assert all(call.args[0].upper().startswith(('SELECT','SET TRANSACTION','START TRANSACTION'))
+                                       for call in cursor.execute.call_args_list)
+                            assert rows()==before and oracle==original
+                            snapshot=oracle|{k:v for k,v in cut.items() if k not in ('account_origins','item_origins')}
+                            snapshot_before=copy.deepcopy(snapshot)
+                            report=Reconciler().audit(snapshot)
+                            assert set(report['exception_counts'])==set(expected),report
+                            assert snapshot==snapshot_before
+                            if not terminal:
+                                snapshot['complete']=False
+                                partial=Reconciler().audit(snapshot)
+                                for limit in (0,1,100):
+                                    result=view(snapshot,partial,'holdings',limit,holding_key=plan[376:416].hex())
+                                    assert result['count']==1 and result['truncated']==(limit==0)
+                                    assert result['coverage']['exception_count']==1 and not result['coverage']['complete']
+                            return report
+                        for index,(frozen,plan) in enumerate(batches):
+                            op=plan[40:56]; accounts,postings,children,before,after,events=struct.unpack_from('<6I',plan,216)
+                            insert('critical_operation_inbox',dict(operation_id=op,command_hash=bytes([4])*32,keys_hash=bytes([5])*32,
+                                   command_type=3,schema_version=2,payload_version=1,status=1,result_code=0,
+                                   durable_revision=index+1,result_payload=b''))
+                            with owner.cursor() as cursor:
+                                cursor.execute('UPDATE critical_operation_inbox SET committed_at=CURRENT_TIMESTAMP(6) WHERE operation_id=%s',(op,))
+                            insert('economic_accounting_operation',dict(operation_id=op,lineage=plan[8:24],epoch=plan[24:40],
+                                   original_operation_id=None if index==0 else plan[56:72],accounting_version=1,
+                                   writer_id=1,policy_version=1,compiler_version=1,actor_kind=plan[72],actor_id=7,
+                                   reason=struct.unpack_from('<H',plan,96)[0],source_event=plan[104:152],
+                                   intent_digest=plan[152:184],domain_digest=plan[184:216],plan_digest=hashlib.sha256(plan).digest(),
+                                   canonical_intent=frozen,canonical_plan=plan,outcome=1,result_code=0,account_count=accounts,
+                                   posting_count=postings,child_count=children,item_event_count=events,
+                                   before_witness_count=before,after_witness_count=after))
+                            for n in range(accounts):
+                                offset=256+n*120; fields=dict(operation_id=op,account_index=n,account_key=plan[offset:offset+40])
+                                fields.update(zip((f'{side}_{coin}' for side in ('before','after') for coin in ('copper','silver','gold','platinum')),
+                                                  struct.unpack_from('<8q',plan,offset+40)))
+                                fields.update(zip(('before_revision','after_revision'),struct.unpack_from('<2Q',plan,offset+104)))
+                                insert('economic_accounting_account_effect',fields)
+                            for n in range(postings):
+                                offset=256+accounts*120+n*48; event,account,child=struct.unpack_from('<IHH',plan,offset)
+                                fields=dict(operation_id=op,line_index=n,event_index=event,account_index=account,child_index=child)
+                                fields.update(zip(('delta_copper','delta_silver','delta_gold','delta_platinum','copper_value'),
+                                                  struct.unpack_from('<5q',plan,offset+8)))
+                                insert('economic_accounting_coin_posting',fields)
+                            insert('economic_accounting_source_claim',dict(lineage=plan[8:24],source_event=plan[104:152],operation_id=op,outcome=1))
+                            audit(bool(index))
+                        with owner.cursor() as cursor:
+                            cursor.execute('UPDATE economic_accounting_account_effect SET after_copper=1 WHERE operation_id=%s AND account_index=1',(op,))
+                        audit(True,('account_effect_posting_mismatch','retired_nonzero_holding'))
+                        with owner.cursor() as cursor:
+                            cursor.execute('UPDATE economic_accounting_account_effect SET after_copper=0 WHERE operation_id=%s AND account_index=1',(op,))
+                        audit(True)
+                        with owner.cursor() as cursor:
+                            cursor.execute('SELECT active_epoch FROM economic_lineage_state'); assert cursor.fetchall()==[{'active_epoch':None}]
+                        print('PASS stake-read-only '+engine+' captures=4 rollback=4 SQL-tables=7 unchanged inactive',flush=True)
+                    finally: reader.close()
+                finally: owner.close()
+    print('STAKE_SQL_QUALIFIED '+json.dumps({'engines':2,'native_modes':2,'plans':2,'intents':2,
+          'read_only_captures':8,'fault_captures':2,'permission_denials':2,'full_mutation_or_gameplay':False},sort_keys=True),flush=True)
+
+
+@unittest.skipUnless(os.environ.get("DURIS_RUN_STAKE_SQL_INTEGRATION") == "1",
+                     "requires explicit disposable Linux native/SQL stake invocation")
+class NativeStakeSQLTests(unittest.TestCase):
+    def test_native_stake_sql_both_engines(self):
+        native_stake_sql()
 
 
 if __name__ == "__main__":
