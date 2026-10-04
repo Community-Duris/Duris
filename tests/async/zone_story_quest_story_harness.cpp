@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 59 &&
+		require(catalog.story_mappings.size() == 60 &&
 				tracker.summary_for(7, 42).total == 1707,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -3382,6 +3382,91 @@ int main(int argc, char **argv)
 				restored_hall.progress_for_zone(7, 42, 777).total == 5 &&
 				restored_hall.progress_for_zone(7, 42, 183).completed == 0,
 			"Hall historical recovery merged outcomes, counted exclusions or credited foreign dagger ownership");
+
+		const auto &sarmiz_map = *std::find_if(catalog.story_mappings.begin(),
+						       catalog.story_mappings.end(),
+						       [](const auto &mapping)
+						       { return mapping.source_area == "sarmiz"; });
+		const auto &sarmiz_royal = story_for("sarmiz", "rodev-three-ingredients");
+		const auto &sarmiz_advisor = story_for("sarmiz", "aberla-four-materials");
+		service supplied_sarmiz(catalog);
+		require(supplied_sarmiz.discover_zone(7, 42, 94, 9400, 100, "arrival") ==
+					result::applied &&
+				supplied_sarmiz.render_journal(7, 42, 94, 10, 1, 101, false, false)
+						.find("] " + sarmiz_advisor.title + "\r\n") ==
+					std::string::npos,
+			"Sarmiz discovery revealed an unmet advisor commission");
+		for (const auto &contact : sarmiz_map.contacts)
+			require(supplied_sarmiz.meet_npc(7, 42, contact.mob_vnum, 9400, 101) ==
+					result::applied,
+				"Sarmiz fixture encounter failed");
+		const auto sarmiz_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Sarmiz journal section missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		for (int item : { 9445, 97135, 97099, 9450, 9442, 9453, 9451 })
+			supplies.carried[item] = 1;
+		const auto sarmiz_before = supplied_sarmiz.serialize_state();
+		journal = supplied_sarmiz.render_journal(7, 42, 94, 10, 1, 102, false, false,
+							 &supplies);
+		require(sarmiz_section(sarmiz_royal)
+						.find("Next: " + sarmiz_royal.steps.back().text) !=
+					std::string::npos &&
+				sarmiz_section(sarmiz_advisor)
+						.find("Next: " +
+						      sarmiz_advisor.steps.back().text) !=
+					std::string::npos &&
+				sarmiz_section(sarmiz_advisor)
+						.find("[Pending] " +
+						      sarmiz_advisor.steps[0].text) !=
+					std::string::npos &&
+				supplied_sarmiz.serialize_state() == sarmiz_before &&
+				supplied_sarmiz.progress_for_zone(7, 42, 94).completed == 0,
+			"supplied Sarmiz recipes required earlier history or a view wrote credit");
+		for (const auto *recipe : { &sarmiz_royal, &sarmiz_advisor })
+			for (const auto &step : recipe->steps)
+			{
+				if (step.kind != "carried_item")
+					continue;
+				const auto item = step.item_vnums.front();
+				supplies.carried.erase(item);
+				supplies.equipped[16] = item;
+				supplies.carried[9454] = 5;
+				journal = supplied_sarmiz.render_journal(7, 42, 94, 10, 1, 103,
+									 false, false, &supplies);
+				require(sarmiz_section(*recipe).find(
+						"[Missing now] " + step.text) != std::string::npos,
+					"worn ingredient or real blue flasks replaced an exact Sarmiz material");
+				supplies.equipped.clear();
+				supplies.carried[item] = 1;
+			}
+		record(supplied_sarmiz, sarmiz_royal.contracts.front(), "sarmiz-supplied-royal", 94,
+		       9962);
+		require(supplied_sarmiz.progress_for_zone(7, 42, 94).completed == 1 &&
+				supplied_sarmiz.progress_for_zone(7, 42, 94).total == 8,
+			"royal receipt completed the conspiracy or custom moonstone story");
+		record(supplied_sarmiz, sarmiz_advisor.contracts.front(), "sarmiz-supplied-advisor",
+		       94, 9962);
+		require(supplied_sarmiz.progress_for_zone(7, 42, 94).completed == 2,
+			"independent advisor receipt imposed an unrecorded branch or producer history");
+		service recovered_sarmiz(catalog);
+		require(recovered_sarmiz.deserialize_state(supplied_sarmiz.serialize_state(),
+							   &error) &&
+				recovered_sarmiz.progress_for_zone(7, 42, 94).completed == 2,
+			"Sarmiz cold recovery lost the independent multi-item deliveries");
+		for (const auto &entry : sarmiz_map.stories)
+			if (entry.id != sarmiz_royal.id && entry.id != sarmiz_advisor.id)
+				record(recovered_sarmiz, entry.contracts.front(), entry.id.c_str(),
+				       94, 9962);
+		service restored_sarmiz(catalog);
+		require(restored_sarmiz.deserialize_state(recovered_sarmiz.serialize_state(),
+							  &error) &&
+				restored_sarmiz.progress_for_zone(7, 42, 94).completed == 8 &&
+				restored_sarmiz.progress_for_zone(7, 42, 94).total == 8,
+			"Sarmiz recovery merged independent deliveries or invented a custom finale");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

@@ -100,6 +100,25 @@ Sin's actual-opponent Freedom of Movement correction is a shipped separate
 combat fix with regression and PR/news evidence. The elder, recipe/source and
 cathedral changes remain plans; keep that distinction clear in builder notes.
 
+Sarmiz'Duul's [dossier](../design/zone-stories/SARMIZ_DUUL.md) demonstrates a
+custom story outside native Q bindings: boot-seeded moonstone fragments,
+pirate-chest core, periodic material assembly and alternative ring or paid
+crew rewards. Pirate setup is deliberately disabled with accounting active;
+adding a sidecar cannot make it available. Qualify durable treasure/key issuance
+and atomic material/output/payment/crew settlement before a custom completion
+adapter. A finished stone also feeds a foreign consumer; preserve exact custody
+and receipt ownership rather than crediting all consumers from assembly history.
+
+Validate an actual custom ask recipient before publishing dialogue, attacking
+or settling rewards. Record accepted events after the mutation commits;
+pre-command attempts and material possession are insufficient. Root-carried,
+bagged, worn, supplied and personally sourced pieces are different states.
+Explicitly document partial boot failure, multiple-core TODO behavior, output
+allocation failure and replay policy. Sarmiz's potion descriptions and missing
+mount stock are pending builder repair decisions, not changes shipped by the
+journal. Use separate fix commits and prominent tested PR/news wording for
+actual native/world-data changes.
+
 ## Schema version 1
 
 Version 1 remains supported. Use version 2 or 3 for new starter and hometown

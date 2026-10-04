@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 59 authored journals, accounting-gated player surfaces, starter/town
+**Status: 60 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -15,7 +15,7 @@ Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
 the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
 Ship Yards, Ultarium, the Surface Realm, Tharnadia, Mini Zones and the City
 of Torrhan, Golden Hall of the Crown, Ashrumite Village and The Hall of the
-Ancients now have complete source story maps; their active-world journeys remain unqualified. Savannah projects seventeen
+Ancients and Sarmiz'Duul now have complete source story maps; their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
 checks. The [Savannah dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md)
@@ -435,6 +435,28 @@ One actual combat repair ships separately in
 Sin's gaze checks its actual opponent, fixing a null-actor crash and wrong-target
 protection; its room target text is corrected. Other Hall repairs remain pending,
 with their exact before/after and qualification plans in the dossier.
+
+Sarmiz'Duul's [comprehensive dossier](zone-stories/SARMIZ_DUUL.md) covers all
+eight native exchanges/thirteen raw addressed families, 583 rooms, 57 mobiles,
+61 objects, four shops and 535 resets/199 families. Revision one has eight
+independent outcomes, 24 contacts and nineteen optional checks. Courtship,
+revenge/relic, three-ingredient royal and four-ingredient conspiracy routes
+preserve exact supplied materials without inventing kills, romantic state,
+guard morale, an invasion or royal succession. The diplomat's valid `sarmiz`
+alias is authored despite the shared apostrophe-family inventory omission.
+
+Its custom moonstone route adds alternative boot-seeded fragments, pirate-ship
+chest/core lineage, exact periodic assembly and alternative ring/paid crew
+settlement to the plan. Pirate ship spawn/crew setup are deliberately disabled
+with accounting active; keep that guard until durable treasure/key issuance
+supports a fresh core. Assembly must preserve materials on failed allocation,
+and rewards must commit item/payment/crew obligations before publishing effects.
+Erzul's missing ask-recipient validation, partial seed ordering, unfinished
+multi-core behavior, four unresolved mount-shop stock references and potion
+prose/type mismatches have bounded repair proposals. No native repair ships
+with this journal; report each later repair separately with tested before/after
+and explicit news wording. A foreign Winterhaven consumer competes for the
+finished moonstone; assembly history cannot replace current stone custody.
 
 ## Accounting requirement and delivery sequence
 
@@ -1147,7 +1169,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 182 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 181 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1168,6 +1190,18 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   Retain typed-food/coin-only and paid town guards; extend draw/custody and
   actor/NPC semantic settlement before healing/lesson/pet milestones. Resolve
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
+
+- [x] Complete Sarmiz'Duul's eight-exchange/thirteen-raw-addressed source
+  dossier: 583 rooms/57 mobiles/61 objects/four shops, 535 resets/199 families,
+  five literal procedures and full custom moonstone source/assembly/ship route.
+  Eight outcomes, 24 contacts and nineteen optional checks; no native repairs.
+- [ ] Qualify Sarmiz moonstone core issuance without weakening the existing
+  active-accounting pirate guard, alternative seed lineage/idempotency, exact
+  periodic assembly, addressed custom responses and atomic ring or paid crew
+  settlement. Select multi-core, potion wording/effects, stale mount stock and
+  optional campaign endpoint policies. Preserve the competing Winterhaven
+  consumer and original source-owned receipts; give real repairs distinct
+  fix commits and prominent PR/news entries.
 - [x] Complete the Hall's eleven-exchange/fourteen-addressed source dossier:
   247 rooms/55 mobiles/53 objects/one shop, 395 resets/153 families and all
   twelve literal procedures/shared dispatch. Five outcomes/four services/two
@@ -1345,6 +1379,7 @@ contract classification; it does not claim complete objective coverage.
 | Golden Hall of the Crown | 1 | Complete: nine outcomes/seven support services across all sixteen native exchanges | [Source-comprehensive dossier](zone-stories/GOLDEN_HALL_OF_THE_CROWN.md); 27 contacts/seventeen addressed families, 34 optional checks and exact note/key/totem/sword guidance | Nine achievements/seven potential dailies; both key-return rescues keep their daily exclusions; live sources, fees, access and pet events unqualified | Native supplied-proof, exact-kind, independent-rescue and recovery fixtures; qualify accepted actor/source/lineage/access/summon events and publish selected repairs clearly |
 | Ashrumite Village | 2 | Complete: twelve support services across every native exchange | [Source-comprehensive dossier](zone-stories/ASHRUMITE_VILLAGE.md); sixteen contacts/all thirteen addressed families, 21 optional checks and explicit intended/current crafting matrix | Zero authored achievements/dailies; all payments guarded, three quest prototypes missing; source, paid lore and actual craft lineage unqualified | Native exact same-name/five-copy, service-only recovery and missing-reference fixtures; select native repairs and qualify fees/source/output/access/pet events before a fresh journey |
 | The Hall of the Ancients | 1 | Complete: five outcomes/four services/two elder exclusions across eleven contracts | [Source-comprehensive dossier](zone-stories/THE_HALL_OF_THE_ANCIENTS.md); 27 contacts/all fourteen addressed families and 23 optional checks | Five achievements/two potential dailies; three mixed fees and sixteen-root device guarded; elder/supply/source/GET/access qualification open | Exact quantities/foreign proof/optional history and excluded receipt recovery; separate Sin null/wrong-target fix, other repairs pending with explicit news handoff |
+| Sarmiz'Duul | 1 | Complete: eight independent native deliveries; custom moonstone guidance without invented terminal | [Source-comprehensive dossier](zone-stories/SARMIZ_DUUL.md); 24 contacts/all thirteen raw addressed families and nineteen optional checks | Eight achievements/potential dailies; source and retiring episodes open; pirate core unavailable with accounting active | Exact three/four-item and supplied-proof routes, independent receipt recovery; custom targeting/seed/assembly/ring/crew, missing stock and potion/campaign repairs pending with news handoff |
 
 ## Twin Towers evidence and decisions
 

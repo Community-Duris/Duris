@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 38 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 39 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -71,6 +71,12 @@ checks. Identical elder offerings, sixteen-root limits, one-copy supplies,
 collector death sources and attempted coin-pickup doors have precise repair or
 qualification plans. Sin's null/wrong-target protection check is an actual
 separate combat fix with PR/news wording; other native changes remain pending.
+Sarmiz'Duul's [completed dossier](zone-stories/SARMIZ_DUUL.md) adds eight
+independent outcomes, 24 contacts and nineteen optional checks across courtship,
+relic, royal and conspiracy routes. The custom moonstone spans boot fragments,
+a guarded pirate core, periodic assembly and alternative ring/paid crew use.
+Targeting, transactional ordering, potion prose/type and missing mount stock
+remain explicit proposals; no native repair ships with this journal.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
 ## Reviewed first integrations
@@ -190,7 +196,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 
 | Order | Zone / source | Rough starting story to review | Evidence to inspect |
 | ---: | --- | --- | --- |
-| 39 | Sarmiz'Duul (`sarmiz`) | [Meet the giver → 1 × a scroll covered with magical formulas; 1 × a demon's heart; 1 × a bag of magical dust and the remaining ingredients → a staff of power](../../areas/qst/sarmiz.qst#L328) | 8 Q; 12 dialogue; 6 candidate link items |
+| 39 | [Sarmiz'Duul](zone-stories/SARMIZ_DUUL.md) (`sarmiz`) | Obsidian → ornate dagger → letter → distinct blue token/flask; lockpicks → relic → dust/cloak; Peacekeeper badge → formulas; three-item royal and four-item conspiracy recipes; custom foreign moonstone fragments/core → assembly → ring or paid ship crew. | Source-comprehensive, revision one: eight achievements/potential dailies, 24 contacts/all thirteen raw addressed families, nineteen optional checks. No native repair ships; active-accounting pirate core guard, custom recipient/seed/assembly/settlement, missing stock, potion mismatch and campaign/episode work remain explicit. |
 | 40 | The Motte and Bailey of Duke Delwyn (`delwyn`) | [Meet the giver → 1 × a spool of fine white yarn → a spool of crimson yarn](../../areas/qst/delwyn.qst#L160) | 11 Q; 9 dialogue; 6 candidate link items |
 | 41 | Home of the Divine (`divhome`) | [Meet the giver → 1 × a token of earth; 1 × a token of water; 1 × a token of air and the remaining ingredients → a silky black dress of the sirens, a harp of the sirens](../../areas/qst/divhome.qst#L8) | 32 Q; 20 dialogue; 4 candidate link items |
 | 42 | The Halfcut Hills (`halfcut`) | [Meet the giver → 1 × the orc's scalp; 1 × the drow's scalp; 1 × the goblin's scalp and the remaining ingredients → a duergar belt](../../areas/qst/halfcut.qst#L177) | 13 Q; 15 dialogue; 4 candidate link items |

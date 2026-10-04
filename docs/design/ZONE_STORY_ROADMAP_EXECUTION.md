@@ -92,9 +92,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 36 | Golden Hall of the Crown | [Comprehensive source dossier](zone-stories/GOLDEN_HALL_OF_THE_CROWN.md): all 42 blocks/sixteen exchanges/seventeen addressed families, 300 rooms/91 mobs/106 objects/two shops, 534 resets/351 families, four literal assignments and automatic/shared bindings | Revision one: nine outcomes/seven services, 27 contacts/34 optional checks; exact note/key/totem/sword guidance, supplied finale and three independent rescues | Active source/recipient/returned-key lineage, three mixed fees, accepted access/travel/actor and pegasus events; builder-selected boulder/teacher/note/route/prose repairs require separate fix/news reporting |
 | 37 | Ashrumite Village | [Comprehensive source dossier](zone-stories/ASHRUMITE_VILLAGE.md): all 25 blocks/twelve exchanges/thirteen addressed families, 153 rooms/53 mobs/65 objects/twelve shops, 275 resets/181 families and fifteen literal/shared bindings | Revision two: twelve support services, sixteen contacts/21 optional checks; actual five-copy and same-name material guidance, complete intended/current repair matrix; no authored quest/daily units | All payments guarded; missing disc/two rewards/teacher equipment, stale eastern boundary and builder-selected crafting/price/guard/merchant/pet/prose work; source, paid-lore and full crafting lineage unqualified |
 | 38 | The Hall of the Ancients | [Comprehensive source dossier](zone-stories/THE_HALL_OF_THE_ANCIENTS.md): all 25 blocks/eleven exchanges/fourteen addressed families, 247 rooms/55 mobs/53 objects/one shop, 395 resets/153 families, twelve literal procedures and shared dispatch | Revision one: five outcomes/four services/two elder exclusions, 27 contacts/23 optional checks; actual sixteen-piece and ten-piece recipes, supplied foreign proof and source/access guidance | Separate Sin actual-opponent/null-actor combat fix ships; three mixed fees and oversized belt guarded; elder ordering, source budgets/chance, collector transaction, early death arming, GET settlement and campaign/access qualification pending |
-| 39–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 39 | Sarmiz'Duul | [Comprehensive source dossier](zone-stories/SARMIZ_DUUL.md): 21 blocks/eight exchanges/thirteen raw addressed families, 583 rooms/57 mobs/61 objects/four shops, 535 resets/199 families, five literal procedures plus foreign custom moonstone execution | Revision one: eight outcomes, 24 contacts/nineteen optional checks; exact courtship/relic/royal/conspiracy recipes, supplied foreign proof and custom guidance | No native repair ships; active-accounting pirate core guard retained; recipient targeting, partial seed/assembly/payment ordering, unfinished multi-core behavior, missing mount stock, potion prose/type and campaign/access/episode qualification pending |
+| 40–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Sarmiz'Duul (`sarmiz`).
+The next area is The Motte and Bailey of Duke Delwyn (`delwyn`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -1828,3 +1829,47 @@ units and 2,225 projected rows; 38 of 220 roadmap areas are source-comprehensive
 with 182 remaining.** Three paid Hall services stay guarded: two display the
 generic mixed-offering warning, while the retiring snapped-key recipe has the
 existing story-only classification and explicit authored payment guidance.
+
+## Sarmiz'Duul completed source map — October 3, 2026
+
+The [dossier](zone-stories/SARMIZ_DUUL.md) explains all 21 native blocks:
+seven Q, one QA and thirteen raw addressed M families across nine speakers.
+Complete world review covers 583 rooms/59 exact prose groups/sixteen headers/
+sixteen metadata groups/322 exit families, 57 mobiles, 61 objects, four shops
+and 535 resets/199 families. All five literal assignments, cleared procedures,
+teacher/tradeskill leads and relevant shared dispatch/source/reset execution
+are reviewed. Positive boundaries resolve; four mount-stock object resets
+remain unresolved, distinct from quest material sources.
+
+Revision one has eight independent outcomes, 24 contacts and nineteen optional
+material/history checks. The courtship and revenge/relic chains feed separate
+receipts, while royal three-part and conspiracy four-part recipes preserve
+exact supplied materials and foreign producer ownership. Two blue outputs are
+different kinds, and the sparkling one is a generic quest token. The diplomat's
+plain `sarmiz` topic is advertised despite a shared extractor skipping its
+apostrophe-containing family. No personal kills, extra assassinations, learned
+topics, poison effects, royal succession or completed romance/war are inferred.
+
+Custom moonstone review traces two boot fragments, pirate-chest core, periodic
+root-material assembly and alternative ring or paid automaton crew. **Pirate
+ship/core setup is deliberately disabled with accounting active.** Do not
+remove this guard to make a source available; durable treasure/key ownership
+must precede fresh issuance. The same finished stone also feeds a foreign
+Winterhaven commission. Optional assembly history cannot replace spent custody.
+
+**Actual native repairs in this checkpoint: none.** Erzul's missing addressed
+target validation, partial boot seed ordering, consumed-before-allocation
+assembly/ring rewards, compound crew settlement, unfinished multi-core branch,
+four missing mount-stock references and potion prose/type discrepancies have
+specific repair/qualification proposals. Builder decisions precede balance,
+effects or mutually exclusive campaign changes. Every implemented repair must
+have a distinct fix commit where practical and prominent PR/news trigger,
+before/after, evidence and limitations; these proposals are not news claims.
+
+Focused existing source/native fixtures cover exact bindings/topics/materials,
+encounter visibility, supplied three/four-item recipes, worn/different proof,
+read-only readiness, optional producers, independent recovery and the guarded
+custom source. These checks are not live acquisition, assembly, ship, combat,
+reset or travel certification. All 2,668 native definitions, revision-two
+fingerprint, registry and other 59 maps remain unchanged. Priority order remains
+220 areas: first 39 comprehensive, 181 pending. Continue with Duke Delwyn.

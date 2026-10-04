@@ -42485,6 +42485,663 @@
       ]
     },
     {
+      "contacts": [
+        {
+          "description": "Weaponsmith shop. Ask weapons. The exact obsidian fragment commission yields the ornate silver dagger; ordinary stock and the daughter's claimed gift remain separate.",
+          "keyword": "lawter",
+          "mob_vnum": 9411,
+          "name": "Lawter",
+          "topics": [
+            "weapons"
+          ]
+        },
+        {
+          "description": "Apothecary. Ask derval. A sealed letter gives the sparkling quest token and a real light-blue flask; her change of heart is narrative, without a romance-state requirement.",
+          "keyword": "severne",
+          "mob_vnum": 9415,
+          "name": "Severne",
+          "topics": [
+            "derval"
+          ]
+        },
+        {
+          "description": "Underground hideout. Ask severne or dagger. The ornate silver dagger yields a sealed letter. His lockpicks have a declared source for a separate request; no kill or courtship branch is enforced.",
+          "keyword": "derval",
+          "mob_vnum": 9420,
+          "name": "Derval",
+          "topics": [
+            "severne",
+            "dagger"
+          ]
+        },
+        {
+          "description": "Market declaration; can wander within the zone. Ask regulars or sword. The ancient fragile sword gives magical dust and a cloak, without a completed morale or corruption campaign.",
+          "keyword": "captain",
+          "mob_vnum": 9429,
+          "name": "Captain of the regular guard",
+          "topics": [
+            "regulars",
+            "sword"
+          ]
+        },
+        {
+          "description": "Sparring arena. Ask fighting or derval. Exact lockpicks give the ancient relic; dialogue calls them death proof but the native exchange does not check a personal kill.",
+          "keyword": "arian",
+          "mob_vnum": 9432,
+          "name": "Arian",
+          "topics": [
+            "derval",
+            "fighting"
+          ]
+        },
+        {
+          "description": "High priest's quarters behind temple doors. Ask tavril. His royal-potion briefing is lore and does not provide an accepted task or learned-keyword achievement.",
+          "keyword": "kirgi",
+          "mob_vnum": 9438,
+          "name": "Kirgi",
+          "topics": [
+            "tavril"
+          ]
+        },
+        {
+          "description": "Throne room. Ask strife or brave. Exact stomach, foreign root vial and foreign ampoule give an obsidian badge; acceptance retires the king without recording an invasion.",
+          "keyword": "rodev",
+          "mob_vnum": 9448,
+          "name": "King Rodev",
+          "topics": [
+            "strife",
+            "brave"
+          ]
+        },
+        {
+          "description": "Throne room beside the king. Ask advisor. Four exact ingredients yield the staff and retire the advisor; neither a coma nor succession is checked.",
+          "keyword": "aberla",
+          "mob_vnum": 9449,
+          "name": "Aberla",
+          "topics": [
+            "advisor"
+          ]
+        },
+        {
+          "description": "Palace guest bedroom. Ask sarmiz, the usable plain topic alias. One Peacekeeper badge gives two scrolls and retires the visitor; personal or additional kills are not checked.",
+          "keyword": "diplomat",
+          "mob_vnum": 9452,
+          "name": "Drow diplomat",
+          "topics": [
+            "sarmiz"
+          ]
+        },
+        {
+          "description": "Upper wizardry tower. Custom ask topics: hello, hi, quest, help, xexos, moonstone, automaton, automatons, cost, money or reward. Broken parts cause an attack. A completed moonstone buys a ring or a paid ship crew; custom settlement has no journal completion binding. The pirate core source is deliberately unavailable with accounting active; target/assembly qualification remains open.",
+          "keyword": "erzul",
+          "mob_vnum": 9453,
+          "name": "Erzul",
+          "topics": [
+            "hello",
+            "hi",
+            "quest",
+            "help",
+            "xexos",
+            "moonstone",
+            "automaton",
+            "automatons",
+            "cost",
+            "money",
+            "reward"
+          ]
+        },
+        {
+          "description": "Market declaration; can wander within the zone. Has the exact obsidian fragment in a one-copy, forty-chance equipment reset. Meeting him does not prove that the fragment was issued or personally obtained.",
+          "keyword": "leader",
+          "mob_vnum": 9407,
+          "name": "Beggar leader",
+          "topics": []
+        },
+        {
+          "description": "Damaged private study at the top of the wizardry tower. Carries the heart for the advisor commission and has a vampire follower. The encounter and room lore do not create a defeat or ritual achievement.",
+          "keyword": "demon",
+          "mob_vnum": 9404,
+          "name": "Half-illithid demon",
+          "topics": []
+        },
+        {
+          "description": "Underground tunnel declaration; can wander within the zone. Carries the stomach container for the royal recipe, with boots inside it. Recovering the stomach and personally killing the dragonkin need different evidence.",
+          "keyword": "dragonkin",
+          "mob_vnum": 9419,
+          "name": "Wingless dragonkin",
+          "topics": []
+        },
+        {
+          "description": "Temple quarters. One particular deacon declaration wears the silver key for the temple hallway. Other deacon encounters do not imply possession of that key; successful door access is separate.",
+          "keyword": "deacon",
+          "mob_vnum": 9437,
+          "name": "Temple deacon",
+          "topics": []
+        },
+        {
+          "description": "City bank. The assigned money changer directs coin conversion to Royal Bank tellers; it is a service notice, with no local quest completion.",
+          "keyword": "anders",
+          "mob_vnum": 9445,
+          "name": "Anders",
+          "topics": []
+        },
+        {
+          "description": "Shipwright office beside the yard. The actual ship-shop procedure is attached to the yard room, not this mobile. Ship purchases, repairs and arrival need accepted settlement and travel events.",
+          "keyword": "macom",
+          "mob_vnum": 9446,
+          "name": "Macom",
+          "topics": []
+        },
+        {
+          "description": "Scallywag pub. Crew services are attached to the room, require an owned ship and enforce their faction policy. A helmsman encounter or attempted hire does not prove a purchase.",
+          "keyword": "helmsman",
+          "mob_vnum": 9455,
+          "name": "Rugged helmsman",
+          "topics": []
+        },
+        {
+          "description": "Scallywag pub. Room crew/chief services are separate from this contact; payment, ship qualification and actual crew installation are not journal achievements.",
+          "keyword": "carpenter",
+          "mob_vnum": 9456,
+          "name": "Dock carpenter",
+          "topics": []
+        },
+        {
+          "description": "Alchemist declaration; can wander beyond the zone. The custom procedure is cleared and a historical craft entry is commented out. Treat him as a current teacher/contact, not a functioning new alchemy quest.",
+          "keyword": "rjinal",
+          "mob_vnum": 9454,
+          "name": "Rjinal",
+          "topics": []
+        },
+        {
+          "description": "Armor smithy. Tradeskill recipe declarations are separate from the eight native story exchanges; no new crafting or quest reward is inferred.",
+          "keyword": "otten",
+          "mob_vnum": 9412,
+          "name": "Otten",
+          "topics": []
+        },
+        {
+          "description": "Pawn shop above the underground passage. Ordinary shop stock and basement access are services and travel leads, not native quest outcomes.",
+          "keyword": "learett",
+          "mob_vnum": 9413,
+          "name": "Learett",
+          "topics": []
+        },
+        {
+          "description": "Supply shop. Ordinary travel supplies are separate from the exact quest materials and accepted delivery receipts.",
+          "keyword": "carrick",
+          "mob_vnum": 9414,
+          "name": "Carrick",
+          "topics": []
+        },
+        {
+          "description": "Magical wares shop. Stock potions, scrolls and spellbooks do not replace the exact letter, sparkling token or magical-formula quest items.",
+          "keyword": "haera",
+          "mob_vnum": 9416,
+          "name": "Haera",
+          "topics": []
+        },
+        {
+          "description": "Mount shop. Four legacy object reset references do not resolve in the active prototype inventory. Restoring stock needs a deliberate world-data repair; it is not part of this journal checkpoint.",
+          "keyword": "sior",
+          "mob_vnum": 9423,
+          "name": "Sior",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore an obsidian city, its market and temple, hidden tunnels, wizardry tower, harbor and royal keep. Eight independent accepted deliveries explain the courtship, relic, royal recipe and conspiracy routes. A custom moonstone story spans foreign sources and ship services, with no invented completion. Active, ready accounting is required; source, custom settlement, access and retiring-recipient qualification remain open.",
+      "orientation": [
+        "Ordinary boundaries lead from the valley road to the city gates, from the harbor to the surface bay, and from the underground tunnels to the underworld river cavern. Administrative loading-room exits are separate; arrival prose does not establish a safe return journey.",
+        "The courtship material route is exact obsidian fragment \u2192 ornate silver dagger \u2192 sealed letter \u2192 two different blue items. Each accepted exchange is independent. Supplied matching materials fit without earlier receipts; ordinary shop daggers, potions or scrolls do not substitute.",
+        "The revenge/relic route is exact steel lockpicks \u2192 ancient fragile sword \u2192 magical dust and cloak. Dialogue calls lockpicks proof of death, but neither possession nor acceptance checks a personal kill. The romance and revenge routes are not mutually exclusive in the native contracts.",
+        "The royal recipe takes three items together: local dragon stomach, Ice Crag root vial and dusty ampoule. The foreign vial is produced by an onion delivery. Delivery gives an obsidian badge and retires the royal recipient; it does not certify an invasion or demonic neutralization.",
+        "A separate palace token delivery takes a Peacekeeper badge for two scrolls. The advisor recipe then takes magical formulas, a demon heart, magical dust and the sparkling blue token together. Royal and conspiracy receipts are independent; no poisoning, succession or campaign-wide branch state is recorded.",
+        "The two blue rewards differ: the sparkling item is a generic quest material with no potion spells, while the light-blue leather flask is a real potion. Native prose about permanent sight and a sleeping potion needs a builder decision; custody never proves those effects happened.",
+        "The market obsidian fragment has a one-copy, forty-chance source; sources and recipients may be missing in an episode. Three recipients retire after acceptance. Eight static daily candidates do not guarantee an available daily journey or unlimited repeated supply.",
+        "Temple silver-key custody, hidden basement and tunnel doors, royal obsidian-key doors, maze travel and harbor services are separate prerequisites. A carried or equipped key alone cannot prove successful unlock, passage or return. The underground dragon source can wander.",
+        "A custom artificer in the wizardry tower wants a finished moonstone. To assemble the heart, carry exactly two fragments and one core loose in your inventory and allow them time to combine. One fragment is seeded on a foreign automaton; another is placed on the water-plane princess or in the sea vault; the pirate ship treasure chest is the declared custom core source. The pirate ship is deliberately disabled with accounting active, so a fresh core cannot currently be recovered there.",
+        "The custom moonstone path offers a ring or ship crew as alternative uses of the same stone. The crew needs an owned ship, at least 3000 ship frags and 40000000 copper. Broken pieces provoke an attack. A separate foreign three-item commission also consumes a finished moonstone; earlier assembly history does not preserve the stone. Assembly, accepted payment, ring issuance and crew installation have no native journal binding; current materials do not award those outcomes.",
+        "Local lore, shop stock, teacher/tradeskill declarations, bank notices, crew hiring and rent remain separate from the eight deliveries. Conversations and reward choices with the artificer are explained here, but their completion is not yet recorded by the journal. Some mount-shop stock is missing and needs restoration.",
+        "Optional producer receipts describe a route, while current material checks describe present unequipped custody. Neither distinguishes personal first recovery from gifts, verifies a source kill or combines independent exchanges into a finished campaign."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "sarmiz",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:9448;receive=I:9449;disappear=0",
+              "giver_vnum": 9411
+            }
+          ],
+          "id": "lawter-obsidian-dagger",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The beggar leader in the market has the exact fragment in a one-copy, forty-chance equipment declaration. Ordinary obsidian weapons and scenery do not substitute. Supplied matching fragments fit.",
+              "id": "material-9448",
+              "item_vnums": [
+                9448
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small piece of obsidian"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9448;receive=I:9449;disappear=0",
+                  "giver_vnum": 9411
+                }
+              ],
+              "hint": "Ask weapons, then offer the exact fragment. The smith stays. The ornate dagger can serve a separate courtship delivery; forging does not record giving it to the smith's daughter or proving its quality.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "The weaponsmith accepts one small piece of obsidian and gives an ornate silver dagger. His interest in a dagger for his daughter is the lead; the delivered fragment and returned dagger are the recorded outcome. His reply calls the result poorly balanced and more suitable for a costume.",
+          "title": "An obsidian commission"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:9449;receive=I:9455;disappear=0",
+              "giver_vnum": 9420
+            }
+          ],
+          "id": "derval-dagger-letter",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9448;receive=I:9449;disappear=0",
+                  "giver_vnum": 9411
+                }
+              ],
+              "hint": "This optional accepted receipt describes a producer route. Supplied exact material fits without that history. A receipt does not replace a material already spent, prove a personal kill or establish first recovery.",
+              "id": "history-9411",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: receive the ornate dagger from the smith"
+            },
+            {
+              "count": 1,
+              "hint": "The smith's obsidian commission produces this exact dagger. Supplied matching daggers fit without earlier history. The stout dagger and obsidian-and-steel daggers sold nearby are different kinds.",
+              "id": "material-9449",
+              "item_vnums": [
+                9449
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ornate silver dagger"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9449;receive=I:9455;disappear=0",
+                  "giver_vnum": 9420
+                }
+              ],
+              "hint": "Find the troubled thief in the underground hideout and ask severne or dagger. Offer the exact ornate dagger for the letter; the recipient stays. His own lockpicks feed a separate revenge request, without an enforced story branch.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "The troubled thief accepts the ornate silver dagger and gives a wax-sealed letter. This delivery is independent of the smith commission and the later apothecary reply. Courtship dialogue does not impose learned topics, a personal forging requirement or a romantic-success milestone.",
+          "title": "A dagger and a sealed letter"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:9455;receive=I:9451,I:9454;disappear=0",
+              "giver_vnum": 9415
+            }
+          ],
+          "id": "severne-letter-potions",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9449;receive=I:9455;disappear=0",
+                  "giver_vnum": 9420
+                }
+              ],
+              "hint": "This optional accepted receipt describes a producer route. Supplied exact material fits without that history. A receipt does not replace a material already spent, prove a personal kill or establish first recovery.",
+              "id": "history-9420",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: obtain the sealed letter from the thief"
+            },
+            {
+              "count": 1,
+              "hint": "The ornate-dagger delivery produces this letter. Supplied matching letters fit; no personal conversation, reading or forging receipt is required. The returned sparkling token is a material for a separate conspiracy recipe.",
+              "id": "material-9455",
+              "item_vnums": [
+                9455
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the wax-sealed letter"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9455;receive=I:9451,I:9454;disappear=0",
+                  "giver_vnum": 9415
+                }
+              ],
+              "hint": "Ask derval after meeting the apothecary. Offer the exact sealed letter. She stays and gives both items. The sparkling item has no usable potion spells; the real light-blue flask has its own effects. Neither delivery proves permanent infravision, sleep inflicted on the king or a completed romance.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "The witch accepts the sealed letter and returns two different items: a sparkling blue potion and a light blue potion in a leather flask. Her reply changes its tone about the suitor, but only the letter delivery and rewards are recorded. The sparkling item is a quest token, despite being called a sleeping potion.",
+          "title": "The apothecary's reply"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:9431;receive=I:9452;disappear=0",
+              "giver_vnum": 9432
+            }
+          ],
+          "id": "arian-lockpicks-relic",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The troubled thief in the underground hideout has a declared carried source. A matching supplied set also fits; a receipt or custody check cannot prove his death or who recovered the item.",
+              "id": "material-9431",
+              "item_vnums": [
+                9431
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the steel lockpicks with obsidian grips"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9431;receive=I:9452;disappear=0",
+                  "giver_vnum": 9432
+                }
+              ],
+              "hint": "At the sparring arena, ask fighting or derval, then offer the exact lockpicks. The warrior stays and gives the relic. The relic can be delivered to the captain separately. The warrior's worn cloak is a different source from the captain's later cloak reward.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "The warrior accepts one exact set of steel lockpicks and returns an ancient fragile sword. His dialogue calls the lockpicks proof that the thief is dead; the native recipe checks the item identity only. Supplied matching lockpicks fit without a personal kill or a mutually exclusive romance branch.",
+          "title": "Lockpicks and an ancient relic"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:9452;receive=I:9419,I:9453;disappear=0",
+              "giver_vnum": 9429
+            }
+          ],
+          "id": "captain-ancient-sword-dust",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9431;receive=I:9452;disappear=0",
+                  "giver_vnum": 9432
+                }
+              ],
+              "hint": "This optional accepted receipt describes a producer route. Supplied exact material fits without that history. A receipt does not replace a material already spent, prove a personal kill or establish first recovery.",
+              "id": "history-9432",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: receive the ancient sword from the warrior"
+            },
+            {
+              "count": 1,
+              "hint": "The lockpick delivery produces this exact relic. Supplied matching swords fit. The city's standard obsidian-and-steel weapons and the king's doubling sword are different kinds.",
+              "id": "material-9452",
+              "item_vnums": [
+                9452
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ancient fragile sword"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9452;receive=I:9419,I:9453;disappear=0",
+                  "giver_vnum": 9429
+                }
+              ],
+              "hint": "Find the captain, who is declared in the market but can wander within the zone. Ask regulars or sword, then offer the exact ancient relic. He stays; dust and cloak are both rewards. Current dust can be used in the advisor recipe without proving a personal guard campaign.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "The captain accepts the ancient fragile sword and returns a bag of magical dust and a silver-lined black leather cloak. This is one independent delivery. His plan to inspire the regulars and peacekeepers does not change a persisted guard morale, corruption or peace state.",
+          "title": "A symbol for the regular guard"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:9445,I:97099,I:97135;receive=I:9459;disappear=1",
+              "giver_vnum": 9448
+            }
+          ],
+          "id": "rodev-three-ingredients",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The local wingless dragonkin in the underground tunnels has this exact stomach container. Corroded boots placed inside it are not another ingredient. Supplied stomachs fit without proving a personal dragon kill.",
+              "id": "material-9445",
+              "item_vnums": [
+                9445
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the dragon's stomach"
+            },
+            {
+              "count": 1,
+              "hint": "In Castle Ice Crag, the Viscount gives the exact root vial for an onion and then retires. The vial is a reward of that foreign delivery, not his declared equipped or carried loot. Supplied vials fit; drinking it spends a recipe material.",
+              "id": "material-97135",
+              "item_vnums": [
+                97135
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the root vial of bubbling purple liquid"
+            },
+            {
+              "count": 1,
+              "hint": "Castle Ice Crag declares this ampoule on the ground in two rooms, including two copies in one laboratory. It is distinct from other potion bottles. Supplying it proves current custody, not personal recovery or use.",
+              "id": "material-97099",
+              "item_vnums": [
+                97099
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the dusty glass ampoule"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9445,I:97099,I:97135;receive=I:9459;disappear=1",
+                  "giver_vnum": 9448
+                }
+              ],
+              "hint": "Ask strife or brave in the throne room, then offer all three exact items together. The king retires after acceptance. The badge delivery belongs to this zone even though two ingredients come from Ice Crag; the onion-for-vial producer receipt belongs to its own zone. Recipient availability still needs episode qualification.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "The king accepts a dragon stomach, a root vial of bubbling purple liquid and a dusty glass ampoule together, and gives an obsidian badge before leaving. This three-item commission is one outcome. The claimed battle against Strife and a demonic son has no native invasion, victory or neutralization check.",
+          "title": "Three ingredients for the royal alchemists"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:9424;receive=I:9450,I:9456;disappear=1",
+              "giver_vnum": 9452
+            }
+          ],
+          "id": "diplomat-badge-formula",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Local Peacekeepers carry or wear this exact badge in eight source declarations. The king's crafted obsidian badge is a different kind. Supplied matching tokens fit without proving a death or personal recovery.",
+              "id": "material-9424",
+              "item_vnums": [
+                9424
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the black-and-silver Peacekeeper badge"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9424;receive=I:9450,I:9456;disappear=1",
+                  "giver_vnum": 9452
+                }
+              ],
+              "hint": "In the palace guest bedroom, ask sarmiz. It is the usable plain alias in a native topic family that also contains an apostrophe. Offer the exact Peacekeeper badge for both scrolls; the diplomat retires. The magical formulas are a separate advisor material. Reading either scroll is not an automatic quest milestone.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "The visiting diplomat accepts one black-and-silver Peacekeeper badge and gives a magical-formula scroll and a doeskin scroll before leaving. Dialogue requests an assassination and extra unproved kills; the native contract checks one badge only. This delivery records neither a personal kill nor the additional violence.",
+          "title": "The diplomat's requested token"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:9442,I:9450,I:9451,I:9453;receive=I:9447;disappear=1",
+              "giver_vnum": 9449
+            }
+          ],
+          "id": "aberla-four-materials",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9424;receive=I:9450,I:9456;disappear=1",
+                  "giver_vnum": 9452
+                }
+              ],
+              "hint": "This optional accepted receipt describes a producer route. Supplied exact material fits without that history. A receipt does not replace a material already spent, prove a personal kill or establish first recovery.",
+              "id": "history-9452",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: obtain formulas through the diplomat's token delivery"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9452;receive=I:9419,I:9453;disappear=0",
+                  "giver_vnum": 9429
+                }
+              ],
+              "hint": "This optional accepted receipt describes a producer route. Supplied exact material fits without that history. A receipt does not replace a material already spent, prove a personal kill or establish first recovery.",
+              "id": "history-9429",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: obtain magical dust through the relic delivery"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9455;receive=I:9451,I:9454;disappear=0",
+                  "giver_vnum": 9415
+                }
+              ],
+              "hint": "This optional accepted receipt describes a producer route. Supplied exact material fits without that history. A receipt does not replace a material already spent, prove a personal kill or establish first recovery.",
+              "id": "history-9415",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: obtain the sparkling token through the letter delivery"
+            },
+            {
+              "count": 1,
+              "hint": "The diplomat's Peacekeeper-badge exchange produces these formulas. The returned doeskin scroll and shop stock are different kinds. Supplied exact formulas fit without that delivery history.",
+              "id": "material-9450",
+              "item_vnums": [
+                9450
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the scroll covered with magical formulas"
+            },
+            {
+              "count": 1,
+              "hint": "The half-illithid demon in the damaged private study carries this exact heart. Supplied matching hearts fit without a personal battle or successful ritual; the room story does not provide a separate exorcism terminal.",
+              "id": "material-9442",
+              "item_vnums": [
+                9442
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the demon's heart"
+            },
+            {
+              "count": 1,
+              "hint": "The captain's ancient-sword delivery produces the exact dust. Current custody is required even after an earlier relic receipt. The bag's equipment bonus is separate from the recipe.",
+              "id": "material-9453",
+              "item_vnums": [
+                9453
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bag of magical dust"
+            },
+            {
+              "count": 1,
+              "hint": "The sealed-letter exchange produces this sparkling item, which is a quest token rather than a usable potion. The real light-blue leather flask is different. No use of a sleeping potion, permanent sight or effect on the king is required.",
+              "id": "material-9451",
+              "item_vnums": [
+                9451
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the sparkling blue potion token"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9442,I:9450,I:9451,I:9453;receive=I:9447;disappear=1",
+                  "giver_vnum": 9449
+                }
+              ],
+              "hint": "Ask advisor in the throne room and offer all four exact materials together. The advisor retires and returns the exact staff. Supplied materials skip the optional producer histories. The three-ingredient royal recipe and this conspiracy can each have an independent receipt; no native branch exclusivity or combined campaign finale is enforced.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "The advisor accepts a magical-formula scroll, a demon heart, magical dust and the sparkling blue token together, gives a staff of power and leaves. This four-item delivery is one outcome. His plot to incapacitate the king, later called a celebration, does not persist poisoning, a coma, kingship transfer or delivery of a brewed potion to the king.",
+          "title": "The advisor's four-part conspiracy"
+        }
+      ]
+    },
+    {
       "contacts": [],
       "coverage": "complete",
       "exclusions": [],

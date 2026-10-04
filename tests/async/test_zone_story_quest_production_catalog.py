@@ -1469,7 +1469,62 @@ assert door_states[77885,1]==6 and door_states[77879,1]==2
 assert door_states[77893,5]==door_states[77944,4]==9
 assert "hidden, locked eastern tower entrance" in hall_stories["xamael-repair-tower-key"]["steps"][-1]["hint"]
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall"):
+# Sarmiz preserves independent source-owned deliveries, exact foreign recipe
+# materials and the usable sibling of a punctuated topic. Custom moonstone
+# guidance must not manufacture a completion or remove its guarded core source.
+sarmiz=inventory_module.area_evidence(ROOT,"sarmiz")
+sarmiz_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="sarmiz")
+sarmiz_stories={s["id"]:s for s in sarmiz_map["stories"]}
+assert (sarmiz_map["schema_version"],sarmiz_map["revision"],sarmiz_map["coverage"])==(3,1,"complete")
+assert len(sarmiz_stories)==8 and len(sarmiz_map["contacts"])==24 and not sarmiz_map["exclusions"]
+assert sum(t.get("optional",False) for s in sarmiz_stories.values() for t in s["steps"])==19
+assert len(sarmiz["requests"])==8 and len(sarmiz["dialogue"])==12
+assert (len(sarmiz["mobs"]),len(sarmiz["items"]),len(sarmiz["reset_commands"]),len(sarmiz["special_assignments"]))==(57,61,535,5)
+assert all(s["steps"][-1]["contracts"]==s["contracts"] for s in sarmiz_stories.values())
+bindings=[b for s in sarmiz_stories.values() for b in s["contracts"]]
+assert len(bindings)==8 and {tuple(sorted(b.items())) for b in bindings}=={
+    tuple(sorted(r["block"]["binding"].items())) for r in sarmiz["requests"]}
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==94]
+assert len(units)==sum(u["achievement"] for u in units)==sum(u["daily_candidate"] for u in units)==8
+royal=sarmiz_stories["rodev-three-ingredients"]
+advisor=sarmiz_stories["aberla-four-materials"]
+assert [(t["item_vnums"],t["count"]) for t in royal["steps"][:-1]]==[([9445],1),([97135],1),([97099],1)]
+assert [(t["item_vnums"],t["count"]) for t in advisor["steps"] if t["kind"]=="carried_item"]==[([9450],1),([9442],1),([9453],1),([9451],1)]
+assert [t["contracts"] for t in advisor["steps"] if t["kind"]=="completion" and t.get("optional")]==[
+    sarmiz_stories["diplomat-badge-formula"]["contracts"],sarmiz_stories["captain-ancient-sword-dust"]["contracts"],sarmiz_stories["severne-letter-potions"]["contracts"]]
+assert sarmiz_stories["derval-dagger-letter"]["steps"][0]["contracts"]==sarmiz_stories["lawter-obsidian-dagger"]["contracts"]
+assert sarmiz_stories["severne-letter-potions"]["steps"][0]["contracts"]==sarmiz_stories["derval-dagger-letter"]["contracts"]
+assert "item identity only" in sarmiz_stories["arian-lockpicks-relic"]["summary"]
+assert "no native branch exclusivity" in advisor["steps"][-1]["hint"]
+contacts={c["mob_vnum"]:c for c in sarmiz_map["contacts"]}
+for v,c in contacts.items(): assert c["keyword"] in sarmiz["mobs"][v]["keywords"]
+raw_m=[b for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/sarmiz.qst" and b["kind"]=="M"]
+assert len(raw_m)==13 and len({b["giver_vnum"] for b in raw_m})==9
+for b in raw_m:
+    assert {t for t in b["body"][0].rstrip("~").split() if "'" not in t}<=set(contacts[b["giver_vnum"]]["topics"])
+assert contacts[9452]["topics"]==["sarmiz"]
+assert set(contacts[9453]["topics"])=={"hello","hi","quest","help","xexos","moonstone","automaton","automatons","cost","money","reward"}
+assert all(b["giver_vnum"]!=9453 for b in bindings)
+assert "deliberately disabled with accounting active" in " ".join(sarmiz_map["orientation"])
+assert "foreign three-item commission" in " ".join(sarmiz_map["orientation"])
+parent=room=None;sources=collections.defaultdict(list)
+for r in sarmiz["reset_commands"]:
+    c,v=r["command"],r["arguments"]
+    assert v[5:]==[0,0,0]
+    if c in ("M","F"): parent,room=v[1],v[3]
+    if c in ("G","E") and v[1] in (9448,9431,9442,9445): sources[v[1]].append((parent,room,v[2],v[4]))
+assert sources=={9448:[(9407,9597,1,40)],9431:[(9420,9733,2,100)],9442:[(9404,9749,1,100)],9445:[(9419,9786,1,100)]}
+for item in (3095,3096,6076,6018):
+    assert item not in inventory_items and any(r["command"]=="G" and r["arguments"][1]==item for r in sarmiz["reset_commands"])
+obj_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/obj/sarmiz.obj").read_text(encoding="utf8"),re.M|re.S)}
+assert int(obj_bodies[9451].split("~")[4].split()[0])==13
+assert int(obj_bodies[9454].split("~")[4].split()[0])==10
+ship_source=(ROOT/"src/ships/ship_npc.c").read_text(encoding="utf8")
+for name in ("load_cyrics_revenge()","load_cyrics_revenge_crew(P_ship ship)"):
+    start=ship_source.index("bool "+name)
+    assert "if (economic_gameplay_authority::active())\n\t\treturn false;" in ship_source[start:start+220]
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
