@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from copy import deepcopy
+from dataclasses import replace
 import hashlib
 import json
 import os
@@ -20,7 +21,7 @@ from scripts.telemetry import battle_history as history
 from scripts.telemetry import battle_contract as battle
 from scripts.telemetry import battle_contribution_contract as contribution
 from scripts.telemetry import battle_source as source
-from scripts.telemetry.db_access import PyMySQLRollupDatabase, GenerationConflict
+from scripts.telemetry import battle_publication as publication, identity_history as identity, incident
 from scripts.telemetry.rollup_engine import build_page_contributions, BoundsExceeded, SemanticError
 from test_telemetry_observations import ownership
 from scripts.telemetry.rollup_definitions import (
@@ -140,6 +141,248 @@ class BattleHistoryTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.directory.cleanup()
+
+    @staticmethod
+    def _publication_window(rows, generation=1):
+        scope = next((row["battle_environment_id"], row["battle_season_id"]) for row in rows if row["record_kind"] == 10)
+        target = (source.DEFINITION_VERSION, generation, *scope)
+        facts = [dict(row, ingest_id=index) for index, row in enumerate(sorted(rows,
+            key=lambda row: (row["boot_id"], row["process_id"], row["record_seq"])), 1)]
+        inputs = [source.retain_input(row, target, 0) for row in facts]
+        header = source.advance_header(source.initial_header(target), inputs, len(facts))
+        return source.verify_source(header, inputs, expected_scope=target, expected_watermark=len(facts))
+
+    def _dated_publication_fixture(self, *, midnight=False):
+        # Controlled coherent UTC labels qualify dated boundaries separately
+        # from the original real-clock native/SQL readbacks. Measured amounts,
+        # complete association references and native actor context stay intact.
+        rows = deepcopy(self.rows)
+        candidates = [row for row in rows if row["record_kind"] == 11 and row["bc_actor_kind"] == 1 and
+            row["bc_observed_through_monotonic_usec"] - row["bc_start_monotonic_usec"] >= 4 and
+            all(row["bc_actor_" + name] for name in ("session_boot_id", "session_process_id", "session_seq"))]
+        selected = max(candidates, key=lambda row: row["bc_observed_through_monotonic_usec"] - row["bc_start_monotonic_usec"])
+        first, last = selected["bc_start_monotonic_usec"], selected["bc_observed_through_monotonic_usec"]
+        middle = first + (last - first) // 2
+        day = 86_400_000_000
+        epoch = day - middle % day if midnight else 2 * day
+        for row in rows:
+            prefix = "battle_" if row["record_kind"] == 10 else "bc_"
+            for clock in ("at", "observed_through") if row["record_kind"] == 10 else ("start", "observed_through", "decision"):
+                row[prefix + clock + "_utc_usec"] = epoch + row[prefix + clock + "_monotonic_usec"]
+            row["occurrence_utc_usec"] = row[prefix + ("at" if row["record_kind"] == 10 else "decision") + "_utc_usec"]
+        producer = selected["bc_battle_boot_id"], selected["bc_battle_process_id"]
+        sequence = max(row["record_seq"] for row in rows if (row["boot_id"], row["process_id"]) == producer)
+        for index, (at, token) in enumerate(((first, 101), (middle, 102)), 1):
+            rows.append(ownership(boot_id=producer[0], process_id=producer[1], record_seq=sequence + index,
+                connection_boot_id=producer[0], connection_process_id=producer[1], connection_seq=index,
+                environment_id=self.scope[0], season_id=self.scope[1], config_id=selected["bc_config_id"],
+                classifier_version=selected["bc_classifier_version"], policy_version=selected["bc_policy_version"],
+                subject_id=selected["bc_actor_id"], pid=selected["bc_actor_pid"],
+                session_boot_id=selected["bc_actor_session_boot_id"], session_process_id=selected["bc_actor_session_process_id"],
+                session_seq=selected["bc_actor_session_seq"], at_monotonic_usec=at, at_utc_usec=epoch + at,
+                occurrence_utc_usec=epoch + at, ownership_account_token=token))
+        registry = identity.Registry(*self.scope, 1, 0, None, epoch + first - 1, epoch + last + 1,
+            epoch + last + 2, "a" * 64, "b" * 64,
+            tuple(identity.Association(index, token, controller, epoch + first - 1, None,
+                "confirmed", "staff_review", "c" * 64) for index, (token, controller) in enumerate(((101, 701), (102, 702)), 1)))
+        return self._publication_window(rows), registry, contribution.segment_key(selected), first, middle, last, epoch
+
+    def test_publication_preserves_native_observations_and_unknown_identity(self):
+        saved = deepcopy(self.source_window)
+        coverage = incident.public_coverage(None, [], registry_schema_version=4)
+        output = publication.build_publication(self.source_window, None, coverage)
+        values = [publication.decode_row(self.source_scope, row) for row in output.rows]
+        self.assertEqual(output.header["verified_contribution_links"], 28)
+        self.assertEqual(output.header["partial_contribution_links"], 0)
+        self.assertEqual(output.header["contribution_row_count"], 28)
+        self.assertEqual(output.header["observed_pc_present_usec"], output.header["unknown_account_pc_present_usec"])
+        self.assertEqual(output.header["confirmed_controller_pc_present_usec"], 0)
+        self.assertEqual(output.header["observed_present_usec"], self.baseline.summary["verified_exposure_present_usec"])
+        self.assertEqual(sum(row["damage_dealt"] or 0 for row in values if row.get("canonical")), 112)
+        metrics = [row for row in values if "bc_segment_seq" in row]
+        self.assertTrue(all(row["bc_control_applications"] is None and row["bc_control_received"] is None for row in metrics))
+        self.assertTrue(all(row.get("controller_token") is None for row in values))
+        self.assertEqual(self.source_window, saved)
+        self.assertLessEqual(output.reserved_bytes, source.DEFAULT_BYTE_LIMIT)
+
+    def test_publication_dated_transfer_conserves_presence_without_dividing_amounts(self):
+        window, registry, selected, first, middle, last, _epoch = self._dated_publication_fixture()
+        coverage = incident.public_coverage(None, [], registry_schema_version=4)
+        output = publication.build_publication(window, registry, coverage)
+        values = [publication.decode_row(self.source_scope, row) for row in output.rows]
+        metric = next(row for row in values if "bc_segment_seq" in row and contribution.segment_key(row) == selected)
+        self.assertEqual(metric["attribution_status"], "identity_changes_inside_segment")
+        self.assertIsNone(metric["account_token"])
+        self.assertIsNone(metric["controller_token"])
+        original = next(row for row in window.facts if row["record_kind"] == 11 and contribution.segment_key(row) == selected)
+        self.assertEqual(metric["bc_damage_dealt"], original["bc_damage_dealt"])
+        actor = original["bc_actor_id"]
+        pieces = [row for row in values if "utc_day" in row and row["battle_actor_id"] == actor and
+            row["source_battle"] == list(selected[:2]) + [original["bc_battle_seq"]] and
+            first <= row["start_monotonic_usec"] < last]
+        self.assertTrue(pieces)
+        before = [row for row in pieces if row["observed_through_monotonic_usec"] <= middle]
+        after = [row for row in pieces if row["start_monotonic_usec"] >= middle]
+        self.assertTrue(before and after)
+        self.assertTrue(all((row["account_token"], row["controller_token"]) == (101, 701) for row in before))
+        self.assertTrue(all((row["account_token"], row["controller_token"]) == (102, 702) for row in after))
+
+    def test_publication_midnight_retains_actual_clocks_and_dated_identity(self):
+        window, registry, selected, first, middle, last, epoch = self._dated_publication_fixture(midnight=True)
+        output = publication.build_publication(window, registry, incident.public_coverage(None, [], registry_schema_version=4))
+        values = [publication.decode_row(self.source_scope, row) for row in output.rows if row["row_kind"] == 4]
+        actor = next(row["bc_actor_id"] for row in window.facts if row["record_kind"] == 11 and contribution.segment_key(row) == selected)
+        selected_rows = [row for row in values if row["battle_actor_id"] == actor and first <= row["start_monotonic_usec"] < last]
+        self.assertGreaterEqual(len({row["utc_day"] for row in selected_rows}), 2)
+        for row in selected_rows:
+            self.assertEqual(row["start_utc_usec"], epoch + row["start_monotonic_usec"])
+            self.assertEqual(row["observed_through_utc_usec"], epoch + row["observed_through_monotonic_usec"])
+        self.assertTrue(any(row["start_monotonic_usec"] == middle for row in selected_rows))
+
+    def test_publication_review_correction_preserves_reserved_generation(self):
+        window, registry, _selected, _first, _middle, _last, _epoch = self._dated_publication_fixture()
+        coverage = incident.public_coverage(None, [], registry_schema_version=4)
+        old = publication.build_publication(window, registry, coverage)
+        saved = deepcopy(old)
+        corrected = replace(registry, registry_version=2, previous_registry_version=1,
+            previous_packet_digest=registry.packet_digest,
+            associations=tuple(replace(row, controller_token=799) if row.account_token == 101 else row
+                for row in registry.associations))
+        new_window = self._publication_window(window.facts, generation=2)
+        new = publication.build_publication(new_window, corrected, coverage)
+        old_values = [publication.decode_row(self.source_scope, row) for row in old.rows if row["row_kind"] == 4]
+        new_scope = tuple(new_window.header[name] for name in source.SCOPE)
+        new_values = [publication.decode_row(new_scope, row) for row in new.rows if row["row_kind"] == 4]
+        self.assertTrue(any(row["controller_token"] == 701 for row in old_values))
+        self.assertTrue(any(row["controller_token"] == 799 for row in new_values))
+        self.assertEqual({row["registry_version"] for row in old_values}, {1})
+        self.assertEqual({row["registry_version"] for row in new_values}, {2})
+        self.assertEqual(old, saved)
+        self.assertEqual(old.header["observed_present_usec"], new.header["observed_present_usec"])
+
+    def test_publication_uniform_account_survives_changing_controller_reviews(self):
+        window, registry, selected, first, middle, last, epoch = self._dated_publication_fixture()
+        rows = deepcopy(window.facts)
+        for row in rows:
+            if row["record_kind"] == 9:
+                row["ownership_account_token"] = 101
+        window = self._publication_window(rows)
+        for later_controller, expected_controller, expected_status in (
+                (702, None, "mixed_review_linkage"), (701, 701, "confirmed_across_associations")):
+            reviewed = replace(registry, associations=(
+                identity.Association(1, 101, 701, epoch + first - 1, epoch + middle,
+                    "confirmed", "staff_review", "c" * 64),
+                identity.Association(2, 101, later_controller, epoch + middle, epoch + last + 1,
+                    "confirmed", "staff_review", "d" * 64)))
+            output = publication.build_publication(window, reviewed,
+                incident.public_coverage(None, [], registry_schema_version=4))
+            values = [publication.decode_row(self.source_scope, row) for row in output.rows if row["row_kind"] == 3]
+            metric = next(row for row in values if contribution.segment_key(row) == selected)
+            self.assertEqual(metric["account_token"], 101)
+            self.assertEqual(metric["controller_token"], expected_controller)
+            self.assertEqual(metric["linkage_status"], expected_status)
+            self.assertIsNone(metric["association_id"])
+            original = next(row for row in rows if row["record_kind"] == 11 and contribution.segment_key(row) == selected)
+            self.assertEqual(metric["bc_damage_dealt"], original["bc_damage_dealt"])
+
+    def test_publication_ownership_loss_waits_for_a_fresh_observed_anchor(self):
+        window, registry, selected, first, middle, last, epoch = self._dated_publication_fixture()
+        original = next(row for row in window.facts if row["record_kind"] == 11 and contribution.segment_key(row) == selected)
+        begin = first + (middle - first) // 2
+        packet = incident.template(4)
+        packet.update(environment_id=self.scope[0], season_id=self.scope[1], reviewer_token="a" * 64,
+            review_evidence_digest="b" * 64, reviewed_from_utc_usec=epoch + first - 1,
+            reviewed_through_utc_usec=epoch + last + 1)
+        loss = dict(packet["incidents"][0], producer_boot_id=original["boot_id"],
+            producer_process_id=original["process_id"], start_utc_usec=epoch + begin,
+            end_utc_usec=epoch + middle, record_kind_mask=1 << 9, evidence_digest="d" * 64)
+        for open_end in (False, True):
+            packet["incidents"] = [dict(loss, end_utc_usec=None)] if open_end else [loss]
+            meta, details = incident.validate_packet(packet)
+            details = [dict(row, occurrence_relation=1) for row in details]
+            summary = incident.publication_summary(self.source_scope, meta, details)
+            covered = incident.public_coverage(summary, details, registry_schema_version=4)
+            output = publication.build_publication(window, registry, covered)
+            values = [publication.decode_row(self.source_scope, row) for row in output.rows if row["row_kind"] == 4]
+            pieces = [row for row in values if row["battle_actor_id"] == original["bc_actor_id"] and
+                row["source_battle"] == [original[name] for name in contribution.BATTLE] and
+                first <= row["start_monotonic_usec"] < last]
+            self.assertTrue(pieces)
+            self.assertTrue(all(row["account_token"] is None for row in pieces if
+                begin <= row["start_monotonic_usec"] < (last if open_end else middle)))
+            recovered = [row for row in pieces if row["start_monotonic_usec"] >= middle]
+            self.assertTrue(recovered)
+            self.assertTrue(all(row["account_token"] is None if open_end else row["account_token"] == 102
+                for row in recovered))
+            self.assertEqual(output.header["observed_present_usec"], self.baseline.summary["verified_exposure_present_usec"])
+            self.assertTrue(output.header["quality_flags"] & ROLLUP_QUALITY_INCIDENT_GAP)
+
+    def test_publication_retains_full_association_values_and_unproven_pet_identity(self):
+        window, registry, _selected, _first, _middle, _last, _epoch = self._dated_publication_fixture()
+        output = publication.build_publication(window, registry,
+            incident.public_coverage(None, [], registry_schema_version=4))
+        decoded = [publication.decode_row(self.source_scope, row) for row in output.rows]
+        associations = {battle.fact_key(row): row for row in decoded if "battle_fact_index" in row}
+        self.assertEqual(len(associations), 123)
+        for row in window.facts:
+            if row["record_kind"] == 10:
+                self.assertEqual({name: associations[battle.fact_key(row)][name] for name in source.SOURCE_COLUMNS[10]},
+                    {name: row[name] for name in source.SOURCE_COLUMNS[10]})
+        pets = [row for row in decoded if "utc_day" in row and row["battle_actor_kind"] == 2]
+        self.assertTrue(pets)
+        self.assertTrue(all(row["account_token"] is None and row["controller_token"] is None and
+            row["linkage_status"] == "unproven_owner_identity" for row in pets))
+
+    def test_publication_unknown_clock_keeps_account_but_not_controller(self):
+        window, registry, selected, _first, _middle, _last, _epoch = self._dated_publication_fixture()
+        rows = deepcopy(window.facts)
+        for row in rows:
+            if row["record_kind"] == 10:
+                for clock in ("at", "observed_through"):
+                    row["battle_" + clock + "_utc_usec"] = contribution.UTC_UNKNOWN
+            elif row["record_kind"] == 11:
+                for clock in ("start", "observed_through", "decision"):
+                    row["bc_" + clock + "_utc_usec"] = contribution.UTC_UNKNOWN
+            else:
+                row["at_utc_usec"] = contribution.UTC_UNKNOWN
+            row["occurrence_utc_usec"] = contribution.UTC_UNKNOWN
+        changed = self._publication_window(rows)
+        output = publication.build_publication(changed, registry, incident.public_coverage(None, [], registry_schema_version=4))
+        values = [publication.decode_row(self.source_scope, row) for row in output.rows if row["row_kind"] == 4]
+        self.assertTrue(any(row["account_token"] is not None for row in values))
+        self.assertTrue(all(row["controller_token"] is None and row["utc_day"] is None for row in values))
+        self.assertEqual(output.header["observed_present_usec"], self.baseline.summary["verified_exposure_present_usec"])
+
+    def test_publication_refuses_changed_source_or_incident_schema(self):
+        coverage = incident.public_coverage(None, [], registry_schema_version=4)
+        changed = deepcopy(self.source_window)
+        row = next(row for row in changed.facts if row["record_kind"] == 11)
+        row["bc_damage_dealt"] += 1
+        with self.assertRaisesRegex(publication.PublicationError, "source_changed"):
+            publication.build_publication(changed, None, coverage)
+        with self.assertRaisesRegex(publication.PublicationError, "incident_schema"):
+            publication.build_publication(self.source_window, None, dict(coverage, registry_schema_version=3))
+
+    def test_publication_payload_scope_key_and_quality_tampering_refuse(self):
+        output = publication.build_publication(self.source_window, None, incident.public_coverage(None, [], registry_schema_version=4))
+        row = dict(output.rows[0])
+        for field, value in (("payload", row["payload"] + b" "), ("row_key", b"x" * 32),
+                ("quality_flags", row["quality_flags"] ^ 1), ("row_kind", True), ("generation", 99)):
+            with self.subTest(field=field), self.assertRaises(publication.PublicationError):
+                publication.decode_row(self.source_scope, dict(row, **{field: value}))
+
+    def test_publication_capacity_deadline_and_values_are_bounded(self):
+        saved = deepcopy(self.source_window)
+        coverage = incident.public_coverage(None, [], registry_schema_version=4)
+        with self.assertRaisesRegex(publication.PublicationError, "byte_capacity"):
+            publication.build_publication(self.source_window, None, coverage, max_total_bytes=self.source_window.reserved_bytes)
+        with self.assertRaises((publication.PublicationError, history.HistoryError)):
+            publication.build_publication(self.source_window, None, coverage, max_output_rows=1)
+        def expired():
+            raise TimeoutError("publication deadline")
+        with self.assertRaises(TimeoutError):
+            publication.build_publication(self.source_window, None, coverage, check_deadline=expired)
+        self.assertEqual(self.source_window, saved)
 
     def test_actual_native_histories_and_disjoint_amounts(self):
         self.assertEqual(qualify_native_history(self.rows).summary, self.baseline.summary)
@@ -634,16 +877,21 @@ class BattleHistoryTests(unittest.TestCase):
             source.verify_source(header, self.retained_inputs + [repeated],
                 expected_scope=self.source_scope, expected_watermark=row["ingest_id"])
 
-    def test_source_preparation_target_has_no_published_report_catalog(self):
+    def test_battle_catalog_is_independent_of_existing_report_versions(self):
         target = RollupTarget(*self.source_scope)
         self.assertEqual(target.scope_tuple, self.source_scope)
         for version in (1, 2, 3):
             self.assertTrue(report_catalog(version))
+        catalog = report_catalog(source.DEFINITION_VERSION)
+        self.assertEqual({row["name"] for row in catalog}, set(publication.ROW_KINDS))
+        self.assertEqual({row["name"] for row in catalog if row["account_metrics_available"]},
+            {"battle_contributions", "battle_exposure"})
+        from scripts.telemetry.rollup_definitions import report_definition
         with self.assertRaises(ValueError):
-            report_catalog(source.DEFINITION_VERSION)
-        database = PyMySQLRollupDatabase(object())
-        with self.assertRaisesRegex(GenerationConflict, "preparation cannot publish"):
-            database.publish_generation(target)
+            report_definition("playtime", source.DEFINITION_VERSION)
+        for version in (1, 2, 3, 4):
+            with self.assertRaises(ValueError):
+                report_definition("battle_exposure", version)
 
     def test_retained_source_origin_is_bound_to_the_selected_window(self):
         origin = 1000
@@ -748,14 +996,14 @@ class BattleHistoryTests(unittest.TestCase):
         self.assertEqual(self.retained_inputs, saved)
         self.assertEqual(header, self.source_window.header)
 
-    def test_retained_source_keeps_published_checkpoints_immutable_without_enabling_catalog(self):
+    def test_retained_source_keeps_published_checkpoints_immutable(self):
         header = dict(self.source_window.header, publication_complete=1)
         source.verify_source(header, self.retained_inputs, expected_scope=self.source_scope,
             expected_watermark=header["input_watermark"])
         with self.assertRaisesRegex(source.SourceError, "published_immutable"):
             source.advance_header(header, [], header["input_watermark"] + 1)
         from scripts.telemetry.rollup_definitions import SUPPORTED_DEFINITION_VERSIONS
-        self.assertEqual(SUPPORTED_DEFINITION_VERSIONS, {1, 2, 3})
+        self.assertEqual(SUPPORTED_DEFINITION_VERSIONS, {1, 2, 3, 5})
 
     def test_bounds_and_deadline_refuse_without_mutating_source(self):
         saved = deepcopy(self.rows)

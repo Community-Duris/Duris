@@ -10,8 +10,10 @@ history reducer also verifies retained lineage, effective contribution context,
 measured lifecycle boundaries and historical exposure intervals. A canonical
 source contract binds selected kind-9/10/11 values to a cursor checkpoint and
 rolling digest. Migration 0063 persists these private inputs with the existing
-generation cursor transaction and required identity reservation. Expanded context/control/prevention/faction
-sources, dated identity linkage and atomic balance projections remain under
+generation cursor transaction and required identity reservation. Migration 0064
+adds atomic publication of these observations with dated identity attribution,
+independent loss coverage and bounded reports. Expanded context/control/prevention/
+faction sources, typed outcomes and the complete balance suites remain under
 implementation.
 [Implementation status](IMPLEMENTATION_STATUS.md) retains the full accepted scope
 and the actual personal-local gameplay qualification requirement.
@@ -727,9 +729,9 @@ must reserve its buffering fetch, history reduction, review/incident evidence,
 dated exposure cells and complete publication invocation separately. A capacity
 or deadline refusal returns no source result and mutates no caller values.
 
-The contract names definition 5 for the existing independent incident-schema-4
-reservation seam. It does not enable definition 5: the maintained catalog remains
-1/2/3, and no SQL source checkpoint or public battle table is created by these pure
+At the retained-input contract stage, definition 5 names the independent incident-schema-4
+reservation seam. Those pure helpers did not enable definition 5: the catalog at
+that stage remained 1/2/3, and no SQL source checkpoint or public battle table is created by these pure
 helpers. Thirty-nine focused regressions qualify context/composition changes,
 alias/inactivity/missing-history cuts, all eight effort counters, unknown clocks/
 sides, source receipt/digest/cursor negatives, kind-9 value retention and budgets.
@@ -767,14 +769,14 @@ cursor update rolls everything back. The existing advisory lock, fixed keyset
 bound, deadline and lost-acknowledgement reconciliation remain the execution
 path. Different generations keep independent source keys and scoped digests.
 
-Definition **5 is currently source preparation**. `RollupTarget` and the existing
+At migration 0063's delivery, definition **5 supplied source preparation**. `RollupTarget` and the existing
 `run` command accept it; report definitions and the catalog remain **1/2/3**.
 Selected kind-9/10/11 facts receive their existing strict family validation and
 exact source encoding. Other valid families advance the global cursor without
 adding battle source or duplicate playtime/progression rows. Generic capture gaps
 retain uncertainty. Source preparation tracks selected occurrence bounds and
 late/unknown clock flags independently of SQL arrival and original source values.
-`publish` explicitly refuses definition 5 until its battle projection exists.
+At that stage `publish` explicitly refused definition 5 pending its battle projection.
 A building source window is not a published balance report or healthy empty
 population proof.
 
@@ -822,8 +824,108 @@ preparing its restricted rollup role and identity reservation, the maintained
 `scripts/telemetry/rollup.py run --definition-version 5 --generation ...
 --environment-id ... --season-id ... --through-ingest-id ...` command prepares
 this source window. Existing explicit connection and invocation bounds apply.
-The next transaction must consume the reserved dated identity review and
-independent schema-4 incident snapshot, publish dated exposure/contribution/
-coverage stores atomically, and qualify immutable report generations, rollback,
-lost acknowledgements and restricted report reads. Remaining native evidence and
-all seven accepted completion requirements remain open under #258.
+Migration 0064 supplies the publication transaction described next. Remaining
+native evidence and all seven accepted completion requirements remain open under
+#258.
+
+## Atomic battle observation publication
+
+Definition **5** now offers five independent reports through the maintained
+`scripts/telemetry/rollup.py` interface. Definitions 1, 2 and 3 preserve their
+earlier report meanings. The separate original `report.py` presentation remains
+its definition-1 interface.
+
+| Report | Published grain and intended use |
+| --- | --- |
+| `battle_observations` | Each original battle, its canonical lineage, alias retirement, lifecycle/packet coverage and observed contribution totals. A censoring reason does not establish a winner. |
+| `battle_actors` | The latest cumulative actor snapshot for each canonical battle. This is an alternative to historical exposure, so its time must not be added to exposure time. |
+| `battle_contributions` | Each original disjoint amount segment, complete association references, canonical battle and available metric families. Exact amounts remain whole when identity changes inside a segment. |
+| `battle_exposure` | Positive measured actor intervals cut at observed ownership changes, reviewed linkage boundaries and comparable UTC midnight. Historical class/faction/group/mode/roster context and all eight effort partitions remain exact. |
+| `battle_associations` | Every original canonical kind-10 field and producer/ingestion receipt, including ordered packet membership, associations, alias bridges, original clocks and projection quality. Private ownership inputs are excluded. |
+
+The builder consumes the locked retained source window, its original ingestion
+boundary/count/digest, the generation's reserved identity version and the
+independent schema-4 incident snapshot. Migration 0064 adds
+`telemetry_rollup_battle_coverage` and `telemetry_rollup_battle_row`. The existing
+publication transaction inserts the coverage header, all public rows and loss
+snapshot, marks retained source complete, publishes the generation and supersedes
+the earlier generation together. A failure undoes every step. Existing advisory
+locking, fixed source bounds, retries, deadlines and statement/socket budgets
+remain the execution path. Published source requires a new generation for more
+input. Superseded reports retain their own source and reviewed snapshots.
+
+Account attribution requires the same producer lifetime, admitted session,
+character PID/owner identity and an observed ownership anchor. A missing session,
+NPC or unproven pet owner remains explicit. Controller attribution additionally
+requires a confirmed dated association in the reserved reviewed version and
+comparable UTC. Unknown UTC can preserve an observed account while leaving the
+controller and day unknown. A reviewed ownership-loss end does not itself restore
+ownership: a fresh matching observed anchor is required. Unknown incident ends
+remain unknown. A correction affects only a new reserved generation.
+
+Exposure partitions conserve native presence and each applicable effort counter.
+The header separates PC/non-PC presence, observed/unknown account presence and
+confirmed/unlinked controller presence. These are sums of measured actor time;
+they do not represent unique controller hours, input activity or continuous human
+attention. Amounts are assigned to a known account/controller only when that
+identity is uniform over the observed segment. A uniform account can remain known
+across changing controller reviews; a controller stays known across consecutive
+confirmed association IDs only when it is uniform. No amount is prorated across
+an unobserved action boundary. Zero-duration amounts retain unknown attribution.
+Unavailable native control counters are public NULLs despite the sealed native
+representation's zeros.
+
+Rows use a canonical bounded JSON field/type contract, domain/scoped logical key,
+payload SHA-256 and quality mask. A generation snapshot digest covers every
+ordered public row receipt. Each report verifies that complete bounded receipt
+list before reading its requested projection, so missing or changed receipts
+cannot become a valid partial report. Selected payloads are capped at 8,193 bytes
+and digest/key selections at one byte beyond their declared widths; an oversized
+stored value refuses instead of becoming a truncated valid value. A consistent
+read-only transaction covers state, identity reservation, publication, rows and
+loss metadata and is released on every outcome.
+
+The builder reserves encoded/decoded source, history, review evidence, temporary
+boundary slices and public output before allocating them. Publication has a
+4,096-row hard ceiling and the existing 2,000-row default; the default total byte
+reservation is 32 MiB. Reports reserve metadata and the complete snapshot receipt
+list before selected rows and their sentinel. These are conservative software
+reservations, not measured heap or game-loop performance. Capacity/deadline
+refusal produces no partial publication.
+
+The restricted rollup role needs SELECT/INSERT on both new publication tables,
+the existing public incident snapshot tables and generation reservation;
+SELECT/INSERT/UPDATE on state and the private building source header; SELECT/
+INSERT on retained inputs; and SELECT on raw telemetry and the selected identity/
+schema-4 review inputs. It receives no UPDATE/DELETE on public rows or retained
+inputs. The report role needs SELECT only on state, reservation and public battle/
+incident stores. It receives no private source, raw account or review-authority
+access. Existing protected lifecycle and controller/disclosure decision entries
+apply to the new stores.
+
+After migrations and roles have been prepared in an explicit disposable local
+setup, reserve a reviewed identity version or explicit unknown identity using
+the existing identity API, then run a fixed input window and publish it:
+
+```sh
+python3 scripts/telemetry/rollup.py definitions --definition-version 5
+python3 scripts/telemetry/rollup.py run --definition-version 5 --generation 1 --environment-id "$environment" --season-id "$season" --through-ingest-id "$through"
+python3 scripts/telemetry/rollup.py publish --definition-version 5 --generation 1 --environment-id "$environment" --season-id "$season"
+python3 scripts/telemetry/rollup.py report --definition-version 5 --generation 1 --environment-id "$environment" --season-id "$season" --name battle_exposure
+```
+
+Use the explicit `TELEMETRY_ROLLUP_DB_*` connection settings documented by the
+existing CLI and select the appropriate rollup or report principal. The focused
+`--battle-runtime` local SQL command above now exercises source preparation and
+atomic publication together. The dated identity/transfer/review/loss tests use
+controlled coherent UTC labels separately from the exact original native writer
+readback. They do not establish real personal-server authentication history.
+Qualification evidence is recorded in
+[the status document](IMPLEMENTATION_STATUS.md#atomic-battle-observation-publication).
+
+These reports supply observation primitives for the accepted balance suites.
+They establish no decisive whole-battle outcome, native control/prevention
+coverage, gear power, complete population, reward rate or causal balance result.
+The native additions, PvE attempts, progression context, four complete suites,
+#487 compatibility and the actual personal-local gameplay/persistence/performance
+gate remain required under #258.

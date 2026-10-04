@@ -52,6 +52,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0061_telemetry_shared_battle_facts.sql",
     ROOT / "migrations" / "immutable" / "0062_telemetry_battle_contributions.sql",
     ROOT / "migrations" / "immutable" / "0063_telemetry_battle_source.sql",
+    ROOT / "migrations" / "immutable" / "0064_telemetry_battle_publication.sql",
 )
 
 ROOT_FIELDS = {

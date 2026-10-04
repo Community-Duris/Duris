@@ -12,10 +12,8 @@ from types import MappingProxyType
 from typing import Any, Mapping
 
 DEFINITION_VERSION = 1
-SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2, 3})
-# Battle source preparation can build a cursor without offering a report or
-# publishing a generation. The catalog stays sealed until that projection exists.
-PREPARATION_DEFINITION_VERSION = 5
+SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2, 3, 5})
+BATTLE_DEFINITION_VERSION = 5
 
 PUBLICATION_BUILDING = 0
 PUBLICATION_PUBLISHED = 1
@@ -185,6 +183,7 @@ class RollupCoverage:
     rebuild_through_ingest_id: int
     incident_coverage: Mapping[str, Any] | None = None
     identity_coverage: Mapping[str, Any] | None = None
+    battle_coverage: Mapping[str, Any] | None = None
 
     @property
     def input_complete_to_snapshot(self) -> bool:
@@ -222,6 +221,7 @@ class RollupCoverage:
             "rebuild_through_ingest_id": self.rebuild_through_ingest_id,
             "incident_coverage": self.incident_coverage,
             **({"identity_coverage": self.identity_coverage} if self.target.definition_version >= 3 else {}),
+            **({"battle_coverage": self.battle_coverage} if self.target.definition_version == BATTLE_DEFINITION_VERSION else {}),
         }
 
 
@@ -372,7 +372,7 @@ def validate_target(target: RollupTarget) -> None:
         target.definition_version, bool
     ):
         raise ValueError("definition_version must be an integer")
-    build_versions = SUPPORTED_DEFINITION_VERSIONS | {PREPARATION_DEFINITION_VERSION}
+    build_versions = SUPPORTED_DEFINITION_VERSIONS
     if target.definition_version not in build_versions:
         raise ValueError(
             f"unsupported rollup definition version {target.definition_version}; "
@@ -547,15 +547,37 @@ IDENTITY_REPORT_DEFINITIONS = MappingProxyType({
             "causal_rotation_advantage", "complete_controller_population"), rate_unit="not_computed"),
 })
 
+BATTLE_REPORT_DEFINITIONS = MappingProxyType({
+    name: ReportDefinition(name=name, definition_version=BATTLE_DEFINITION_VERSION,
+        grain=grain, table="telemetry_rollup_battle_row", dimensions=dimensions, metrics=metrics,
+        denominator="Immutable shared-battle observations and exact measured presence. Character-owner counts are not account/controller counts. Amounts crossing identity boundaries are not divided. Unavailable metrics, clocks, identity and decisive outcomes remain explicit; no rate is computed.",
+        distinct_semantics="Canonical battles and original alias lineage remain distinct. Actor snapshots, contribution segments and historical exposures are alternative projections; do not sum them together. Pets cannot borrow an unproven owner's authenticated identity.",
+        distribution_semantics="Observed and censored lifecycles retain source/linkage/loss quality. No complete battle, player population, winner, gear strength or causal comparison is established by these observations.",
+        account_metrics_available=name in ("battle_contributions", "battle_exposure"), unavailable_metrics=("battle_win_rate", "zone_clear_rate", "gear_strength",
+            "complete_controller_population", "continuous_human_attention", "economic_reward_rate"), rate_unit="not_computed")
+    for name, grain, dimensions, metrics in (
+        ("battle_observations", "original_and_canonical_battle", ("battle", "canonical_battle", "canonical"),
+            ("start_seen", "close_seen", "packet_history_complete", "contribution_count", "available_metric_mask", "outcome", "quality_flags")),
+        ("battle_actors", "canonical_battle_and_latest_actor_snapshot", ("canonical_battle", "battle_actor_id", "battle_actor_kind"),
+            ("battle_present_usec", "battle_contributor_usec", "effort_replay_verified", "quality_flags")),
+        ("battle_contributions", "original_disjoint_contribution_segment", ("canonical_battle", "bc_segment_seq", "bc_actor_id", "account_token", "controller_token"),
+            ("bc_damage_dealt", "bc_damage_taken", "bc_effective_healing", "bc_control_applications", "link_status", "attribution_status", "publication_quality_flags", "attribution_quality_flags")),
+        ("battle_exposure", "dated_actor_context_and_observed_identity_interval", ("source_battle", "canonical_battle", "battle_actor_id", "utc_day", "battle_config_id", "battle_actor_class_id", "battle_actor_faction_id", "account_token", "controller_token"),
+            ("battle_present_usec", "battle_contributor_usec", "battle_outnumbered_owner_usec", "observed_side_owners", "observed_opposing_owners", "linkage_status", "quality_flags")),
+        ("battle_associations", "original_immutable_association_fact", ("battle_boot_id", "battle_process_id", "battle_seq", "battle_revision", "battle_fact_sequence"),
+            ("battle_fact_kind", "battle_fact_count", "battle_actor_id", "battle_related_actor_id", "battle_related_battle_seq", "battle_mode", "battle_side_status", "battle_quality_flags", "projection_quality_flags")),
+    )
+})
+
 
 def report_definition(name: str, definition_version: int | None = None) -> ReportDefinition:
     canonical = REPORT_ALIASES.get(name, name)
     try:
-        definition = REPORT_DEFINITIONS.get(canonical) or OBSERVATION_REPORT_DEFINITIONS.get(canonical) or IDENTITY_REPORT_DEFINITIONS[canonical]
+        definition = REPORT_DEFINITIONS.get(canonical) or OBSERVATION_REPORT_DEFINITIONS.get(canonical) or IDENTITY_REPORT_DEFINITIONS.get(canonical) or BATTLE_REPORT_DEFINITIONS[canonical]
     except KeyError as error:
         raise ValueError(
             f"unknown report definition {name!r}; "
-            f"available={sorted((*REPORT_DEFINITIONS, *OBSERVATION_REPORT_DEFINITIONS, *IDENTITY_REPORT_DEFINITIONS))}"
+            f"available={sorted((*REPORT_DEFINITIONS, *OBSERVATION_REPORT_DEFINITIONS, *IDENTITY_REPORT_DEFINITIONS, *BATTLE_REPORT_DEFINITIONS))}"
         ) from error
     if definition_version is None:
         return definition
@@ -565,10 +587,14 @@ def report_definition(name: str, definition_version: int | None = None) -> Repor
         raise ValueError(f"report requires definition version {definition.definition_version}")
     if canonical in OBSERVATION_REPORT_DEFINITIONS and definition_version != 2:
         raise ValueError("observation report requires definition version 2")
+    if (canonical in BATTLE_REPORT_DEFINITIONS) != (definition_version == BATTLE_DEFINITION_VERSION):
+        raise ValueError("battle reports require their independent definition version")
     return replace(definition, definition_version=definition_version)
 
 
 def report_definitions(definition_version: int = 1) -> tuple[ReportDefinition, ...]:
+    if definition_version == BATTLE_DEFINITION_VERSION:
+        return tuple(report_definition(name, definition_version) for name in sorted(BATTLE_REPORT_DEFINITIONS))
     names = set(REPORT_DEFINITIONS)
     if definition_version == 2:
         names.update(OBSERVATION_REPORT_DEFINITIONS)

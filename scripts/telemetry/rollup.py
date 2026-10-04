@@ -18,7 +18,7 @@ from typing import Any, Callable
 
 try:  # Running as a package.
     from .db_access import ConnectionSettings, PyMySQLConnectionFactory, PyMySQLRollupDatabase
-    from .rollup_definitions import RollupTarget, report_catalog
+    from .rollup_definitions import RollupTarget, report_catalog, SUPPORTED_DEFINITION_VERSIONS
     from .rollup_engine import (
         BoundsExceeded,
         REPORT_BYTE_LIMIT_DEFAULT,
@@ -29,7 +29,7 @@ try:  # Running as a package.
     )
 except ImportError:  # Running scripts/telemetry/rollup.py directly.
     from db_access import ConnectionSettings, PyMySQLConnectionFactory, PyMySQLRollupDatabase  # type: ignore[no-redef]
-    from rollup_definitions import RollupTarget, report_catalog  # type: ignore[no-redef]
+    from rollup_definitions import RollupTarget, report_catalog, SUPPORTED_DEFINITION_VERSIONS  # type: ignore[no-redef]
     from rollup_engine import (  # type: ignore[no-redef]
         BoundsExceeded,
         REPORT_BYTE_LIMIT_DEFAULT,
@@ -216,7 +216,7 @@ def _add_connection_arguments(parser: argparse.ArgumentParser) -> None:
 
 def _add_target_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--definition-version", type=int, required=True,
-        help="1/2/3 are published report definitions; 5 prepares private battle source only")
+        help="1/2/3 retain their earlier reports; 5 publishes independent shared-battle observations")
     parser.add_argument("--generation", type=int, required=True)
     parser.add_argument("--environment-id", type=int, required=True)
     parser.add_argument("--season-id", type=int, required=True)
@@ -245,7 +245,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     definitions = subparsers.add_parser("definitions", help="print stable report definitions without SQL")
-    definitions.add_argument("--definition-version", type=int, default=1, choices=(1, 2, 3))
+    definitions.add_argument("--definition-version", type=int, default=1, choices=sorted(SUPPORTED_DEFINITION_VERSIONS))
     definitions.set_defaults(handler=_definitions)
 
     run = subparsers.add_parser("run", help="process one explicit generation through one fixed raw high-water mark")

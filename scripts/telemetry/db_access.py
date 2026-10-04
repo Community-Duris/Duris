@@ -19,7 +19,7 @@ import math
 from typing import Any, Callable, Mapping, Sequence
 
 try:
-    from . import incident, identity_history as identity, observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions, battle_source
+    from . import incident, identity_history as identity, observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions, battle_source, battle_publication
 except ImportError:
     import incident
     import identity_history as identity
@@ -28,6 +28,7 @@ except ImportError:
     import battle_contract as battles
     import battle_contribution_contract as contributions
     import battle_source
+    import battle_publication
 
 try:  # Running as a package.
     from .rollup_definitions import (
@@ -1533,7 +1534,7 @@ class PyMySQLRollupDatabase:
         # invocation deadline and retry ceiling through the validated policy.
         requested = requested or RollupBounds(max_runtime_s=10.0, max_retries=2)
         requested.validate()
-        if target is not None and target.definition_version == identity_publication.DEFINITION_VERSION:
+        if target is not None and target.definition_version in (identity_publication.DEFINITION_VERSION, battle_source.DEFINITION_VERSION):
             return requested
         return RollupBounds(
             page_size=1,
@@ -1704,7 +1705,7 @@ class PyMySQLRollupDatabase:
                 raise SemanticError(str(error)) from error
             if header["input_watermark"] != state["input_watermark"] or header["input_origin"] != state["rebuild_from_ingest_id"]:
                 raise SemanticError("battle_source_cursor_conflict")
-            if bool(header["publication_complete"]) != (int(state["publication_status"]) == PUBLICATION_PUBLISHED):
+            if bool(header["publication_complete"]) != (int(state["publication_status"]) in {PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED}):
                 raise SemanticError("battle_source_publication_state_conflict")
             return header
         if int(state["input_watermark"]) != int(state["rebuild_from_ingest_id"]) or int(state["publication_status"]) != PUBLICATION_BUILDING:
@@ -1752,31 +1753,7 @@ class PyMySQLRollupDatabase:
             state = self._fetch_state(target, for_update=False)
             if state is None:
                 raise GenerationConflict("battle source generation has no state")
-            rows, _, _ = self._execute("SELECT " + ",".join(battle_source.HEADER_COLUMNS) +
-                " FROM telemetry_battle_source WHERE " + SCOPE_WHERE + " LIMIT 1", target.scope_tuple)
-            if not rows:
-                raise SemanticError("battle_source_header_missing_after_input")
-            header = rows[0]
-            battle_source._header(header)
-            published = int(state["publication_status"]) in (PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED)
-            if bool(header["publication_complete"]) != published:
-                raise SemanticError("battle_source_publication_state_conflict")
-            # A buffering SQL fetch and the decoded source verification overlap.
-            # Reserve both plus one sentinel before the driver materializes rows.
-            fetch_count = header["source_fact_count"] + 1
-            reserved = battle_source.HEADER_BYTE_BOUND + fetch_count * (
-                battle_source.INPUT_ROW_BYTE_BOUND + battle_source.PUBLICATION_INPUT_BYTE_BOUND)
-            if reserved > max_bytes:
-                raise BoundsExceeded("battle source fetch/verification byte reservation exceeded")
-            columns = [f"LEFT(payload,{battle_source.MAX_PAYLOAD_BYTES + 1}) AS payload" if name == "payload" else
-                "LEFT(payload_digest,33) AS payload_digest" if name == "payload_digest" else name
-                for name in battle_source.INPUT_COLUMNS]
-            inputs, _, _ = self._execute("SELECT " + ",".join(columns) +
-                " FROM telemetry_battle_input FORCE INDEX(PRIMARY) WHERE " + SCOPE_WHERE +
-                " ORDER BY ingest_id LIMIT %s", (*target.scope_tuple, fetch_count))
-            result = battle_source.verify_source(header, inputs, expected_scope=target.scope_tuple,
-                expected_watermark=state["input_watermark"], expected_origin=state["rebuild_from_ingest_id"], max_total_bytes=max_bytes,
-                check_deadline=self._check_deadline)
+            result = self._battle_source_in_transaction(target, state, max_bytes)
             self._check_deadline()
             return result
         except battle_source.SourceError as error:
@@ -1787,6 +1764,103 @@ class PyMySQLRollupDatabase:
         finally:
             self._rollback()
             self._clear_transaction_budget()
+
+    def _battle_source_in_transaction(self, target: RollupTarget, state: Mapping[str, Any],
+                                      max_bytes: int) -> battle_source.VerifiedSource:
+        # Publication calls this inside its existing locked transaction. The
+        # private read API supplies a consistent snapshot around the same check.
+        rows, _, _ = self._execute("SELECT " + ",".join(battle_source.HEADER_COLUMNS) +
+            " FROM telemetry_battle_source WHERE " + SCOPE_WHERE + " LIMIT 1", target.scope_tuple)
+        if not rows:
+            raise SemanticError("battle_source_header_missing_after_input")
+        header = rows[0]
+        battle_source._header(header)
+        published = int(state["publication_status"]) in (PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED)
+        if bool(header["publication_complete"]) != published:
+            raise SemanticError("battle_source_publication_state_conflict")
+        fetch_count = header["source_fact_count"] + 1
+        reserved = battle_source.HEADER_BYTE_BOUND + fetch_count * (
+            battle_source.INPUT_ROW_BYTE_BOUND + battle_source.PUBLICATION_INPUT_BYTE_BOUND)
+        if reserved > max_bytes:
+            raise BoundsExceeded("battle source fetch/verification byte reservation exceeded")
+        columns = [f"LEFT(payload,{battle_source.MAX_PAYLOAD_BYTES + 1}) AS payload" if name == "payload" else
+            "LEFT(payload_digest,33) AS payload_digest" if name == "payload_digest" else name
+            for name in battle_source.INPUT_COLUMNS]
+        inputs, _, _ = self._execute("SELECT " + ",".join(columns) +
+            " FROM telemetry_battle_input FORCE INDEX(PRIMARY) WHERE " + SCOPE_WHERE +
+            " ORDER BY ingest_id LIMIT %s", (*target.scope_tuple, fetch_count))
+        return battle_source.verify_source(header, inputs, expected_scope=target.scope_tuple,
+            expected_watermark=state["input_watermark"], expected_origin=state["rebuild_from_ingest_id"], max_total_bytes=max_bytes,
+            check_deadline=self._check_deadline)
+
+    def _publish_battle(self, target: RollupTarget, state: Mapping[str, Any], bounds: RollupBounds) -> None:
+        if bounds.max_total_bytes < battle_publication.REPORT_METADATA_BYTE_BOUND:
+            raise BoundsExceeded("battle publication cannot reserve snapshot metadata")
+        if int(state["publication_status"]) == PUBLICATION_PUBLISHED:
+            self._read_published_battle(target, state, verify_private_header=True)
+            return
+        header = self._ensure_battle_source_header(target, state)
+        if header["source_fact_count"] > bounds.max_rows:
+            raise BoundsExceeded("battle publication exceeds retained source row reservation")
+        # Retained SQL buffering overlaps decoded values, review evidence,
+        # history and public outputs. Reserve buffering/sentinel and reviews
+        # before the source fetch; the value builder accounts all later stages.
+        buffered = (header["source_fact_count"] + 1) * battle_source.INPUT_ROW_BYTE_BOUND + battle_source.PUBLICATION_INPUT_BYTE_BOUND
+        remaining = bounds.max_total_bytes - buffered
+        if remaining < battle_source.HEADER_BYTE_BOUND + header["source_fact_count"] * battle_source.PUBLICATION_INPUT_BYTE_BOUND + battle_publication.REVIEW_BYTE_BOUND:
+            raise BoundsExceeded("battle publication source/review byte reservation exceeded")
+        window = self._battle_source_in_transaction(target, state, bounds.max_total_bytes - battle_publication.REVIEW_BYTE_BOUND)
+        reservation = self._identity_reservation(target)
+        registry = None if reservation["registry_version"] is None else self._read_identity_registry(
+            target.scope_tuple[2:], reservation["registry_version"])
+        expected = identity.generation_row(target.scope_tuple, registry)
+        if any(expected[name] != reservation[name] for name in identity.GENERATION_COLUMNS):
+            raise identity.IdentityError("reserved_registry_changed_or_missing")
+        reviewed = self._read_incident_coverage(target, state, max_bytes=remaining)
+        try:
+            output = battle_publication.build_publication(window, registry, reviewed, max_total_bytes=remaining,
+                max_output_rows=min(bounds.max_output_fanout, battle_publication.MAX_OUTPUT_ROWS), check_deadline=self._check_deadline)
+        except (battle_publication.PublicationError, battle_source.SourceError, battle_publication.history.HistoryError,
+                identity.IdentityError, observations.ObservationError, incident.IncidentError) as error:
+            raise SemanticError(str(error)) from error
+        self._insert_review_rows("telemetry_rollup_battle_coverage", battle_publication.COVERAGE_COLUMNS, (output.header,))
+        self._insert_review_rows("telemetry_rollup_battle_row", battle_publication.ROW_COLUMNS, output.rows,
+            max_rows=battle_publication.MAX_OUTPUT_ROWS)
+        _, affected, _ = self._execute("UPDATE telemetry_battle_source SET publication_complete=1 WHERE " +
+            SCOPE_WHERE + " AND publication_complete=0", target.scope_tuple)
+        if affected != 1:
+            raise SemanticError("battle_source_header_not_building")
+        self._execute("UPDATE telemetry_rollup_state SET quality_flags=(quality_flags | %s) WHERE " + SCOPE_WHERE,
+            (output.header["quality_flags"], *target.scope_tuple))
+
+    def _read_published_battle(self, target: RollupTarget, state: Mapping[str, Any], *,
+                               verify_private_header: bool = False) -> Mapping[str, Any]:
+        reservation = self._identity_reservation(target)
+        rows, _, _ = self._execute("SELECT " + ",".join(battle_publication.COVERAGE_COLUMNS) +
+            " FROM telemetry_rollup_battle_coverage WHERE " + SCOPE_WHERE + " LIMIT 1", target.scope_tuple)
+        if not rows or rows[0]["input_watermark"] != state["input_watermark"] or rows[0]["input_origin"] != state["rebuild_from_ingest_id"]:
+            raise SemanticError("battle_publication_cursor_or_header_missing")
+        result = battle_publication.public_header(rows[0], reservation)
+        if verify_private_header:
+            source_rows, _, _ = self._execute("SELECT " + ",".join(battle_source.HEADER_COLUMNS) +
+                " FROM telemetry_battle_source WHERE " + SCOPE_WHERE + " LIMIT 1", target.scope_tuple)
+            if not source_rows or source_rows[0]["quality_flags"] & ~rows[0]["quality_flags"] or any(
+                    source_rows[0][name] != rows[0][name] for name in battle_source.HEADER_COLUMNS if name != "quality_flags"):
+                raise SemanticError("battle_publication_source_header_conflict")
+        receipts, _, _ = self._execute("SELECT row_kind,LEFT(row_key,33) AS row_key,LEFT(payload_digest,33) AS payload_digest " +
+            "FROM telemetry_rollup_battle_row FORCE INDEX(PRIMARY) WHERE " + SCOPE_WHERE +
+            " ORDER BY row_kind,row_key LIMIT %s", (*target.scope_tuple, battle_publication.MAX_OUTPUT_ROWS + 1))
+        try:
+            digest = battle_publication.snapshot_digest(target.scope_tuple, receipts, check_deadline=self._check_deadline)
+        except battle_publication.PublicationError as error:
+            raise SemanticError(str(error)) from error
+        actual = {kind: sum(row["row_kind"] == kind for row in receipts) for kind in battle_publication.VALUE_FIELDS}
+        if set(actual) - set(battle_publication.VALUE_FIELDS) or any(actual.get(kind, 0) != result[field]
+                for kind, field in enumerate(battle_publication.COUNT_FIELDS, 1)):
+            raise SemanticError("battle_publication_detail_missing")
+        if digest != rows[0]["snapshot_digest"]:
+            raise SemanticError("battle_publication_snapshot_changed")
+        return result
 
     def _ensure_identity_source_header(self, target: RollupTarget, state: Mapping[str, Any]) -> Mapping[str, Any]:
         self._identity_reservation(target)
@@ -2059,8 +2133,6 @@ class PyMySQLRollupDatabase:
         """Publish one generation within one fixed retry/deadline budget."""
 
         target.__post_init__()
-        if target.definition_version == battle_source.DEFINITION_VERSION:
-            raise GenerationConflict("battle source preparation cannot publish until the battle projection is implemented")
         publication_bounds = self._publication_bounds(bounds, target)
         retries = min(self.max_commit_retries, publication_bounds.max_retries)
         fixed_deadline = self.clock() + float(publication_bounds.max_runtime_s)
@@ -2097,6 +2169,8 @@ class PyMySQLRollupDatabase:
                     self._publish_incident_coverage(target, state)
                     if target.definition_version == identity_publication.DEFINITION_VERSION:
                         self._publish_identity(target, state, publication_bounds)
+                    if target.definition_version == battle_source.DEFINITION_VERSION:
+                        self._publish_battle(target, state, publication_bounds)
                     self._execute(
                         "UPDATE telemetry_rollup_state SET publication_status=%s, provisional=1 WHERE "
                         + SCOPE_WHERE,
@@ -2129,6 +2203,8 @@ class PyMySQLRollupDatabase:
                         if row is not None and int(row["publication_status"]) == PUBLICATION_PUBLISHED:
                             if target.definition_version == identity_publication.DEFINITION_VERSION:
                                 self._read_published_identity(target, row)
+                            if target.definition_version == battle_source.DEFINITION_VERSION:
+                                self._read_published_battle(target, row, verify_private_header=True)
                             return self._publication_result(target)
                     except Exception as reread_error:
                         self._drop_connection()
@@ -2182,6 +2258,23 @@ class PyMySQLRollupDatabase:
         max_bytes: int = REPORT_BYTE_LIMIT_DEFAULT,
     ) -> tuple[list[Mapping[str, Any]], bool]:
         definition = report_definition(report_name, target.definition_version)
+        if definition.name in battle_publication.ROW_KINDS:
+            row_bound = battle_publication.ROW_FETCH_BYTE_BOUND + battle_publication.ROW_VALUE_BYTE_BOUND
+            limit, fetch_limit = _report_fetch_limits(max_rows, max_bytes - battle_publication.REPORT_METADATA_BYTE_BOUND, row_bound)
+            columns = [f"LEFT(payload,{battle_publication.MAX_PAYLOAD_BYTES + 1}) AS payload" if name == "payload" else
+                "LEFT(payload_digest,33) AS payload_digest" if name == "payload_digest" else
+                "LEFT(row_key,33) AS row_key" if name == "row_key" else name for name in battle_publication.ROW_COLUMNS]
+            rows, _, _ = self._execute("SELECT " + ",".join(columns) +
+                " FROM telemetry_rollup_battle_row FORCE INDEX(PRIMARY) WHERE " + SCOPE_WHERE +
+                " AND row_kind=%s ORDER BY row_key LIMIT %s",
+                (*target.scope_tuple, battle_publication.ROW_KINDS[definition.name], fetch_limit))
+            if len(rows) > fetch_limit:
+                raise BoundsExceeded("battle report exceeds its SQL fetch limit")
+            try:
+                values = [battle_publication.decode_row(target.scope_tuple, row) for row in rows]
+            except (battle_publication.PublicationError, contributions.ContributionContractError, battles.BattleContractError) as error:
+                raise SemanticError(str(error)) from error
+            return values[:limit], len(rows) > limit
         table_and_columns = REPORT_TABLES.get(definition.name)
         if table_and_columns is None:
             raise ValueError(f"report has no executable aggregate query: {definition.name}")
@@ -2258,8 +2351,14 @@ class PyMySQLRollupDatabase:
             self._execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
             state = self._fetch_state(target, for_update=False)
             if state is None or int(state["publication_status"]) not in (
-                {PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED} if target.definition_version == identity_publication.DEFINITION_VERSION else {PUBLICATION_PUBLISHED}):
+                {PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED} if target.definition_version in (identity_publication.DEFINITION_VERSION, battle_source.DEFINITION_VERSION) else {PUBLICATION_PUBLISHED}):
                 raise GenerationConflict("requested report generation is not published")
+            published_battle = None
+            if target.definition_version == battle_source.DEFINITION_VERSION:
+                if max_bytes < battle_publication.REPORT_METADATA_BYTE_BOUND + 2 * (
+                        battle_publication.ROW_FETCH_BYTE_BOUND + battle_publication.ROW_VALUE_BYTE_BOUND):
+                    raise BoundsExceeded("battle report cannot reserve metadata and one row with its sentinel")
+                published_battle = self._read_published_battle(target, state)
             rows, truncated = self._read_report_rows(
                 target,
                 definition.name,
@@ -2267,11 +2366,16 @@ class PyMySQLRollupDatabase:
                 max_bytes=max_bytes,
             )
             public_rows = self._public_report_rows(definition.name, rows)
+            if published_battle is not None and any(row.get("registry_version") != published_battle["identity"]["registry_version"]
+                    for row in public_rows if "registry_version" in row):
+                raise SemanticError("battle_report_reserved_identity_conflict")
             incident_coverage = self._read_incident_coverage(target, state, max_bytes=max_bytes)
             identity_coverage = self._read_published_identity(target, state) if target.definition_version == identity_publication.DEFINITION_VERSION else None
-            if _report_rows_bytes((*public_rows, incident_coverage, *(() if identity_coverage is None else (identity_coverage,)))) > max_bytes:
+            if _report_rows_bytes((*public_rows, incident_coverage, *(() if identity_coverage is None else (identity_coverage,)),
+                    *(() if published_battle is None else (published_battle,)))) > max_bytes:
                 raise BoundsExceeded("public report and coverage exceed their explicit byte budget")
-            coverage = coverage_from_state_row(target, state, incident_coverage=incident_coverage, identity_coverage=identity_coverage)
+            coverage = coverage_from_state_row(target, state, incident_coverage=incident_coverage, identity_coverage=identity_coverage,
+                battle_coverage=published_battle)
             self._check_deadline()
             return ReportSnapshot(definition=definition, coverage=coverage, rows=public_rows, truncated=truncated)
         except BoundsExceeded:
@@ -2298,11 +2402,16 @@ class PyMySQLRollupDatabase:
             state = self._fetch_state(target, for_update=False)
             if state is None:
                 raise DatabaseAccessError("requested generation has no rollup state")
+            if target.definition_version == battle_source.DEFINITION_VERSION and max_bytes < battle_publication.REPORT_METADATA_BYTE_BOUND:
+                raise BoundsExceeded("battle coverage cannot reserve its metadata and snapshot receipts")
             reviewed = self._read_incident_coverage(target, state, max_bytes=max_bytes)
             published_identity = self._read_published_identity(target, state) if target.definition_version == identity_publication.DEFINITION_VERSION and int(state["publication_status"]) in {PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED} else None
-            if _report_rows_bytes((state, reviewed, *(() if published_identity is None else (published_identity,)))) > max_bytes:
+            published_battle = self._read_published_battle(target, state) if target.definition_version == battle_source.DEFINITION_VERSION and int(state["publication_status"]) in {PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED} else None
+            if _report_rows_bytes((state, reviewed, *(() if published_identity is None else (published_identity,)),
+                    *(() if published_battle is None else (published_battle,)))) > max_bytes:
                 raise BoundsExceeded("coverage metadata exceeds its report byte budget")
-            return coverage_from_state_row(target, state, incident_coverage=reviewed, identity_coverage=published_identity)
+            return coverage_from_state_row(target, state, incident_coverage=reviewed, identity_coverage=published_identity,
+                battle_coverage=published_battle)
         finally:
             self._rollback()
             self._clear_transaction_budget()

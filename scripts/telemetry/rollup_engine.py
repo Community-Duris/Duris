@@ -1383,6 +1383,7 @@ def coverage_from_state_row(
     snapshot_high_watermark: int | None = None,
     incident_coverage: Mapping[str, Any] | None = None,
     identity_coverage: Mapping[str, Any] | None = None,
+    battle_coverage: Mapping[str, Any] | None = None,
 ) -> RollupCoverage:
     snapshot = (
         int(row.get("rebuild_through_ingest_id", 0))
@@ -1397,12 +1398,14 @@ def coverage_from_state_row(
         coverage_start_utc_usec=row.get("coverage_start_utc_usec"),
         coverage_end_utc_usec=row.get("coverage_end_utc_usec"),
         quality_flags=int(row["quality_flags"]) | (0 if incident_coverage is None else int(incident_coverage["quality_flags"])) |
-            (0 if identity_coverage is None else int(identity_coverage["quality_flags"])),
+            (0 if identity_coverage is None else int(identity_coverage["quality_flags"])) |
+            (0 if battle_coverage is None else int(battle_coverage["quality_flags"])),
         provisional=bool(row["provisional"]),
         rebuild_from_ingest_id=int(row["rebuild_from_ingest_id"]),
         rebuild_through_ingest_id=int(row["rebuild_through_ingest_id"]),
         incident_coverage=incident_coverage,
         identity_coverage=identity_coverage,
+        battle_coverage=battle_coverage,
     )
 
 

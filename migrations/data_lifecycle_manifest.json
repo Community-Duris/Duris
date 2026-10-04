@@ -9230,6 +9230,68 @@
       "dependencies": [
         "database:telemetry_battle_source"
       ]
+    },
+    {
+      "id": "database:telemetry_rollup_battle_coverage",
+      "kind": "database_table",
+      "locator": "telemetry_rollup_battle_coverage",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_character_account_confirmed_controller_identity_or_generation_coverage",
+      "technical_purpose": "Immutable public battle publication coverage, retained source digest, reserved dated identity and measured presence conservation",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_battle_source"
+      ]
+    },
+    {
+      "id": "database:telemetry_rollup_battle_row",
+      "kind": "database_table",
+      "locator": "telemetry_rollup_battle_row",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_character_account_confirmed_controller_identity_or_generation_coverage",
+      "technical_purpose": "Bounded canonical public observations, original associations and aliases, contributions and dated presence with explicit unknown identity and availability",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_rollup_battle_coverage"
+      ]
     }
   ]
 }

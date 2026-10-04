@@ -7,6 +7,7 @@ not qualify a running server, account authentication, or production activation.
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 import hashlib
 import json
 import os
@@ -16,7 +17,7 @@ import sys
 import tempfile
 
 from test_telemetry_gameplay_adapters import ROOT, compile_gameplay
-from test_telemetry_battle_history import qualify_native_history, qualify_retained_native_source
+from test_telemetry_battle_history import BattleHistoryTests, qualify_native_history, qualify_retained_native_source
 from test_telemetry_repository import prepare_sql_fixture, drop_sql_fixture
 from test_telemetry_incidents import runtime_fingerprint
 
@@ -25,10 +26,12 @@ import battle_contract
 import battle_contribution_contract
 import battle_source as retained_source
 import battle_history
+import battle_publication
+import incident
 import identity_history
 from db_access import (RAW_COLUMNS, AmbiguousCommit, ConnectionSettings, GenerationConflict,
     PyMySQLConnectionFactory, PyMySQLRollupDatabase)
-from rollup_definitions import RollupTarget, PUBLICATION_BUILDING
+from rollup_definitions import RollupTarget, PUBLICATION_BUILDING, PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED
 from rollup_engine import RollupEngine, RollupBounds, BoundsExceeded, SemanticError
 from test_telemetry_observations import ownership
 
@@ -46,15 +49,26 @@ def qualify_persisted_source(query, environment, command, name, history):
         grants = {
             "rollup": {"telemetry_rollup_state": "SELECT,INSERT,UPDATE",
                 "telemetry_generation_identity": "SELECT,INSERT", "telemetry_battle_source": "SELECT,INSERT,UPDATE",
-                "telemetry_battle_input": "SELECT,INSERT", "telemetry_interval": "SELECT"},
-            "report": {"telemetry_rollup_state": "SELECT"},
+                "telemetry_battle_input": "SELECT,INSERT", "telemetry_interval": "SELECT",
+                "telemetry_identity_registry": "SELECT", "telemetry_identity_association": "SELECT",
+                "telemetry_incident_registry_v4": "SELECT", "telemetry_incident_v4": "SELECT"},
+            "report": {"telemetry_rollup_state": "SELECT", "telemetry_generation_identity": "SELECT"},
+            "review": {"telemetry_identity_reviewer": "SELECT", "telemetry_identity_registry": "SELECT,INSERT",
+                "telemetry_identity_association": "SELECT,INSERT", "telemetry_interval": "SELECT",
+                "telemetry_incident_registry_v4": "SELECT,INSERT", "telemetry_incident_v4": "SELECT,INSERT"},
         }
+        for table in ("telemetry_rollup_battle_coverage", "telemetry_rollup_battle_row",
+                "telemetry_rollup_incident_coverage", "telemetry_rollup_incident"):
+            grants["rollup"][table] = "SELECT,INSERT"
+            grants["report"][table] = "SELECT"
         for role, tables in grants.items():
             user = "tbr_source_" + role + "_" + token
             query("CREATE USER %s@'%%' IDENTIFIED BY %s", (user, password))
             users.append(user)
             for table, permissions in tables.items():
                 query(f"GRANT {permissions} ON `{name}`.`{table}` TO %s@'%%'", (user,))
+        query(f"GRANT SELECT (environment_id,season_id,account_token) ON `{name}`.telemetry_account_token TO %s@'%%'",
+            ("tbr_source_review_" + token,))
 
         def settings(role):
             return ConnectionSettings(host="127.0.0.1", port=int(environment["DB_PORT"]), database=name,
@@ -101,11 +115,11 @@ def qualify_persisted_source(query, environment, command, name, history):
         assert RollupEngine(rollup).run(target, bounds=bounds, through_ingest_id=through).complete
         assert rollup.read_battle_source(target) == original
         try:
-            rollup.publish_generation(target)
-        except GenerationConflict:
+            rollup.publish_generation(target, bounds=RollupBounds(page_size=1, max_rows=1))
+        except BoundsExceeded:
             pass
         else:
-            raise AssertionError("source preparation was published as a battle report")
+            raise AssertionError("battle publication exceeded its source row reservation")
         assert rollup.read_state(target)["publication_status"] == PUBLICATION_BUILDING
 
         # Fail after source/header writes but before cursor update; none survive.
@@ -224,15 +238,17 @@ def qualify_persisted_source(query, environment, command, name, history):
         subprocess.run([sys.executable, "scripts/telemetry/rollup.py", "run", *target_args, "--through-ingest-id", str(through),
             "--page-size", "3", "--max-runtime-s", "30"], cwd=ROOT, env=cli_environment, capture_output=True, check=True, timeout=45)
         assert rollup.read_battle_source(cli_target).facts == expanded.facts
-        result = subprocess.run([sys.executable, "scripts/telemetry/rollup.py", "publish", *target_args], cwd=ROOT,
-            env=cli_environment, capture_output=True, timeout=30)
-        assert result.returncode != 0 and b"preparation cannot publish" in result.stderr
+        catalog = subprocess.run([sys.executable, "scripts/telemetry/rollup.py", "definitions", "--definition-version", "5"],
+            cwd=ROOT, env=cli_environment, capture_output=True, check=True, timeout=15)
+        assert set(row["name"] for row in json.loads(catalog.stdout)["definitions"]) == set(battle_publication.ROW_KINDS)
 
         for role in ("rollup", "report"):
             principal = PyMySQLConnectionFactory(settings(role)).connect()
             try:
                 denied = ["UPDATE telemetry_battle_input SET record_kind=9 WHERE 0", "DELETE FROM telemetry_battle_input WHERE 0",
-                    "SELECT * FROM accounts LIMIT 0"] if role == "rollup" else ["SELECT * FROM telemetry_battle_source LIMIT 0", "SELECT * FROM telemetry_battle_input LIMIT 0"]
+                    "UPDATE telemetry_rollup_battle_row SET row_kind=1 WHERE 0", "DELETE FROM telemetry_rollup_battle_row WHERE 0",
+                    "SELECT * FROM accounts LIMIT 0"] if role == "rollup" else ["SELECT * FROM telemetry_battle_source LIMIT 0",
+                    "SELECT * FROM telemetry_battle_input LIMIT 0", "UPDATE telemetry_rollup_battle_row SET row_kind=1 WHERE 0"]
                 for statement in denied:
                     try:
                         with principal.cursor() as cursor:
@@ -311,15 +327,256 @@ def qualify_persisted_source(query, environment, command, name, history):
         assert runtime_fingerprint(environment) == fingerprint
         assert rollup.read_battle_source(target) == expanded
 
+        reporter, reviewer = adapter("report"), adapter("review")
+        public_tables = ("telemetry_rollup_battle_coverage", "telemetry_rollup_battle_row",
+            "telemetry_rollup_incident_coverage", "telemetry_rollup_incident")
+        try:
+            rollup.publish_generation(target, bounds=RollupBounds(max_output_fanout=1))
+        except (BoundsExceeded, SemanticError):
+            pass
+        else:
+            raise AssertionError("battle publication exceeded its output row reservation")
+        # A failure after a detail insert must undo the public header, loss
+        # snapshot, detail, source completion flag and generation transition.
+        insert = rollup._insert_review_rows
+        def fail_public_detail(table, fields, rows, **kwargs):
+            if table == "telemetry_rollup_battle_row":
+                insert(table, fields, rows[:1], **kwargs)
+                raise RuntimeError("injected battle detail failure")
+            return insert(table, fields, rows, **kwargs)
+        rollup._insert_review_rows = fail_public_detail
+        try:
+            try:
+                rollup.publish_generation(target)
+            except RuntimeError as error:
+                assert str(error) == "injected battle detail failure"
+            else:
+                raise AssertionError("battle publication did not roll back its detail failure")
+        finally:
+            rollup._insert_review_rows = insert
+        for table in public_tables:
+            assert query(f"SELECT COUNT(*) AS n FROM {table} WHERE " + scope_where, target.scope_tuple)[0]["n"] == 0
+        assert rollup.read_battle_source(target) == expanded
+        assert rollup.read_state(target)["publication_status"] == PUBLICATION_BUILDING
+        query("UPDATE telemetry_rollup_state SET rebuild_through_ingest_id=input_watermark+1 WHERE " + scope_where, target.scope_tuple)
+        try:
+            rollup.publish_generation(target)
+        except GenerationConflict:
+            pass
+        else:
+            raise AssertionError("battle publication ignored an unfinished fixed bound")
+        query("UPDATE telemetry_rollup_state SET rebuild_through_ingest_id=input_watermark WHERE " + scope_where, target.scope_tuple)
+        assert rollup.publish_generation(target)["status"] == "published"
+        assert rollup.read_battle_source(target).header["publication_complete"] == 1
+
+        def reports(generation):
+            return {kind: reporter.read_report(generation, kind) for kind in battle_publication.ROW_KINDS}
+        original_reports = reports(target)
+        covered = original_reports["battle_exposure"].coverage.battle_coverage
+        assert covered["source_fact_count"] == expanded.header["source_fact_count"]
+        assert covered["identity"]["status"] == "published_unknown_identity"
+        assert covered["verified_contribution_links"] == 28 and covered["partial_contribution_links"] == 0
+        assert covered["observed_present_usec"] == history.summary["verified_exposure_present_usec"]
+        assert covered["observed_pc_present_usec"] == covered["unknown_account_pc_present_usec"]
+        assert covered["association_row_count"] == 123 and covered["contribution_row_count"] == 28
+        assert original_reports["battle_exposure"].coverage.incident_coverage["registry_schema_version"] == 4
+        assert all(not report.truncated for report in original_reports.values())
+        associations = {battle_contract.fact_key(row): row for row in original_reports["battle_associations"].rows}
+        for row in expanded.facts:
+            if row["record_kind"] == 10:
+                assert {name: associations[battle_contract.fact_key(row)][name] for name in retained_source.SOURCE_COLUMNS[10]} == row
+        summaries = original_reports["battle_observations"].rows
+        assert sum(row["damage_dealt"] or 0 for row in summaries if row["canonical"]) == 112
+        assert all(row["outcome"] is None and row["control_applications"] is None for row in summaries)
+        assert reporter.read_report(target, "battle_associations", max_rows=1).truncated
+        for action in (lambda: reporter.read_report(target, "battle_exposure", max_bytes=100_000),
+                lambda: reporter.read_coverage(target, max_bytes=100_000)):
+            try:
+                action()
+            except BoundsExceeded:
+                pass
+            else:
+                raise AssertionError("battle report exceeded its metadata byte budget")
+        rollup.publish_generation(target)
+        assert reports(target) == original_reports
+
+        public_row = query("SELECT * FROM telemetry_rollup_battle_row WHERE " + scope_where +
+            " AND row_kind=3 ORDER BY row_key LIMIT 1", target.scope_tuple)[0]
+        detail_where = scope_where + " AND row_kind=%s AND row_key=%s"
+        detail_key = (*target.scope_tuple, public_row["row_kind"], public_row["row_key"])
+        query("UPDATE telemetry_rollup_battle_row SET payload_digest=%s WHERE " + detail_where, (b"x" * 32, *detail_key))
+        refused(lambda: reporter.read_report(target, "battle_exposure"), "snapshot_changed")
+        refused(lambda: rollup.publish_generation(target), "snapshot_changed")
+        query("UPDATE telemetry_rollup_battle_row SET payload_digest=%s WHERE " + detail_where, (public_row["payload_digest"], *detail_key))
+        query("UPDATE telemetry_rollup_battle_row SET payload=%s WHERE " + detail_where, (b"x", *detail_key))
+        refused(lambda: reporter.read_report(target, "battle_contributions"), "payload_digest")
+        query("UPDATE telemetry_rollup_battle_row SET payload=%s WHERE " + detail_where, (public_row["payload"], *detail_key))
+        query("DELETE FROM telemetry_rollup_battle_row WHERE " + detail_where, detail_key)
+        refused(lambda: reporter.read_report(target, "battle_exposure"), "detail_missing")
+        fields = battle_publication.ROW_COLUMNS
+        query("INSERT INTO telemetry_rollup_battle_row (" + ",".join(fields) + ") VALUES (" + ",".join(["%s"] * len(fields)) + ")",
+            tuple(public_row[name] for name in fields))
+        query("UPDATE telemetry_battle_source SET publication_complete=0 WHERE " + scope_where, target.scope_tuple)
+        refused(lambda: rollup.publish_generation(target), "publication_state_conflict")
+        query("UPDATE telemetry_battle_source SET publication_complete=1 WHERE " + scope_where, target.scope_tuple)
+        assert reports(target) == original_reports
+
+        for generation, committed in ((3, True), (4, False)):
+            retry = RollupTarget(5, generation, environment_id, season_id)
+            commit, injected = rollup._commit, False
+            def lost_publication_ack():
+                nonlocal injected
+                if not injected:
+                    injected = True
+                    if committed:
+                        commit()
+                    raise AmbiguousCommit("injected battle publication acknowledgement loss")
+                commit()
+            rollup._commit = lost_publication_ack
+            try:
+                assert rollup.publish_generation(retry)["status"] == "published"
+            finally:
+                rollup._commit = commit
+            assert injected
+            saved = reports(retry)
+            rollup.publish_generation(retry)
+            assert reports(retry) == saved
+        assert rollup.read_state(target)["publication_status"] == PUBLICATION_SUPERSEDED
+        assert rollup.read_battle_source(target).facts == expanded.facts
+        old_after_supersede = reports(target)
+        assert {kind: report.rows for kind, report in old_after_supersede.items()} == {
+            kind: report.rows for kind, report in original_reports.items()}
+        assert old_after_supersede["battle_exposure"].coverage.battle_coverage == covered
+
+        subprocess.run([sys.executable, "scripts/telemetry/rollup.py", "publish", *target_args], cwd=ROOT,
+            env=cli_environment, capture_output=True, check=True, timeout=30)
+        report_environment = dict(cli_environment, TELEMETRY_ROLLUP_DB_USER=settings("report").user)
+        cli_report = subprocess.run([sys.executable, "scripts/telemetry/rollup.py", "report", *target_args,
+            "--name", "battle_contributions"], cwd=ROOT, env=report_environment, capture_output=True, check=True, timeout=30)
+        assert len(json.loads(cli_report.stdout)["rows"]) == 28
+        assert rollup.read_state(cli_target)["publication_status"] == PUBLICATION_PUBLISHED
+
+        # Use controlled coherent UTC labels as a separate dated boundary
+        # fixture. The original native writer/SQL values were checked above.
+        fixture = BattleHistoryTests("test_publication_dated_transfer_conserves_presence_without_dividing_amounts")
+        fixture.rows = [row for row in expanded.facts if row["record_kind"] in (10, 11)]
+        fixture.scope = environment_id, season_id
+        dated, registry_fixture, segment_key, first, middle, last, epoch = fixture._dated_publication_fixture()
+        registry = identity_history.Registry.from_packet(registry_fixture.input_dict())
+        principal = reviewer.connection_factory.connect()
+        try:
+            with principal.cursor() as cursor:
+                cursor.execute("SELECT CURRENT_USER() AS principal")
+                principal_name = cursor.fetchone()["principal"]
+        finally:
+            reviewer.connection_factory.close(principal)
+        query("INSERT INTO telemetry_identity_reviewer VALUES (%s,%s,%s,%s,1)",
+            (environment_id, season_id, principal_name, bytes.fromhex(registry.reviewer_token)))
+        query("INSERT INTO telemetry_account_lifetime VALUES (900001,NULL),(900002,NULL)")
+        query("INSERT INTO telemetry_account_token VALUES (%s,%s,101,900001),(%s,%s,102,900002)",
+            (environment_id, season_id, environment_id, season_id))
+        assert reviewer.register_identity_packet(registry.input_dict())["status"] == "registered"
+        loss_packet = incident.template(4)
+        loss_packet.update(environment_id=environment_id, season_id=season_id, reviewer_token="a" * 64,
+            review_evidence_digest="b" * 64, reviewed_from_utc_usec=epoch + first - 1,
+            reviewed_through_utc_usec=epoch + last + 1, incidents=[])
+        assert reviewer.register_incident_packet(loss_packet)["status"] == "registered"
+        raw_original = query("SELECT " + ",".join(RAW_COLUMNS) + " FROM telemetry_interval WHERE record_kind IN (9,10,11) ORDER BY ingest_id")
+        query("DELETE FROM telemetry_interval WHERE record_kind IN (9,10,11)")
+        for row in dated.facts:
+            names = [name for name in row if name != "ingest_id"]
+            query("INSERT INTO telemetry_interval (" + ",".join(names) + ") VALUES (" + ",".join(["%s"] * len(names)) + ")",
+                tuple(row[name] for name in names))
+        dated_through = query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"]
+        reviewed_target = RollupTarget(5, 7, environment_id, season_id)
+        rollup.reserve_identity_generation(reviewed_target.scope_tuple, 1)
+        assert RollupEngine(rollup).run(reviewed_target, bounds=RollupBounds(page_size=3), through_ingest_id=dated_through).complete
+        rollup.publish_generation(reviewed_target)
+        reviewed_reports = reports(reviewed_target)
+        reviewed_exposure = reviewed_reports["battle_exposure"]
+        assert reviewed_exposure.coverage.battle_coverage["owned_pc_present_usec"] > 0
+        assert reviewed_exposure.coverage.battle_coverage["confirmed_controller_pc_present_usec"] > 0
+        assert any(row["controller_token"] == 701 for row in reviewed_exposure.rows)
+        selected = next(row for row in reviewed_reports["battle_contributions"].rows if battle_contribution_contract.segment_key(row) == segment_key)
+        assert selected["attribution_status"] == "identity_changes_inside_segment" and selected["account_token"] is None
+        corrected = replace(registry, registry_version=2, previous_registry_version=1, previous_packet_digest=registry.packet_digest,
+            associations=tuple(replace(row, controller_token=799) if row.account_token == 101 else row for row in registry.associations))
+        assert reviewer.register_identity_packet(corrected.input_dict())["status"] == "registered"
+        source_segment = next(row for row in dated.facts if row["record_kind"] == 11 and battle_contribution_contract.segment_key(row) == segment_key)
+        loss = dict(incident.template(4)["incidents"][0], producer_boot_id=source_segment["boot_id"],
+            producer_process_id=source_segment["process_id"], start_utc_usec=epoch + first + (middle - first) // 2,
+            end_utc_usec=epoch + middle, record_kind_mask=1 << 9, evidence_digest="d" * 64)
+        loss_packet.update(registry_version=2, previous_registry_version=1, incidents=[loss])
+        assert reviewer.register_incident_packet(loss_packet)["status"] == "registered"
+        corrected_target = RollupTarget(5, 8, environment_id, season_id)
+        rollup.reserve_identity_generation(corrected_target.scope_tuple, 2)
+        assert RollupEngine(rollup).run(corrected_target, through_ingest_id=dated_through).complete
+        rollup.publish_generation(corrected_target)
+        corrected_exposure = reporter.read_report(corrected_target, "battle_exposure")
+        assert corrected_exposure.coverage.battle_coverage["identity"]["registry_version"] == 2
+        assert corrected_exposure.coverage.incident_coverage["registry_version"] == 2
+        assert any(row["controller_token"] == 799 for row in corrected_exposure.rows)
+        pieces = [row for row in corrected_exposure.rows if row["battle_actor_id"] == source_segment["bc_actor_id"] and
+            row["source_battle"] == [source_segment[name] for name in battle_contribution_contract.BATTLE] and
+            first <= row["start_monotonic_usec"] < last]
+        assert any(row["account_token"] is None and row["quality_flags"] & incident.QUALITY_INCIDENT_GAP for row in pieces)
+        assert any(row["account_token"] == 102 and row["start_monotonic_usec"] >= middle for row in pieces)
+        assert corrected_exposure.coverage.battle_coverage["observed_present_usec"] == reviewed_exposure.coverage.battle_coverage["observed_present_usec"]
+        old = reports(reviewed_target)
+        assert old["battle_exposure"].rows == reviewed_exposure.rows
+        assert old["battle_exposure"].coverage.battle_coverage == reviewed_exposure.coverage.battle_coverage
+        assert old["battle_exposure"].coverage.incident_coverage == reviewed_exposure.coverage.incident_coverage
+        query("DELETE FROM telemetry_interval WHERE record_kind IN (9,10,11)")
+        for row in raw_original:
+            query(raw_insert, tuple(row[name] for name in RAW_COLUMNS))
+
+        publication_schema = ROOT / "migrations/immutable/0064_telemetry_battle_publication.sql"
+        def apply_publication():
+            subprocess.run(command + [name], input=publication_schema.read_bytes(), env=environment,
+                check=True, timeout=20, stdout=subprocess.DEVNULL)
+        def verify_publication(success=True):
+            result = subprocess.run(["bash", str(publication_schema.with_suffix(".sh"))], cwd=ROOT, env=environment,
+                capture_output=True, timeout=45)
+            assert (result.returncode == 0) is success, result.stderr.decode(errors="replace")
+        saved_public = query("SELECT * FROM telemetry_rollup_battle_row ORDER BY definition_version,generation,environment_id,season_id,row_kind,row_key")
+        apply_publication()
+        verify_publication()
+        assert query("SELECT * FROM telemetry_rollup_battle_row ORDER BY definition_version,generation,environment_id,season_id,row_kind,row_key") == saved_public
+        rejected_sql("UPDATE telemetry_rollup_battle_coverage SET owned_pc_present_usec=owned_pc_present_usec+1 WHERE " + scope_where,
+            target.scope_tuple, (3819, 4025))
+        rejected_sql("UPDATE telemetry_rollup_battle_row SET row_kind=6 WHERE " + detail_where, detail_key, (3819, 4025))
+        query("ALTER TABLE telemetry_rollup_battle_row MODIFY payload VARBINARY(32768) NOT NULL, " + drop_check + " chk_battle_row_payload")
+        query("ALTER TABLE telemetry_rollup_battle_row ADD CONSTRAINT chk_battle_row_payload CHECK (OCTET_LENGTH(payload) BETWEEN 1 AND 32768)")
+        verify_publication(False)
+        apply_publication()
+        verify_publication(False)
+        query("UPDATE telemetry_rollup_battle_row SET payload=%s WHERE " + detail_where, (b"x" * 32000, *detail_key))
+        refused(lambda: reporter.read_report(target, "battle_contributions"), "payload_capacity")
+        query("UPDATE telemetry_rollup_battle_row SET payload=%s WHERE " + detail_where, (public_row["payload"], *detail_key))
+        query("ALTER TABLE telemetry_rollup_battle_row " + drop_check + " chk_battle_row_payload")
+        query("ALTER TABLE telemetry_rollup_battle_row MODIFY payload VARBINARY(8192) NOT NULL, ADD CONSTRAINT chk_battle_row_payload CHECK (OCTET_LENGTH(payload) BETWEEN 1 AND 8192)")
+        verify_publication()
+        assert runtime_fingerprint(environment) == fingerprint
+        assert reporter.read_report(target, "battle_contributions").rows == original_reports["battle_contributions"].rows
+
         return dict(history_persisted_source_checkpoint=True, battle_source_identity_reservation=True,
             battle_source_cursor_atomicity=True, battle_source_lost_acknowledgements=True,
             battle_source_exact_values=True, battle_source_ownership_arrival=True, battle_source_private_roles=True,
             battle_source_bounded_reads=True, battle_source_cli_preparation=True,
-            battle_source_publication_refused=True, battle_source_selected_inputs=expanded.header["source_fact_count"],
+            battle_publication_capacity_refused=True, battle_source_selected_inputs=expanded.header["source_fact_count"],
             battle_source_retention=True, battle_source_schema_drift_refused=True, battle_source_restored_metadata=True,
             battle_source_read_transaction_released=True,
             battle_source_migration_apply_checksum=hashlib.sha256(schema.read_bytes()).hexdigest(),
-            battle_source_migration_verify_checksum=hashlib.sha256(schema.with_suffix(".sh").read_bytes()).hexdigest())
+            battle_source_migration_verify_checksum=hashlib.sha256(schema.with_suffix(".sh").read_bytes()).hexdigest(),
+            history_atomic_publication=True, battle_publication_rollback=True, battle_publication_lost_acknowledgements=True,
+            battle_publication_exact_native_values=True, battle_publication_bounded_reports=True,
+            battle_publication_snapshot_verified=True, battle_publication_read_transaction_released=True,
+            battle_publication_private_report_role=True, battle_publication_cli=True,
+            battle_publication_dated_fixture=True, battle_publication_review_correction=True,
+            battle_publication_ownership_loss_recovery=True, battle_publication_old_generation_immutable=True,
+            battle_publication_schema_drift_refused=True, battle_publication_restored_metadata=True,
+            battle_publication_migration_apply_checksum=hashlib.sha256(publication_schema.read_bytes()).hexdigest(),
+            battle_publication_migration_verify_checksum=hashlib.sha256(publication_schema.with_suffix(".sh").read_bytes()).hexdigest())
     finally:
         for database in adapters:
             database.close()

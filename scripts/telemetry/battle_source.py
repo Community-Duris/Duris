@@ -16,7 +16,7 @@ try:
     from . import battle_contract as battle, battle_contribution_contract as contribution
     from . import identity_history as identity, identity_publication, observation_semantics as observations, incident
     from .battle_history import HEADER
-    from .rollup_definitions import PREPARATION_DEFINITION_VERSION, ROLLUP_QUALITY_MASK
+    from .rollup_definitions import BATTLE_DEFINITION_VERSION, ROLLUP_QUALITY_MASK
 except ImportError:
     import battle_contract as battle
     import battle_contribution_contract as contribution
@@ -25,9 +25,9 @@ except ImportError:
     import observation_semantics as observations
     import incident
     from battle_history import HEADER
-    from rollup_definitions import PREPARATION_DEFINITION_VERSION, ROLLUP_QUALITY_MASK
+    from rollup_definitions import BATTLE_DEFINITION_VERSION, ROLLUP_QUALITY_MASK
 
-DEFINITION_VERSION = PREPARATION_DEFINITION_VERSION  # Independent incident schema 4.
+DEFINITION_VERSION = BATTLE_DEFINITION_VERSION  # Independent incident schema 4.
 SCOPE = observations.SCOPE
 REPLAY = identity_publication.REPLAY
 MAX_INPUTS = 16_384

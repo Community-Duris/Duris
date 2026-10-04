@@ -808,6 +808,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "9fe2d8f82612d5ba3c65d9c23a96af6db7afd37eaaf29f5c30b23749d37bed60",
       "verify_checksum": "e9c80c1363ec397bf684de2bae59b0a9d3da1faae1d34410df1f6c0d66310625"
+    },
+    {
+      "id": "0064_telemetry_battle_publication",
+      "sequence": 64,
+      "description": "Atomically publish retained battle observations with dated presence and reserved identity attribution",
+      "apply": "immutable/0064_telemetry_battle_publication.sql",
+      "verify": "immutable/0064_telemetry_battle_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "3757688bd03830cd81f41dc37a6c79ae02ab667954864acb359eb400c9e46963",
+      "verify_checksum": "b21d8d115545a990d988fe65f6efec79d68ef61b8dca40e42096f29b588ea4b9"
     }
   ]
 }
