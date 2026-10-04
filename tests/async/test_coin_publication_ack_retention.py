@@ -45,6 +45,10 @@ static critical_command submitted;
 static bool held = false, ack_available = true, physical_available = false;
 static int submissions = 0, ack_attempts = 0, acks = 0, physical_attempts = 0;
 static int physical_successes = 0, notifications = 0, failures = 0;
+// The controlled publisher models one idempotent physical effect, with fresh
+// dependency verification on every invocation. It is not a native world proof.
+static bool physical_published = false, physical_required = true;
+static bool ack_before_physical = false;
 static bool notification_before_ack = false;
 static bool throw_physical = false, throw_notification = false, fail_notification = false;
 static int bank_calls = 0, throw_bank_call = 0;
@@ -124,6 +128,8 @@ bool critical_command_coordinator_acknowledge_publication(const critical_operati
 	++ack_attempts;
 	if (!held || id.bytes != submitted.operation_id.bytes || !ack_available)
 		return false;
+	if (physical_required && physical_successes != 1)
+		ack_before_physical = true;
 	held = false; // Successful ACK retires the operation: subsequent ACK must fail.
 	++acks;
 	return true;
@@ -162,7 +168,11 @@ static bool physical(P_char,
 		throw std::runtime_error("controlled physical failure");
 	if (!physical_available)
 		return false;
-	++physical_successes;
+	if (!physical_published)
+	{
+		physical_published = true;
+		++physical_successes;
+	}
 	return true;
 }
 static bool notify(P_char, bool committed, const coin_transfer_payload &,
@@ -194,6 +204,15 @@ static void check(bool condition, const char *name)
 	printf("%s %s\n", condition ? "PASS" : "FAIL", name);
 	if (!condition)
 		++failures;
+}
+
+static void dispatch(const critical_completion *completions, size_t count)
+{
+	const int before = physical_attempts;
+	currency_transaction_handle_completions(completions, count);
+	check(physical_attempts - before <= 1, "one physical callback at most per dispatch");
+	check(physical_successes <= 1 && acks <= 1, "physical effect and ACK occur at most once");
+	check(!ack_before_physical, "ACK cannot precede physical publication");
 }
 
 static coin_transfer_payload transfer(P_char actor, bool wallet_only)
@@ -284,6 +303,7 @@ int main(int argc, char **argv)
 	const bool partial = scenario == "partial_projection_retry" ||
 			     scenario == "partial_projection_conflict";
 	const bool wallet_only = scenario == "wallet_only_replay" || partial;
+	physical_required = !wallet_only;
 	const bool replay = scenario == "missing_publisher" || scenario == "absent_actor" ||
 			    scenario == "wallet_only_replay";
 	const auto payload = transfer(&actor, wallet_only);
@@ -349,7 +369,7 @@ int main(int argc, char **argv)
 	bool projection_escaped = false;
 	try
 	{
-		currency_transaction_handle_completions(&completed, 1);
+		dispatch(&completed, 1);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -368,7 +388,7 @@ int main(int argc, char **argv)
 		      "partial projection retains both wallet lifecycle owners");
 		if (scenario == "partial_projection_retry")
 		{
-			currency_transaction_handle_completions(nullptr, 0);
+			dispatch(nullptr, 0);
 			check(!held && acks == 1 && notifications == 1 &&
 				      !currency_transaction_health_copy().pending,
 			      "same exact partial receipt retries to ACK");
@@ -383,8 +403,8 @@ int main(int argc, char **argv)
 			      "first-endpoint fault precedes destination assignment");
 			auto conflict = completed;
 			conflict.durable_revision = completed.durable_revision + 1;
-			currency_transaction_handle_completions(&conflict, 1);
-			currency_transaction_handle_completions(nullptr, 0);
+			dispatch(&conflict, 1);
+			dispatch(nullptr, 0);
 			check(held && !acks && !notifications &&
 				      currency_transaction_health_copy().publication_blocked == 1,
 			      "changed receipt cannot replace partial native effect");
@@ -402,8 +422,8 @@ int main(int argc, char **argv)
 		conflict.durable_revision = completed.durable_revision + 1;
 		physical_available = true;
 		ack_available = true;
-		currency_transaction_handle_completions(&conflict, 1);
-		currency_transaction_handle_completions(nullptr, 0);
+		dispatch(&conflict, 1);
+		dispatch(nullptr, 0);
 		check(held && !acks && !notifications && physical_attempts == before,
 		      "changed authoritative receipt cannot overwrite published wallet or physical obligation");
 		check(currency_transaction_health_copy().pending == 1 &&
@@ -420,7 +440,7 @@ int main(int argc, char **argv)
 			      !notification_before_ack &&
 			      !currency_transaction_health_copy().pending,
 		      "post-ACK notification failure cannot resurrect economic owner");
-		currency_transaction_handle_completions(nullptr, 0);
+		dispatch(nullptr, 0);
 		check(physical_attempts == 1 && notifications == 1,
 		      "post-ACK failure has no economic retry");
 	}
@@ -439,7 +459,7 @@ int main(int argc, char **argv)
 		check(currency_transaction_coin_item_busy(pile_uid), "replay pile remains busy");
 		check(currency_transaction_player_busy(&actor),
 		      "replay actor remains busy after wallet publication");
-		currency_transaction_handle_completions(nullptr, 0);
+		dispatch(nullptr, 0);
 		check(held && !ack_attempts && !physical_attempts && !notifications,
 		      "replay pulse cannot invent publisher");
 	}
@@ -453,12 +473,22 @@ int main(int argc, char **argv)
 		auto duplicate = completed;
 		duplicate.outcome = critical_apply_outcome::already_applied;
 		duplicate.attempt = completed.attempt + 1;
-		currency_transaction_handle_completions(&duplicate, 1);
-		check(physical_successes == 1 && physical_attempts == 1,
-		      "ACK retry cannot repeat physical publication");
+		dispatch(&duplicate, 1);
+		check(physical_successes == 1 && physical_attempts == 2,
+		      "ACK retry re-verifies without repeating physical effect");
 		ack_available = true;
-		currency_transaction_handle_completions(nullptr, 0);
-		check(acks == 1 && !held && notifications == 1 && !notification_before_ack,
+		physical_available = false;
+		const int before_ack = ack_attempts;
+		dispatch(nullptr, 0);
+		check(held && !acks && !notifications && ack_attempts == before_ack &&
+			      physical_successes == 1 && physical_attempts == 3 &&
+			      currency_transaction_player_busy(&actor) &&
+			      currency_transaction_coin_item_busy(pile_uid),
+		      "failed completed-stage verification retains original before ACK");
+		physical_available = true;
+		dispatch(nullptr, 0);
+		check(physical_successes == 1 && acks == 1 && !held && notifications == 1 &&
+			      !notification_before_ack,
 		      "notification follows successful ACK");
 		check(!currency_transaction_health_copy().pending,
 		      "ACK retry retires domain entry");
@@ -476,9 +506,18 @@ int main(int argc, char **argv)
 		{
 			for (unsigned int i = 0; i < CURRENCY_COIN_PUBLICATION_MAX_ATTEMPTS + 2;
 			     ++i)
-				currency_transaction_handle_completions(nullptr, 0);
-			check(physical_attempts == CURRENCY_COIN_PUBLICATION_MAX_ATTEMPTS,
-			      "physical attempts bounded");
+			{
+				const int before = physical_attempts;
+				dispatch(nullptr, 0);
+				check(physical_attempts == before + 1,
+				      "unavailable dependency receives one bounded attempt per pulse");
+				check(held && !ack_attempts && !acks && !physical_successes &&
+					      !notifications && currency_transaction_health_copy().pending == 1 &&
+					      submitted.operation_id.bytes == original_id.bytes &&
+					      currency_transaction_player_busy(&actor) &&
+					      currency_transaction_coin_item_busy(pile_uid),
+				      "unavailable pulse retains original owners without effects or ACK");
+			}
 			check(held && !acks && currency_transaction_health_copy().pending == 1,
 			      "exhaustion retains coordinator receipt and domain entry");
 			check(currency_transaction_player_busy(&actor) &&
@@ -487,11 +526,18 @@ int main(int argc, char **argv)
 			check(!notifications &&
 				      !currency_transaction_health_copy().publication_abandoned,
 			      "exhaustion cannot finalize or abandon committed publication");
+			throw_physical = false;
+			physical_available = true;
+			dispatch(nullptr, 0);
+			check(physical_successes == 1 && acks == 1 && !held && notifications == 1 &&
+				      !notification_before_ack && !currency_transaction_health_copy().pending &&
+				      submitted.operation_id.bytes == original_id.bytes,
+			      "recovered dependency finishes original once after legacy attempt count");
 		}
 		else
 		{
 			physical_available = true;
-			currency_transaction_handle_completions(nullptr, 0);
+			dispatch(nullptr, 0);
 			check(physical_attempts == 2 && physical_successes == 1,
 			      "same operation later physically publishes");
 			check(acks == 1 && !held && notifications == 1 && !notification_before_ack,
@@ -504,7 +550,7 @@ int main(int argc, char **argv)
 	      "original operation identity unchanged");
 	const int before_physical = physical_attempts, before_notification = notifications,
 		  before_acks = acks;
-	currency_transaction_handle_completions(&completed, 1);
+	dispatch(&completed, 1);
 	check(physical_attempts == before_physical && notifications == before_notification &&
 		      acks == before_acks,
 	      "duplicate completion has no repeated successful publication");
