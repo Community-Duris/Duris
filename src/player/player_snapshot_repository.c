@@ -334,12 +334,10 @@ query_result apply_replacement_rows(MYSQL *connection, const player_snapshot &sn
 						  << ",0))";
 				      });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_TIMERS))
-		result = replace_rows(connection, snapshot.pid, "player_timers",
-				      "timer_id,timer_value", snapshot.timers,
-				      [](auto &sql, const auto &row) {
-					      sql << row.index << ",FROM_UNIXTIME(NULLIF("
-						  << row.value << ",0))";
-				      });
+		result = replace_rows(
+			connection, snapshot.pid, "player_timers", "timer_id,timer_value",
+			snapshot.timers, [](auto &sql, const auto &row)
+			{ sql << row.index << ",FROM_UNIXTIME(NULLIF(" << row.value << ",0))"; });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_UNDEAD_SLOTS))
 		result = replace_rows(connection, snapshot.pid, "player_undead_slots",
 				      "circle,slots", snapshot.undead_slots,
@@ -2491,9 +2489,8 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 						player_revision_t source_revision)
 {
 	using outcome = player_death_terminal_write_outcome;
-	const auto failed = [](unsigned int code) {
-		return player_death_terminal_write_result{ outcome::failed, code ? code : EIO };
-	};
+	const auto failed = [](unsigned int code)
+	{ return player_death_terminal_write_result{ outcome::failed, code ? code : EIO }; };
 	if (!connection)
 		return failed(EINVAL);
 #ifndef __NO_MYSQL__
@@ -2777,39 +2774,29 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 	return player_snapshot_repository_apply(connection, snapshot, nullptr);
 }
 
-player_save_apply_result
-player_snapshot_repository_recovery_apply(MYSQL *connection,
-					  const player_save_recovery_record &record)
-try
+static player_save_apply_result
+apply_owned_recovery_snapshot(MYSQL *connection, const player_save_recovery_record &record,
+			      player_sql_transaction_cleanup &owner)
 {
 	if (!connection || record.backend != 2 || !player_save_journal_recovery_matches(record))
 		return { player_save_apply_outcome::terminal_failure, 0, EPERM };
-#ifndef __NO_MYSQL__
-	if (!(connection->server_status & SERVER_STATUS_AUTOCOMMIT) ||
-	    (connection->server_status & SERVER_STATUS_IN_TRANS))
-		return { player_save_apply_outcome::terminal_failure, 0, EBUSY };
-#endif
 	const auto &snapshot = record.replacement;
 	auto query = execute(connection, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
 	if (query.ok)
+	{
+		if (!owner.same_session() || player_sql_idle_error(connection))
+			return failure(ENOTCONN);
+		owner.starting();
 		query = execute(connection, "START TRANSACTION");
+	}
 	if (!query.ok)
 		return failure(query.error_code);
-	const auto rollback_transaction = [](MYSQL *owner)
-	{
-#ifndef __NO_MYSQL__
-		if (!(owner->server_status & SERVER_STATUS_IN_TRANS))
-			return;
-#endif
-		mysql_real_query(owner, "ROLLBACK", 8);
-	};
-	std::unique_ptr<MYSQL, decltype(rollback_transaction)> rollback_guard(connection,
-									      rollback_transaction);
+	if (!owner.same_session() || !(connection->server_status & SERVER_STATUS_IN_TRANS))
+		return failure(ENOTCONN);
 	query = execute(connection, "SELECT pid FROM player_data WHERE pid=" +
 					    std::to_string(snapshot.pid) + " FOR UPDATE");
 	if (!query.ok)
 	{
-		execute(connection, "ROLLBACK");
 		return failure(query.error_code);
 	}
 	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
@@ -2817,7 +2804,6 @@ try
 	if (!rows || mysql_num_rows(rows.get()) != 1)
 	{
 		rows.reset();
-		execute(connection, "ROLLBACK");
 		return { player_save_apply_outcome::terminal_failure, 0, ENOENT };
 	}
 	rows.reset();
@@ -2830,14 +2816,12 @@ try
 			  player_load_result{};
 	if (receipt && present && player_quarantine_recovery_state_matches(current, record, true))
 	{
-		execute(connection, "ROLLBACK");
 		return { player_save_apply_outcome::already_applied, snapshot.revision, 0 };
 	}
 	if (!receipt || present ||
 	    !player_quarantine_recovery_state_matches(current, record, false) ||
 	    !player_quarantine_recovery_creation_proofs_sql(connection, record))
 	{
-		execute(connection, "ROLLBACK");
 		return { player_save_apply_outcome::terminal_failure, current.snapshot.revision,
 			 ESTALE };
 	}
@@ -2852,7 +2836,6 @@ try
 						    std::to_string(record.baseline.revision));
 	if (!query.ok || mysql_affected_rows(connection) != 1)
 	{
-		execute(connection, "ROLLBACK");
 		return failure(query.ok ? EAGAIN : query.error_code, query.custody_diagnosis);
 	}
 	const auto projected = player_load_repository_quarantine_inspect(
@@ -2860,25 +2843,72 @@ try
 	if (!player_quarantine_recovery_state_matches(projected, record, true) ||
 	    !player_quarantine_recovery_sql_receipt(connection, record, true, &present) || !present)
 	{
-		execute(connection, "ROLLBACK");
 		return { player_save_apply_outcome::terminal_failure, record.baseline.revision,
 			 EILSEQ };
 	}
+	if (!owner.same_session() || !(connection->server_status & SERVER_STATUS_IN_TRANS))
+		return failure(ENOTCONN);
+	owner.committing();
 	query = execute(connection, "COMMIT");
 	if (!query.ok)
 	{
-		if (!connection_error(query.error_code))
-			execute(connection, "ROLLBACK");
 		return { connection_error(query.error_code) ?
 				 player_save_apply_outcome::ambiguous_commit :
 				 failure(query.error_code).outcome,
 			 record.baseline.revision, query.error_code };
 	}
+	if (!owner.committed())
+		return { player_save_apply_outcome::ambiguous_commit, record.baseline.revision,
+			 ENOTCONN };
 	return { player_save_apply_outcome::applied, snapshot.revision, 0 };
 }
-catch (...)
+
+player_save_apply_result player_snapshot_repository_recovery_apply(
+	MYSQL *connection, const player_save_recovery_record &record, player_sql_cleanup *cleanup)
 {
-	return { player_save_apply_outcome::retryable_failure, 0, ENOMEM };
+	player_sql_cleanup local;
+	auto &proof = cleanup ? *cleanup : local;
+	player_sql_transaction_cleanup owner(connection, proof);
+	const unsigned int idle_error = player_sql_idle_error(connection);
+	if (idle_error)
+		return { player_save_apply_outcome::terminal_failure, 0, idle_error };
+	try
+	{
+		const auto result = apply_owned_recovery_snapshot(connection, record, owner);
+		owner.finish();
+		// Recovery cannot resolve a retained fence on an unconfirmed read-only
+		// rollback, even when the exact replacement was already present.
+		if ((result.outcome == player_save_apply_outcome::applied ||
+		     result.outcome == player_save_apply_outcome::already_applied) &&
+		    proof.disposition != player_sql_cleanup_disposition::idle_verified)
+			return { owner.commit_attempted() ?
+					 player_save_apply_outcome::ambiguous_commit :
+					 player_save_apply_outcome::terminal_failure,
+				 0, proof.cleanup_error ? proof.cleanup_error : EIO };
+		return result;
+	}
+	catch (const std::bad_alloc &)
+	{
+		owner.finish();
+		return { owner.commit_attempted() ? player_save_apply_outcome::ambiguous_commit :
+			 proof.rollback_confirmed ? player_save_apply_outcome::retryable_failure :
+						    player_save_apply_outcome::terminal_failure,
+			 0, ENOMEM };
+	}
+	catch (...)
+	{
+		owner.finish();
+		return { owner.commit_attempted() ? player_save_apply_outcome::ambiguous_commit :
+						    player_save_apply_outcome::terminal_failure,
+			 0, EIO };
+	}
+}
+
+player_save_apply_result
+player_snapshot_repository_recovery_apply(MYSQL *connection,
+					  const player_save_recovery_record &record)
+{
+	return player_snapshot_repository_recovery_apply(connection, record, nullptr);
 }
 
 player_save_apply_result player_snapshot_repository_apply_from_pool(const player_snapshot &snapshot,
