@@ -758,3 +758,37 @@ python3 scripts/zone_story_quest_home_coverage.py --check
 
 See the [coverage register](../reference/ZONE_STORY_STARTER_HOMETOWN_COVERAGE.md)
 for mapped areas, exclusions, and the remaining qualification work.
+
+### Peril Peaks: separate linked deliveries, controls and unfinished investigations
+
+Peril Peaks' [source dossier](../design/zone-stories/THE_MOUNTAIN_OF_PERIL_PEAKS.md)
+and [zone sidecar](../../areas/story/nexus.story.json) demonstrate ten independent
+deliveries with three optional earlier-exchange histories. A stud, parchment or
+troll eye supplied by another player fits the same native contract without
+creating a personal mining/hunting receipt. Current proof remains distinct from
+the accepted producer receipt; consumed proof is not restored by recorded history.
+Three reptile kinds and two tentacle kinds require each distinct material, while
+an anaconda pair and a pair of draco eyes are each one object.
+
+Builders can map the native questions and explain medallion/emerald/portal
+prerequisites now. A carried NPC emerald needs exposed room custody before its
+touch control can dispatch. The ghost holders' death path releases their contents
+directly into the room; combat, custody and exposure still need a live journey.
+Looking at twilight and touching the return sphere
+are actual travel commands, not interchangeable enter hints. Discovery, meeting
+the source, receiving a key, removing a block and arriving through a gate are
+different facts; do not mark them all complete from one delivery.
+
+The injured human's request for his companions' fate has no further native Q.
+Their active connected placements and wandering do not supply a report endpoint.
+Design whether the finale means investigation, a surviving subset, escort,
+keepsake recovery or a returned report before authoring its future objective.
+Completion arrays currently express OR alternatives; they cannot enforce an AND
+campaign or five-companion requirement. Add deeper fields only alongside their
+implemented parser/runtime, committed events, persistence and rejection/replay
+tests. Dynamic extraction can suggest sources and links, while reward intent
+(such as Gooran's ring promise versus actual book) remains a builder decision.
+
+Alias, clue or dormant-route repairs belong in separate named fix commits where
+practical, with explicit PR/news trigger, before/after and validation. Journal
+guidance or a proposed companion finale does not constitute a shipped quest repair.

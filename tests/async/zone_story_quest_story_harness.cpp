@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 69 &&
+		require(catalog.story_mappings.size() == 70 &&
 				tracker.summary_for(7, 42).total == 1663,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -4705,6 +4705,125 @@ int main(int argc, char **argv)
 					restored_surface.progress_for_zone(7, 42, 979).total == 5,
 				"Surface cold recovery changed story/service/provenance distinction");
 		}
+
+		{
+			const auto &nexus_map = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &mapping) { return mapping.source_area == "nexus"; });
+			const auto &nexus_scales =
+				story_for("nexus", "hunter-three-reptile-scales");
+			const auto &nexus_tentacles = story_for("nexus", "hunter-two-tentacles");
+			const auto &nexus_eye = story_for("nexus", "human-troll-eye");
+			const auto &nexus_roxon = story_for("nexus", "roxon-silver-stud");
+			const auto &nexus_gooran = story_for("nexus", "gooran-parchment");
+			service nexus(catalog);
+			require(nexus.discover_zone(7, 42, 575, 57637, 100, "arrival") ==
+						result::applied &&
+					nexus.render_journal(7, 42, 575, 10, 1, 101, false, false)
+							.find("] " + nexus_scales.title + "\r\n") ==
+						std::string::npos,
+				"Peril Peaks discovery exposed an unmet request");
+			for (const auto &contact : nexus_map.contacts)
+				require(nexus.meet_npc(7, 42, contact.mob_vnum, 57605, 102) ==
+						result::applied,
+					"Peril Peaks contact failed");
+			const auto nexus_section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Peril Peaks journal section missing");
+				const auto end = journal.find("\r\n[", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto nexus_material = [](const auto &entry, int item) -> const auto &
+			{
+				return *std::find_if(entry.steps.begin(), entry.steps.end(),
+						     [&](const auto &step) {
+							     return step.kind == "carried_item" &&
+								    step.item_vnums.front() == item;
+						     });
+			};
+			supplies = {};
+			supplies.carried[57535] = 3;
+			supplies.carried[57555] = 2;
+			const auto nexus_before = nexus.serialize_state();
+			journal = nexus.render_journal(7, 42, 575, 10, 1, 103, false, false,
+						       &supplies);
+			require(nexus_section(nexus_scales)
+							.find("[Missing now] " +
+							      nexus_material(nexus_scales, 57534)
+								      .text) != std::string::npos &&
+					nexus_section(nexus_scales)
+							.find("[Missing now] " +
+							      nexus_material(nexus_scales, 57536)
+								      .text) != std::string::npos &&
+					nexus_section(nexus_tentacles)
+							.find("[Missing now] " +
+							      nexus_material(nexus_tentacles, 57566)
+								      .text) != std::string::npos &&
+					nexus.serialize_state() == nexus_before &&
+					nexus.progress_for_zone(7, 42, 575).completed == 0,
+				"Peril Peaks duplicates replaced distinct parts, mutated state or invented a delivery");
+			for (int item : { 57534, 57536, 57566, 57523, 57548, 57549 })
+				supplies.carried[item] = 1;
+			journal = nexus.render_journal(7, 42, 575, 10, 1, 104, false, false,
+						       &supplies);
+			for (const auto *entry : { &nexus_scales, &nexus_tentacles, &nexus_eye,
+						   &nexus_roxon, &nexus_gooran })
+				require(nexus_section(*entry).find("Next: " +
+								   entry->steps.back().text) !=
+						std::string::npos,
+					"Peril Peaks exact supplied proof required earlier history or wrong parts");
+			record(nexus, nexus_eye.steps.front().contracts.front(),
+			       "nexus-head-producer", 575, 57637);
+			supplies.carried.erase(57549);
+			supplies.equipped[14] = 57549;
+			journal = nexus.render_journal(7, 42, 575, 10, 1, 105, false, false,
+						       &supplies);
+			require(nexus_section(nexus_eye).find("[Recorded] " +
+							      nexus_eye.steps.front().text) !=
+						std::string::npos &&
+					nexus_section(nexus_eye).find(
+						"[Missing now] " +
+						nexus_material(nexus_eye, 57549).text) !=
+						std::string::npos &&
+					nexus.progress_for_zone(7, 42, 575).completed == 1,
+				"Peril Peaks producer history restored spent or worn proof or completed the traveler");
+			service supplied_nexus(catalog);
+			for (const auto *entry : { &nexus_eye, &nexus_roxon, &nexus_gooran })
+			{
+				record(supplied_nexus, entry->contracts.front(), entry->id.c_str(),
+				       575, 57605);
+				require(supplied_nexus.evidence_for(
+							      entry->steps.front().contracts.front(),
+							      2)
+							.successful_attempts == 0,
+					"Peril Peaks supplied delivery invented its earlier producer");
+			}
+			require(supplied_nexus.progress_for_zone(7, 42, 575).completed == 3 &&
+					supplied_nexus.progress_for_zone(7, 42, 575).total == 10,
+				"Peril Peaks final supplies completed whole campaigns, access or companion fate");
+			auto replay =
+				completion(nexus_eye.contracts.front(), nexus_eye.id.c_str(), 120);
+			replay.transaction.zone_number = 575;
+			replay.transaction.room_vnum = 57605;
+			require(supplied_nexus.record_completion(replay) == result::already_applied,
+				"Peril Peaks delivery replay was not idempotent");
+			for (const auto &entry : nexus_map.stories)
+				if (entry.id != nexus_eye.id && entry.id != nexus_roxon.id &&
+				    entry.id != nexus_gooran.id)
+					record(supplied_nexus, entry.contracts.front(),
+					       entry.id.c_str(), 575, 57605);
+			service restored_nexus(catalog);
+			require(restored_nexus.deserialize_state(supplied_nexus.serialize_state(),
+								 &error) &&
+					restored_nexus.progress_for_zone(7, 42, 575).completed ==
+						10 &&
+					restored_nexus.progress_for_zone(7, 42, 575).total == 10,
+				"Peril Peaks cold recovery changed independent delivery totals");
+		}
+
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

@@ -104,9 +104,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 46 | The Mountain Valley of Dawndale | [Comprehensive source dossier](zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md): seventeen blocks/thirteen exchanges/four addressed; 150 rooms/sixty-nine mobs/sixty-six objects, 321 resets/175 families; automatic switches/shared teleport, bounded foreign sand/forge/book | Revision one: nine outcomes/three services/one referral, twenty-seven contacts/thirty-one optional checks; refugee preparations, rival bundles and foreign flute return | No native repair ships. Guarded coin purchase/mixed lens fee, key availability/shared caps/source content, fossil/Ender repairs and actual camp/tunnel/curse/install endpoints pending |
 | 47 | The 222nd Layer of the Abyss | [Comprehensive source dossier](zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md): all 48 blocks/23 exchanges/25 addressed; 183 rooms/117 mobs/113 objects, 378 resets/257 families, six literal procedures and bounded foreign routes/producers | Revision one: 22 outcomes/forty contacts/39 optional checks; 19 potential dailies, equivalent old-leash aliases, exact competing bundles and optional histories | No native repair ships. Phase insertion blocker, lake/generator/legend creation, dormant Ebb, Flow effects, clue/departure and actual scoped world-effect plans pending |
 | 48 | The Minizones of the Surface | [Comprehensive source dossier](zone-stories/THE_MINIZONES_OF_THE_SURFACE.md): all 59 blocks/25 exchanges/32 addressed, 119 rooms/25 mobs/42 objects, 145 resets/66 families, three literal procedures and bounded foreign producers/hosts/routes | Revision one: five stories/sixteen services, 38 contacts/73 optional checks; five potential dailies, exact copies/kinds and any-one cleansing | No native repair ships. Guarded fees, source/recipient choices, wand/pet creation and custody, clue/flame cleanup fixes, missing ordinary entries and dormant igloo/foreign laboratory plans pending |
-| 49–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 49 | The Mountain of Peril Peaks | [Comprehensive source dossier](zone-stories/THE_MOUNTAIN_OF_PERIL_PEAKS.md): all 21 blocks/ten deliveries/eleven addressed; 196 rooms/162 mobs/85 objects/two shops, 297 resets/236 families, automatic switches/shared travel and reciprocal Mountain Tracks boundaries | Revision one: ten outcomes, 28 contacts/16 optional checks; ten potential dailies, exact parts and three optional intermediate histories | No native repair ships. Companion-fate finale, causal source/custody, accepted controls/key/arrival and scoped campaigns pending; ring/book, aliases and dormant content need builder decisions |
+| 50–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is the Mountain of Peril Peaks (`nexus`).
+The next area is Crakkaros' Liar (`crakkaro`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -115,6 +116,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-NEXUS-COMPANION / ACCESS / CONTENT | Traveler requests companion fate after medallion, but no later Q exists. Five companions are placed in a connected load room and can wander. Medallion, NPC-carried same-named emeralds and portals are distinct prerequisites; ring promise contradicts actual prayer book. | Builder designs investigation/report/rescue; add causal source/custody, accepted control/key/arrival and scoped AND episodes with supplied-proof branches. Qualify exposed controls, stock/reset and surviving instances. Separate builder-reviewed clue/alias/dormant-content fixes and news proof; none ships here. |
 | ZSQ-SURFACEMINI-CREATION / CONTENT | Flame collar lacks extraction on narrow-room failure; both collars continue after unchecked placement. Wand consumes before unchecked random replacement. Frost clue says Fire rather than Ice; flame room text says ice. | Separate focused original-failing cleanup/text fixes preserving balance/cooldowns/random output; qualify placement/identity/custody and accepted pet/equipment effects. All replacement prototypes exist; normal lesser/greater predicates are identical, so high-roll split remains conditional. No native repair ships. |
 | ZSQ-SURFACEMINI-SOURCE / HOST / QUANTITY | Four pockets lack ordinary inbound edges; igloo/three local mobiles have no active sources. Foreign scientist/apparatus share caps; chest has no local contents/key producer. Retiring bases, one sphere, five-kind versus any-one cleansing and guarded fees need exact semantics. | Builder-reviewed routes/dormant content/foreign key flow with separate news proof; expand accepted source/handoff, quantities/mixed payment, surviving-recipient episodes, shared resource reservation, choices/scoped all-stage completion and random transformation lineage. Preserve original foreign ownership and supplied materials. |
 | ZSQ-JUIBLEX-PHASE / GENERATION | First Juiblex attempts already-linked room insertion, which the current handler rejects; second phase, vault seal and invisible key remain staged. Lake can retain first allocation if second fails. Generator/consumed legend creation use unchecked results; prototypes exist. | Separate identity/room-preflight/unlink/placement repair with original-failing procedure tests and public access/reset/recovery journey. Qualify staged creation cleanup and random consumable output/source recovery without changing ambient population or silently guaranteeing both tale halves. |
@@ -2402,3 +2404,51 @@ unchanged. Catalog: 69 maps/1663 achievements/1478 potential dailies/2218 rows.
 Original order: forty-eight source-comprehensive, 172 pending. Continue with
 the Mountain of Peril Peaks (`nexus`). No database, account/server operation,
 native repair or merge was performed at this checkpoint.
+
+## The Mountain of Peril Peaks completed source map — October 4, 2026
+
+The [dossier](zone-stories/THE_MOUNTAIN_OF_PERIL_PEAKS.md) covers all 21 blocks:
+ten Q and eleven addressed M, with no ambient/default families. Read all 196
+rooms/143 prose groups/41 headers/42 metadata/all 236 exit families, 162 mobiles,
+85 objects/two shops and 297 resets/all 236 families. No local literal procedure
+is bound; automatic switches/shared teleport, key/container/dispatch/wandering,
+fall/current and both reciprocal Mountain Tracks boundaries were reviewed.
+All native input/reward and reset references resolve; no foreign material is required.
+
+Revision one has ten outcomes, twenty-eight contacts and sixteen optional checks
+(thirteen current materials, three producer histories). Three two-stage errands
+explain silver/stud/Roxon, arm/parchment/Gooran and head/eye/traveler. The spirit's
+three distinct scales, two distinct tentacles and draco eyes, plus separate bear
+fur, remain independent outcomes. Supplied proof does not require or invent
+personal producer history; intermediate receipts cannot restore consumed objects.
+
+The medallion is a persistent key. Gardener/library emeralds have different exact
+control targets despite shared names and need exposed room custody; another
+NPC's carried object is not dispatched. Looking at twilight reaches the observatory,
+touching the sphere returns, and black-gate/tent travel uses enter. Unused cave/
+oval portals, plaque and small iron key do not establish broken existing routes.
+The five displaced companions have active connected placements and ordinary
+wandering, not absent sources. The traveler nevertheless has no companion-fate
+report/rescue contract. This needs builder design plus qualified encounter,
+survival/ownership and actual report/effect endpoints, not fabricated completion.
+
+**Pending decisions, none repaired:** native dialogue/parchment promise a ring,
+but Gooran actually gives a prayer book. Builder must choose intended reward or
+coherent clues. Preserve old aliases while improving bag/stud/kraken/key command
+discovery if approved. Confirm dormant portal command/placement/riddle/key intent
+before enabling content. Actual repairs need separate clear fix/news entries and
+original-failing command/source/access tests; stock caps/wandering/custody are
+qualification limits rather than automatically classified bugs.
+
+Expand causal item source versus player handoff; accepted emerald control/key
+use/opening/arrival and reset generation; scoped AND campaigns with supplied-proof
+branches; companion fate/escort/report and truthful healing/regeneration/kill
+effects. Current completion arrays are OR alternatives. Do not add inert builder
+fields before implementing parser, events, persistence and replay semantics.
+
+Active, ready accounting remains mandatory. All 2668 native definitions, source
+fingerprint, content revision two, registry and other 69 journals stay unchanged.
+Catalog: 70 maps/1663 achievements/1478 potential dailies/2218 rows. Original
+order: forty-nine source-comprehensive, 171 pending. Continue with Crakkaros'
+Liar (`crakkaro`). No database, account/server operation, migration, native repair
+or merge occurs; gameplay qualification remains open.

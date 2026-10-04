@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 69 authored journals, accounting-gated player surfaces, starter/town
+**Status: 70 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -615,6 +615,22 @@ passage. Refugee BOOM/new camp, follower relocation, drow tunneling, captain
 curse/ritual and telescope installation need builder-selected accepted endpoints.
 Fossil follow-up and Ender's victim-message key are pending content repairs.
 No native repair or accounting activation ships with this journal.
+
+Peril Peaks' [comprehensive dossier](zone-stories/THE_MOUNTAIN_OF_PERIL_PEAKS.md)
+adds ten outcomes covering all ten deliveries, twenty-eight contacts/all eleven
+addressed families and sixteen optional checks (thirteen materials, three histories).
+Silver → stud → Roxon, sasquach arm → parchment → Gooran and skeleton head →
+troll eye → traveler explain three linked errands. Three distinct reptile kinds,
+two distinct tentacles and independent draco eyes/bear fur retain supplied proof.
+The medallion keys the gates; same-named NPC-carried emeralds require exposed
+room custody before touch controls. Four active portals have exact commands,
+including looking at twilight rather than entering it. Companion placements are
+connected and can wander, but the requested fate report has no completion.
+Expand causal source/custody, accepted control/key/arrival events and scoped AND
+campaigns/companion resolution; schema completion arrays are alternatives.
+Ring-versus-book intent, awkward aliases and dormant portal/key/riddle content
+remain builder decisions. No native repair ships. Catalog: 70 maps/1663
+achievements/1478 potential dailies/2218 rows; native definitions stay unchanged.
 
 The Surface Minizones [comprehensive dossier](zone-stories/THE_MINIZONES_OF_THE_SURFACE.md)
 adds five stories/sixteen services covering all twenty-five exchanges, thirty-eight
@@ -1363,7 +1379,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 172 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 171 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1386,6 +1402,12 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
 
 
+- [x] Complete Peril Peaks' ten-delivery/eleven-addressed source dossier: ten
+  outcomes, twenty-eight contacts and sixteen optional checks; three linked
+  errands, distinct hunting parts, medallion/emerald custody and exact portal
+  commands. Companion fate, scoped campaigns and source/access/effect adapters
+  remain planned. Ring/book, aliases and dormant content require builder review;
+  no native repair ships, and all native definitions/credit totals stay unchanged.
 - [x] Complete the Surface Minizones' twenty-five-exchange/thirty-two-addressed
   source dossier: five stories/sixteen services, thirty-eight contacts and
   seventy-three optional checks; exact foreign clothing, gland/essence bundles,
@@ -1668,6 +1690,7 @@ contract classification; it does not claim complete objective coverage.
 | The Mountain Valley of Dawndale | 1 | Complete: nine outcomes, three support services and one referral exclusion | [Source-comprehensive dossier](zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md); twenty-seven contacts/all four addressed families and thirty-one optional checks | Nine potential candidates require actual source/access/retirement/payout qualification; coin-only key and mixed lens service guarded | Refugee portrait/stones/dust/device + persistent key; competing captain bundles; bow/treasure/larvae and foreign flute return. Shared caps, exact source/content, fossil/Ender repairs and actual camp/tunnel/curse/lens endpoints pending; no native repair ships |
 | The 222nd Layer of the Abyss | 1 | Complete: 22 outcomes covering all 23 exchanges | [Source-comprehensive dossier](zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md); forty contacts/all 25 addressed families and 39 optional checks | 19 potential candidates; three outcomes remain native Story-only | Warrior/gloves, Uz wand/tales, distinct heads/parts/essences, Neptune and equivalent Marvin aliases. Phase transfer/source/access/effect qualification and truthful clue/departure fixes pending; no native repair ships |
 | The Minizones of the Surface | 1 | Complete: five stories and sixteen services cover all twenty-five exchanges | [Source-comprehensive dossier](zone-stories/THE_MINIZONES_OF_THE_SURFACE.md); thirty-eight contacts/all thirty-two addressed families and seventy-three optional checks | Five potential candidates; support services award no achievement/daily credit; mixed payment remains guarded | Hermit/gland/essence errands, healing tiers, foreign bases/spheres and Mugflog alternatives. Source/quantity/payment/recipient, transformed-item/pet and access/foreign-host qualification pending. Clear text/cleanup repairs proposed; no native fix ships |
+| The Mountain of Peril Peaks | 1 | Complete: ten outcomes cover all ten deliveries | [Source-comprehensive dossier](zone-stories/THE_MOUNTAIN_OF_PERIL_PEAKS.md); twenty-eight contacts/all eleven addressed families and sixteen optional checks | Ten potential candidates; source/custody/access and companion finale remain unqualified | Three linked errands, distinct beast parts, medallion/emerald prerequisites and exact portals. Ring/book and dormant/alias decisions pending; no native repair ships |
 
 ## Twin Towers evidence and decisions
 

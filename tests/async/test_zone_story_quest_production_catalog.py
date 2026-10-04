@@ -2214,7 +2214,62 @@ surface_units=[u for u in catalog_module.story_units(catalog) if u["zone_number"
 assert (len(surface_units),sum(u["achievement"] for u in surface_units),sum(u["daily_candidate"] for u in surface_units))==(21,5,5)
 assert {s["id"] for s in surface_stories.values() if s["category"]=="story"}=={"hermit-green-potion","hermit-clothing-recipe","gleb-eight-glands","hermit-salmon-firebreather","strange-six-essences"}
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini"):
+
+# Peril Peaks preserves exact linked proof without inventing access or companion completion.
+nexus=inventory_module.area_evidence(ROOT,"nexus")
+nexus_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="nexus")
+nexus_stories={s["id"]:s for s in nexus_map["stories"]}
+assert (nexus_map["schema_version"],nexus_map["revision"],nexus_map["coverage"])==(3,1,"complete")
+assert len(nexus_stories)==10 and len(nexus_map["contacts"])==28 and not nexus_map["exclusions"]
+assert all(s["category"]=="story" for s in nexus_stories.values())
+assert collections.Counter(t["kind"] for s in nexus_stories.values() for t in s["steps"] if t.get("optional"))=={"carried_item":13,"completion":3}
+assert (len(nexus["requests"]),len(nexus["dialogue"]),len(nexus["mobs"]),len(nexus["items"]),len(nexus["reset_commands"]))==(10,11,162,85,297)
+assert collections.Counter(b["kind"] for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/nexus.qst")=={"Q":10,"M":11}
+by_line={r["block"]["line"]:r["block"] for r in nexus["requests"]}
+for line,required,reward in ((12,[57522],[("I",57523)]),(36,[57535,57536,57534],[("I",57537)]),
+    (46,[57555,57566],[("I",57519)]),(55,[57540],[("I",57569)]),(99,[57545],[("E",5000)]),
+    (104,[57561],[("I",57548)]),(119,[57548],[("I",57511)]),(184,[57554],[("I",57549)]),
+    (202,[57523],[("I",57583)]),(217,[57549],[("I",57504)])):
+    assert by_line[line]["give"]==[("I",v) for v in required] and by_line[line]["receive"]==reward
+    assert by_line[line]["binding"]["completion_key"].endswith("disappear=0")
+bindings=[b for entry in nexus_stories.values() for b in entry["contracts"]]
+assert len(bindings)==10 and {tuple(sorted(b.items())) for b in bindings}=={tuple(sorted(b["binding"].items())) for b in by_line.values()}
+for later,earlier in (("roxon-silver-stud","foreman-silver-bag"),("gooran-parchment","barbarian-sasquach-arm"),("human-troll-eye","troll-skeleton-head")):
+    assert nexus_stories[later]["steps"][0]["optional"] and nexus_stories[later]["steps"][0]["contracts"]==nexus_stories[earlier]["contracts"]
+assert {t["item_vnums"][0] for t in nexus_stories["hunter-three-reptile-scales"]["steps"] if t["kind"]=="carried_item"}=={57534,57535,57536}
+assert {t["item_vnums"][0] for t in nexus_stories["hunter-two-tentacles"]["steps"] if t["kind"]=="carried_item"}=={57555,57566}
+assert all(t.get("count",1)==1 for entry in nexus_stories.values() for t in entry["steps"])
+contacts={c["mob_vnum"]:c for c in nexus_map["contacts"]}
+for dialogue in nexus["dialogue"]:
+    assert set(dialogue["body"][0].rstrip("~").split())<=set(contacts[dialogue["giver_vnum"]]["topics"])
+assert all("qc_action" not in c["topics"] for c in contacts.values())
+assert not nexus["special_assignments"]
+assert collections.Counter(r["command"] for r in nexus["reset_commands"])=={"M":140,"D":58,"E":55,"G":25,"F":10,"O":7,"P":2}
+assert all(r["arguments"][-3:]==[0,0,0] for r in nexus["reset_commands"])
+assert all(r["definition"]["daily_eligible"] for r in nexus["requests"])
+assert len([u for u in catalog_module.story_units(catalog) if u["zone_number"]==575])==10
+nexus_sources=set();nexus_parent=None
+for reset in nexus["reset_commands"]:
+    if reset["command"] in "MF":nexus_parent=reset["arguments"][1]
+    elif reset["command"]=="G":nexus_sources.add((reset["arguments"][1],nexus_parent))
+assert {(57522,57544),(57534,57549),(57535,57546),(57536,57545),(57555,57520),(57566,57531),(57540,57521),(57545,57570),(57561,57573),(57554,57586),(57558,57527),(57567,57528)}<=nexus_sources
+objects=dawndale_bodies("nexus","obj");world=dawndale_bodies("nexus","wld");mobiles=dawndale_bodies("nexus","mob")
+assert objvalues(objects[57504])[0]==18 and objvalues(objects[57504])[12]==0
+assert objvalues(objects[57558])[11:15]==[320,57507,0,1] and objvalues(objects[57567])[11:15]==[320,57663,0,1]
+assert objvalues(objects[57558])[7]==0 and objvalues(objects[57567])[7]==0
+assert all(re.search(r"\bS\s+UG\b",mobiles[v]) for v in (57527,57528))
+for item,room,target,command in ((57568,57500,57570,15),(57502,57570,57500,320),(57512,57511,57515,7),(57582,57628,57692,7)):
+    assert objvalues(objects[item])[11:14]==[target,command,-1]
+    assert any(r["command"]=="O" and r["arguments"][1]==item and r["arguments"][3]==room for r in nexus["reset_commands"])
+assert all(not any(r["command"] in "OGEP" and r["arguments"][1]==item for r in nexus["reset_commands"]) for item in (57500,57506,57508,57556,57573))
+for companion in (57513,57515,57512,57510,57514):
+    assert any(r["command"]=="M" and r["arguments"][1]==companion and r["arguments"][3]==57551 for r in nexus["reset_commands"])
+    assert not int(mobiles[companion].split("~")[4].split()[0])&2
+assert re.search(r"D2\s*[^~]*~\s*[^~]*~\s*0 0 57505",world[57551])
+assert not any("companion" in entry["id"] for entry in nexus_stories.values())
+assert "prayer book" in nexus_stories["gooran-parchment"]["summary"] and "pending builder" in nexus_stories["gooran-parchment"]["summary"]
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
