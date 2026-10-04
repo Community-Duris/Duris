@@ -863,6 +863,14 @@ class Reconciler:
                 len(set(baseline_operation_ids)) != len(baseline_operation_ids)):
             raise SnapshotError("invalid baseline operation identity coverage")
         baseline_operation_ids = set(baseline_operation_ids)
+        # Compare selected creators with their own evidence without rescanning
+        # every effect for every root. Keep references; normalize only effects
+        # actually consumed by a selected creator below.
+        effects_by_operation = defaultdict(dict)
+        if effects is not None:
+            for key, effect in effects.items():
+                if isinstance(key, tuple) and len(key) == 2:
+                    effects_by_operation[key[0]][key[1]] = effect
         roots_by_id = {}
         for root in roots:
             operation_id = require_id(root.get("operation_id"), "mapping creator operation ID")
@@ -929,11 +937,10 @@ class Reconciler:
                         effect.get("account_index"): effect for effect in root_effects
                     }
                     evidence_effects = {
-                        key[1]: {field: value.get(field) for field in (
+                        index: {field: value.get(field) for field in (
                             "account_index", "account_key", "before", "after",
                             "before_revision", "after_revision")}
-                        for key, value in effects.items()
-                        if isinstance(key, tuple) and len(key) == 2 and key[0] == operation_id
+                        for index, value in effects_by_operation.get(operation_id, {}).items()
                     }
                     if (len(root_effects_by_index) != len(root_effects) or
                             root_effects_by_index != evidence_effects):

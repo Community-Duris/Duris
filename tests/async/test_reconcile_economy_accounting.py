@@ -170,6 +170,80 @@ def stake_snapshot(terminal=False):
     return snapshot
 
 
+def mapping_creation_snapshot(count):
+    """Valid synthetic creation evidence; no gameplay or native coverage claim."""
+    snapshot = {
+        "schema_version": 1, "lineage": LINEAGE, "epoch": EPOCH,
+        "complete": True, "quiescent": True, "backend": "disposable",
+        "native": {"holdings": [], "items": [], "mapping_creations": [],
+                   "mapping_creation_roots": [], "mapping_creation_coverage": {
+                       "rows": count, "creator_rows": count, "root_rows": count,
+                       "missing_roots": 0}},
+        "operations": [], "effects": [], "postings": [], "children": [],
+        "item_references": [], "ownership_events": [], "source_claims": [],
+        "account_origins": [], "item_origins": [], "receipts": [],
+    }
+    for index in range(1, count + 1):
+        op = index.to_bytes(16, "little").hex()
+        account = key(1, index)
+        source = source_identity(sequence=index)
+        operation = {
+            "operation_id": op, "lineage": LINEAGE, "epoch": EPOCH, "reason": 42,
+            "outcome": "committed", "result_code": 0, "source_event": source,
+            "account_count": 1, "posting_count": 0, "child_count": 0, "item_event_count": 0,
+        }
+        effect = {"account_index": 0, "account_key": account,
+                  "before": [0, 0, 0, 0], "after": [0, 0, 0, 0],
+                  "before_revision": 0, "after_revision": 1}
+        snapshot["operations"].append(operation)
+        snapshot["effects"].append({"operation_id": op, **effect})
+        snapshot["account_origins"].append({"account_key": account, "origin": "creation",
+                                            "balance": [0, 0, 0, 0], "revision": 0})
+        snapshot["receipts"].append({"operation_id": op, "status": 1, "result_code": 0,
+                                     "failure_stage": 0, "committed_at_present": True})
+        snapshot["source_claims"].append({"lineage": LINEAGE, "source_event": source,
+                                          "operation_id": op})
+        snapshot["native"]["holdings"].append({"account_key": account,
+                                               "balance": [0, 0, 0, 0], "revision": 1})
+        snapshot["native"]["mapping_creations"].append({
+            "mapping_id": index, "account_key": account, "account_kind": 1,
+            "context_id": 0, "native_id": index, "active_native_id": index,
+            "creating_operation_id": op})
+        snapshot["native"]["mapping_creation_roots"].append({
+            **operation, "effects": [effect], "creator_inbox_status": 1,
+            "creator_inbox_result_code": 0, "creator_inbox_failure_stage": 0,
+            "creator_inbox_committed_at_present": True})
+    return snapshot
+
+
+def near_limit_mapping_snapshot():
+    low, high = 1, 20_000
+    while low < high:
+        count = (low + high + 1) // 2
+        size = len(json.dumps(mapping_creation_snapshot(count), separators=(",", ":")).encode())
+        if size <= MAX_INPUT_BYTES - 1024:
+            low = count
+        else:
+            high = count - 1
+    return mapping_creation_snapshot(low)
+
+
+def measure_audit_cli(path, limit):
+    # A fresh wrapper has exactly one child, so its RUSAGE_CHILDREN peak is
+    # this CLI's peak rather than a prior native compiler/test process's peak.
+    probe = """import json,resource,subprocess,sys,time
+start=time.perf_counter()
+p=subprocess.run([sys.executable,sys.argv[1],sys.argv[2],'--limit',sys.argv[3]],capture_output=True,text=True,timeout=35)
+result={'exit_code':p.returncode,'elapsed_seconds':time.perf_counter()-start,
+        'peak_bytes':resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss*1024,
+        'stderr':p.stderr,'report':json.loads(p.stdout)}
+print(json.dumps(result,separators=(',',':')))
+"""
+    return json.loads(subprocess.check_output([
+        sys.executable, "-c", probe, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+        str(path), str(limit)]))
+
+
 class ReconciliationTests(unittest.TestCase):
     def codes(self, snapshot):
         before = copy.deepcopy(snapshot)
@@ -177,6 +251,43 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(snapshot, before, "audit must leave its input untouched")
         self.assertEqual(sum(report["exception_counts"].values()), report["exception_count"])
         return set(report["exception_counts"])
+
+    def test_mapping_creation_effect_comparison_scans_evidence_once(self):
+        class MeasuredEffects(dict):
+            inspected = 0
+
+            def items(self):
+                for pair in super().items():
+                    self.inspected += 1
+                    yield pair
+
+        count = 1200
+        snapshot = mapping_creation_snapshot(count)
+        before = copy.deepcopy(snapshot)
+        self.assertEqual(self.codes(snapshot), set())
+        operations = {(row["operation_id"],): row for row in snapshot["operations"]}
+        origins = {(row["account_key"],): row for row in snapshot["account_origins"]}
+        effects = MeasuredEffects({(row["operation_id"], row["account_index"]): row
+                                   for row in snapshot["effects"]})
+        # Mixed key shapes were ignored by the old root comparison and remain
+        # ignored; unrelated values must not be normalized or interpreted.
+        effects["unrelated"] = None
+        effects[("unrelated",)] = None
+        effects[("unrelated", 0, 1)] = None
+        effects[("unrelated", 0)] = None
+        for corrupt in (False, True):
+            if corrupt:
+                snapshot["native"]["mapping_creation_roots"][0]["effects"][0]["after"] = [1, 0, 0, 0]
+            original = copy.deepcopy(snapshot)
+            effects.inspected = 0
+            reader = Reconciler()
+            reader.audit_mapping_creations("disposable", LINEAGE, snapshot["native"],
+                                           origins, operations, effects, EPOCH)
+            self.assertEqual(reader.counts, {"invalid_mapping_creation_root": 1} if corrupt else {})
+            self.assertLessEqual(effects.inspected, len(effects) * 2)
+            self.assertEqual(snapshot, original)
+        snapshot["native"]["mapping_creation_roots"][0]["effects"][0]["after"] = [0, 0, 0, 0]
+        self.assertEqual(snapshot, before)
 
     def test_original_operation_identity_and_self_link(self):
         for value in ([], {}, True, 7, "", "0" * 32, "gg" * 16, "AA" * 16,
@@ -1991,7 +2102,7 @@ def native_stake_sql():
     from test_persistence_backup_integration import sql
     read_evidence = exporter.read_evidence
     root = ROOT
-    work=root/'bin/tests/plan5-original-link-sql'
+    work=root/'bin/tests/plan5-mapping-audit-sql'
     work.mkdir(mode=0o700,parents=True,exist_ok=True)
     source=work/'probe.cpp'
     source.write_text('''#include "economy/economic_accounting_intent.h"
@@ -2346,6 +2457,53 @@ def native_stake_sql():
 class NativeStakeSQLTests(unittest.TestCase):
     def test_native_stake_sql_both_engines(self):
         native_stake_sql()
+
+
+@unittest.skipUnless(os.environ.get("DURIS_RUN_AUDIT_BUDGET") == "1" and sys.platform == "linux",
+                     "requires explicit Linux audit budget invocation")
+class AuditBudgetTests(unittest.TestCase):
+    def test_near_limit_mapping_snapshot_cli_budget_and_limit_invariance(self):
+        import hashlib
+        snapshot = near_limit_mapping_snapshot()
+        count = len(snapshot["operations"])
+        with tempfile.TemporaryDirectory(prefix="duris-audit-budget-") as directory:
+            path = Path(directory) / "snapshot.json"
+            for corrupt in (False, True):
+                if corrupt:
+                    snapshot["native"]["mapping_creation_roots"][0]["effects"][0]["after"] = [1, 0, 0, 0]
+                payload = json.dumps(snapshot, separators=(",", ":")).encode()
+                self.assertTrue(MAX_INPUT_BYTES - 4000 <= len(payload) <= MAX_INPUT_BYTES - 1024)
+                path.write_bytes(payload)
+                expected = {"invalid_mapping_creation_root": 1} if corrupt else {}
+                for limit in (0, 1, 100):
+                    result = measure_audit_cli(path, limit)
+                    self.assertEqual(result["exit_code"], int(corrupt), result)
+                    self.assertEqual(result["stderr"], "")
+                    self.assertEqual(result["report"]["exception_counts"], expected)
+                    self.assertEqual(result["report"]["checked"]["operations"], count)
+                    self.assertEqual(result["report"]["checked"]["effects"], count)
+                    self.assertLessEqual(len(result["report"]["exceptions"]), limit)
+                    self.assertLessEqual(result["elapsed_seconds"], 30)
+                    self.assertLessEqual(result["peak_bytes"], 256 * 1024 * 1024)
+                    self.assertEqual(path.read_bytes(), payload)
+                    print("AUDIT_BUDGET " + json.dumps({
+                        "roots": count, "bytes": len(payload), "input_sha256": hashlib.sha256(payload).hexdigest(),
+                        "corrupt": corrupt, "limit": limit, "exception_counts": expected,
+                        "elapsed_seconds": result["elapsed_seconds"], "peak_bytes": result["peak_bytes"],
+                        "input_unchanged": True, "synthetic_component": True,
+                        "release_host_qualified": False}, sort_keys=True), flush=True)
+            # A valid JSON document with whitespace over the byte budget must
+            # refuse before parsing, including when no details are requested.
+            oversized = payload + b" " * (MAX_INPUT_BYTES + 1 - len(payload))
+            path.write_bytes(oversized)
+            for limit in (0, 100):
+                result = subprocess.run([
+                    sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                    str(path), "--limit", str(limit)], capture_output=True, text=True, timeout=35)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("snapshot or output limit exceeded", result.stderr)
+                self.assertEqual(path.read_bytes(), oversized)
 
 
 if __name__ == "__main__":
