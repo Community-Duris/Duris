@@ -2,6 +2,7 @@
 #include "persistence/critical_command_coordinator.h"
 
 #include <charconv>
+#include <cstdio>
 #include <limits>
 #include <memory>
 #include <string>
@@ -24,8 +25,10 @@ bool reconnect_disabled(MYSQL *connection)
 
 bool query_lock_owner(MYSQL *connection, const char *name, unsigned long *owner, bool *has_owner)
 {
-	const std::string query = "SELECT IS_USED_LOCK('" + std::string(name) + "')";
-	if (mysql_real_query(connection, query.data(), query.size()))
+	char query[160];
+	const int length = std::snprintf(query, sizeof(query), "SELECT IS_USED_LOCK('%s')", name);
+	if (length < 0 || static_cast<size_t>(length) >= sizeof(query) ||
+	    mysql_real_query(connection, query, static_cast<unsigned long>(length)))
 		return false;
 	result_ptr result(mysql_store_result(connection), mysql_free_result);
 	if (!result || mysql_num_rows(result.get()) != 1 || mysql_num_fields(result.get()) != 1)
@@ -40,9 +43,9 @@ bool query_lock_owner(MYSQL *connection, const char *name, unsigned long *owner,
 		return true;
 	}
 	uint64_t parsed_owner = 0;
-	const auto length = std::char_traits<char>::length(row[0]);
-	const auto parsed = std::from_chars(row[0], row[0] + length, parsed_owner);
-	if (parsed.ec != std::errc{} || parsed.ptr != row[0] + length ||
+	const auto row_length = std::char_traits<char>::length(row[0]);
+	const auto parsed = std::from_chars(row[0], row[0] + row_length, parsed_owner);
+	if (parsed.ec != std::errc{} || parsed.ptr != row[0] + row_length ||
 	    parsed_owner > std::numeric_limits<unsigned long>::max())
 		return false;
 	*owner = static_cast<unsigned long>(parsed_owner);
@@ -64,8 +67,10 @@ bool release_lock_and_verify(MYSQL *connection, const char *name, unsigned long 
 	if (!connection || mysql_thread_id(connection) != session ||
 	    !reconnect_disabled(connection))
 		return false;
-	const std::string query = "SELECT RELEASE_LOCK('" + std::string(name) + "')";
-	if (mysql_real_query(connection, query.data(), query.size()))
+	char query[160];
+	const int length = std::snprintf(query, sizeof(query), "SELECT RELEASE_LOCK('%s')", name);
+	if (length < 0 || static_cast<size_t>(length) >= sizeof(query) ||
+	    mysql_real_query(connection, query, static_cast<unsigned long>(length)))
 		return false;
 	result_ptr result(mysql_store_result(connection), mysql_free_result);
 	if (!result || mysql_num_rows(result.get()) != 1 || mysql_num_fields(result.get()) != 1 ||
