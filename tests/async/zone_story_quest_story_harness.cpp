@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 91 &&
-				tracker.summary_for(7, 42).total == 1606,
+		require(catalog.story_mappings.size() == 92 &&
+				tracker.summary_for(7, 42).total == 1603,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7095,6 +7095,159 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 831) &&
 					!recovered.has_discovered(7, 42, 5000),
 				"Depths cold recovery lost outcomes/receipts, inflated alternative/reward credit or invented foreign discovery");
+		}
+
+		{
+			const auto &artist = story_for("icecrag", "artist-stonecutters-tools");
+			const auto &pages = story_for("icecrag", "priest-three-speech-pages");
+			const auto &wine = story_for("icecrag", "raucous-guest-wines");
+			const auto &sergeant = story_for("icecrag", "sergeant-winter-clothes");
+			const auto &book = story_for("icecrag", "commander-lost-book");
+			const auto &onion = story_for("icecrag", "viscount-kitchen-onion");
+			const auto &shoes = story_for("icecrag", "siege-master-calfskin-shoes");
+			const auto &hearts = story_for("icecrag", "myrke-two-hearts");
+			const auto &key = story_for("icecrag", "cleaner-guardwalk-key");
+			const auto &milk = story_for("icecrag", "servant-fresh-milk");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 970, 97026, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 970, 10, 1, 101, false, false)
+							.find(shoes.title) == std::string::npos,
+				"IceCrag discovery exposed an unseen giver's story");
+			for (const auto &actor : { std::pair<int, int>{ 97001, 97066 },
+						   { 97002, 97082 },
+						   { 97006, 97071 },
+						   { 97008, 97100 },
+						   { 97010, 97142 },
+						   { 97014, 97142 },
+						   { 97020, 97025 },
+						   { 97021, 97267 },
+						   { 97023, 97244 },
+						   { 97029, 97278 },
+						   { 97039, 97005 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 102) ==
+						result::applied,
+					"IceCrag encounter fixture failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"IceCrag journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[97137] = 3;
+			supplies.carried[90017] = 1;
+			supplies.carried[92048] = 1;
+			supplies.carried[97004] = 1;
+			supplies.carried[97136] = 3;
+			supplies.carried[8] = 2;
+			supplies.carried[97016] = 2;
+			supplies.equipped[8] = 97029;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 970, 10, 1, 103, false, false,
+							 &supplies);
+			for (const auto &missing : { std::pair{ &pages, 1 },
+						     { &pages, 2 },
+						     { &wine, 0 },
+						     { &wine, 1 },
+						     { &book, 0 },
+						     { &onion, 0 },
+						     { &shoes, 1 },
+						     { &hearts, 1 } })
+				require(section(*missing.first)
+							.find("[Missing now] " +
+							      missing.first->steps[missing.second]
+								      .text) != std::string::npos,
+					"IceCrag duplicate page/heart, one bottle, wrong book/onion or worn shoes invented readiness");
+			require(section(sergeant).find("currently unavailable") !=
+						std::string::npos &&
+					section(key).find("currently unavailable") !=
+						std::string::npos &&
+					section(milk).find("currently unavailable") !=
+						std::string::npos &&
+					journal.find("incomplete") != std::string::npos &&
+					journey.progress_for_zone(7, 42, 970).completed == 0 &&
+					journey.progress_for_zone(7, 42, 970).total == 8 &&
+					journey.serialize_state() == before,
+				"IceCrag source guidance, guarded services or invalid recipe changed credit/history");
+			for (int kind : { 11606, 11607, 97138, 97149, 97006, 97115, 97029, 97017,
+					  97041, 97047, 97048 })
+				supplies.carried[kind] = 1;
+			supplies.carried[90017] = 2;
+			supplies.carried[92048] = 2;
+			journal = journey.render_journal(7, 42, 970, 10, 1, 104, false, false,
+							 &supplies);
+			for (const auto *entry :
+			     { &artist, &pages, &wine, &sergeant, &book, &onion, &shoes, &hearts })
+				for (const auto &step : entry->steps)
+					if (step.kind == "carried_item")
+						require(section(*entry).find("[Ready now] " +
+									     step.text) !=
+								std::string::npos,
+							"IceCrag exact supplied loose materials required source, access or earlier receipt");
+			require(journey.serialize_state() == before &&
+					section(sergeant).find("currently unavailable") !=
+						std::string::npos,
+				"IceCrag material read paid a fee or wrote progression");
+			service supplied(catalog);
+			record(supplied, shoes.contracts.front(), "icecrag-supplied-shoes", 970,
+			       97278);
+			require(supplied.progress_for_zone(7, 42, 970).completed == 1 &&
+					supplied.evidence_for(artist.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					!supplied.has_discovered(7, 42, 170),
+				"IceCrag supplied shoes required artist history or invented foreign discovery");
+			record(journey, artist.contracts.front(), "icecrag-tools", 970, 97082);
+			supplies.carried.erase(97029);
+			journal = journey.render_journal(7, 42, 970, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(shoes).find("[Missing now] " + shoes.steps[1].text) !=
+						std::string::npos &&
+					journey.evidence_for(shoes.contracts.front(), 2)
+							.successful_attempts == 0,
+				"IceCrag optional earlier receipt restored spent shoes or completed later story");
+			auto wrong_owner =
+				completion(hearts.contracts.front(), "icecrag-wrong-owner", 122);
+			wrong_owner.transaction.zone_number = 831;
+			wrong_owner.transaction.room_vnum = 97005;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"IceCrag foreign trophy source stole ownership of the delivery");
+			record(journey, key.contracts.front(), "icecrag-key-support", 970, 97066);
+			record(journey, milk.contracts.front(), "icecrag-milk-support", 970, 97142);
+			const auto &ice_mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "icecrag"; });
+			record(journey, ice_mapping.exclusions.begin()->first,
+			       "icecrag-excluded-receipt", 970, 97071);
+			require(journey.progress_for_zone(7, 42, 970).completed == 1 &&
+					journey.evidence_for(milk.contracts.front(), 2)
+							.successful_attempts == 1,
+				"IceCrag two milk rewards or excluded cuisine receipt inflated credit");
+			for (const auto *entry :
+			     { &pages, &wine, &sergeant, &book, &onion, &shoes, &hearts })
+			{
+				const auto txid = std::string("icecrag-outcome-") + entry->id;
+				record(journey, entry->contracts.front(), txid.c_str(), 970, 97278);
+			}
+			const auto hearts_txid = std::string("icecrag-outcome-") + hearts.id;
+			auto replay =
+				completion(hearts.contracts.front(), hearts_txid.c_str(), 120);
+			replay.transaction.zone_number = 970;
+			replay.transaction.room_vnum = 97278;
+			require(journey.record_completion(replay) == result::already_applied,
+				"IceCrag item-and-coin reward replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 970).completed == 8 &&
+					recovered.progress_for_zone(7, 42, 970).total == 8 &&
+					recovered.evidence_for(hearts.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					!recovered.has_discovered(7, 42, 831),
+				"IceCrag cold recovery lost outcomes or invented source/duplicate reward credit");
 		}
 
 		{

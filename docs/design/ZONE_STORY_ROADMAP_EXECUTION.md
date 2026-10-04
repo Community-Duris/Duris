@@ -138,9 +138,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 68 | Enclave of the Opal Phoenix | [Comprehensive dossier](zone-stories/OPAL_PHOENIX.md): all6 blocks/76 rooms/18 mobiles/24 objects/84 resets/76 exact and parent families; actual hidden selection/search/key, indexed item/XP/D1, shop/teacher/inn and bounded foreign closure | Three outcomes, nine contacts/8 aliases/4 optional checks; supplied optional student route, independent forest reagent and exact hidden-source distinctions | Separate sand70823 visibility fix ac8e2de48. Live source/handoff/search/key/GET, items+XP, recipient/stock removal/reappearance, service/rent and renewal remain unqualified; richer accepted episodes are planned |
 | 69 | Myrabolus | [Comprehensive dossier](zone-stories/MYRABOLUS.md): all17 blocks/188 rooms/78 mobiles/62 objects/316 resets,257 exact/272 parent families; two shops, literal/computed/imported handlers and bounded foreign closure | Thirteen stories/three support entries,21 contacts/4 aliases/24 optional checks; exact returned-note/new-half, same-name study/parts, four treasure allocations, awake Alexis and supplied shortcuts | No native repair. Missing treasury kind, Roland/load-room/set/wording intent, shared denied crew-payment ordering and admitted fee/source/access/reward/recipient/renewal episodes remain plans |
 | 70 | The Depths of Duris | [Comprehensive dossier](zone-stories/THE_DEPTHS_OF_DURIS.md): all103 blocks/2645 rooms/75 mobiles/60 objects/611 resets,406 exact/530 parent families; ten shops, custom death/decay/CARVE and bounded foreign closure | Nine outcomes/three services,17 contacts/109 aliases/15 optional checks; four brew alternatives, same-name feather kinds, ten loose roots and supplied seer shortcuts | No native repair. Six absent destinations, wall/stair intent, blue/pink wording and unplaced residents remain proposals; accepted source/part mutation/publication/expiry/payment/reward/retirement/renewal qualification remains open |
-| 71–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 71 | IceCrag Castle | [Comprehensive dossier](zone-stories/ICECRAG_CASTLE.md): all67 blocks/243 rooms/66 mobs/138 objects/620 resets,374 exact/460 parent families; twenty local assignments, full speech gates/command portals/custom encounters/foreign closure | Eight stories/two services/one incomplete exclusion,25 contacts/129 aliases/16 optional checks; exact 3-page/2+2-bottle/two-heart bundles and optional shoes history | No native repair. Missing Masha ingredient/dungeon, wine cap, duplicate kinds and dormant/global behavior remain proposals; accepted access/source/control/transform/fee/settlement/renewal qualification remains open |
+| 72–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is IceCrag Castle (`icecrag`).
+The next area is Father Tel's Holy Cloister (`cloister`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -149,6 +150,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-ICECRAG-CONTENT / SOURCE / ACCESS / ACTOR | Cuisine requires missing6551 and mismatched pelt/parchment; exact book/onion/page kinds, 2+2 bottles versus cap-one elven source; speech unlock/open/arrival, GET interruption, NPC rescue and global wolf/death replacement. | Eight stories/two services/one excluded incomplete recipe ship. Builder selects native recipe/source/route repairs; add accepted UID/source/custody, door/control/actor generation and transfer/publication/lifecycle, atomic fee and indexed reward/retirement/reset qualification. No native repair ships here; proposed news remains distinct. |
 | ZSQ-RIFT-BATCH / ROLE / ACTOR / BRANCH | Feather cloak needs 15 roots beyond 14 maximum; seven mixed-fee crafts are guarded. Source instances/color counts, secret reveal, token/head disagreement, unspawned dragon alternative and wandering foreign ranger. Two procedural hosts have their own assignment/count/payout authority. |12 outcomes/12 services/3 exclusions ship with 30 optional checks. Extend complete-batch bounds and atomic craft payments; accept source/reveal/dialogue/role/travel/actor and scoped AND/faction/procedural events. Native five-direction fix/news separate; plot/dragon/historical boundary decisions pending. |
 | ZSQ-DESOLATE-PAYMENT / TREE / PHASE / TRIAL | Rod + wheel + five platinum is guarded; monkey container holds a separately required chain. Timed random exit changes north route and zone flags. Secret switches clear one side; trial controls lack ordered/defeat terminal; foreign referral returns original letter. | Nine outcomes/two services and optional histories ship. Add atomic wallet/item/reward/recovery, destructive descendant preview, content predicates, accepted targeted controls/arrival, phase generation/episode and scoped trial/foreign AND campaigns. Native south/west direction repair ships separately with news; three absent stock refs and other intent remain pending. |
 | ZSQ-ROGUE-ALTERNATIVES / FOREIGN / EFFECT | Two giant recipes each give one outcome; distinct promises/flesh share visible names. Sijona resolves through foreign Balance; sigil uses direct seven-member slot counting, unlike eight-member adapter. Containers are pickable; mounts change actual E/G ownership. | OR outcomes plus separately optional producer histories ship; native owner preserved. Expand causal UID/source/custody, R/rider/owner, successful key/pick/portal/aerial/actual set effects and resetting/retiring episodes. Wording, aliases, item/set intent and historical route are proposed decisions, not shipped repairs. |
@@ -3784,3 +3786,63 @@ world/quest/source/service bytes stay unchanged. Original roadmap is **70/220
 source-comprehensive, 150 pending**. IceCrag Castle is next. The full goal remains
 active. No accounting activation, DB/server operation, migration, deployment or
 merge occurred.
+
+
+## Priority 71 checkpoint: IceCrag Castle
+
+The [comprehensive dossier](zone-stories/ICECRAG_CASTLE.md) closes all 67 native
+blocks, 243 rooms (232 prose/30 headers/44 metadata/628 exits/241 numeric/200 text
+families), 66 mobiles, 138 objects and 620 resets (374 exact/460 parent-aware).
+All twenty local assignments, custom and shared source paths, four imported
+objects, eleven present foreign recipe kinds and one missing kind, eighteen
+foreign reset groups, six relevant shops, ten foreign native rows, all 713 portal
+targets and seven boundary edges/five external room IDs were reviewed.
+
+The journal classifies eleven native offerings as eight stories, two paid services and
+one excluded incomplete recipe; 25 contacts retain all 129 distinct aliases and
+16 optional checks. Seven pure-item stories are daily candidates. The sergeant's
+winter-clothing help remains a meaningful story with its fee guard; readiness
+of three clothes never pays it. Masha's missing 6551/pelt/parchment recipe cannot
+be completed ordinarily and supplies no journal/daily unit. Exclusion does not
+repair native content. No substitute ingredient or invented cookbook is added.
+
+Three pages are different kinds despite identical names; four bottles need two
+of each, with a cap-one elven source; supplied shoes can skip the artist's earlier
+receipt, which cannot replenish spent shoes. Ordinary kitchen onion differs
+from Masha's juicy reward; the commander's accepted hidden book differs from its
+same-name unused counterpart. Two loaded hearts differ from ordinary CARVE
+parts. Each accepted offering produces one outcome despite coin/XP or duplicate
+rewards. The front speech door unlocks both matching sides; OPEN and arrival
+remain independent. RUB pedestal/orb travels and another player's shared access
+do not manufacture a quest terminal or personal key history.
+
+**Expansion:** explicit invalid-content quarantine and builder requalification;
+source/handoff/hidden selection/UID custody across wolf/vapor replacement;
+successful speech-door mutation/open/arrival; Masha's attempted/accepted GET
+interference, NPC defense and scoped transformation/hunting episodes; exact ALL
+allocation, atomic mixed fees, per-index frozen item/coin/XP settlement and
+recipient/source renewal. Existing schema carries guidance, current materials
+and receipts; unsupported adapters and native campaign terminals remain planned.
+
+**Native repairs:** none. Missing dungeon destination, incomplete recipe, elven
+bottle cap, duplicate-kind copy, dormant guardian/follow code and global/failure
+scope each have balanced repair/design plans. Actual future fixes require
+separate fix commits and prominent PR/news trigger, before/after, failing/passing
+proof, limits and a news-ready sentence. Earlier actual fixes remain preserved.
+
+**Validation:** focused source/prototype/binding checks and all 92 Python/C++
+schema/file-loader/projection journeys cover quarantine/services, exact same-name
+and repeated roots, current Ready/Missing states, supplied shoes, spent optional
+history, owner rejection, one credit per outcome, replay and cold recovery.
+Full production source/catalog/inventory/audit regression, maintained build,
+changed/staged formatting, whitespace, links, original queue, native bytes,
+definitions/fingerprint/revision/registry and prior 91 journals are verified
+before publication. These checks do not qualify played speech/search/GET/key/
+combat/transformation/payment/settlement/retirement/reset/persistence or daily
+renewal. Accounting must be active and ready; frozen recovery remains separate.
+
+Current catalog: 92 maps/1603 achievement units/1453 potential dailies/2203 rows.
+All 2668 definitions, fingerprint, revision two, registry and native world/code
+remain unchanged. The original queue is **71/220 source-comprehensive, 149 pending**;
+Father Tel's Holy Cloister is next. The full goal remains active. No accounting
+activation, DB/server operation, migration, deployment or merge occurred.

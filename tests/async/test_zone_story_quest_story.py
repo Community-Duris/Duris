@@ -15,8 +15,8 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1454
-assert report['mapped_area_count'] == 91 and report['eligible_by_zone']['162'] == 4
+assert report["daily_unit_count"] == 1453
+assert report['mapped_area_count'] == 92 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -34,6 +34,17 @@ assert depths_stories['mystardala-paired-trophies']['steps'][0]['contracts'] == 
 assert depths_stories['mystardala-paired-trophies']['steps'][0]['optional']
 assert all(t.get('optional') for s in depths['stories'] for t in s['steps'][:-1])
 assert all(s['steps'][-1]['contracts'] == s['contracts'] for s in depths['stories'])
+
+icecrag = next(m for m in catalog['story_mappings'] if m['source_area'] == 'icecrag')
+assert (icecrag['schema_version'], icecrag['revision'], icecrag['coverage']) == (3, 1, 'complete')
+assert len(icecrag['stories']) == 10 and len(icecrag['contacts']) == 25 and len(icecrag['exclusions']) == 1
+assert report['eligible_by_zone']['970'] == 8
+ice_units = [u for u in module.story_units(catalog) if u['zone_number'] == 970]
+assert len(ice_units) == 10 and sum(u['daily_candidate'] for u in ice_units) == 7
+assert sum(s['category'] == 'service' for s in icecrag['stories']) == 2
+assert sum(len(c['topics']) for c in icecrag['contacts']) == 129
+assert sum(t.get('optional', False) for s in icecrag['stories'] for t in s['steps']) == 16
+assert all(t.get('optional') for s in icecrag['stories'] for t in s['steps'][:-1])
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

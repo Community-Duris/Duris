@@ -1577,3 +1577,38 @@ policy, indexed rewards and actual recipient retirement. Qualify intended failed
 carving costs separately from allocation/placement failure, then busy/partial/
 replay/restart. Never author unsupported CARVE/kill/rescue/expiry steps as though
 schema-three readiness already records them.
+
+
+## Building IceCrag-style access and transformed-source journals
+
+Use the [IceCrag dossier](../design/zone-stories/ICECRAG_CASTLE.md) and
+[authored journal](../../areas/story/icecrag.story.json). Complete coverage can
+include an explicit exclusion: Masha's native recipe requires missing object 6551 and
+does not agree with the food dialogue. Do not invent a prototype or a replacement
+ingredient. Classify the exact binding with a clear reason, show the unfinished
+project in orientation/contact guidance, and exclude its achievement/daily unit.
+A later builder-selected native repair gets its own fix commit, failing/passing
+proof, limits, news-ready sentence and requalified journal revision.
+
+Keep same-name kinds distinct. Three speech pages require one of each numbered
+kind; two white and two elven bottles require four physical roots. Masha's juicy
+onion cannot replace the Viscount's ordinary onion; the accepted borrowed book
+differs from another same-name prototype. Source actor names and dialogue alone
+do not identify an item. Use optional current-material steps, loose counts and
+clear hint text without changing native acceptance. The earlier artist receipt
+is optional for supplied shoes and cannot recreate spent or worn shoes.
+
+Describe access as actions: speak Auril, open the unlocked doors, then travel.
+Admitted speech and actual paired lock changes differ from ASK clues, shared
+access or arrival. RUB is the pedestal/orb command. Never add a mandatory
+self-unlock or source kill merely because it makes a neat story. Masha's GET
+interference, NPC bodyguard rescue, wolf conversion and death→vapor need precise
+accepted actor/control/custody/lifecycle adapters before historical credit.
+
+Treat helping the freezing sergeant as a meaningful story with a fee blocker;
+paid milk/key purchases remain services. Ready garments do not pay coins.
+World-cap-one elven bottles, rare/holding NPC routes and D1 recipients need
+actual supply and reset qualification before daily availability. Every new
+discovery/encounter/journal/achievement/daily update requires active and ready
+accounting. Keep broader banquet/shroud/construction/rescue campaigns in builder
+plans until their native endings and event evidence exist.

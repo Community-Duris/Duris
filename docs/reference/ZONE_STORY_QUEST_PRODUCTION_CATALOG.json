@@ -120431,6 +120431,796 @@
     {
       "contacts": [
         {
+          "description": "Cleaners sweep the foyer and halls. Ask about key or job for a guard-walk key lead. The paid key service is currently unavailable; different cleaner placements carry keys or the third speech page.",
+          "keyword": "cleaning",
+          "mob_vnum": 97001,
+          "name": "a member of the cleaning crew",
+          "topics": [
+            "crew",
+            "icecrag",
+            "responsibilities",
+            "sell"
+          ]
+        },
+        {
+          "description": "The artist works beside the ice sculpture in the garden. Ask about tools, hammer or chisel. His exact two-tool offering supplies calf-skin shoes for the Siege Master.",
+          "keyword": "artist",
+          "mob_vnum": 97002,
+          "name": "the ice artist",
+          "topics": [
+            "shoe",
+            "shoes",
+            "calf",
+            "calfskin",
+            "work",
+            "ice",
+            "sculpture",
+            "girl",
+            "art",
+            "she",
+            "magnificent",
+            "finish",
+            "tools"
+          ]
+        },
+        {
+          "description": "Malice starts at the garden gazebo. On death he can leave a ghastly black vapor carrying his possessions. Defeating the first form does not prove the final form\u2019s defeat or recovery of its golden key.",
+          "keyword": "malice",
+          "mob_vnum": 97003,
+          "name": "Malice, the half-breed son of Strife,",
+          "topics": []
+        },
+        {
+          "description": "Masha works in the banquet kitchen. Ask about cookbook for his cuisine project. Its current recipe is incomplete, so it is excluded from achievements and daily quests until repaired. He can interrupt attempts to take kitchen onions.",
+          "keyword": "masha",
+          "mob_vnum": 97006,
+          "name": "Masha the dicer",
+          "topics": [
+            "onions",
+            "onion",
+            "castle",
+            "icecrag",
+            "strife",
+            "icess",
+            "kitchen",
+            "cook",
+            "chef",
+            "food",
+            "project",
+            "interest",
+            "archivist",
+            "tar",
+            "malice"
+          ]
+        },
+        {
+          "description": "The priest waits at the clergy\u2019s banquet table. Ask about notes or speech. Recover three differently numbered pages; his attendant may defend him in combat.",
+          "keyword": "priest",
+          "mob_vnum": 97008,
+          "name": "a Priest of the First Ascension",
+          "topics": [
+            "siege",
+            "viscount",
+            "strife",
+            "malice",
+            "archivist",
+            "masha",
+            "treasury",
+            "castle",
+            "icecrag",
+            "speech",
+            "notes"
+          ]
+        },
+        {
+          "description": "Serving women start in a guest distribution room and can wander through the castle. Ask about milk. The two-cask coin purchase is currently unavailable.",
+          "keyword": "servant",
+          "mob_vnum": 97010,
+          "name": "a servant",
+          "topics": [
+            "icecrag",
+            "castle",
+            "servant",
+            "job",
+            "banquet",
+            "more",
+            "life",
+            "somewhere",
+            "sell",
+            "milk"
+          ]
+        },
+        {
+          "description": "Garden attendants wear brown fur hats. Their public remarks concern the frozen garden; these remarks grant no separate keyword achievement.",
+          "keyword": "attendant",
+          "mob_vnum": 97011,
+          "name": "an ice garden attendant",
+          "topics": []
+        },
+        {
+          "description": "Mahdrel guards the vault approach and wears the tiny silver key for the Captain\u2019s hidden key sheath. His note explains the layered vault security; the key alone does not open every door.",
+          "keyword": "mahdrel",
+          "mob_vnum": 97012,
+          "name": "Mahdrel the vault guardian",
+          "topics": []
+        },
+        {
+          "description": "The raucous guest can wander from the guest distributor. Ask about wine or reward. He needs two white and two elven bottles, not one of each.",
+          "keyword": "raucous",
+          "mob_vnum": 97014,
+          "name": "a raucous guest",
+          "topics": [
+            "guest",
+            "icecrag",
+            "castle",
+            "banquet",
+            "strife",
+            "icess",
+            "specialty",
+            "trade",
+            "magic",
+            "enchantment",
+            "gem",
+            "stones",
+            "gold",
+            "ore",
+            "wine",
+            "stolen",
+            "shipment",
+            "caravan",
+            "information"
+          ]
+        },
+        {
+          "description": "The olive-skinned female guest wears Speech Notes 2 on her guest-distributor placement. Inspect the paper; its name matches the other two pages.",
+          "keyword": "guest",
+          "mob_vnum": 97015,
+          "name": "a quiet guest of the castle",
+          "topics": []
+        },
+        {
+          "description": "Off-duty patrol guards wear the exact jacket and pants needed by the sergeant. They do not run the artist\u2019s tool offering or provide an achievement for each garment.",
+          "keyword": "patrol",
+          "mob_vnum": 97017,
+          "name": "an off-duty patrol guard",
+          "topics": []
+        },
+        {
+          "description": "The sergeant starts outside on the castle approach with following privates. Ask about cold or freezing for his winter clothing request, or castle for the front-door clue. His item-and-coin request is currently unavailable.",
+          "keyword": "sergeant",
+          "mob_vnum": 97020,
+          "name": "a sergeant",
+          "topics": [
+            "icecrag",
+            "castle",
+            "banquet",
+            "strife",
+            "icess",
+            "storm",
+            "delayed",
+            "guests",
+            "freezing",
+            "frost",
+            "cold"
+          ]
+        },
+        {
+          "description": "The commander sits in his office upstairs. Ask about book or archivist for the missing borrowed book. His treasury clue and Strife lore do not require a new personal kill.",
+          "keyword": "commander",
+          "mob_vnum": 97021,
+          "name": "the Commander",
+          "topics": [
+            "book",
+            "lost",
+            "mountains",
+            "trek",
+            "perch",
+            "natural",
+            "countryside",
+            "prophecy",
+            "fate",
+            "nonsense",
+            "non-sense",
+            "man",
+            "fellow",
+            "strange"
+          ]
+        },
+        {
+          "description": "The Viscount works in his upstairs office. Ask about onion or stomach. He accepts the ordinary kitchen onion, not Masha\u2019s juicy reward, and his assistant may defend him.",
+          "keyword": "viscount",
+          "mob_vnum": 97023,
+          "name": "the Viscount",
+          "topics": [
+            "strife",
+            "malice",
+            "archivist",
+            "masha",
+            "treasury",
+            "castle",
+            "icecrag",
+            "financial",
+            "business",
+            "research",
+            "alchemy",
+            "sample"
+          ]
+        },
+        {
+          "description": "Treasury guards protect the vault approach. One declared placement equips its treasury key. The same-named guards do not all carry a copy.",
+          "keyword": "guard",
+          "mob_vnum": 97024,
+          "name": "a treasury guard",
+          "topics": []
+        },
+        {
+          "description": "The embalmer in the preparation room carries the thick black key to a nearby hidden iron chest. That key can break on use. The displayed bodies are scenery, rather than automatic rescue or carving objectives.",
+          "keyword": "cision",
+          "mob_vnum": 97026,
+          "name": "Cision",
+          "topics": []
+        },
+        {
+          "description": "The Siege Master sits by the massive round table. Ask about shoes or calfskin. His calf-skin shoe request is separate from the artist\u2019s exchange; his attendant may intervene in a fight.",
+          "keyword": "siege",
+          "mob_vnum": 97029,
+          "name": "the siege master",
+          "topics": [
+            "castle",
+            "strife",
+            "icecrag",
+            "pouch",
+            "hobby",
+            "hobbies",
+            "artist",
+            "calf",
+            "skin",
+            "calf-skin",
+            "pair"
+          ]
+        },
+        {
+          "description": "The Archivist starts in the castle archives with the hidden borrowed book and ornate brass key. In combat he can become a gigantic werewolf and turn archive assistants into hunting wolves, carrying their gear across forms.",
+          "keyword": "archivist",
+          "mob_vnum": 97030,
+          "name": "the Archivist",
+          "topics": []
+        },
+        {
+          "description": "The Captain of the Upper Echelon carries his named bloody heart and the Mausoleum key. This is the captain Myrke wants; the investigating captain and patrol lieutenants are separate creatures.",
+          "keyword": "captain",
+          "mob_vnum": 97035,
+          "name": "the Captain of the Upper Echelon",
+          "topics": []
+        },
+        {
+          "description": "Strife carries her named bloody heart and starts on a special route into her office. Her office key lies in the ice vault. Finding the court\u2019s old preserved bodies does not supply her trophy.",
+          "keyword": "strife",
+          "mob_vnum": 97036,
+          "name": "Strife, Icess of Auril",
+          "topics": []
+        },
+        {
+          "description": "Myrke begins in a rare-mobile distribution route, so finding him is uncertain. Ask about revenge or plan for the two-heart request. His shroud warning and cloak rumours point to separate foreign stories.",
+          "keyword": "myrke",
+          "mob_vnum": 97039,
+          "name": "Myrke the Stalker",
+          "topics": [
+            "captain",
+            "killed",
+            "bodyrush",
+            "vial"
+          ]
+        },
+        {
+          "description": "The Viscount\u2019s assistant can rescue his employer during combat. This is an NPC defense action, not a player rescue receipt.",
+          "keyword": "assistant",
+          "mob_vnum": 97040,
+          "name": "the Viscount's assistant",
+          "topics": []
+        },
+        {
+          "description": "The Siege Master\u2019s attendant can rescue his employer during combat. The accepted shoe offering remains its own story.",
+          "keyword": "attendant",
+          "mob_vnum": 97041,
+          "name": "the Siege Master's attendant",
+          "topics": []
+        },
+        {
+          "description": "The ice priest\u2019s attendant can rescue his employer during combat. Returning the three speech pages does not require a recorded defeat of that defender.",
+          "keyword": "attendant",
+          "mob_vnum": 97042,
+          "name": "the Ice Priest's attendant",
+          "topics": []
+        },
+        {
+          "description": "The deranged man may leave his distributor for the Rock in the Lava Tubes area or remain in a holding room. Ask about book. He carries an accepted hidden book but does not own a separate turn-in.",
+          "keyword": "deranged",
+          "mob_vnum": 97063,
+          "name": "a deranged looking man",
+          "topics": [
+            "book",
+            "commander",
+            "home",
+            "hi",
+            "hello"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [
+        {
+          "contracts": [
+            {
+              "completion_key": "give=I:303,I:315,I:6551,I:11519,I:15252,I:16025,I:66058;receive=I:97110,I:97136,I:97136,I:97136;disappear=0",
+              "giver_vnum": 97006
+            }
+          ],
+          "reason": "Masha\u2019s cuisine recipe requires missing item prototype 6551 and includes a fox pelt and spell parchment despite food dialogue. Keep it excluded from achievements and daily quests until a builder selects and qualifies a complete recipe; do not invent replacement ingredients."
+        }
+      ],
+      "introduction": "Follow the artist\u2019s tools into the Siege Master\u2019s shoes, recover three distinct speech pages, bring four exact wine bottles, return the commander\u2019s borrowed book, find the Viscount\u2019s kitchen onion and gather Myrke\u2019s two named hearts. The sergeant\u2019s paid winter-clothing request is guarded; Masha\u2019s cuisine recipe needs repair.",
+      "orientation": [
+        "Discover IceCrag and meet its residents to reveal their requests. Eight story outcomes are separate from two paid services. The sergeant\u2019s coin-and-clothing request is currently unavailable, and Masha\u2019s incomplete cuisine recipe is excluded. Conversation topics provide clues; discovery has its own achievement.",
+        "At the front doors, read the plaque and speak the Frostmaiden\u2019s name, Auril. This unlocks the paired doors; open them before travelling north. Another player can already have opened them. The rear route leads toward the Royal Mausoleum, and the guard walk has its own key.",
+        "Help the artist with the stonecutter\u2019s hammer and chisel, then take his calf-skin shoes to the Siege Master. These are two independent offerings. Supplied shoes skip the earlier exchange; a past receipt cannot replace shoes you have spent.",
+        "The priest\u2019s three speech pages share one visible name. Inspect their writing: the tubby merchant carries page 1, the olive-skinned female guest page 2 and the foyer cleaner page 3. Keep all three different pages loose together.",
+        "The raucous guest needs two cheap white bottles and two elven winebottles. Foggy Woods and Undermountain have declared crate sources, but the elven bottle has a world cap of one. Existing or supplied stock matters; do not expect one reset to provide the complete bundle. His timely-delivery promise has no extra tracked deadline.",
+        "Masha\u2019s cookbook request asks for food but its current ingredients include a fox pelt, spell parchment and an item that is unavailable. This project needs repair before it can become a quest achievement or daily. His juicy-onion rewards are different from the ordinary kitchen onion the Viscount wants.",
+        "The Viscount needs the ordinary kitchen onion. Masha can interrupt attempts to take onions or everything while awake and out of combat. Obtaining that onion, keeping it now and giving it to the Viscount are separate actions; only the accepted offering completes the request.",
+        "The commander\u2019s hidden book can come from the Archivist or the deranged man. An identically named book of another kind is not accepted. The Archivist can transform in combat, and the deranged man\u2019s route can end in a holding room or on the distant Rock.",
+        "Myrke wants the Captain of the Upper Echelon\u2019s heart and Strife\u2019s heart together. They are two different loaded trophy items, not ordinary carved hearts. Malice\u2019s vapor and the Archivist\u2019s wolves are separate encounters. Supplied exact trophies do not require a recorded personal kill.",
+        "The vault uses several different keys. Malice\u2019s golden key, the treasury key, the Captain\u2019s hidden key sheath and its tiny silver key, and the worn notched key serve distinct parts of the route. RUB the court pedestal to return to the front doors, or the throbbing orb in the ice vault to reach the antechamber. These travels are separate from quest completion.",
+        "The sergeant\u2019s three-clothing-plus-coin request and the cleaners\u2019 and servants\u2019 coin purchases are currently unavailable. Foreign shopping and epic services also need supported transactions. A story or daily request does not guarantee a fresh item, an accessible recipient, or a replacement for a spent reward.",
+        "The banquet, preserved trophy displays, frozen garden, shroud theft and Myrke\u2019s cloak rumours explain the setting. They do not invent accepted rescue, banquet-start, construction or personal-kill objectives. Bodyguards defend NPCs; their action is separate from a player helping that NPC."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "icecrag",
+      "stories": [
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:1000;receive=I:97005;disappear=1",
+              "giver_vnum": 97001
+            }
+          ],
+          "id": "cleaner-guardwalk-key",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:1000;receive=I:97005;disappear=1",
+                  "giver_vnum": 97001
+                }
+              ],
+              "hint": "Only the accepted exact offering records this entry. Questions, carried items, personal kills and access are separate facts. Every declared reward and any recipient departure still need settlement. A daily request does not promise fresh materials or a present recipient.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete The cleaning crew: buy a guard-walk key"
+            }
+          ],
+          "summary": "The cleaning crew offers the guard-walk key for 1,000 coin-value units and then leaves. This paid access service is currently unavailable. The same key also has equipped sources among the castle cleaners.",
+          "title": "The cleaning crew: buy a guard-walk key"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:11606,I:11607;receive=E:50000,I:97029;disappear=1",
+              "giver_vnum": 97002
+            }
+          ],
+          "id": "artist-stonecutters-tools",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Ghore\u2019s troll stonecutters equip one hammer or chisel on separate placements. These are weapons, so remove them from equipment before offering. The clansdwarf in Khildarak lists both tools, but shopping is currently unavailable. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "hammer",
+              "item_vnums": [
+                11606
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the stonecutter\u2019s hammer"
+            },
+            {
+              "count": 1,
+              "hint": "Use the exact stonecutter\u2019s chisel along with the hammer. The garden attendant\u2019s broom or mason\u2019s grout trowel is not a substitute. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "chisel",
+              "item_vnums": [
+                11607
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the stonecutter\u2019s chisel"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:11606,I:11607;receive=E:50000,I:97029;disappear=1",
+                  "giver_vnum": 97002
+                }
+              ],
+              "hint": "Only the accepted exact offering records this entry. Questions, carried items, personal kills and access are separate facts. Every declared reward and any recipient departure still need settlement. A daily request does not promise fresh materials or a present recipient.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete The ice artist: replace his tools"
+            }
+          ],
+          "summary": "Bring the ice artist the stonecutter\u2019s hammer and chisel for calf-skin shoes and declared 50,000 experience. He leaves afterward. The shoes can be offered separately to the Siege Master; supplying them directly skips this earlier exchange.",
+          "title": "The ice artist: replace his tools"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:97137,I:97138,I:97149;receive=I:97139;disappear=1",
+              "giver_vnum": 97008
+            }
+          ],
+          "id": "priest-three-speech-pages",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The tubby merchant\u2019s first guest placement wears this page. Inspect the paper\u2019s contents to identify its page number. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "page-one",
+              "item_vnums": [
+                97137
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Speech Notes 1"
+            },
+            {
+              "count": 1,
+              "hint": "The svelte, olive-skinned female guest wears this second page. The guest distributor can send her elsewhere in the castle. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "page-two",
+              "item_vnums": [
+                97138
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Speech Notes 2"
+            },
+            {
+              "count": 1,
+              "hint": "The cleaner at the Grand Foyer wears the third page. Other cleaners carry keys; a cleaner\u2019s name alone cannot identify its page. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "page-three",
+              "item_vnums": [
+                97149
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Speech Notes 3"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:97137,I:97138,I:97149;receive=I:97139;disappear=1",
+                  "giver_vnum": 97008
+                }
+              ],
+              "hint": "Only the accepted exact offering records this entry. Questions, carried items, personal kills and access are separate facts. Every declared reward and any recipient departure still need settlement. A daily request does not promise fresh materials or a present recipient.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete The ice priest: recover all three speech pages"
+            }
+          ],
+          "summary": "Return Speech Notes 1, 2 and 3 together for troll-hide sleeves. The priest leaves afterward. The pages share their visible name and aliases, but require three different kinds, rather than three copies of any one page.",
+          "title": "The ice priest: recover all three speech pages"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:800;receive=I:97146,I:97146;disappear=1",
+              "giver_vnum": 97010
+            }
+          ],
+          "id": "servant-fresh-milk",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:800;receive=I:97146,I:97146;disappear=1",
+                  "giver_vnum": 97010
+                }
+              ],
+              "hint": "Only the accepted exact offering records this entry. Questions, carried items, personal kills and access are separate facts. Every declared reward and any recipient departure still need settlement. A daily request does not promise fresh materials or a present recipient.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete The servant: buy two milk casks"
+            }
+          ],
+          "summary": "The serving woman offers two separate small casks of fresh milk for 800 coin-value units, then leaves. This paid provision service is currently unavailable; two rewards still belong to one offering.",
+          "title": "The servant: buy two milk casks"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:90017,I:90017,I:92048,I:92048;receive=C:75000,E:30000,I:97141;disappear=1",
+              "giver_vnum": 97014
+            }
+          ],
+          "id": "raucous-guest-wines",
+          "steps": [
+            {
+              "count": 2,
+              "hint": "Two bottles are declared inside a heavy wooden crate in Foggy Woods. Retrieve both loose; a drink container\u2019s remaining liquid is not a second bottle. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "white-wine",
+              "item_vnums": [
+                90017
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry two bottles of cheap white wine"
+            },
+            {
+              "count": 2,
+              "hint": "A wooden crate in Undermountain declares this kind with a world cap of one. Two copies are required, so check existing or supplied stock before planning this request; one reset cannot promise both. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "elven-wine",
+              "item_vnums": [
+                92048
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry two elven winebottles"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:90017,I:90017,I:92048,I:92048;receive=C:75000,E:30000,I:97141;disappear=1",
+                  "giver_vnum": 97014
+                }
+              ],
+              "hint": "Only the accepted exact offering records this entry. Questions, carried items, personal kills and access are separate facts. Every declared reward and any recipient departure still need settlement. A daily request does not promise fresh materials or a present recipient.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete The raucous guest: replace four wine bottles"
+            }
+          ],
+          "summary": "Bring the raucous guest two bottles of cheap white wine and two elven winebottles together for a shiny flask, declared 75,000 coin-value units and 30,000 experience. He leaves afterward. His promise of a timely bonus adds no actual deadline or extra recipe.",
+          "title": "The raucous guest: replace four wine bottles"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=C:25000,I:97041,I:97047,I:97048;receive=I:97143,I:97145;disappear=1",
+              "giver_vnum": 97020
+            }
+          ],
+          "id": "sergeant-winter-clothes",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Garden attendants wear the hat. Alatorin also places a hat, jacket and pants inside a closet. Paid shopping is not required by this request. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "fur-hat",
+              "item_vnums": [
+                97041
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the brown fur hat"
+            },
+            {
+              "count": 1,
+              "hint": "Off-duty patrol guards wear the jacket and pants. A cold-weather garment with a different kind cannot replace the exact jacket. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "fur-jacket",
+              "item_vnums": [
+                97047
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the warm fur jacket"
+            },
+            {
+              "count": 1,
+              "hint": "Carry the matching warm fur pants separately from the jacket and hat. Possession of the three items does not pay the coin fee or complete the request. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "fur-pants",
+              "item_vnums": [
+                97048
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the warm fur pants"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:25000,I:97041,I:97047,I:97048;receive=I:97143,I:97145;disappear=1",
+                  "giver_vnum": 97020
+                }
+              ],
+              "hint": "Only the accepted exact offering records this entry. Questions, carried items, personal kills and access are separate facts. Every declared reward and any recipient departure still need settlement. A daily request does not promise fresh materials or a present recipient.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete The sergeant: bring winter clothing"
+            }
+          ],
+          "summary": "The freezing sergeant wants the brown fur hat, warm fur jacket, warm fur pants and 25,000 coin-value units. He promises a buckskin pack and key pouch, then leaves. This meaningful help request is currently unavailable because the item-and-coin offering is unsupported; it is separate from the banquet\u2019s start.",
+          "title": "The sergeant: bring winter clothing"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:97006;receive=I:97144;disappear=1",
+              "giver_vnum": 97021
+            }
+          ],
+          "id": "commander-lost-book",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Search a source body for the hidden book, then retrieve it. The Archivist can transform in combat, carrying his possessions into the werewolf form. The deranged man may wander out onto the Rock in the Lava Tubes area or remain in a sealed holding room; availability is uncertain. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "borrowed-book",
+              "item_vnums": [
+                97006
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the commander\u2019s borrowed book"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:97006;receive=I:97144;disappear=1",
+                  "giver_vnum": 97021
+                }
+              ],
+              "hint": "Only the accepted exact offering records this entry. Questions, carried items, personal kills and access are separate facts. Every declared reward and any recipient departure still need settlement. A daily request does not promise fresh materials or a present recipient.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete The commander: return his borrowed book"
+            }
+          ],
+          "summary": "Return the commander\u2019s missing book for a blue earthstone ring. He leaves afterward. The Archivist and the deranged man carry the accepted book kind. Another identically named book has a different kind and is not accepted.",
+          "title": "The commander: return his borrowed book"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:97115;receive=I:97135;disappear=1",
+              "giver_vnum": 97023
+            }
+          ],
+          "id": "viscount-kitchen-onion",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The ordinary onion is placed on the kitchen counter. Masha can interrupt attempts to take onions or everything while awake and out of combat. Passing that interference is not a separately recorded achievement. A juicy onion supplied by Masha is not this ingredient. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "kitchen-onion",
+              "item_vnums": [
+                97115
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ordinary kitchen onion"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:97115;receive=I:97135;disappear=1",
+                  "giver_vnum": 97023
+                }
+              ],
+              "hint": "Only the accepted exact offering records this entry. Questions, carried items, personal kills and access are separate facts. Every declared reward and any recipient departure still need settlement. A daily request does not promise fresh materials or a present recipient.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete The Viscount: bring the kitchen onion"
+            }
+          ],
+          "summary": "Bring the Viscount the ordinary kitchen onion for a root vial of bubbling purple liquid. He leaves afterward. Masha\u2019s juicy-onion reward is a different kind and cannot satisfy this recipe; his cookbook project is currently incomplete.",
+          "title": "The Viscount: bring the kitchen onion"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:97029;receive=I:97140;disappear=1",
+              "giver_vnum": 97029
+            }
+          ],
+          "id": "siege-master-calfskin-shoes",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:11606,I:11607;receive=E:50000,I:97029;disappear=1",
+                  "giver_vnum": 97002
+                }
+              ],
+              "hint": "The artist\u2019s hammer-and-chisel offering produces these shoes. An earlier receipt does not replace shoes that were worn, spent or handed away.",
+              "id": "optional-tool-exchange",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: help the ice artist"
+            },
+            {
+              "count": 1,
+              "hint": "The artist supplies this exact pair for the two stonecutters\u2019 tools. Remove the shoes from equipment before offering; other soft shoes cannot replace them. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "calfskin-shoes",
+              "item_vnums": [
+                97029
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the calf-skin shoes"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:97029;receive=I:97140;disappear=1",
+                  "giver_vnum": 97029
+                }
+              ],
+              "hint": "Only the accepted exact offering records this entry. Questions, carried items, personal kills and access are separate facts. Every declared reward and any recipient departure still need settlement. A daily request does not promise fresh materials or a present recipient.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete The Siege Master: supply calf-skin shoes"
+            }
+          ],
+          "summary": "Bring the Siege Master the calf-skin shoes for a carved ebony tribal mask. He leaves afterward. The ice artist\u2019s tool exchange supplies the shoes, but exact supplied shoes can complete this stage without the earlier receipt.",
+          "title": "The Siege Master: supply calf-skin shoes"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:97016,I:97017;receive=C:250000,I:55032;disappear=0",
+              "giver_vnum": 97039
+            }
+          ],
+          "id": "myrke-two-hearts",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The Captain of the Upper Echelon carries his named heart at the tactical room. Other captains are different creatures and do not supply this exact trophy. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "captains-heart",
+              "item_vnums": [
+                97016
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody heart of the Captain"
+            },
+            {
+              "count": 1,
+              "hint": "Strife carries this named heart and starts in a special load room connected to her office. The Frost of Calamity key opens her office approach. Check her actual presence; narrative about her old body and the court\u2019s throne does not provide another heart. Carry the exact items loose; worn or nested items do not count as loose ingredients. Exact supplied items can skip personal recovery.",
+              "id": "strifes-heart",
+              "item_vnums": [
+                97017
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody heart of Strife"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:97016,I:97017;receive=C:250000,I:55032;disappear=0",
+                  "giver_vnum": 97039
+                }
+              ],
+              "hint": "Only the accepted exact offering records this entry. Questions, carried items, personal kills and access are separate facts. Every declared reward and any recipient departure still need settlement. A daily request does not promise fresh materials or a present recipient.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Myrke: bring the Captain\u2019s and Strife\u2019s hearts"
+            }
+          ],
+          "summary": "Bring Myrke the two different bloody hearts together for a vial of bodyrush and declared 250,000 coin-value units. He remains afterward. The trophies are loaded items carried by the Captain of the Upper Echelon and Strife; ordinary carved body parts cannot replace them.",
+          "title": "Myrke: bring the Captain\u2019s and Strife\u2019s hearts"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Start with these conversation topics, then follow the requests below.",
           "keyword": "high",
           "mob_vnum": 97510,

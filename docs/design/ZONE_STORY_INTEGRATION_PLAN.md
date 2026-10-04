@@ -2513,3 +2513,41 @@ The original queue is 70/220 source-comprehensive, 150 pending. These are precis
 adapter and qualification requirements; this checkpoint adds no runtime API,
 event/schema, payment adapter, native recipe or world effect. Live CARVE/death/
 source/access/offer/reward/expiry/retirement/persistence journeys remain open.
+
+
+## IceCrag: content quarantine, speech access and transformed source custody
+
+[IceCrag's dossier](zone-stories/ICECRAG_CASTLE.md) closes priority 71, using
+existing schema 3, revision 1 for eight stories, two supporting services and one
+incomplete exclusion. Its 25 contacts cover all 55 addressed families/129 aliases;
+15 optional material checks and one optional earlier shoe receipt remain
+read-only. Seven stories are item-only candidates; winter clothing needs an
+unsupported fee and Masha's cuisine project is excluded. All eleven bindings
+are classified, without changing native acceptance or economic guards.
+
+Static discovery can identify recipes, placed materials, keys, command portals
+and procedure bindings. It cannot infer intended replacements for missing object 6551,
+make fox pelts/parchment into cuisine, merge ordinary/juicy onions, turn global
+wolf conversion into a local-only encounter, or supply the absent dungeon.
+Continue per-zone authored maps and builder-owned native design decisions.
+Existing excluded recipes can safely quarantine impossible content today;
+reintroduce them only after a separate deliberate native repair and qualification.
+
+| Capability | Concrete IceCrag requirement | Implementation and qualification plan |
+| --- | --- | --- |
+| Invalid-content lifecycle | Required object 6551 absent; several ingredients disagree with food dialogue | Explicit contract exclusion, no fabricated material prototype or valid journal/daily unit. Keep complete native classification. Builder selects intended recipe or retirement; original-fails/repaired-passes source and played transaction proof before reintroduction |
+| Speech access and shared world state | Admitted SAY unlocks paired key-2 doors; OPEN and crossing are later operations | Freeze speaker/room/door/reset and before/after lock bits, both-side mutation, already-unlocked/shared access and confirmed arrival. An ASK clue, spoken text or helper boolean is insufficient |
+| Actor/control/transform custody | Masha GET keyword interference, bodyguard rescue, global archive-assistant conversion, Malice death→vapor | Record attempt/result, actor/participant/owner/generation and scope. Qualify allocation failure after stopped fight, selected UID gear transfer/publication/extraction, target memory and final defeat; do not infer a player rescue from NPC defense |
+| Exact material identity and allocation | Three different same-name pages; book 97006≠97004; onion 97115≠97136; two different hearts; 2+2 wine | Current loose UID counts and source-versus-handoff facts stay separate from terminal/history. Preserve supplied shortcuts. Optional artist receipt does not restore shoes; cap-one elven stock does not promise two fresh copies |
+| Atomic fee and frozen reward indices | Clothing plus C25000, C1000 key, C800 two-milk reward; three onions, coin and XP | Preserve guards. Admit wallet/root destruction/reward/retirement together; freeze indexed duplicates, nominal versus actual credited group XP and coin entitlements. Busy/rejected/partial/replay/cold publication proof before enabling |
+| Campaign and visual explanation | Optional artist→shoes route, excluded cuisine, banquet/shroud/trophy/dungeon lore | Existing text UI shows exact counts, Ready/Missing, supplied history and unavailable reasons. Add builder-selected ALL/ANY campaign branches, successful rescue/banquet/construction/lore endpoints only with actual native predicates and qualified events |
+| Supply and recipient episodes | Rare holding routes, world caps, hidden source, departing giver | Qualify admitted source item/actor publication and singleton retirement/reset, then daily availability. Separate fallback navigation and foreign ownership; no local completion from Air/Sarmiz/Winterhaven or Alatorin's forge continuation |
+
+No native IceCrag repair ships. Missing ingredient/dungeon, ambiguous names,
+elven quantity, dormant bindings and transformation scope/failure have balanced
+proposals and separate proof plans. Actual repairs require clear fix commits,
+prominent PR/news before/after and news-ready sentences; classification and
+proposals never masquerade as fixed gameplay. Active, ready accounting gates new
+progress; frozen obligations retain independent recovery. Source/projection
+checks remain distinct from played acquisition/access/combat/fee/settlement/
+retirement/persistence/renewal qualification. Queue: 71/220 source-comprehensive, 149 pending; Cloister next.
