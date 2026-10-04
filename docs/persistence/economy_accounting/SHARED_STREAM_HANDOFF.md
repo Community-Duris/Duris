@@ -160,3 +160,13 @@ maintained cutover baseline. This remains PREPARED_UNEXECUTED. Native pooled
 COMMIT-row preservation is not actual critical/death adapter return and typed
 receipt-preservation proof; that gap remains required. Declared300/120 bounds
 are unmeasured proposals; the original maintained shell has no explicit deadline.
+
+
+Central registry source preparation now describes the retained ordinary-room drop,
+pickup and dispatch paths, and separately classifies exact native pile projection
+and temporary zero-add rendering. New rows keep all SQL/flatfile backend evidence
+unverified. The generator only gains matching projection/nonwriter categories;
+it has not run. Historical source_commit/census and generated matrix are preserved
+until full current-source reanchoring at the major-plan integration batch. Pending
+source integration is explicit; these rows do not establish lexical completeness,
+executable route proof or any release/activation qualification.

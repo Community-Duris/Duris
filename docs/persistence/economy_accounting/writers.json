@@ -5010,9 +5010,9 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "Wallet-to-pile transfer, including actual pile UID creation or merge; neither issuance nor expense. Current debit precedes live publication.",
+      "classification": "Active ordinary-room single-root drop prepares one typed wallet/pile root and retains physical publication through durable ACK. Inactive legacy debit/refund remains; unsupported active placement refuses. Source implemented, actual producer/backend/recovery qualification pending.",
       "authority_boundary": "Bind committed debit to pile effects and recoverable publication; allocation/publication failure must not strand value.",
-      "current_support": "Existing behavior only; accounting integration unverified",
+      "current_support": "Implemented source only; no current native/gameplay/persistence/recovery qualification",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -5027,7 +5027,9 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_coin_physical_publication.py"
+      ],
       "sites": [
         [
           "src/cmd/actobj.c",
@@ -5143,9 +5145,9 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "Partial/full pile pickup; unknown pile first admitted separately.",
+      "classification": "Active ordinary-room single-root full/partial pickup prepares one typed pile/wallet root and retains exact literal/native result publication through ACK. Containers and unsupported active placement remain refused; inactive legacy behavior remains. Source implemented, actual backend/cold recovery qualification pending.",
       "authority_boundary": "Compound transfer plus admission boundary",
-      "current_support": "Existing behavior only; accounting integration unverified",
+      "current_support": "Implemented source only; no current native/gameplay/persistence/recovery qualification",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -5161,7 +5163,8 @@
         }
       },
       "test_candidates": [
-        "tests/async/test_coin_get_completion.py"
+        "tests/async/test_coin_get_completion.py",
+        "tests/async/test_coin_physical_publication.py"
       ],
       "sites": [
         [
@@ -5287,9 +5290,9 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "Coin dispatch builds wallet and pile commands; one root must cover money and UID payload.",
+      "classification": "Schema-2 physical coin dispatch validates immutable command/result terms before projection, retains original receipt conflicts and revalidates body/account/race and physical proof for every ACK attempt. Generic owner does not link native world publication. Source-only; complete active producer and recovery journeys unqualified.",
       "authority_boundary": "Accepted currency_transaction_submit_coin source event, selected backend, expected native revisions and receipt before publication.",
-      "current_support": "Typed wallet-only submission remains available; new schema-2 item endpoints require an explicit verified physical publisher before admission. Replayed pile commands without that proof retain the original obligation. No production physical publisher is wired; complete native recovery, backend parity and playable route qualification remain open.",
+      "current_support": "Implemented source only; no current native/gameplay/persistence/recovery qualification",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -5305,6 +5308,7 @@
         }
       },
       "test_candidates": [
+        "tests/async/test_coin_physical_publication.py",
         "tests/async/test_coin_publication_ack_retention.py",
         "tests/async/test_currency_completion_retention.py"
       ],
@@ -46339,6 +46343,95 @@
           "ordinary enchantment continuation"
         ]
       }
+    },
+    {
+      "id": "coin.retained_pile_rendering",
+      "path": "src/economy/coin_physical_publication.c",
+      "symbol": "source_matches",
+      "reason": "coin_transfer",
+      "integration_issue": 490,
+      "owner": "primary / #490",
+      "coverage": "legacy",
+      "classification": "Stack-local zero-add native coin renderer compares canonical opening/after text and weight. It neither admits a UID nor changes a native holding; the separate retained projection owns live changes.",
+      "authority_boundary": "Original committed command/result and retained native publication; no new accounting root or live-bank authority is inferred.",
+      "current_support": "Source classification only; prepared component cases unexecuted and full backend/recovery proof pending.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_coin_physical_publication.py"
+      ],
+      "sites": [
+        [
+          "src/economy/coin_physical_publication.c",
+          115,
+          "coin_bulk_mutation"
+        ],
+        [
+          "src/economy/coin_physical_publication.c",
+          124,
+          "coin_bulk_mutation"
+        ]
+      ],
+      "evidence": []
+    },
+    {
+      "id": "coin.retained_room_projection",
+      "path": "src/economy/coin_physical_publication.c",
+      "symbol": "coin_physical_publication_publish",
+      "reason": "coin_transfer",
+      "integration_issue": 490,
+      "owner": "primary / #490",
+      "coverage": "legacy",
+      "classification": "Runtime projection of a committed original-UID ordinary-room pile. Literal bytes, denomination/custody and result identity must agree; uncertain materialization/handler stages remain held and post-ACK notifications are separate.",
+      "authority_boundary": "Original committed command/result and retained native publication; no new accounting root or live-bank authority is inferred.",
+      "current_support": "Source classification only; prepared component cases unexecuted and full backend/recovery proof pending.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_coin_physical_publication.py"
+      ],
+      "sites": [
+        [
+          "src/economy/coin_physical_publication.c",
+          359,
+          "coin_bulk_mutation"
+        ],
+        [
+          "src/economy/coin_physical_publication.c",
+          366,
+          "item_publication"
+        ],
+        [
+          "src/economy/coin_physical_publication.c",
+          368,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": []
     }
   ],
   "census": [
@@ -63296,5 +63389,10 @@
     "base_commit": "a461b989016cb40fff2e1573720c6c9288e6427b",
     "evidence": "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
+  },
+  "pending_source_integration": {
+    "candidate_commit": "4268b190b6b2f03c21d96ae789611712919295e1",
+    "status": "Source rows prepared; full current census/site reanchoring and generated matrix remain pending major-plan integration.",
+    "qualified": false
   }
 }
