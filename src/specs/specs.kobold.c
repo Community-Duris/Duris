@@ -120,7 +120,7 @@ int kobold_priest(P_char ch, P_char pl, int cmd, char * /*arg*/)
 	{
 		return (FALSE);
 	}
-	if (world[ch->in_room].number == 1482)
+	if (world[ch->in_room].number == 1481)
 	{
 		if (pl && ((cmd == CMD_NORTH) || (cmd == CMD_SOUTH) || (cmd == CMD_EAST)))
 		{
@@ -147,7 +147,7 @@ int kobold_priest(P_char ch, P_char pl, int cmd, char * /*arg*/)
 				    "sacrificial pit to the west!",
 				    FALSE, pl, 0, ch, TO_NOTVICT);
 				char_from_room(pl);
-				char_to_room(pl, real_room(1485), 0);
+				char_to_room(pl, real_room(1484), 0);
 				return (TRUE);
 			}
 			else
@@ -262,7 +262,7 @@ int stone_golem(P_char ch, P_char pl, int cmd, char * /*arg*/)
 	{
 		return (FALSE);
 	}
-	if (world[ch->in_room].number == 1483)
+	if (world[ch->in_room].number == 1482)
 	{
 		if (cmd == CMD_WEST && !IS_TRUSTED(pl) && (number(1, 100) > 20))
 		{
@@ -291,7 +291,7 @@ int tako_demon(P_char ch, P_char pl, int cmd, char * /*arg*/)
 	{
 		return (FALSE);
 	}
-	if (world[ch->in_room].number == 1485)
+	if (world[ch->in_room].number == 1484)
 	{
 		if (pl && cmd == CMD_UP && !IS_TRUSTED(pl))
 		{
@@ -308,7 +308,7 @@ int tako_demon(P_char ch, P_char pl, int cmd, char * /*arg*/)
 		}
 		else if (!cmd && !IS_FIGHTING(ch))
 		{
-			for (k = world[real_room(1484)].people; k; k = k->next)
+			for (k = world[real_room(1483)].people; k; k = k->next_in_room)
 			{
 				if (IS_PC(k) && CAN_SEE(ch, k) && !IS_TRUSTED(k) && !IS_FIGHTING(k))
 				{
@@ -316,7 +316,7 @@ int tako_demon(P_char ch, P_char pl, int cmd, char * /*arg*/)
 					break;
 				}
 			}
-			if (victim && (world[victim->in_room].number == 1484))
+			if (victim && (world[victim->in_room].number == 1483))
 			{
 				if (number(0, 100) < 30)
 				{
@@ -325,7 +325,7 @@ int tako_demon(P_char ch, P_char pl, int cmd, char * /*arg*/)
 					act("$n is suddenly &+BYANKED&n downwards by a snaky tentacle!",
 					    TRUE, victim, 0, 0, TO_ROOM);
 					char_from_room(victim);
-					char_to_room(victim, real_room(1485), 0);
+					char_to_room(victim, real_room(1484), 0);
 					act("$N is suddenly yanked here from above by $n!", TRUE,
 					    ch, 0, victim, TO_NOTVICT);
 					MobStartFight(ch, victim);
