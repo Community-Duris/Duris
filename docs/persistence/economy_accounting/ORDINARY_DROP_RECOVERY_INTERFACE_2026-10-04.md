@@ -86,12 +86,12 @@ checks. No current SQL authority, graph publication, census, ACK reservation, st
 or complete cold recovery follows from these unqualified prerequisites.
 
 
-## Next native-graph owner: exact existing graph (source design)
+## Exact existing-graph owner now present (source only)
 
 The October4 read-only review identifies the next bounded integration owner:
-`src/item/ordinary_drop_recovery.c/.h` (new operation-specific module, not yet
-implemented), with primary-owned Makefile registration. Its generic public result
-must distinguish verified_existing, absent, conflict, unsupported and unavailable.
+`src/item/ordinary_drop_recovery.c/.h`, now implemented in488414dc1 with
+primary-owned Makefile registration. Its generic public result distinguishes
+verified_existing, absent, conflict, unsupported, refused and unavailable.
 The returned value is an observation, not a coordinator ACK capability.
 
 Validate the original schema2 SQL ordinary-drop command and sealed definitive
@@ -111,6 +111,12 @@ No pointer, weight, metadata, registry or room-list repair is permitted. Fully
 matching graphs verify unchanged. Entirely absent graphs remain absent, not a
 permission to construct. Partial, duplicate, changed or misplaced graphs conflict.
 All refusal/OOM exits preserve physical and runtime state.
+The implementation also checks foreign container/character links, registered
+global pointer membership and bounded cycles before either matching or absent.
+Opaque helper errors retain unavailable independently of errno. Exact-session
+rollback/idle confirmation is required after comparison. See the
+[preparation report](EXISTING_DROP_GRAPH_PREPARATION_2026-10-04.md); source review
+passed,44 declarative cases remain unexecuted and no native qualification follows.
 
 Existing ordinary publication applies the runtime transfer before its callback;
 a new callback alone would not meet proof-before-mutation ordering. It also waits
@@ -120,10 +126,38 @@ all-absent enrollment, mutation census and ACK reservation exist. The existing
 `sql_room_item_publish` rejects any already present expected UID and invokes the
 legacy non-inert materializer; it cannot substitute for this idempotent owner.
 
-The subsequent all-absent owner must retain trusted prepared prototypes/fresh
+The cache-only all-absent owner is now source-implemented in `e84e52de0`; see
+[its preparation and limits](ABSENT_DROP_ENROLLMENT_PREPARATION_2026-10-04.md).
+It reacquires authority internally, validates the whole eligible graph before
+pool allocation and privately owns stage disarming. Atomic runtime hydration
+precedes assignment-only native enrollment. Uncertain cleanup preserves the
+published graph and the original obligation for exact existing-graph retry.
+This does not qualify general ordinary drops: trusted boot prototype coverage
+and activity-bearing bookkeeping remain incomplete, along with production
+dispatcher, save census/reservation, ACK and cold recovery.
+
+Complete all-absent coverage must retain trusted prepared prototypes/fresh
 eligibility, normalize SQL loader slot -1 to literal slot0 before inert staging,
 privately transfer staged ownership, preallocate all topology/counters/bookkeeping,
 recheck current authority and global absence, then perform atomic runtime hydration
 and nonthrowing global/index/room enrollment with no callbacks or allocations.
 No general raw-pointer release is authorized by this design. Both owners still
 need native tests and full actorless cold recovery on the combined candidate.
+
+## Deferred replay revisit requires stable overlapping ownership
+
+Source review confirms dispatcher initial `replay_deferred` still leaves append
+processing and pulse submission of durable work enabled. A later whole-journal
+replay can select a frame already active/pending in the worker. Counted execution
+permits exclude held PIDs but do not serialize replay with worker apply/ACK.
+`journal_mutex` does not cover the native SQL callback. A sticky revisit notice
+alone therefore cannot authorize concurrent replay. This is a source-established
+counterexample, not an executed race.
+
+Do not add a blind replay revisit or pause unrelated PIDs as complete recovery.
+The next owner must establish stable per-PID worker/pipeline/journal ownership,
+reserve replay versus native apply/checkpoint and preserve exact release notices
+across parking/in-flight transitions. It must include retained active, pending,
+result and exact journal frames; omitted archives/quarantines or missing namespace
+proof cannot become a clean census. Actual unrelated-PID progress remains required.
+No replay source change or test followed from this review.
