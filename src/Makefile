@@ -451,6 +451,7 @@ OBJS =  $(SHIP_OBJS) \
 				 item/item_transfer_command.o \
 				 item/craft_pouch_mutation.o \
 				 item/item_ownership_runtime.o \
+				 item/ordinary_drop_recovery.o \
 				 item/item_get_policy.o \
 				 item/item_command_policy.o \
 				 item/item_command_parser.o \
