@@ -12,8 +12,10 @@ from types import MappingProxyType
 from typing import Any, Mapping
 
 DEFINITION_VERSION = 1
-SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2, 3, 5})
+SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2, 3, 5, 6})
 BATTLE_DEFINITION_VERSION = 5
+BATTLE_BUILD_DEFINITION_VERSION = 6
+BATTLE_DEFINITION_VERSIONS = frozenset((BATTLE_DEFINITION_VERSION, BATTLE_BUILD_DEFINITION_VERSION))
 
 PUBLICATION_BUILDING = 0
 PUBLICATION_PUBLISHED = 1
@@ -221,7 +223,7 @@ class RollupCoverage:
             "rebuild_through_ingest_id": self.rebuild_through_ingest_id,
             "incident_coverage": self.incident_coverage,
             **({"identity_coverage": self.identity_coverage} if self.target.definition_version >= 3 else {}),
-            **({"battle_coverage": self.battle_coverage} if self.target.definition_version == BATTLE_DEFINITION_VERSION else {}),
+            **({"battle_coverage": self.battle_coverage} if self.target.definition_version in BATTLE_DEFINITION_VERSIONS else {}),
         }
 
 
@@ -569,11 +571,28 @@ BATTLE_REPORT_DEFINITIONS = MappingProxyType({
     )
 })
 
+BUILD_REPORT_DEFINITIONS = MappingProxyType({
+    **{name: replace(value, definition_version=BATTLE_BUILD_DEFINITION_VERSION, table=value.table + "_v6")
+        for name, value in BATTLE_REPORT_DEFINITIONS.items()},
+    "battle_build_points": ReportDefinition(name="battle_build_points", definition_version=BATTLE_BUILD_DEFINITION_VERSION,
+        grain="original_actor_build_point", table="telemetry_rollup_battle_row_v6",
+        dimensions=("canonical_battle", "bctx_sequence", "bctx_actor_id", "bctx_actor_kind", "bctx_config_id",
+            "bctx_build_version", "bctx_content_version", "bctx_level", "bctx_race_id", "bctx_faction_id",
+            "bctx_classes_mask", "bctx_specialization", "bctx_equipment_digest", "bctx_epic_digest"),
+        metrics=("bctx_available", "bctx_status", "bctx_boundary", "bctx_context_quality", "link_status",
+            "point_clock_status", "configuration_status", "point_context_verified", "publication_quality_flags"),
+        denominator="Exact observed build points, including unavailable markers. A verified point requires its complete association prefix, producer clocks, retained configuration and independent schema-5 loss review. No continuous build exposure or contribution rate is inferred.",
+        distinct_semantics="Build points are repeated samples of original actors and canonical battles, not independent fights or people. PCs, pets and NPCs retain their own profiles. Availability bits qualify each raw cleared field family; unknown values are not measured zero.",
+        distribution_semantics="Use available families and configuration/content versions as explicit comparison dimensions. Point snapshots do not establish buff ownership, universal power, arena results or causal effects. Missing, stale and grace-tail points remain in coverage.",
+        unavailable_metrics=("continuous_build_exposure", "damage_by_build", "build_win_rate", "buff_caster_identity",
+            "unique_human_count", "universal_power_score", "arena_match_result"), rate_unit="not_computed"),
+})
+
 
 def report_definition(name: str, definition_version: int | None = None) -> ReportDefinition:
     canonical = REPORT_ALIASES.get(name, name)
     try:
-        definition = REPORT_DEFINITIONS.get(canonical) or OBSERVATION_REPORT_DEFINITIONS.get(canonical) or IDENTITY_REPORT_DEFINITIONS.get(canonical) or BATTLE_REPORT_DEFINITIONS[canonical]
+        definition = REPORT_DEFINITIONS.get(canonical) or OBSERVATION_REPORT_DEFINITIONS.get(canonical) or IDENTITY_REPORT_DEFINITIONS.get(canonical) or BATTLE_REPORT_DEFINITIONS.get(canonical) or BUILD_REPORT_DEFINITIONS[canonical]
     except KeyError as error:
         raise ValueError(
             f"unknown report definition {name!r}; "
@@ -587,14 +606,15 @@ def report_definition(name: str, definition_version: int | None = None) -> Repor
         raise ValueError(f"report requires definition version {definition.definition_version}")
     if canonical in OBSERVATION_REPORT_DEFINITIONS and definition_version != 2:
         raise ValueError("observation report requires definition version 2")
-    if (canonical in BATTLE_REPORT_DEFINITIONS) != (definition_version == BATTLE_DEFINITION_VERSION):
+    if (canonical in BUILD_REPORT_DEFINITIONS) != (definition_version in BATTLE_DEFINITION_VERSIONS):
         raise ValueError("battle reports require their independent definition version")
-    return replace(definition, definition_version=definition_version)
+    return BUILD_REPORT_DEFINITIONS[canonical] if definition_version == BATTLE_BUILD_DEFINITION_VERSION else replace(definition, definition_version=definition_version)
 
 
 def report_definitions(definition_version: int = 1) -> tuple[ReportDefinition, ...]:
-    if definition_version == BATTLE_DEFINITION_VERSION:
-        return tuple(report_definition(name, definition_version) for name in sorted(BATTLE_REPORT_DEFINITIONS))
+    if definition_version in BATTLE_DEFINITION_VERSIONS:
+        definitions = BUILD_REPORT_DEFINITIONS if definition_version == BATTLE_BUILD_DEFINITION_VERSION else BATTLE_REPORT_DEFINITIONS
+        return tuple(report_definition(name, definition_version) for name in sorted(definitions))
     names = set(REPORT_DEFINITIONS)
     if definition_version == 2:
         names.update(OBSERVATION_REPORT_DEFINITIONS)

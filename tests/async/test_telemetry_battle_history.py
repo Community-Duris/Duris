@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT))
 from scripts.telemetry import battle_history as history
 from scripts.telemetry import battle_contract as battle
 from scripts.telemetry import battle_contribution_contract as contribution
+from scripts.telemetry import battle_build_contract as builds
 from scripts.telemetry import battle_source as source
 from scripts.telemetry import battle_publication as publication, identity_history as identity, incident
 from scripts.telemetry.rollup_engine import build_page_contributions, BoundsExceeded, SemanticError
@@ -142,6 +143,16 @@ class BattleHistoryTests(unittest.TestCase):
             env=dict(os.environ, TELEMETRY_BATTLE_CAPTURE_EXPORT=str(controls)),
             text=True, capture_output=True, check=True, timeout=30)
         cls.control_rows = [json.loads(line) for line in controls.read_text(encoding="utf-8").splitlines()]
+        build_points, build_battles = cls.path / "build-points.jsonl", cls.path / "build-battles.jsonl"
+        subprocess.run([str(executable), "--native-build-capture"], cwd=ROOT,
+            env=dict(os.environ, TELEMETRY_BUILD_CAPTURE_EXPORT=str(build_points), TELEMETRY_BATTLE_CAPTURE_EXPORT=str(build_battles)),
+            capture_output=True, check=True, timeout=30)
+        cls.build_rows = [json.loads(line) for path in (build_points, build_battles) for line in path.read_text().splitlines()]
+        for row in cls.build_rows:
+            if row["record_kind"] == 12:
+                for name in builds.BYTE_FIELDS:
+                    row[name] = bytes.fromhex(row[name])
+                builds.validate_raw_observation(row)
         cls.scope = next((row["battle_environment_id"], row["battle_season_id"])
                          for row in cls.rows if row["record_kind"] == 10)
         cls.baseline = qualify_native_history(cls.rows)
@@ -182,6 +193,195 @@ class BattleHistoryTests(unittest.TestCase):
         inputs = [source.retain_input(row, target, 0) for row in facts]
         header = source.advance_header(source.initial_header(target), inputs, len(facts))
         return source.verify_source(header, inputs, expected_scope=target, expected_watermark=len(facts))
+
+    @staticmethod
+    def _build_window(rows, *, capture_config=True):
+        scope = next((row["bctx_environment_id"], row["bctx_season_id"]) for row in rows if row["record_kind"] == 12)
+        target = (source.BUILD_DEFINITION_VERSION, 1, *scope)
+        ordered = [dict(row, ingest_id=index) for index, row in enumerate(sorted(rows,
+            key=lambda row: (row["boot_id"], row["process_id"], row["record_seq"])), 1)]
+        inputs = [source.retain_input(row, target, 0, configuration={name: row["bctx_" + name] for name in source.CONFIG_COLUMNS}
+            if capture_config and row["record_kind"] == 12 and row["bctx_config_id"] else None) for row in ordered]
+        header = source.advance_header(source.initial_header(target), inputs, len(ordered))
+        return source.verify_source(header, inputs, expected_scope=target, expected_watermark=len(ordered)), inputs
+
+    def _dated_build_rows(self):
+        # Coherent labels are an explicit clock fixture, separate from the native
+        # points. No continuous build interval or damage attribution is created.
+        rows = deepcopy(self.build_rows)
+        epoch = 4 * 86_400_000_000
+        for row in rows:
+            prefix = {10: "battle_", 11: "bc_", 12: "bctx_"}[row["record_kind"]]
+            for clock in ("at", "observed_through") if row["record_kind"] == 10 else (
+                    ("start", "observed_through", "decision") if row["record_kind"] == 11 else ("at",)):
+                row[prefix + clock + "_utc_usec"] = epoch + row[prefix + clock + "_monotonic_usec"]
+            row["occurrence_utc_usec"] = row[prefix + ("decision" if row["record_kind"] == 11 else "at") + "_utc_usec"]
+        packet = dict(incident.template(5), incidents=[], environment_id=rows[0]["bctx_environment_id"],
+            season_id=rows[0]["bctx_season_id"], reviewer_token="a" * 64, review_evidence_digest="b" * 64,
+            reviewed_from_utc_usec=min(row["occurrence_utc_usec"] for row in rows) - 1,
+            reviewed_through_utc_usec=max(row["occurrence_utc_usec"] for row in rows) + 1)
+        meta, details = incident.validate_packet(packet)
+        summary = incident.publication_summary((6, 1, packet["environment_id"], packet["season_id"]), meta, details)
+        return rows, incident.public_coverage(summary, details, registry_schema_version=5)
+
+    def test_native_build_points_retain_all_fields_and_publish_separately(self):
+        rows, coverage = self._dated_build_rows()
+        window, inputs = self._build_window(rows)
+        scope = tuple(window.header[name] for name in source.SCOPE)
+        self.assertEqual(window.header["build_count"], 20)
+        for raw, decoded in zip(sorted(rows, key=lambda row: (row["boot_id"], row["process_id"], row["record_seq"])), window.facts, strict=True):
+            self.assertTrue(all(decoded[name] == value for name, value in raw.items()))
+        output = publication.build_publication(window, None, coverage)
+        points = [publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 6]
+        self.assertEqual(len(points), 20)
+        self.assertEqual(output.header["verified_build_links"] + output.header["partial_build_links"], 20)
+        self.assertGreater(output.header["qualified_build_points"], 0, [(row["bctx_sequence"], row["link_status"],
+            row["point_clock_status"], row["configuration_status"], row["publication_quality_flags"]) for row in points])
+        self.assertGreater(output.header["partial_build_links"], 0)
+        self.assertTrue(any(row["link_status"] == "outside_observed_prefix" for row in points))
+        self.assertTrue(all(not row["continuous_build_exposure_implied"] for row in points))
+        original = {builds.observation_key(row): row for row in rows if row["record_kind"] == 12}
+        for row in points:
+            expected = original[builds.observation_key(row)]
+            self.assertTrue(all(row[name] == (expected[name].hex() if name in builds.BYTE_FIELDS else expected[name]) for name in builds.FIELDS))
+        self.assertEqual(output.header["unavailable_build_points"], sum(row["bctx_status"] == 2 for row in points))
+        self.assertEqual({row["name"] for row in report_catalog(6)}, set(publication.BUILD_ROW_KINDS))
+        from scripts.telemetry.rollup_definitions import report_definition
+        with self.assertRaises(ValueError):
+            report_definition("battle_build_points", 5)
+        # All sealed generations continue over the valid new family without
+        # retaining it, changing their coverage or creating any output amount.
+        for version in (1, 2, 3, 5):
+            page = build_page_contributions([dict(row, ingest_id=index) for index, row in enumerate(original.values(), 1)],
+                RollupTarget(version, 2, *scope[2:]))
+            self.assertEqual((page.battle_inputs, page.coverage_start_utc_usec, page.coverage_end_utc_usec, page.state_quality_flags), ([], None, None, 0))
+
+    def test_build_configuration_is_retained_and_unknown_remains_unqualified(self):
+        rows, coverage = self._dated_build_rows()
+        window, _ = self._build_window(rows, capture_config=False)
+        output = publication.build_publication(window, None, coverage)
+        self.assertEqual(output.header["qualified_build_points"], 0)
+        self.assertEqual(output.header["configuration_unknown_build_points"], 20)
+        point = next(row for row in window.facts if row["record_kind"] == 12 and row["bctx_config_id"])
+        config = {name: point["bctx_" + name] for name in source.CONFIG_COLUMNS}
+        with self.assertRaisesRegex(source.SourceError, "configuration_conflict"):
+            source.retain_input(point, tuple(window.header[name] for name in source.SCOPE), 0,
+                configuration=dict(config, content_version=config["content_version"] + 1))
+        with self.assertRaisesRegex(publication.PublicationError, "incident_schema"):
+            publication.build_publication(window, None, incident.public_coverage(None, [], registry_schema_version=4))
+
+    def test_build_reference_loss_and_changed_clocks_stay_visible(self):
+        rows, coverage = self._dated_build_rows()
+        points = [row for row in rows if row["record_kind"] == 12]
+        window, _ = self._build_window(points)
+        output = publication.build_publication(window, None, coverage)
+        self.assertEqual(output.header["partial_build_links"], 20)
+        self.assertEqual(output.header["qualified_build_points"], 0)
+        self.assertTrue(all(publication.decode_row(tuple(window.header[name] for name in source.SCOPE), row)["link_status"] == "missing_packet"
+            for row in output.rows if row["row_kind"] == 6))
+        point = next(row for row in rows if row["record_kind"] == 12 and row["bctx_status"] == 1)
+        point["bctx_at_utc_usec"] += 123
+        point["occurrence_utc_usec"] = point["bctx_at_utc_usec"]
+        changed = history.build_history(rows, (point["bctx_environment_id"], point["bctx_season_id"]),
+            incident_coverage=coverage, incident_schema_version=5)
+        result = next(row for row in changed.builds if builds.observation_key(row) == builds.observation_key(point))
+        self.assertEqual(result["point_clock_status"], "mismatch")
+        self.assertTrue(result["publication_quality_flags"] & ROLLUP_QUALITY_UTC_MISMATCH)
+        point["bctx_at_monotonic_usec"] = 0
+        with self.assertRaisesRegex(history.HistoryError, "build_reference_clock"):
+            history.build_history(rows, (point["bctx_environment_id"], point["bctx_season_id"]), incident_schema_version=5)
+
+    def test_build_logical_conflicts_tampering_and_bounds_refuse(self):
+        rows, coverage = self._dated_build_rows()
+        window, inputs = self._build_window(rows)
+        scope = tuple(window.header[name] for name in source.SCOPE)
+        duplicate = dict(next(row for row in rows if row["record_kind"] == 12), record_seq=max(row["record_seq"] for row in rows) + 1)
+        with self.assertRaisesRegex(history.HistoryError, "logical_receipt_conflict"):
+            history.build_history([*rows, duplicate], scope[2:], incident_schema_version=5)
+        saved = deepcopy(window)
+        with self.assertRaisesRegex((publication.PublicationError, history.HistoryError), "output_capacity"):
+            publication.build_publication(window, None, coverage, max_output_rows=1)
+        with self.assertRaisesRegex(source.SourceError, "byte_capacity"):
+            source.verify_source(window.header, inputs, expected_scope=scope, expected_watermark=window.header["input_watermark"], max_total_bytes=1)
+        output = publication.build_publication(window, None, coverage)
+        raw = next(row for row in output.rows if row["row_kind"] == 6)
+        value = publication.decode_row(scope, raw)
+        for field, item in (("continuous_build_exposure_implied", True), ("point_context_verified", not value["point_context_verified"]),
+                ("bctx_equipment_digest", "0" * 64), ("point_clock_status", "invented")):
+            changed = dict(value, **{field: item})
+            with self.subTest(field=field), self.assertRaises((publication.PublicationError, builds.BuildContractError)):
+                publication.retain_row(scope, 6, changed)
+        for changes in ({"build_row_count": 21}, {"verified_build_links": 0, "partial_build_links": 20},
+                {"unavailable_build_points": 20}, {"configuration_unknown_build_points": 21}):
+            with self.subTest(header=changes), self.assertRaisesRegex(publication.PublicationError, "build_conservation"):
+                publication._validate_header(dict(output.header, **changes))
+        self.assertEqual(window, saved)
+
+    def test_build_and_association_loss_reviews_are_independent(self):
+        rows, coverage = self._dated_build_rows()
+        window, _ = self._build_window(rows)
+        scope = tuple(window.header[name] for name in source.SCOPE)
+        baseline = publication.build_publication(window, None, coverage)
+        point = next(publication.decode_row(scope, row) for row in baseline.rows if row["row_kind"] == 6 and
+            publication.decode_row(scope, row)["point_context_verified"])
+        for kind in (10, 12):
+            packet = dict(incident.template(5), environment_id=scope[2], season_id=scope[3], reviewer_token="a" * 64,
+                review_evidence_digest="b" * 64, reviewed_from_utc_usec=coverage["reviewed_from_utc_usec"],
+                reviewed_through_utc_usec=coverage["reviewed_through_utc_usec"])
+            packet["incidents"][0].update(producer_boot_id=point["boot_id"], producer_process_id=point["process_id"],
+                start_utc_usec=point["bctx_at_utc_usec"], end_utc_usec=point["bctx_at_utc_usec"], record_kind_mask=1 << kind,
+                evidence_digest="c" * 64)
+            meta, details = incident.validate_packet(packet)
+            details = [dict(row, occurrence_relation=incident.occurrence_relation(row, coverage["reviewed_from_utc_usec"],
+                coverage["reviewed_through_utc_usec"])) for row in details]
+            reviewed = incident.public_coverage(incident.publication_summary(scope, meta, details), details, registry_schema_version=5)
+            output = publication.build_publication(window, None, reviewed)
+            changed = next(publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 6 and
+                builds.observation_key(publication.decode_row(scope, row)) == builds.observation_key(point))
+            self.assertFalse(changed["point_context_verified"])
+            self.assertTrue(changed["publication_quality_flags"] & ROLLUP_QUALITY_INCIDENT_GAP)
+            if kind == 12:
+                self.assertEqual([row for row in output.rows if row["row_kind"] != 6], [row for row in baseline.rows if row["row_kind"] != 6])
+
+    def test_build_alias_lineage_preserves_original_reference_and_rejects_late_receipt(self):
+        donor = next(row for row in self.baseline.battles if row["retired_by_alias"])
+        facts = [dict(row, record_seq=row["record_seq"] * 2) for row in self.rows if row["record_kind"] == 10]
+        cut = next(row for row in facts if battle.battle_id(row) == donor["battle"] and row["battle_fact_kind"] == 4)
+        actor = next(row for row in facts if battle.battle_id(row) == donor["battle"] and row["battle_fact_kind"] == 2 and
+            row["battle_actor_kind"] == 1)
+        point = deepcopy(next(row for row in self.build_rows if row["record_kind"] == 12 and row["bctx_status"] == row["bctx_actor_kind"] == 1))
+        point.update(boot_id=cut["boot_id"], process_id=cut["process_id"], record_seq=cut["record_seq"] + 1,
+            bctx_battle_boot_id=cut["battle_boot_id"], bctx_battle_process_id=cut["battle_process_id"], bctx_battle_seq=cut["battle_seq"],
+            bctx_environment_id=cut["battle_environment_id"], bctx_season_id=cut["battle_season_id"], bctx_config_id=cut["battle_config_id"],
+            bctx_actor_id=actor["battle_actor_id"], bctx_association_revision=cut["battle_revision"],
+            bctx_association_fact_sequence=cut["battle_fact_sequence"], bctx_at_monotonic_usec=cut["battle_at_monotonic_usec"],
+            bctx_at_utc_usec=cut["battle_at_utc_usec"], occurrence_utc_usec=cut["battle_at_utc_usec"])
+        result = history.build_history([*facts, point], self.scope, incident_schema_version=5)
+        self.assertEqual(result.builds[0]["canonical_battle"], donor["canonical_battle"])
+        self.assertEqual(result.builds[0]["link_status"], "verified")
+        self.assertEqual(tuple(result.builds[0][name] for name in builds.BATTLE), donor["battle"])
+        point["record_seq"] = max(row["record_seq"] for row in facts) + 1
+        late = history.build_history([*facts, point], self.scope, incident_schema_version=5)
+        self.assertEqual(late.builds[0]["link_status"], "outside_observed_prefix")
+
+    def test_build_stale_reference_does_not_borrow_later_roster(self):
+        rows, coverage = self._dated_build_rows()
+        first = next(row for row in rows if row["record_kind"] == 12 and row["bctx_status"] == 1)
+        # Retain the verified earlier packet, but advance this point to a later
+        # admitted association boundary while preserving its old reference.
+        identity = tuple(first[name] for name in builds.BATTLE)
+        cuts = [row for row in rows if row["record_kind"] == 10 and battle.battle_id(row) == identity and
+            row["battle_fact_kind"] == 4 and row["battle_revision"] > first["bctx_association_revision"]]
+        cut = min(cuts, key=lambda row: row["record_seq"])
+        first.update(record_seq=cut["record_seq"] + 1, bctx_at_monotonic_usec=cut["battle_at_monotonic_usec"],
+            bctx_at_utc_usec=cut["battle_at_utc_usec"], occurrence_utc_usec=cut["battle_at_utc_usec"])
+        # Only this point is needed; another raw family's receipt does not change
+        # the association state, and the fixture sequence is made unique.
+        facts = [dict(row, record_seq=row["record_seq"] * 2) for row in rows if row["record_kind"] == 10]
+        first["record_seq"] = cut["record_seq"] * 2 + 1
+        result = history.build_history([*facts, first], (first["bctx_environment_id"], first["bctx_season_id"]),
+            incident_coverage=coverage, incident_schema_version=5)
+        self.assertEqual(result.builds[0]["link_status"], "stale_association")
 
     def _dated_publication_fixture(self, *, midnight=False):
         # Controlled coherent UTC labels qualify dated boundaries separately
@@ -1064,7 +1264,7 @@ class BattleHistoryTests(unittest.TestCase):
         with self.assertRaisesRegex(source.SourceError, "published_immutable"):
             source.advance_header(header, [], header["input_watermark"] + 1)
         from scripts.telemetry.rollup_definitions import SUPPORTED_DEFINITION_VERSIONS
-        self.assertEqual(SUPPORTED_DEFINITION_VERSIONS, {1, 2, 3, 5})
+        self.assertEqual(SUPPORTED_DEFINITION_VERSIONS, {1, 2, 3, 5, 6})
 
     def test_bounds_and_deadline_refuse_without_mutating_source(self):
         saved = deepcopy(self.rows)

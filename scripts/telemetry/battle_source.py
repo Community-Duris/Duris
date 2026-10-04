@@ -1,8 +1,8 @@
 """Exact bounded retained inputs for atomic shared-battle publication.
 
 This is the value contract consumed by the publication transaction. It validates
-canonical kinds 9/10/11, ties selected inputs to an ingestion checkpoint and
-refuses changed, missing or conflicting source. It performs no SQL, authorizes
+canonical kinds 9/10/11 (plus kind 12 for definition 6), ties selected inputs to
+an ingestion checkpoint and refuses changed, missing or conflicting source. It performs no SQL, authorizes
 no private review and does not activate a report definition or imply publication.
 """
 from __future__ import annotations
@@ -13,13 +13,14 @@ import json
 from typing import Any, Callable, Mapping, Sequence
 
 try:
-    from . import battle_contract as battle, battle_contribution_contract as contribution
+    from . import battle_contract as battle, battle_contribution_contract as contribution, battle_build_contract as builds
     from . import identity_history as identity, identity_publication, observation_semantics as observations, incident
     from .battle_history import HEADER
     from .rollup_definitions import BATTLE_DEFINITION_VERSION, ROLLUP_QUALITY_MASK
 except ImportError:
     import battle_contract as battle
     import battle_contribution_contract as contribution
+    import battle_build_contract as builds
     import identity_history as identity
     import identity_publication
     import observation_semantics as observations
@@ -28,6 +29,8 @@ except ImportError:
     from rollup_definitions import BATTLE_DEFINITION_VERSION, ROLLUP_QUALITY_MASK
 
 DEFINITION_VERSION = BATTLE_DEFINITION_VERSION  # Independent incident schema 4.
+BUILD_DEFINITION_VERSION = 6  # Independent incident schema 5; definition 5 stays sealed.
+DEFINITION_VERSIONS = frozenset((DEFINITION_VERSION, BUILD_DEFINITION_VERSION))
 SCOPE = observations.SCOPE
 REPLAY = identity_publication.REPLAY
 MAX_INPUTS = 16_384
@@ -43,10 +46,28 @@ SOURCE_COLUMNS = {
     9: (*identity_publication.SOURCE_COLUMNS[9], "ingested_utc_usec"),
     10: ("ingest_id", *HEADER, "ingested_utc_usec", *battle.FIELDS),
     11: ("ingest_id", *HEADER, "ingested_utc_usec", *contribution.FIELDS),
+    12: ("ingest_id", *HEADER, "ingested_utc_usec", *builds.FIELDS),
 }
 SOURCE_SCOPE = {9: ("environment_id", "season_id"),
-    10: ("battle_environment_id", "battle_season_id"), 11: ("bc_environment_id", "bc_season_id")}
+    10: ("battle_environment_id", "battle_season_id"), 11: ("bc_environment_id", "bc_season_id"),
+    12: ("bctx_environment_id", "bctx_season_id")}
 COUNTS = {9: "ownership_count", 10: "association_count", 11: "contribution_count"}
+CONFIG_COLUMNS = ("config_id", "environment_id", "season_id", "build_version", "content_version")
+
+
+def counts(scope):
+    return COUNTS | ({12: "build_count"} if scope[0] == BUILD_DEFINITION_VERSION else {})
+
+
+def header_columns(scope):
+    return (*HEADER_COLUMNS, "build_count") if scope[0] == BUILD_DEFINITION_VERSION else HEADER_COLUMNS
+
+
+def table(name, scope):
+    _scope(scope)
+    _require(name in ("telemetry_battle_source", "telemetry_battle_input",
+        "telemetry_rollup_battle_coverage", "telemetry_rollup_battle_row"), "battle_source_table")
+    return name + ("_v6" if scope[0] == BUILD_DEFINITION_VERSION else "")
 
 
 class SourceError(ValueError):
@@ -68,7 +89,7 @@ def _scope(value: Any) -> tuple[int, int, int, int]:
         identity.generation_scope(value)
     except identity.IdentityError as error:
         raise SourceError("battle_source_generation_scope") from error
-    _require(value[0] == DEFINITION_VERSION, "battle_source_definition")
+    _require(value[0] in DEFINITION_VERSIONS, "battle_source_definition")
     return value
 
 
@@ -96,19 +117,23 @@ def advance_digest(digest: bytes, row: Mapping[str, Any]) -> bytes:
         _bytes(row["payload_digest"], 32)).digest()
 
 
-def _source(row: Mapping[str, Any], scope: tuple[int, int, int, int], *, exact: bool) -> dict[str, int]:
+def _source(row: Mapping[str, Any], scope: tuple[int, int, int, int], *, exact: bool) -> dict[str, Any]:
     _require(isinstance(row, Mapping), "battle_source_mapping")
-    kind = _integer(row.get("record_kind"), lower=9, upper=11)
+    kind = _integer(row.get("record_kind"), lower=9, upper=12)
+    _require(kind in counts(scope), "battle_source_family_definition")
     if exact:
         _require(set(row) == set(SOURCE_COLUMNS[kind]), "battle_source_exact_fields")
     try:
-        if kind == 10:
+        if kind == 12:
+            builds.validate_raw_observation(row)
+        elif kind == 10:
             battle.validate_raw_fact(row)
         elif kind == 11:
             contribution.validate_raw_segment(row)
         else:
             observations.validate_observation(row)
-    except (battle.BattleContractError, contribution.ContributionContractError, observations.ObservationError) as error:
+    except (battle.BattleContractError, contribution.ContributionContractError,
+            builds.BuildContractError, observations.ObservationError) as error:
         raise SourceError(str(error)) from error
     _integer(row.get("ingest_id"), lower=1)
     _require(tuple(row[name] for name in SOURCE_SCOPE[kind]) == scope[2:], "battle_source_environment_season")
@@ -118,14 +143,32 @@ def _source(row: Mapping[str, Any], scope: tuple[int, int, int, int], *, exact: 
     ingested = row.get("ingested_utc_usec")
     value["ingested_utc_usec"] = contribution.UTC_UNKNOWN if ingested is None else _integer(
         ingested, lower=-(1 << 63), upper=(1 << 63) - 1)
-    _require(all(type(item) is int for item in value.values()), "battle_source_field_types")
+    _require(all(type(item) is bytes and len(item) == 32 if kind == 12 and name in builds.BYTE_FIELDS
+        else type(item) is int for name, item in value.items()), "battle_source_field_types")
     return value
 
 
-def retain_input(row: Mapping[str, Any], scope: tuple[int, int, int, int], quality: int) -> dict[str, Any]:
+def _configuration(configuration, source):
+    if configuration is None:
+        return None
+    _require(source["record_kind"] == 12 and isinstance(configuration, Mapping) and
+        set(configuration) == set(CONFIG_COLUMNS), "battle_source_configuration_fields")
+    result = {name: _integer(configuration[name], lower=1) for name in CONFIG_COLUMNS}
+    _require(all(result[name] == source["bctx_" + name] for name in CONFIG_COLUMNS),
+        "battle_source_configuration_conflict")
+    return result
+
+
+def retain_input(row: Mapping[str, Any], scope: tuple[int, int, int, int], quality: int, *, configuration=None) -> dict[str, Any]:
     scope = _scope(scope)
     source = _source(row, scope, exact=False)
-    payload = _canonical({"projection_quality": _quality(quality), "source": source})
+    packet = {"projection_quality": _quality(quality), "source": source}
+    if source["record_kind"] == 12:
+        packet["source"] = {name: value.hex() if name in builds.BYTE_FIELDS else value for name, value in source.items()}
+        packet["configuration"] = _configuration(configuration, source)
+    else:
+        _require(configuration is None, "battle_source_configuration_family")
+    payload = _canonical(packet)
     _require(len(payload) <= MAX_PAYLOAD_BYTES, "battle_source_payload_capacity")
     result = dict(zip(SCOPE, scope, strict=True))
     result.update({name: source[name] for name in ("ingest_id", *REPLAY, "record_kind")})
@@ -135,8 +178,9 @@ def retain_input(row: Mapping[str, Any], scope: tuple[int, int, int, int], quali
 
 @dataclass(frozen=True, slots=True)
 class DecodedInput:
-    source: Mapping[str, int]
+    source: Mapping[str, Any]
     projection_quality: int
+    configuration: Mapping[str, int] | None = None
 
 
 def decode_input(row: Mapping[str, Any], scope: tuple[int, int, int, int]) -> DecodedInput:
@@ -145,7 +189,7 @@ def decode_input(row: Mapping[str, Any], scope: tuple[int, int, int, int]) -> De
         tuple(row[name] for name in SCOPE) == scope, "battle_source_retained_scope_or_columns")
     for name in ("ingest_id", *REPLAY):
         _integer(row[name], lower=1)
-    _integer(row["record_kind"], lower=9, upper=11)
+    _require(row["record_kind"] in counts(scope), "battle_source_family_definition")
     payload = row["payload"]
     _require(type(payload) is bytes and 0 < len(payload) <= MAX_PAYLOAD_BYTES, "battle_source_payload_capacity")
     _require(hashlib.sha256(payload).digest() == _bytes(row["payload_digest"], 32), "battle_source_payload_digest")
@@ -153,33 +197,42 @@ def decode_input(row: Mapping[str, Any], scope: tuple[int, int, int, int]) -> De
         packet = incident.decode_evidence_packet(payload, max_bytes=MAX_PAYLOAD_BYTES)
     except incident.IncidentError as error:
         raise SourceError("battle_source_payload_json") from error
-    _require(type(packet) is dict and set(packet) == {"projection_quality", "source"} and
+    fields = {"projection_quality", "source"} | ({"configuration"} if row["record_kind"] == 12 else set())
+    _require(type(packet) is dict and set(packet) == fields and
         type(packet["source"]) is dict, "battle_source_payload_fields")
     _require(_canonical(packet) == payload, "battle_source_payload_canonical")
-    source = _source(packet["source"], scope, exact=True)
+    value = dict(packet["source"])
+    if row["record_kind"] == 12:
+        for name in builds.BYTE_FIELDS:
+            item = value.get(name)
+            _require(type(item) is str and len(item) == 64 and all(part in "0123456789abcdef" for part in item),
+                "battle_source_build_digest")
+            value[name] = bytes.fromhex(item)
+    source = _source(value, scope, exact=True)
     _require(all(source[name] == row[name] for name in ("ingest_id", *REPLAY, "record_kind")), "battle_source_payload_identity")
-    return DecodedInput(source, _quality(packet["projection_quality"]))
+    return DecodedInput(source, _quality(packet["projection_quality"]), _configuration(packet.get("configuration"), source))
 
 
 def initial_header(scope: tuple[int, int, int, int], watermark: int = 0) -> dict[str, Any]:
     result = dict(zip(SCOPE, _scope(scope), strict=True))
-    result.update({name: 0 for name in HEADER_COLUMNS[4:]})
+    result.update({name: 0 for name in header_columns(scope)[4:]})
     result.update(input_origin=_integer(watermark), input_watermark=watermark, source_digest=seed_digest(scope, watermark))
     return result
 
 
 def _header(header: Mapping[str, Any]) -> tuple[int, int, int, int]:
-    _require(isinstance(header, Mapping) and set(header) == set(HEADER_COLUMNS), "battle_source_header_fields")
+    _require(isinstance(header, Mapping) and set(SCOPE) <= set(header), "battle_source_header_fields")
     scope = _scope(tuple(header[name] for name in SCOPE))
+    _require(set(header) == set(header_columns(scope)), "battle_source_header_fields")
     _integer(header["input_origin"])
     _integer(header["input_watermark"])
     _integer(header["source_fact_count"], upper=MAX_INPUTS)
-    for name in COUNTS.values():
+    for name in counts(scope).values():
         _integer(header[name], upper=MAX_INPUTS)
     _quality(header["quality_flags"])
     _integer(header["publication_complete"], upper=1)
     _bytes(header["source_digest"], 32)
-    _require(header["input_origin"] <= header["input_watermark"] and sum(header[name] for name in COUNTS.values()) ==
+    _require(header["input_origin"] <= header["input_watermark"] and sum(header[name] for name in counts(scope).values()) ==
         header["source_fact_count"] <= header["input_watermark"] - header["input_origin"],
         "battle_source_header_count")
     return scope
@@ -214,7 +267,7 @@ def advance_header(header: Mapping[str, Any], inputs: Sequence[Mapping[str, Any]
         _require(receipt not in receipts, "battle_source_duplicate_receipt")
         receipts.add(receipt)
         result["source_digest"] = advance_digest(result["source_digest"], row)
-        result[COUNTS[row["record_kind"]]] += 1
+        result[counts(scope)[row["record_kind"]]] += 1
         result["quality_flags"] |= decoded.projection_quality
     result.update(input_watermark=watermark, source_fact_count=result["source_fact_count"] + len(inputs))
     _header(result)
@@ -224,9 +277,10 @@ def advance_header(header: Mapping[str, Any], inputs: Sequence[Mapping[str, Any]
 @dataclass(frozen=True, slots=True)
 class VerifiedSource:
     header: Mapping[str, Any]
-    facts: tuple[Mapping[str, int], ...]
+    facts: tuple[Mapping[str, Any], ...]
     projection_qualities: tuple[int, ...]
     reserved_bytes: int
+    configurations: tuple[Mapping[str, int] | None, ...] = ()
 
 
 def verify_source(header: Mapping[str, Any], inputs: Sequence[Mapping[str, Any]], *,
@@ -245,7 +299,7 @@ def verify_source(header: Mapping[str, Any], inputs: Sequence[Mapping[str, Any]]
         "battle_source_state_checkpoint")
     reserved = _reservation(inputs, max_total_bytes, check_deadline)
     digest, previous, receipts = seed_digest(scope, expected_origin), expected_origin, set()
-    counts, quality, facts, qualities = dict.fromkeys(COUNTS.values(), 0), 0, [], []
+    totals, quality, facts, qualities, configurations = dict.fromkeys(counts(scope).values(), 0), 0, [], [], []
     for row in inputs:
         check_deadline()
         decoded = decode_input(row, scope)
@@ -254,12 +308,13 @@ def verify_source(header: Mapping[str, Any], inputs: Sequence[Mapping[str, Any]]
         receipt = tuple(row[name] for name in REPLAY)
         _require(receipt not in receipts, "battle_source_duplicate_receipt")
         receipts.add(receipt)
-        counts[COUNTS[row["record_kind"]]] += 1
+        totals[counts(scope)[row["record_kind"]]] += 1
         quality |= decoded.projection_quality
         facts.append(dict(decoded.source))
         qualities.append(decoded.projection_quality)
+        configurations.append(decoded.configuration)
         digest = advance_digest(digest, row)
     _require(len(inputs) == header["source_fact_count"] and digest == header["source_digest"] and
-        all(counts[name] == header[name] for name in COUNTS.values()), "battle_source_missing_or_changed")
+        all(totals[name] == header[name] for name in counts(scope).values()), "battle_source_missing_or_changed")
     _require(quality & ~header["quality_flags"] == 0, "battle_source_header_quality")
-    return VerifiedSource(dict(header), tuple(facts), tuple(qualities), reserved)
+    return VerifiedSource(dict(header), tuple(facts), tuple(qualities), reserved, tuple(configurations))

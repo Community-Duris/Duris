@@ -38,7 +38,7 @@ from rollup_engine import RollupEngine, RollupBounds, BoundsExceeded, SemanticEr
 from test_telemetry_observations import ownership
 
 
-def qualify_native_build_storage(query, executable, run_environment, export):
+def qualify_native_build_storage(query, executable, run_environment, export, environment, command, name):
     """Actual cached reader/worker/writer values; retained reports remain sealed."""
     origin = query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"]
     public = query("SELECT * FROM telemetry_rollup_battle_row ORDER BY definition_version,generation,environment_id,season_id,row_kind,row_key")
@@ -46,9 +46,9 @@ def qualify_native_build_storage(query, executable, run_environment, export):
         env=dict(run_environment, TELEMETRY_BUILD_CAPTURE_EXPORT=str(export)), check=True, timeout=30)
     emitted = [json.loads(line) for line in export.read_text(encoding="utf-8").splitlines()]
     for row in emitted:
-        for name, _, signed in battle_build_contract.FIELD_LAYOUT:
+        for field, _, signed in battle_build_contract.FIELD_LAYOUT:
             if signed is None:
-                row[name] = bytes.fromhex(row[name])
+                row[field] = bytes.fromhex(row[field])
         battle_build_contract.validate_raw_observation(row)
     receipt = lambda row: (row["boot_id"], row["process_id"], row["record_seq"])
     stored = query("SELECT " + ",".join(RAW_COLUMNS) +
@@ -70,11 +70,238 @@ def qualify_native_build_storage(query, executable, run_environment, export):
                     "bctx_build_version", "bctx_content_version", "bctx_environment_id", "bctx_season_id"))
     assert query("SELECT * FROM telemetry_rollup_battle_row ORDER BY definition_version,generation,environment_id,season_id,row_kind,row_key") == public
     assert query("SELECT COUNT(*) AS n FROM telemetry_quarantine")[0]["n"] == 0
-    return dict(native_build_capture=True, native_build_records=20, native_build_fields=110,
+    qualification = qualify_native_build_publication(query, environment, command, name, origin)
+    return dict(qualification, native_build_capture=True, native_build_records=20, native_build_fields=110,
         native_build_sql_exact=True, native_build_exact_association=True,
         native_build_configuration_gaps=True, native_build_partial_families=True,
-        native_build_periodic_lifetime_safe=True, native_build_retained_publication=False,
+        native_build_periodic_lifetime_safe=True, native_build_retained_publication=True,
         native_build_running_server=False)
+
+
+def qualify_native_build_publication(query, environment, command, name, origin):
+    """Exact native points retained/published with restricted definition-6 roles."""
+    token = hashlib.sha256(name.encode()).hexdigest()[:12]
+    password = "synthetic-build-publication-" + token
+    users, adapters = [], []
+    selected = query("SELECT " + ",".join(RAW_COLUMNS) +
+        " FROM telemetry_interval WHERE ingest_id>%s AND record_kind IN (9,10,11,12) ORDER BY ingest_id", (origin,))
+    first = next(row for row in selected if row["record_kind"] == 12)
+    target = RollupTarget(6, 1, first["bctx_environment_id"], first["bctx_season_id"])
+    through = query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"]
+    tables = ("telemetry_battle_source_v6", "telemetry_battle_input_v6", "telemetry_rollup_battle_coverage_v6", "telemetry_rollup_battle_row_v6")
+    old_public = {table: query("SELECT * FROM " + table + " ORDER BY definition_version,generation,environment_id,season_id" +
+        (",row_kind,row_key" if table.endswith("_row") else "")) for table in ("telemetry_rollup_battle_row", "telemetry_rollup_battle_coverage")}
+    scope_where = "definition_version=%s AND generation=%s AND environment_id=%s AND season_id=%s"
+    try:
+        grants = {
+            "rollup": {"telemetry_rollup_state": "SELECT,INSERT,UPDATE", "telemetry_generation_identity": "SELECT,INSERT",
+                "telemetry_interval": "SELECT", "telemetry_config": "SELECT", "telemetry_identity_registry": "SELECT",
+                "telemetry_identity_association": "SELECT", "telemetry_incident_registry_v5": "SELECT", "telemetry_incident_v5": "SELECT",
+                tables[0]: "SELECT,INSERT,UPDATE", tables[1]: "SELECT,INSERT", tables[2]: "SELECT,INSERT", tables[3]: "SELECT,INSERT",
+                "telemetry_rollup_incident_coverage": "SELECT,INSERT", "telemetry_rollup_incident": "SELECT,INSERT"},
+            "report": {"telemetry_rollup_state": "SELECT", "telemetry_generation_identity": "SELECT", tables[2]: "SELECT", tables[3]: "SELECT",
+                "telemetry_rollup_incident_coverage": "SELECT", "telemetry_rollup_incident": "SELECT"},
+            "review": {"telemetry_interval": "SELECT", "telemetry_incident_registry_v5": "SELECT,INSERT", "telemetry_incident_v5": "SELECT,INSERT"},
+        }
+        for role, permissions in grants.items():
+            user = "tbr_build_" + role + "_" + token
+            query("CREATE USER %s@'%%' IDENTIFIED BY %s", (user, password))
+            users.append(user)
+            for table, permission in permissions.items():
+                query(f"GRANT {permission} ON `{name}`.`{table}` TO %s@'%%'", (user,))
+
+        def adapter(role):
+            database = PyMySQLRollupDatabase(PyMySQLConnectionFactory(ConnectionSettings(host="127.0.0.1",
+                port=int(environment["DB_PORT"]), database=name, user="tbr_build_" + role + "_" + token, password=password)))
+            adapters.append(database)
+            return database
+
+        rollup, reporter, reviewer = adapter("rollup"), adapter("report"), adapter("review")
+        rollup.reserve_identity_generation(target.scope_tuple, None)
+        commit, lost_page_ack = rollup._commit, [False]
+        def lose_page_ack():
+            commit()
+            if not lost_page_ack[0]:
+                lost_page_ack[0] = True
+                raise AmbiguousCommit("fixture_build_source_lost_ack")
+        rollup._commit = lose_page_ack
+        try:
+            assert RollupEngine(rollup).run(target, origin_ingest_id=origin, through_ingest_id=through,
+                bounds=RollupBounds(page_size=3, max_runtime_s=30)).complete
+        finally:
+            rollup._commit = commit
+        assert lost_page_ack[0]
+        retained = rollup.read_battle_source(target)
+        assert retained.header["build_count"] == 20 and len(retained.facts) == len(selected)
+        for raw, value, config in zip(selected, retained.facts, retained.configurations, strict=True):
+            assert all(value[field] == raw[field] for field in retained_source.SOURCE_COLUMNS[raw["record_kind"]])
+            if raw["record_kind"] == 12 and raw["bctx_config_id"]:
+                assert config == {field: raw["bctx_" + field] for field in retained_source.CONFIG_COLUMNS}
+            else:
+                assert config is None
+
+        for table in (tables[0], tables[1], "telemetry_interval", "telemetry_config", "telemetry_incident_registry_v5", "telemetry_incident_v5"):
+            try:
+                reporter._execute("SELECT COUNT(*) AS n FROM " + table)
+            except Exception as error:
+                assert getattr(error.__cause__, "args", (None,))[0] == 1142 or getattr(error, "args", (None,))[0] == 1142
+            else:
+                raise AssertionError("build report role can read private inputs")
+        try:
+            rollup.publish_generation(target, bounds=RollupBounds(max_output_fanout=1))
+        except SemanticError as error:
+            assert "output_capacity" in str(error)
+        else:
+            raise AssertionError("build publication fanout bound not enforced")
+        assert rollup.read_state(target)["publication_status"] == PUBLICATION_BUILDING
+        assert query("SELECT COUNT(*) AS n FROM " + tables[2])[0]["n"] == 0
+        assert not rollup.read_battle_source(target).header["publication_complete"]
+
+        # A detail refusal rolls back coverage, source completion and status.
+        execute = rollup._execute
+        def refuse_detail(statement, parameters=()):
+            if statement.startswith("INSERT INTO " + tables[3]):
+                raise SemanticError("fixture_build_detail_refusal")
+            return execute(statement, parameters)
+        rollup._execute = refuse_detail
+        try:
+            try:
+                rollup.publish_generation(target)
+            except SemanticError as error:
+                assert str(error) == "fixture_build_detail_refusal"
+            else:
+                raise AssertionError("build detail refusal was not reached")
+        finally:
+            rollup._execute = execute
+        assert query("SELECT COUNT(*) AS n FROM " + tables[2])[0]["n"] == 0
+        assert query("SELECT COUNT(*) AS n FROM telemetry_rollup_incident_coverage WHERE " + scope_where, target.scope_tuple)[0]["n"] == 0
+
+        # Review an explicit independent schema-5 inventory; older schema-4
+        # reviews are never reused to certify the new family.
+        occurrences = [row["occurrence_utc_usec"] for row in selected if row["occurrence_utc_usec"] != incident.UTC_UNKNOWN]
+        packet = dict(incident.template(5), incidents=[], environment_id=target.environment_id, season_id=target.season_id,
+            reviewer_token="a" * 64, review_evidence_digest="b" * 64,
+            reviewed_from_utc_usec=min(occurrences) - 1, reviewed_through_utc_usec=max(occurrences) + 1)
+        assert reviewer.register_incident_packet(packet)["status"] == "registered"
+        lost_public_ack = [False]
+        def lose_public_ack():
+            commit()
+            if not lost_public_ack[0]:
+                lost_public_ack[0] = True
+                raise AmbiguousCommit("fixture_build_publication_lost_ack")
+        rollup._commit = lose_public_ack
+        try:
+            assert rollup.publish_generation(target)["status"] == "published"
+        finally:
+            rollup._commit = commit
+        assert lost_public_ack[0]
+        reports = {report: reporter.read_report(target, report) for report in battle_publication.BUILD_ROW_KINDS}
+        points = reports["battle_build_points"]
+        assert len(points.rows) == 20 and not points.truncated
+        assert points.coverage.incident_coverage["registry_schema_version"] == 5
+        assert points.coverage.battle_coverage["build_row_count"] == 20
+        assert points.coverage.battle_coverage["verified_build_links"] + points.coverage.battle_coverage["partial_build_links"] == 20
+        assert all(not row["continuous_build_exposure_implied"] for row in points.rows)
+        raw_points = {battle_build_contract.observation_key(row): row for row in selected if row["record_kind"] == 12}
+        for row in points.rows:
+            raw = raw_points[battle_build_contract.observation_key(row)]
+            assert all(row[field] == (raw[field].hex() if field in battle_build_contract.BYTE_FIELDS else raw[field])
+                for field in battle_build_contract.FIELDS)
+        assert rollup.publish_generation(target)["status"] == "published"
+        assert reporter.read_report(target, "battle_build_points") == points
+        tiny = reporter.read_report(target, "battle_build_points", max_rows=1)
+        assert tiny.truncated and len(tiny.rows) == 1
+        cli_environment = dict(environment, TELEMETRY_ROLLUP_DB_HOST="127.0.0.1", TELEMETRY_ROLLUP_DB_PORT=str(environment["DB_PORT"]),
+            TELEMETRY_ROLLUP_DB_DATABASE=name, TELEMETRY_ROLLUP_DB_USER="tbr_build_report_" + token, TELEMETRY_ROLLUP_DB_PASSWORD=password)
+        args = ["--definition-version", "6", "--generation", "1", "--environment-id", str(target.environment_id), "--season-id", str(target.season_id)]
+        result = subprocess.run([sys.executable, "scripts/telemetry/rollup.py", "report", "--name", "battle_build_points", *args],
+            cwd=ROOT, env=cli_environment, check=True, capture_output=True, text=True, timeout=45)
+        assert json.loads(result.stdout)["rows"] == list(points.rows)
+
+        # A real kind-12 incident publishes through the shared public snapshot
+        # store. A corrected review belongs to a new generation; it cannot
+        # reinterpret the earlier generation's frozen inventory or point rows.
+        corrected = dict(packet, registry_version=2, previous_registry_version=1)
+        loss = dict(incident.template(5)["incidents"][0], producer_boot_id=first["boot_id"], producer_process_id=first["process_id"],
+            record_kind_mask=1 << 12, start_utc_usec=first["occurrence_utc_usec"], end_utc_usec=first["occurrence_utc_usec"],
+            first_record_seq=first["record_seq"], last_record_seq=first["record_seq"], evidence_digest="c" * 64)
+        corrected["incidents"] = [loss]
+        assert reviewer.register_incident_packet(corrected)["status"] == "registered"
+        next_target = replace(target, generation=2)
+        rollup.reserve_identity_generation(next_target.scope_tuple, None)
+        assert RollupEngine(rollup).run(next_target, origin_ingest_id=origin, through_ingest_id=through,
+            bounds=RollupBounds(page_size=3, max_runtime_s=30)).complete
+        assert rollup.publish_generation(next_target)["status"] == "published"
+        changed = reporter.read_report(next_target, "battle_build_points")
+        assert changed.coverage.incident_coverage["registry_version"] == 2
+        assert changed.coverage.incident_coverage["incidents"][0]["record_kind_mask"] == 1 << 12
+        lost = next(row for row in changed.rows if battle_build_contract.observation_key(row) == battle_build_contract.observation_key(first))
+        assert not lost["point_context_verified"] and lost["publication_quality_flags"] & incident.QUALITY_INCIDENT_GAP
+        frozen = reporter.read_report(target, "battle_build_points")
+        assert frozen.rows == points.rows and frozen.coverage.battle_coverage == points.coverage.battle_coverage
+        assert frozen.coverage.incident_coverage == points.coverage.incident_coverage
+        assert frozen.coverage.publication_status == PUBLICATION_SUPERSEDED
+        points = frozen
+
+        # Raw retention and later catalogue changes cannot alter this generation.
+        config_id = first["bctx_config_id"]
+        query("UPDATE telemetry_config SET content_version=content_version+1 WHERE config_id=%s", (config_id,))
+        query("DELETE FROM telemetry_interval WHERE ingest_id>%s", (origin,))
+        assert rollup.read_battle_source(target) == replace(retained, header=dict(retained.header, publication_complete=1))
+        assert rollup.publish_generation(next_target)["status"] == "published"
+        assert reporter.read_report(target, "battle_build_points") == points
+        for table, expected in old_public.items():
+            assert query("SELECT * FROM " + table + " ORDER BY definition_version,generation,environment_id,season_id" +
+                (",row_kind,row_key" if table.endswith("_row") else "")) == expected
+        schema = ROOT / "migrations/immutable/0066_telemetry_build_publication.sql"
+        fingerprint = runtime_fingerprint(environment)
+        def apply():
+            subprocess.run(command + [name], input=schema.read_bytes(), env=environment, check=True, stdout=subprocess.DEVNULL)
+        def verify(expected=True):
+            result = subprocess.run(["bash", str(schema.with_suffix(".sh"))], env=environment, capture_output=True, timeout=45)
+            assert (result.returncode == 0) is expected, result.stderr.decode(errors="replace")
+        apply()
+        verify()
+        query("ALTER TABLE telemetry_battle_input_v6 MODIFY payload VARBINARY(8191) NOT NULL")
+        verify(False)
+        apply()
+        verify(False)
+        query("ALTER TABLE telemetry_battle_input_v6 MODIFY payload VARBINARY(8192) NOT NULL")
+        verify()
+        query("ALTER TABLE telemetry_battle_input_v6 DROP INDEX uq_battle6_input_replay, "
+            "ADD UNIQUE KEY uq_battle6_input_replay (definition_version,generation,environment_id,season_id,record_seq,boot_id,process_id)")
+        verify(False)
+        apply()
+        verify(False)
+        query("ALTER TABLE telemetry_battle_input_v6 DROP INDEX uq_battle6_input_replay, "
+            "ADD UNIQUE KEY uq_battle6_input_replay (definition_version,generation,environment_id,season_id,boot_id,process_id,record_seq)")
+        verify()
+        drop = "DROP CONSTRAINT" if "mariadb" in os.environ["TELEMETRY_REPOSITORY_DB_IMAGE"] else "DROP CHECK"
+        query(f"ALTER TABLE telemetry_rollup_battle_row_v6 {drop} chk_battle6_row_kind")
+        query("ALTER TABLE telemetry_rollup_battle_row_v6 ADD CONSTRAINT chk_battle6_row_kind CHECK (row_kind BETWEEN 1 AND 7)")
+        verify(False)
+        apply()
+        verify(False)
+        query(f"ALTER TABLE telemetry_rollup_battle_row_v6 {drop} chk_battle6_row_kind")
+        query("ALTER TABLE telemetry_rollup_battle_row_v6 ADD CONSTRAINT chk_battle6_row_kind CHECK (row_kind BETWEEN 1 AND 6)")
+        verify()
+        assert runtime_fingerprint(environment) == fingerprint
+        assert reporter.read_report(target, "battle_build_points") == points
+        return dict(build_publication_definition=6, build_publication_incident_schema=5,
+            build_publication_exact_points=20, build_publication_retained_configuration=True,
+            build_publication_private_roles=True, build_publication_rollback=True, build_publication_bounded_reports=True,
+            build_publication_page_lost_acknowledgement=True, build_publication_lost_acknowledgement=True,
+            build_publication_kind_twelve_loss=True, build_publication_review_correction=True, build_publication_old_generation_immutable=True,
+            build_publication_cli=True, build_publication_raw_retention=True, build_publication_catalogue_independent=True,
+            build_publication_sealed_definition_five_preserved=True, build_publication_schema_rerun=True,
+            build_publication_schema_drift_refused=True, build_publication_restored_metadata=True,
+            build_publication_qualified_points=points.coverage.battle_coverage["qualified_build_points"],
+            build_publication_partial_links=points.coverage.battle_coverage["partial_build_links"])
+    finally:
+        for database in adapters:
+            database.close()
+        for user in users:
+            query("DROP USER IF EXISTS %s@'%%'", (user,))
 
 
 def qualify_native_control_publication(query, rollup, reporter, executable, run_environment, export):
@@ -828,7 +1055,7 @@ def qualify() -> None:
                 native_sql_writer=True, private_writer=True, running_server=False)
             result.update(persistence)
             result.update(qualify_native_build_storage(query, executable, run_environment,
-                export.with_name("builds.jsonl")))
+                export.with_name("builds.jsonl"), environment, command, name))
             if artifact := os.environ.get("TELEMETRY_BATTLE_RUNTIME_RESULT"):
                 Path(artifact).write_text(json.dumps(result, indent=2) + "\n")
             print(json.dumps(result, sort_keys=True), flush=True)

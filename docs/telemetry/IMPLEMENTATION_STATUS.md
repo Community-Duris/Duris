@@ -28,14 +28,15 @@ work. A future production deployment is a separate operational decision.
 | Atomic battle observation publication | Implemented and locally qualified | Migration 0064 publishes source coverage, canonical/original battles, latest actors, disjoint contributions, dated exposure and every original association with reserved identity and independent schema-4 loss coverage in one transaction. Fifty-six focused regressions and both full-64-step native-writer SQL journeys qualify exact native values, ownership/review/day cuts, explicit unknowns, rollback, lost acknowledgements, immutable older generations, snapshot tamper refusal, bounds, restricted CLI/report roles and guarded drift/restoration. Definition 5 exposes five observation reports; definitions 1/2/3 retain their meanings. Complete balance suites and remaining native/personal-server evidence remain required. See [BATTLES.md](BATTLES.md#atomic-battle-observation-publication). |
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Accepted blindness and stun applications | Implemented and locally qualified | Actual `blind`/`Stun` success boundaries feed the existing bounded kind-11 accumulator after effect mutation and before teardown. New segments declare producer mask 31; older unavailable control remains NULL. Normal/ASan/UBSan, 58 history/publication regressions and both full-64-step native-writer SQL journeys preserve eight applications/eight received through eight verified published segments. Source-service seams, partial producer coverage and unobserved duration/resistance remain explicit. See [BATTLES.md](BATTLES.md#accepted-blindness-and-stun-control-capture). |
-| Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/accepted-control/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Definition 5 publishes these observations with exact association/alias/source and independent loss coverage. Accepted control currently covers `blind`/`Stun`; other effect producers, typed attempts/resistance/duration, prevention and faction exposure remain required. Compact build/power/arena context, typed outcomes, the full balance suites and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
+| Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/accepted-control/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Definition 5 publishes these observations with exact association/alias/source and independent loss coverage. Accepted control currently covers `blind`/`Stun`; other effect producers, typed attempts/resistance/duration, prevention and faction exposure remain required. Complete build/power/arena comparisons, typed outcomes, the full balance suites and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
 | #487: economic projection compatibility | Pending audit and implementation | Reuse current accounting reconciliation where it meets acceptance; project canonical earned receipts without counting compatibility ledgers, transfers or openings as new rewards. |
 | #258: local observational acceptance and final runbook | In progress | Initial readiness/capacity recovery is implemented and qualified in executable fixtures. Remaining: dedicated roles/catalog, real session/progression readback, normal gameplay/save, failure/recovery and a single reproducible local qualification command. |
-| Native compact build snapshot reader | Reader and cached capture qualified | Version-1 value reader preserves exact class masks/spec, base/effective resources/stats, fixed equipment declarations, learned epic skill fingerprints, bounded listed effects and independent arena room/roster observations. The 440-byte snapshot has explicit unavailable/partial families. A fixed cache gates entry/change/configuration/periodic/recovery reads before gear/epic scans, including combat callbacks. Normal/ASan/UBSan, lifetime/cap/queue-loss checks, both runtime variants, history/publication regressions and the server build pass. Complete reviewed classification, report publication and actual personal-server evidence remain required. See [BATTLES.md](BATTLES.md#native-cached-build-capture). |
-| Durable selected build observations and loss review | Storage and native capture qualified; publication pending | Kind 12 has 110 typed fields, a 447-byte portable encoding and a 448-byte C++ payload. Migration 0065, exact logical replay, DMSTLJ04 and independent private incident schema 5 remain qualified. Native cached capture now supplies fresh point keys and empty unavailable markers. Both full-65-step SQL journeys persist 20 actual reader/runtime/worker points with exact values and association/configuration references. Existing definitions 1/2/3/5 retain their meanings; new build publication remains required. See [BATTLES.md](BATTLES.md#native-cached-build-capture). |
+| Native compact build snapshot reader | Reader and cached capture qualified | Version-1 value reader preserves exact class masks/spec, base/effective resources/stats, fixed equipment declarations, learned epic skill fingerprints, bounded listed effects and independent arena room/roster observations. The 440-byte snapshot has explicit unavailable/partial families. A fixed cache gates entry/change/configuration/periodic/recovery reads before gear/epic scans, including combat callbacks. Normal/ASan/UBSan, lifetime/cap/queue-loss checks, both runtime variants, history/publication regressions and the server build pass. Exact point publication is qualified below; complete reviewed classification, comparison suites and actual personal-server evidence remain required. See [BATTLES.md](BATTLES.md#native-cached-build-capture). |
+| Durable selected build observations and loss review | Storage, native capture and point publication qualified | Kind 12 has 110 typed fields, a 447-byte portable encoding and a 448-byte C++ payload. Migration 0065, exact logical replay, DMSTLJ04 and independent private incident schema 5 remain qualified. Native cached capture supplies fresh point keys and empty unavailable markers. Migration 0066 retains and publishes the exact points under independent definition 6, as described below. Existing definitions 1/2/3/5 retain their meanings. See [BATTLES.md](BATTLES.md#native-cached-build-capture). |
+| Retained build point publication | Implemented and locally qualified | Definition 6 retains all 110 kind-12 fields, arrival labels and configuration evidence with the cursor; publishes exact points and independent schema-5 coverage through the existing bounded pipeline. Sixty-five history/publication regressions and both full-66-step native-writer SQL journeys qualify all 20 points, missing/stale/retired references, clock and configuration uncertainty, independent kind-10/12 loss, review corrections, old-generation immutability, rollback, lost acknowledgements, raw-retention independence, the restricted report CLI and guarded schema drift/restoration. Points establish no continuous build exposure or damage attribution. Full comparison suites and personal-server evidence remain required. See [BATTLES.md](BATTLES.md#retained-build-point-publication). |
 
 ## Qualified first-layer checks
 
@@ -1512,3 +1513,60 @@ canonical economic compatibility remain required. All seven final accepted
 requirements retain their unfinished portions; production or staging access is
 unnecessary. See [BATTLES.md](BATTLES.md#native-cached-build-capture) for exact
 boundaries, limits and maintained local commands.
+
+## Retained build point publication
+
+The retained kind-12 publication step is implemented under independent report
+definition **6**, with its own exact source/publication stores and schema-5 loss
+coverage. Definition 5's kinds 9–11, schema-4 reviews, tables, row shapes and
+published generations retain their meaning. All 110 fields and their digests
+are retained with configuration evidence at the input page/cursor transaction.
+Publication verifies association packets, live actor kind, original/canonical
+alias lineage, producer clocks, stale references and closed observed prefixes.
+The `battle_build_points` report retains unknown families and partial/gap points.
+
+Point context qualification is distinct from family availability and from
+verified packet links. Unknown buff origin and unavailable families remain
+visible. A qualified point has no inferred continuous exposure, contribution
+amount, human identity or arena result. Those limits prevent a later gear change
+or a grace-tail read from rewriting earlier battle evidence.
+
+Migration **0066_telemetry_build_publication** adds four protected stores, with
+all three prefixes and boot/lifecycle consumers updated to **66 steps / 260
+tables**. Earlier immutable migrations are unchanged. Measured fresh/restored
+normalized fingerprints are:
+
+- MariaDB 10.11.14:
+  `292d480353901e4b197a89a73667e3cd81b7beb747b343e9bc0acd1fff0fa3f3`.
+- MySQL 8.0.46:
+  `22cdbdb0f767e1bf3dd62405692c9f180c15b3865ba24cfddbe7c2ea3b0d3e29`.
+
+The expanded native history suite has **65 passing tests**, including exact
+retained fields/configuration, partial families, missing packet/configuration,
+invalid clocks, alias and stale references, independent kind-10/kind-12 loss,
+logical conflicts, tampering and bounded refusal. Both full-chain SQL journeys
+qualify **20 actual native reader/runtime/worker/private-writer points** through
+retention and atomic publication. Restricted report roles, source/publication
+lost acknowledgements, rollback, CLI access, raw retention/catalog changes,
+guarded reruns and column/index/check drift with exact restoration pass. A
+separate corrected schema-5 review publishes actual kind-12 loss under a new
+generation while preserving the earlier generation's frozen inventory and rows.
+The 123-fact/38-packet/28-link, 112/112 damage and 8/8 accepted-control journeys
+remain qualified. Coverage durations and qualification counts depend on their
+actual captured clocks; controlled dated fixtures are separately labeled.
+
+The maintained server build, changed-line formatting, rollup, incident,
+reservation/budget, migration, lifecycle and boot contract checks qualify this
+increment. These executable gameplay objects and service seams still do not
+establish personal-server authentication/save/readback or measured performance.
+All seven final accepted requirements retain unfinished portions.
+
+**Next executable expectation:** complete the remaining native
+control/prevention/faction and typed death/escape/objective producers and their
+battle reports, then qualify actual personal-local gameplay/readback/performance.
+Distinct PvE attempts/objectives/recovery/reward linkage, rested/assistance and
+milestone/switching/portfolio additions, the four complete suites/statistical
+exports and #487 canonical economic compatibility remain required under #258.
+Production/staging access is unnecessary. See
+[BATTLES.md](BATTLES.md#retained-build-point-publication) for exact semantics,
+limits, permissions and maintained local commands.

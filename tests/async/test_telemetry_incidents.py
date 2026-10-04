@@ -79,7 +79,7 @@ class IncidentSemantics(unittest.TestCase):
         self.assertNotEqual(first["packet_digest"], second["packet_digest"])
         with self.assertRaisesRegex(incident.IncidentError, "stored_inventory_digest_mismatch"):
             incident.validate_stored(first, rows, registry_schema_version=2)
-        self.assertEqual([incident.generation_schema(v) for v in (1, 2, 3, 4, 5)], [1, 1, 2, 3, 4])
+        self.assertEqual([incident.generation_schema(v) for v in (1, 2, 3, 4, 5, 6)], [1, 1, 2, 3, 4, 5])
         for version in (True, 0, 6, "2", None):
             with self.assertRaises(incident.IncidentError):
                 incident.template(version)

@@ -17,7 +17,7 @@ from typing import Any, Callable, Mapping
 
 try:
     from . import battle_source as source, battle_history as history, battle_contract as battle
-    from . import battle_contribution_contract as contribution, identity_history as identity
+    from . import battle_contribution_contract as contribution, battle_build_contract as builds, identity_history as identity
     from . import identity_publication, observation_semantics as observations, incident
     from .rollup_definitions import ROLLUP_QUALITY_MASK, ROLLUP_QUALITY_UTC_FANOUT, UNKNOWN_DAY
 except ImportError:
@@ -25,6 +25,7 @@ except ImportError:
     import battle_history as history
     import battle_contract as battle
     import battle_contribution_contract as contribution
+    import battle_build_contract as builds
     import identity_history as identity
     import identity_publication
     import observation_semantics as observations
@@ -43,6 +44,7 @@ REPORT_METADATA_BYTE_BOUND = 3 * source.HEADER_BYTE_BOUND + 2 * incident.MAX_PAC
     incident.MAX_INCIDENTS + 1) * incident.INCIDENT_ROW_BYTE_BOUND + (MAX_OUTPUT_ROWS + 1) * SNAPSHOT_ROW_BYTE_BOUND
 ROW_COLUMNS = (*SCOPE, "row_kind", "row_key", "payload", "payload_digest", "quality_flags")
 ROW_KINDS = {"battle_observations": 1, "battle_actors": 2, "battle_contributions": 3, "battle_exposure": 4, "battle_associations": 5}
+BUILD_ROW_KINDS = {**ROW_KINDS, "battle_build_points": 6}
 COUNT_FIELDS = ("battle_row_count", "actor_row_count", "contribution_row_count", "exposure_row_count", "association_row_count")
 COVERAGE_COLUMNS = (*source.HEADER_COLUMNS, "snapshot_digest", *COUNT_FIELDS,
     "complete_packet_count", "incomplete_packet_count", "alias_count", "canonical_battle_count",
@@ -68,11 +70,33 @@ EXPOSURE_FIELDS = ("source_battle", "start_association", "through_association", 
     "history_verified", "complete_population_coverage_implied", "canonical_battle", "utc_day", *IDENTITY_FIELDS)
 ASSOCIATION_FIELDS = (*source.SOURCE_COLUMNS[10], "projection_quality_flags")
 VALUE_FIELDS = {1: BATTLE_FIELDS, 2: ACTOR_FIELDS, 3: CONTRIBUTION_FIELDS, 4: EXPOSURE_FIELDS, 5: ASSOCIATION_FIELDS}
+BUILD_FIELDS = (*source.SOURCE_COLUMNS[12], "canonical_battle", "link_status", "point_clock_status",
+    "configuration_status", "publication_quality_flags", "point_context_verified", "continuous_build_exposure_implied")
 _BOOLEANS = frozenset(("canonical", "start_seen", "close_seen", "retired_by_alias", "packet_history_complete",
     "observed_graph_verified", "end_censored", "active_at_last_observation", "effort_replay_verified",
     "history_verified", "complete_population_coverage_implied", "complete_metric_coverage_implied",
     "account_or_controller_identity_implied"))
 _REFERENCES = {"battle": 3, "canonical_battle": 3, "source_battle": 3, "start_association": 5, "through_association": 5}
+
+
+def row_kinds(scope):
+    return BUILD_ROW_KINDS if scope[0] == source.BUILD_DEFINITION_VERSION else ROW_KINDS
+
+
+def value_fields(scope):
+    return {**VALUE_FIELDS, 6: BUILD_FIELDS} if scope[0] == source.BUILD_DEFINITION_VERSION else VALUE_FIELDS
+
+
+def count_fields(scope):
+    return (*COUNT_FIELDS, "build_row_count") if scope[0] == source.BUILD_DEFINITION_VERSION else COUNT_FIELDS
+
+
+def coverage_columns(scope):
+    if scope[0] == source.BUILD_DEFINITION_VERSION:
+        return (*source.header_columns(scope), *COVERAGE_COLUMNS[len(source.HEADER_COLUMNS):],
+            "build_row_count", "verified_build_links", "partial_build_links", "qualified_build_points",
+            "unavailable_build_points", "configuration_unknown_build_points")
+    return COVERAGE_COLUMNS
 
 
 class PublicationError(ValueError):
@@ -97,6 +121,8 @@ def _logical_key(kind, value):
         return contribution.segment_key(value)
     if kind == 5:
         return battle.fact_key(value)
+    if kind == 6:
+        return builds.observation_key(value)
     return (*value["source_battle"], value["battle_actor_id"],
         value["start_monotonic_usec"], value["observed_through_monotonic_usec"])
 
@@ -114,7 +140,7 @@ def snapshot_digest(scope, rows, *, check_deadline=lambda: None):
     for row in rows:
         check_deadline()
         kind, key, digest = row["row_kind"], row["row_key"], row["payload_digest"]
-        _require(type(kind) is int and kind in VALUE_FIELDS and type(key) is bytes and len(key) == 32 and
+        _require(type(kind) is int and kind in value_fields(scope) and type(key) is bytes and len(key) == 32 and
             type(digest) is bytes and len(digest) == 32, "battle_public_snapshot_receipt")
         current = kind, key
         _require(previous is None or previous < current, "battle_public_snapshot_order")
@@ -131,6 +157,28 @@ def _quality(value):
 
 
 def _validate_value(kind, value):
+    if kind == 6:
+        _require(type(value) is dict and set(value) == set(BUILD_FIELDS), "battle_public_build_fields")
+        raw = {name: value[name] for name in source.SOURCE_COLUMNS[12]}
+        for name in builds.BYTE_FIELDS:
+            item = raw[name]
+            _require(type(item) is str and re.fullmatch("[0-9a-f]{64}", item) is not None, "battle_public_build_digest")
+            raw[name] = bytes.fromhex(item)
+        builds.validate_raw_observation(raw)
+        _require(type(raw["ingest_id"]) is int and raw["ingest_id"] > 0 and type(raw["ingested_utc_usec"]) is int and
+            -(1 << 63) <= raw["ingested_utc_usec"] < (1 << 63), "battle_public_build_arrival")
+        root = value["canonical_battle"]
+        _require(isinstance(root, (tuple, list)) and len(root) == 3 and all(type(item) is int and 0 < item <= battle.UINT64_MAX for item in root),
+            "battle_public_build_reference")
+        _require(tuple(root[:2]) == builds.observation_key(raw)[:2] and
+            (value["configuration_status"] == "unavailable") == (raw["bctx_config_id"] == 0), "battle_public_build_scope")
+        _require(value["link_status"] in ("verified", "missing_packet", "partial_history", "stale_association", "outside_observed_prefix") and
+            value["point_clock_status"] in ("verified", "unknown", "unverified", "mismatch", "discontinuous") and
+            value["configuration_status"] in ("verified", "unknown", "unavailable"), "battle_public_build_status")
+        _require(type(value["point_context_verified"]) is bool and value["continuous_build_exposure_implied"] is False and
+            value["point_context_verified"] == _build_verified(value), "battle_public_build_qualification")
+        _quality(value)
+        return
     _require(kind in VALUE_FIELDS and type(value) is dict and set(value) == set(VALUE_FIELDS[kind]), "battle_public_row_fields")
     for name, item in value.items():
         if name in _REFERENCES:
@@ -196,8 +244,10 @@ def _validate_value(kind, value):
 
 def retain_row(scope, kind, value):
     source._scope(scope)
-    _require(type(kind) is int and kind in VALUE_FIELDS, "battle_public_row_kind")
+    _require(type(kind) is int and kind in value_fields(scope), "battle_public_row_kind")
     _validate_value(kind, value)
+    if kind == 6:
+        _require((value["bctx_environment_id"], value["bctx_season_id"]) == scope[2:], "battle_public_build_scope")
     payload = _canonical(value)
     _require(len(payload) <= MAX_PAYLOAD_BYTES, "battle_public_payload_capacity")
     return dict(zip(SCOPE, scope, strict=True), row_kind=kind, row_key=_key(scope, kind, value), payload=payload,
@@ -206,7 +256,7 @@ def retain_row(scope, kind, value):
 
 def decode_row(scope, row):
     _require(isinstance(row, Mapping) and set(row) == set(ROW_COLUMNS) and
-        tuple(row[name] for name in SCOPE) == scope and type(row["row_kind"]) is int and row["row_kind"] in VALUE_FIELDS and
+        tuple(row[name] for name in SCOPE) == scope and type(row["row_kind"]) is int and row["row_kind"] in value_fields(scope) and
         type(row["row_key"]) is bytes and len(row["row_key"]) == 32 and type(row["payload_digest"]) is bytes and
         len(row["payload_digest"]) == 32 and type(row["quality_flags"]) is int, "battle_public_stored_scope")
     payload = row["payload"]
@@ -218,6 +268,8 @@ def decode_row(scope, row):
         raise PublicationError("battle_public_payload_json") from error
     _require(_canonical(value) == payload, "battle_public_payload_canonical")
     _validate_value(row["row_kind"], value)
+    if row["row_kind"] == 6:
+        _require((value["bctx_environment_id"], value["bctx_season_id"]) == scope[2:], "battle_public_build_scope")
     _require(_key(scope, row["row_kind"], value) == row["row_key"] and
         _quality(value) == row["quality_flags"], "battle_public_stored_identity")
     return value
@@ -375,6 +427,19 @@ class Publication:
     reserved_bytes: int
 
 
+def _build_verified(value):
+    # This proves a point's context only. The availability mask still determines
+    # which families can be used in a particular comparison; it creates no time
+    # denominator and attributes no contribution amount to the sampled build.
+    # UNKNOWN_CONTEXT is represented by the independent family mask (and the
+    # explicit unknown buff origin). It does not negate a verified association,
+    # point clock or configuration, nor make an unavailable family comparable.
+    fatal = (battle.QUALITY_KNOWN & ~1) | history.ROLLUP_QUALITY_PROCESS_GAP | identity.UTC_ATTRIBUTION_FLAGS | (
+        history.ROLLUP_QUALITY_INCIDENT_GAP | history.ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN)
+    return (value["bctx_status"] == 1 and value["link_status"] == value["point_clock_status"] ==
+        value["configuration_status"] == "verified" and not value["publication_quality_flags"] & fatal)
+
+
 def build_publication(window: source.VerifiedSource, registry: identity.Registry | None, coverage: Mapping[str, Any], *,
                       max_total_bytes: int = source.DEFAULT_BYTE_LIMIT, max_output_rows: int = 2_000,
                       check_deadline: Callable[[], None] = lambda: None) -> Publication:
@@ -385,27 +450,29 @@ def build_publication(window: source.VerifiedSource, registry: identity.Registry
         len(window.projection_qualities), "battle_public_building_source")
     _require(registry is None or type(registry) is identity.Registry and (registry.environment_id, registry.season_id) == scope[2:],
         "battle_public_registry_scope")
-    _require(coverage["registry_schema_version"] == 4, "battle_public_incident_schema")
+    incident_version = 5 if scope[0] == source.BUILD_DEFINITION_VERSION else 4
+    _require(coverage["registry_schema_version"] == incident_version, "battle_public_incident_schema")
     budget = _Budget(max_total_bytes, max_output_rows, check_deadline)
     budget.reserve(source.HEADER_BYTE_BOUND + len(window.facts) * source.PUBLICATION_INPUT_BYTE_BOUND + REVIEW_BYTE_BOUND)
-    digest, previous, counts = source.seed_digest(scope, window.header["input_origin"]), window.header["input_origin"], dict.fromkeys(source.COUNTS.values(), 0)
+    digest, previous, counts = source.seed_digest(scope, window.header["input_origin"]), window.header["input_origin"], dict.fromkeys(source.counts(scope).values(), 0)
+    _require(not window.configurations or len(window.configurations) == len(window.facts), "battle_public_configuration_count")
     budget.reserve(source.PUBLICATION_INPUT_BYTE_BOUND)
-    for row, flags in zip(window.facts, window.projection_qualities, strict=True):
+    for index, (row, flags) in enumerate(zip(window.facts, window.projection_qualities, strict=True)):
         check_deadline()
         _require(previous < row["ingest_id"] <= window.header["input_watermark"], "battle_public_source_cursor")
         previous = row["ingest_id"]
-        retained = source.retain_input(row, scope, flags)
+        retained = source.retain_input(row, scope, flags, configuration=window.configurations[index] if window.configurations else None)
         digest = source.advance_digest(digest, retained)
-        counts[source.COUNTS[row["record_kind"]]] += 1
+        counts[source.counts(scope)[row["record_kind"]]] += 1
     budget.used -= source.PUBLICATION_INPUT_BYTE_BOUND
     _require(digest == window.header["source_digest"] and all(counts[name] == window.header[name] for name in counts), "battle_public_source_changed")
-    reduced = history.build_history([row for row in window.facts if row["record_kind"] in (10, 11)], scope[2:],
-        incident_coverage=coverage, max_output_rows=max_output_rows, max_total_bytes=budget.limit - budget.used,
+    reduced = history.build_history([row for row in window.facts if row["record_kind"] in (10, 11, 12)], scope[2:],
+        incident_coverage=coverage, incident_schema_version=incident_version, max_output_rows=max_output_rows, max_total_bytes=budget.limit - budget.used,
         check_deadline=check_deadline)
     budget.reserve(reduced.summary["reserved_bytes"])
     ownership = _ownership(window)
     output, keys = [], set()
-    header = dict(window.header, snapshot_digest=b"\0" * 32, **dict.fromkeys(COVERAGE_COLUMNS[len(source.HEADER_COLUMNS) + 1:], 0))
+    header = dict(window.header, snapshot_digest=b"\0" * 32, **dict.fromkeys(coverage_columns(scope)[len(source.header_columns(scope)) + 1:], 0))
     header.update(publication_complete=1, quality_flags=window.header["quality_flags"] | coverage["quality_flags"])
 
     def append(kind, value):
@@ -415,7 +482,7 @@ def build_publication(window: source.VerifiedSource, registry: identity.Registry
         _require(key not in keys, "battle_public_duplicate_cell")
         keys.add(key)
         output.append(row)
-        header[COUNT_FIELDS[kind - 1]] += 1
+        header[count_fields(scope)[kind - 1]] += 1
         header["quality_flags"] |= row["quality_flags"]
 
     for value in reduced.battles:
@@ -424,6 +491,20 @@ def build_publication(window: source.VerifiedSource, registry: identity.Registry
         append(2, dict(value))
     for value in reduced.contributions:
         append(3, _metric_identity(value, ownership, registry, coverage, budget))
+    build_source = {builds.observation_key(row): (row, configuration) for row, configuration in zip(window.facts,
+        window.configurations or (None,) * len(window.facts), strict=True) if row["record_kind"] == 12}
+    for value in reduced.builds:
+        raw, configuration = build_source[builds.observation_key(value)]
+        row = dict(value, ingest_id=raw["ingest_id"], ingested_utc_usec=raw["ingested_utc_usec"],
+            configuration_status="unavailable" if not value["bctx_config_id"] else
+                "unknown" if configuration is None else "verified")
+        row["point_context_verified"] = _build_verified(row)
+        for name in builds.BYTE_FIELDS:
+            row[name] = row[name].hex()
+        append(6, row)
+        header["qualified_build_points"] += int(row["point_context_verified"])
+        header["unavailable_build_points"] += int(row["bctx_status"] == 2)
+        header["configuration_unknown_build_points"] += int(row["configuration_status"] != "verified")
     for value, flags in zip(window.facts, window.projection_qualities, strict=True):
         if value["record_kind"] == 10:
             append(5, dict(value, projection_quality_flags=flags))
@@ -455,6 +536,8 @@ def build_publication(window: source.VerifiedSource, registry: identity.Registry
     for field in ("complete_packet_count", "incomplete_packet_count", "alias_count", "canonical_battle_count",
             "verified_contribution_links", "partial_contribution_links"):
         header[field] = reduced.summary[field]
+    if scope[0] == source.BUILD_DEFINITION_VERSION:
+        header.update({field: reduced.summary[field] for field in ("verified_build_links", "partial_build_links")})
     header["snapshot_digest"] = snapshot_digest(scope, sorted(output, key=lambda item: (item["row_kind"], item["row_key"])),
         check_deadline=check_deadline)
     _validate_header(header)
@@ -463,18 +546,26 @@ def build_publication(window: source.VerifiedSource, registry: identity.Registry
 
 
 def _validate_header(row):
-    _require(isinstance(row, Mapping) and set(row) == set(COVERAGE_COLUMNS), "battle_public_header_fields")
-    source._header({name: row[name] for name in source.HEADER_COLUMNS})
+    _require(isinstance(row, Mapping) and set(SCOPE) <= set(row), "battle_public_header_fields")
+    scope = tuple(row[name] for name in SCOPE)
+    _require(set(row) == set(coverage_columns(scope)), "battle_public_header_fields")
+    source._header({name: row[name] for name in source.header_columns(scope)})
     _require(row["publication_complete"] == 1 and type(row["snapshot_digest"]) is bytes and len(row["snapshot_digest"]) == 32,
         "battle_public_header_incomplete")
-    for name in COVERAGE_COLUMNS[len(source.HEADER_COLUMNS) + 1:]:
+    for name in coverage_columns(scope)[len(source.header_columns(scope)) + 1:]:
         _require(type(row[name]) is int and 0 <= row[name] <= battle.UINT64_MAX, "battle_public_header_scalar")
-    _require(sum(row[name] for name in COUNT_FIELDS) <= MAX_OUTPUT_ROWS and
+    _require(sum(row[name] for name in count_fields(scope)) <= MAX_OUTPUT_ROWS and
         row["association_row_count"] == row["association_count"] and
         row["contribution_row_count"] == row["contribution_count"] == row["verified_contribution_links"] + row["partial_contribution_links"] and
         row["observed_present_usec"] == row["observed_pc_present_usec"] + row["non_pc_present_usec"] and
         row["observed_pc_present_usec"] == row["owned_pc_present_usec"] + row["unknown_account_pc_present_usec"] ==
         row["confirmed_controller_pc_present_usec"] + row["unlinked_controller_pc_present_usec"], "battle_public_header_conservation")
+    if scope[0] == source.BUILD_DEFINITION_VERSION:
+        _require(row["build_count"] == row["build_row_count"] == row["verified_build_links"] + row["partial_build_links"] and
+            row["qualified_build_points"] <= row["verified_build_links"] and
+            row["qualified_build_points"] + row["unavailable_build_points"] <= row["build_count"] and
+            row["configuration_unknown_build_points"] <= row["build_count"],
+            "battle_public_build_conservation")
 
 
 def public_header(row, reservation):
@@ -483,8 +574,13 @@ def public_header(row, reservation):
     metadata = identity.public_generation(reservation)
     metadata.update(status="published_reviewed_version" if reservation["registry_version"] is not None else "published_unknown_identity",
         balance_report_published=True)
-    return dict(row, source_digest=row["source_digest"].hex(), snapshot_digest=row["snapshot_digest"].hex(),
+    result = dict(row, source_digest=row["source_digest"].hex(), snapshot_digest=row["snapshot_digest"].hex(),
         identity=metadata, source_input_retention_complete=True,
         presence_is_input_activity=False, alternative_projections_additive=False, metrics_apportioned_across_identity_boundaries=False,
         decisive_outcomes_available=False, complete_metric_coverage_implied=False, complete_controller_population_implied=False,
         zero_activity_implied=False, economic_rewards_included=False, rates_computed=False)
+    if row["definition_version"] == source.BUILD_DEFINITION_VERSION:
+        result.update(builds_are_point_observations=True, continuous_build_exposure_implied=False,
+            contributions_attributed_to_builds=False, raw_cleared_values_require_available_family=True,
+            build_actor_identity_inferred=False, arena_roster_is_match_result=False)
+    return result

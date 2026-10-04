@@ -13,13 +13,14 @@ import hashlib
 from typing import Any, Callable, Mapping, Sequence
 
 try:
-    from . import battle_contract as battle, battle_contribution_contract as contribution, incident
+    from . import battle_contract as battle, battle_contribution_contract as contribution, battle_build_contract as builds, incident
     from .rollup_definitions import (ROLLUP_QUALITY_PROCESS_GAP, ROLLUP_QUALITY_CONTEXT_UNAVAILABLE,
         ROLLUP_QUALITY_INCIDENT_GAP, ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN,
         ROLLUP_QUALITY_UTC_UNKNOWN, ROLLUP_QUALITY_UTC_BACKWARD, ROLLUP_QUALITY_UTC_MISMATCH)
 except ImportError:
     import battle_contract as battle
     import battle_contribution_contract as contribution
+    import battle_build_contract as builds
     import incident
     from rollup_definitions import (ROLLUP_QUALITY_PROCESS_GAP, ROLLUP_QUALITY_CONTEXT_UNAVAILABLE,
         ROLLUP_QUALITY_INCIDENT_GAP, ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN,
@@ -123,6 +124,7 @@ class BattleHistory:
     actors: tuple[Mapping[str, Any], ...]
     contributions: tuple[Mapping[str, Any], ...]
     exposures: tuple[Mapping[str, Any], ...]
+    builds: tuple[Mapping[str, Any], ...] = ()
 
 
 def _group(actor: _Actor) -> bool:
@@ -298,10 +300,10 @@ def _utc_quality(points: Sequence[int], raw_quality: int) -> int:
 
 
 def _coverage_quality(coverage: Mapping[str, Any] | None, producer: tuple[int, int], kind: int,
-                      first: int | None, last: int | None, first_seq: int, last_seq: int) -> int:
+                      first: int | None, last: int | None, first_seq: int, last_seq: int, *, schema_version=4) -> int:
     if coverage is None or coverage.get("status") in ("not_published", "not_registered"):
         return ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN
-    _require(coverage.get("registry_schema_version") == 4 and coverage.get("status") == "reviewed_inventory",
+    _require(coverage.get("registry_schema_version") == schema_version and coverage.get("status") == "reviewed_inventory",
              "history_incident_schema_or_status")
     rows = coverage.get("incidents")
     _require(isinstance(rows, (tuple, list)) and len(rows) <= incident.MAX_INCIDENTS, "history_incident_capacity")
@@ -315,7 +317,7 @@ def _coverage_quality(coverage: Mapping[str, Any] | None, producer: tuple[int, i
         quality |= ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN
     for row in rows:
         _require(isinstance(row, Mapping) and row.get("status") in ("active", "withdrawn") and
-                 _integer(row.get("record_kind_mask"), lower=1, upper=(1 << 12) - 2) and row["record_kind_mask"] & 1 == 0,
+                 _integer(row.get("record_kind_mask"), lower=1, upper=incident.schema_contract(schema_version)[0]) and row["record_kind_mask"] & 1 == 0,
                  "history_incident_fields")
         if row["status"] != "active" or not row["record_kind_mask"] & (1 << kind):
             continue
@@ -342,7 +344,7 @@ def _coverage_quality(coverage: Mapping[str, Any] | None, producer: tuple[int, i
 
 
 def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
-                  incident_coverage: Mapping[str, Any] | None = None, max_output_rows: int = 2_000,
+                  incident_coverage: Mapping[str, Any] | None = None, incident_schema_version: int = 4, max_output_rows: int = 2_000,
                   max_total_bytes: int = DEFAULT_BYTE_LIMIT,
                   check_deadline: Callable[[], None] = lambda: None) -> BattleHistory:
     """Reduce an exact bounded source window, including partial histories.
@@ -354,22 +356,26 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
     """
     _require(type(scope) is tuple and len(scope) == 2 and all(_integer(part, lower=1) for part in scope), "history_scope")
     _require(isinstance(rows, (tuple, list)) and len(rows) <= MAX_INPUTS, "history_input_capacity")
+    _require(type(incident_schema_version) is int and incident_schema_version in (4, 5), "history_incident_version")
     _require(_integer(max_output_rows, lower=1) and _integer(max_total_bytes, lower=1) and callable(check_deadline), "history_bounds")
     budget = _Budget(max_total_bytes, max_output_rows, check_deadline)
     facts: dict[tuple[int, int, int, int], dict[str, int]] = {}
     segments: dict[tuple[int, int, int], dict[str, int]] = {}
+    build_points = {}
     receipts: dict[tuple[int, int, int], dict[str, int]] = {}
     requested = set()
     wanted_actors: dict[tuple[int, int, int], set[int]] = defaultdict(set)
     retries = 0
     for raw in rows:
         budget.reserve(INPUT_BYTE_BOUND)
-        _require(isinstance(raw, Mapping) and raw.get("record_kind") in (10, 11), "history_source_family")
+        _require(isinstance(raw, Mapping) and raw.get("record_kind") in ((10, 11, 12) if incident_schema_version == 5 else (10, 11)),
+            "history_source_family")
         try:
-            value = battle.validate_raw_fact(raw) if raw["record_kind"] == 10 else contribution.validate_raw_segment(raw)
-        except (battle.BattleContractError, contribution.ContributionContractError) as error:
+            value = (battle.validate_raw_fact(raw) if raw["record_kind"] == 10 else
+                contribution.validate_raw_segment(raw) if raw["record_kind"] == 11 else builds.validate_raw_observation(raw))
+        except (battle.BattleContractError, contribution.ContributionContractError, builds.BuildContractError) as error:
             raise HistoryError(str(error)) from error
-        prefix = "battle_" if raw["record_kind"] == 10 else "bc_"
+        prefix = {10: "battle_", 11: "bc_", 12: "bctx_"}[raw["record_kind"]]
         _require((value[prefix + "environment_id"], value[prefix + "season_id"]) == scope, "history_source_scope")
         retained = dict(value, **{name: raw[name] for name in HEADER})
         receipt = tuple(raw[name] for name in HEADER[:3])
@@ -378,9 +384,14 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
             retries += 1
             continue
         receipts[receipt] = retained
-        target, key = (facts, battle.fact_key(value)) if raw["record_kind"] == 10 else (segments, contribution.segment_key(value))
+        target, key = ((facts, battle.fact_key(value)) if raw["record_kind"] == 10 else
+            (segments, contribution.segment_key(value)) if raw["record_kind"] == 11 else (build_points, builds.observation_key(value)))
         _require(key not in target, "history_logical_receipt_conflict")
         target[key] = retained
+        if raw["record_kind"] == 12:
+            identity = tuple(value[name] for name in builds.BATTLE)
+            wanted_actors[identity].add(value["bctx_actor_id"])
+            requested.add((*identity, value["bctx_association_revision"], value["bctx_association_fact_sequence"]))
         if raw["record_kind"] == 11:
             wanted_actors[tuple(value[name] for name in contribution.BATTLE)].add(value["bc_actor_id"])
             for boundary in ("first", "last"):
@@ -396,8 +407,11 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
     states: dict[tuple[int, int, int], _State] = {}
     aliases: dict[tuple[int, int, int], tuple[int, int, int]] = {}
     alias_cuts: dict[tuple[int, int, int], int] = {}
+    alias_receipts = {}
     bases: dict[tuple[int, int, int, int, int], tuple[dict[str, int], dict[int, _Actor], bool]] = {}
     traces: dict[tuple[int, int, int, int], list[tuple[int, int, tuple[int, ...] | None, bool]]] = defaultdict(list)
+    point_boundaries = defaultdict(list)
+    prefix_ranges, basis_prefixes = {}, {}
     packet_count = incomplete_count = 0
     for identity, packet_rows in sorted(grouped.items(), key=lambda item: (
             *item[0][:2], min(row["record_seq"] for row in item[1]))):
@@ -413,6 +427,14 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
         _require(all(a["record_seq"] < b["record_seq"] for a, b in zip(ordered, ordered[1:])),
                  "history_packet_transport_order")
         first, last = ordered[0], ordered[-1]
+        if incident_schema_version == 5:
+            if battle_id not in prefix_ranges:
+                budget.reserve(512)
+                prefix_ranges[battle_id] = (first["occurrence_utc_usec"], first["record_seq"])
+            utc_first, receipt_first = prefix_ranges[battle_id]
+            label = first["occurrence_utc_usec"]
+            prefix_ranges[battle_id] = (None if utc_first is None or utc_first == contribution.UTC_UNKNOWN or
+                label == contribution.UTC_UNKNOWN else min(utc_first, label), receipt_first)
         buffer = battle.PacketBuffer()
         for row in ordered:
             status = buffer.receive({name: row[name] for name in battle.FIELDS})
@@ -473,9 +495,16 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
                 state.integrity &= donor.integrity
                 state.replay_verified &= donor.replay_verified
                 state.quality |= donor.quality
+                if incident_schema_version == 5:
+                    own, other = prefix_ranges[battle_id], prefix_ranges[donor_id]
+                    prefix_ranges[battle_id] = (None if own[0] is None or other[0] is None else min(own[0], other[0]),
+                        min(own[1], other[1]))
                 donor.retired = True
             aliases[donor_id] = battle_id
             alias_cuts[donor_id] = at
+            if incident_schema_version == 5:
+                budget.reserve(512)
+                alias_receipts[donor_id] = last["record_seq"]
         trusted = state.replay_verified and complete
         for row in ordered:
             kind = row["battle_fact_kind"]
@@ -506,6 +535,9 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
             if terminal:
                 state.close_seen = True
         state.last = last
+        if incident_schema_version == 5:
+            budget.reserve(512)
+            point_boundaries[battle_id].append((last["battle_revision"], last["battle_at_monotonic_usec"], last["record_seq"]))
         for actor_id in wanted_actors[battle_id]:
             budget.reserve(ACTOR_BYTE_BOUND)
             actor = state.actors.get(actor_id)
@@ -516,6 +548,8 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
         if complete and key in requested:
             budget.reserve(OUTPUT_BYTE_BOUND + len(state.actors) * ACTOR_BYTE_BOUND)
             bases[key] = (dict(last), {actor_id: actor.clone() for actor_id, actor in state.actors.items()}, state.replay_verified)
+            if incident_schema_version == 5:
+                basis_prefixes[key] = prefix_ranges[battle_id]
 
     # Alias components retain separate source coverage but contribute to one
     # canonical total. Absolute inherited effort is replaced, never added twice.
@@ -607,7 +641,8 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
             first_utc <= last_utc and not quality & (battle.QUALITY_CLOCK_DISCONTINUITY |
                 ROLLUP_QUALITY_UTC_UNKNOWN | ROLLUP_QUALITY_UTC_BACKWARD))
         quality |= _coverage_quality(incident_coverage, identity[:2], 11,
-            first_utc if comparable else None, last_utc if comparable else None, segment["record_seq"], segment["record_seq"])
+            first_utc if comparable else None, last_utc if comparable else None, segment["record_seq"], segment["record_seq"],
+            schema_version=incident_schema_version)
         stream = (*identity[:2], segment["bc_actor_id"])
         intervals[stream].append((segment["bc_start_monotonic_usec"], segment["bc_observed_through_monotonic_usec"]))
         contribution_counts[root] += 1
@@ -624,6 +659,63 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
             _require(end is None or first >= end, "history_contribution_overlap")
             end = last
 
+    build_rows = []
+    for point in sorted(build_points.values(), key=builds.observation_key):
+        budget.output()
+        identity = tuple(point[name] for name in builds.BATTLE)
+        basis = bases.get((*identity, point["bctx_association_revision"], point["bctx_association_fact_sequence"]))
+        status, clock_status = "missing_packet", "unverified"
+        quality = point["bctx_quality_flags"]
+        at, utc = point["bctx_at_monotonic_usec"], point["bctx_at_utc_usec"]
+        if basis is not None:
+            cut, actors, verified = basis
+            quality |= cut["battle_quality_flags"]
+            _require(cut["battle_fact_kind"] == 4 and cut["battle_at_monotonic_usec"] <= at and
+                cut["record_seq"] < point["record_seq"], "history_build_reference_clock")
+            _require(not point["bctx_config_id"] or cut["battle_config_id"] == point["bctx_config_id"],
+                "history_build_configuration_conflict")
+            actor = actors.get(point["bctx_actor_id"])
+            if verified:
+                _require(actor is not None and actor.active and actor.context["battle_actor_kind"] == point["bctx_actor_kind"],
+                    "history_build_actor_conflict")
+            status = "verified" if verified else "partial_history"
+            if any(revision > point["bctx_association_revision"] and boundary_at <= at and receipt < point["record_seq"]
+                    for revision, boundary_at, receipt in point_boundaries[identity]):
+                status = "stale_association"
+            first_utc = cut["battle_at_utc_usec"]
+            if utc == contribution.UTC_UNKNOWN or first_utc == contribution.UTC_UNKNOWN:
+                clock_status = "unknown"
+                quality |= ROLLUP_QUALITY_UTC_UNKNOWN
+            elif utc - first_utc != at - cut["battle_at_monotonic_usec"]:
+                clock_status = "mismatch"
+                quality |= ROLLUP_QUALITY_UTC_MISMATCH
+            elif quality & battle.QUALITY_CLOCK_DISCONTINUITY:
+                clock_status = "discontinuous"
+            else:
+                clock_status = "verified"
+        terminal = states.get(identity)
+        if identity in alias_cuts and (at > alias_cuts[identity] or point["record_seq"] > alias_receipts[identity]) or terminal is not None and terminal.close_seen and (
+                at > terminal.last["battle_observed_through_monotonic_usec"] or
+                point["record_seq"] > terminal.last["record_seq"]):
+            status = "outside_observed_prefix"
+        if status != "verified":
+            quality |= ROLLUP_QUALITY_PROCESS_GAP
+        comparable = clock_status == "verified"
+        quality |= _coverage_quality(incident_coverage, identity[:2], 12, utc if comparable else None,
+            utc if comparable else None, point["record_seq"], point["record_seq"], schema_version=incident_schema_version)
+        if basis is not None:
+            # Missing association changes can invalidate a seemingly current
+            # reference even when this build point itself was delivered. Review
+            # its observed prefix and the interval from that prefix to the point.
+            prefix_first, prefix_receipt = basis_prefixes[(*identity, point["bctx_association_revision"],
+                point["bctx_association_fact_sequence"])]
+            prefix_clock = comparable and prefix_first is not None
+            quality |= _coverage_quality(incident_coverage, identity[:2], 10,
+                prefix_first if prefix_clock else None, utc if prefix_clock else None,
+                prefix_receipt, point["record_seq"], schema_version=incident_schema_version)
+        build_rows.append(dict(point, canonical_battle=_canonical(identity, aliases), link_status=status,
+            point_clock_status=clock_status, publication_quality_flags=quality, continuous_build_exposure_implied=False))
+
     battle_rows, actor_rows, exposure_rows = [], [], []
     for identity, state in sorted(states.items()):
         budget.output()
@@ -636,7 +728,7 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
         comparable = not quality & (battle.QUALITY_CLOCK_DISCONTINUITY | ROLLUP_QUALITY_UTC_UNKNOWN | ROLLUP_QUALITY_UTC_BACKWARD)
         quality |= _coverage_quality(incident_coverage, identity[:2], 10,
             min(occurrences) if comparable else None, max(occurrences) if comparable else None,
-            min(row["record_seq"] for row in source), max(row["record_seq"] for row in source))
+            min(row["record_seq"] for row in source), max(row["record_seq"] for row in source), schema_version=incident_schema_version)
         for exposure in state.exposures:
             check_deadline()
             flags = exposure["quality_flags"]
@@ -645,7 +737,7 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
             flags |= _coverage_quality(incident_coverage, identity[:2], 10,
                 exposure["start_utc_usec"] if comparable else None,
                 exposure["observed_through_utc_usec"] if comparable else None,
-                exposure["start_record_seq"], exposure["through_record_seq"])
+                exposure["start_record_seq"], exposure["through_record_seq"], schema_version=incident_schema_version)
             exposure_rows.append(dict(exposure, canonical_battle=root, quality_flags=flags))
         canonical = identity == root
         metric_totals = {}
@@ -711,4 +803,7 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
         "atomic_publication_implied": False, "complete_metric_coverage_implied": False,
         "decisive_outcomes_available": False, "account_or_controller_identity_implied": False,
         "zero_activity_implied": False}
-    return BattleHistory(summary, tuple(battle_rows), tuple(actor_rows), tuple(contribution_rows), tuple(exposure_rows))
+    if incident_schema_version == 5:
+        summary.update(build_count=len(build_rows), verified_build_links=sum(row["link_status"] == "verified" for row in build_rows),
+            partial_build_links=sum(row["link_status"] != "verified" for row in build_rows))
+    return BattleHistory(summary, tuple(battle_rows), tuple(actor_rows), tuple(contribution_rows), tuple(exposure_rows), tuple(build_rows))

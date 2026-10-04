@@ -77,7 +77,7 @@ def schema_contract(version: Any) -> tuple[int, int, str, str]:
 def generation_schema(definition_version: int) -> int:
     if type(definition_version) is not int or not 1 <= definition_version < (1 << 32):
         raise IncidentError("invalid_definition_version")
-    return 4 if definition_version >= 5 else 3 if definition_version == 4 else 2 if definition_version == 3 else 1
+    return 5 if definition_version >= 6 else 4 if definition_version == 5 else 3 if definition_version == 4 else 2 if definition_version == 3 else 1
 
 
 def _stored_digest(value: Any, *, nullable: bool = False) -> bytes | None:

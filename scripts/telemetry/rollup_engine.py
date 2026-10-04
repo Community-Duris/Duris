@@ -915,7 +915,7 @@ def build_page_contributions(
         start_cursor=start_cursor,
         page_last_ingest_id=start_cursor,
         fetched_rows=len(rows),
-        estimated_bytes=battle_source.HEADER_BYTE_BOUND if target.definition_version == battle_source.DEFINITION_VERSION else 0,
+        estimated_bytes=battle_source.HEADER_BYTE_BOUND if target.definition_version in battle_source.DEFINITION_VERSIONS else 0,
     )
     previous_ingest: int | None = None
     coverage_end_seen: int | None = prior_coverage_end_utc_usec
@@ -930,12 +930,14 @@ def build_page_contributions(
 
     def retain_battle_input(row):
         nonlocal coverage_end_seen
-        if target.definition_version != battle_source.DEFINITION_VERSION:
+        if target.definition_version not in battle_source.DEFINITION_VERSIONS:
             return
         kind = row["record_kind"]
+        if kind not in battle_source.counts(target.scope_tuple):
+            return
         if tuple(row[name] for name in battle_source.SOURCE_SCOPE[kind]) != target.scope_tuple[2:]:
             return
-        prefix = {9: "", 10: "battle_", 11: "bc_"}[kind]
+        prefix = {9: "", 10: "battle_", 11: "bc_", 12: "bctx_"}[kind]
         quality = _normalize_raw_quality(row[prefix + "quality_flags"])
         occurrence = row["occurrence_utc_usec"]
         if occurrence == UTC_UNKNOWN:
@@ -983,9 +985,9 @@ def build_page_contributions(
                 builds.validate_raw_observation(row)
             except builds.BuildContractError as error:
                 raise SemanticError(str(error)) from error
+            retain_battle_input(row)
             # Sealed definitions retain their earlier source, amount and
-            # coverage meaning. Build observations need a separately qualified
-            # publication that resolves the exact association reference.
+            # coverage meaning; only definition 6 retains build points.
             continue
         if kind == 11:
             try:
@@ -1022,7 +1024,7 @@ def build_page_contributions(
                 # every valid family in the immutable mixed-kind input stream.
                 if target.definition_version == 1:
                     continue
-                if target.definition_version == battle_source.DEFINITION_VERSION:
+                if target.definition_version in battle_source.DEFINITION_VERSIONS:
                     continue
                 if (observation["environment_id"], observation["season_id"]) != (target.environment_id, target.season_id):
                     continue

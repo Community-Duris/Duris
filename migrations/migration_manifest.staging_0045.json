@@ -828,6 +828,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "d6838b321408191d727892973e27215475a287ad3653b6a2a67d8ee859ac6455",
       "verify_checksum": "ca0be3bbf10362354b2d673eb95ab146b29849f87ba96c0aa69d799221548a94"
+    },
+    {
+      "id": "0066_telemetry_build_publication",
+      "sequence": 66,
+      "description": "Retain and atomically publish exact build points under independent battle definition 6",
+      "apply": "immutable/0066_telemetry_build_publication.sql",
+      "verify": "immutable/0066_telemetry_build_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "b607a89b91674eda67d3d71f4d87e5c6e0d02b5537bc573e5697487ccdd5aa7a",
+      "verify_checksum": "f21db7966c37fb7b73ec75d3df1cd74d5b6880dc9934aaf7514c2e2a2cd0500d"
     }
   ]
 }

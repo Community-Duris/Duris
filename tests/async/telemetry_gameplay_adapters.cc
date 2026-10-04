@@ -2988,7 +2988,10 @@ void check_native_build_capture(bool use_native = false, bool export_capture = f
 					    telemetry_battle_fact_kind::close;
 			     }) == 1);
 	if (export_capture)
+	{
 		export_native_build_capture(fake);
+		export_native_battle_capture(fake);
+	}
 	character_list = nullptr;
 	world = nullptr;
 	zone_table = nullptr;

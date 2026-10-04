@@ -1296,3 +1296,111 @@ progression/portfolio additions, the four balance suites/statistical exports and
 #487 reward compatibility remain open under #258. All seven final acceptance
 requirements keep their unfinished portions; production/staging access is
 unnecessary.
+
+## Retained build point publication
+
+Definition **6** retains kinds **9–12** under its own source and publication
+tables. Definition **5** keeps kinds **9–11**, incident schema **4**, its original
+tables, row keys and published meaning. Definition 6 uses the independent
+incident schema **5** introduced with build storage; earlier reviewed inventories
+cannot certify the new family.
+
+Migration **0066_telemetry_build_publication** adds four guarded, re-runnable,
+protected tables: private `telemetry_battle_source_v6` and
+`telemetry_battle_input_v6`, and public
+`telemetry_rollup_battle_coverage_v6` and
+`telemetry_rollup_battle_row_v6`. It changes no earlier migration or wire field.
+All three supported migration prefixes, lifecycle inventory, runtime metadata
+queries and boot fingerprints include the new stores. The full current chain has
+**66 steps / 260 tables**.
+
+The existing bounded page transaction retains every selected build field and
+both digests, plus the exact configuration row available when the page is
+processed. The proof contains configuration/environment/season/build/content
+identities. Missing configuration remains unknown; contradictory configuration
+refuses the page. Configuration evidence is part of the canonical retained
+payload and folded source digest. Later raw retention or catalog edits cannot
+change an already retained generation. Arrival timestamps remain separate from
+producer occurrence labels.
+
+Publication reuses the existing packet, graph, actor and alias reducer. A build
+point references an exact complete association cut with an earlier producer
+receipt and a monotonic clock no later than the point. Its actor must be active
+with the same runtime kind. Later admitted association changes make an old
+reference stale. Original battle identities remain visible alongside canonical
+alias lineage; a receipt after alias retirement or battle close, or a clock past
+the closed observed prefix, remains outside that prefix. Periodic reads during
+inactivity grace do not manufacture measured participation.
+
+`battle_build_points` exposes all **110 selected fields**, their native
+availability and quality, occurrence/arrival labels, original reference,
+canonical battle, configuration status, point-clock status and
+`point_context_verified`. Digests are canonical lowercase hexadecimal.
+Unavailable native families retain their raw cleared encoding and **must be
+interpreted using `bctx_available` and `bctx_status`**, never as measured zero.
+Unknown buff origin remains explicit. A valid actor/time/configuration link does
+not make an unavailable gear, epic, affect or arena family comparable.
+
+The point's UTC label is checked against its referenced producer clock.
+Unknown, mismatched or discontinuous clocks prevent full point qualification.
+Schema-5 loss review covers both delivery of kind 12 and the association prefix
+and interval that could contain a missing kind-10 change. Missing review
+inventory remains uncertainty. Packet/link verification and point qualification
+are separate counts. Capped reads, rate/source/configuration gaps, partial
+families and grace tails remain in the retained source and coverage.
+
+These are **point observations**. Equal digests do not prove a build remained
+unchanged between reads. No sampled build receives continuous exposure, damage,
+healing, rewards, account/controller identity, a universal power score, or an
+arena match result. Repeated points are not independent fights or people. The
+new report supplies explicit level/race/faction/class/spec, base/effective
+resources and stats, gear/epic features, affect-prefix and arena dimensions for
+later declared comparisons. The complete four balance suites remain unfinished.
+
+Both definitions use the same locked cursor, identity reservation, bounded
+canonical payloads, immutable generation publication and receipt verification.
+The existing limits remain: 16,384 retained inputs, 2,048 requested association
+snapshots, 4,096 public rows, the 2,000-row default output cap, 8,192-byte payloads,
+and a 32 MiB default reservation. Overflow/deadline failure refuses the whole
+publication. No unrestricted report query over raw history is introduced.
+
+The definition-6 rollup principal needs the existing state/reservation and public
+incident permissions, SELECT/INSERT/UPDATE on its private source header,
+SELECT/INSERT on its private inputs and public output, and SELECT on raw
+telemetry, `telemetry_config`, identity evidence and schema-5 review stores.
+Its report principal needs SELECT only on state, reservation, public
+definition-6 battle rows/coverage and public incident snapshots. It cannot read
+the private source, raw telemetry, catalog, account tables or review-authority
+stores. A review correction is published in a new generation; superseding an
+old generation preserves its rows and frozen inventory.
+
+Use explicit disposable-local connection settings and reserve reviewed or
+explicitly unknown identity through the existing identity API before processing
+a fixed window:
+
+~~~sh
+python3 scripts/telemetry/rollup.py definitions --definition-version 6
+python3 scripts/telemetry/rollup.py run --definition-version 6 --generation 1 --environment-id "$environment" --season-id "$season" --origin-ingest-id "$origin" --through-ingest-id "$through"
+python3 scripts/telemetry/rollup.py publish --definition-version 6 --generation 1 --environment-id "$environment" --season-id "$season"
+python3 scripts/telemetry/rollup.py report --definition-version 6 --generation 1 --environment-id "$environment" --season-id "$season" --name battle_build_points
+~~~
+
+The focused maintained proofs are
+`python3 tests/async/test_telemetry_battle_history.py` and
+`python3 tests/async/test_telemetry_battle_runtime_sql.py --sql-fixture`.
+The latter requires the existing explicit disposable/loopback/allow-listed
+database settings and prepares the full chain. It exercises native capture,
+retention, restricted roles, lost acknowledgements, rollback, CLI reports,
+kind-12 loss and corrected-review generations, raw/catalog independence, bounded
+reads, schema drift and restored fingerprints on both supported engines.
+Dated positive/negative fixtures declare their controlled clocks separately.
+
+**Next executable expectation:** complete the remaining native
+control/prevention/faction and typed death/escape/objective producers and their
+battle reports, then qualify actual personal-local gameplay/readback/performance.
+Distinct PvE attempts/objectives/recovery/reward links, rested/assistance,
+milestones and switching/portfolio projections, all four balance suites and
+statistical exports, and #487 canonical economic compatibility remain required
+under #258. All seven final acceptance requirements retain unfinished portions.
+Production and staging access are unnecessary for those implementation and
+qualification steps.
