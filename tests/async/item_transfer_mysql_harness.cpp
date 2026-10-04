@@ -105,6 +105,12 @@ extern "C" void sql_pool_release(MYSQL *pooled)
 	if (pooled)
 		mysql_close(pooled);
 }
+extern "C" bool sql_pool_retire_owned_connection(MYSQL *)
+{
+	// Fresh-session doubles do not prove exact native slot ownership.
+	// Refuse without closing; real-pool mode links the production implementation.
+	return false;
+}
 extern "C" MYSQL *sql_pool_replace_connection(MYSQL *pooled)
 {
 	economic_sql_commit_reply_loss_fixture::closing(pooled, true);
