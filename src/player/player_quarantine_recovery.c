@@ -5,6 +5,7 @@
 #include "persistence/critical_command_repository.h"
 #include "persistence/persistence_observability.h"
 #include "player/player_snapshot_repository.h"
+#include "player/player_sql_transaction_cleanup.h"
 #include "flatfile/flatfile_player_repository.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_identity_repository.h"
@@ -398,10 +399,11 @@ int sql_query(MYSQL *connection, const char *sql)
 {
 	return mysql_real_query(connection, sql, std::strlen(sql));
 }
-struct recovery_rollback
+struct sql_recovery_proof_context
 {
 	MYSQL *connection;
-	~recovery_rollback() { sql_query(connection, "ROLLBACK"); }
+	unsigned long original_session;
+	player_sql_cleanup *cleanup;
 };
 std::string hex_bytes(const uint8_t *data, size_t size)
 {
@@ -439,39 +441,65 @@ bool sql_creations(MYSQL *connection, const std::vector<critical_command> &comma
 }
 bool sql_proof(const player_save_recovery_record &record, void *context)
 {
-	auto *connection = static_cast<MYSQL *>(context);
-#ifndef __NO_MYSQL__
-	if (!connection || !(connection->server_status & SERVER_STATUS_AUTOCOMMIT) ||
-	    (connection->server_status & SERVER_STATUS_IN_TRANS))
+	auto *request = static_cast<sql_recovery_proof_context *>(context);
+	if (!request || !request->cleanup)
 		return false;
-#endif
-	if (sql_query(connection, "START TRANSACTION"))
+	auto *connection = request->connection;
+	auto &proof = *request->cleanup;
+	player_sql_transaction_cleanup owner(connection, proof);
+	if (player_sql_idle_error(connection))
 		return false;
-	recovery_rollback rollback{ connection };
-	bool present = false;
-	const bool receipt =
-		player_quarantine_recovery_sql_receipt(connection, record, false, &present) &&
-		present && player_quarantine_recovery_creation_proofs_sql(connection, record);
-	const auto loaded =
-		receipt && present ?
-			player_load_repository_quarantine_inspect(
-				connection, player_quarantine_recovery_request(record), &record) :
-			player_load_result{};
-	player_save_recovery_record retained;
-	bool resolved = false;
-	const bool known =
-		player_save_journal_recovery_read(record.replacement.pid, &retained, &resolved) ==
-		player_save_journal_result::ok;
-	const bool continuation = known && resolved &&
-				  loaded.outcome == player_load_outcome::applied &&
-				  !loaded.degraded_components && !loaded.missing_payload_rows &&
-				  loaded.account_name == record.account_name &&
-				  loaded.snapshot.revision >= record.replacement.revision;
-	const bool matches =
-		receipt && present &&
-		(continuation || player_quarantine_recovery_state_matches(loaded, record, true));
-	sql_query(connection, "ROLLBACK");
-	return matches;
+	if (proof.original_session != request->original_session)
+	{
+		proof.disposition = player_sql_cleanup_disposition::retire_required;
+		proof.cleanup_error = ENOTCONN;
+		return false;
+	}
+	try
+	{
+		owner.starting();
+		if (sql_query(connection, "START TRANSACTION") || !owner.same_session() ||
+		    !(connection->server_status & SERVER_STATUS_IN_TRANS))
+		{
+			owner.finish();
+			return false;
+		}
+		bool present = false;
+		const bool receipt =
+			player_quarantine_recovery_sql_receipt(connection, record, false,
+							       &present) &&
+			present &&
+			player_quarantine_recovery_creation_proofs_sql(connection, record);
+		const auto loaded = receipt && present ?
+					    player_load_repository_quarantine_inspect(
+						    connection,
+						    player_quarantine_recovery_request(record),
+						    &record) :
+					    player_load_result{};
+		player_save_recovery_record retained;
+		bool resolved = false;
+		const bool known = player_save_journal_recovery_read(record.replacement.pid,
+								     &retained, &resolved) ==
+				   player_save_journal_result::ok;
+		const bool continuation =
+			known && resolved && loaded.outcome == player_load_outcome::applied &&
+			!loaded.degraded_components && !loaded.missing_payload_rows &&
+			loaded.account_name == record.account_name &&
+			loaded.snapshot.revision >= record.replacement.revision;
+		const bool matches =
+			receipt && present &&
+			(continuation ||
+			 player_quarantine_recovery_state_matches(loaded, record, true));
+		owner.finish();
+		return matches && proof.rollback_confirmed &&
+		       proof.disposition == player_sql_cleanup_disposition::idle_verified &&
+		       !proof.cleanup_error;
+	}
+	catch (...)
+	{
+		owner.finish();
+		return false;
+	}
 }
 }
 
@@ -580,16 +608,12 @@ bool player_quarantine_recovery_creation_proofs_sql(MYSQL *connection,
 	       sql_creations(connection, commands, &verified);
 }
 
-bool player_quarantine_recovery_prepare_sql(MYSQL *connection, int pid,
-					    const std::vector<critical_command> &commands,
-					    const std::string &backend_identity,
-					    player_save_recovery_record *record, std::string *error)
+static bool prepare_sql_owned(MYSQL *connection, int pid,
+			      const std::vector<critical_command> &commands,
+			      const std::string &backend_identity,
+			      player_save_recovery_record *record, std::string *error,
+			      player_sql_transaction_cleanup &owner, player_sql_cleanup &proof)
 {
-#ifndef __NO_MYSQL__
-	if (!connection || !(connection->server_status & SERVER_STATUS_AUTOCOMMIT) ||
-	    (connection->server_status & SERVER_STATUS_IN_TRANS))
-		return refuse(error, "connection is not an isolated transaction owner");
-#endif
 	std::vector<player_snapshot> frames;
 	std::array<uint8_t, 32> archive;
 	if (!connection || !record || commands.empty() || commands.size() > 64 ||
@@ -615,18 +639,39 @@ bool player_quarantine_recovery_prepare_sql(MYSQL *connection, int pid,
 	next.account_name = row[0];
 	next.replacement.pid = pid;
 	rows.reset();
-	if (sql_query(connection, "START TRANSACTION"))
+	if (!owner.same_session() || player_sql_idle_error(connection))
+	{
+		proof.disposition = player_sql_cleanup_disposition::retire_required;
+		proof.cleanup_error = ENOTCONN;
+		return refuse(error, "backend session changed before verification");
+	}
+	owner.starting();
+	if (sql_query(connection, "START TRANSACTION") || !owner.same_session() ||
+	    !(connection->server_status & SERVER_STATUS_IN_TRANS))
 		return refuse(error, "verification transaction failed");
 	std::vector<player_recovery_creation> verified;
-	bool proved = false;
-	{
-		recovery_rollback rollback{ connection };
-		proved = sql_creations(connection, commands, &verified);
-	}
+	const bool proved = sql_creations(connection, commands, &verified);
+	owner.finish();
+	if (!proof.rollback_confirmed ||
+	    proof.disposition != player_sql_cleanup_disposition::idle_verified ||
+	    proof.cleanup_error)
+		return refuse(error,
+			      "verification cleanup uncertain; retain fence and retire session");
 	if (!proved)
 		return refuse(error, "original grant receipt/source/history mismatch");
+	// Inspection starts its own read transaction. The earlier creation-proof
+	// rollback is not cleanup evidence for this second phase or its exceptions.
+	owner.starting();
 	const auto current = player_load_repository_quarantine_inspect(
 		connection, player_quarantine_recovery_request(next));
+	owner.finish();
+	if (!proof.rollback_confirmed ||
+	    proof.disposition != player_sql_cleanup_disposition::idle_verified ||
+	    proof.cleanup_error)
+	{
+		return refuse(error,
+			      "inspection cleanup uncertain; retain fence and retire session");
+	}
 	if (!player_quarantine_recovery_build(current, frames, verified, &next, error))
 		return false;
 	critical_operation_id identity;
@@ -640,8 +685,42 @@ bool player_quarantine_recovery_prepare_sql(MYSQL *connection, int pid,
 	return true;
 }
 
-bool player_quarantine_recovery_resume_sql(MYSQL *connection, int pid,
-					   const std::string &backend_identity, std::string *error)
+bool player_quarantine_recovery_prepare_sql(MYSQL *connection, int pid,
+					    const std::vector<critical_command> &commands,
+					    const std::string &backend_identity,
+					    player_save_recovery_record *record, std::string *error,
+					    player_sql_cleanup *cleanup)
+{
+	player_sql_cleanup local;
+	auto &proof = cleanup ? *cleanup : local;
+	player_sql_transaction_cleanup owner(connection, proof);
+	if (player_sql_idle_error(connection))
+		return refuse(error, "connection is not an isolated transaction owner");
+	try
+	{
+		const bool prepared = prepare_sql_owned(connection, pid, commands, backend_identity,
+							record, error, owner, proof);
+		owner.finish();
+		return prepared;
+	}
+	catch (...)
+	{
+		owner.finish();
+		return refuse(error, "recovery preparation failed; retain archive and fence");
+	}
+}
+
+bool player_quarantine_recovery_prepare_sql(MYSQL *connection, int pid,
+					    const std::vector<critical_command> &commands,
+					    const std::string &backend_identity,
+					    player_save_recovery_record *record, std::string *error)
+{
+	return player_quarantine_recovery_prepare_sql(connection, pid, commands, backend_identity,
+						      record, error, nullptr);
+}
+
+static bool resume_sql_owned(MYSQL *connection, int pid, const std::string &backend_identity,
+			     std::string *error, sql_recovery_proof_context &context)
 {
 	player_save_recovery_record record;
 	bool resolved = false;
@@ -652,18 +731,67 @@ bool player_quarantine_recovery_resume_sql(MYSQL *connection, int pid,
 	    (!backend_identity.empty() && backend_identity != record.backend_identity))
 		return refuse(error, "no matching durable SQL preparation");
 	if (resolved)
-		return player_save_journal_recovery_resolve(record, sql_proof, connection) ==
+		return player_save_journal_recovery_resolve(record, sql_proof, &context) ==
 			       player_save_journal_result::ok ||
 		       refuse(error, "resolved recovery does not match this backend generation");
-	const auto result = player_snapshot_repository_recovery_apply(connection, record);
+	const auto result =
+		player_snapshot_repository_recovery_apply(connection, record, context.cleanup);
 	if (result.outcome != player_save_apply_outcome::applied &&
 	    result.outcome != player_save_apply_outcome::already_applied)
 		return refuse(
 			error,
 			"native replacement refused or commit uncertain; retain fence and resume");
-	return player_save_journal_recovery_resolve(record, sql_proof, connection) ==
+	if (context.cleanup->original_session != context.original_session ||
+	    context.cleanup->disposition != player_sql_cleanup_disposition::idle_verified ||
+	    context.cleanup->cleanup_error)
+		return refuse(error, "native replacement cleanup uncertain; retain fence");
+	return player_save_journal_recovery_resolve(record, sql_proof, &context) ==
 		       player_save_journal_result::ok ||
 	       refuse(error, "exact backend result or durable resolution missing");
+}
+
+bool player_quarantine_recovery_resume_sql(MYSQL *connection, int pid,
+					   const std::string &backend_identity, std::string *error,
+					   player_sql_cleanup *cleanup)
+{
+	player_sql_cleanup local;
+	auto &proof = cleanup ? *cleanup : local;
+	proof = {};
+	// Keep the call's original session independent of phase cleanup evidence.
+	player_sql_cleanup boundary_proof;
+	player_sql_transaction_cleanup boundary(connection, boundary_proof);
+	proof.original_session = boundary_proof.original_session;
+	if (player_sql_idle_error(connection))
+		return refuse(error, "connection is not an isolated transaction owner");
+	sql_recovery_proof_context context{ connection, boundary_proof.original_session, &proof };
+	try
+	{
+		const bool resumed =
+			resume_sql_owned(connection, pid, backend_identity, error, context);
+		if (!boundary.same_session() || player_sql_idle_error(connection))
+		{
+			proof.disposition = player_sql_cleanup_disposition::retire_required;
+			proof.cleanup_error = ENOTCONN;
+			// sql_proof establishes cleanup before durable journal resolution.
+			// Later lease retirement cannot undo that result or recreate a fence.
+			return resumed;
+		}
+		return resumed;
+	}
+	catch (...)
+	{
+		// Phase owners clean their own transactions during unwinding. In the
+		// absence of explicit proof the pooled caller must retire its lease.
+		proof.disposition = player_sql_cleanup_disposition::retire_required;
+		return refuse(error, "recovery verification failed; retain fence");
+	}
+}
+
+bool player_quarantine_recovery_resume_sql(MYSQL *connection, int pid,
+					   const std::string &backend_identity, std::string *error)
+{
+	return player_quarantine_recovery_resume_sql(connection, pid, backend_identity, error,
+						     nullptr);
 }
 
 bool player_quarantine_recovery_prepare_flatfile(const std::string &root, int pid,
@@ -789,21 +917,20 @@ void player_quarantine_recovery_revalidate_selected()
 					record.backend_identity, &error);
 			else if (!flatfile && record.backend == 2)
 			{
-				MYSQL *connection = sql_pool_acquire();
-				if (!connection)
+				player_sql_pool_lease lease(sql_pool_acquire());
+				if (!lease.get())
 					break;
+				player_sql_cleanup cleanup;
 				try
 				{
 					verified += player_quarantine_recovery_resume_sql(
-						connection, record.replacement.pid,
-						record.backend_identity, &error);
+						lease.get(), record.replacement.pid,
+						record.backend_identity, &error, &cleanup);
+					lease.reuse(cleanup);
 				}
 				catch (...)
 				{
 				}
-				if (mysql_errno(connection) >= 2000)
-					sql_pool_discard_connection(connection);
-				sql_pool_release(connection);
 			}
 		}
 		catch (...)

@@ -45,6 +45,9 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 struct player_save_recovery_record;
 player_save_apply_result
 player_snapshot_repository_recovery_apply(MYSQL *, const player_save_recovery_record &);
+player_save_apply_result
+player_snapshot_repository_recovery_apply(MYSQL *, const player_save_recovery_record &,
+					  player_sql_cleanup *cleanup);
 player_save_apply_result player_snapshot_repository_apply_from_pool(const player_snapshot &snapshot,
 								    void *context);
 

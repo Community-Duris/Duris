@@ -2838,3 +2838,36 @@ orphan-audit review are in `SHARED_STREAM_HANDOFF.md`. Strict combined-source se
 builds, paired native SQL faults, active route/player/recovery qualification and
 current broad gates remain open. Earlier canonical 0055 receipts remain scoped to
 their original source; no production activation/data change or PR merge is authorized.
+
+### Source implementation after plan-level testing deferral
+
+The user-specified repository remains `Community-Duris/Duris`. The shared Git
+`origin` now points to `Community-Duris/DurisMUD`, which has no accounting branch;
+that configuration is preserved. Direct authority-scoped fetch confirms requested
+experimental-accounting remains `7d2f8e815`, while Plan 5 advances to `f2a110c4d`.
+The retained UID provenance query slice is merged locally, followed by the
+`0a13bde70` REMOVE-CURSE preparation helper. The helper is unwired, pointer-free
+and read-only; active refusal and the existing spell source remain unchanged.
+Both slices require current-candidate plan-level qualification.
+
+The primary implements recovery cleanup across snapshot recovery apply,
+preparation, exact proof and boot pooled-session revalidation. Borrowed APIs retain
+their original signatures through wrappers and add explicit cleanup overloads;
+they require idle autocommit with reconnect disabled and never close or replace
+the handle. Cleanup is armed before START, including the inspection loader's
+second read transaction. Exact original-session rollback must be confirmed before
+preparation or journal resolution. COMMIT-attempt tracking preserves ambiguity.
+Boot leases retire by default, and later session retirement does not falsely undo
+successful durable recovery resolution. Archive/generation, original creation,
+UID, component and full projection checks remain intact; no migration is added.
+
+The read-only persistence review caught the second inspection transaction and
+post-resolution return-contract gaps; both are corrected in source. Immutable
+BEFORE archive `tmp/recovery-session-cleanup-before-v3.local/manifest.json` is
+SHA-256 `7338380f04afb42269c97a45a49fce9c8fb9e1698918c5fb3b3d8a7056554abb`
+at base `002cb6013dd7e5a14fa18e69467a4db31f1f6e8c`. This is implemented,
+unqualified work: no native RED, compiler, SQL or gameplay test was run. Deferred
+Plan 1 fixtures must retain the existing 13 fault cases and add second-phase
+inspection START loss/OOM/rollback refusal plus late retirement after resolution.
+The old 0055 owner and qualification remain historical. Plan 1, writer evidence,
+activation and release gates remain open.
