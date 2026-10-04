@@ -2028,15 +2028,34 @@ def bounded_rows(rows: list[dict], limit: int) -> dict:
     return {"count": len(rows), "rows": rows[:limit], "truncated": len(rows) > limit}
 
 
-def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = None) -> dict:
+def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = None,
+         operation_id: str | None = None, holding_key: str | None = None) -> dict:
+    if type(limit) is not int or not 0 <= limit <= MAX_OUTPUT_ROWS:
+        raise SnapshotError("invalid output limit")
+    if operation_id is not None:
+        require_id(operation_id, "operation lookup ID")
+        if name != "operation":
+            raise SnapshotError("operation filter requires operation view")
+    if holding_key is not None:
+        account_key(holding_key)
+        if name != "holdings":
+            raise SnapshotError("account filter requires holdings view")
     if name == "exceptions":
         return report
     if name == "holdings":
         rows = [{"account_key": row["account_key"], "kind": account_key(row["account_key"])[1],
                  "balance": vector(row["balance"]), "revision": row["revision"]}
-                for row in snapshot["native"]["holdings"]]
+                for row in snapshot["native"]["holdings"]
+                if holding_key is None or row["account_key"] == holding_key]
         if any(not unsigned_revision(row["revision"]) for row in rows):
             raise SnapshotError("invalid native holding revision")
+        if holding_key is not None:
+            return {**bounded_rows(rows, limit), "coverage": {
+                "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
+                "complete": snapshot.get("complete") is True,
+                "quiescent": snapshot.get("quiescent") is True,
+                "exception_count": report.get("exception_count"),
+                "scope": "captured_native_holdings", "account_key": holding_key}}
     elif name == "provenance":
         if type(uid) is not int or not 0 < uid < 2**64:
             raise SnapshotError("provenance requires --uid")
@@ -2067,6 +2086,64 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
             "lineage_history_available": isinstance(snapshot["native"].get("uid_history_events"), list),
             "unattributed_history_available": isinstance(
                 snapshot["native"].get("unattributed_uid_events"), list)}}
+    elif name == "operation":
+        if operation_id is None:
+            raise SnapshotError("operation view requires --operation-id")
+        rows = []
+        record_counts = {}
+        for collection, fields in (
+                ("operations", ("reason", "result_code", "account_count", "posting_count",
+                                "child_count", "item_event_count", "realized_price_copper",
+                                "accounting_version", "writer_id", "policy_version", "compiler_version")),
+                ("effects", ("account_index", "before_revision", "after_revision")),
+                ("postings", ("line_index", "event_index", "account_index", "child_index", "copper_value")),
+                ("children", ("child_index", "parent_index", "domain_id", "discriminator", "relationship")),
+                ("item_references", ("line_index", "event_index", "uid", "child_index", "before_revision",
+                                     "after_revision", "legacy_event_index")),
+                ("receipts", ("status", "result_code", "failure_stage")),
+                ("source_claims", ()),
+                ("orphan_evidence", ("row_index",))):
+            selected = [row for row in snapshot.get(collection, [])
+                        if row.get("operation_id") == operation_id]
+            record_counts[collection] = len(selected)
+            for row in selected:
+                safe = {"record": collection, "operation_id": operation_id}
+                safe.update({field: row[field] for field in fields if type(row.get(field)) is int})
+                for field in ("lineage", "epoch", "original_operation_id", "child_operation_id",
+                              "receipt_operation_id", "legacy_operation_id"):
+                    if row.get(field) is not None:
+                        safe[field] = require_id(row[field], field)
+                if row.get("source_event") is not None:
+                    source = row["source_event"]
+                    if not isinstance(source, str) or not HEX_SOURCE_EVENT.fullmatch(source):
+                        raise SnapshotError("invalid operation source event")
+                    safe["source_event"] = source
+                if collection == "operations":
+                    safe["outcome"] = (row["outcome"] if row.get("outcome") in
+                                       ("committed", "rejected") else "unknown")
+                elif collection == "effects":
+                    account_key(row["account_key"])
+                    safe.update(account_key=row["account_key"], before=vector(row["before"]),
+                                after=vector(row["after"]))
+                elif collection == "postings":
+                    safe["delta"] = vector(row["delta"])
+                elif collection == "receipts":
+                    safe["committed_at_present"] = row.get("committed_at_present") is True
+                elif collection == "orphan_evidence":
+                    if row.get("table") not in ORPHAN_EVIDENCE_SOURCES:
+                        raise SnapshotError("invalid orphan evidence table")
+                    safe["table"] = row["table"]
+                rows.append(safe)
+        order = {collection: index for index, collection in enumerate(record_counts)}
+        rows.sort(key=lambda row: (order[row["record"]], next(
+            (row[field] for field in ("line_index", "event_index", "account_index", "child_index", "row_index")
+             if field in row), 0), json.dumps(row, sort_keys=True)))
+        return {**bounded_rows(rows, limit), "record_counts": record_counts, "coverage": {
+            "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
+            "complete": snapshot.get("complete") is True,
+            "quiescent": snapshot.get("quiescent") is True,
+            "exception_count": report.get("exception_count"), "root_scope": "selected_epoch",
+            "operation_id": operation_id}}
     elif name == "supply":
         totals: dict[tuple, int] = defaultdict(int)
         effect_kind = {(row["operation_id"], row["account_index"]): account_key(row["account_key"])[1]
@@ -2101,9 +2178,11 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("snapshot", type=Path, help="complete quiescent snapshot JSON")
-    parser.add_argument("--view", choices=("exceptions", "holdings", "provenance", "supply", "prices", "routes"),
+    parser.add_argument("--view", choices=("exceptions", "holdings", "provenance", "operation", "supply", "prices", "routes"),
                         default="exceptions")
     parser.add_argument("--uid", type=int)
+    parser.add_argument("--operation-id")
+    parser.add_argument("--account-key")
     parser.add_argument("--limit", type=int, default=50)
     args = parser.parse_args()
     try:
@@ -2111,7 +2190,8 @@ def main() -> int:
             raise SnapshotError("snapshot or output limit exceeded")
         snapshot = json.loads(args.snapshot.read_text(encoding="utf-8"))
         report = Reconciler(args.limit).audit(snapshot)
-        result = view(snapshot, report, args.view, args.limit, args.uid)
+        result = view(snapshot, report, args.view, args.limit, args.uid,
+                      operation_id=args.operation_id, holding_key=args.account_key)
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return 0 if report["exception_count"] == 0 else 1
     except (OSError, ValueError, KeyError, TypeError) as error:
