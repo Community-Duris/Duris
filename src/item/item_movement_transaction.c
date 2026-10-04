@@ -15,6 +15,7 @@
 #include "persistence/persistence_checkpoint.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
+#include "player/inert_item_stage.h"
 #include "player/player_load_items.h"
 #include "player/player_save_pipeline.h"
 #include "core/prototypes.h"
@@ -2532,6 +2533,10 @@ static bool submit_movement(P_char actor, P_obj root, P_obj target_container,
 		return reject_with(reject, item_movement_reject::snapshot_failure);
 	if (live_drop_token && !live_drop_source_owned(root, from_owner, snapshots))
 		return reject_with(reject, item_movement_reject::topology_mismatch);
+	if (live_drop_token &&
+	    ordinary_drop_recovery_eligibility(snapshots.data(), snapshots.size()) !=
+		    inert_item_stage_result::ok)
+		return reject_with(reject, item_movement_reject::active_accounting_unsupported);
 	std::vector<item_transfer_entry> items;
 	try
 	{
@@ -2788,6 +2793,10 @@ bool item_movement_transaction_prepare_sql_drop(P_char actor, P_obj root,
 			    player_snapshot_capture_result::ok ||
 		    !live_drop_source_owned(root, owner.owner, snapshots))
 			return reject_with(reject, item_movement_reject::topology_mismatch);
+		if (ordinary_drop_recovery_eligibility(snapshots.data(), snapshots.size()) !=
+		    inert_item_stage_result::ok)
+			return reject_with(reject,
+					   item_movement_reject::active_accounting_unsupported);
 	}
 	catch (const std::bad_alloc &)
 	{

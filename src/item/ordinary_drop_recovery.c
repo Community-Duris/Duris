@@ -7,9 +7,9 @@
 #include "item/item_ownership_runtime.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
+#include "player/inert_item_stage.h"
 
 #ifndef __NO_MYSQL__
-#include "player/inert_item_stage.h"
 #include "item/item_transfer_repository.h"
 #include "world/object_template.h"
 #include "persistence/critical_command_repository.h"
@@ -19,6 +19,7 @@
 #endif
 
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <climits>
 #include <functional>
@@ -565,6 +566,57 @@ observe_transaction(MYSQL *connection, const critical_command &command,
 #endif
 } // namespace
 
+inert_item_stage_result ordinary_drop_recovery_eligibility(const player_item_snapshot *items,
+							   size_t count) noexcept
+{
+	if (!items || !count || count > ITEM_TRANSFER_MAX_ITEMS)
+		return inert_item_stage_result::invalid;
+#ifdef __NO_MYSQL__
+	return inert_item_stage_result::unsupported;
+#else
+	if (!obj_index || top_of_objt < 0 || top_of_objt == INT_MAX)
+		return inert_item_stage_result::invalid;
+	if (!recovery_object_templates_ready())
+		return inert_item_stage_result::unsupported;
+	std::array<size_t, ITEM_TRANSFER_MAX_ITEMS> depths = {};
+	for (size_t index = 0; index < count; ++index)
+	{
+		const auto &literal = items[index];
+		if (!index)
+		{
+			if (literal.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				return inert_item_stage_result::invalid;
+		}
+		else
+		{
+			if (literal.parent_index < 0 ||
+			    literal.parent_index >= static_cast<int32_t>(index))
+				return inert_item_stage_result::invalid;
+			const auto parent = static_cast<size_t>(literal.parent_index);
+			const int parent_type = items[parent].type;
+			if (parent_type != ITEM_CONTAINER && parent_type != ITEM_QUIVER &&
+			    parent_type != ITEM_STORAGE)
+				return inert_item_stage_result::invalid;
+			depths[index] = depths[parent] + 1;
+			if (depths[index] >= PLAYER_SNAPSHOT_MAX_DEPTH ||
+			    depths[index] > static_cast<size_t>(top_of_objt) + 1)
+				return inert_item_stage_result::invalid;
+		}
+		const auto *prototype = find_recovery_object_template(literal.vnum);
+		if (!prototype)
+			return inert_item_stage_result::unsupported;
+		const auto activity_type = [](int type)
+		{ return type == ITEM_TELEPORT || type == ITEM_SHIP || type == ITEM_BOAT; };
+		if (activity_type(prototype->type) || activity_type(literal.type))
+			return inert_item_stage_result::unsupported;
+		const auto eligibility = inert_item_stage_eligibility(*prototype, literal);
+		if (eligibility != inert_item_stage_result::ok)
+			return eligibility;
+	}
+	return inert_item_stage_result::ok;
+#endif
+}
+
 #ifndef __NO_MYSQL__
 ordinary_drop_observation ordinary_drop_live_publication_owner::publish(
 	MYSQL *connection, unsigned long session, const critical_command &command,
@@ -708,6 +760,14 @@ ordinary_drop_observation ordinary_drop_enrollment_owner::publish(
 		return observed(ordinary_drop_observation_status::refused, EINVAL);
 	if (!recovery_object_templates_ready())
 		return observed(ordinary_drop_observation_status::unavailable, EAGAIN);
+	const auto eligibility =
+		ordinary_drop_recovery_eligibility(original.items.data(), original.items.size());
+	if (eligibility != inert_item_stage_result::ok)
+		return observed(eligibility == inert_item_stage_result::unsupported ?
+					ordinary_drop_observation_status::unsupported :
+					ordinary_drop_observation_status::refused,
+				eligibility == inert_item_stage_result::unsupported ? ENOTSUP :
+										      EBADMSG);
 	owner.runtime_.reserve(durable.identities.size());
 	for (size_t index = 0; index < durable.identities.size(); ++index)
 	{
@@ -716,28 +776,6 @@ ordinary_drop_observation ordinary_drop_enrollment_owner::publish(
 					   identity.parent_item_uid, identity.owner,
 					   identity.item_revision, identity.owner_revision,
 					   durable.items[index].vnum, identity.state });
-	}
-	std::vector<size_t> depths(original.items.size(), 0);
-	for (size_t index = 0; index < original.items.size(); ++index)
-	{
-		const auto &literal = original.items[index];
-		if (!index)
-		{
-			if (literal.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
-				return observed(ordinary_drop_observation_status::refused, EBADMSG);
-			continue;
-		}
-		if (literal.parent_index < 0 || literal.parent_index >= static_cast<int32_t>(index))
-			return observed(ordinary_drop_observation_status::refused, EBADMSG);
-		const int parent_type = original.items[literal.parent_index].type;
-		if (parent_type != ITEM_CONTAINER && parent_type != ITEM_QUIVER &&
-		    parent_type != ITEM_STORAGE)
-			return observed(ordinary_drop_observation_status::refused, EBADMSG,
-					literal.object_uid);
-		depths[index] = depths[literal.parent_index] + 1;
-		if (depths[index] > static_cast<size_t>(top_of_objt) + 1)
-			return observed(ordinary_drop_observation_status::refused, E2BIG,
-					literal.object_uid);
 	}
 	owner.stages_.resize(original.items.size());
 	owner.prototypes_.reserve(original.items.size());
@@ -754,22 +792,6 @@ ordinary_drop_observation ordinary_drop_enrollment_owner::publish(
 		if (number < 0 || number > top_of_objt ||
 		    owner.index_[number].virtual_number != literal.vnum)
 			return observed(ordinary_drop_observation_status::conflict, ESTALE,
-					literal.object_uid);
-		// These types can enroll allocating activity indexes or external ship
-		// bindings. A future complete activity owner is required before admission.
-		const auto activity_type = [](int type)
-		{ return type == ITEM_TELEPORT || type == ITEM_SHIP || type == ITEM_BOAT; };
-		if (activity_type(prototype->type) || activity_type(literal.type))
-			return observed(ordinary_drop_observation_status::unsupported, ENOTSUP,
-					literal.object_uid);
-		const auto eligibility = inert_item_stage_eligibility(*prototype, literal);
-		if (eligibility != inert_item_stage_result::ok)
-			return observed(eligibility == inert_item_stage_result::unsupported ?
-						ordinary_drop_observation_status::unsupported :
-						ordinary_drop_observation_status::refused,
-					eligibility == inert_item_stage_result::unsupported ?
-						ENOTSUP :
-						EBADMSG,
 					literal.object_uid);
 		owner.prototypes_.push_back(prototype);
 		++owner.counts_[number];
@@ -873,6 +895,9 @@ ordinary_drop_observation ordinary_drop_enrollment_owner::publish(
 	    static_cast<uint64_t>(world[owner.room_].number) != payload.to_owner.id ||
 	    !critical_operation_id_equal(owner.command_.operation_id, owner.receipt_.operation_id))
 		return observed(ordinary_drop_observation_status::unavailable, ESTALE);
+	if (ordinary_drop_recovery_eligibility(original.items.data(), original.items.size()) !=
+	    inert_item_stage_result::ok)
+		return observed(ordinary_drop_observation_status::conflict, ESTALE);
 	for (size_t index = 0; index < original.items.size(); ++index)
 	{
 		const auto &literal = original.items[index];
@@ -881,9 +906,7 @@ ordinary_drop_observation ordinary_drop_enrollment_owner::publish(
 		    prototype->R_num != owner.stages_[index].object_->R_num ||
 		    prototype->R_num < 0 || prototype->R_num > top_of_objt ||
 		    owner.index_[prototype->R_num].virtual_number != literal.vnum ||
-		    owner.index_[prototype->R_num].func.obj ||
-		    inert_item_stage_eligibility(*prototype, literal) !=
-			    inert_item_stage_result::ok)
+		    owner.index_[prototype->R_num].func.obj)
 			return observed(ordinary_drop_observation_status::conflict, ESTALE,
 					literal.object_uid);
 	}
