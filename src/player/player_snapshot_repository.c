@@ -1,4 +1,5 @@
 #include "player/player_snapshot_repository.h"
+#include "player/player_save_execution_guard.h"
 #include "player/player_sql_transaction_cleanup.h"
 
 #include "core/defines.h"
@@ -2741,6 +2742,17 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 	player_sql_cleanup local;
 	auto &proof = cleanup ? *cleanup : local;
 	player_sql_transaction_cleanup owner(connection, proof);
+	if (snapshot.pid <= 0)
+		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+	player_save_execution_guard::permit execution(snapshot.pid);
+	if (!execution)
+		return { execution.result() == player_save_execution_guard::admission::held ?
+				 player_save_apply_outcome::deferred :
+				 player_save_apply_outcome::retryable_failure,
+			 0,
+			 execution.result() == player_save_execution_guard::admission::held ?
+				 0U :
+				 ENOMEM };
 	const unsigned int idle_error = player_sql_idle_error(connection);
 	if (idle_error)
 		return { player_save_apply_outcome::terminal_failure, 0, idle_error };
@@ -2915,6 +2927,18 @@ player_save_apply_result player_snapshot_repository_apply_from_pool(const player
 								    void *context)
 {
 	(void)context;
+	if (snapshot.pid <= 0)
+		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+	// The outer owner includes ambiguous-COMMIT readback and pool cleanup.
+	player_save_execution_guard::permit execution(snapshot.pid);
+	if (!execution)
+		return { execution.result() == player_save_execution_guard::admission::held ?
+				 player_save_apply_outcome::deferred :
+				 player_save_apply_outcome::retryable_failure,
+			 0,
+			 execution.result() == player_save_execution_guard::admission::held ?
+				 0U :
+				 ENOMEM };
 	player_sql_pool_lease lease(sql_pool_acquire());
 	if (!lease.get())
 		return { player_save_apply_outcome::retryable_failure, 0, ETIMEDOUT };
