@@ -276,6 +276,23 @@ when all prototypes exist. Journal authoring must not silently activate dormant 
 create lich/rebirth/escort endpoints or fix clue/departure text. These are separately
 owned repairs with actual procedure/journey tests and prominent fix/news reporting.
 
+The Surface Minizones [dossier](../design/zone-stories/THE_MINIZONES_OF_THE_SURFACE.md)
+shows exact repeated counts and five equivalent cleansing alternatives. Any-one
+materials differ from a five-kind recipe; optional producer receipts do not
+restore spent wands/spheres/tokens or prove later payment. Classify ongoing
+commissions as support services, retain supplied proof and keep foreign producer
+and duplicate-host ownership explicit. Three retiring artifact choices and a
+single sphere cannot be treated as guaranteed supply for every service.
+
+Trace custom sources as well as resets: death-to-object generates Incarnate and
+psychomia materials without O/G/P. Random transformations need preflight and
+lineage; summon procedures need failure cleanup, placement/identity continuation,
+cooldowns and actual pet endpoints. Decorative springs and griffon narration are
+not usable fountains or granted mounts. Missing ordinary inbound links and dormant
+igloo prototypes require builder intent before enabling new content. Keep clear
+text/cleanup repairs in separate commits and prominent PR/news entries; conditional
+branches with identical current eligibility predicates are not demonstrated bugs.
+
 ## Schema version 1
 
 Version 1 remains supported. Use version 2 or 3 for new starter and hometown

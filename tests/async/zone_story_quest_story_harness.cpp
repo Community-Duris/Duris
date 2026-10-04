@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 68 &&
-				tracker.summary_for(7, 42).total == 1683,
+		require(catalog.story_mappings.size() == 69 &&
+				tracker.summary_for(7, 42).total == 1663,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -4496,6 +4496,215 @@ int main(int argc, char **argv)
 				recovered_abyss.progress_for_zone(7, 42, 875).completed == 22 &&
 				recovered_abyss.progress_for_zone(7, 42, 875).total == 22,
 			"Abyss cold recovery counted aliases/histories/narrated effects as additional outcomes");
+
+		{
+			const auto &surface_map = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &mapping)
+				{ return mapping.source_area == "surfacemini"; });
+			const auto &surface_clothes =
+				story_for("surfacemini", "hermit-clothing-recipe");
+			const auto &surface_glands = story_for("surfacemini", "gleb-eight-glands");
+			const auto &surface_essences =
+				story_for("surfacemini", "strange-six-essences");
+			const auto &surface_greater =
+				story_for("surfacemini", "cosmo-greater-healing");
+			const auto &surface_staff =
+				story_for("surfacemini", "cosmo-damnation-staff");
+			const auto &surface_clean =
+				story_for("surfacemini", "mug-cleansing-potions");
+			const auto &surface_time = story_for("surfacemini", "mug-time-vials");
+			const auto &surface_drug = story_for("surfacemini", "mug-potent-elixirs");
+			service surface(catalog);
+			require(surface.discover_zone(7, 42, 979, 97952, 100, "arrival") ==
+						result::applied &&
+					surface.render_journal(7, 42, 979, 10, 1, 101, false, false)
+							.find("] " + surface_essences.title +
+							      "\r\n") == std::string::npos,
+				"Surface discovery alone exposed an unmet request");
+			for (const auto &contact : surface_map.contacts)
+				require(surface.meet_npc(7, 42, contact.mob_vnum, 97952, 102) ==
+						result::applied,
+					"Surface local/foreign contact failed");
+			const auto surface_section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Surface journal section missing");
+				const auto end = journal.find("\r\n[", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto surface_material =
+				[](const auto &entry, int item) -> const auto &
+			{
+				return *std::find_if(entry.steps.begin(), entry.steps.end(),
+						     [&](const auto &step) {
+							     return step.kind == "carried_item" &&
+								    step.item_vnums.front() == item;
+						     });
+			};
+			supplies = {};
+			supplies.carried[43138] = 7;
+			supplies.carried[97904] = 1;
+			supplies.carried[97905] = 1;
+			supplies.carried[55198] = 6;
+			supplies.carried[97920] = 2;
+			supplies.carried[400280] = 2;
+			const auto surface_before = surface.serialize_state();
+			journal = surface.render_journal(7, 42, 979, 10, 1, 103, false, false,
+							 &supplies);
+			require(surface_section(surface_glands)
+							.find("[Missing now] " +
+							      surface_material(surface_glands,
+									       43138)
+								      .text) != std::string::npos &&
+					surface_section(surface_clothes)
+							.find("[Missing now] " +
+							      surface_material(surface_clothes,
+									       28552)
+								      .text) != std::string::npos &&
+					surface_section(surface_essences)
+							.find("[Missing now] " +
+							      surface_material(surface_essences,
+									       55199)
+								      .text) != std::string::npos &&
+					surface_section(surface_greater)
+							.find("[Missing now] " +
+							      surface_material(surface_greater,
+									       97920)
+								      .text) != std::string::npos &&
+					surface_section(surface_staff)
+							.find("[Missing now] " +
+							      surface_material(surface_staff,
+									       400280)
+								      .text) != std::string::npos,
+				"Surface accepted seven glands, local same-name clothes, repeated essence or two-copy proof");
+			supplies.carried[43138] = 8;
+			supplies.carried[28552] = 1;
+			supplies.carried[28553] = 1;
+			supplies.carried[97920] = 3;
+			supplies.carried[400280] = 3;
+			supplies.carried[53650] = 1;
+			supplies.carried[97921] = 1;
+			for (const int item : { 55199, 55200, 55201, 55202, 55203 })
+				supplies.carried[item] = 1;
+			journal = surface.render_journal(7, 42, 979, 10, 1, 104, false, false,
+							 &supplies);
+			require(surface_section(surface_glands)
+							.find("[Ready now] " +
+							      surface_material(surface_glands,
+									       43138)
+								      .text) != std::string::npos &&
+					surface_section(surface_clothes)
+							.find("Next: " +
+							      surface_clothes.steps.back().text) !=
+						std::string::npos &&
+					surface_section(surface_greater)
+							.find("Next: " +
+							      surface_greater.steps.back().text) !=
+						std::string::npos &&
+					surface_section(surface_staff)
+							.find("[Ready now] " +
+							      surface_material(surface_staff,
+									       400280)
+								      .text) != std::string::npos &&
+					surface.serialize_state() == surface_before &&
+					surface.progress_for_zone(7, 42, 979).completed == 0 &&
+					surface.progress_for_zone(7, 42, 979).total == 5,
+				"Surface supplied exact proof required histories, mutated state or credited services");
+			for (const int item : { 55550, 55551, 55552, 55553, 55554 })
+			{
+				for (const int remove : { 55550, 55551, 55552, 55553, 55554 })
+					supplies.carried.erase(remove);
+				supplies.carried[item] = 1;
+				journal = surface.render_journal(7, 42, 979, 10, 1, 105, false,
+								 false, &supplies);
+				require(surface_section(surface_clean)
+								.find("[Ready now] " +
+								      surface_clean.steps.front()
+									      .text) !=
+							std::string::npos &&
+						surface_section(surface_time).find("[Missing now]") !=
+							std::string::npos,
+					"Surface any-one cleansing required every material or replaced the full time bundle");
+			}
+			supplies.carried.erase(97920);
+			supplies.equipped[14] = 97920;
+			record(surface, surface_greater.steps.front().contracts.front(),
+			       "surface-lesser-service", 979, 97952);
+			journal = surface.render_journal(7, 42, 979, 10, 1, 106, false, false,
+							 &supplies);
+			require(surface_section(surface_greater)
+							.find("[Recorded] " +
+							      surface_greater.steps.front().text) !=
+						std::string::npos &&
+					surface_section(surface_greater)
+							.find("[Missing now] " +
+							      surface_material(surface_greater,
+									       97920)
+								      .text) != std::string::npos &&
+					surface.progress_for_zone(7, 42, 979).completed == 0,
+				"Surface crafting history restored spent/worn proof or awarded achievement credit");
+			auto wrong_drug = completion(surface_drug.steps.front().contracts.front(),
+						     "surface-wrong-drug-owner", 120);
+			wrong_drug.transaction.zone_number = 979;
+			wrong_drug.transaction.room_vnum = 55219;
+			require(surface.record_completion(wrong_drug) == result::rejected,
+				"Surface stole foreign drug producer ownership");
+			record(surface, surface_drug.steps.front().contracts.front(),
+			       "surface-buzzbeef", 550, 55219);
+			supplies.carried.erase(55247);
+			journal = surface.render_journal(7, 42, 979, 10, 1, 107, false, false,
+							 &supplies);
+			require(surface_section(surface_drug)
+							.find("[Recorded] " +
+							      surface_drug.steps.front().text) !=
+						std::string::npos &&
+					surface_section(surface_drug)
+							.find("[Missing now] " +
+							      surface_material(surface_drug, 55247)
+								      .text) != std::string::npos &&
+					surface.progress_for_zone(7, 42, 979).completed == 0,
+				"Foreign drug reward restored a bag, paid Mugflog or credited the Surface");
+			for (const auto &id : surface_clean.contracts)
+				record(surface, id, id.c_str(), 979, 98017);
+			for (const auto &entry : surface_map.stories)
+				if (entry.category == "service" && entry.id != surface_clean.id)
+					record(surface, entry.contracts.front(), entry.id.c_str(),
+					       979, 98017);
+			require(surface.progress_for_zone(7, 42, 979).completed == 0 &&
+					surface.progress_for_zone(7, 42, 979).total == 5,
+				"Surface service/alternative receipts inflated terminal achievements");
+			auto surface_replay = completion(surface_clean.contracts.front(),
+							 surface_clean.contracts.front().c_str(),
+							 120);
+			surface_replay.transaction.zone_number = 979;
+			surface_replay.transaction.room_vnum = 98017;
+			require(surface.record_completion(surface_replay) ==
+					result::already_applied,
+				"Surface cleansing replay was not idempotent");
+			service supplied_surface(catalog);
+			record(supplied_surface, surface_clothes.contracts.front(),
+			       "surface-supplied-clothes", 979, 97907);
+			require(supplied_surface.progress_for_zone(7, 42, 979).completed == 1 &&
+					supplied_surface.evidence_for(surface_clothes.steps.front()
+									      .contracts.front(),
+								      2)
+							.successful_attempts == 0,
+				"Surface supplied final clothing required or invented foreign producer history");
+			for (const auto &entry : surface_map.stories)
+				if (entry.category == "story" && entry.id != surface_clothes.id)
+					record(supplied_surface, entry.contracts.front(),
+					       entry.id.c_str(), 979, 97907);
+			service restored_surface(catalog);
+			require(restored_surface.deserialize_state(
+					supplied_surface.serialize_state(), &error) &&
+					restored_surface.progress_for_zone(7, 42, 979).completed ==
+						5 &&
+					restored_surface.progress_for_zone(7, 42, 979).total == 5,
+				"Surface cold recovery changed story/service/provenance distinction");
+		}
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 68 authored journals, accounting-gated player surfaces, starter/town
+**Status: 69 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -615,6 +615,24 @@ passage. Refugee BOOM/new camp, follower relocation, drow tunneling, captain
 curse/ritual and telescope installation need builder-selected accepted endpoints.
 Fossil follow-up and Ender's victim-message key are pending content repairs.
 No native repair or accounting activation ships with this journal.
+
+The Surface Minizones [comprehensive dossier](zone-stories/THE_MINIZONES_OF_THE_SURFACE.md)
+adds five stories/sixteen services covering all twenty-five exchanges, thirty-eight
+contacts/all thirty-two addressed families and seventy-three optional checks.
+Distinct foreign clothing and six planar essences, eight glands, retiring errands,
+healing tiers, sphere/base commissions and Mugflog alternatives use exact current
+proof with optional producer histories. Death-produced Incarnate materials and
+Lancer's bundle are alternative routes; cleansing requires any one kind, while
+time vials require all five. Service classification removes twenty fallback
+achievements and eleven potential dailies, and merges five equivalent cleansing
+rows into one. Current catalog: 69 maps/1663 achievements/1478 potential
+dailies/2218 rows. No native repair ships. Plan qualified mixed payment/quantities,
+surviving recipient/choice and source lineage, random transformations and accepted
+pet/equipment effects. Flame narrow-room allocation, frost/flame clue text,
+disconnected/dormant pockets and foreign laboratory custody are explicit pending
+repairs with separate future fix/news proof. Identical current lesser/greater
+eligibility predicates make the apparent high-roll split conditional rather than
+a demonstrated gameplay failure.
 
 The Abyss's [comprehensive dossier](zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md)
 covers all 23 exchanges/25 addressed families, 183 rooms, 117 mobs/113 objects,
@@ -1345,7 +1363,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 173 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 172 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1368,6 +1386,13 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
 
 
+- [x] Complete the Surface Minizones' twenty-five-exchange/thirty-two-addressed
+  source dossier: five stories/sixteen services, thirty-eight contacts and
+  seventy-three optional checks; exact foreign clothing, gland/essence bundles,
+  healing copies/fees, six sphere/base services and five cleansing alternatives.
+  Native definitions stay unchanged. No native repair ships; creation cleanup,
+  clue text, source/access/foreign-host and accepted transformation/pet plans
+  remain pending with clearly separated future fix/news evidence.
 - [x] Complete the Abyss's 23-exchange/25-addressed comprehensive source dossier:
   22 outcomes/forty contacts/39 optional checks; six procedures, full world/resets,
   exact competing bundles, foreign producers and staged source/access blockers.
@@ -1642,6 +1667,7 @@ contract classification; it does not claim complete objective coverage.
 | Valley of the Snow Ogres | 1 | Complete: seven outcomes, one armor service and one refusal exclusion | [Source-comprehensive dossier](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md); sixteen contacts/all six addressed families and fifteen optional checks | Seven potential candidates need actual source/access/payout qualification; mixed armor payment guarded | Distinct shard producers → pyramid; independent trophies; surface Leppts six-hide/two-weapon/2,500-platinum commission. Stalk/hide sources, active renewal, controls and custom lifecycle/target/cadence repairs pending; no native repair ships |
 | The Mountain Valley of Dawndale | 1 | Complete: nine outcomes, three support services and one referral exclusion | [Source-comprehensive dossier](zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md); twenty-seven contacts/all four addressed families and thirty-one optional checks | Nine potential candidates require actual source/access/retirement/payout qualification; coin-only key and mixed lens service guarded | Refugee portrait/stones/dust/device + persistent key; competing captain bundles; bow/treasure/larvae and foreign flute return. Shared caps, exact source/content, fossil/Ender repairs and actual camp/tunnel/curse/lens endpoints pending; no native repair ships |
 | The 222nd Layer of the Abyss | 1 | Complete: 22 outcomes covering all 23 exchanges | [Source-comprehensive dossier](zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md); forty contacts/all 25 addressed families and 39 optional checks | 19 potential candidates; three outcomes remain native Story-only | Warrior/gloves, Uz wand/tales, distinct heads/parts/essences, Neptune and equivalent Marvin aliases. Phase transfer/source/access/effect qualification and truthful clue/departure fixes pending; no native repair ships |
+| The Minizones of the Surface | 1 | Complete: five stories and sixteen services cover all twenty-five exchanges | [Source-comprehensive dossier](zone-stories/THE_MINIZONES_OF_THE_SURFACE.md); thirty-eight contacts/all thirty-two addressed families and seventy-three optional checks | Five potential candidates; support services award no achievement/daily credit; mixed payment remains guarded | Hermit/gland/essence errands, healing tiers, foreign bases/spheres and Mugflog alternatives. Source/quantity/payment/recipient, transformed-item/pet and access/foreign-host qualification pending. Clear text/cleanup repairs proposed; no native fix ships |
 
 ## Twin Towers evidence and decisions
 

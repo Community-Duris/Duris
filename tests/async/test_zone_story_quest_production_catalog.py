@@ -2153,7 +2153,68 @@ assert "attack_continuation" in (ROOT/"src/specs/specs.underworld.c").read_text(
 legend=(ROOT/"src/specs/specs.winterhaven.c").read_text().split("int lorekeeper_scroll(",1)[1].split("\nint ",1)[0]
 assert "extract_obj(obj, TRUE)" in legend and "number(55364, 55365)" in legend
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex"):
+
+# Surface commissions and alternatives preserve exact source contracts without extra credit.
+surface_mini=inventory_module.area_evidence(ROOT,"surfacemini")
+surface_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="surfacemini")
+surface_stories={s["id"]:s for s in surface_map["stories"]}
+assert (surface_map["schema_version"],surface_map["revision"],surface_map["coverage"])==(3,1,"complete")
+assert len(surface_stories)==21 and len(surface_map["contacts"])==38 and not surface_map["exclusions"]
+assert collections.Counter(s["category"] for s in surface_stories.values())=={"story":5,"service":16}
+assert sum(t.get("optional",False) for s in surface_stories.values() for t in s["steps"])==73
+assert (len(surface_mini["requests"]),len(surface_mini["dialogue"]),len(surface_mini["mobs"]),len(surface_mini["items"]),len(surface_mini["reset_commands"]))==(25,32,25,42,145)
+assert collections.Counter(b["kind"] for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/surfacemini.qst")=={"Q":20,"QA":5,"M":30,"MA":4}
+by_line={r["block"]["line"]:r["block"] for r in surface_mini["requests"]}
+for line,required,reward,coins,retire in (
+    (26,[15008],[97930],0,0),(33,[28553,28552],[97903],0,0),
+    (165,[55554,55553,55552,55551,55550],[97920],100000,0),
+    (174,[97920]*3,[97919],250000,0),(181,[53650,97921,400280,400280,400280],[53661],0,0),
+    (189,[53651,97921,400280,400280,400280],[53662],0,0),(197,[53652,97921,400280,400280,400280],[53663],0,0),
+    (205,[97919]*3,[97922],1000000,0),(212,[53646,400280,400280,400280,97921],[53664],0,0),
+    (220,[97921,400280,400280,400280,500003],[97931],0,0),(228,[97921,400280,400280,400280,500046],[97932],0,0),
+    (236,[55033,55033,55033,55246],[97933,97933],0,0),(261,[43138]*8,[97910],0,1),
+    (341,[55198,55199,55200,55201,55202,55203],[97921,97923],0,1),
+    (421,[55033,55246],[97934]*3,0,0),(428,[55033]*3+[55238],[97936],0,0),
+    (435,[55550,55551,55552,55553,55554,55238],[97935]*2,0,0),
+    (445,[41916]+[55033]*3,[55075],0,0),(452,[55247],[97937]*4,25000,0),
+    (460,[55554],[97938]*2,10000,0),(466,[55553],[97938]*2,10000,0),
+    (472,[55552],[97938]*2,10000,0),(478,[55551],[97938]*2,10000,0),(484,[55550],[97938]*2,10000,0)):
+    assert by_line[line]["give"]==[("I",v) for v in required]+([("C",coins)] if coins else [])
+    assert by_line[line]["receive"]==[("I",v) for v in reward]
+    assert by_line[line]["binding"]["completion_key"].endswith("disappear="+str(retire))
+assert by_line[302]["give"]==[("I",16635),("I",3003)] and by_line[302]["receive"]==[("E",15000),("C",16000)]
+assert by_line[302]["binding"]["completion_key"].endswith("disappear=1")
+bindings=[b for entry in surface_stories.values() for b in entry["contracts"]]
+assert len(bindings)==25 and {tuple(sorted(b.items())) for b in bindings}=={tuple(sorted(b["binding"].items())) for b in by_line.values()}
+cleansing=surface_stories["mug-cleansing-potions"]
+assert cleansing["contracts"]==[by_line[n]["binding"] for n in (460,466,472,478,484)]
+assert cleansing["steps"][0]["item_vnums"]==[55550,55551,55552,55553,55554] and cleansing["steps"][0]["count"]==1
+for name,item,count in (("gleb-eight-glands",43138,8),("cosmo-greater-healing",97920,3),("cosmo-ultimate-healing",97919,3),("cosmo-damnation-staff",400280,3)):
+    assert any(t.get("item_vnums")==[item] and t["count"]==count for t in surface_stories[name]["steps"])
+assert {t["item_vnums"][0] for t in surface_stories["strange-six-essences"]["steps"] if t["kind"]=="carried_item"}=={55198,55199,55200,55201,55202,55203}
+assert {t["item_vnums"][0] for t in surface_stories["hermit-clothing-recipe"]["steps"] if t["kind"]=="carried_item"}=={28552,28553}
+assert {t["item_vnums"][0] for t in surface_stories["mug-time-vials"]["steps"] if t["kind"]=="carried_item"}=={55550,55551,55552,55553,55554,55238}
+all_blocks=inventory_module.native_blocks(ROOT)
+drug=surface_stories["mug-potent-elixirs"]["steps"][0]
+assert drug["contracts"]==[next(b["binding"] for b in all_blocks if b["source"]==src and b["line"]==line) for src,line in (("areas/qst/wh.qst",1342),("areas/qst/alatorin.qst",6526))]
+incarnate_producer=surface_stories["cosmo-lesser-healing"]["steps"][0]["contracts"][0]
+assert incarnate_producer==next(b["binding"] for b in all_blocks if b["source"]=="areas/qst/wh.qst" and b["line"]==2619)
+assert surface_stories["cosmo-greater-healing"]["steps"][0]["contracts"]==surface_stories["cosmo-lesser-healing"]["contracts"]
+assert surface_stories["cosmo-ultimate-healing"]["steps"][0]["contracts"]==surface_stories["cosmo-greater-healing"]["contracts"]
+contacts={c["mob_vnum"]:c for c in surface_map["contacts"]}
+for dialogue in surface_mini["dialogue"]:
+    assert set(dialogue["body"][0].rstrip("~").split())<=set(contacts[dialogue["giver_vnum"]]["topics"])
+assert all("qc_action" not in c["topics"] for c in contacts.values())
+assert collections.Counter(r["command"] for r in surface_mini["reset_commands"])=={"M":97,"O":14,"G":12,"E":11,"D":10,"R":1}
+assert any(r["command"]=="R" and r["arguments"]==[1,97915,7,98001,100,0,0,0] for r in surface_mini["reset_commands"])
+assert all(r["arguments"][-3:]==[0,0,0] for r in surface_mini["reset_commands"])
+assert {(a["kind"],a["vnum"],a["function"]) for a in surface_mini["special_assignments"]}=={("obj",97923,"elemental_wand"),("obj",97932,"collar_frost"),("obj",97931,"collar_flames")}
+assert {r["block"]["line"] for r in surface_mini["requests"] if not r["definition"]["daily_eligible"]}=={165,174,205,452,460,466,472,478,484}
+surface_units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==979]
+assert (len(surface_units),sum(u["achievement"] for u in surface_units),sum(u["daily_candidate"] for u in surface_units))==(21,5,5)
+assert {s["id"] for s in surface_stories.values() if s["category"]=="story"}=={"hermit-green-potion","hermit-clothing-recipe","gleb-eight-glands","hermit-salmon-firebreather","strange-six-essences"}
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

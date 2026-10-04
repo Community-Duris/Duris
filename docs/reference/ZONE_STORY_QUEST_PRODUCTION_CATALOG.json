@@ -110774,6 +110774,1806 @@
     {
       "contacts": [
         {
+          "description": "Gorblaat carries the breakable bone key for the locked grate; this access route has no native quest exchange.",
+          "keyword": "gorblaat",
+          "mob_vnum": 97900,
+          "name": "Gorblaat",
+          "topics": []
+        },
+        {
+          "description": "Humble hermit with two independent foreign-material errands. His worn local clothing is not the requested foreign proof.",
+          "keyword": "hermit",
+          "mob_vnum": 97901,
+          "name": "a humble hermit",
+          "topics": [
+            "hi",
+            "hello",
+            "hey",
+            "howdy",
+            "errand",
+            "errands"
+          ]
+        },
+        {
+          "description": "Observatory cosmomancer with three healing tiers, six artifact commissions and a milky-potion service. Fees, consumed copies and sphere supply are separate requirements.",
+          "keyword": "cosmomancer",
+          "mob_vnum": 97907,
+          "name": "a Gnomish cosmomancer",
+          "topics": [
+            "lesser",
+            "hi",
+            "hello",
+            "howdy",
+            "hey",
+            "greater",
+            "wand",
+            "healing",
+            "staff",
+            "crown",
+            "platemail",
+            "ultimate",
+            "shadow",
+            "stalker",
+            "wicked",
+            "collar",
+            "infinite",
+            "flames",
+            "flame",
+            "perpetual",
+            "frost",
+            "frosty",
+            "milky",
+            "potion"
+          ]
+        },
+        {
+          "description": "Gleb requires eight exact fire glands, gives an elixir and retires. His spell-themed reward does not change your character class.",
+          "keyword": "gleb",
+          "mob_vnum": 97908,
+          "name": "Gleb Shnieebly the pyro-mage",
+          "topics": [
+            "hi",
+            "hello",
+            "pyrolisk",
+            "pyrolisks"
+          ]
+        },
+        {
+          "description": "Hungry Eagle Ridge hermit with a salmon/firebreather delivery. Reward narration does not grant the overhead griffon.",
+          "keyword": "hermit",
+          "mob_vnum": 97909,
+          "name": "a strange old hermit",
+          "topics": [
+            "hi",
+            "hello",
+            "hungry",
+            "bone"
+          ]
+        },
+        {
+          "description": "Wandering farseer with addressed greetings and a mounted reset. His griffon and gear are lore and access context rather than an extra accepted delivery.",
+          "keyword": "farseer",
+          "mob_vnum": 97916,
+          "name": "a mountain farseer",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Strange being with six distinct planar essences, one cosmic sphere and one transformable wand; retires after delivery.",
+          "keyword": "strange",
+          "mob_vnum": 97917,
+          "name": "a strange being",
+          "topics": [
+            "hi",
+            "hello",
+            "howdy",
+            "hey",
+            "tasks"
+          ]
+        },
+        {
+          "description": "Bog alchemist with six service families; the five cleansing materials are alternatives, while the time-vial materials are a full distinct bundle.",
+          "keyword": "mugflog",
+          "mob_vnum": 97920,
+          "name": "Mugflog, the shaman",
+          "topics": [
+            "hi",
+            "hello",
+            "hey",
+            "howdy",
+            "time",
+            "vial",
+            "liquid",
+            "staff",
+            "broken",
+            "thick",
+            "green",
+            "sludge",
+            "chronomancer",
+            "wicked",
+            "scepter",
+            "spiked",
+            "mace",
+            "vampire",
+            "elixir",
+            "potent",
+            "drugs",
+            "cleansing",
+            "potion"
+          ]
+        },
+        {
+          "description": "Foreign Winterhaven scientist has an additional laboratory declaration here. His three contracts retain Winterhaven ownership; shared global cap can affect local presence.",
+          "keyword": "chibbleniffle",
+          "mob_vnum": 55239,
+          "name": "Chibbleniffle the Great Scientist",
+          "topics": []
+        },
+        {
+          "description": "Misty Chasm scale-for-potion producer; retires after the two distinct scales.",
+          "keyword": "shaman",
+          "mob_vnum": 15006,
+          "name": "a pygmie shaman",
+          "topics": []
+        },
+        {
+          "description": "Foreign headdress and necklace maker. Exact counts differ and both item-and-coin payments remain guarded.",
+          "keyword": "podaling",
+          "mob_vnum": 28576,
+          "name": "a hunched podaling",
+          "topics": []
+        },
+        {
+          "description": "Foreign frail man beneath Du'Maathe Castle uses the secret recipe and fine sand for three granular potions. This is an onward route rather than another Surface reward.",
+          "keyword": "frail",
+          "mob_vnum": 37102,
+          "name": "a frail man",
+          "topics": []
+        },
+        {
+          "description": "Shipyard stonescale pyrolisk has carried or worn gland declarations. Recover loose proof without inferring a personal kill.",
+          "keyword": "pyrolisk",
+          "mob_vnum": 43193,
+          "name": "a stonescale pyrolisk",
+          "topics": []
+        },
+        {
+          "description": "Shackled vehicle pyrolisk provides an alternative gland declaration.",
+          "keyword": "pyrolisk",
+          "mob_vnum": 47109,
+          "name": "a shackled stonescale pyrolisk",
+          "topics": []
+        },
+        {
+          "description": "Alatorin bladeback pyrolisk with gland declarations.",
+          "keyword": "pyrolisk",
+          "mob_vnum": 83515,
+          "name": "a bladeback pyrolisk",
+          "topics": []
+        },
+        {
+          "description": "Larger Alatorin bladeback pyrolisk with the same exact gland kind.",
+          "keyword": "pyrolisk",
+          "mob_vnum": 83516,
+          "name": "a LARGE bladeback pyrolisk",
+          "topics": []
+        },
+        {
+          "description": "Woodseer fish vendor declares the exact salmon steak as shop stock.",
+          "keyword": "vendor",
+          "mob_vnum": 16538,
+          "name": "a fish vendor",
+          "topics": []
+        },
+        {
+          "description": "Foreign wayhouse keeper carries a firebreather; produced stock alone does not establish that it is for sale.",
+          "keyword": "jenna",
+          "mob_vnum": 5715,
+          "name": "Jenna",
+          "topics": []
+        },
+        {
+          "description": "Earth planar essence source.",
+          "keyword": "ogremoch",
+          "mob_vnum": 23806,
+          "name": "Ogremoch Prince of the Elemental Plane of Earth",
+          "topics": []
+        },
+        {
+          "description": "Fire planar essence source.",
+          "keyword": "imix",
+          "mob_vnum": 25440,
+          "name": "Imix Prince of the Elemental Plane of Fire",
+          "topics": []
+        },
+        {
+          "description": "Air planar essence source.",
+          "keyword": "yan-c-bin",
+          "mob_vnum": 24440,
+          "name": "Yan-C-Bin Prince of the Elemental Plane of Air",
+          "topics": []
+        },
+        {
+          "description": "Ethereal essence source.",
+          "keyword": "menzellon",
+          "mob_vnum": 12400,
+          "name": "Menzellon",
+          "topics": []
+        },
+        {
+          "description": "Water planar essence source.",
+          "keyword": "olhydra",
+          "mob_vnum": 23240,
+          "name": "Olhydra Princess of the Elemental Plane of Water",
+          "topics": []
+        },
+        {
+          "description": "Reviewed Astral main source for the sixth essence.",
+          "keyword": "demogorgon",
+          "mob_vnum": 19704,
+          "name": "Demogorgon",
+          "topics": []
+        },
+        {
+          "description": "Foreign treant uses a death procedure to leave the psychomia plant. The plant competes among several recipes.",
+          "keyword": "psychomia",
+          "mob_vnum": 55246,
+          "name": "a tall psychomia treant",
+          "topics": []
+        },
+        {
+          "description": "Fire Incarnate leaves burning flame through a death procedure.",
+          "keyword": "incarnate",
+          "mob_vnum": 55550,
+          "name": "the Incarnate of Fire",
+          "topics": []
+        },
+        {
+          "description": "Frost Incarnate leaves a snowflake through a death procedure.",
+          "keyword": "incarnate",
+          "mob_vnum": 55551,
+          "name": "the Incarnate of Frost",
+          "topics": []
+        },
+        {
+          "description": "Stone Incarnate leaves flint through a death procedure.",
+          "keyword": "incarnate",
+          "mob_vnum": 55552,
+          "name": "the Incarnate of Stone",
+          "topics": []
+        },
+        {
+          "description": "Air Incarnate leaves a wind wisp through a death procedure.",
+          "keyword": "incarnate",
+          "mob_vnum": 55553,
+          "name": "the Incarnate of Air",
+          "topics": []
+        },
+        {
+          "description": "Mischief Incarnate leaves a bubble through a death procedure.",
+          "keyword": "incarnate",
+          "mob_vnum": 55554,
+          "name": "the Incarnate of Mischief",
+          "topics": []
+        },
+        {
+          "description": "Alternative five-material Incarnate bundle producer for a sphere of the void. This is separate from personally slaying every Incarnate.",
+          "keyword": "lancer",
+          "mob_vnum": 55151,
+          "name": "Lancer",
+          "topics": []
+        },
+        {
+          "description": "Retiring foreign two-head producer for the unfinished Shadow Stalker wand.",
+          "keyword": "ahanz",
+          "mob_vnum": 53700,
+          "name": "Ahanz",
+          "topics": []
+        },
+        {
+          "description": "Retiring foreign five-artifact producer: staff handle, crown shell and chest piece are alternative reward choices.",
+          "keyword": "adventurer",
+          "mob_vnum": 53704,
+          "name": "a once great adventurer",
+          "topics": []
+        },
+        {
+          "description": "Prophet of Fire supplies the Flaming ring for the flames collar.",
+          "keyword": "prophet",
+          "mob_vnum": 500116,
+          "name": "the Prophet of Fire",
+          "topics": []
+        },
+        {
+          "description": "Prophet of Ice supplies the Frosty ring, despite the cosmomancer's Fire clue.",
+          "keyword": "prophet",
+          "mob_vnum": 500117,
+          "name": "the Prophet of Ice",
+          "topics": []
+        },
+        {
+          "description": "Ceothia Future source for the wicked scepter consumed by two independent Mugflog services.",
+          "keyword": "chronomancer",
+          "mob_vnum": 81454,
+          "name": "The Chronomancer",
+          "topics": []
+        },
+        {
+          "description": "One foreign plant-for-drug-bag producer; also pays a hundred-platinum reward.",
+          "keyword": "buzzbeef",
+          "mob_vnum": 55111,
+          "name": "Buzzbeef",
+          "topics": []
+        },
+        {
+          "description": "Alternative foreign plant-for-drug-bag producer with the same exact output and reward.",
+          "keyword": "bimk",
+          "mob_vnum": 83392,
+          "name": "Bimk the goblin seafarer",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the Surface's independent hermit errands, Gleb's eight glands and the six-plane essence delivery, with healing tiers and alchemical or artifact commissions as support services. Active, ready accounting is required. Exact supplied proof fits without producer history; personal sources, dialogue, kills, access, mounts and equipment effects remain separate integrations. All sixteen service families give no achievement or daily credit; the five story outcomes retain their native potential daily eligibility. Material readiness does not prove payment or a full campaign.",
+      "orientation": [
+        "Meet each recipient and ask their addressed questions. The minizones are separate pockets across the surface; discovering one does not mean you entered every pocket or learned every keyword. Each question provides a clue rather than an achievement.",
+        "The humble hermit accepts the pygmie shaman's green potion or both exact foreign clothes independently. The shaman wants a small and a large salamander scale. The hunched podaling makes a headdress for six feathers, one hide and one platinum, or a necklace for three hides and half a platinum. Those mixed payments remain guarded; the hermit's same-named local clothing does not fit.",
+        "The clothing errand gives a secret potion recipe. The frail man beneath the Apples and Wheat Inn under Du'Maathe Castle later consumes it with fine sand for three granular potions. The water dragon wears that sand. This foreign continuation retains its own ownership and is not extra Surface credit.",
+        "Gleb needs eight fire glands. Shipyard, vehicle and Alatorin pyrolisks have matching sources. Four glands plus a token are a different recipe. Gleb retires and gives one elixir carrying fire aura, fireshield and fire ward; its name does not change your class.",
+        "The Eagle Ridge hermit wants a salmon steak and firebreather. The Woodseer vendor supplies the steak; Jenna and several foreign bartenders carry the bottle. Acceptance pays sixteen platinum and experience and retires the hermit. It does not create, grant or transport you on the griffon mentioned overhead.",
+        "The strange being wants six distinct essences: Ogremoch, Imix, Yan-C-Bin, Menzellon, Olhydra and Demogorgon. Their reviewed Earth, Fire, Air, Ethereal, Water and Astral sources carry them. Five copies of one essence do not fit. The recipient gives one cosmic sphere and one elemental wand and retires.",
+        "Wear the elemental wand and rub a matching wand keyword outside combat to consume it and receive one random elemental variant. One use does not give all six variants. Actual transformation, safe creation, custody and effect history are separate from the essence-delivery receipt.",
+        "The cosmomancer makes a lesser healing wand for five distinct Incarnate materials plus one hundred platinum, a greater wand for three lesser wands plus two hundred fifty, and an ultimate wand for three greater wands plus one thousand. All three mixed payments remain guarded. Building an ultimate from raw proof requires nine lesser wands and two thousand six hundred fifty platinum across fees; optional histories do not supply the copies or payment.",
+        "Incarnates leave their exact materials on death, while Lancer offers all five for a sphere of the void. These are alternative supply routes. One flame, snowflake, flint, wisp and bubble support a full healing or time-vial bundle; Mugflog cleansing instead accepts any one of them with ten platinum.",
+        "Six artifact commissions each consume one cosmic sphere, three large mithril pieces and one exact base. The once great adventurer offers three different Damnation bases through retiring alternative choices; Ahanz offers the unfinished Shadow Stalker wand for two heads. One sphere or one adventurer choice cannot supply every commission. Supplied matching proof remains valid.",
+        "The Prophet of Fire produces the Flaming ring, and the Prophet of Ice produces the Frosty ring. The native frost clue wrongly names Fire. The collars must be worn: flames or frost attempts a summon outside combat and a locker, with follower and narrow-room checks and a ten-minute success cooldown. Native failure/placement cleanup and correct flame text remain pending repairs; crafting does not record a summoned pet.",
+        "The cosmomancer also makes two milky white potions for three tokens and a psychomia plant. Mugflog makes three green sludge rewards for one token and a plant, a broken staff for three tokens and the wicked scepter, two time vials for the scepter and all five Incarnate materials, or a mace for Woundhealer and three tokens. These are independent consumed-material services.",
+        "Mugflog gives four potent elixirs for a drug bag plus twenty-five platinum. Buzzbeef and Bimk independently produce the bag for psychomia and pay a hundred-platinum reward. Either history is optional; that reward is distinct from Mugflog's guarded payment. Five equivalent cleansing offers share one service and require ten platinum with any one exact Incarnate material.",
+        "In Gorblaat's cave, pull the table to clear the east passage, then use his breakable bone key to unlock the grate. Near the farseer, push the rocks to clear the upward passage; neither control requires opening an invented door. The ridge also has ordinary closed doors and secret closed passages, with distinct controls and hazards.",
+        "Chibbleniffle's laboratory is a foreign Winterhaven host. Its three token, mold and element exchanges retain Winterhaven ownership, and the Surface chest has no local contents declaration. Shared global caps affect local scientist and apparatus presence. The laboratory does not create three additional Surface achievements.",
+        "Several pockets have outward surface links without corresponding ordinary inbound links, and the final igloo has no reviewed ordinary exit or Ishaz/ice-elemental reset. These are builder-review findings, not guaranteed new adventures. Discovery, mount handling, rare seraphim gear, griffon feathers, safe arrival and world changes need actual accepted endpoints before extra credit."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "surfacemini",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:15008;receive=I:97930;disappear=0",
+              "giver_vnum": 97901
+            }
+          ],
+          "id": "hermit-green-potion",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:15017,I:15018;receive=I:15008;disappear=1",
+                  "giver_vnum": 15006
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-shaman",
+              "kind": "completion",
+              "optional": true,
+              "text": "Foreign scale-for-potion exchange recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The pygmie shaman in Misty Chasm accepts one small and one large salamander scale for this potion and retires. Supplied matching potion fits without that receipt. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-15008",
+              "item_vnums": [
+                15008
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a viscid ebon potion"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:15008;receive=I:97930;disappear=0",
+                  "giver_vnum": 97901
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient stays. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Return the pygmie shaman's exact green potion for the hermit's potion of might. His clothing errand is an independent request.",
+          "title": "A potion for the humble hermit"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:28552,I:28553;receive=I:97903;disappear=0",
+              "giver_vnum": 97901
+            }
+          ],
+          "id": "hermit-clothing-recipe",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:1000,I:28554,I:28554,I:28554,I:28554,I:28554,I:28554,I:28555;receive=I:28552;disappear=0",
+                  "giver_vnum": 28576
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-headdress",
+              "kind": "completion",
+              "optional": true,
+              "text": "Foreign headdress commission recorded"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:500,I:28555,I:28555,I:28555;receive=I:28553;disappear=0",
+                  "giver_vnum": 28576
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-necklace",
+              "kind": "completion",
+              "optional": true,
+              "text": "Foreign necklace commission recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The hunched podaling makes this exact necklace for three neberihide strips and half a platinum. The mixed payment remains guarded. The hermit wears a different same-named local necklace, which does not fit. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-28553",
+              "item_vnums": [
+                28553
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a woven neberihide necklace"
+            },
+            {
+              "count": 1,
+              "hint": "The hunched podaling makes this exact headdress for six dark feathers, one neberihide strip and one platinum. The mixed payment remains guarded. The hermit wears a different same-named local headdress, which does not fit. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-28552",
+              "item_vnums": [
+                28552
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a birdfeather headdress"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:28552,I:28553;receive=I:97903;disappear=0",
+                  "giver_vnum": 97901
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient stays. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Return the exact foreign headdress and necklace for the secret recipe. The hermit's same-named local clothes do not fit. A frail man under Du'Maathe Castle can later use this recipe with fine sand.",
+          "title": "Clothing and the secret potion recipe"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:43138,I:43138,I:43138,I:43138,I:43138,I:43138,I:43138,I:43138;receive=I:97910;disappear=1",
+              "giver_vnum": 97908
+            }
+          ],
+          "id": "gleb-eight-glands",
+          "steps": [
+            {
+              "count": 8,
+              "hint": "Recover eight exact fire glands. Stonescale pyrolisks in Shipyard or its shackled vehicle sources and bladeback pyrolisks in Alatorin have declared glands. Four glands and a token serve a different Alatorin recipe, not Gleb's request. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-43138",
+              "item_vnums": [
+                43138
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 8 copies of a fire gland"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43138,I:43138,I:43138,I:43138,I:43138,I:43138,I:43138,I:43138;receive=I:97910;disappear=1",
+                  "giver_vnum": 97908
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient retires after acceptance. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring eight matching pyrolisk glands for one pyro-mage elixir; Gleb retires. The potion applies its native fire spells rather than making you a pyro-mage.",
+          "title": "Eight fire glands for Gleb"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:3003,I:16635;receive=C:16000,E:15000;disappear=1",
+              "giver_vnum": 97909
+            }
+          ],
+          "id": "hermit-salmon-firebreather",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The Woodseer fish vendor supplies this exact salmon steak through declared shop stock. Other meals do not fit; accepting the meal does not summon or grant the overhead griffon. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-16635",
+              "item_vnums": [
+                16635
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a salmon steak"
+            },
+            {
+              "count": 1,
+              "hint": "Recover the exact bottle of firebreather. Jenna carries one and several Charing and Bloodstone bartenders have declarations; her produced-stock list does not itself guarantee this bottle is sold. Other bottles do not fit. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-3003",
+              "item_vnums": [
+                3003
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a firebreather"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:3003,I:16635;receive=C:16000,E:15000;disappear=1",
+                  "giver_vnum": 97909
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient retires after acceptance. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring the exact salmon steak and firebreather for sixteen platinum and experience. The hermit retires; the bright griffon is narrative rather than a granted mount.",
+          "title": "A meal for the hungry hermit"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:55198,I:55199,I:55200,I:55201,I:55202,I:55203;receive=I:97921,I:97923;disappear=1",
+              "giver_vnum": 97917
+            }
+          ],
+          "id": "strange-six-essences",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Ogremoch on the Elemental Plane of Earth carries this exact essence. The other five named planar essences are distinct, and other consumers compete for them. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55198",
+              "item_vnums": [
+                55198
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the essence of Ogremoch"
+            },
+            {
+              "count": 1,
+              "hint": "Imix on the Elemental Plane of Fire carries this exact essence. Deliver it with the five other distinct essences; repeated fire essences cannot replace them. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55199",
+              "item_vnums": [
+                55199
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the essence of Imix"
+            },
+            {
+              "count": 1,
+              "hint": "Yan-C-Bin on the Elemental Plane of Air carries this exact essence. Carry it loose rather than leaving it in a container. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55200",
+              "item_vnums": [
+                55200
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the essence of Yan-c-bin"
+            },
+            {
+              "count": 1,
+              "hint": "Menzellon on the Ethereal Plane carries this exact essence. Its native delivery does not certify your own planar travel or kill. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55201",
+              "item_vnums": [
+                55201
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the essence of Menzellon"
+            },
+            {
+              "count": 1,
+              "hint": "Olhydra on the Elemental Plane of Water carries this exact essence. It differs from the other five required essences. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55202",
+              "item_vnums": [
+                55202
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the essence of Olhydra"
+            },
+            {
+              "count": 1,
+              "hint": "Demogorgon on the Astral Plane carries this exact essence. The reviewed Astral main source exists; the separate Tiamat declaration has an unresolved missing mobile reference and is not promised as an alternative. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55203",
+              "item_vnums": [
+                55203
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the essence of Demogorgon"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55198,I:55199,I:55200,I:55201,I:55202,I:55203;receive=I:97921,I:97923;disappear=1",
+                  "giver_vnum": 97917
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient retires after acceptance. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Deliver one essence each of Ogremoch, Imix, Yan-C-Bin, Menzellon, Olhydra and Demogorgon for one cosmic sphere and one elemental wand. The being retires; actual wand transformation and later sphere spending remain separate.",
+          "title": "Six planes for the strange being"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:100000,I:55550,I:55551,I:55552,I:55553,I:55554;receive=I:97920;disappear=0",
+              "giver_vnum": 97907
+            }
+          ],
+          "id": "cosmo-lesser-healing",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93011;receive=I:55550,I:55551,I:55552,I:55553,I:55554;disappear=0",
+                  "giver_vnum": 55151
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-incarnates",
+              "kind": "completion",
+              "optional": true,
+              "text": "Foreign alternative Incarnate bundle recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The Incarnate of Mischief leaves the bubble through its death procedure. Lancer supplies a bundle containing it for a sphere of the void; it is distinct from the other four material kinds. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55554",
+              "item_vnums": [
+                55554
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a delicate bubble"
+            },
+            {
+              "count": 1,
+              "hint": "The Incarnate of Air leaves the wisp through its death procedure. Lancer's bundle is an alternative source. Current possession does not identify who killed, recovered or handed over the item. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55553",
+              "item_vnums": [
+                55553
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a wisp of wind"
+            },
+            {
+              "count": 1,
+              "hint": "The Incarnate of Stone leaves the flint through its death procedure. Lancer can supply it in the alternative five-material bundle; a fire or wind item is a different kind. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55552",
+              "item_vnums": [
+                55552
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a flint of granite"
+            },
+            {
+              "count": 1,
+              "hint": "The Incarnate of Frost leaves a snowflake through its death procedure. Lancer's sphere-of-the-void exchange is an alternative bundle source; another Incarnate material cannot replace snow in a full bundle. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55551",
+              "item_vnums": [
+                55551
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a small snowflake"
+            },
+            {
+              "count": 1,
+              "hint": "The Incarnate of Fire leaves the burning flame through a death procedure. Lancer also gives the complete five-material bundle for a sphere of the void. A supplied matching flame fits either recipe without personal kill history. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55550",
+              "item_vnums": [
+                55550
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a burning flame"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:100000,I:55550,I:55551,I:55552,I:55553,I:55554;receive=I:97920;disappear=0",
+                  "giver_vnum": 97907
+                }
+              ],
+              "hint": "Offer all exact items together. Pay 100 platinum in the same offer; mixed item-and-coin settlement remains guarded, and item readiness does not prove payment. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer the five distinct Incarnate materials and one hundred platinum for one lesser wand. Death-produced materials and Lancer's alternative bundle are supply routes.",
+          "title": "Commission a lesser healing wand"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:250000,I:97920,I:97920,I:97920;receive=I:97919;disappear=0",
+              "giver_vnum": 97907
+            }
+          ],
+          "id": "cosmo-greater-healing",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:100000,I:55550,I:55551,I:55552,I:55553,I:55554;receive=I:97920;disappear=0",
+                  "giver_vnum": 97907
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-165",
+              "kind": "completion",
+              "optional": true,
+              "text": "Earlier lesser-wand commission recorded"
+            },
+            {
+              "count": 3,
+              "hint": "The cosmomancer makes one lesser healing wand for the five distinct Incarnate materials plus one hundred platinum. That mixed payment remains guarded. Greater healing needs three separate matching lesser wands; this wand is not the strange being's transformable wand. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-97920",
+              "item_vnums": [
+                97920
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 copies of the lesser wand of healing"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:250000,I:97920,I:97920,I:97920;receive=I:97919;disappear=0",
+                  "giver_vnum": 97907
+                }
+              ],
+              "hint": "Offer all exact items together. Pay 250 platinum in the same offer; mixed item-and-coin settlement remains guarded, and item readiness does not prove payment. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer three lesser healing wands and two hundred fifty platinum for one greater wand. Prior personal lesser-wand receipts are optional; current copies and payment are required.",
+          "title": "Commission a greater healing wand"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:1000000,I:97919,I:97919,I:97919;receive=I:97922;disappear=0",
+              "giver_vnum": 97907
+            }
+          ],
+          "id": "cosmo-ultimate-healing",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:250000,I:97920,I:97920,I:97920;receive=I:97919;disappear=0",
+                  "giver_vnum": 97907
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-174",
+              "kind": "completion",
+              "optional": true,
+              "text": "Earlier greater-wand commission recorded"
+            },
+            {
+              "count": 3,
+              "hint": "The cosmomancer makes one greater healing wand for three lesser wands plus two hundred fifty platinum. That mixed payment remains guarded. Ultimate healing needs three greater wands, not three lesser wands. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-97919",
+              "item_vnums": [
+                97919
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 copies of the greater wand of healing"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:1000000,I:97919,I:97919,I:97919;receive=I:97922;disappear=0",
+                  "giver_vnum": 97907
+                }
+              ],
+              "hint": "Offer all exact items together. Pay 1000 platinum in the same offer; mixed item-and-coin settlement remains guarded, and item readiness does not prove payment. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer three greater healing wands and one thousand platinum for one ultimate wand. From raw materials this requires nine five-material bundles, nine lesser wands and two thousand six hundred fifty platinum across all fees.",
+          "title": "Commission an ultimate healing wand"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:53650,I:97921,I:400280,I:400280,I:400280;receive=I:53661;disappear=0",
+              "giver_vnum": 97907
+            }
+          ],
+          "id": "cosmo-damnation-staff",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16210,I:16224,I:16232,I:16249,I:16269;receive=I:53650,I:53660;disappear=1",
+                  "giver_vnum": 53704
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-staff-base",
+              "kind": "completion",
+              "optional": true,
+              "text": "Foreign staff-base choice recorded"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55198,I:55199,I:55200,I:55201,I:55202,I:55203;receive=I:97921,I:97923;disappear=1",
+                  "giver_vnum": 97917
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-341",
+              "kind": "completion",
+              "optional": true,
+              "text": "Six-essence sphere delivery recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The once great adventurer offers this exact staff handle for one five-artifact choice and retires. His crown and platemail choices use different bundles; one retiring exchange does not supply all three bases. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-53650",
+              "item_vnums": [
+                53650
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the handle of the shadowy staff of damnation"
+            },
+            {
+              "count": 1,
+              "hint": "The strange being gives one sphere of cosmic power together with the elemental wand for six distinct planar essences, then retires. Each of six artifact commissions consumes one sphere; a single sphere cannot fund all six. Supplied exact spheres fit without personal essence history. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-97921",
+              "item_vnums": [
+                97921
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pulsating sphere of energy"
+            },
+            {
+              "count": 3,
+              "hint": "Carry three large pieces of mithril ore for this commission. Small or medium pieces do not fit. Large pieces have declared Lornecro ground and Alatorin container sources; the alchemist also combines two matching medium pieces into a large piece. Recover contained proof loose. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-400280",
+              "item_vnums": [
+                400280
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 copies of a large piece of mithril ore"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:53650,I:97921,I:400280,I:400280,I:400280;receive=I:53661;disappear=0",
+                  "giver_vnum": 97907
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer the exact handle, one cosmic sphere and three large mithril pieces for the finished staff. Its on-hit effect is separate from crafting.",
+          "title": "Complete the staff of damnation"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:53651,I:97921,I:400280,I:400280,I:400280;receive=I:53662;disappear=0",
+              "giver_vnum": 97907
+            }
+          ],
+          "id": "cosmo-damnation-crown",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16210,I:16224,I:16235,I:16244,I:16269;receive=I:53651,I:53660;disappear=1",
+                  "giver_vnum": 53704
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-crown-base",
+              "kind": "completion",
+              "optional": true,
+              "text": "Foreign crown-base choice recorded"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55198,I:55199,I:55200,I:55201,I:55202,I:55203;receive=I:97921,I:97923;disappear=1",
+                  "giver_vnum": 97917
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-341",
+              "kind": "completion",
+              "optional": true,
+              "text": "Six-essence sphere delivery recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The once great adventurer offers this exact crown shell for a different five-artifact choice and retires. The staff and platemail bases cannot replace it. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-53651",
+              "item_vnums": [
+                53651
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the shell of the shadowy crown of damnation"
+            },
+            {
+              "count": 1,
+              "hint": "The strange being gives one sphere of cosmic power together with the elemental wand for six distinct planar essences, then retires. Each of six artifact commissions consumes one sphere; a single sphere cannot fund all six. Supplied exact spheres fit without personal essence history. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-97921",
+              "item_vnums": [
+                97921
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pulsating sphere of energy"
+            },
+            {
+              "count": 3,
+              "hint": "Carry three large pieces of mithril ore for this commission. Small or medium pieces do not fit. Large pieces have declared Lornecro ground and Alatorin container sources; the alchemist also combines two matching medium pieces into a large piece. Recover contained proof loose. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-400280",
+              "item_vnums": [
+                400280
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 copies of a large piece of mithril ore"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:53651,I:97921,I:400280,I:400280,I:400280;receive=I:53662;disappear=0",
+                  "giver_vnum": 97907
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer the exact crown shell, one cosmic sphere and three large mithril pieces for the finished crown. Its equipment effect is separate from crafting.",
+          "title": "Complete the crown of damnation"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:53652,I:97921,I:400280,I:400280,I:400280;receive=I:53663;disappear=0",
+              "giver_vnum": 97907
+            }
+          ],
+          "id": "cosmo-damnation-platemail",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16210,I:16234,I:16248,I:16249,I:16269;receive=I:53652,I:53660;disappear=1",
+                  "giver_vnum": 53704
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-plate-base",
+              "kind": "completion",
+              "optional": true,
+              "text": "Foreign armor-base choice recorded"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55198,I:55199,I:55200,I:55201,I:55202,I:55203;receive=I:97921,I:97923;disappear=1",
+                  "giver_vnum": 97917
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-341",
+              "kind": "completion",
+              "optional": true,
+              "text": "Six-essence sphere delivery recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The once great adventurer offers this exact chest piece for its own five-artifact choice and retires. His three rewards are alternatives requiring surviving recipients or supplied bases for further choices. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-53652",
+              "item_vnums": [
+                53652
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the chest piece of the shadowy platemail of damnation"
+            },
+            {
+              "count": 1,
+              "hint": "The strange being gives one sphere of cosmic power together with the elemental wand for six distinct planar essences, then retires. Each of six artifact commissions consumes one sphere; a single sphere cannot fund all six. Supplied exact spheres fit without personal essence history. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-97921",
+              "item_vnums": [
+                97921
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pulsating sphere of energy"
+            },
+            {
+              "count": 3,
+              "hint": "Carry three large pieces of mithril ore for this commission. Small or medium pieces do not fit. Large pieces have declared Lornecro ground and Alatorin container sources; the alchemist also combines two matching medium pieces into a large piece. Recover contained proof loose. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-400280",
+              "item_vnums": [
+                400280
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 copies of a large piece of mithril ore"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:53652,I:97921,I:400280,I:400280,I:400280;receive=I:53663;disappear=0",
+                  "giver_vnum": 97907
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer the exact chest piece, one cosmic sphere and three large mithril pieces for the finished armor. One adventurer choice does not supply every Damnation base.",
+          "title": "Complete the platemail of damnation"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:53646,I:97921,I:400280,I:400280,I:400280;receive=I:53664;disappear=0",
+              "giver_vnum": 97907
+            }
+          ],
+          "id": "cosmo-shadow-stalker",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:53643,I:53644;receive=I:53646;disappear=1",
+                  "giver_vnum": 53700
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-shadow-base",
+              "kind": "completion",
+              "optional": true,
+              "text": "Foreign unfinished-wand exchange recorded"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55198,I:55199,I:55200,I:55201,I:55202,I:55203;receive=I:97921,I:97923;disappear=1",
+                  "giver_vnum": 97917
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-341",
+              "kind": "completion",
+              "optional": true,
+              "text": "Six-essence sphere delivery recorded"
+            },
+            {
+              "count": 1,
+              "hint": "Ahanz accepts the two exact enemy heads for the unfinished Shadow Stalker wand and retires. The cosmomancer consumes this unfinished wand, one cosmic sphere and three large mithril pieces. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-53646",
+              "item_vnums": [
+                53646
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the unfinished wand of the Shadow Stalker"
+            },
+            {
+              "count": 3,
+              "hint": "Carry three large pieces of mithril ore for this commission. Small or medium pieces do not fit. Large pieces have declared Lornecro ground and Alatorin container sources; the alchemist also combines two matching medium pieces into a large piece. Recover contained proof loose. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-400280",
+              "item_vnums": [
+                400280
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 copies of a large piece of mithril ore"
+            },
+            {
+              "count": 1,
+              "hint": "The strange being gives one sphere of cosmic power together with the elemental wand for six distinct planar essences, then retires. Each of six artifact commissions consumes one sphere; a single sphere cannot fund all six. Supplied exact spheres fit without personal essence history. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-97921",
+              "item_vnums": [
+                97921
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pulsating sphere of energy"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:53646,I:97921,I:400280,I:400280,I:400280;receive=I:53664;disappear=0",
+                  "giver_vnum": 97907
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer the unfinished wand, three large mithril pieces and one cosmic sphere. Ahanz's retiring head exchange is an optional foreign route, not a required personal hunt.",
+          "title": "Complete the Shadow Stalker wand"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:97921,I:400280,I:400280,I:400280,I:500003;receive=I:97931;disappear=0",
+              "giver_vnum": 97907
+            }
+          ],
+          "id": "cosmo-flames-collar",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500048;receive=I:500003,I:500049,I:500049,I:500049;disappear=0",
+                  "giver_vnum": 500116
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-fire-ring",
+              "kind": "completion",
+              "optional": true,
+              "text": "Foreign Flaming-ring exchange recorded"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55198,I:55199,I:55200,I:55201,I:55202,I:55203;receive=I:97921,I:97923;disappear=1",
+                  "giver_vnum": 97917
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-341",
+              "kind": "completion",
+              "optional": true,
+              "text": "Six-essence sphere delivery recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The strange being gives one sphere of cosmic power together with the elemental wand for six distinct planar essences, then retires. Each of six artifact commissions consumes one sphere; a single sphere cannot fund all six. Supplied exact spheres fit without personal essence history. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-97921",
+              "item_vnums": [
+                97921
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pulsating sphere of energy"
+            },
+            {
+              "count": 3,
+              "hint": "Carry three large pieces of mithril ore for this commission. Small or medium pieces do not fit. Large pieces have declared Lornecro ground and Alatorin container sources; the alchemist also combines two matching medium pieces into a large piece. Recover contained proof loose. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-400280",
+              "item_vnums": [
+                400280
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 copies of a large piece of mithril ore"
+            },
+            {
+              "count": 1,
+              "hint": "The Prophet of Fire gives the Flaming ring for the heart of fire. This ring supports the flames collar commission; the Frosty ring is a different kind. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-500003",
+              "item_vnums": [
+                500003
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the Flaming ring of the Prophet"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:97921,I:400280,I:400280,I:400280,I:500003;receive=I:97931;disappear=0",
+                  "giver_vnum": 97907
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer one cosmic sphere, three large mithril pieces and the Flaming ring. Wearing the result and saying flames attempts a separate elemental summon with a ten-minute success cooldown.",
+          "title": "Commission the flames collar"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:97921,I:400280,I:400280,I:400280,I:500046;receive=I:97932;disappear=0",
+              "giver_vnum": 97907
+            }
+          ],
+          "id": "cosmo-frost-collar",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500047;receive=I:500046,I:500050,I:500050,I:500050;disappear=0",
+                  "giver_vnum": 500117
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-ice-ring",
+              "kind": "completion",
+              "optional": true,
+              "text": "Foreign Frosty-ring exchange recorded"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55198,I:55199,I:55200,I:55201,I:55202,I:55203;receive=I:97921,I:97923;disappear=1",
+                  "giver_vnum": 97917
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-341",
+              "kind": "completion",
+              "optional": true,
+              "text": "Six-essence sphere delivery recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The strange being gives one sphere of cosmic power together with the elemental wand for six distinct planar essences, then retires. Each of six artifact commissions consumes one sphere; a single sphere cannot fund all six. Supplied exact spheres fit without personal essence history. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-97921",
+              "item_vnums": [
+                97921
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pulsating sphere of energy"
+            },
+            {
+              "count": 3,
+              "hint": "Carry three large pieces of mithril ore for this commission. Small or medium pieces do not fit. Large pieces have declared Lornecro ground and Alatorin container sources; the alchemist also combines two matching medium pieces into a large piece. Recover contained proof loose. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-400280",
+              "item_vnums": [
+                400280
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 copies of a large piece of mithril ore"
+            },
+            {
+              "count": 1,
+              "hint": "The Prophet of Ice gives the Frosty ring for the ice berry. The cosmomancer's frost clue incorrectly names the Prophet of Fire; use the Ice source for this exact ring. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-500046",
+              "item_vnums": [
+                500046
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the Frosty ring of the Prophet"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:97921,I:400280,I:400280,I:400280,I:500046;receive=I:97932;disappear=0",
+                  "giver_vnum": 97907
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer one cosmic sphere, three large mithril pieces and the Frosty ring from the Prophet of Ice. The native Fire clue needs correction. Wearing the result and saying frost attempts a separate elemental summon.",
+          "title": "Commission the frost collar"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:55033,I:55033,I:55033,I:55246;receive=I:97933,I:97933;disappear=0",
+              "giver_vnum": 97907
+            }
+          ],
+          "id": "cosmo-milky-potion",
+          "steps": [
+            {
+              "count": 3,
+              "hint": "Carry the stated number of gnomish shopkeepers tokens. Numerous Winterhaven, Alatorin, vehicle and Ravenloft exchanges produce this kind. A producer receipt does not restore a spent token or prove the next payment; no particular personal producer route is required. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55033",
+              "item_vnums": [
+                55033
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 copies of a gnomish shopkeepers token"
+            },
+            {
+              "count": 1,
+              "hint": "Psychomia treants leave this exact plant through their death procedure at reviewed foreign declarations. Cosmomancer milky potion, Mugflog green sludge and the foreign drug makers consume the same kind. Recover it loose; no personal kill or first recovery is inferred. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55246",
+              "item_vnums": [
+                55246
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a psychomia plant"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55033,I:55033,I:55033,I:55246;receive=I:97933,I:97933;disappear=0",
+                  "giver_vnum": 97907
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer three gnomish shopkeepers tokens and one psychomia plant for two milky white potions. Other psychomia consumers compete for this material.",
+          "title": "Commission milky white potions"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:55033,I:55246;receive=I:97934,I:97934,I:97934;disappear=0",
+              "giver_vnum": 97920
+            }
+          ],
+          "id": "mug-green-sludge",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Carry the stated number of gnomish shopkeepers tokens. Numerous Winterhaven, Alatorin, vehicle and Ravenloft exchanges produce this kind. A producer receipt does not restore a spent token or prove the next payment; no particular personal producer route is required. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55033",
+              "item_vnums": [
+                55033
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a gnomish shopkeepers token"
+            },
+            {
+              "count": 1,
+              "hint": "Psychomia treants leave this exact plant through their death procedure at reviewed foreign declarations. Cosmomancer milky potion, Mugflog green sludge and the foreign drug makers consume the same kind. Recover it loose; no personal kill or first recovery is inferred. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55246",
+              "item_vnums": [
+                55246
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a psychomia plant"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55033,I:55246;receive=I:97934,I:97934,I:97934;disappear=0",
+                  "giver_vnum": 97920
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer one gnomish shopkeepers token and one psychomia plant for three sludge rewards. A bag made from psychomia is a different kind.",
+          "title": "Commission thick green sludge"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:55033,I:55033,I:55033,I:55238;receive=I:97936;disappear=0",
+              "giver_vnum": 97920
+            }
+          ],
+          "id": "mug-broken-staff",
+          "steps": [
+            {
+              "count": 3,
+              "hint": "Carry the stated number of gnomish shopkeepers tokens. Numerous Winterhaven, Alatorin, vehicle and Ravenloft exchanges produce this kind. A producer receipt does not restore a spent token or prove the next payment; no particular personal producer route is required. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55033",
+              "item_vnums": [
+                55033
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 copies of a gnomish shopkeepers token"
+            },
+            {
+              "count": 1,
+              "hint": "The Chronomancer in Ceothia Future carries the wicked scepter. Mugflog consumes it in either the broken-staff or time-vial recipe; one spent scepter cannot support both. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55238",
+              "item_vnums": [
+                55238
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the wicked scepter of the Chronomancer"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55033,I:55033,I:55033,I:55238;receive=I:97936;disappear=0",
+                  "giver_vnum": 97920
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer three gnomish shopkeepers tokens and the wicked scepter for one broken staff. Mugflog's time-vial recipe consumes the same scepter independently.",
+          "title": "Commission the broken Chronomancer staff"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:55238,I:55550,I:55551,I:55552,I:55553,I:55554;receive=I:97935,I:97935;disappear=0",
+              "giver_vnum": 97920
+            }
+          ],
+          "id": "mug-time-vials",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:93011;receive=I:55550,I:55551,I:55552,I:55553,I:55554;disappear=0",
+                  "giver_vnum": 55151
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-incarnates",
+              "kind": "completion",
+              "optional": true,
+              "text": "Foreign alternative Incarnate bundle recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The Incarnate of Fire leaves the burning flame through a death procedure. Lancer also gives the complete five-material bundle for a sphere of the void. A supplied matching flame fits either recipe without personal kill history. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55550",
+              "item_vnums": [
+                55550
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a burning flame"
+            },
+            {
+              "count": 1,
+              "hint": "The Incarnate of Frost leaves a snowflake through its death procedure. Lancer's sphere-of-the-void exchange is an alternative bundle source; another Incarnate material cannot replace snow in a full bundle. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55551",
+              "item_vnums": [
+                55551
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a small snowflake"
+            },
+            {
+              "count": 1,
+              "hint": "The Incarnate of Stone leaves the flint through its death procedure. Lancer can supply it in the alternative five-material bundle; a fire or wind item is a different kind. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55552",
+              "item_vnums": [
+                55552
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a flint of granite"
+            },
+            {
+              "count": 1,
+              "hint": "The Incarnate of Air leaves the wisp through its death procedure. Lancer's bundle is an alternative source. Current possession does not identify who killed, recovered or handed over the item. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55553",
+              "item_vnums": [
+                55553
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a wisp of wind"
+            },
+            {
+              "count": 1,
+              "hint": "The Incarnate of Mischief leaves the bubble through its death procedure. Lancer supplies a bundle containing it for a sphere of the void; it is distinct from the other four material kinds. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55554",
+              "item_vnums": [
+                55554
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a delicate bubble"
+            },
+            {
+              "count": 1,
+              "hint": "The Chronomancer in Ceothia Future carries the wicked scepter. Mugflog consumes it in either the broken-staff or time-vial recipe; one spent scepter cannot support both. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55238",
+              "item_vnums": [
+                55238
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the wicked scepter of the Chronomancer"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55238,I:55550,I:55551,I:55552,I:55553,I:55554;receive=I:97935,I:97935;disappear=0",
+                  "giver_vnum": 97920
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer the five distinct Incarnate materials and the wicked scepter for two vials. Those materials can instead support healing wands or individual cleansing offers.",
+          "title": "Commission time vials"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:41916,I:55033,I:55033,I:55033;receive=I:55075;disappear=0",
+              "giver_vnum": 97920
+            }
+          ],
+          "id": "mug-spiked-mace",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Recover Woundhealer loose from the bone casket in the Clan of the Mir. The casket has its own lock and key; the weapon remains distinct from the resulting Mugflog mace. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-41916",
+              "item_vnums": [
+                41916
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a scimitar named 'Woundhealer'"
+            },
+            {
+              "count": 3,
+              "hint": "Carry the stated number of gnomish shopkeepers tokens. Numerous Winterhaven, Alatorin, vehicle and Ravenloft exchanges produce this kind. A producer receipt does not restore a spent token or prove the next payment; no particular personal producer route is required. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55033",
+              "item_vnums": [
+                55033
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 copies of a gnomish shopkeepers token"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41916,I:55033,I:55033,I:55033;receive=I:55075;disappear=0",
+                  "giver_vnum": 97920
+                }
+              ],
+              "hint": "Offer all exact items together. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer Woundhealer and three gnomish shopkeepers tokens for the mace. Recover the scimitar loose from its bone casket before delivery.",
+          "title": "Commission the spiked mace"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:25000,I:55247;receive=I:97937,I:97937,I:97937,I:97937;disappear=0",
+              "giver_vnum": 97920
+            }
+          ],
+          "id": "mug-potent-elixirs",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55246;receive=C:100000,I:55247;disappear=0",
+                  "giver_vnum": 55111
+                },
+                {
+                  "completion_key": "give=I:55246;receive=C:100000,I:55247;disappear=0",
+                  "giver_vnum": 83392
+                }
+              ],
+              "hint": "Optional accepted history explains the supply route. Supplied exact material fits without it. Alternatives do not require every producer; earlier receipts do not restore spent items, prove personal source recovery or pay a later fee.",
+              "id": "producer-buzzbeef-drugs",
+              "kind": "completion",
+              "optional": true,
+              "text": "Either foreign drug-bag exchange recorded"
+            },
+            {
+              "count": 1,
+              "hint": "Buzzbeef or Bimk accepts the exact psychomia plant for a bag of drugs and a hundred-platinum reward. Either optional producer history explains this supply. Mugflog separately requires the bag plus twenty-five platinum; the earlier reward is not that payment. Offer exact proof loose in inventory. This check does not distinguish source recovery from a player handoff.",
+              "id": "material-55247",
+              "item_vnums": [
+                55247
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a small plastic bag filled with drugs"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:25000,I:55247;receive=I:97937,I:97937,I:97937,I:97937;disappear=0",
+                  "giver_vnum": 97920
+                }
+              ],
+              "hint": "Offer all exact items together. Pay 25 platinum in the same offer; mixed item-and-coin settlement remains guarded, and item readiness does not prove payment. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer one exact bag of drugs and twenty-five platinum for four elixirs. Buzzbeef and Bimk are alternative bag producers; their hundred-platinum payout is a reward.",
+          "title": "Commission potent elixirs"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:10000,I:55554;receive=I:97938,I:97938;disappear=0",
+              "giver_vnum": 97920
+            },
+            {
+              "completion_key": "give=C:10000,I:55553;receive=I:97938,I:97938;disappear=0",
+              "giver_vnum": 97920
+            },
+            {
+              "completion_key": "give=C:10000,I:55552;receive=I:97938,I:97938;disappear=0",
+              "giver_vnum": 97920
+            },
+            {
+              "completion_key": "give=C:10000,I:55551;receive=I:97938,I:97938;disappear=0",
+              "giver_vnum": 97920
+            },
+            {
+              "completion_key": "give=C:10000,I:55550;receive=I:97938,I:97938;disappear=0",
+              "giver_vnum": 97920
+            }
+          ],
+          "id": "mug-cleansing-potions",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Any one burning flame, snowflake, flint, wind wisp or bubble fits this cleansing offer together with ten platinum. Five materials are required for other recipes; they are alternatives here. Mixed payment remains guarded and this service awards no achievement or daily credit.",
+              "id": "cleansing-alternative",
+              "item_vnums": [
+                55550,
+                55551,
+                55552,
+                55553,
+                55554
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry any one exact Incarnate material"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000,I:55554;receive=I:97938,I:97938;disappear=0",
+                  "giver_vnum": 97920
+                },
+                {
+                  "completion_key": "give=C:10000,I:55553;receive=I:97938,I:97938;disappear=0",
+                  "giver_vnum": 97920
+                },
+                {
+                  "completion_key": "give=C:10000,I:55552;receive=I:97938,I:97938;disappear=0",
+                  "giver_vnum": 97920
+                },
+                {
+                  "completion_key": "give=C:10000,I:55551;receive=I:97938,I:97938;disappear=0",
+                  "giver_vnum": 97920
+                },
+                {
+                  "completion_key": "give=C:10000,I:55550;receive=I:97938,I:97938;disappear=0",
+                  "giver_vnum": 97920
+                }
+              ],
+              "hint": "Offer any one of the five exact Incarnate materials. Pay 10 platinum in the same offer; mixed item-and-coin settlement remains guarded, and item readiness does not prove payment. The recipient stays. This support service gives no achievement or daily credit. Accepted delivery does not certify your own kills, first recovery, learned words, access, travel, reward use or narrated world effects.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted service"
+            }
+          ],
+          "summary": "Offer any one exact Incarnate material plus ten platinum for two potions. Five equivalent choices share one service; this does not require the entire five-material bundle.",
+          "title": "Commission cleansing potions"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "This master is an ordinary source for the amethyst rune in the forest. The rune is carried stock; meeting or hearing a periodic statement does not count as recovering it.",
           "keyword": "amethyst",
           "mob_vnum": 99003,

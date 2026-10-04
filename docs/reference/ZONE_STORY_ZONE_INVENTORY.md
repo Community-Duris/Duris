@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 68 authored journals.
+2668 distinct Q contracts; 69 authored journals.
 
 Regenerate with:
 
@@ -209,7 +209,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Temple of the Sun (`suntmpl`) | 3 | 3 | 0 | Fallback | [1 × the twisted heart of a pine; 1 × the demented mind of a bear → a vine covered key](../../areas/qst/suntmpl.qst#L11) | — |
 | The Surface Realm of Duris (`surface`) | 31 | 36 | 6 | Yes | [1 × the crumbling locket of fire; 1 × the crumbling locket of water; 1 × the crumbling locket of earth; other required items → the mystical sash of the Netherworld, a mystical key](../../areas/qst/surface.qst#L71) | Baltazo, goodie_guardian, ship_shop_proc, tharnrifts_portal, wh_corpse_to_object |
 | The Depths of Duris (`surfacekeeps`) | 15 | 43 | 1 | Fallback | [10 × bodypart to be created → a commendation token of stealth, a smoke bomb potion](../../areas/qst/surfacekeeps.qst#L562) | wh_corpse_decay, wh_corpse_to_object |
-| The Minizones of the Surface (`surfacemini`) | 25 | 32 | 3 | Fallback | [8 × a fire gland → an elixir of the pyro-mage](../../areas/qst/surfacemini.qst#L261) | collar_flames, collar_frost, elemental_wand |
+| The Minizones of the Surface (`surfacemini`) | 25 | 32 | 3 | Yes | [8 × a fire gland → an elixir of the pyro-mage](../../areas/qst/surfacemini.qst#L261) | collar_flames, collar_frost, elemental_wand |
 | The Dark Stone Tower of the Northern Realms (`teka2`) | 1 | 3 | 0 | Fallback | [1 × a small rhinestone → a shiny golden mask of Teka, a flaming mace of the Ruzdo](../../areas/qst/teka2.qst#L32) | — |
 | Temple of Flames (`temple`) | 6 | 33 | 0 | Fallback | [2 × a yellow dagger; 1 × a green token; 1 × a blue wooden sword → native reward/response](../../areas/qst/temple.qst#L233) | temple_illyn |
 | Tharnadia - City of Humans (`tharnadia`) | 19 | 24 | 1 | Yes | [1 × A small reed flute; 1 × A small clumsily made mandolin; 1 × a small bamboo lyre → native reward/response](../../areas/qst/tharnadia.qst#L239) | assoc_founder, crew_shop_proc, die_roller, inn, janitor, learn_tradeskill |

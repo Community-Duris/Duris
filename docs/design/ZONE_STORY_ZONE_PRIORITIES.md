@@ -1,6 +1,6 @@
 # Zone journal integration priorities
 
-**Reviewed planning order — October 3, 2026. Active economic accounting is required.**
+**Reviewed planning order — October 4, 2026. Active economic accounting is required.**
 
 This is an integration order, not a difficulty ranking or a claim that players must follow
 these stories in order. New journals use the existing schema; proposed learned dialogue,
@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 47 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 48 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -252,7 +252,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 45 | [Valley of the Snow Ogres](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md) (`snogres`) | Chieftain hourglass / rare astereater eye / illithid tentacle → three distinct shards → lich pyramid; independent hydra head / sundew stalk / dragon scale; hide refusal → surface Leppts six-hide + exact claymore/greatsword + 2,500-platinum armor commission. | Source-comprehensive, revision one: seven outcomes/one service/one excluded refusal, sixteen contacts/all six addressed families/fifteen optional checks. Supplied shards preserve optional history; no personal kills, ritual or transformation credit. Stalk/hide supply, active renewal, mixed payment, grotto/fall/foreign access and custom targeting/helper/cadence/custody repairs pending; no native fix. |
 | 46 | [The Mountain Valley of Dawndale](zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md) (`airshipgrave`) | Portrait → stones → dust → device; 250-platinum/persistent city key + device → refugee moonstone/backpack. Separate captain two-vial/six-kind bundles; hunter bow, sack treasure, worm larvae; sand/25-platinum lens service and electrum → foreign Emition flute → Whetstone return. | Source-comprehensive, revision one: nine outcomes/three services/one referral, twenty-seven contacts/all four addressed families/thirty-one optional checks. Supplied proof preserves optional histories. Active coin guards, exact recovery/content, shared caps and actual control/escape/curse/install endpoints pending; fossil/Ender repairs proposed, no native fix. |
 | 47 | [The 222nd Layer of the Abyss](zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md) (`juiblex`) | Distinct companion bodies; Madness → Irritation → Placation gloves; clone brain → used wand + acid worm → fortress key; paired foreign tale halves; five heads/four parts/four fugitive essences; map/crystal/larvae/medallion/clamp; soul prison → Ebb/Flow; equivalent old-leash offers → given leash → blessing. | Source-comprehensive, revision one: 22 outcomes/all 23 exchanges, forty contacts/all 25 addressed families, 39 optional checks. Native Story-only rules retained; phase transfer, actual generation/source/travel/effects and surviving-recipient choices pending; no native repair ships. |
-| 48 | The Minizones of the Surface (`surfacemini`) | [Meet the giver → 8 × a fire gland → an elixir of the pyro-mage](../../areas/qst/surfacemini.qst#L261) | 25 Q; 32 dialogue; 3 candidate link items |
+| 48 | [The Minizones of the Surface](zone-stories/THE_MINIZONES_OF_THE_SURFACE.md) (`surfacemini`) | Two hermit errands and foreign recipe continuation; eight glands; meal reward; six distinct planar essences → sphere/random wand; three healing tiers, six sphere/base commissions and alchemy services; any-one cleansing alternatives. | Source-comprehensive, revision one: five stories/sixteen services cover all twenty-five exchanges, thirty-eight contacts/all thirty-two addressed families, seventy-three optional checks. Exact supplied proof and optional histories retained. Guarded fees, retirement/contention, generation/transformation/pet/access and foreign laboratory qualification pending. Text/cleanup/dormant source repairs proposed; no native fix ships. |
 | 49 | the Mountain of Peril Peaks (`nexus`) | [Meet the giver → 1 × a python scale; 1 × a serpent scale; 1 × a pair of slimy scales of an anaconda → some slimy reptilian snakescales](../../areas/qst/nexus.qst#L36) | 10 Q; 11 dialogue; 3 candidate link items |
 | 50 | Crakkaros' Liar (`crakkaro`) | [Meet the giver → 17 × a piece of animal fur → native reward/response](../../areas/qst/crakkaro.qst#L166) | 11 Q; 9 dialogue; 3 candidate link items |
 | 51 | Rogue Plains (`roguerai`) | [Meet the giver → 1 × a strip of buffalo flesh; 1 × a strip of buffalo flesh; 1 × a strip of buffalo flesh and the remaining ingredients → some enormous buffalo hides](../../areas/qst/roguerai.qst#L29) | 9 Q; 3 dialogue; 3 candidate link items |

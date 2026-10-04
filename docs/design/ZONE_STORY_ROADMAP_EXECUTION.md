@@ -103,9 +103,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 45 | Valley of the Snow Ogres | [Comprehensive source dossier](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md): fifteen blocks/nine exchanges/six addressed; one hundred rooms/forty-four mobs/thirty-eight objects, two hundred resets/eighty families; twelve literal assignments/shared switch and bounded surface source | Revision one: seven outcomes/one service/one refusal, sixteen contacts/fifteen optional checks; distinct shards, exact trophies and six-hide/full-fee armor | No native repair ships. Stalk/hide generation/renewal, mixed payment, control/access/foreign owner and burn/golem/toss/equipment fixes/endpoints pending |
 | 46 | The Mountain Valley of Dawndale | [Comprehensive source dossier](zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md): seventeen blocks/thirteen exchanges/four addressed; 150 rooms/sixty-nine mobs/sixty-six objects, 321 resets/175 families; automatic switches/shared teleport, bounded foreign sand/forge/book | Revision one: nine outcomes/three services/one referral, twenty-seven contacts/thirty-one optional checks; refugee preparations, rival bundles and foreign flute return | No native repair ships. Guarded coin purchase/mixed lens fee, key availability/shared caps/source content, fossil/Ender repairs and actual camp/tunnel/curse/install endpoints pending |
 | 47 | The 222nd Layer of the Abyss | [Comprehensive source dossier](zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md): all 48 blocks/23 exchanges/25 addressed; 183 rooms/117 mobs/113 objects, 378 resets/257 families, six literal procedures and bounded foreign routes/producers | Revision one: 22 outcomes/forty contacts/39 optional checks; 19 potential dailies, equivalent old-leash aliases, exact competing bundles and optional histories | No native repair ships. Phase insertion blocker, lake/generator/legend creation, dormant Ebb, Flow effects, clue/departure and actual scoped world-effect plans pending |
-| 48–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 48 | The Minizones of the Surface | [Comprehensive source dossier](zone-stories/THE_MINIZONES_OF_THE_SURFACE.md): all 59 blocks/25 exchanges/32 addressed, 119 rooms/25 mobs/42 objects, 145 resets/66 families, three literal procedures and bounded foreign producers/hosts/routes | Revision one: five stories/sixteen services, 38 contacts/73 optional checks; five potential dailies, exact copies/kinds and any-one cleansing | No native repair ships. Guarded fees, source/recipient choices, wand/pet creation and custody, clue/flame cleanup fixes, missing ordinary entries and dormant igloo/foreign laboratory plans pending |
+| 49–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Minizones of the Surface (`surfacemini`).
+The next area is the Mountain of Peril Peaks (`nexus`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -114,6 +115,8 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-SURFACEMINI-CREATION / CONTENT | Flame collar lacks extraction on narrow-room failure; both collars continue after unchecked placement. Wand consumes before unchecked random replacement. Frost clue says Fire rather than Ice; flame room text says ice. | Separate focused original-failing cleanup/text fixes preserving balance/cooldowns/random output; qualify placement/identity/custody and accepted pet/equipment effects. All replacement prototypes exist; normal lesser/greater predicates are identical, so high-roll split remains conditional. No native repair ships. |
+| ZSQ-SURFACEMINI-SOURCE / HOST / QUANTITY | Four pockets lack ordinary inbound edges; igloo/three local mobiles have no active sources. Foreign scientist/apparatus share caps; chest has no local contents/key producer. Retiring bases, one sphere, five-kind versus any-one cleansing and guarded fees need exact semantics. | Builder-reviewed routes/dormant content/foreign key flow with separate news proof; expand accepted source/handoff, quantities/mixed payment, surviving-recipient episodes, shared resource reservation, choices/scoped all-stage completion and random transformation lineage. Preserve original foreign ownership and supplied materials. |
 | ZSQ-JUIBLEX-PHASE / GENERATION | First Juiblex attempts already-linked room insertion, which the current handler rejects; second phase, vault seal and invisible key remain staged. Lake can retain first allocation if second fails. Generator/consumed legend creation use unchecked results; prototypes exist. | Separate identity/room-preflight/unlink/placement repair with original-failing procedure tests and public access/reset/recovery journey. Qualify staged creation cleanup and random consumable output/source recovery without changing ambient population or silently guaranteeing both tale halves. |
 | ZSQ-JUIBLEX-RECIPIENT / EFFECT / CONTENT | Uz refill and either equivalent old-leash offer retire recipients; first Marvin body competes. Medallion clue names merchant but source is elder. Final Marvin D0 contradicts fade/color text. Ebb unbound; Flow may restore nothing and still cool down; inventory vibration suppressed. Lich/rebirth/escape/escort/victory are narrative. | Builder-selected clue/departure/ability changes with separate fix/news proof; surviving-recipient/alias and exact current proof policy. Extend accepted effects/cooldowns, containers/shared crystal, source versus handoff and scoped AND/world/party endpoints. No actual native repair ships. |
 | ZSQ-DAWNDALE-SOURCE / KEY / PAYMENT | Coin-only 250-platinum city-key purchase is guarded; admission retains it. Office/alcove keys have 100-percent break declarations. Mixed sand/25-platinum lens service is guarded. Captain bundles each consume two sunlight vials and the book; three vials declared, book shares global cap one with an administrative source. Sand is a real Aravne death output. | Atomic accepted purchase/mixed settlement and key availability/office-alcove destruction; qualify normal/forced renewal and recovery before intentional cap/isolation repairs. Extend loose container recovery, liquid content/volume and personal source-versus-handoff evidence without bypassing active generation guards. |
@@ -2341,3 +2344,61 @@ remain unchanged. Catalog: 68 maps/1683 achievements/1489 potential dailies/2222
 rows; equivalent aliases remove one fallback achievement/row. Original order:
 forty-seven source-comprehensive, 173 pending. Continue with The Minizones of the
 Surface (`surfacemini`). Active accounting remains mandatory.
+
+## The Minizones of the Surface completed source map — October 4, 2026
+
+The [dossier](zone-stories/THE_MINIZONES_OF_THE_SURFACE.md) covers every one of
+59 blocks: twenty Q/five QA/thirty M/four MA, with thirty-two addressed and two
+ambient families. Read all 119 rooms/68 prose groups/15 headers/24 metadata/all
+86 exit families, 25 mobs/42 objects and 145 resets/all 66 families, including the
+actual farseer R mount. Three literal wand/collar bindings and complete handlers,
+shared command/reset/creation/placement predicates, every boundary and bounded
+foreign material producers and laboratory hosts were reviewed. All local native
+input/reward and reset references exist; unbound igloo mobiles remain dormant.
+
+Revision one has five stories and sixteen services covering all twenty-five
+contracts, thirty-eight contacts and seventy-three optional checks (53 materials,
+20 histories). Five equivalent cleansing offers share one service and accept any
+one exact kind. The six-essence story requires six distinct kinds; time vials and
+lesser healing require five distinct Incarnate materials. Same-named local hermit
+clothes do not fit foreign clothing inputs. Exact eight glands, three wand/ore
+copies and supplied final proof retain current readiness without mandatory
+producer histories. Services award no achievement or daily credit.
+
+Incarnates and psychomia treants generate their items on death; missing O/G/P is
+not absence of a source. Lancer also supplies all five Incarnate materials for a
+sphere of the void. Retiring foreign adventurer choices supply one Damnation base,
+not all three; a single essence delivery supplies one cosmic sphere for one of
+six commissions. Raw ultimate healing requires nine five-kind bundles and 2,650
+platinum across nine lesser/three greater/one ultimate fees; mixed settlement
+remains guarded. Foreign recipe, drug makers, ring producers and laboratory
+contracts keep their original ownership. Overhead griffon/key-assembly narration
+does not establish an actual mount or key source.
+
+**Pending repairs, none shipped:** native frost clue names Fire, flame room text
+says ice and ethereal-wand aliases include earth. Flame collar abandons a created
+mobile on narrow-room rejection; both collars ignore placement continuation.
+Random wand replacement consumes before checking creation. Current generic
+elemental/replacement prototypes exist, and lesser/greater follower checks are
+identical, so their hypothetical high-roll split is not a normal gameplay failure.
+Plan original-failing procedure tests, balanced preflight/cleanup/identity changes,
+correct clue/effect text, accepted equipment/pet journeys and separate fix/news
+entries. Four pockets lack ordinary inbound links; final igloo and three local
+mobiles lack active sources. Verify builder intent before linking/activating them.
+Foreign laboratory cap, chest contents/key narrative and an incomplete alternate
+Astral essence reset need bounded source/content decisions and actual journeys.
+
+Expand universal accepted generation→custody→first recovery versus handoff,
+transformed-item lineage, quantities/wallet/mixed payment, surviving-recipient
+episodes, shared resource reservation, full-stage/choice endpoints, mount/pet
+arrival and effect/cooldown/removal. Current multiple bindings mean alternatives,
+not an AND campaign. Source/native fixtures cover exact counts/kinds/classification,
+supplied/worn/spent proof, foreign ownership, alternative cleansing, support credit
+exclusion, replay and cold recovery; synthetic receipts do not qualify those live
+custom procedures or fees. Accounting remains mandatory.
+
+Native definitions, revision-two fingerprint, registry and other 68 journals stay
+unchanged. Catalog: 69 maps/1663 achievements/1478 potential dailies/2218 rows.
+Original order: forty-eight source-comprehensive, 172 pending. Continue with
+the Mountain of Peril Peaks (`nexus`). No database, account/server operation,
+native repair or merge was performed at this checkpoint.
