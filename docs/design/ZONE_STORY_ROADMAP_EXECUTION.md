@@ -55,6 +55,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [b28262d8c](https://github.com/Community-Duris/Duris/commit/b28262d8cc8dfe6156df70f162981399d18be717): Halfcut crossbow ambusher | Setup registers periodic scheduling without firing; pulses keep three lanes/four bolts/player-only targets. Runtime identity checks stop volleys after death, movement, removal or storage reuse; missing lanes do not hide later lanes. Unbound procedures remain unbound. | Player-facing: “The Halfcut Hills kobold crossbow ambusher now fires on its scheduled pulses and stops interrupted volleys safely.” Actual-procedure regression passes and original fails setup; maintained build/format pass. Live balance/reset/accounting journey remains unqualified. |
 | [348eccdf3](https://github.com/Community-Duris/Duris/commit/348eccdf3261e62aa8984ac0868b98adfa815a06): Halfcut struck-player warning | The crossbow's direct warning uses TO_CHAR for its player actor/recipient, so the shared audience filter delivers it. Previously TO_VICT suppressed that message; the room warning and four-bolt damage remain unchanged. | Player-facing addition: “The Halfcut Hills crossbow warning now reaches each struck player.” Audience regression fails the preceding procedure and passes with the fix; maintained build/format pass. This is a separate actual repair from journal authoring. |
 | [f8090481d](https://github.com/Community-Duris/Duris/commit/f8090481df837bb4e1a675c901488f13090657d1): Tribal Forest exit clues | Inspecting west at 42204 and 42231 now says west; inspecting south at 42261 now says south. Exactly three description words change, preserving reciprocal routes and all other native bytes. | Player-facing: “Tribal Forest's two western forest exits and the southern village exit now describe their actual directions.” All three original clues fail the focused regression; repaired source/exact-byte scope pass. Live LOOK/traversal remains unqualified. |
+| [b07b560cc](https://github.com/Community-Duris/Duris/commit/b07b560ccf2d3b7bbcb61227cfa5423dd6fa6924): Ironstar exit clues | Inspecting west at 138903 now says west; inspecting south at 138957 now says south. Exactly two native description words change, preserving reciprocal routes and all other native bytes. | Player-facing: “Ironstar's western valley exit and southern Fairlocke exit now describe their actual directions.” Both original color-normalized clues fail the focused regression; repaired source/exact-byte scope pass. Live LOOK/traversal remains unqualified. |
 
 ## Progress
 
@@ -117,9 +118,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 55 | The Tempest Court | [Comprehensive dossier](zone-stories/TEMPEST_COURT.md): all 26 blocks/200 rooms/52 mobs/63 objects/307 resets; full active dagger, shared execution and foreign proof chains | Seven outcomes/eight contracts, 21 contacts/28 optional checks; five candidates, supplied proof and fragment allocation | Separate two-word direction fix ships; upgrade/portal/lightning/dispersal intent pending. Source-generation/access/branch/actor/epic/ALL events and live supply qualification planned |
 | 56 | The Caverns of Armageddon | [Comprehensive dossier](zone-stories/CAVERNS_OF_ARMAGEDDON.md): all 33 blocks/149 rooms/94 mobs/69 objects/393 resets; imported procs/shared execution and foreign follow-ups | Eighteen independent outcomes, 40 contacts/27 optional checks; exact heads/tags/parts/amulets and supplied acceptance | Roland placement; admitted supply, custody/source, successful access/key/trap, actor/ALL and allocation events; boundary/key/prose/effect intent pending. No native repair ships here |
 | 57 | Tribal Forest | [Comprehensive dossier](zone-stories/TRIBAL_FOREST.md): all 25 blocks/175 rooms/67 mobs/103 objects/377 resets; shop/orb/shared execution and source ownership | Nine outcomes/one refusal exclusion; seventeen contacts/21 optional checks; exact grain/clothing/crystal/parts/egg progression | Admitted staged supply, recovery/transfer/replacement, reused key/control/travel/HP/actor events; trap/text/grove/shop-audit intent pending. Separate three-word native direction fix/news ships |
-| 58–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 58 | The Ancient Halls of Ironstar | [Comprehensive dossier](zone-stories/THE_ANCIENT_HALLS_OF_IRONSTAR.md): all 22 blocks/100 rooms/34 mobs/66 objects/198 resets; native/shared source and effective access | Four stories/three services; fifteen contacts/fourteen optional checks; exact rings/crown/paid key/three locks and independent equipment routes | Guarded atomic fees, reset door state, source/transfer/allocation and retiring supply; river/prose/lore/epic concerns pending. Separate two-word native direction fix/news ships |
+| 59–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Ancient Halls of Ironstar (`lornecro`).
+The next area is Plane of Fire, Brass (`brass`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -2907,3 +2909,60 @@ retirement/renewal and played persistence remain unqualified. Catalog: 78 maps/
 complete, 163 pending; The Ancient Halls of Ironstar (`lornecro`) next. Active,
 ready accounting is mandatory. No DB/account/server operation, migration,
 deployment or merge.
+
+## The Ancient Halls of Ironstar completed source map — October 4, 2026
+
+The [comprehensive dossier](zone-stories/THE_ANCIENT_HALLS_OF_IRONSTAR.md)
+reviews all 22 blocks (fifteen M/seven Q), 100 rooms, 34 mobiles, 66 objects,
+198 resets/143 families, exact NPC/container ownership, bounded global
+sources/consumers/boundary and shared quest/reset/door/magic-word/current
+execution. No local shop, literal local special or ACT_TEACHER establishes an
+extra terminal. Imported ore is tradeskill stock; the epic node remains a
+separate shared interaction with its previously recorded qualification concern.
+
+The [journal](../../areas/story/lornecro.story.json) adds four stories and
+three equipment services, fifteen contacts and fourteen optional checks
+(twelve carried, two producer receipts). Office wedding ring → Larra’s ring
+→ Robert/Soulcatcher and king’s crown → axe → paid vault key remain independent
+exchanges; supplied material fits without producer history. Dragonbone mail,
+dagger and hammer preserve native receipts without zone achievement/daily
+inflation. All four coin recipes retain the durable offering guard.
+
+Tomb and grate have configured keys, but their D resets open/unlock them.
+The room loader reads low-two-bit door kind rather than an initial closed/locked
+state. Avoid a false mandatory mold/tomb cycle or password prerequisite.
+The three real forward vault locks use third-baby-dragon key, gravel key and
+paid Dralor key; reverse state differs. Saying Datherlion can unlock an actually
+locked grate and clear secret state, but does not open it. The spellbook/globe
+prose does not implement portal travel or a learned-topic achievement.
+
+Expand atomic owned item-plus-normalized-fee allocation, effective door/reset
+and shared episode state, successful unlock/open/reveal and arrival, exact
+UID/root/container/NPC provenance and competing reward-to-offering lineage.
+Robert’s 75-percent M and D1, apprentice’s 80-percent M, and cap-one material
+need admitted placement/generation/renewal qualification. First recovery, supplied
+proof, surviving combat and accepted delivery remain distinct. Reunion, clan
+rebuilding, dwarf-friend title, teaching, letter and globe terminals need explicit
+builder design before credit. River bend metadata, copied dagger/scroll/weapon
+descriptions and the shared epic-node concern remain balanced pending proposals.
+
+**Actual native repair:** separate [fix b07b560cc](https://github.com/Community-Duris/Duris/commit/b07b560ccf2d3b7bbcb61227cfa5423dd6fa6924)
+changes exactly two exit-description words: room 138903 west now says west,
+and room 138957 south now says south. Both color-normalized original clues
+fail the focused regression; repaired clues, reciprocal routes and exact native
+bytes pass. Live LOOK/traversal remains unqualified. News: “Ironstar's western
+valley exit and southern Fairlocke exit now describe their actual directions.”
+Journal additions and pending proposals are separate; earlier native repair/news
+records remain visible and preserved.
+
+Focused source and actual C++ fixtures cover exact independent inputs/fees,
+wrong mold/intact blade/worn equipment, paid guard guidance, supplied acceptance,
+history versus spent material, independent service receipts, replay and cold
+recovery. Live generation, access/current/traps, original source/handoff,
+coin settlement, actor retirement/renewal and played persistence remain pending.
+Catalog: 79 maps/1633 achievements/1464 potential dailies/2210 rows. The three
+equipment commissions remove three generic achievement units; all seven native
+definitions/rows and daily candidates remain. Native fingerprint/revision two/
+registry and prior 78 maps stay unchanged. Original queue: 58/220 complete,
+162 pending; Plane of Fire, Brass (`brass`) next. Active, ready accounting
+is mandatory. No DB/account/server operation, migration, deployment or merge.

@@ -1141,3 +1141,36 @@ Trap codes 9/10, other text mismatches, selected-target safety and builder-selec
 lore endpoints remain pending proposals; the shop needs no header-related repair.
 Future actual native repairs need separate identifiable fix commits, player
 triggers, before-after proof/live limits and ready news wording.
+
+### Ironstar: effective access, guarded fees and distinct commission inputs
+
+The [dossier](../design/zone-stories/THE_ANCIENT_HALLS_OF_IRONSTAR.md) and
+[journal](../../areas/story/lornecro.story.json) map four story outcomes and
+three equipment services. Wedding ring → Larra ring → Soulcatcher and crown
+→ axe → paid key are independent accepted stages. Optional producer history
+cannot replenish spent material, prove a current object’s source or become a
+hidden prerequisite for supplied input. Native loose-only offerings differ
+from VNUM-based key matching that also accepts a held matching object.
+
+Trace effective door state: the loader interprets low-two-bit door kind, and
+D resets open the tomb and magic grate despite their configured keys. Do not
+invent a mandatory mold-before-crown cycle or Datherlion password step.
+SAY only unlocks an actually locked grate and clears secret state; opening and
+arrival are separate. The vault really has three forward locks: third-dragon
+silver key, gravel’s large key and Dralor’s paid key. A key receipt is not proof
+of every door, and descriptive globes are not physical travel controls.
+
+Keep paid routes guarded until item roots plus normalized coin debit/reward
+recovery are atomic. Material readiness does not certify wallet readiness.
+Mail is independent; dagger and hammer use different molds and outputs but
+share scarce scroll/broken-weapon kinds. Maltheas separately carries a broken
+weapon and wields an intact blade; do not invent a required player breaking
+action. Following guardian skeletons do not own the minion’s scroll, and only
+one of the four baby-dragon reset instances declares the first vault key.
+
+Robert’s chance, wandering and departure need admitted source/renewal fixtures;
+random-room labels and teaching/letter/reunion/clan lore are not accepted
+terminals. Copied object wording and river current direction remain pending
+builder-reviewed proposals. The separate two-word direction repair b07b560cc
+has original-fails/repaired-passes and exact native-byte evidence, plus ready
+news wording. Keep any future actual repair equally clear in the PR/register.

@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 78 authored journals, accounting-gated player surfaces, starter/town
+**Status: 79 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -2031,3 +2031,68 @@ deployment or merge.
 | Distinct travel and effects | Mirror STARE travels; orb RUB selects, STARE/GLANCE views and TOUCH changes room/HP; spell pool has separate effects | Qualify native target dispatcher, bounded/stable selected world identity, actual HP/effect and arrival publication before semantic milestones. Preserve outcome and recoverable obligations. |
 | Trap content and source-audit method | Native trap codes 9/10 lack payload branches; shop headers require direct native-record reading rather than generic prototype counters | Builder chooses supported trap effects before an isolated native fix with GET/PUT/charge/recovery proof/news. Keep direct shop stock/role verification in the source fixture; no shop behavior or production-parser repair is claimed. |
 | Narrated actor or racial conditions | D1 departure does not certify escorted travel/forgiveness; human grove exclusion lacks reviewed enforcement | Builder specifies predicate, actor/episode scope and accepted terminal. Add objective events only after actual implementation; questions, static lore and route possession are insufficient. |
+
+## The Ancient Halls of Ironstar completed source map — October 4, 2026
+
+The [comprehensive dossier](zone-stories/THE_ANCIENT_HALLS_OF_IRONSTAR.md)
+reviews all 22 blocks (fifteen M/seven Q), 100 rooms, 34 mobiles, 66 objects,
+198 resets/143 families, exact NPC/container ownership, bounded global
+sources/consumers/boundary and shared quest/reset/door/magic-word/current
+execution. No local shop, literal local special or ACT_TEACHER establishes an
+extra terminal. Imported ore is tradeskill stock; the epic node remains a
+separate shared interaction with its previously recorded qualification concern.
+
+The [journal](../../areas/story/lornecro.story.json) adds four stories and
+three equipment services, fifteen contacts and fourteen optional checks
+(twelve carried, two producer receipts). Office wedding ring → Larra’s ring
+→ Robert/Soulcatcher and king’s crown → axe → paid vault key remain independent
+exchanges; supplied material fits without producer history. Dragonbone mail,
+dagger and hammer preserve native receipts without zone achievement/daily
+inflation. All four coin recipes retain the durable offering guard.
+
+Tomb and grate have configured keys, but their D resets open/unlock them.
+The room loader reads low-two-bit door kind rather than an initial closed/locked
+state. Avoid a false mandatory mold/tomb cycle or password prerequisite.
+The three real forward vault locks use third-baby-dragon key, gravel key and
+paid Dralor key; reverse state differs. Saying Datherlion can unlock an actually
+locked grate and clear secret state, but does not open it. The spellbook/globe
+prose does not implement portal travel or a learned-topic achievement.
+
+Expand atomic owned item-plus-normalized-fee allocation, effective door/reset
+and shared episode state, successful unlock/open/reveal and arrival, exact
+UID/root/container/NPC provenance and competing reward-to-offering lineage.
+Robert’s 75-percent M and D1, apprentice’s 80-percent M, and cap-one material
+need admitted placement/generation/renewal qualification. First recovery, supplied
+proof, surviving combat and accepted delivery remain distinct. Reunion, clan
+rebuilding, dwarf-friend title, teaching, letter and globe terminals need explicit
+builder design before credit. River bend metadata, copied dagger/scroll/weapon
+descriptions and the shared epic-node concern remain balanced pending proposals.
+
+**Actual native repair:** separate [fix b07b560cc](https://github.com/Community-Duris/Duris/commit/b07b560ccf2d3b7bbcb61227cfa5423dd6fa6924)
+changes exactly two exit-description words: room 138903 west now says west,
+and room 138957 south now says south. Both color-normalized original clues
+fail the focused regression; repaired clues, reciprocal routes and exact native
+bytes pass. Live LOOK/traversal remains unqualified. News: “Ironstar's western
+valley exit and southern Fairlocke exit now describe their actual directions.”
+Journal additions and pending proposals are separate; earlier native repair/news
+records remain visible and preserved.
+
+Focused source and actual C++ fixtures cover exact independent inputs/fees,
+wrong mold/intact blade/worn equipment, paid guard guidance, supplied acceptance,
+history versus spent material, independent service receipts, replay and cold
+recovery. Live generation, access/current/traps, original source/handoff,
+coin settlement, actor retirement/renewal and played persistence remain pending.
+Catalog: 79 maps/1633 achievements/1464 potential dailies/2210 rows. The three
+equipment commissions remove three generic achievement units; all seven native
+definitions/rows and daily candidates remain. Native fingerprint/revision two/
+registry and prior 78 maps stay unchanged. Original queue: 58/220 complete,
+162 pending; Plane of Fire, Brass (`brass`) next. Active, ready accounting
+is mandatory. No DB/account/server operation, migration, deployment or merge.
+
+| Ironstar capability | Verified requirement | Planned implementation and acceptance |
+| --- | --- | --- |
+| Paid access plus material services | Axe + 500-platinum key; scales + 100-platinum mail; separate 1000-platinum mold/scroll/broken-weapon commissions | Atomic exact item-root and normalized currency allocation/debit, fixed reward terms, replay/rollback/interrupted recovery, wallet readiness and supported-fee capability before enabling. Preserve current guard. |
+| Effective door and magic-word state | Tomb/grate D resets open; door kind bits are not initial locked state; vault forward locks and reverse states differ; SAY unlocks without opening | Resolve prototype, actual reset and later shared episode state. Publish accepted target/direction/key unlock, secret reveal, open and surviving passage separately. Avoid false mold/password prerequisites. |
+| Competing source and spent outputs | Crown produces axe consumed for key; two molds require new copies of shared cap-one scroll and broken blade; intact blade is different | Trace committed UID/root/parent/NPC ownership, transfer and source recovery; allocate each offering once with reward-to-input lineage. Preserve independent supplied receipt semantics and optional history. |
+| Encounter and renewable supply | Robert’s 75-percent M and D1; apprentice’s 80-percent M; unused random-room lore; item generation guard | Qualify admitted initial/forced M, actual wandering/presence, retirement/reset episode and source replenishment before daily assignment; no guaranteed placement claim from static prose. |
+| Builder-selected native intent | Unrecorded reunion/clan/title/teaching/read/letter endpoints; copied item descriptions and river bend mismatch | Specify actual scoped objective events and terminals. Confirm text/current intent, then separate native fix commits with source/behavior proof and prominent news; do not repair lore into an invented rule. |

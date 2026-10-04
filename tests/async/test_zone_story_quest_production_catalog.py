@@ -2313,7 +2313,7 @@ assert sum(d["daily_eligible"] for d in definitions.values())==9
 assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
 assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
-assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1636
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1633
 sources=collections.defaultdict(list);parent=None;room=None
 for reset in crakkaro["reset_commands"]:
     c,v=reset["command"],reset["arguments"]
@@ -2908,7 +2908,96 @@ assert objvalues(objects[42235])[7]==0 and objvalues(objects[42235])[11]==0
 triggers=ROOT/'areas/world.trg'
 assert not triggers.exists() or not re.search(r'^#(?:422\d\d|423[0-7]\d)\b',triggers.read_text(encoding='utf8',errors='replace'),re.M)
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal"):
+# Ironstar: linked supplied outcomes, guarded fees, exact ownership and effective access.
+ironstar=inventory_module.area_evidence(ROOT,'lornecro')
+ironstar_map=next(m for m in catalog['story_mappings'] if m['source_area']=='lornecro')
+assert (ironstar_map['schema_version'],ironstar_map['revision'],ironstar_map['coverage'])==(3,1,'complete')
+assert len(ironstar_map['stories'])==7 and not ironstar_map['exclusions'] and len(ironstar_map['contacts'])==15
+assert collections.Counter(s['category'] for s in ironstar_map['stories'])=={'story':4,'service':3}
+assert collections.Counter(t['kind'] for s in ironstar_map['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':12,'completion':2}
+raw=[b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/lornecro.qst']
+assert collections.Counter(b['kind'] for b in raw)=={'Q':7,'M':15}
+by_line={r['block']['line']:r['block'] for r in ironstar['requests']}
+for line,giver,inputs,reward,retire in (
+    (16,138908,[('I',138913)],138914,0),
+    (92,138921,[('I',138942)],138943,0),
+    (107,138921,[('I',138909),('C',100000)],138945,0),
+    (114,138921,[('I',138943),('C',500000)],138958,0),
+    (124,138921,[('I',138944),('I',138952),('I',138965),('C',1000000)],138963,0),
+    (134,138921,[('I',138962),('I',138952),('I',138965),('C',1000000)],138964,0),
+    (228,138927,[('I',138914)],138950,1)):
+    b=by_line[line]
+    assert b['giver_vnum']==giver and b['give']==inputs and b['receive']==[('I',reward)]
+    assert b['binding']['completion_key'].endswith('disappear='+str(retire))
+stories={s['id']:s for s in ironstar_map['stories']}
+assert {tuple(s['contracts'][0].items()) for s in stories.values()}=={tuple(b['binding'].items()) for b in by_line.values()}
+for s in stories.values():
+    assert len(s['contracts'])==1 and s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional')
+assert stories['robert-soulcatcher']['steps'][0]['contracts']==[by_line[16]['binding']]
+assert stories['dralor-vault-key']['steps'][0]['contracts']==[by_line[92]['binding']]
+for id,inputs in (
+    ('larra-wedding-ring',[138911,138913]),('robert-soulcatcher',[138914]),
+    ('haldron-crown',[138942]),('dralor-vault-key',[138943]),('dralor-dragonbone-mail',[138909]),
+    ('dralor-demonic-dagger',[138944,138952,138965]),('dralor-demonic-hammer',[138962,138952,138965])):
+    assert [t['item_vnums'][0] for t in stories[id]['steps'] if t['kind']=='carried_item']==inputs
+assert all(not any(t['kind']=='completion' for t in stories[id]['steps'][:-1]) for id in ('dralor-dragonbone-mail','dralor-demonic-dagger','dralor-demonic-hammer'))
+definitions={r['block']['line']:r['definition'] for r in ironstar['requests']}
+assert {line for line,d in definitions.items() if d['daily_eligible']}=={16,92,228}
+assert all(definitions[line]['daily_exclusion']=='Unsupported durable offering' for line in (107,114,124,134))
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==1389]
+assert len(units)==7 and sum(u['achievement'] for u in units)==4 and sum(u['daily_candidate'] for u in units)==3
+contacts={c['mob_vnum']:c for c in ironstar_map['contacts']}
+assert {v for v,c in contacts.items() if c['topics']}=={138908,138921,138927}
+for v,c in contacts.items():
+    assert set(c['topics'])=={t for b in raw if b['kind']=='M' and b['giver_vnum']==v for t in b['body'][0].rstrip('~').split()}
+assert {'key','vault','mithril','maltheas','dagger','warhammer','mold'}<=set(contacts[138921]['topics'])
+assert ironstar['zone']==dict(zone_number=1389,name='The Ancient Halls of Ironstar',source_area='lornecro',last_vnum=138999,reset_mode=1,discoverable=True,first_vnum=138667)
+assert len(ironstar['mobs'])==34 and len(ironstar['items'])==66 and len(ironstar['reset_commands'])==198
+assert collections.Counter(r['command'] for r in ironstar['reset_commands'])=={'M':51,'D':50,'E':27,'O':26,'F':21,'P':16,'G':7}
+assert not ironstar['special_assignments'] and not (ROOT/'areas/shp/lornecro.shp').exists()
+objects=dawndale_bodies('lornecro','obj');rooms=dawndale_bodies('lornecro','wld');mobs=dawndale_bodies('lornecro','mob')
+assert set(rooms)==set(range(138900,139000))
+assert not any(int(b.split('~')[4].split()[0])&32768 for b in mobs.values())
+sources=collections.defaultdict(list);owner=None;room=None
+for r in ironstar['reset_commands']:
+    c,v=r['command'],r['arguments']
+    if c in 'MF':owner,room=v[1],v[3]
+    if c in 'GE':sources[v[1]].append((c,owner,room,v[2],v[3],v[4]))
+for item,mob,where in ((138909,138923,138977),(138949,138926,138984),(138952,138928,138976),(138965,138906,138998)):
+    assert sources[item]==[('G',mob,where,1,0,100)]
+assert sources[138908]==[('E',138906,138998,1,16,100)]
+assert sources[138960]==[('E',138932,138900,1,18,100)]
+commands=ironstar['reset_commands']
+dragons=[n for n,r in enumerate(commands) if r['command']=='M' and r['arguments'][1]==138926]
+assert len(dragons)==4 and commands[dragons[2]+1]['command']=='G' and commands[dragons[2]+1]['arguments'][1]==138949
+for mob,chance in ((138927,75),(138932,80)):
+    assert [r['arguments'][2:5] for r in commands if r['command']=='M' and r['arguments'][1]==mob]==[[1,138900,chance]]
+assert not any(r['command'] in 'MF' and r['arguments'][3] in (138991,138992) for r in commands)
+for item,where in ((138911,138941),(138910,138937),(138934,138975),(138956,138987),(138944,138994),(138962,138994)):
+    assert [r['arguments'][2:5] for r in commands if r['command']=='O' and r['arguments'][1]==item]==[[1,where,100]]
+for item,parent in ((138913,138910),(138942,138934),(138955,138956),(138954,138953)):
+    assert [r['arguments'][2:5] for r in commands if r['command']=='P' and r['arguments'][1]==item]==[[1,parent,100]]
+assert objvalues(objects[138910])[0]==15 and objvalues(objects[138910])[12:14]==[29,138911]
+assert objvalues(objects[138922])[0]==15 and objvalues(objects[138922])[12:14]==[2,138921]
+assert objvalues(objects[138954])[0]==33 and 'Datherlion' in objects[138954]
+assert objvalues(objects[138908])[0]==5 and objvalues(objects[138965])[0]==5
+assert 'hammer' in objects[138944].lower() and 'dragon' in objects[138952].lower()
+assert not any(objvalues(b)[0] in (25,29) for b in objects.values())
+for room,direction,kind,key,target in ((138971,5,15,138944,138975),(138975,4,3,138944,138971),
+    (138983,2,3,138949,138985),(138985,2,3,138955,138993),(138993,2,3,138958,138994),
+    (138988,2,3,-2,138989),(138989,0,3,-2,138988)):
+    assert re.search(r'\bD'+str(direction)+r'\s+[^~]*~[^~]*~\s*'+str(kind)+' '+str(key)+' '+str(target)+r'\b',rooms[room],re.S)
+for room,direction,state in ((138971,5,0),(138975,4,0),(138988,2,0),(138989,0,0),
+    (138983,2,2),(138985,0,1),(138985,2,2),(138993,0,1),(138993,2,2),(138994,0,1),(138980,2,5)):
+    assert [r['arguments'][3] for r in commands if r['command']=='D' and r['arguments'][1:3]==[room,direction]]==[state]
+assert all('grate adamant datherlion' in rooms[v] for v in (138988,138989))
+assert re.search(r'\bD1\s+[^~]*~[^~]*~\s*0 0 138913\b',rooms[138911],re.S) and re.search(r'\bC\s+20 2\b',rooms[138911])
+assert not re.search(r'\bD2\s',rooms[138911])
+assert re.search(r'\bD0\s+[^~]*~[^~]*~\s*0 0 512296\b',rooms[138978],re.S)
+triggers=ROOT/'areas/world.trg'
+assert not triggers.exists() or not re.search(r'^#1389\d\d\b',triggers.read_text(encoding='utf8',errors='replace'),re.M)
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 78 &&
-				tracker.summary_for(7, 42).total == 1636,
+		require(catalog.story_mappings.size() == 79 &&
+				tracker.summary_for(7, 42).total == 1633,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -5848,6 +5848,147 @@ int main(int argc, char **argv)
 					recovered.evidence_for(drow.contracts.front(), 2)
 							.successful_attempts == 1,
 				"Tribal recovery split paired rewards, counted refusal or invented campaign credit");
+		}
+
+		{
+			const auto &map = *std::find_if(catalog.story_mappings.begin(),
+							catalog.story_mappings.end(),
+							[](const auto &m)
+							{ return m.source_area == "lornecro"; });
+			const auto &larra = story_for("lornecro", "larra-wedding-ring");
+			const auto &robert = story_for("lornecro", "robert-soulcatcher");
+			const auto &crown = story_for("lornecro", "haldron-crown");
+			const auto &key = story_for("lornecro", "dralor-vault-key");
+			const auto &dagger = story_for("lornecro", "dralor-demonic-dagger");
+			const auto &hammer = story_for("lornecro", "dralor-demonic-hammer");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1389, 138978, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 1389, 10, 1, 101, false,
+							       false)
+							.find("] " + robert.title + "\r\n") ==
+						std::string::npos,
+				"Ironstar discovery exposed an unmet recipient");
+			for (const auto &contact : map.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 138978, 102) ==
+						result::applied,
+					"Ironstar model encounter failed");
+			std::string ironstar_journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start =
+					ironstar_journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Ironstar journal section missing");
+				const auto end = ironstar_journal.find("\r\n[", start + 3);
+				return ironstar_journal.substr(
+					start, end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[138962] = 1;
+			supplies.carried[138952] = 1;
+			supplies.carried[138908] = 1;
+			supplies.equipped[0] = 138942;
+			supplies.equipped[16] = 138943;
+			const auto before = journey.serialize_state();
+			ironstar_journal = journey.render_journal(7, 42, 1389, 10, 1, 103, false,
+								  false, &supplies);
+			require(section(dagger).find("[Missing now] " + dagger.steps[0].text) !=
+						std::string::npos &&
+					section(hammer).find("[Ready now] " +
+							     hammer.steps[0].text) !=
+						std::string::npos &&
+					section(dagger).find("[Missing now] " +
+							     dagger.steps[2].text) !=
+						std::string::npos &&
+					section(crown).find("[Missing now] " +
+							    crown.steps[0].text) !=
+						std::string::npos &&
+					section(key).find("[Missing now] " + key.steps[1].text) !=
+						std::string::npos &&
+					section(key).find("500000 copper") != std::string::npos &&
+					section(key).find("Turn-in currently unavailable") !=
+						std::string::npos &&
+					section(dagger).find("1000000 copper") !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 1389).completed == 0,
+				"Ironstar wrong mold, intact blade, worn material, fee guidance or reading invented credit");
+			supplies = {};
+			for (int v : { 138914, 138943, 138944, 138952, 138965 })
+				supplies.carried[v] = 1;
+			ironstar_journal = journey.render_journal(7, 42, 1389, 10, 1, 104, false,
+								  false, &supplies);
+			require(section(robert).find("[Ready now] " + robert.steps[1].text) !=
+						std::string::npos &&
+					section(robert).find("Next: " + robert.steps.back().text) !=
+						std::string::npos &&
+					section(key).find("[Ready now] " + key.steps[1].text) !=
+						std::string::npos &&
+					section(key).find("Turn-in currently unavailable") !=
+						std::string::npos &&
+					section(dagger).find("[Ready now] " +
+							     dagger.steps[0].text) !=
+						std::string::npos &&
+					section(hammer).find("[Missing now] " +
+							     hammer.steps[0].text) !=
+						std::string::npos,
+				"Ironstar supplied inputs gained hidden history or merged independent molds");
+			service supplied(catalog);
+			record(supplied, robert.contracts.front(), "ironstar-supplied-ring", 1389,
+			       138900);
+			record(supplied, key.contracts.front(), "ironstar-historical-paid-key",
+			       1389, 138981);
+			require(supplied.progress_for_zone(7, 42, 1389).completed == 2 &&
+					supplied.evidence_for(larra.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.evidence_for(crown.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Ironstar supplied or historical acceptance fabricated producer receipts");
+			record(journey, larra.contracts.front(), "ironstar-larra", 1389, 138961);
+			record(journey, crown.contracts.front(), "ironstar-crown", 1389, 138981);
+			supplies = {};
+			ironstar_journal = journey.render_journal(7, 42, 1389, 10, 1, 121, false,
+								  false, &supplies);
+			require(section(robert).find("[Recorded] " + robert.steps[0].text) !=
+						std::string::npos &&
+					section(robert).find("[Missing now] " +
+							     robert.steps[1].text) !=
+						std::string::npos &&
+					section(key).find("[Recorded] " + key.steps[0].text) !=
+						std::string::npos &&
+					section(key).find("[Missing now] " + key.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 1389).completed == 2,
+				"Ironstar producer history restored spent rings/axes or completed downstream stories");
+			for (const auto &entry : map.stories)
+				if (entry.category == "service")
+					record(journey, entry.contracts.front(), entry.id.c_str(),
+					       1389, 138981);
+			require(journey.progress_for_zone(7, 42, 1389).completed == 2 &&
+					journey.progress_for_zone(7, 42, 1389).total == 4 &&
+					journey.evidence_for(dagger.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					journey.evidence_for(hammer.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Ironstar service receipts added achievements or merged commission history");
+			record(journey, robert.contracts.front(), "ironstar-robert", 1389, 138900);
+			record(journey, key.contracts.front(), "ironstar-paid-key-history", 1389,
+			       138981);
+			auto replay = completion(crown.contracts.front(), "ironstar-crown", 120);
+			replay.transaction.zone_number = 1389;
+			replay.transaction.room_vnum = 138981;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Ironstar accepted receipt replay was not idempotent");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 1389).completed == 4 &&
+					recovered.progress_for_zone(7, 42, 1389).total == 4 &&
+					recovered.evidence_for(dagger.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(hammer.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Ironstar cold recovery lost receipts, counted services or invented a campaign finale");
 		}
 
 		std::cout
