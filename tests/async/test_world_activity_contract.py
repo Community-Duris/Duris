@@ -74,8 +74,8 @@ def test_runtime_switch_and_build_registration_exist():
         assert key in PROPERTIES
     assert "world/world_activity.o" in MAKEFILE
     assert "bootstrapped && enabled_changed && config.enabled" in ACTIVITY
-    assert 'get_property("world.activity.enabled", 0)' in ACTIVITY
-    assert "world.activity.enabled=0.000" in PROPERTIES
+    assert 'get_property("world.activity.enabled", 1)' in ACTIVITY
+    assert "world.activity.enabled=1.000" in PROPERTIES
 
 
 def test_bounded_regions_equipment_and_scheduler_cleanup():

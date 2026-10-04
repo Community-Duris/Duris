@@ -586,6 +586,11 @@ static void test_reschedule_batches(bool player_priority)
 		}
 		require(handles[0].event->due_tick == 600, 457);
 		require(nevent_pending_reschedules.size() == 4, 458);
+		require(ne_event_time(handles[0].event) == 6, 470);
+		require(nevent_advance_by(handles[0], 1), 471);
+		require(ne_event_time(handles[0].event) == 5, 472);
+		require(nevent_advance_by(handles[0], 1), 473);
+		require(ne_event_time(handles[0].event) == 4, 474);
 		require(nevent_reschedule_at(handles[0], 4), 459);
 	}
 	require(nevent_pending_reschedules.empty() && nevent_reschedule_batch_depth == 0, 460);
