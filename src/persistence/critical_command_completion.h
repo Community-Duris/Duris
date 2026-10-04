@@ -55,6 +55,8 @@ struct critical_completion
 	critical_failure_stage failure_stage = critical_failure_stage::none;
 	uint16_t result_size = 0;
 	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result_payload = {};
+	// Reconstructed from durable command entity keys after restart; diagnostics only.
+	std::array<char, 33> recovery_correlation = {};
 	critical_completion_disposition disposition = critical_completion_disposition::execution;
 };
 

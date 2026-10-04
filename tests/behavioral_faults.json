@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "faults": [
+    {
+      "id": "epic-refusal",
+      "requirement": "SAVE-REFUSAL",
+      "family": "offline",
+      "source": "src/world/epic.c",
+      "find": "if (!committed || context_size != sizeof(epic_skill_refund_context))",
+      "replace": "if (context_size != sizeof(epic_skill_refund_context))",
+      "owner": "test_epic_save_guards.py",
+      "compiled_marker": "EPIC-NATIVE compiled",
+      "positive_marker": "Ran 2 tests",
+      "failure_marker": "learned == 50"
+    },
+    {
+      "id": "currency-denomination",
+      "requirement": "CURRENCY-REPLAY",
+      "family": "offline",
+      "source": "src/flatfile/flatfile_accounting_bank_transaction.c",
+      "find": "value.wallet.amount[part] = record.domains.wallet[part];",
+      "replace": "value.wallet.amount[part] = record.domains.wallet[(part + 1) % 4];",
+      "owner": "test_flatfile_accounting_bank.py",
+      "environment": {
+        "DURIS_BANK_GENERATED_ONLY": "1"
+      },
+      "compiled_marker": "BANK-NATIVE compiled",
+      "positive_marker": "PASS: CURRENCY-REPLAY generated",
+      "failure_marker": "Assertion"
+    },
+    {
+      "id": "custody-owner",
+      "requirement": "CUSTODY-HISTORY",
+      "family": "offline",
+      "source": "src/flatfile/flatfile_item_repository.c",
+      "find": "entry.owner = payload.to_owner;",
+      "replace": "entry.owner = payload.from_owner;",
+      "owner": "test_flatfile_item_repository.py",
+      "compiled_marker": "ITEM-NATIVE compiled",
+      "positive_marker": "PASS: CUSTODY-HISTORY 12",
+      "failure_marker": "custody history"
+    },
+    {
+      "id": "load-hidden-query",
+      "requirement": "LOAD-QUERY",
+      "family": "sql",
+      "source": "src/player/player_load_repository.c",
+      "find": "++result->metrics.query_count;\n\treturn rc == 0;",
+      "replace": "result->metrics.query_count += 0;\n\treturn rc == 0;",
+      "owner": "test_player_death_recovery_mysql.py",
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true,
+      "compiled_marker": "LOAD-NATIVE compiled",
+      "positive_marker": "PASS: LOAD-QUERY 32 generated",
+      "failure_marker": "LOAD-QUERY actual statements differ from metrics"
+    },
+    {
+      "id": "pool-premature-reuse",
+      "requirement": "POOL-LEASE",
+      "family": "sql",
+      "source": "src/sql/sql_pool.c",
+      "find": "pool[i].discard_on_release = 1;",
+      "replace": "pool[i].discard_on_release = 1; pool[i].in_use = 0; pthread_cond_signal(&pool_cond);",
+      "owner": "test_sql_pool_discard_mysql.py",
+      "schema_prefix": "death_read_pool_test_",
+      "migrated": false,
+      "compiled_marker": "POOL-NATIVE compiled",
+      "positive_marker": "PASS: real SQL pool retires",
+      "failure_marker": "FAIL: waiting borrower"
+    },
+    {
+      "id": "currency-replay-ack",
+      "requirement": "CURRENCY-REPLAY",
+      "family": "offline",
+      "source": "src/flatfile/flatfile_accounting_bank_transaction.c",
+      "find": "return completion(retained, true);",
+      "replace": "return completion(retained, false);",
+      "owner": "test_flatfile_accounting_bank.py",
+      "environment": {
+        "DURIS_BANK_GENERATED_ONLY": "1"
+      },
+      "compiled_marker": "BANK-NATIVE compiled",
+      "positive_marker": "PASS: CURRENCY-REPLAY generated",
+      "failure_marker": "Assertion"
+    },
+    {
+      "id": "quarantine-admission",
+      "requirement": "CUSTODY-ADMISSION",
+      "family": "offline",
+      "source": "src/player/player_save_journal.c",
+      "find": "return quarantine_state_failed || (quarantine_state_ready && quarantined_pids.count(pid));",
+      "replace": "return quarantine_state_failed || (quarantine_state_ready && quarantined_pids.count(pid) && false);",
+      "owner": "test_player_save_journal_quarantine.py",
+      "compiled_marker": "JOURNAL-NATIVE compiled",
+      "positive_marker": "[PASS] copied capture:",
+      "failure_marker": "SIGABRT"
+    },
+    {
+      "id": "pool-missed-wake",
+      "requirement": "POOL-LEASE",
+      "family": "sql",
+      "source": "src/sql/sql_pool.c",
+      "find": "else\n\t\t\t\tpthread_cond_signal(&pool_cond);\n\t\t\tbreak;",
+      "replace": "else\n\t\t\t\t(void)pool_cond;\n\t\t\tbreak;",
+      "owner": "test_sql_pool_discard_mysql.py",
+      "schema_prefix": "death_read_pool_test_",
+      "migrated": false,
+      "compiled_marker": "POOL-NATIVE compiled",
+      "positive_marker": "PASS: real SQL pool retires",
+      "failure_marker": "FAIL: waiting borrower"
+    }
+  ]
+}

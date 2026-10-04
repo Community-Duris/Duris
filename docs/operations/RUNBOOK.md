@@ -822,9 +822,10 @@ row and is safe only before the repaired player is loaded or saved again.
 
 The audited restitution tool is evidence recovery, not an automatic reimbursement
 command. It reads the immutable `0020_player_death_restitution` contract and
-accepts only normalized death schema 8 after the native bridge has validated the
-raw wire version. Raw death wires 2, 4, 6, and the current writer's 8 are distinct
-inputs; an unknown or corrupt wire is refused.
+accepts supported normalized death schemas after the native bridge has validated
+the raw wire version. Death requests use wires 2, 4, 6, 8, 13, 15, and 18, or
+ward-bearing equivalents 21, 26, 28, and 31. Evidence envelopes are excluded;
+an unknown or corrupt wire is refused.
 
 The production target probe is read-only. Native preparation uses a target-info
 artifact containing the exact database-name confirmation and actual server

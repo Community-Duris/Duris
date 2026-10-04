@@ -95,6 +95,10 @@ constexpr uint32_t PLAYER_SPELL_EFFECT_RECEIPT_EFFECT_MAX = 6;
 constexpr size_t PLAYER_SPELL_EFFECT_RECEIPT_MAX = 4096;
 constexpr size_t PLAYER_DEATH_EVIDENCE_MAX_COLUMNS = 64;
 constexpr size_t PLAYER_DEATH_EVIDENCE_MAX_COLUMN_NAME_BYTES = 64;
+// Ward-bearing wire envelopes use the existing normalized schema plus 13.
+// This allocates versions 20, 21 and 23-32 without reusing accounting formats
+// 7-19 (including death evidence 10). Receipts retain their existing schemas.
+constexpr uint32_t PLAYER_SNAPSHOT_WARD_WIRE_OFFSET = 13;
 constexpr size_t PLAYER_SNAPSHOT_MAX_BYTES = 4 * 1024 * 1024;
 constexpr size_t PLAYER_SNAPSHOT_MAX_ROWS = 8192;
 constexpr size_t PLAYER_SNAPSHOT_MAX_OBJECTS = 4096;
@@ -227,6 +231,14 @@ struct player_affect_snapshot
 	uint8_t location;
 	uint16_t level;
 	std::array<uint64_t, 5> bitvectors;
+	uint64_t ward_source_uid;
+	int32_t ward_full_duration;
+	int64_t ward_capacity;
+	int64_t ward_capacity_max;
+	int32_t ward_refresh_remaining;
+	uint8_t ward_source_type;
+	uint8_t ward_source_worn;
+	uint8_t ward_active;
 	std::string wear_off_character;
 	std::string wear_off_room;
 };

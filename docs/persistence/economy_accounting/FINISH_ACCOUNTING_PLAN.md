@@ -10,17 +10,64 @@ The damaged production database requires the separate
 [ownership repair and accounting opening procedure](../../operations/PRODUCTION_RELEASE_AND_OWNERSHIP_REPAIR.md)
 before any production cutover.
 
+## Current issue tracking (2026-10-03)
+
+[#490](https://github.com/Community-Duris/Duris/issues/490) is the single
+remaining implementation and qualification tracker. It retains all R1-R8 and
+domain-plan acceptance, including the outstanding scope consolidated from
+#487, #488, #489, #568 and #661. Those issue closures are supersession records;
+they do not complete or remove the remaining requirements.
+
+| #490 section | Remaining acceptance owner |
+| --- | --- |
+| 1. Ordinary money and item routes | Native authority, sources, UID custody, publication/replay and executable writer coverage |
+| 2. Compound gameplay and recovery | Commerce, remaining crafts/enhancements, quest/spell rewards, death and corpse recovery |
+| 3. Initialization and sourced NPC issuance | Former #568 baseline/starter grants and #661 active-accounting vial source/decision/replay |
+| 4. Independent audit and reward projection | Former #487 reconciliation, protected bounded queries and canonical reward compatibility |
+| 5. Audited corrections | Former #488 preview/apply, authorization, expected-state guards and linked recovery evidence |
+| 6. Lifecycle, retention and verified restore | Former #489 deletion/reset, retained history, scoped exports and coherent restore |
+| 7. Baseline, activation and safe pause | Consistent openings, guarded admission, observation/enforcement and reversible pause |
+| 8. Integrated candidate and measured budgets | Current candidate, all supported backends, gameplay/fault matrix and declared workload budgets |
+
+[#664](https://github.com/Community-Duris/Duris/issues/664) remains separately
+open for historical quarantined-case reconciliation. Grant/save prevention and
+restricted stopped recovery tooling are delivered; historical case eligibility
+and authorized resolution require retained private evidence. Technical feature
+completion does not establish historical recovery or production reopening.
+
+[#551](https://github.com/Community-Duris/Duris/issues/551) is completed through
+PR #693. Preserve the scoped active-accounting poison, Encrust and Harvester
+[qualification evidence](ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md). Older dated
+statements about those routes being unfinished remain historical, not new work.
+
+SQL is the first delivery target; MySQL, MariaDB and flatfile remain required
+for full completion. Technical acceptance uses disposable databases and a
+personal local server. Production repair, opening, migration, deployment and
+restitution retain their separate evidence and authorization requirements.
+Historical phase IDs in writer metadata continue to identify requirement slices;
+their closed state is not evidence of qualified coverage. Link focused PRs and
+current proof to the appropriate #490 section, preserving file-owner handoffs,
+backend limitations and the tested revision before checking off acceptance.
+
+## Current implementation and qualification
+
 Current integration and native qualification are recorded in the
 [October 3 review status](REVIEW_STATUS_2026-10-03.md), with earlier results in the
 [October 2 review status](REVIEW_STATUS_2026-10-02.md) and
 [October 1 review status](REVIEW_STATUS_2026-10-01.md). Canonical, staging, and
-master-prefix histories now retain 55 receipts, preserving published alchemy
+master-prefix histories at the last qualified 0055 snapshot retain 55 receipts, preserving published alchemy
 migration 0054 and adding exact room-item payload migration 0055. The staging
 fork preserves its first 45 and appends ten; the master fork preserves its first
 31 and appends 24, retaining existing runtime-state payloads. All three converge
 on the pinned 226-table schema on disposable MySQL 8.0.46 and MariaDB 10.11.14 targets.
-The writer inventory covers 868 routes, 2,817 occurrences and 2,758 unique sites
-with zero unmapped sites. These counts do not replace route qualification.
+The current local integration includes incoming migration 0056 spell-ward durability;
+its combined native, migration and player qualification remains pending. The writer
+inventory now classifies 872 routes, 2,818 occurrences and 2,759 unique sites with
+zero unmapped lexical sites. Four added semantic rows separately classify offline
+payload repair and dispel object/timer changes outside the lexical scan. Their
+backend status remains unverified. These counts do not replace route qualification.
+The shared ownership and pending Plan 5 qualification interface are recorded in
+[the stream handoff](SHARED_STREAM_HANDOFF.md).
 
 Restored SQL ordinary-drop obligation registration and clean authoritative
 hydration now have bounded component qualification on both engines. Original
@@ -37,8 +84,11 @@ retry exhaustion, exact repair/restart and later native movement/season history.
 Strict production backends and current inactive creation journeys pass; the
 original 300-second native compile gate passes in 287.557 seconds with the
 same binary used for both-engine fault/recovery checks. These source-specific
-results exclude incoming remote changes (current remote b84693f96); local history integration
-is blocked by the retained no-merge instruction and automatic approval review.
+results exclude incoming remote changes (then-current remote b84693f96). Local
+history integration was blocked at that checkpoint by the retained no-merge
+instruction and automatic approval review. The user subsequently authorized this
+local merge; current combined-source qualification and normal publication remain
+pending.
 Complete ordinary-drop producer/replay/copyover and all R1-R8 gates remain open.
 The bounded coin physical-publication/ACK and null-replay retention repair below
 is qualified separately; production native reconstruction remains open.

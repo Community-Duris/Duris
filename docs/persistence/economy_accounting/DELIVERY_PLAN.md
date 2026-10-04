@@ -1,12 +1,30 @@
 # Economy accounting phased delivery
 
-## Active branch plan (2026-09-28)
+## Current delivery tracking (2026-10-03)
 
 Use [Finish accounting, saves, item custody, and death recovery](FINISH_ACCOUNTING_PLAN.md)
-for the execution order on `finish-accounting`, based on `main` at `d686d4c70`.
-It records current read-only checks and prioritizes a stable SQL gameplay build
-before complete accounting qualification. The older commit-specific status
-statements below are historical; verify them against current code before acting.
+for the execution order on `experimental-accounting`, and
+[#490](https://github.com/Community-Duris/Duris/issues/490) as the single remaining
+implementation and qualification tracker. Outstanding reconciliation (#487),
+corrections (#488), lifecycle/restore (#489), initialization (#568) and sourced
+NPC vial issuance (#661) are consolidated into its numbered acceptance sections.
+Their closures are supersession records, not completion or scope-removal claims.
+
+[#664](https://github.com/Community-Duris/Duris/issues/664) remains separately
+open for historical quarantined-case reconciliation. Its prevention and stopped
+recovery tooling are delivered; private case eligibility and authorized resolution
+remain distinct from technical feature completion and production reopening.
+[#551](https://github.com/Community-Duris/Duris/issues/551) is completed through
+PR #693; preserve its scoped active poison/Encrust/Harvester evidence.
+
+The five domain plans and R1-R8 contract remain required. Historical phase IDs
+in writer metadata retain their requirement identity without implying qualified
+coverage. Link focused implementation PRs to the relevant #490 section, retain
+file-owner handoffs, and record backend proof and tested revisions in the existing
+evidence documents. SQL is the first milestone; MySQL, MariaDB and flatfile remain
+required for full completion. Production operations retain separate authorization.
+Older commit-specific status statements below are historical; verify them against
+current code before acting.
 
 ## Prior plan baseline: add-double-entry at 49af585c4 (2026-09-27)
 
@@ -24,10 +42,11 @@ inventory values are outside this feature.
 | [4. Compound domains](plans/04_COMPOUND_DOMAINS.md) | Shop, collector, auction, craft, death/resurrection composites | Domain-specific player journeys prove money and item effects in each commit | Equivalent domain journeys and refusals on flatfile |
 | [5. Audit and release](plans/05_AUDIT_OPERATIONS_AND_RELEASE.md) | Complete writer inventory, independent reconciliation, operations and fault proof | Zero unclassified real writers and SQL reconciliation/report | Both backends and release matrix pass |
 
-The prior issue crosswalk is Plan 1: #476-479; Plan 2: #480-481;
-Plan 3: #482; Plan 4: #483-486; Plan 5: #475 and #487-490. This is an
-ownership guide, not a dependency order. Baseline/activation (#479) and final
-qualification (#490) close only after the joint release gate.
+The historical requirement crosswalk is Plan 1: #476-479; Plan 2: #480-481;
+Plan 3: #482; Plan 4: #483-486; Plan 5: #475 and #487-490. Current acceptance
+is owned by #490's numbered sections, as mapped in the active completion plan.
+Historical issue closure does not satisfy baseline/activation or the joint
+release gate; #490 closes only after its complete technical acceptance passes.
 
 Each plan starts from this head and has its own inactive-epoch fixtures,
 owned code areas, and acceptance evidence. Work can proceed concurrently

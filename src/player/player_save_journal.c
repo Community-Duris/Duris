@@ -375,7 +375,7 @@ bool archive_recovery_frames(int pid, std::vector<player_snapshot> *frames,
 					   bytes.size() - JOURNAL_HEADER_SIZE,
 					   &snapshot) != player_snapshot_codec_result::ok ||
 		    !ordinary_recovery_snapshot(snapshot) || snapshot.pid != pid ||
-		    snapshot.schema_version != get_u32(bytes.data(), 44) ||
+		    get_u32(bytes.data() + JOURNAL_HEADER_SIZE, 0) != get_u32(bytes.data(), 44) ||
 		    snapshot.revision != get_u64(bytes.data(), 48) ||
 		    snapshot.components != get_u64(bytes.data(), 56))
 			return false;
@@ -816,7 +816,8 @@ bool build_frame(const player_snapshot &snapshot, journal_frame &frame)
 	put_u64(frame.bytes, 24, frame.record_id);
 	put_u64(frame.bytes, 32, frame.created_msec);
 	put_u32(frame.bytes, 40, static_cast<uint32_t>(snapshot.pid));
-	put_u32(frame.bytes, 44, snapshot.schema_version);
+	// Pin the encoded wire, including ward envelopes, rather than its normalized schema.
+	put_u32(frame.bytes, 44, get_u32(payload.data(), 0));
 	put_u64(frame.bytes, 48, snapshot.revision);
 	put_u64(frame.bytes, 56, snapshot.components);
 	put_u32(frame.bytes, 64, payload.size());
@@ -1914,7 +1915,8 @@ bool recovery_generation_matches(const player_save_recovery_record &record)
 	if (!archive_recovery_frames(record.replacement.pid, &frames, &digest) ||
 	    digest != record.archive_digest || policy_pids.count(record.replacement.pid))
 		return false;
-	return std::all_of(frames.begin(), frames.end(), [&](const player_snapshot &frame)
+	return std::all_of(frames.begin(), frames.end(),
+			   [&](const player_snapshot &frame)
 			   { return frame.revision < record.replacement.revision; });
 }
 } // namespace

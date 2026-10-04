@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from _paths import SRC
+from _paths import SRC, extract_function
 import json
 import re
 import subprocess
@@ -84,7 +84,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("'economic_sql_activation_receipt'", self.header)
         self.assertIn("'economic_sql_global_activation'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0055_sql_room_item_payload")
+                         "0056_spell_ward_durability")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
@@ -113,15 +113,15 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         import tempfile
         from unittest import mock
         value = runtime.load()
-        self.assertEqual(value["migration_head"]["sequence"], 55)
-        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 55)
+        self.assertEqual(value["migration_head"]["sequence"], 56)
+        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 56)
         self.assertEqual(value["staging_0045_migration_head"]["id"],
-                         "0055_sql_room_item_payload")
+                         "0056_spell_ward_durability")
         self.assertNotEqual(value["migration_head"]["history_checksum"],
                             value["staging_0045_migration_head"]["history_checksum"])
-        self.assertEqual(value["master_0031_migration_head"]["sequence"], 55)
+        self.assertEqual(value["master_0031_migration_head"]["sequence"], 56)
         self.assertEqual(value["master_0031_migration_head"]["id"],
-                         "0055_sql_room_item_payload")
+                         "0056_spell_ward_durability")
         self.assertEqual(len({value[field]["history_checksum"] for field in (
             "migration_head", "staging_0045_migration_head", "master_0031_migration_head")}), 3)
         with tempfile.TemporaryDirectory() as directory:
@@ -168,17 +168,14 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
                          "critical_command_coordinator_init", "game_loop(port, sslport)"):
             self.assertIn(boundary, game)
 
-        game_loop = self.comm[self.comm.index("static bool run_connection_phase"):
-                              self.comm.index("bool runtime_listener_address")]
-        self.assertIn("redis_load_world_state", game_loop)
-        self.assertIn("transport_world_pump", game_loop)
-        # Listener acceptance moved before run_connection_phase. Both the
-        # legacy poll boundary and transport pump remain behind verified boot.
-        acceptance = self.comm[self.comm.index("static int drain_new_connections"):
-                               self.comm.index("static bool run_connection_phase")]
-        for listener in ("ctx.telnet_listener", "ctx.ssl_listener",
-                         "ctx.websocket_listener"):
-            self.assertIn("drain_new_connections(" + listener, acceptance)
+        game_loop = extract_function("net/comm.c", "void game_loop(")
+        network = extract_function("net/comm.c", "static bool service_network_turn(")
+        self.assertLess(game_loop.index("redis_load_world_state"),
+                        game_loop.index("run_connection_phase(context)"))
+        connections = extract_function("net/comm.c", "static bool run_connection_phase(")
+        self.assertIn("transport_world_pump", connections)
+        for listener in ("ctx.telnet_listener", "ctx.ssl_listener", "ctx.websocket_listener"):
+            self.assertIn("drain_new_connections(" + listener, network)
 
     def test_schema_fingerprint_and_redacted_reason_ids_are_enforced(self):
         self.assertIn("sql_verify_metadata_fingerprint", self.sql)

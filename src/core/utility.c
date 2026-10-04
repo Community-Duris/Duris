@@ -25,6 +25,7 @@ using namespace std;
 #endif
 
 #include "core/prototypes.h"
+#include "world/world_activity.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -3112,7 +3113,7 @@ static void currency_adjustment_committed(P_char ch, bool committed,
 					  unsigned int error_code, const uint8_t *context,
 					  size_t context_size);
 
-void ADD_MONEY(P_char ch, int amount)
+void ADD_MONEY(P_char ch, int amount, const char *committed_message)
 {
 	int t = 0;
 
@@ -3133,12 +3134,18 @@ void ADD_MONEY(P_char ch, int amount)
 				ch);
 		return;
 	}
+	const size_t message_size = committed_message ? strlen(committed_message) + 1 : 0;
+	if (message_size > CURRENCY_PENDING_CONTEXT_MAX_BYTES)
+	{
+		logit(LOG_WIZ, "ADD_MONEY: credit acknowledgement exceeds context capacity");
+		return;
+	}
 	if (IS_PC(ch) && GET_PID(ch) > 0)
 	{
 		if (!currency_transaction_submit_wallet_value(
 			    ch, amount, currency_reason_type::wallet_reward, 0,
 			    critical_source_site::command, critical_deadline_class::interactive,
-			    currency_adjustment_committed, nullptr, 0))
+			    currency_adjustment_committed, committed_message, message_size))
 		{
 			logit(LOG_WIZ, "ADD_MONEY: wallet transaction submission failed for pid %d",
 			      GET_PID(ch));
@@ -3149,6 +3156,8 @@ void ADD_MONEY(P_char ch, int amount)
 			else
 				send_to_char("Your coin credit is pending staff review.\r\n", ch);
 		}
+		else if (committed_message)
+			send_to_char("Your coin credit is pending confirmation.\r\n", ch);
 		return;
 	}
 
@@ -3179,6 +3188,8 @@ void ADD_MONEY(P_char ch, int amount)
 
 	/* Update web client */
 	gmcp_char_vitals(ch);
+	if (committed_message)
+		send_to_char(committed_message, ch);
 }
 
 /* TOWARDS BANK MONEY
@@ -3258,15 +3269,19 @@ void publish_account_bank_balances_revision(const char *account_name, int racewa
 
 static void currency_adjustment_committed(P_char ch, bool committed,
 					  const currency_command_result & /*result*/,
-					  unsigned int error_code, const uint8_t * /*context*/,
-					  size_t /*context_size*/)
+					  unsigned int error_code, const uint8_t *context,
+					  size_t context_size)
 {
+	if (committed && ch && context && context_size && context[context_size - 1] == 0)
+		send_to_char(reinterpret_cast<const char *>(context), ch);
 	if (!committed && ch)
 	{
 		logit(LOG_DEBUG, "Currency adjustment rejected for pid %d (error %u)", GET_PID(ch),
 		      error_code);
 		send_to_char(
-			"Your coin transaction could not be completed. Please contact staff if goods were delivered.\r\n",
+			context_size ?
+				"Your coin credit could not be completed. Please contact staff.\r\n" :
+				"Your coin transaction could not be completed. Please contact staff if goods were delivered.\r\n",
 			ch);
 	}
 }
@@ -4969,6 +4984,10 @@ P_char char_in_room(int room)
 bool spell_can_affect_char(P_char ch, int spl)
 {
 	int i = GetLowestSpellCircle_p(spl);
+	// Finite player wards can be worn down by these spells. Selection must
+	// remain read-only; the damage stage owns eligibility and capacity wear.
+	if (IS_PC(ch))
+		return true;
 
 	if (spl == SPELL_MOLTEN_SPRAY && IS_UNDEADRACE(ch))
 		return true;
@@ -7206,6 +7225,7 @@ void connect_rooms(int v1, int v2, int to_dir, int from_dir)
 		CREATE(world[r1].dir_option[to_dir], room_direction_data, 1, MEM_TAG_DIRDATA);
 		world[r1].dir_option[to_dir]->to_room = r2;
 		world[r1].dir_option[to_dir]->exit_info = 0;
+		world_activity_room_exits_changed(r1);
 	}
 
 	if (from_dir >= 0 && !world[r2].dir_option[from_dir])
@@ -7213,6 +7233,7 @@ void connect_rooms(int v1, int v2, int to_dir, int from_dir)
 		CREATE(world[r2].dir_option[from_dir], room_direction_data, 1, MEM_TAG_DIRDATA);
 		world[r2].dir_option[from_dir]->to_room = r1;
 		world[r2].dir_option[from_dir]->exit_info = 0;
+		world_activity_room_exits_changed(r2);
 	}
 }
 
@@ -7230,6 +7251,7 @@ void disconnect_exit(int v1, int dir)
 
 	FREE(VIRTUAL_EXIT(r1, dir));
 	VIRTUAL_EXIT(r1, dir) = NULL;
+	world_activity_room_exits_changed(r1);
 }
 
 void disconnect_rooms(int v1, int v2)
@@ -7255,12 +7277,14 @@ void disconnect_rooms(int v1, int v2)
 	{
 		FREE(VIRTUAL_EXIT(r1, d1));
 		VIRTUAL_EXIT(r1, d1) = NULL;
+		world_activity_room_exits_changed(r1);
 	}
 
 	if (d2 >= 0 && d2 < NUM_EXITS)
 	{
 		FREE(VIRTUAL_EXIT(r2, d2));
 		VIRTUAL_EXIT(r2, d2) = NULL;
+		world_activity_room_exits_changed(r2);
 	}
 }
 

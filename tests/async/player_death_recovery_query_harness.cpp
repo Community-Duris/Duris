@@ -218,6 +218,9 @@ int main()
 							    detail.detail_identity, archive));
 	assert(detail.detail_summary.size() <= PLAYER_DEATH_RECOVERY_SUMMARY_MAX);
 	assert(detail.detail_summary.find("sword") != std::string::npos);
+	assert(detail.detail_summary.find("correlation=") != std::string::npos);
+	assert(detail.detail_summary.find("recovery_owner=retained_death_conflict") !=
+	       std::string::npos);
 	assert(detail.detail_summary.find("Unresolved archive evidence only") != std::string::npos);
 	assert(detail.detail_summary.find("not a completed terminal recovery") !=
 	       std::string::npos);

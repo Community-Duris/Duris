@@ -197,6 +197,42 @@ def run(server, inspector, fence_fault=None):
                     assert snapshot.read_bytes() == original_snapshot
                     assert retained.read_bytes() == original_quest_state
                     assert not (state / "domains/.critical-authority-transaction").exists()
+                    # The deletion journal reads the state file under its
+                    # authority lock, not the runtime publisher's separate lock.
+                    # Unsafe state metadata must refuse native erasure without
+                    # changing its bytes or destroying the fenced identities.
+                    fenced_accounts = account_images()
+                    assert retained.is_file()
+                    original_mode = retained.stat().st_mode & 0o777
+                    assert original_mode == 0o600
+                    retained.chmod(0o601)
+                    try:
+                        client.send(journey.ACCOUNT)
+                        client.expect("Account deletion did not complete.", timeout=30)
+                        client.expect("to retry completion:")
+                        assert snapshot.read_bytes() == original_snapshot
+                        assert account_images() == fenced_accounts
+                        assert retained.read_bytes() == original_quest_state
+                        assert b"were permanently deleted." not in client.transcript
+                        client.send("cancel")
+                        client.expect("Deletion has already started and cannot be cancelled.", timeout=30)
+                        client.expect("to retry completion:")
+                    finally:
+                        retained.chmod(original_mode)
+                    client.close()
+                    client = None
+                    stop()
+                    process = boot()
+                    client = journey.MudClient(plain)
+                    client.expect("Please enter your account name:")
+                    client.send(journey.ACCOUNT)
+                    client.expect("Please enter your password:")
+                    client.send(journey.PASSWORD)
+                    client.expect("to retry completion:", timeout=30)
+                    assert snapshot.read_bytes() == original_snapshot
+                    assert account_images() == fenced_accounts
+                    assert retained.read_bytes() == original_quest_state
+                    print(f"Native {fence_fault} quest-state persistence refusal preserved retry identities and aliases across cold restart", flush=True)
                     client.send(journey.ACCOUNT)
                     client.expect("Your account and all of its characters were permanently deleted.", timeout=30)
                     assert client.transcript.count(b"were permanently deleted.") == 1
@@ -209,9 +245,14 @@ def run(server, inspector, fence_fault=None):
                     # tracker would restore the erased account's old aliases.
                     client = journey.MudClient(plain)
                     journey.create_character(client, account="Eraseview", character="Observer")
+                    client.send("save")
+                    client.expect("Save complete for Observer.", timeout=30)
                     client.send("quit")
                     client.expect("ACCOUNT MENU", timeout=30)
-                    assert (1, journey.CHARACTER) not in quest_aliases(retained.read_bytes()), "runtime cache restored an erased alias"
+                    refreshed_aliases = quest_aliases(retained.read_bytes())
+                    assert (1, journey.CHARACTER) not in refreshed_aliases, "runtime cache restored an erased alias"
+                    observers = [pid for pid, name in refreshed_aliases if name == "Observer"]
+                    assert len(observers) == 1 and observers[0] != 1, "new quest identity was never published after cache refresh"
                     client.close()
                     client = None
                     stop()
@@ -274,7 +315,9 @@ def run(server, inspector, fence_fault=None):
                 # unrelated account/session captures into the regression output.
                 diagnostics = journey.runtime_logs(runtime) + output_path.read_text(errors="replace")
                 for line in diagnostics.splitlines():
-                    if "deleteCharacter()" in line:
+                    if any(marker in line for marker in ("deleteCharacter()", "deleteAccount()",
+                                                          "account deletion", "zone-story",
+                                                          "authority file metadata")):
                         print(line)
                 raise
             finally:

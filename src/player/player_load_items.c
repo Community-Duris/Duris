@@ -613,10 +613,10 @@ bool materialize_item_graph(P_char character, std::vector<P_obj> *detached_roots
 		    (identity.override_mask & (PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS |
 					       PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME)))
 		{
-			const auto baseline =
-				std::find_if(item.dynamic_affects.begin(),
-					     item.dynamic_affects.end(), [](const auto &affect)
-					     { return affect.type == TAG_ALTERED_EXTRA2; });
+			const auto baseline = std::find_if(
+				item.dynamic_affects.begin(), item.dynamic_affects.end(),
+				[](const auto &affect)
+				{ return affect.type == TAG_ALTERED_EXTRA2; });
 			if (baseline != item.dynamic_affects.end())
 				object->extra2_flags = static_cast<ulong>(baseline->extra2);
 			for (auto affect = item.dynamic_affects.rbegin();
@@ -949,4 +949,13 @@ void player_load_items_discard(P_char character)
 	}
 	GET_CARRYING_W(character) = 0;
 	IS_CARRYING_N(character) = 0;
+}
+
+bool player_load_item_snapshot_metadata_valid(const player_item_snapshot &item)
+{
+	player_load_item_identity identity = {};
+	identity.database_id = 1;
+	identity.item_uid = item.object_uid;
+	identity.override_mask = PLAYER_LOAD_ITEM_OVERRIDE_ALL;
+	return valid_item_metadata(item, identity, true) == metadata_validation_outcome::valid;
 }

@@ -582,6 +582,32 @@ int main()
         assert(!item_movement_transaction_player_busy(&f.actor));
         recover_creation = false;
     }
+    // A committed purchase awaiting reconstruction stays charged and pending:
+    // notify once, retain its final callback, and publish before continuation.
+    {
+        fixture f;
+        grant_callback_count = 0; grant_callback_committed = false;
+        grant_callback_successor = nullptr;
+        assert(item_creation_grant_submit_to_player_with_completion(
+            &f.actor, &f.bag, &f.actor, nullptr, grant_callback));
+        const auto completed = next_completion(critical_apply_outcome::applied);
+        object_list = &f.extra; f.extra.next = &f.food; f.food.next = nullptr;
+        deliver(completed);
+        assert(grant_callback_count == 0 && extractions.empty() && publications.empty());
+        assert(item_movement_transaction_player_busy(&f.actor));
+        assert(fixture_messages ==
+            "Your items are safe but are still being delivered.\r\n"
+            "Please wait a moment or reconnect; do not request them again.\r\n");
+        const std::string delay_notice = fixture_messages;
+        deliver(completed);
+        assert(grant_callback_count == 0 && fixture_messages == delay_notice);
+        recover_creation = true;
+        item_movement_transaction_player_ready(&f.actor);
+        assert(grant_callback_count == 1 && grant_callback_committed);
+        assert(publications[100] == 1 && extractions.empty());
+        assert(!item_movement_transaction_player_busy(&f.actor));
+        recover_creation = false;
+    }
     // A held grant does not publish early or hold an unrelated player's dispatch.
     // After disconnect, publish to the retained character and continue its queue.
     {

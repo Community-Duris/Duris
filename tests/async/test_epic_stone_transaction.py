@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from _sql_dispatch_sources import SQL_DISPATCH_SOURCES
 
 ROOT = Path(__file__).resolve().parents[2]
 CODEC = r'''
@@ -134,18 +135,7 @@ int main()
 
 SQL_SOURCES = [
     "persistence/critical_command.c", "world/epic_command.c", "economy/currency_command.c",
-    "item/item_transfer_command.c", "item/craft_pouch_mutation.c", "combat/chaos_pouch_ledger.c", "item/item_transfer_repository.c",
-    "economy/auction_command.c", "economy/auction_repository.c",
-    "combat/combat_outcome_command.c", "combat/combat_outcome_repository.c",
-    "guild/artifact_guild_command.c", "guild/artifact_guild_repository.c",
-    "economy/boon_reward_command.c", "economy/boon_reward_repository.c",
-    "world/zone_touch_command.c", "world/zone_touch_repository.c",
-    "account/session_audit_command.c", "account/session_audit_repository.c",
-    "economy/coin_transfer_command.c", "player/player_snapshot_codec.c",
-    "economy/collector_command.c", "economy/collector_codec.c",
-    "economy/collector_policy.c", "economy/collector_repository.c",
-    "persistence/corpse_lifecycle_command.c", "persistence/corpse_lifecycle_repository.c",
-    "persistence/critical_command_repository.c",
+    "combat/combat_outcome_command.c", *SQL_DISPATCH_SOURCES,
 ]
 
 
@@ -180,7 +170,8 @@ class EpicStoneTransactionTests(unittest.TestCase):
     @unittest.skipUnless(os.environ.get("EPIC_STONE_MYSQL_TEST") == "1",
                          "requires explicitly provisioned disposable MySQL service")
     def test_mysql_atomic_awards_replay_and_failure_rollback(self):
-        self.compile_and_run(ROOT / "tests/async/epic_stone_mysql_harness.cpp", SQL_SOURCES, mysql=True)
+        self.compile_and_run(ROOT / "tests/async/epic_stone_mysql_harness.cpp",
+                             SQL_SOURCES, mysql=True)
 
 
 if __name__ == "__main__":

@@ -837,7 +837,7 @@ flatfile production binary SHA-256
 f0c37cd6d62caef1a5481ba90b28c74592cd5a4206f10f473481fc4ff2414964.
 The separate observer binary supplies exact native readback only under a test
 macro; production does not enable it. The original frozen broad result remains
-831 passed, 11 skipped and 17 failed; a current-head broad run and full R1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“R8
+831 passed, 11 skipped and 17 failed; a current-head broad run and full R1ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œR8
 qualification remain required. Release and activation remain blocked.
 
 
@@ -2773,3 +2773,43 @@ narrow interface requests and independently committed slices for integration on
 one tested candidate; do not duplicate Plan5 mutation/tooling work. Local Git
 integration is explicitly authorized; GitHub PR merge/deploy/production activation
 remain prohibited. Normal milestone publication follows combined-source checks.
+
+
+### Current combined-source integration checkpoint
+
+The local merge combines qualified SQL-cleanup parent `79e766b54` with incoming
+`9d0ea2a1` and canonical migration 0056. All seven conflict contents are resolved;
+merge recording and wider candidate qualification remain pending at this checkpoint.
+Local definite-admission disposition is retained after the incoming diagnostic-only
+recovery correlation field. ACK reservation and failure retention are unchanged.
+The incoming manifest-based runner is preserved and eleven local owners are
+explicitly registered; the two mandatory-artifact SQL owners remain manual.
+
+Registry reconciliation preserves both branches' semantic changes and reanchors
+checked excerpt identities rather than selecting one side's coordinates. Current
+inventory is 872 routes / 2,818 lexical occurrences / 2,759 unique sites, with zero
+unmapped lexical sites. Four source-only rows classify offline player payload
+repair and dispel object, portal and anchor mutations beyond the lexical scan.
+All four remain backend-unverified; coverage remains false and release BLOCKED.
+The refreshed activation contract passes 55 cases, writer evidence passes two,
+writer-site checks pass 2,728 checks, and accounting contracts pass 30 cases.
+Source-coordinate assertion failures and the Windows python3 alias failure are
+retained before the exact checked anchor/interpreter repairs.
+
+`tmp/accounting-integration-9d0-native-owners-v1.local.json` pins the combined native
+inputs and nine passing serial owners: coordinator, spell wards/dispel, world
+activity runtime/contract, nevent scheduler, latency, save journal, pipeline and
+worker. Diagnostics passes separately with the supported linker wrapper; its
+original missing-system-libm setup failure is retained. These are native component
+checks, not complete SQL, player, ward restart or release qualification.
+Runtime compatibility validation passes for 0056. Linux migration/boot contract
+checks are being rerun after Windows ownership/symlink/socket/interpreter boundaries.
+
+The root-runner integration tests refuse the missing required matrix rows for the
+ordinary and retained SQL exception owners. Preserve workload completeness and
+supply real compile/run adapters with the original 300/120 budgets; a target guard
+self-test cannot qualify the native cases. The narrow Plan 5 request and first
+orphan-audit review are in `SHARED_STREAM_HANDOFF.md`. Strict combined-source server
+builds, paired native SQL faults, active route/player/recovery qualification and
+current broad gates remain open. Earlier canonical 0055 receipts remain scoped to
+their original source; no production activation/data change or PR merge is authorized.

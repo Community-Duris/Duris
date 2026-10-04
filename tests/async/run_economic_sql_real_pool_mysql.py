@@ -120,6 +120,18 @@ def run_binary(family, binary, expected_sha256=None):
     if expected_sha256 and sha256(binary) != expected_sha256:
         raise RuntimeError("qualified executable changed during runtime")
 
+def run_room_journey(binary, server, server_sha256):
+    if not re.fullmatch(r"[0-9a-f]{64}", server_sha256) or sha256(server) != server_sha256:
+        raise RuntimeError("room journey server SHA256 pin mismatch")
+    execute([
+        "python3", str(ROOT / "tests/async/run_sql_room_item_payload_recovery_journey.py"),
+        "--seed-binary", str(binary), "--seed-sha256", sha256(binary),
+        "--server-binary", str(server), "--server-sha256", server_sha256,
+    ], environment=dict(os.environ), timeout=600)
+    if sha256(server) != server_sha256:
+        raise RuntimeError("room journey server changed during qualification")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--family", choices=("coin", "item", "room"), required=True)
@@ -130,7 +142,14 @@ def main():
     parser.add_argument("--compile-budget-seconds", type=int, choices=(300, 600), default=300)
     parser.add_argument("--retained-public-verifier", action="store_true",
                         help="include new public helper RR contract probe; room family only")
+    parser.add_argument("--server", type=Path,
+                        help="also run the room recovery journey using this frozen SQL server")
+    parser.add_argument("--server-sha256")
     args = parser.parse_args()
+    if bool(args.server) != bool(args.server_sha256) or (args.server and args.family != "room"):
+        parser.error("the room recovery journey requires both --server and --server-sha256")
+    if args.compile_only and args.server:
+        parser.error("--compile-only cannot run a server journey")
     if args.retained_public_verifier and args.family != "room":
         parser.error("public retained verifier belongs to the room fixture")
     if args.compile_only:
@@ -142,6 +161,8 @@ def main():
         if not args.binary_sha256:
             parser.error("--run-binary requires --binary-sha256")
         run_binary(args.family, args.run_binary.resolve(strict=True), args.binary_sha256)
+        if args.server:
+            run_room_journey(args.run_binary.resolve(strict=True), args.server, args.server_sha256)
         return
     if not target_is_disposable(os.environ):
         raise SystemExit("explicit disposable loopback schema and port required")
@@ -150,6 +171,9 @@ def main():
         compile_family(args.family, binary, timeout=args.compile_budget_seconds,
                        retained_verifier=args.retained_public_verifier)
         run_binary(args.family, binary, sha256(binary))
+        if args.server:
+            run_room_journey(binary, args.server, args.server_sha256)
+    print(f"PASS: real SQL pool {args.family} qualification completed")
 
 if __name__ == "__main__":
     main()

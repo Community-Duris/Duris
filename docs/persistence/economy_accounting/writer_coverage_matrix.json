@@ -10,24 +10,24 @@
   "candidate_worktree_evidence": null,
   "counts": {
     "dormant_writer_candidates": 14,
-    "draft_registry_rows": 868,
-    "function_definition_anchors_verified": 860,
-    "matrix_rows": 868,
+    "draft_registry_rows": 872,
+    "function_definition_anchors_verified": 864,
+    "matrix_rows": 872,
     "non_function_candidate_anchors": 8,
     "non_writer_or_out_of_scope_candidates": 97,
-    "offline_operational_writer_routes": 3,
+    "offline_operational_writer_routes": 4,
     "routes_with_current_schema_1_path": 85,
     "routes_with_schema_2_gameplay_producer": 15,
     "routes_with_unified_double_entry_evidence": 2,
-    "runtime_mutation_and_projection_routes": 754,
+    "runtime_mutation_and_projection_routes": 757,
     "supplemental_candidates_found": 0
   },
   "coverage_complete": false,
   "disposition_counts": {
     "dormant_writer_candidate": 14,
     "non_writer_candidate": 97,
-    "offline_operational_writer": 3,
-    "runtime_mutation_route": 688,
+    "offline_operational_writer": 4,
+    "runtime_mutation_route": 691,
     "runtime_projection_route": 66
   },
   "global_schema_and_accounting_evidence": {
@@ -40,33 +40,33 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 868 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The matrix reconciles 872 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
     "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2817,
-    "current_unique_path_line_family_sites": 2758,
+    "current_occurrences": 2818,
+    "current_unique_path_line_family_sites": 2759,
     "draft_registry_census_complete": true,
     "draft_source_commit": "5f542e9cf769dfa7ef89e28ce4845d7495d4e1b3",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2758,
+    "draft_unique_sites": 2759,
     "family_occurrences": {
       "coin_assignment": 164,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
-      "economic_submit": 187,
+      "economic_submit": 188,
       "item_lifecycle": 1147,
       "item_publication": 1063,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
       "sql_economy": 56
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 868-row registry maps 2758 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2758,
-    "mapped_unique_sites_from_draft_rows": 2758,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 872-row registry maps 2759 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2759,
+    "mapped_unique_sites_from_draft_rows": 2759,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -5949,7 +5949,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4391
+          4405
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -7224,7 +7224,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1846
+          1930
         ],
         "file": "src/combat/fight.c",
         "function": "die",
@@ -7460,7 +7460,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3436
+          3549
         ],
         "file": "src/combat/fight.c",
         "function": "check_shields",
@@ -7814,7 +7814,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4886
+          4999
         ],
         "file": "src/combat/fight.c",
         "function": "hit",
@@ -9236,7 +9236,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3229
+          3240
         ],
         "file": "src/core/utility.c",
         "function": "publish_account_bank_balances_revision",
@@ -9425,7 +9425,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3190
+          3201
         ],
         "file": "src/core/utility.c",
         "function": "publish_account_bank_balance",
@@ -9665,8 +9665,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          479,
-          12659
+          481,
+          12691
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -9730,7 +9730,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3115
+          3116
         ],
         "file": "src/core/utility.c",
         "function": "ADD_MONEY",
@@ -10360,7 +10360,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3115
+          3116
         ],
         "file": "src/core/utility.c",
         "function": "ADD_MONEY",
@@ -10425,7 +10425,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3286
+          3301
         ],
         "file": "src/core/utility.c",
         "function": "SUB_MONEY",
@@ -10990,7 +10990,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          730
+          808
         ],
         "file": "src/combat/fight.c",
         "function": "make_corpse",
@@ -11113,7 +11113,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          730
+          808
         ],
         "file": "src/combat/fight.c",
         "function": "make_corpse",
@@ -11174,7 +11174,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          592
+          651
         ],
         "file": "src/combat/fight.c",
         "function": "clear_corpse_transfer_dispute",
@@ -11235,7 +11235,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          730
+          808
         ],
         "file": "src/combat/fight.c",
         "function": "make_corpse",
@@ -13541,7 +13541,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1502
+          1589
         ],
         "file": "src/combat/fight.c",
         "function": "save_disputed_death_disposition",
@@ -14019,7 +14019,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          628
+          631
         ],
         "file": "src/world/buildings.c",
         "function": "outpost_inside",
@@ -17101,8 +17101,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3013,
-          3025
+          3009,
+          3021
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17164,7 +17164,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1292
+          1288
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17226,7 +17226,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1192
+          1188
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17411,7 +17411,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1073
+          1069
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -17656,7 +17656,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10117
+          10183
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_empty_objects",
@@ -18347,7 +18347,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7800
+          7866
         ],
         "file": "src/cmd/actobj.c",
         "function": "remove_item",
@@ -18409,7 +18409,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7734
+          7800
         ],
         "file": "src/cmd/actobj.c",
         "function": "execute_wear",
@@ -18829,10 +18829,10 @@
           6695
         ],
         "file": "src/cmd/actobj.c",
-        "function": "do_eat",
-        "original_draft_symbol": "do_eat"
+        "function": "apply_eaten_item",
+        "original_draft_symbol": "apply_eaten_item"
       },
-      "source_classification": "Eat action extracts consumed food; true UID retirement needs a source event.",
+      "source_classification": "Food effects and live extraction follow guarded UID retirement for durable player items.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -19668,7 +19668,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3261
+          3257
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19730,7 +19730,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3073
+          3069
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20342,7 +20342,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9837
+          9903
         ],
         "file": "src/cmd/actobj.c",
         "function": "list_foods",
@@ -20716,7 +20716,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2156
+          2152
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -21084,7 +21084,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9741
+          9807
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_apply_poison",
@@ -21367,7 +21367,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1568
+          1564
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21429,7 +21429,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1124
+          1120
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21674,7 +21674,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          154
+          155
         ],
         "file": "src/item/objmisc.c",
         "function": "event_random_exit",
@@ -21797,7 +21797,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          979
+          975
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -22518,7 +22518,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2366
+          2367
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_execute_at_offset",
@@ -22579,7 +22579,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3014
+          3015
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_destroy_owners",
@@ -24472,7 +24472,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2019
+          2038
         ],
         "file": "src/core/files.c",
         "function": "delete_character_result",
@@ -24738,7 +24738,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1955
+          1956
         ],
         "file": "src/core/utility.c",
         "function": "persistence_prepare_pwipe",
@@ -24863,8 +24863,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          305,
-          5487
+          306,
+          5518
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_account",
@@ -24928,8 +24928,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          280,
-          1252
+          281,
+          1254
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_player",
@@ -25085,7 +25085,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2699
+          2703
         ],
         "file": "src/item/storage_lockers.c",
         "function": "locker_access_CanAdd",
@@ -25145,7 +25145,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3530
+          3535
         ],
         "file": "src/item/storage_lockers.c",
         "function": "check_for_artisInRoom",
@@ -25204,7 +25204,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1567
+          1571
         ],
         "file": "src/item/storage_lockers.c",
         "function": "LockerChest::~LockerChest",
@@ -25263,7 +25263,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3824
+          3829
         ],
         "file": "src/item/storage_lockers.c",
         "function": "locker_chestcmd",
@@ -25322,7 +25322,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1567
+          1571
         ],
         "file": "src/item/storage_lockers.c",
         "function": "LockerChest::~LockerChest",
@@ -25382,7 +25382,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          712
+          716
         ],
         "file": "src/item/storage_lockers.c",
         "function": "StorageLocker::PutInProperChest",
@@ -25501,7 +25501,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          330
+          331
         ],
         "file": "src/item/storage_lockers.c",
         "function": "locker_handle_leave",
@@ -25560,7 +25560,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1645
+          1649
         ],
         "file": "src/item/storage_lockers.c",
         "function": "PrivateChest::PrivateChest",
@@ -25619,7 +25619,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1524
+          1528
         ],
         "file": "src/item/storage_lockers.c",
         "function": "LockerChest::CreateChestObject",
@@ -25679,7 +25679,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3501
+          3506
         ],
         "file": "src/item/storage_lockers.c",
         "function": "StorageLocker::PFileToLocker",
@@ -25739,7 +25739,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3401
+          3406
         ],
         "file": "src/item/storage_lockers.c",
         "function": "StorageLocker::LockerToPFile",
@@ -25798,7 +25798,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2923
+          2927
         ],
         "file": "src/item/storage_lockers.c",
         "function": "create_new_locker",
@@ -25857,7 +25857,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1795
+          1799
         ],
         "file": "src/item/storage_lockers.c",
         "function": "storage_locker_room_hook",
@@ -26242,7 +26242,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3680
+          3723
         ],
         "file": "src/magic/affects.c",
         "function": "falling_obj",
@@ -26299,7 +26299,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3454
+          3497
         ],
         "file": "src/magic/affects.c",
         "function": "poo",
@@ -26641,7 +26641,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1241
+          1242
         ],
         "file": "src/magic/smagic.c",
         "function": "spell_arieks_shattering_iceball",
@@ -27480,7 +27480,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          364
+          346
         ],
         "file": "src/magic/spell_portals.c",
         "function": "spell_general_portal",
@@ -27537,7 +27537,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          208
+          206
         ],
         "file": "src/magic/spell_portals.c",
         "function": "spell_moonstone",
@@ -28946,7 +28946,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          996
+          997
         ],
         "file": "src/mob/studioproc.c",
         "function": "sp_execute",
@@ -30295,7 +30295,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          611
+          624
         ],
         "file": "src/player/player_load_repository.c",
         "function": "load_bank",
@@ -30471,7 +30471,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4137
+          4173
         ],
         "file": "src/core/files.c",
         "function": "confiscate_all",
@@ -30518,7 +30518,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4041
+          4077
         ],
         "file": "src/core/files.c",
         "function": "confiscate_item",
@@ -30576,7 +30576,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4041
+          4077
         ],
         "file": "src/core/files.c",
         "function": "confiscate_item",
@@ -30636,7 +30636,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2269
+          2278
         ],
         "file": "src/player/player_snapshot_repository.c",
         "function": "apply_death",
@@ -30697,7 +30697,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1756
+          1775
         ],
         "file": "src/core/files.c",
         "function": "writeCharacter",
@@ -30757,7 +30757,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1756
+          1775
         ],
         "file": "src/core/files.c",
         "function": "writeCharacter",
@@ -30817,7 +30817,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2213
+          2232
         ],
         "file": "src/core/files.c",
         "function": "restoreStatus",
@@ -30971,7 +30971,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          827
+          846
         ],
         "file": "src/core/files.c",
         "function": "writeObjectlist",
@@ -31018,7 +31018,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1204
+          1223
         ],
         "file": "src/core/files.c",
         "function": "write_one_object",
@@ -31078,7 +31078,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1204
+          1223
         ],
         "file": "src/core/files.c",
         "function": "write_one_object",
@@ -31138,8 +31138,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          475,
-          12524
+          477,
+          12556
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -31199,8 +31199,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          245,
-          4140
+          246,
+          4160
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_status",
@@ -31261,7 +31261,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1756
+          1775
         ],
         "file": "src/core/files.c",
         "function": "writeCharacter",
@@ -32681,7 +32681,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3280
+          3316
         ],
         "file": "src/core/files.c",
         "function": "restoreObjects",
@@ -32742,7 +32742,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4644
+          4680
         ],
         "file": "src/core/files.c",
         "function": "restorePetStatus",
@@ -32789,7 +32789,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4432
+          4468
         ],
         "file": "src/core/files.c",
         "function": "writePet",
@@ -32915,7 +32915,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4432
+          4468
         ],
         "file": "src/core/files.c",
         "function": "writePet",
@@ -33163,7 +33163,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4859
+          4895
         ],
         "file": "src/core/files.c",
         "function": "restoreSavedItems",
@@ -33226,8 +33226,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          428,
-          11281
+          430,
+          11312
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33288,8 +33288,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          424,
-          9501
+          426,
+          9532
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_saved_item",
@@ -33350,8 +33350,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          420,
-          9447
+          422,
+          9478
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_saved_item",
@@ -33414,7 +33414,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3729
+          3765
         ],
         "file": "src/core/files.c",
         "function": "read_one_object",
@@ -33477,8 +33477,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          393,
-          8361
+          395,
+          8392
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33525,8 +33525,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          393,
-          8361
+          395,
+          8392
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33573,7 +33573,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          922
+          924
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_format_item_diff_fields_and_free_proto",
@@ -33636,7 +33636,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6351
+          6382
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_locker_items_filtered",
@@ -33699,8 +33699,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          263,
-          4594
+          264,
+          4625
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -33763,8 +33763,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          563,
-          7212
+          565,
+          7243
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_private_chest_items",
@@ -33827,8 +33827,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          428,
-          11281
+          430,
+          11312
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33875,8 +33875,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          428,
-          11281
+          430,
+          11312
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33939,7 +33939,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9589
+          9620
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -34001,7 +34001,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9589
+          9620
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -34048,7 +34048,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9541
+          9572
         ],
         "file": "src/sql/sql_player.c",
         "function": "discard_shopkeeper_restore_stage",
@@ -34095,7 +34095,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7361
+          7392
         ],
         "file": "src/sql/sql_player.c",
         "function": "free_temp_char",
@@ -34199,7 +34199,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          207
+          212
         ],
         "file": "scripts/persistence_restore.py",
         "function": "restore",
@@ -34915,7 +34915,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2898
+          2902
         ],
         "file": "src/ships/ship_base.c",
         "function": "dock_ship",
@@ -35210,7 +35210,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          474
+          475
         ],
         "file": "src/ships/ship_base.c",
         "function": "flat_ship_materialize",
@@ -35270,7 +35270,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2985
+          2989
         ],
         "file": "src/ships/ship_base.c",
         "function": "finish_sinking",
@@ -35446,7 +35446,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1057
+          1058
         ],
         "file": "src/ships/ship_base.c",
         "function": "load_ship",
@@ -35682,7 +35682,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2205
+          2209
         ],
         "file": "src/ships/ship_base.c",
         "function": "ship_activity",
@@ -36153,7 +36153,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1748
+          1752
         ],
         "file": "src/ships/ship_base.c",
         "function": "reset_ship",
@@ -36212,8 +36212,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1169,
-          3515
+          1170,
+          3519
         ],
         "file": "src/ships/ship_base.c",
         "function": "delete_ship",
@@ -36272,7 +36272,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          599
+          600
         ],
         "file": "src/ships/ship_base.c",
         "function": "shutdown_ships",
@@ -36391,8 +36391,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          453,
-          12101
+          455,
+          12133
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -36451,8 +36451,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          445,
-          11983
+          447,
+          12015
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -36512,8 +36512,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          441,
-          11729
+          443,
+          11761
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -36572,7 +36572,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3117
+          3121
         ],
         "file": "src/ships/ship_base.c",
         "function": "summon_ship_event",
@@ -36854,7 +36854,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          695
+          696
         ],
         "file": "src/ships/ship_base.c",
         "function": "new_ship",
@@ -36917,7 +36917,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1018
+          1221
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_buy",
@@ -36980,7 +36980,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          259
+          420
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_submit_produced_continuation",
@@ -37105,7 +37105,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          898
+          1101
         ],
         "file": "src/economy/shop.c",
         "function": "get_purchase_obj",
@@ -37168,7 +37168,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          320
+          481
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_completion",
@@ -37229,7 +37229,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2671
+          2948
         ],
         "file": "src/economy/shop.c",
         "function": "transact",
@@ -37290,7 +37290,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1639
+          1899
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_peruse",
@@ -37353,7 +37353,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1877
+          2154
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_repair",
@@ -37416,7 +37416,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1358
+          1618
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -37479,7 +37479,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1358
+          1618
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -37541,7 +37541,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1991
+          2268
         ],
         "file": "src/economy/shop.c",
         "function": "shop_keeper",
@@ -37603,7 +37603,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1716
+          1976
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_list",
@@ -37794,7 +37794,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          306
+          467
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_route_invalid_cleanup",
@@ -43149,7 +43149,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          372
+          373
         ],
         "file": "src/specs/specs.unique.c",
         "function": "living_necroplasm",
@@ -43206,7 +43206,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          556
+          557
         ],
         "file": "src/specs/specs.unique.c",
         "function": "vapor",
@@ -44571,7 +44571,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3354
+          3355
         ],
         "file": "src/magic/smagic.c",
         "function": "summon_beast_common",
@@ -44689,7 +44689,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1822
+          1823
         ],
         "file": "src/magic/smagic.c",
         "function": "spell_transfer_wellness",
@@ -44924,7 +44924,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1052
+          1048
         ],
         "file": "src/cmd/actwiz.c",
         "function": "submit_wizard_load_establish",
@@ -45043,7 +45043,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1176
+          1172
         ],
         "file": "src/cmd/actwiz.c",
         "function": "do_purge",
@@ -45160,7 +45160,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2884
+          2880
         ],
         "file": "src/cmd/actwiz.c",
         "function": "do_storage",
@@ -45220,7 +45220,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2741
+          2737
         ],
         "file": "src/cmd/actwiz.c",
         "function": "flat_storage_completion",
@@ -45394,7 +45394,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4975
+          4976
         ],
         "file": "src/cmd/actinf.c",
         "function": "do_world",
@@ -47931,7 +47931,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1447
+          1449
         ],
         "file": "src/world/random.zone.c",
         "function": "create_lab",
@@ -47978,7 +47978,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1447
+          1449
         ],
         "file": "src/world/random.zone.c",
         "function": "create_lab",
@@ -48025,7 +48025,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1447
+          1449
         ],
         "file": "src/world/random.zone.c",
         "function": "create_lab",
@@ -48085,7 +48085,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1354
+          1355
         ],
         "file": "src/world/random.zone.c",
         "function": "reset_lab",
@@ -48145,7 +48145,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1354
+          1355
         ],
         "file": "src/world/random.zone.c",
         "function": "reset_lab",
@@ -48595,7 +48595,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          134
+          135
         ],
         "file": "src/world/random.zone.c",
         "function": "create_zone",
@@ -48655,7 +48655,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          134
+          135
         ],
         "file": "src/world/random.zone.c",
         "function": "create_zone",
@@ -48715,7 +48715,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          134
+          135
         ],
         "file": "src/world/random.zone.c",
         "function": "create_zone",
@@ -48775,7 +48775,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          134
+          135
         ],
         "file": "src/world/random.zone.c",
         "function": "create_zone",
@@ -48833,7 +48833,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          134
+          135
         ],
         "file": "src/world/random.zone.c",
         "function": "create_zone",
@@ -48893,7 +48893,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          134
+          135
         ],
         "file": "src/world/random.zone.c",
         "function": "create_zone",
@@ -48953,7 +48953,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          134
+          135
         ],
         "file": "src/world/random.zone.c",
         "function": "create_zone",
@@ -49013,7 +49013,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          134
+          135
         ],
         "file": "src/world/random.zone.c",
         "function": "create_zone",
@@ -49134,7 +49134,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1145
+          1146
         ],
         "file": "src/world/random.zone.c",
         "function": "random_quest_mob_proc",
@@ -49194,7 +49194,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1145
+          1146
         ],
         "file": "src/world/random.zone.c",
         "function": "random_quest_mob_proc",
@@ -49254,7 +49254,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          891
+          892
         ],
         "file": "src/world/random.zone.c",
         "function": "relic_proc",
@@ -49301,7 +49301,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1326
+          1327
         ],
         "file": "src/world/random.zone.c",
         "function": "create_sigil",
@@ -49361,7 +49361,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          134
+          135
         ],
         "file": "src/world/random.zone.c",
         "function": "create_zone",
@@ -49421,7 +49421,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          134
+          135
         ],
         "file": "src/world/random.zone.c",
         "function": "create_zone",
@@ -49943,7 +49943,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2083
+          2168
         ],
         "file": "src/world/new_events.c",
         "function": "zone_purge",
@@ -50695,7 +50695,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          242
+          245
         ],
         "file": "src/item/objmisc.c",
         "function": "item_restrict_player_pet_equipment",
@@ -50847,7 +50847,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2670
+          2666
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -51029,7 +51029,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1644
+          1645
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "insert_craft_output_item",
@@ -51079,8 +51079,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          263,
-          4594
+          264,
+          4625
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -51266,7 +51266,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          11095
+          11126
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_room_item_publish",
@@ -51328,7 +51328,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          11052
+          11083
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_room_item_place_restored",
@@ -51375,13 +51375,253 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          11078
+          11109
         ],
         "file": "src/sql/sql_player.c",
         "function": "~sql_room_item_stage_guard",
         "original_draft_symbol": "~sql_room_item_stage_guard"
       },
       "source_classification": "Clears original UIDs only on this failed detached stage and extracts its root without retiring native custody.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "maintenance_only_no_live_admission",
+        "must_block_on_activation": false,
+        "required_policy": "Reconstructs missing physical payload for an existing selected player UID under an approved offline plan and runtime exclusion. Custody, root, parent, revision and supply remain unchanged; this is neither issuance nor an economic adjustment. Require a quiesced boundary, exact retained lineage/epoch, source snapshot witness and idempotent resume; fail closed on unknown rows."
+      },
+      "counts_as_operational_writer": true,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "none",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "offline_operational_writer",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "offline_baseline_or_restore_evidence_only",
+        "unified_operation_postings_observed": false
+      },
+      "id": "repair.player_item_payload",
+      "native_effects": {
+        "custody_effect": "Reconstructs missing physical payload for an existing selected player UID under an approved offline plan and runtime exclusion. Custody, root, parent, revision and supply remain unchanged; this is neither issuance nor an economic adjustment.",
+        "holding_effect": "No wallet or bank mutation, issuance, retirement or accounting root.",
+        "native_state_targets": [
+          "player_items and player_item_runtime_state for the retained UID",
+          "player_item_affects and player_item_extra_descr",
+          "player_death_restitution_receipt and player_death_restitution_item payload_repair audit rows"
+        ]
+      },
+      "reachability_evidence": "The offline CLI calls build_sql for guarded repair application and verified status advancement; it has no gameplay admission caller.",
+      "reason": "correction",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          378
+        ],
+        "file": "scripts/player_item_payload_repair.py",
+        "function": "build_sql",
+        "original_draft_symbol": "build_sql"
+      },
+      "source_classification": "Offline reconstruction of a missing physical payload for an existing player UID preserves selected custody, root, parent, revision and supply. Separate payload_repair audit receipts do not create an accounting correction or issuance root.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "spell.dispel_object_state",
+      "native_effects": {
+        "custody_effect": "Dispel can weaken paired wall strength/duration, delegate special-object handling, retire objects through Decay, or remove ordinary ITEM2_MAGIC and two enchantment affects. Metadata changes are distinct from retirement and require retained selected payload proof.",
+        "holding_effect": "No direct coin balance change.",
+        "native_state_targets": [
+          "P_obj.extra2_flags",
+          "P_obj.affected[0..1]",
+          "paired wall P_obj.value[2] and decay event deadlines",
+          "delegated Decay retirement"
+        ]
+      },
+      "reachability_evidence": "cast_dispel_magic and spell command dispatch call spell_dispel_magic; its object branch handles walls, ordinary enchantments and custom objects.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          423
+        ],
+        "file": "src/magic/spell_dispel_magic.c",
+        "function": "spell_dispel_magic",
+        "original_draft_symbol": "spell_dispel_magic"
+      },
+      "source_classification": "Dispel can weaken paired wall strength/duration, delegate special-object handling, retire objects through Decay, or remove ordinary ITEM2_MAGIC and two enchantment affects. Metadata changes are distinct from retirement and require retained selected payload proof.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "spell.dispel_portal_lifecycle",
+      "native_effects": {
+        "custody_effect": "Custom portal dispel checks an unambiguous counterpart, then either shortens both decay timers or delegates both object retirements to Decay. Pair validation alone is not an accounting root.",
+        "holding_effect": "No direct coin balance change.",
+        "native_state_targets": [
+          "paired portal decay event deadlines",
+          "delegated Decay retirement"
+        ]
+      },
+      "reachability_evidence": "dispel_custom_object calls dispel_portal for portal_door, portal_wormhole and portal_etherportal; rejection does not fall through to ordinary destruction.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          193
+        ],
+        "file": "src/magic/spell_dispel_magic.c",
+        "function": "dispel_portal",
+        "original_draft_symbol": "dispel_portal"
+      },
+      "source_classification": "Custom portal dispel checks an unambiguous counterpart, then either shortens both decay timers or delegates both object retirements to Decay. Pair validation alone is not an accounting root.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "spell.dispel_anchor_lifecycle",
+      "native_effects": {
+        "custody_effect": "Moonstone anchor dispel repairs a missing finite decay timer, shortens its deadline, or delegates exhausted retirement to Decay. Surviving anchors can also continue into ordinary enchantment removal.",
+        "holding_effect": "No direct coin balance change.",
+        "native_state_targets": [
+          "anchor TAG_OBJ_DECAY affect and event deadline",
+          "delegated Decay retirement",
+          "ordinary enchantment continuation"
+        ]
+      },
+      "reachability_evidence": "dispel_custom_object calls dispel_stone_anchor for moonstone objects 419 and 433 and returns continue_enchantment for surviving anchors.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          241
+        ],
+        "file": "src/magic/spell_dispel_magic.c",
+        "function": "dispel_stone_anchor",
+        "original_draft_symbol": "dispel_stone_anchor"
+      },
+      "source_classification": "Moonstone anchor dispel repairs a missing finite decay timer, shortens its deadline, or delegates exhausted retirement to Decay. Surviving anchors can also continue into ordinary enchantment removal.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     }
   ],

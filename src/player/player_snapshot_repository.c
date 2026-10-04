@@ -334,10 +334,12 @@ query_result apply_replacement_rows(MYSQL *connection, const player_snapshot &sn
 						  << ",0))";
 				      });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_TIMERS))
-		result = replace_rows(
-			connection, snapshot.pid, "player_timers", "timer_id,timer_value",
-			snapshot.timers, [](auto &sql, const auto &row)
-			{ sql << row.index << ",FROM_UNIXTIME(NULLIF(" << row.value << ",0))"; });
+		result = replace_rows(connection, snapshot.pid, "player_timers",
+				      "timer_id,timer_value", snapshot.timers,
+				      [](auto &sql, const auto &row) {
+					      sql << row.index << ",FROM_UNIXTIME(NULLIF("
+						  << row.value << ",0))";
+				      });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_UNDEAD_SLOTS))
 		result = replace_rows(connection, snapshot.pid, "player_undead_slots",
 				      "circle,slots", snapshot.undead_slots,
@@ -386,7 +388,9 @@ query_result apply_affects(MYSQL *connection, const player_snapshot &snapshot)
 	std::ostringstream sql;
 	sql << "INSERT INTO player_affects (pid,type,duration,flags,modifier,location,level,"
 	       "bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,custom_msg_char,"
-	       "custom_msg_room) VALUES ";
+	       "custom_msg_room,ward_source_uid,ward_full_duration,ward_capacity,"
+	       "ward_capacity_max,ward_refresh_remaining,ward_source_type,ward_source_worn,"
+	       "ward_active) VALUES ";
 	for (size_t index = 0; index < snapshot.affects.size(); ++index)
 	{
 		const auto &row = snapshot.affects[index];
@@ -400,7 +404,12 @@ query_result apply_affects(MYSQL *connection, const player_snapshot &snapshot)
 							 quote(connection, row.wear_off_character))
 		    << ','
 		    << (row.wear_off_room.empty() ? "NULL" : quote(connection, row.wear_off_room))
-		    << ')';
+		    << ',' << row.ward_source_uid << ',' << row.ward_full_duration << ','
+		    << row.ward_capacity << ',' << row.ward_capacity_max << ','
+		    << row.ward_refresh_remaining << ','
+		    << static_cast<unsigned int>(row.ward_source_type) << ','
+		    << static_cast<unsigned int>(row.ward_source_worn) << ','
+		    << static_cast<unsigned int>(row.ward_active) << ')';
 	}
 	return execute(connection, sql.str());
 }
@@ -2275,6 +2284,29 @@ query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
 		return result;
 	const std::string pid = std::to_string(snapshot.pid);
 	const std::string revision = std::to_string(snapshot.revision);
+	// Retain durable-only descendants in the existing custody evidence before
+	// quarantine. Their UID must survive later movement/retirement of the root.
+	result = execute(
+		connection,
+		"INSERT INTO player_death_custody (pid,save_revision,item_uid,root_item_uid,parent_item_uid,"
+		"item_revision,vnum,state,owner_type,owner_id,owner_context_id,owner_revision) "
+		"SELECT " +
+			pid + "," + revision +
+			",own.item_uid,own.root_item_uid,own.parent_item_uid,"
+			"own.item_revision,own.vnum,own.state,own.owner_type,own.owner_id,own.owner_context_id,rev.revision "
+			"FROM item_current_owner own JOIN item_owner_revision rev ON rev.owner_type=own.owner_type "
+			"AND rev.owner_id=own.owner_id AND rev.owner_context_id=own.owner_context_id "
+			"WHERE own.owner_type=1 AND own.owner_id=" +
+			pid +
+			" AND own.owner_context_id=0 AND own.state=1 "
+			"AND EXISTS (SELECT 1 FROM (SELECT root_item_uid FROM player_death_custody WHERE pid=" +
+			pid + " AND save_revision=" + revision +
+			") roots WHERE roots.root_item_uid=own.root_item_uid) "
+			"AND NOT EXISTS (SELECT 1 FROM (SELECT item_uid FROM player_death_custody WHERE pid=" +
+			pid + " AND save_revision=" + revision +
+			") captured WHERE captured.item_uid=own.item_uid)");
+	if (!result.ok)
+		return result;
 	// A rejected handoff leaves custody with the player. Preserve those rows
 	// for recovery, but prevent a subsequent load from restoring disputed items.
 	const std::string owner =
@@ -2459,8 +2491,9 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 						player_revision_t source_revision)
 {
 	using outcome = player_death_terminal_write_outcome;
-	const auto failed = [](unsigned int code)
-	{ return player_death_terminal_write_result{ outcome::failed, code ? code : EIO }; };
+	const auto failed = [](unsigned int code) {
+		return player_death_terminal_write_result{ outcome::failed, code ? code : EIO };
+	};
 	if (!connection)
 		return failed(EINVAL);
 #ifndef __NO_MYSQL__
