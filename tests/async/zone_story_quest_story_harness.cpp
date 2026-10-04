@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 77 &&
-				tracker.summary_for(7, 42).total == 1637,
+		require(catalog.story_mappings.size() == 78 &&
+				tracker.summary_for(7, 42).total == 1636,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -5719,6 +5719,135 @@ int main(int argc, char **argv)
 					recovered.progress_for_zone(7, 42, 133).completed == 18 &&
 					recovered.progress_for_zone(7, 42, 133).total == 18,
 				"Caverns recovery changed eighteen independent outcomes or added campaign credit");
+		}
+
+		{
+			const auto &map = *std::find_if(catalog.story_mappings.begin(),
+							catalog.story_mappings.end(),
+							[](const auto &m)
+							{ return m.source_area == "tribal"; });
+			const auto &hunter = story_for("tribal", "hunter-grain");
+			const auto &grain = story_for("tribal", "bluebird-grain-staff");
+			const auto &nest = story_for("tribal", "bluebird-small-meat-nest");
+			const auto &wife = story_for("tribal", "wife-four-part-escape");
+			const auto &skin = story_for("tribal", "shaman-spotted-deerskin");
+			const auto &crystal = story_for("tribal", "shaman-five-ingredient-crystal");
+			const auto &drow = story_for("tribal", "xazapath-five-body-parts");
+			const auto &queen = story_for("tribal", "queen-missing-egg");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 422, 42281, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 422, 10, 1, 101, false, false)
+							.find("] " + grain.title + "\r\n") ==
+						std::string::npos,
+				"Tribal discovery exposed an unmet recipient");
+			for (const auto &contact : map.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 42281, 102) ==
+						result::applied,
+					"Tribal model encounter failed");
+			std::string tribal_journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = tribal_journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Tribal journal section missing");
+				const auto end = tribal_journal.find("\r\n[", start + 3);
+				return tribal_journal.substr(
+					start, end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[42201] = 2;
+			supplies.carried[42294] = 5;
+			supplies.carried[42221] = 5;
+			supplies.equipped[19] = 42227;
+			supplies.equipped[8] = 42219;
+			supplies.carried[42204] = 1;
+			const auto before = journey.serialize_state();
+			tribal_journal = journey.render_journal(7, 42, 422, 10, 1, 103, false,
+								false, &supplies);
+			require(section(hunter).find("[Ready now] " + hunter.steps[0].text) !=
+						std::string::npos &&
+					section(nest).find("[Missing now] " + nest.steps[0].text) !=
+						std::string::npos &&
+					section(crystal).find("[Missing now] " +
+							      crystal.steps[1].text) !=
+						std::string::npos &&
+					section(crystal).find("[Missing now] " +
+							      crystal.steps[2].text) !=
+						std::string::npos &&
+					section(wife).find("[Missing now] " + wife.steps[1].text) !=
+						std::string::npos &&
+					section(drow).find("[Missing now] " + drow.steps[0].text) !=
+						std::string::npos &&
+					section(queen).find("[Missing now] " +
+							    queen.steps[0].text) !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 422).completed == 0,
+				"Tribal similar meat, duplicate parts, worn material, nest or reading invented credit");
+			supplies = {};
+			for (int v : { 42265, 42222, 42219, 42220, 42242, 42221, 42227, 42212,
+				       42263, 42267, 42293, 42294, 42295, 42296, 42297, 42302 })
+				supplies.carried[v] = 1;
+			tribal_journal = journey.render_journal(7, 42, 422, 10, 1, 104, false,
+								false, &supplies);
+			for (const auto &entry : { wife, crystal, drow, queen })
+				for (size_t i = 0; i + 1 < entry.steps.size(); ++i)
+					require(section(entry).find("[Ready now] " +
+								    entry.steps[i].text) !=
+							std::string::npos,
+						"Tribal exact independent material was not ready");
+			require(section(grain).find("[Ready now] " + grain.steps[1].text) !=
+						std::string::npos &&
+					section(grain).find("Next: " + grain.steps.back().text) !=
+						std::string::npos &&
+					section(crystal).find("Next: " +
+							      crystal.steps.back().text) !=
+						std::string::npos,
+				"Tribal supplied grain or crystal ingredients acquired hidden history prerequisites");
+			service supplied(catalog);
+			record(supplied, grain.contracts.front(), "tribal-supplied-grain", 422,
+			       42284);
+			record(supplied, crystal.contracts.front(), "tribal-supplied-crystal", 422,
+			       42254);
+			require(supplied.progress_for_zone(7, 42, 422).completed == 2 &&
+					supplied.evidence_for(hunter.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.evidence_for(skin.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Tribal supplied acceptance fabricated producer history");
+			record(journey, hunter.contracts.front(), "tribal-hunter", 422, 42217);
+			supplies = {};
+			tribal_journal = journey.render_journal(7, 42, 422, 10, 1, 121, false,
+								false, &supplies);
+			require(section(grain).find("[Recorded] " + grain.steps[0].text) !=
+						std::string::npos &&
+					section(grain).find("[Missing now] " +
+							    grain.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 422).completed == 1,
+				"Tribal hunter history restored spent grain or completed the bird");
+			for (const auto &[id, reason] : map.exclusions)
+				record(journey, id, "tribal-larger-meat-refusal", 422, 42284);
+			require(journey.progress_for_zone(7, 42, 422).completed == 1 &&
+					journey.progress_for_zone(7, 42, 422).total == 9,
+				"Tribal larger-meat refusal became an achievement or extra story");
+			for (const auto &entry : map.stories)
+				if (entry.id != hunter.id)
+					record(journey, entry.contracts.front(), entry.id.c_str(),
+					       422, 42281);
+			auto replay = completion(hunter.contracts.front(), "tribal-hunter", 120);
+			replay.transaction.zone_number = 422;
+			replay.transaction.room_vnum = 42217;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Tribal accepted receipt replay was not idempotent");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 422).completed == 9 &&
+					recovered.progress_for_zone(7, 42, 422).total == 9 &&
+					recovered.evidence_for(drow.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Tribal recovery split paired rewards, counted refusal or invented campaign credit");
 		}
 
 		std::cout

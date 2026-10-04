@@ -61473,6 +61473,682 @@
     {
       "contacts": [
         {
+          "description": "The huge shimmering bluebird starts in a loading room and may wander into the forest or tree crowns. Grain yields a staff; the smaller white-worm meat yields a nest. It refuses the larger meat. Other bluebirds are different prototypes; meet the actual recipient.",
+          "keyword": "bird",
+          "mob_vnum": 42200,
+          "name": "the huge shimmering bluebird",
+          "topics": [
+            "hi",
+            "hello",
+            "forest",
+            "you",
+            "going",
+            "target",
+            "food"
+          ]
+        },
+        {
+          "description": "The master hunter starts in the narrow hut at 42217. Larger white-worm meat yields oat grain for the huge bluebird. He also has the shared teacher role; teaching is separate from this accepted exchange.",
+          "keyword": "hunter",
+          "mob_vnum": 42209,
+          "name": "the tribal master hunter",
+          "topics": [
+            "bluebirds",
+            "birds",
+            "bird"
+          ]
+        },
+        {
+          "description": "The chieftain\u2019s wife starts in the locked kitchen at 42249. A bluish key and three exact clothing kinds yield a skirt before she departs. Current key possession does not prove unlocking, escorting or removing shackles.",
+          "keyword": "wife",
+          "mob_vnum": 42219,
+          "name": "the chieftains wife",
+          "topics": [
+            "hi",
+            "hello",
+            "gretings",
+            "husban",
+            "boss",
+            "chief",
+            "chieftain",
+            "prison",
+            "imprisonment",
+            "kitchen"
+          ]
+        },
+        {
+          "description": "The young tribal woman starts in her hut at 42266. A beautiful comb yields the gemmed brooch; her crude comb and the wife\u2019s rescue clothing are distinct kinds and outcomes.",
+          "keyword": "woman",
+          "mob_vnum": 42230,
+          "name": "the young tribal woman",
+          "topics": [
+            "hi",
+            "hello",
+            "greetings",
+            "comb"
+          ]
+        },
+        {
+          "description": "The shaman starts in his hut at 42254. Spotted deerskin and the five-ingredient crystal experiment are independent exchanges. The following devil carries the horn. Blood, sulphur and oil in his prose are his contribution, not three extra required inputs.",
+          "keyword": "shaman",
+          "mob_vnum": 42234,
+          "name": "the tribal shaman",
+          "topics": [
+            "hi",
+            "hello",
+            "greetings",
+            "quest",
+            "work",
+            "details",
+            "another"
+          ]
+        },
+        {
+          "description": "Xazapath starts in a staging-room chain at 42317 and may wander through three equipment rooms toward the apartment behind the boulder. Meet the actual drow hunter; five distinct scattered parts yield both bow and quiver before retirement.",
+          "keyword": "drow",
+          "mob_vnum": 42256,
+          "name": "the drow hunter",
+          "topics": [
+            "hello",
+            "greeting",
+            "greetings",
+            "help",
+            "job",
+            "work",
+            "reward"
+          ]
+        },
+        {
+          "description": "The Spider Queen starts in the underground egg niche at 42346 with three following spiders and can move. The missing soft egg comes from an ancient tree above ground. Her pile-of-eggs room description is not a recoverable egg source.",
+          "keyword": "queen",
+          "mob_vnum": 42259,
+          "name": "the spider queen",
+          "topics": [
+            "hi",
+            "hello",
+            "greetings",
+            "welcome",
+            "egg",
+            "eggs",
+            "missing"
+          ]
+        },
+        {
+          "description": "The larger white worm starts in loading room 42291, with exits to forest routes or a holding prison. It carries the larger meat accepted by the master hunter and refused by the huge bluebird; actual encounter and renewal need qualification.",
+          "keyword": "worm",
+          "mob_vnum": 42201,
+          "name": "the white oblong worm",
+          "topics": []
+        },
+        {
+          "description": "Three smaller white worms start in the deep forest. Only the final reset at 42278 declares small meat for the bluebird\u2019s nest; similar names do not make every worm an item source.",
+          "keyword": "worm",
+          "mob_vnum": 42202,
+          "name": "the white oblong worm",
+          "topics": []
+        },
+        {
+          "description": "The green-spotted deer starts at 42206 carrying the exact deerskin for the shaman. Ordinary deer are different prototypes; the native recipe specifies an inventory item rather than a personal skinning achievement.",
+          "keyword": "deer",
+          "mob_vnum": 42215,
+          "name": "the large deer",
+          "topics": []
+        },
+        {
+          "description": "The black bear starts in the thorny-bush clearing at 42220 carrying the twisted bone for the crystal experiment. The nearby slain-tribesman container can supply shoes, a separate material.",
+          "keyword": "bear",
+          "mob_vnum": 42216,
+          "name": "the stout black bear",
+          "topics": []
+        },
+        {
+          "description": "The huge brown spider starts in the forest glade at 42219 carrying the beautiful wooden comb. Other brown spiders and the bluebird\u2019s nest do not supply that same proof. The glade also has a web entrance to the underground route.",
+          "keyword": "spider",
+          "mob_vnum": 42217,
+          "name": "the huge brown spider",
+          "topics": []
+        },
+        {
+          "description": "The chieftain starts in his hut at 42248 carrying the bluish iron key. Its fifty-percent normal-unlock break chance matters because the wife\u2019s four-item offering also consumes a matching key. Her receipt does not prove a personal victory over him.",
+          "keyword": "chieftain",
+          "mob_vnum": 42218,
+          "name": "the tribal chieftain",
+          "topics": []
+        },
+        {
+          "description": "The young lookout starts above the village at 42269 holding the magnifying crystal in slot 19, with nominal seventy-five-percent issuance. Recover it into loose inventory for the shaman; it is not the magical reward crystal.",
+          "keyword": "lookout",
+          "mob_vnum": 42231,
+          "name": "the young lookout",
+          "topics": []
+        },
+        {
+          "description": "The first devil following the shaman carries the small horn. The following demon is a different actor without that horn. Source ownership is distinct from personal combat or first recovery.",
+          "keyword": "devil",
+          "mob_vnum": 42232,
+          "name": "the devil",
+          "topics": []
+        },
+        {
+          "description": "Three ancient trees follow the forest mother in the Heart of the Forest. The first declares the root, the second the missing egg, and the third neither. Nominal seventy-five-percent item rolls and cap-one stock need admitted-generation qualification.",
+          "keyword": "tree",
+          "mob_vnum": 42237,
+          "name": "the ancient tree",
+          "topics": []
+        },
+        {
+          "description": "The apprentice starts in his hut at 42259 and has a real four-item shop: siege horn, parchment, potion and ward scroll. STARE at his mirror travels to the surface cave entrance; the mirror is separate from the cellar\u2019s amethyst orb.",
+          "keyword": "apprentice",
+          "mob_vnum": 42235,
+          "name": "the young shaman apprentice",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [
+        {
+          "contracts": [
+            {
+              "completion_key": "give=I:42201;receive=I:42201;disappear=0",
+              "giver_vnum": 42200
+            }
+          ],
+          "reason": "The huge bluebird refuses the larger white-worm meat and returns the same prototype kind without a meaningful reward. Preserve native settlement evidence, but do not count this refusal as a completed story, achievement or daily; same-kind replacement is not proof of identical physical UID."
+        }
+      ],
+      "introduction": "Discover Tribal Forest and follow the hunter-to-bluebird grain route, the separate small-meat nest, the wife\u2019s four-item escape, the lost comb, the shaman\u2019s two independent commissions, Xazapath\u2019s five scattered parts and the Spider Queen\u2019s missing egg. Actual source, key, switch, trap and travel clues guide preparation; each accepted exchange remains its own named outcome.",
+      "orientation": [
+        "Active, ready accounting is required for discovery, visible NPC encounters, journals and new achievement/daily credit. First discovery is its own achievement. Reading hints, carrying materials and asking ordinary keywords award no credit.",
+        "Enter through the cave at 42281, joined to three surface hill rooms. The apprentice\u2019s STARE mirror returns to this cave. The cellar\u2019s ENTER pentagram leads to a local Astral junction, with a returning black rift and six outward Astral exits; these are travel routes, not accepted quest completions.",
+        "The hunter\u2019s larger-meat exchange produces oat grain for the huge bluebird\u2019s staff. The bird separately accepts small meat for a nest, but refuses larger meat. The refusal returns the same prototype kind through native exchange settlement; it is excluded from named outcomes and dailies. Do not equate a same-kind output with the same physical item UID.",
+        "Some recipients and sources begin in loading rooms or follow another actor. Bluebird, larger worm and Xazapath staging routes rely on actual wandering, not a guaranteed immediate placement. Starting rooms, reset comments and nominal probabilities do not certify a currently reachable actor or item.",
+        "The kitchen lock uses the chieftain\u2019s bluish key, which can break on normal unlock and is also consumed in the wife\u2019s four-item offering. Recover shoes, skirt and blanket from the secret closet or other exact declared sources. Shared doors or supplied material fit without a personal chief kill, shackles action or escort.",
+        "The beautiful comb is on the huge brown spider; spotted deerskin is on a specific deer. The shaman\u2019s second recipe needs five different material kinds and no earlier deerskin receipt. The lookout\u2019s crystal is held, the runed bone is inside an unlocked bone pile, and F gives the horn, root and egg to their actual following owners.",
+        "PUSH the named vegetation or leaves to address their configured blocked exits. STOMP the weak web floor after entering the web in the forest glade to reach the tunnels. PUSH the tunnel boulder to approach Xazapath\u2019s apartment. The shared switch clears the blocked state; secret discovery and other door state remain separate.",
+        "The red cellar key is inside the shelf in the shaman\u2019s hut and can break on normal unlock. The yellow bone key comes from the dracolizard and always breaks on normal unlock to the back treasure room. Neither key is required by the shaman\u2019s five-material offering; an available key is not proof of the associated passage.",
+        "Xazapath requires five different secret ground parts in separate underground rooms; two left hands cannot replace a right hand. The Spider Queen\u2019s exact missing egg is on the second ancient tree above ground, not a spider, the bluebird nest or the descriptive egg pile in her room.",
+        "The fixed amethyst orb has RUB destination selection, STARE or GLANCE viewing and TOUCH travel or burning with HP loss. Its target is a runtime room index, not a native quest receipt. The apprentice mirror uses STARE for direct travel instead; match the actual targeted object and committed arrival before recording any future access objective.",
+        "Tree branches, tight trunks, no-ground falls, poisonous-ivy combat and the well have real movement or hazard constraints. Grove lore describes magic excluding humans, but the reviewed local bindings and room flags do not establish a dedicated racial gate. The narrator\u2019s claim is not an enforced prerequisite or recorded achievement.",
+        "All nine meaningful exchanges retain native daily shape, including wife and drow retirement under reset mode one. Current recipients, reachable supply, perception, traps, difficulty, shared scarcity and renewal need qualification before assignment. Active accounting refuses legacy item resets without admitted generation.",
+        "The runed bone uses unsupported trap damage code 9 and the ring of destruction code 10. The shared handler can spend their charge without a matching payload branch; attempted pickup is still separate from recovery. Builder intent must choose supported effects before a native repair. Leaf and other narrative direction discrepancies remain separate review findings.",
+        "Supplied matching loose items fit the native recipes. Optional producer receipts cannot replace spent grain, keys, clothing, body parts or crystal ingredients. The wife\u2019s and Xazapath\u2019s native departures do not establish an escorted journey, deity forgiveness, title or global forest-campaign terminal."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "tribal",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42201;receive=E:50000,I:42265;disappear=0",
+              "giver_vnum": 42209
+            }
+          ],
+          "id": "hunter-grain",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The larger white oblong worm starts in its loading room and carries the larger meat. It may wander into the deep forest. The huge bluebird refuses this larger kind; the master hunter accepts it. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42201",
+              "item_vnums": [
+                42201
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a piece of white-worm meat"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42201;receive=E:50000,I:42265;disappear=0",
+                  "giver_vnum": 42209
+                }
+              ],
+              "hint": "Offer the exact complete bundle together to the actual recipient from loose carried inventory. This receipt records this named exchange; it does not certify optional preparation, original recovery, personal combat, actor rescue or the whole campaign.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted The hunter\u2019s bluebird grain exchange"
+            }
+          ],
+          "summary": "Bring the larger white-worm meat to the tribal master hunter for oat grain and 50000 experience. The grain can then be offered to the huge shimmering bluebird for its staff reward; that is a separate exchange. The smaller meat belongs to the bluebird\u2019s nest exchange.",
+          "title": "The hunter\u2019s bluebird grain"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42265;receive=E:80000,I:42200;disappear=0",
+              "giver_vnum": 42200
+            }
+          ],
+          "id": "bluebird-grain-staff",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42201;receive=E:50000,I:42265;disappear=0",
+                  "giver_vnum": 42209
+                }
+              ],
+              "hint": "Optional personal history for the grain producer. Supplied grain fits without it. An earlier receipt does not establish the current grain\u2019s source or restore spent grain.",
+              "id": "earlier-hunter",
+              "kind": "completion",
+              "optional": true,
+              "text": "Earlier master-hunter exchange recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The master hunter produces this oat grain for the larger white-worm meat. Remove any nesting or equipment before offering the loose grain to the actual huge bluebird. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42265",
+              "item_vnums": [
+                42265
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry some oat grains"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42265;receive=E:80000,I:42200;disappear=0",
+                  "giver_vnum": 42200
+                }
+              ],
+              "hint": "Offer the exact complete bundle together to the actual recipient from loose carried inventory. This receipt records this named exchange; it does not certify optional preparation, original recovery, personal combat, actor rescue or the whole campaign.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted The bluebird\u2019s grain and staff exchange"
+            }
+          ],
+          "summary": "Offer oat grain to the huge shimmering bluebird for the blue-feather staff and 80000 experience. The master hunter supplies grain for the larger white-worm meat, but your own hunter receipt is optional: supplied matching grain also fits. This is independent of the small-meat nest reward.",
+          "title": "The bluebird\u2019s grain and staff"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42202;receive=E:33000,I:42204;disappear=0",
+              "giver_vnum": 42200
+            }
+          ],
+          "id": "bluebird-small-meat-nest",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Three smaller white worms start in separate deep-forest rooms, but only the last reset at 42278 declares the small meat. Not every worm has this proof, and the larger meat is a different kind. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42202",
+              "item_vnums": [
+                42202
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a small piece of white-worm meat"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42202;receive=E:33000,I:42204;disappear=0",
+                  "giver_vnum": 42200
+                }
+              ],
+              "hint": "Offer the exact complete bundle together to the actual recipient from loose carried inventory. This receipt records this named exchange; it does not certify optional preparation, original recovery, personal combat, actor rescue or the whole campaign.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted The bluebird\u2019s small-meat nest exchange"
+            }
+          ],
+          "summary": "Offer the small white-worm meat to the huge shimmering bluebird for a small bird nest and 33000 experience. The larger similarly named meat is refused by this bird and instead belongs to the hunter\u2019s grain exchange. This reward does not recover the Spider Queen\u2019s missing egg.",
+          "title": "The bluebird\u2019s small-meat nest"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42219,I:42220,I:42222,I:42242;receive=I:42268;disappear=1",
+              "giver_vnum": 42219
+            }
+          ],
+          "id": "wife-four-part-escape",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The chieftain in his hut carries this bluish iron key. It fits the kitchen lock and has a fifty-percent normal-unlock break chance. Shared open doors or renewed/supplied keys can change access; the receipt still consumes an exact loose key with all three clothing kinds. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42222",
+              "item_vnums": [
+                42222
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a bluish iron key"
+            },
+            {
+              "count": 1,
+              "hint": "Fine deerskin shoes are in the secret closet, in the slain-tribesman container, and on several tribal NPCs. Recover or remove them into loose inventory; worn shoes do not fit the offering. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42219",
+              "item_vnums": [
+                42219
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pair of fine deerskin shoes"
+            },
+            {
+              "count": 1,
+              "hint": "The secret closet supplies a deerskin skirt; several tribal NPCs also wear or carry this kind. It differs from the well-crafted skirt awarded by this exchange. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42220",
+              "item_vnums": [
+                42220
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a deerskin skirt"
+            },
+            {
+              "count": 1,
+              "hint": "The wool blanket is declared on the ground in the secret closet between the young women\u2019s and warriors\u2019 huts. Find the secret entrance and recover it; cloth possession does not certify successful closet access. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42242",
+              "item_vnums": [
+                42242
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a blanket made from wool"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42219,I:42220,I:42222,I:42242;receive=I:42268;disappear=1",
+                  "giver_vnum": 42219
+                }
+              ],
+              "hint": "Offer the exact complete bundle together to the actual recipient from loose carried inventory. This receipt records this named exchange; it does not certify optional preparation, original recovery, personal combat, actor rescue or the whole campaign.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted The wife\u2019s four-part escape exchange"
+            }
+          ],
+          "summary": "Find the chieftain\u2019s wife in the kitchen. Offer the bluish iron key, fine deerskin shoes, deerskin skirt and wool blanket together for a well-crafted skirt and her native departure. The key also opens the kitchen door and can break on normal unlocking; a broken key cannot then serve as the offering. Native acceptance does not require your personal chief defeat, a shackles action or an escort.",
+          "title": "The wife\u2019s four-part escape"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42241;receive=E:250000,I:42260;disappear=0",
+              "giver_vnum": 42230
+            }
+          ],
+          "id": "woman-lost-comb",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The huge brown spider starts in the forest glade at 42219 and carries the beautiful comb. Ordinary smaller brown spiders and the recipient\u2019s crude comb are different sources and kinds. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42241",
+              "item_vnums": [
+                42241
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a beautifully crafted wooden comb"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42241;receive=E:250000,I:42260;disappear=0",
+                  "giver_vnum": 42230
+                }
+              ],
+              "hint": "Offer the exact complete bundle together to the actual recipient from loose carried inventory. This receipt records this named exchange; it does not certify optional preparation, original recovery, personal combat, actor rescue or the whole campaign.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted The young woman\u2019s lost comb exchange"
+            }
+          ],
+          "summary": "Recover the beautifully crafted wooden comb and offer it to the young tribal woman for a gemmed brooch and 250000 experience. The huge brown spider in the forest glade carries this exact comb. The woman\u2019s own crude wooden comb is not a substitute, and her reward is separate from helping the chieftain\u2019s wife.",
+          "title": "The young woman\u2019s lost comb"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42244;receive=I:42224;disappear=0",
+              "giver_vnum": 42234
+            }
+          ],
+          "id": "shaman-spotted-deerskin",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The green-spotted large deer starts at 42206 carrying this skin. Ordinary large deer are different prototypes. The skin is declared inventory; the recipe does not require a personal skinning command. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42244",
+              "item_vnums": [
+                42244
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a piece of green spotted deerskin"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42244;receive=I:42224;disappear=0",
+                  "giver_vnum": 42234
+                }
+              ],
+              "hint": "Offer the exact complete bundle together to the actual recipient from loose carried inventory. This receipt records this named exchange; it does not certify optional preparation, original recovery, personal combat, actor rescue or the whole campaign.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted The shaman\u2019s spotted deerskin exchange"
+            }
+          ],
+          "summary": "Bring the green spotted deerskin to the tribal shaman for a bearhide amulet. A specific spotted deer carries this exact object. The shaman\u2019s later five-ingredient crystal experiment has a separate recipe and does not require your personal deerskin receipt.",
+          "title": "The shaman\u2019s spotted deerskin"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42212,I:42221,I:42227,I:42263,I:42267;receive=I:42262;disappear=0",
+              "giver_vnum": 42234
+            }
+          ],
+          "id": "shaman-five-ingredient-crystal",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The stout black bear starts at 42220 carrying the twisted bone. It differs from the runed old bone needed by the same recipe. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42221",
+              "item_vnums": [
+                42221
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a twisted bone"
+            },
+            {
+              "count": 1,
+              "hint": "The young lookout above the village holds this magnifying crystal in slot 19, with a nominal seventy-five-percent equipment reset. It must become loose carried proof; the reward crystal and amethyst orb are different objects. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42227",
+              "item_vnums": [
+                42227
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a magnifying crystal"
+            },
+            {
+              "count": 1,
+              "hint": "The pile-of-bones container in the dracolizard cave contains this runed old bone. The bone has a one-charge GET/PUT trap with unsupported damage code 9; triggering a trap is separate from successful recovery. The yellow key opens the back treasure room, not this unlocked container. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42212",
+              "item_vnums": [
+                42212
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry an old bone covered with magical runes"
+            },
+            {
+              "count": 1,
+              "hint": "The devil following the tribal shaman carries the small horn. The next following demon does not. F changes reset ownership, so the horn is not the shaman\u2019s own inventory or a cellar-only source. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42263",
+              "item_vnums": [
+                42263
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a small horn of a devil"
+            },
+            {
+              "count": 1,
+              "hint": "The first following ancient tree in the Heart of the Forest carries the magical root with nominal seventy-five-percent issuance. The next tree supplies the Spider Queen\u2019s egg. These are separate owners and objects; grove lore alone does not establish a recorded racial access gate. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42267",
+              "item_vnums": [
+                42267
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry an ancient and magical root"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42212,I:42221,I:42227,I:42263,I:42267;receive=I:42262;disappear=0",
+                  "giver_vnum": 42234
+                }
+              ],
+              "hint": "Offer the exact complete bundle together to the actual recipient from loose carried inventory. This receipt records this named exchange; it does not certify optional preparation, original recovery, personal combat, actor rescue or the whole campaign.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted The shaman\u2019s five-ingredient crystal exchange"
+            }
+          ],
+          "summary": "Offer one twisted bone, magnifying crystal, runed old bone, devil horn and ancient magical root together to the tribal shaman for a magical magnifying crystal. Five distinct kinds are required. The shaman supplies the narrated dragon blood, sulphur and olive oil himself; those are not extra player inputs. Supplied material fits without your earlier deerskin receipt.",
+          "title": "The shaman\u2019s five-ingredient crystal"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42293,I:42294,I:42295,I:42296,I:42297;receive=I:42285,I:42291;disappear=1",
+              "giver_vnum": 42256
+            }
+          ],
+          "id": "xazapath-five-body-parts",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The severed left leg is a secret ground object at the underground dead end 42339. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42293",
+              "item_vnums": [
+                42293
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a severed left leg"
+            },
+            {
+              "count": 1,
+              "hint": "The severed left hand is a secret ground object at the underground tunnel end 42352. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42294",
+              "item_vnums": [
+                42294
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a severed left hand"
+            },
+            {
+              "count": 1,
+              "hint": "The severed right hand is a secret ground object at the underground dead end 42335. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42295",
+              "item_vnums": [
+                42295
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a severed right hand"
+            },
+            {
+              "count": 1,
+              "hint": "The severed right leg is a secret ground object at the underground dead end 42349. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42296",
+              "item_vnums": [
+                42296
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a severed right leg"
+            },
+            {
+              "count": 1,
+              "hint": "The drow head is a secret ground quest object in the Spider Queen\u2019s niche at 42346. The four limbs are other-type objects. Multiple copies of one part cannot replace the remaining kinds. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42297",
+              "item_vnums": [
+                42297
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a severed head of a Drow Elf"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42293,I:42294,I:42295,I:42296,I:42297;receive=I:42285,I:42291;disappear=1",
+                  "giver_vnum": 42256
+                }
+              ],
+              "hint": "Offer the exact complete bundle together to the actual recipient from loose carried inventory. This receipt records this named exchange; it does not certify optional preparation, original recovery, personal combat, actor rescue or the whole campaign.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted Xazapath\u2019s five scattered parts exchange"
+            }
+          ],
+          "summary": "Recover a left leg, left hand, right hand, right leg and drow head: five different kinds. Offer all five to Xazapath for the hunting bow and leather quiver before his native departure. The parts are secret ground objects in separate underground rooms, not automatically cut from any freshly defeated drow. His narrated forgiveness and journey home have no separate reviewed terminal.",
+          "title": "Xazapath\u2019s five scattered parts"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42302;receive=E:250000,I:42301;disappear=0",
+              "giver_vnum": 42259
+            }
+          ],
+          "id": "queen-missing-egg",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The second following ancient tree, after the root-bearing tree, declares this soft white egg. The Queen and her following spiders do not declare the lost egg. Recover the actual object into loose inventory and meet the actual Queen. Recover this exact kind into loose carried inventory. Supplied matching material fits; this check does not record first recovery, a personal kill, original source, opening a route or arrival.",
+              "id": "material-42302",
+              "item_vnums": [
+                42302
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a soft white egg"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42302;receive=E:250000,I:42301;disappear=0",
+                  "giver_vnum": 42259
+                }
+              ],
+              "hint": "Offer the exact complete bundle together to the actual recipient from loose carried inventory. This receipt records this named exchange; it does not certify optional preparation, original recovery, personal combat, actor rescue or the whole campaign.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted The Spider Queen\u2019s missing egg exchange"
+            }
+          ],
+          "summary": "Find the Spider Queen in the underground egg niche and return the soft white egg for the Queen Spider ring and 250000 experience. The second following ancient tree in the Heart of the Forest carries the egg with nominal seventy-five-percent issuance. Neither the room\u2019s pile-of-eggs description nor the bluebird\u2019s nest reward supplies this exact proof.",
+          "title": "The Spider Queen\u2019s missing egg"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Canderthal pole shop: ordinary fishing poles are shop stock. The refundable note service is separate from the ten-material lure request.",
           "keyword": "pol",
           "mob_vnum": 43103,

@@ -2313,7 +2313,7 @@ assert sum(d["daily_eligible"] for d in definitions.values())==9
 assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
 assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
-assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1637
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1636
 sources=collections.defaultdict(list);parent=None;room=None
 for reset in crakkaro["reset_commands"]:
     c,v=reset["command"],reset["arguments"]
@@ -2814,7 +2814,101 @@ if triggers.exists():
     assert not any(13300<=int(v)<=13448 for v in re.findall(r'^#(\d+)\s+[MOR]\b',triggers.read_text(encoding='utf8'),re.M))
 
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt"):
+# Tribal Forest: independent exchanges, supplied preparation and a same-kind refusal.
+tribal=inventory_module.area_evidence(ROOT,'tribal')
+tribal_map=next(m for m in catalog['story_mappings'] if m['source_area']=='tribal')
+assert (tribal_map['schema_version'],tribal_map['revision'],tribal_map['coverage'])==(3,1,'complete')
+assert len(tribal_map['stories'])==9 and len(tribal_map['exclusions'])==1 and len(tribal_map['contacts'])==17
+assert all(s['category']=='story' and len(s['contracts'])==1 for s in tribal_map['stories'])
+assert collections.Counter(t['kind'] for s in tribal_map['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':20,'completion':1}
+raw=[b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/tribal.qst']
+assert collections.Counter(b['kind'] for b in raw)=={'Q':10,'M':13,'MA':2}
+by_line={r['block']['line']:r['block'] for r in tribal['requests']}
+for line,giver,inputs,rewards,disappear in (
+    (11,42200,[42265],[('I',42200),('E',80000)],0),
+    (18,42200,[42202],[('I',42204),('E',33000)],0),
+    (25,42200,[42201],[('I',42201)],0),
+    (46,42209,[42201],[('I',42265),('E',50000)],0),
+    (77,42219,[42222,42219,42220,42242],[('I',42268)],1),
+    (119,42230,[42241],[('I',42260),('E',250000)],0),
+    (180,42234,[42244],[('I',42224)],0),
+    (191,42234,[42221,42227,42212,42263,42267],[('I',42262)],0),
+    (266,42256,[42293,42294,42295,42296,42297],[('I',42285),('I',42291)],1),
+    (308,42259,[42302],[('E',250000),('I',42301)],0)):
+    b=by_line[line]
+    assert b['giver_vnum']==giver and b['give']==[('I',v) for v in inputs] and b['receive']==rewards
+    assert b['binding']['completion_key'].endswith('disappear='+str(disappear))
+stories={s['id']:s for s in tribal_map['stories']}
+refs=[s['contracts'][0] for s in tribal_map['stories']]+tribal_map['exclusions'][0]['contracts']
+assert {tuple(ref.items()) for ref in refs}=={tuple(b['binding'].items()) for b in by_line.values()}
+assert tribal_map['exclusions'][0]['contracts']==[by_line[25]['binding']]
+assert 'same prototype kind' in tribal_map['exclusions'][0]['reason']
+for s in tribal_map['stories']:
+    assert s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional')
+grain=stories['bluebird-grain-staff']
+assert grain['steps'][0]['contracts']==[by_line[46]['binding']] and grain['steps'][0]['optional']
+assert grain['steps'][1]['item_vnums']==[42265]
+assert [t['item_vnums'][0] for t in stories['wife-four-part-escape']['steps'][:-1]]==[42222,42219,42220,42242]
+assert [t['item_vnums'][0] for t in stories['shaman-five-ingredient-crystal']['steps'][:-1]]==[42221,42227,42212,42263,42267]
+assert [t['item_vnums'][0] for t in stories['xazapath-five-body-parts']['steps'][:-1]]==[42293,42294,42295,42296,42297]
+assert not any(t['kind']=='completion' for t in stories['shaman-five-ingredient-crystal']['steps'][:-1])
+assert tribal['zone']['reset_mode']==1
+definitions={r['block']['line']:r['definition'] for r in tribal['requests']}
+assert sum(d['daily_eligible'] for d in definitions.values())==9
+assert not definitions[25]['daily_eligible'] and definitions[25]['daily_exclusion']=='Item exchange'
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==422]
+assert len(units)==9 and all(u['achievement'] and u['daily_candidate'] for u in units)
+contacts={c['mob_vnum']:c for c in tribal_map['contacts']}
+assert {v for v,c in contacts.items() if c['topics']}=={b['giver_vnum'] for b in raw if b['kind'] in ('M','MA')}
+for v,c in contacts.items():
+    aliases={t for b in raw if b['kind'] in ('M','MA') and b['giver_vnum']==v for t in b['body'][0].rstrip('~').split()}
+    assert set(c['topics'])==aliases
+assert {'gretings','husban'}<=set(contacts[42219]['topics'])
+assert len(tribal['mobs'])==67 and len(tribal['items'])==103
+assert len(tribal['reset_commands'])==377 and collections.Counter(r['command'] for r in tribal['reset_commands'])=={'M':133,'E':87,'O':49,'D':38,'G':30,'P':25,'F':15}
+assert {(r['kind'],r['vnum'],r['function']) for r in tribal['special_assignments']}=={('obj',42235,'amethyst_orb')}
+objects=dawndale_bodies('tribal','obj');rooms=dawndale_bodies('tribal','wld');mobs=dawndale_bodies('tribal','mob')
+assert set(rooms)==set(range(42200,42375))
+assert [v for v,b in mobs.items() if int(b.split('~')[4].split()[0])&32768]==[42209]
+assert int(mobs[42256].split('~')[4].split()[0])&4 # Scavenger, not a guaranteed staging arrival.
+sources=collections.defaultdict(list);owner=None;room=None
+for r in tribal['reset_commands']:
+    c,v=r['command'],r['arguments']
+    if c in 'MFR':owner,room=v[1],v[3]
+    if c in 'GE':sources[v[1]].append((c,owner,room,v[2],v[3],v[4]))
+for item,mob,where,chance in ((42201,42201,42291,100),(42202,42202,42278,100),
+    (42221,42216,42220,100),(42222,42218,42248,100),(42241,42217,42219,100),
+    (42244,42215,42206,100),(42263,42232,42254,100),(42267,42237,42267,75),(42302,42237,42267,75)):
+    assert sources[item]==[('G',mob,where,1,0,chance)]
+assert sources[42227]==[('E',42231,42269,1,19,75)]
+reset_lines=(ROOT/'areas/zon/tribal.zon').read_text(encoding='utf8').splitlines()
+trees=[r for r in tribal['reset_commands'] if r['command']=='F' and r['arguments'][1]==42237]
+assert len(trees)==3 and '42267' in reset_lines[trees[0]['line']] and '42302' in reset_lines[trees[1]['line']]
+assert [(r['arguments'][3]) for r in tribal['reset_commands'] if r['command']=='M' and r['arguments'][1]==42200]==[42289]
+assert [(r['arguments'][3]) for r in tribal['reset_commands'] if r['command']=='M' and r['arguments'][1]==42256]==[42317]
+for item,where in ((42293,42339),(42294,42352),(42295,42335),(42296,42349),(42297,42346)):
+    assert [(r['arguments'][2:5]) for r in tribal['reset_commands'] if r['command']=='O' and r['arguments'][1]==item]==[[1,where,100]]
+    assert objvalues(objects[item])[6]&4096
+assert objvalues(objects[42297])[0]==8 and all(objvalues(objects[v])[0]==13 for v in (42293,42294,42295,42296))
+for key,breakage in ((42222,50),(42233,30),(42210,100)):
+    assert objvalues(objects[key])[0]==18 and objvalues(objects[key])[12]==breakage
+assert objvalues(objects[42213])[0]==15 and objvalues(objects[42213])[12]==0
+assert re.search(r'\bT\s+2\s+9\s+1\s+50\b',objects[42212]) and re.search(r'\bT\s+2\s+10\s+1\s+50\b',objects[42290])
+for item,command,where,direction in ((42271,270,42239,3),(42283,270,42285,0),(42284,270,42322,9),(42282,282,42315,5),(42287,270,42342,2)):
+    assert objvalues(objects[item])[0]==29 and objvalues(objects[item])[11:15]==[command,where,direction,1]
+for portal,target,command in ((42281,42315,7),(42234,42297,7),(42253,42295,7),(42250,42370,7),(42264,42281,139)):
+    assert objvalues(objects[portal])[0]==25 and objvalues(objects[portal])[11:15]==[target,command,-1,0]
+for room,direction,flags,key,target in ((42248,3,2,42222,42249),(42249,1,2,42222,42248),(42254,5,6,42233,42295),
+    (42293,1,2,42210,42282),(42315,5,12,0,42316),(42322,9,12,0,42319),(42342,2,13,0,42353)):
+    assert re.search(r'\bD'+str(direction)+r'\s+[^~]*~[^~]*~\s*'+str(flags)+' '+str(key)+' '+str(target)+r'\b',rooms[room],re.S)
+shop=(ROOT/'areas/shp/tribal.shp').read_text(encoding='utf8')
+assert shop.startswith('#42235~\nN\n42231\n42246\n42248\n42247\n0\n')
+assert '\n42235\n0\n42259\n0\n28\n0\n28\n' in shop
+assert objvalues(objects[42235])[7]==0 and objvalues(objects[42235])[11]==0
+triggers=ROOT/'areas/world.trg'
+assert not triggers.exists() or not re.search(r'^#(?:422\d\d|423[0-7]\d)\b',triggers.read_text(encoding='utf8',errors='replace'),re.M)
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

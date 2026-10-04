@@ -1104,3 +1104,40 @@ This checkpoint ships no native repair. Mixed-company salvage, actor narration,
 Roland placement, boundary direction and cosmos-key lifetime are documented
 pending intent/qualification. Actual repairs need separate fix commits and
 prominent PR/news before-after evidence; journal authoring is a distinct addition.
+
+### Tribal Forest: exact ownership, reused keys and supplied independent stages
+
+The [dossier](../design/zone-stories/TRIBAL_FOREST.md) and
+[journal](../../areas/story/tribal.story.json) cover all ten exchanges as nine
+outcomes and one refusal exclusion, with seventeen contacts/21 optional checks.
+Map the two similar meat kinds honestly: larger meat → hunter grain → staff,
+small meat → nest, while the bird's larger-meat return is excluded. Native same-
+kind reward issuance does not prove that the original physical UID was returned.
+
+Supplied grain fits without your hunter receipt; the five-material crystal
+does not require your spotted-deerskin commission. Earlier receipts cannot
+replace spent ingredients. The shaman provides his own narrated blood, sulphur
+and oil. The bluebird's nest, room egg descriptions and the Queen's exact missing
+egg are distinct. Five duplicate limbs cannot replace five different corpse
+parts. Preserve all addressed M/MA aliases; ordinary questions award no credit.
+
+Trace the actual source owner and slot: lookout-held crystal; bone inside an
+unlocked container; horn on the following devil; root on first following tree,
+egg on second. Loading rooms and reset chance/cap declarations do not establish
+guaranteed current NPC encounters or admitted item supply. Read the apprentice's
+real shop directly: its valid `#42235~` header differs from prototype headers.
+
+The wife consumes the bluish key alongside three clothing kinds, while normal
+kitchen unlocking may break it. Separate source possession, successful unlock,
+shared-door state and arrival. PUSH/STOMP only clears configured blocking;
+remaining secret/closed state matters. Match actual mirror STARE travel versus
+orb viewing/selection/TOUCH HP effects and imported spell-pool outcomes before
+adding semantic events. Do not turn magic grove or forgiveness lore into a
+hidden native prerequisite, escort outcome or global campaign achievement.
+
+The separate three-word direction repair f8090481d has original-fails/repaired-
+passes and exact native-byte evidence in the dossier and PR/news register.
+Trap codes 9/10, other text mismatches, selected-target safety and builder-selected
+lore endpoints remain pending proposals; the shop needs no header-related repair.
+Future actual native repairs need separate identifiable fix commits, player
+triggers, before-after proof/live limits and ready news wording.

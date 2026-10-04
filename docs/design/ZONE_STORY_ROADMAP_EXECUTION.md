@@ -54,6 +54,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [7297b964e](https://github.com/Community-Duris/Duris/commit/7297b964ed3996c33a90dae4172cd0875addf174): Hall Shadow of Sin | Its gaze checks the actual opponent for Freedom of Movement rather than the callback actor. Periodic null actors no longer crash; bystander protection is not consumed, and target text substitutes correctly. | Player-facing: “The Shadow of Sin now correctly checks its opponent's Freedom of Movement, fixing a combat crash and misleading target text.” Actual procedure/null/unrelated-actor/effect/immunity regression and server build passed; live gameplay qualification remains open. |
 | [b28262d8c](https://github.com/Community-Duris/Duris/commit/b28262d8cc8dfe6156df70f162981399d18be717): Halfcut crossbow ambusher | Setup registers periodic scheduling without firing; pulses keep three lanes/four bolts/player-only targets. Runtime identity checks stop volleys after death, movement, removal or storage reuse; missing lanes do not hide later lanes. Unbound procedures remain unbound. | Player-facing: “The Halfcut Hills kobold crossbow ambusher now fires on its scheduled pulses and stops interrupted volleys safely.” Actual-procedure regression passes and original fails setup; maintained build/format pass. Live balance/reset/accounting journey remains unqualified. |
 | [348eccdf3](https://github.com/Community-Duris/Duris/commit/348eccdf3261e62aa8984ac0868b98adfa815a06): Halfcut struck-player warning | The crossbow's direct warning uses TO_CHAR for its player actor/recipient, so the shared audience filter delivers it. Previously TO_VICT suppressed that message; the room warning and four-bolt damage remain unchanged. | Player-facing addition: “The Halfcut Hills crossbow warning now reaches each struck player.” Audience regression fails the preceding procedure and passes with the fix; maintained build/format pass. This is a separate actual repair from journal authoring. |
+| [f8090481d](https://github.com/Community-Duris/Duris/commit/f8090481df837bb4e1a675c901488f13090657d1): Tribal Forest exit clues | Inspecting west at 42204 and 42231 now says west; inspecting south at 42261 now says south. Exactly three description words change, preserving reciprocal routes and all other native bytes. | Player-facing: “Tribal Forest's two western forest exits and the southern village exit now describe their actual directions.” All three original clues fail the focused regression; repaired source/exact-byte scope pass. Live LOOK/traversal remains unqualified. |
 
 ## Progress
 
@@ -115,9 +116,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 54 | The Transparent Tower | [Comprehensive dossier](zone-stories/TRNSPTOW.md): all thirty blocks/100 rooms/40 mobs/75 objects/208 resets; five specials, fragile keys, command portals and imported epic/artifact roles | Four outcomes/fourteen contacts/eleven optional checks; one daily candidate | No native repair ships; pulse/misdirection/shortcut/trash intent pending. Accepted source/access/command/epic/ALL/escape evidence planned |
 | 55 | The Tempest Court | [Comprehensive dossier](zone-stories/TEMPEST_COURT.md): all 26 blocks/200 rooms/52 mobs/63 objects/307 resets; full active dagger, shared execution and foreign proof chains | Seven outcomes/eight contracts, 21 contacts/28 optional checks; five candidates, supplied proof and fragment allocation | Separate two-word direction fix ships; upgrade/portal/lightning/dispersal intent pending. Source-generation/access/branch/actor/epic/ALL events and live supply qualification planned |
 | 56 | The Caverns of Armageddon | [Comprehensive dossier](zone-stories/CAVERNS_OF_ARMAGEDDON.md): all 33 blocks/149 rooms/94 mobs/69 objects/393 resets; imported procs/shared execution and foreign follow-ups | Eighteen independent outcomes, 40 contacts/27 optional checks; exact heads/tags/parts/amulets and supplied acceptance | Roland placement; admitted supply, custody/source, successful access/key/trap, actor/ALL and allocation events; boundary/key/prose/effect intent pending. No native repair ships here |
-| 57–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 57 | Tribal Forest | [Comprehensive dossier](zone-stories/TRIBAL_FOREST.md): all 25 blocks/175 rooms/67 mobs/103 objects/377 resets; shop/orb/shared execution and source ownership | Nine outcomes/one refusal exclusion; seventeen contacts/21 optional checks; exact grain/clothing/crystal/parts/egg progression | Admitted staged supply, recovery/transfer/replacement, reused key/control/travel/HP/actor events; trap/text/grove/shop-audit intent pending. Separate three-word native direction fix/news ships |
+| 58–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Tribal Forest (`tribal`).
+The next area is The Ancient Halls of Ironstar (`lornecro`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -2846,3 +2848,62 @@ group epic and played persistence remain unqualified. Catalog: 77 maps/1637
 achievement units/1464 potential dailies/2211 rows. Original order: 56/220
 complete, 164 pending; Tribal Forest (`tribal`) next. Active, ready accounting
 is mandatory. No DB/account/server operation, migration, deployment or merge.
+
+## Tribal Forest completed source map — October 4, 2026
+
+The [comprehensive dossier](zone-stories/TRIBAL_FOREST.md) reviews all 25
+native blocks (thirteen M/ten Q/two MA), 175 rooms, 67 mobiles, 103 objects,
+377 resets/234 families, the real apprentice shop, fixed amethyst orb,
+imported spell pool, shared teacher/switch/portal/trap execution and bounded
+global sources/consumers. The [journal](../../areas/story/tribal.story.json)
+adds nine outcomes, one explicit refusal exclusion, seventeen contacts and
+21 optional checks (twenty carried, one hunter receipt). Both MA families are
+addressed dialogue; all native aliases remain. Definitions/fingerprint/revision
+two/registry and prior 77 maps stay unchanged.
+
+Progression includes larger worm meat → hunter grain → bluebird staff; separate
+small meat → bird nest; bluish key/shoes/skirt/blanket → wife's departure;
+beautiful comb → brooch; spotted deerskin → amulet; five different ingredients
+→ crystal; five different scattered underground parts → Xazapath bow/quiver;
+and ancient-tree egg → Queen Spider ring. Supplied matching material is accepted;
+producer history neither becomes a hidden prerequisite nor restores spent grain.
+The larger-meat bird refusal reissues the same kind without a meaningful reward
+and is excluded, removing one false achievement/row, without removing a daily.
+
+The kitchen key can break on normal unlock and is also an offering input.
+Lookout holds the crystal, the runed bone is inside an unlocked container,
+the following devil has the horn, and different following trees have root/egg.
+PUSH/STOMP switches clear blocking but can leave closed/secret state. Mirror
+STARE is travel; orb STARE/GLANCE is viewing, RUB selects a runtime room index,
+and TOUCH can travel or burn and reduce HP to zero. Loading rooms and nominal
+source chance/caps do not certify current reachable NPCs or admitted stock.
+
+Expand committed UID/root/container/NPC ownership, first recovery versus handoff,
+same-kind replacement, admitted M/F/O/P/G/E sources and retiring/reset episodes.
+Add exact control/unlock/key-break/door state and actual actor arrival/HP effects;
+separate actor/escort/scoped campaign and builder-selected racial predicates.
+Preserve supplied independent receipts, existing settlement and accounting guards.
+Trap codes 9/10 lack handler payloads; select supported effects before a separate
+repair. Other leaf/tunnel/redbird wording, grove/escort lore and orb/spell-pool
+target qualification remain balanced pending findings. The apprentice's valid
+tilde shop record was checked directly; do not call that real shop a broken quest.
+
+**Actual native repair:** separate [fix f8090481d](https://github.com/Community-Duris/Duris/commit/f8090481df837bb4e1a675c901488f13090657d1)
+changes exactly three direction words in room 42204 west, 42231 west and 42261
+south descriptions. All three original clues fail the focused regression; repaired
+clues, reciprocal routes and exact native-byte scope pass. Live LOOK/traversal is
+unqualified. News: “Tribal Forest's two western forest exits and the southern
+village exit now describe their actual directions.” Journal additions and the
+other proposals are separate from this shipped fix. Earlier repair/news records
+remain visible and preserved.
+
+Focused source and actual C++ fixtures cover exact kinds, optional hunter history,
+supplied crystal acceptance without first commission, loose versus worn materials,
+duplicate limbs, nest versus egg, spent grain versus producer history, one paired
+reward receipt, refusal exclusion, read-only rendering, replay and cold recovery.
+Live generation/encounter/GET/source/transfer, access/trap/travel/HP/combat,
+retirement/renewal and played persistence remain unqualified. Catalog: 78 maps/
+1636 achievements/1464 potential dailies/2210 rows. Original order: 57/220
+complete, 163 pending; The Ancient Halls of Ironstar (`lornecro`) next. Active,
+ready accounting is mandatory. No DB/account/server operation, migration,
+deployment or merge.

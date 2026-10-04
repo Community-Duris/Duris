@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 77 authored journals, accounting-gated player surfaces, starter/town
+**Status: 78 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -1963,3 +1963,71 @@ is mandatory. No DB/account/server operation, migration, deployment or merge.
 | Zone checkpoint | Revision | Native classification | Source map | Daily policy | Required qualification |
 | --- | --- | --- | --- | --- | --- |
 | The Caverns of Armageddon | 1 | Eighteen named exchanges; fifteen independent bounties, tags, creature parts and consumed amulet pair | [Comprehensive dossier](zone-stories/CAVERNS_OF_ARMAGEDDON.md); 40 contacts/27 optional checks | Eighteen native-shaped candidates, subject to actual recipient/source admission and suitability | Roland placement; key break/access/trap/custody/branch/actor/ALL/effect events and actual renewable supply; native repair proposals pending |
+
+## Tribal Forest completed source map — October 4, 2026
+
+The [comprehensive dossier](zone-stories/TRIBAL_FOREST.md) reviews all 25
+native blocks (thirteen M/ten Q/two MA), 175 rooms, 67 mobiles, 103 objects,
+377 resets/234 families, the real apprentice shop, fixed amethyst orb,
+imported spell pool, shared teacher/switch/portal/trap execution and bounded
+global sources/consumers. The [journal](../../areas/story/tribal.story.json)
+adds nine outcomes, one explicit refusal exclusion, seventeen contacts and
+21 optional checks (twenty carried, one hunter receipt). Both MA families are
+addressed dialogue; all native aliases remain. Definitions/fingerprint/revision
+two/registry and prior 77 maps stay unchanged.
+
+Progression includes larger worm meat → hunter grain → bluebird staff; separate
+small meat → bird nest; bluish key/shoes/skirt/blanket → wife's departure;
+beautiful comb → brooch; spotted deerskin → amulet; five different ingredients
+→ crystal; five different scattered underground parts → Xazapath bow/quiver;
+and ancient-tree egg → Queen Spider ring. Supplied matching material is accepted;
+producer history neither becomes a hidden prerequisite nor restores spent grain.
+The larger-meat bird refusal reissues the same kind without a meaningful reward
+and is excluded, removing one false achievement/row, without removing a daily.
+
+The kitchen key can break on normal unlock and is also an offering input.
+Lookout holds the crystal, the runed bone is inside an unlocked container,
+the following devil has the horn, and different following trees have root/egg.
+PUSH/STOMP switches clear blocking but can leave closed/secret state. Mirror
+STARE is travel; orb STARE/GLANCE is viewing, RUB selects a runtime room index,
+and TOUCH can travel or burn and reduce HP to zero. Loading rooms and nominal
+source chance/caps do not certify current reachable NPCs or admitted stock.
+
+Expand committed UID/root/container/NPC ownership, first recovery versus handoff,
+same-kind replacement, admitted M/F/O/P/G/E sources and retiring/reset episodes.
+Add exact control/unlock/key-break/door state and actual actor arrival/HP effects;
+separate actor/escort/scoped campaign and builder-selected racial predicates.
+Preserve supplied independent receipts, existing settlement and accounting guards.
+Trap codes 9/10 lack handler payloads; select supported effects before a separate
+repair. Other leaf/tunnel/redbird wording, grove/escort lore and orb/spell-pool
+target qualification remain balanced pending findings. The apprentice's valid
+tilde shop record was checked directly; do not call that real shop a broken quest.
+
+**Actual native repair:** separate [fix f8090481d](https://github.com/Community-Duris/Duris/commit/f8090481df837bb4e1a675c901488f13090657d1)
+changes exactly three direction words in room 42204 west, 42231 west and 42261
+south descriptions. All three original clues fail the focused regression; repaired
+clues, reciprocal routes and exact native-byte scope pass. Live LOOK/traversal is
+unqualified. News: “Tribal Forest's two western forest exits and the southern
+village exit now describe their actual directions.” Journal additions and the
+other proposals are separate from this shipped fix. Earlier repair/news records
+remain visible and preserved.
+
+Focused source and actual C++ fixtures cover exact kinds, optional hunter history,
+supplied crystal acceptance without first commission, loose versus worn materials,
+duplicate limbs, nest versus egg, spent grain versus producer history, one paired
+reward receipt, refusal exclusion, read-only rendering, replay and cold recovery.
+Live generation/encounter/GET/source/transfer, access/trap/travel/HP/combat,
+retirement/renewal and played persistence remain unqualified. Catalog: 78 maps/
+1636 achievements/1464 potential dailies/2210 rows. Original order: 57/220
+complete, 163 pending; The Ancient Halls of Ironstar (`lornecro`) next. Active,
+ready accounting is mandatory. No DB/account/server operation, migration,
+deployment or merge.
+
+| Tribal capability | Verified requirement | Planned implementation and acceptance |
+| --- | --- | --- |
+| Admitted staged supply | Bird/worm/drow staging and F-tree ownership; 75-percent held crystal/root/egg and cap-one material; two retiring recipients | Trace committed source generation and real NPC/stock identity, then qualify reachability, renewal and difficulty before daily assignment. Preserve guards and supplied stock. |
+| Source and replacement identity | Supplied grain/crystal/clothes fit; same-kind meat refusal consumes/reissues; body parts are fixed secret objects | Capture UID/root/NPC/container ownership and transfers. Distinguish first recovery, reward replacement and delivery, with replay/rollback/cold recovery and no producer-history substitution. |
+| Multi-purpose access key | Wife consumes the same key kind that may break opening her kitchen; switch mutation can leave secret/closed state | Add accepted targeted control/unlock, key destruction, shared-door state and surviving actor arrival. Keep recipe possession optional guidance rather than a hidden access receipt. |
+| Distinct travel and effects | Mirror STARE travels; orb RUB selects, STARE/GLANCE views and TOUCH changes room/HP; spell pool has separate effects | Qualify native target dispatcher, bounded/stable selected world identity, actual HP/effect and arrival publication before semantic milestones. Preserve outcome and recoverable obligations. |
+| Trap content and source-audit method | Native trap codes 9/10 lack payload branches; shop headers require direct native-record reading rather than generic prototype counters | Builder chooses supported trap effects before an isolated native fix with GET/PUT/charge/recovery proof/news. Keep direct shop stock/role verification in the source fixture; no shop behavior or production-parser repair is claimed. |
+| Narrated actor or racial conditions | D1 departure does not certify escorted travel/forgiveness; human grove exclusion lacks reviewed enforcement | Builder specifies predicate, actor/episode scope and accepted terminal. Add objective events only after actual implementation; questions, static lore and route possession are insufficient. |
