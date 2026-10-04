@@ -294,3 +294,23 @@ plan qualification batch. This source slice is unqualified; no new schema,
 framework, fixture family or acceptance gate was added. Ownership remains disabled;
 clean lifecycle closure, supported native metadata ownership, authentic cutover,
 flatfile parity and Plan 1 acceptance remain open.
+
+## Direct login metadata ownership
+
+`sql_save_player_core` is called after the master save owner has returned during
+login and modification. Its independent native player/account/frag projections
+previously lacked an enabled PID residence and exact main-session cleanup owner.
+The source now borrows existing resident claim, execution scope and permit around
+that native body; confirmed cleanup or original-session retirement precedes every
+owner's destruction, including exceptions. PID-zero creation, caller-owned
+transactions, non-game-thread writes, unsafe main sessions and held saves refuse.
+The historical same-name update affecting other PIDs is skipped in enabled mode.
+
+Renaming is an unsupported enabled operation and now refuses at both the command
+facade and SQL entry, before the trusted declined-name filesystem unlink or any
+native/identity change. Epoch-zero behavior retains the original body. The three
+changed source files are sql C, sql_player C and modify C. Independent source
+review, changed-line formatting and diff hygiene passed. This is source-only;
+native/compiler/player/recovery checks remain deferred to major-plan readiness.
+No receipt, schema, fixture, framework or acceptance gate was added. Production
+ownership enable, clean lifecycle close and Plan 1 acceptance remain unfinished.
