@@ -21,6 +21,7 @@
 #include <cstring>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <strings.h>
@@ -2505,6 +2506,18 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 	    !player_snapshot_is_death_evidence_schema(retained.schema_version) ||
 	    !retained.death->conflict_evidence)
 		return failed(EINVAL);
+	// This transaction participant borrows its caller's explicit ownership.
+	// Do not acquire a new residence or bypass a pending replay reservation.
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		execution.emplace(request.pid);
+		if (!*execution)
+			return failed(execution->result() ==
+						      player_save_execution_guard::admission::held ?
+					      EAGAIN :
+					      ENOMEM);
+	}
 	// The existing wallet transaction, not a death snapshot, owns conversion.
 	// A nonzero or stale wallet remains a hold; this writer never debits it or
 	// awards a replacement pile alongside still-spendable money.
@@ -2878,6 +2891,24 @@ apply_owned_recovery_snapshot(MYSQL *connection, const player_save_recovery_reco
 player_save_apply_result player_snapshot_repository_recovery_apply(
 	MYSQL *connection, const player_save_recovery_record &record, player_sql_cleanup *cleanup)
 {
+	// The independent recovery owner must already hold the exact PID scope.
+	// Retain this nested permit through native work and cleanup-owner unwind;
+	// lease disposal and later journal resolution remain the caller's duty.
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		execution.emplace(record.replacement.pid);
+		if (!*execution)
+			return { execution->result() ==
+						 player_save_execution_guard::admission::held ?
+					 player_save_apply_outcome::deferred :
+					 player_save_apply_outcome::retryable_failure,
+				 0,
+				 execution->result() ==
+						 player_save_execution_guard::admission::held ?
+					 0U :
+					 ENOMEM };
+	}
 	player_sql_cleanup local;
 	auto &proof = cleanup ? *cleanup : local;
 	player_sql_transaction_cleanup owner(connection, proof);

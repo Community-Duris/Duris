@@ -106,3 +106,19 @@ proof withdrawal, namespace loss/corruption and scoped recovery mutations.
 Checkpoint internals may still allocate: failure retains evidence, rather than
 establishing allocation-free completion after apply. Full native writer ownership,
 clean ACK census, actual revisit/startup and lifecycle completion remain open.
+
+## Independent SQL participants
+
+The retained-death writer and recovery-apply participant now borrow an enabled
+caller's scope before codecs/native SQL. They acquire no new claims. Held entry
+returns the existing deferred or failed/EAGAIN result; unavailable admission
+returns retryable or failed/ENOMEM. Recovery refusal leaves the caller cleanup
+output untouched; an admitted permit outlives its cleanup owner. Disabled-epoch
+bodies remain unchanged. Outer recovery/death-conflict ownership through transaction,
+uncertain-lease disposal and journal resolution is still required.
+
+Maintainer implementation and independent architect source review accepted C pin
+`798ec2f6fa6807c9542681da8e34a9451f317c662254a5c957f83873e6af0c19`.
+The preserved BEFORE C pin is
+`273e7364edce38876c6109844decc3cbc1a5a6f73e0cafb2f89b199550a7fbbc`.
+Formatting/diff hygiene only; no compiler, tests, native SQL or qualified push.
