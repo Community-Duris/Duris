@@ -91,7 +91,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
     def test_flatfile_economic_record_loss_refuses_before_service_boot(self):
         self.build_native_fixture()
         fixture = build_economic_fixture(ROOT / "bin/tools/flatfile_restore_authority_fixture")
-        for mode in ("records", "source-claims"):
+        for mode in ("records", "source-claims", "baseline"):
             live = self.base / ("live-" + mode)
             self.p["live_roots"] = [live]
             for directory in ("identities/accounts", "identities/names", "players", "domains"):
@@ -105,9 +105,15 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
             shutil.copytree(live, proof / "state")
             backup.run([str(ROOT / "bin/tools/qualify_flatfile_restore"),
                         "--state-preflight", str(proof / "state")])
-            names = (("bucket-01.eai", "bucket-01-0.eas", "bucket-01-1.eas") if mode == "records"
-                     else sorted(path.name for path in (live / "economic-evidence").glob("source-claim-*.bin")))
-            self.assertEqual(len(names), 3 if mode == "records" else 2)
+            evidence = live / "economic-evidence"
+            if mode == "records":
+                names = ("bucket-01.eai", "bucket-01-0.eas", "bucket-01-1.eas")
+            elif mode == "source-claims":
+                names = sorted(path.name for path in evidence.glob("source-claim-*.bin"))
+            else:
+                names = [next(evidence.glob("baseline-*" + suffix)).name
+                         for suffix in (".eab", "head.ebc", "3.ebi", "0.ebi")]
+            self.assertEqual(len(names), {"records": 3, "source-claims": 2, "baseline": 4}[mode])
             for name in names:
                 with self.subTest(mode=mode, missing=name):
                     path = live / "economic-evidence" / name

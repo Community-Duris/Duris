@@ -150,7 +150,8 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	assert(mode == "lifetimes" || mode == "records" || mode == "source-claims" ||
-	       mode == "baseline");
+	       mode == "baseline" || mode == "baseline-empty" || mode == "baseline-rich" ||
+	       mode == "baseline-maximum" || mode == "baseline-full-index");
 	for (size_t bucket = 0; bucket < 256; ++bucket)
 	{
 		assert(access::initialize_native_bucket(root, lock, control().revision, bucket,
@@ -195,7 +196,7 @@ int main(int argc, char **argv)
 	       0);
 	commit();
 	assert(critical_operation_id_is_zero(control().active_epoch));
-	if (mode == "baseline")
+	if (mode.starts_with("baseline"))
 	{
 		economic_baseline_batch batch;
 		batch.lineage = id(1);
@@ -211,23 +212,134 @@ int main(int argc, char **argv)
 					   { 100, 0, 0, 0 },
 					   0,
 					   native_digest });
-		std::optional<economic_prepared_baseline> prepared;
-		assert(economic_baseline_prepare(batch, &prepared) ==
-		       economic_accounting_error::ok);
-		critical_command command;
-		assert(economic_baseline_command_build(*prepared, 1, &command) ==
-		       economic_accounting_error::ok);
-		assert(access::initialize_evidence_bucket(root, lock, control().revision,
-							  command.operation_id.bytes[0], id(8),
-							  &operations, &error) == 0);
-		commit();
-		assert(access::initialize_baseline(root, lock, id(1), id(50), batch.opening_account,
-						   id(53), &operations,
+		assert(access::initialize_baseline(root, lock, id(1), batch.epoch,
+						   batch.opening_account, id(53), &operations,
 						   &error) == flatfile_accounting_status::ok);
 		commit();
-		assert(access::stage_baseline(root, lock, command, *prepared, &operations,
-					      &error) == flatfile_accounting_status::ok);
-		commit();
+		if (mode == "baseline-empty")
+			return 0;
+		auto item = [&](uint64_t uid, item_owner_identity owner, uint64_t root_uid,
+				uint64_t parent, uint64_t revision, item_custody_state state)
+		{
+			economic_item_snapshot snapshot;
+			snapshot.uid = uid;
+			snapshot.position = { owner, root_uid, parent, revision, state, 0 };
+			batch.items.push_back({ snapshot, native_digest });
+		};
+		if (mode == "baseline-rich")
+		{
+			batch.holdings.clear();
+			// Deliberately unsorted inputs cross little-endian numeric boundaries.
+			for (uint64_t lifetime : { 512u, 256u, 255u })
+				batch.holdings.push_back(
+					{ { id(1), economic_account_kind::wallet, lifetime, 0 },
+					  { lifetime == 512 ? 0 : 10, 2, 3, 4 },
+					  UINT64_MAX,
+					  native_digest });
+			batch.holdings.back().balance = {};
+			batch.holdings.push_back(
+				{ { id(1), economic_account_kind::bank, UINT64_MAX, UINT64_MAX },
+				  { INT64_MAX, 0, 0, 0 },
+				  UINT64_MAX,
+				  native_digest });
+			item(256, { item_owner_type::player, 7, 0 }, 255, 255, 0,
+			     item_custody_state::quarantined);
+			item(255, { item_owner_type::player, 7, 0 }, 255, 0, UINT64_MAX,
+			     item_custody_state::active);
+			item(512, { item_owner_type::destruction, 0, 0 }, UINT64_MAX, UINT64_MAX,
+			     UINT64_MAX, item_custody_state::destroyed);
+			item(513, { item_owner_type::pet, 8, INT32_MAX }, 513, 0, UINT64_MAX,
+			     item_custody_state::active);
+			item(514, { item_owner_type::collector, 9, 0 }, 514, 0, 0,
+			     item_custody_state::quarantined);
+			item(515, { item_owner_type::system, 0, 0 }, 515, 0, 0,
+			     item_custody_state::active);
+		}
+		if (mode == "baseline-maximum")
+		{
+			batch.holdings.clear();
+			for (uint64_t lifetime = 1; lifetime <= ECONOMIC_BASELINE_MAX_HOLDINGS;
+			     ++lifetime)
+				batch.holdings.push_back(
+					{ { id(1), economic_account_kind::wallet, lifetime, 0 },
+					  { 1, 2, 3, 4 },
+					  UINT64_MAX,
+					  native_digest });
+			for (uint64_t uid = 10000;
+			     uid < 10000 + ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES; ++uid)
+				item(uid, { item_owner_type::player, 7, 0 }, 10000,
+				     uid == 10000 ? 0 : uid - 1, UINT64_MAX,
+				     item_custody_state::active);
+		}
+		auto stage = [&]
+		{
+			std::optional<economic_prepared_baseline> prepared;
+			assert(economic_baseline_prepare(batch, &prepared) ==
+			       economic_accounting_error::ok);
+			critical_command command;
+			assert(economic_baseline_command_build(*prepared, UINT64_MAX, &command) ==
+			       economic_accounting_error::ok);
+			const auto bucket = command.operation_id.bytes[0];
+			if (!(control().evidence_initialized[bucket / 8] & (1u << (bucket % 8))))
+			{
+				assert(access::initialize_evidence_bucket(
+					       root, lock, control().revision, bucket, id(8),
+					       &operations, &error) == 0);
+				commit();
+			}
+			assert(access::stage_baseline(root, lock, command, *prepared, &operations,
+						      &error) == flatfile_accounting_status::ok);
+			commit();
+		};
+		if (mode == "baseline-full-index")
+		{
+			// A full native shard is 88 bytes larger than a generic 2 MiB file.
+			for (uint64_t first = 1; first <= 65536;
+			     first += ECONOMIC_BASELINE_MAX_HOLDINGS)
+			{
+				batch.batch_index = (first - 1) / ECONOMIC_BASELINE_MAX_HOLDINGS;
+				batch.holdings.clear();
+				for (uint64_t lifetime = first;
+				     lifetime <= 65536 &&
+				     lifetime < first + ECONOMIC_BASELINE_MAX_HOLDINGS;
+				     ++lifetime)
+					batch.holdings.push_back(
+						{ { id(1), economic_account_kind::wallet,
+						    lifetime * 16, 0 },
+						  {},
+						  UINT64_MAX,
+						  native_digest });
+				stage();
+			}
+		}
+		else
+			stage();
+		if (mode == "baseline-rich")
+		{
+			const auto first = batch;
+			batch.batch_index = 1;
+			batch.holdings = { { { id(1), economic_account_kind::treasury, 1025, 0 },
+					     {},
+					     UINT64_MAX,
+					     native_digest } };
+			batch.items.clear();
+			item(1025, { item_owner_type::room, 300, UINT64_MAX }, 1025, 0, 0,
+			     item_custody_state::active);
+			stage();
+			batch.batch_index = UINT64_MAX;
+			batch.holdings.clear();
+			batch.items.clear();
+			stage();
+			batch = first;
+			batch.preparation_id = id(54);
+			batch.epoch = id(51);
+			assert(access::initialize_baseline(root, lock, id(1), batch.epoch,
+							   batch.opening_account, id(55),
+							   &operations, &error) ==
+			       flatfile_accounting_status::ok);
+			commit();
+			stage();
+		}
 		assert(critical_operation_id_is_zero(control().active_epoch));
 		return 0;
 	}

@@ -364,6 +364,232 @@ int main(int argc, char **argv) {
             check("native baseline own witness book needs no common claim", True)
 
             restore({})
+            subprocess.run([str(fixture), str(state), "baseline-empty"], env=environment, check=True)
+            check("native initialized empty inactive baseline book", True)
+            empty_book = inventory(evidence)
+            for name in sorted(n for n in empty_book if n.startswith("baseline-")):
+                files = dict(empty_book)
+                files.pop(name)
+                restore(files)
+                check("empty book partial loss " + name[-8:], False)
+
+            restore({})
+            subprocess.run([str(fixture), str(state), "baseline-maximum"], env=environment, check=True)
+            check("native maximum baseline witness holdings and item forest", True)
+
+            restore({})
+            subprocess.run([str(fixture), str(state), "baseline-full-index"], env=environment, check=True)
+            full_index, = evidence.glob("baseline-*-0.ebi")
+            assert full_index.stat().st_size == 88 + 65536 * 32
+            assert struct.unpack_from("<I", full_index.read_bytes(), 84)[0] == 65536
+            assert len(list(evidence.glob("baseline-*.eab"))) == 22
+            check("native full 65536-entry reservation shard exceeds generic 2 MiB bound", True)
+
+            restore({})
+            subprocess.run([str(fixture), str(state), "baseline-rich"], env=environment, check=True)
+            check("native multibatch cross-epoch baseline numeric ordering and unchanged forest", True)
+            baselines = inventory(evidence)
+            witnesses = sorted(n for n in baselines if n.endswith(".eab"))
+            assert len(witnesses) == 4
+            witness = next(n for n in witnesses if baselines[n][32:48] == b"2" + b"\x00" * 15
+                           and struct.unpack_from("<Q", baselines[n], 72)[0] == 0)
+            operation = bytes.fromhex(witness[-36:-4])
+            base = witness[:-36]
+            head, reservation = base + "head.ebc", base + "f.ebi"
+            holding_count = struct.unpack_from("<I", baselines[witness], 184)[0]
+            items_start = 192 + holding_count * 112
+            baseline_cases = []
+            def baseline_case(label, mutate):
+                baseline_cases.append((label, mutate))
+
+            def baseline_record(files):
+                name = "bucket-" + operation[:1].hex() + ".eai"
+                count = struct.unpack_from("<I", files[name], 68)[0]
+                row = next(n for n in range(count) if files[name][80 + n * 64:96 + n * 64] == operation)
+                segment, offset, size = struct.unpack_from("<III", files[name], 128 + row * 64)
+                segment_name = name[:-4] + "-" + str(segment) + ".eas"
+                value = bytearray(files[segment_name][80 + offset:80 + offset + size])
+                command_size = struct.unpack_from("<I", value, 48)[0]
+                return name, row, segment_name, offset, value, 74 + 52 + 16 + 48 + 4, 74 + command_size
+
+            def rewrite_baseline_record(files, mutate):
+                name, row, segment_name, offset, value, intent, plan = baseline_record(files)
+                mutate(value, intent, plan)
+                # Preserve every generic immutable binding so baseline semantics,
+                # rather than a broken outer checksum, decide these refusals.
+                normalized = bytearray(value[74:intent - 4])
+                normalized[4] = 1
+                normalized[31] = 0
+                normalized[32:40] = struct.pack("<Q", 1)
+                value[intent + 160:intent + 192] = hashlib.sha256(
+                    b"DURIS-ECONOMIC-COMMAND-V1\x00" + normalized).digest()
+                domain = value[74 + 24:74 + 28] + value[74 + 48:74 + 52] + value[74 + 68:intent - 4]
+                value[intent + 192:intent + 224] = hashlib.sha256(
+                    b"DURIS-ECONOMIC-DOMAIN-V1\x00" + domain).digest()
+                value[plan + 8:plan + 72] = value[intent + 32:intent + 96]
+                value[plan + 72] = value[intent + 26]
+                value[plan + 76:plan + 84] = value[intent + 96:intent + 104]
+                value[plan + 84:plan + 98] = value[intent + 12:intent + 26]
+                value[plan + 100] = value[intent + 27]
+                value[plan + 104:plan + 152] = value[intent + 112:intent + 160]
+                value[plan + 152:plan + 184] = hashlib.sha256(
+                    b"DURIS-ECONOMIC-INTENT-V1\x00" + value[intent:intent + 256]).digest()
+                value[plan + 184:plan + 216] = value[intent + 192:intent + 224]
+                value = rehash(value)
+                segment = bytearray(files[segment_name])
+                segment[80 + offset:80 + offset + len(value)] = value
+                files[segment_name] = rehash(segment)
+                change(files, name, 96 + row * 64, hashlib.sha256(value).digest())
+
+            def witness_change(files, offset, data):
+                encoded = bytearray(files[witness])
+                encoded[offset:offset + len(data)] = data
+                files[witness] = bytes(encoded)
+                def rebind(value, intent, plan):
+                    value[74 + 68 + 8:74 + 68 + 12] = struct.pack("<I", len(encoded))
+                    value[74 + 68 + 16:74 + 68 + 48] = hashlib.sha256(encoded).digest()
+                rewrite_baseline_record(files, rebind)
+
+            def reservation_change(files, offset, data):
+                change(files, reservation, offset, data)
+                change(files, head, 48 + 96 + 15 * 32, hashlib.sha256(files[reservation]).digest())
+
+            for name in sorted(n for n in baselines if n.startswith("baseline-")):
+                baseline_case("missing retained baseline " + name[-36:], lambda f, n=name: f.pop(n))
+            baseline_case("complete baseline namespace loss with retained receipts",
+                          lambda f: [f.pop(n) for n in list(f) if n.startswith("baseline-")])
+            def remove_roots(files):
+                for name in list(files):
+                    if name.startswith("bucket-"):
+                        files.pop(name)
+                change(files, "authority.eal", 48 + 16520, b"\x00" * 32)
+            baseline_case("book without retained receipts", remove_roots)
+            for label, offset, data in (
+                ("magic", 0, b"X"), ("version", 8, struct.pack("<I", 2)),
+                ("lineage", 48, b"\x63"), ("epoch", 64, b"\x63"),
+                ("opening kind", 48 + 32 + 18, struct.pack("<H", 1)),
+                ("opening lifetime", 48 + 32 + 20, struct.pack("<Q", 2)),
+                ("opening reserved", 48 + 32 + 36, b"\x01"),
+                ("zero revision", 120, b"\x00" * 8),
+                ("missing revision", 120, struct.pack("<Q", 2)),
+                ("future revision", 120, struct.pack("<Q", 4)),
+                ("maximum revision without witnesses", 120, struct.pack("<Q", 2**64 - 1)),
+                ("zero terminal", 128, b"\x00" * 16), ("foreign terminal", 128, b"\x63" * 16),
+                ("zero index digest", 144, b"\x00" * 32), ("wrong index digest", 144, b"\x63" * 32)):
+                baseline_case("baseline head " + label, lambda f, o=offset, d=data: change(f, head, o, d))
+            for label, offset, data in (
+                ("magic", 0, b"X"), ("version", 8, struct.pack("<I", 2)),
+                ("lineage", 48, b"\x63"), ("epoch", 64, b"\x63"),
+                ("slot", 80, struct.pack("<I", 14)), ("count", 84, struct.pack("<I", 1)),
+                ("capacity", 84, struct.pack("<I", 65537)),
+                ("kind", 88, struct.pack("<Q", 2)), ("zero id", 96, b"\x00" * 8),
+                ("wrong id", 96, struct.pack("<Q", 511)),
+                ("wrong operation", 104, b"\x63" * 16), ("zero operation", 104, b"\x00" * 16)):
+                baseline_case("baseline reservation " + label,
+                              lambda f, o=offset, d=data: reservation_change(f, o, d))
+            baseline_case("baseline duplicate reservation", lambda f: reservation_change(
+                f, 120, f[reservation][88:120]))
+            for name in (head, reservation, witness):
+                baseline_case("baseline truncated " + name[-8:], lambda f, n=name: f.update({n: f[n][:-1]}))
+                baseline_case("baseline trailing bytes " + name[-8:], lambda f, n=name: f.update({n: f[n] + b"\x00"}))
+                baseline_case("baseline checksum " + name[-8:], lambda f, n=name: f.update({n: f[n][:-1] + b"\x63"}))
+            # The witness digest, command binding, domain binding and plan metadata
+            # are rebound for each malformed origin. Raw witness semantics decide.
+            for label, offset, data in (
+                ("magic", 0, b"X"), ("version", 4, struct.pack("<H", 2)),
+                ("header size", 6, struct.pack("<H", 191)), ("total size", 8, b"\x00" * 4),
+                ("reserved", 12, b"\x01"), ("lineage", 16, b"\x63"),
+                ("epoch", 32, b"\x63"), ("preparation id", 48, b"\x63"),
+                ("actor", 64, struct.pack("<Q", 8)), ("batch", 72, struct.pack("<Q", 9)),
+                ("opening kind", 98, struct.pack("<H", 1)), ("opening lifetime", 100, b"\x00" * 8),
+                ("boundary digest", 120, b"\x00" * 32), ("coverage digest", 152, b"\x00" * 32),
+                ("holding capacity", 184, struct.pack("<I", 3072)),
+                ("item capacity", 188, struct.pack("<I", 6001)),
+                ("holding lineage", 192, b"\x63"), ("holding version", 208, b"\x02"),
+                ("holding kind", 210, struct.pack("<H", 9)),
+                ("negative balance", 232, struct.pack("<Q", 2**64 - 1)),
+                ("copper overflow", 344, struct.pack("<Q", 2**63 - 1)),
+                ("holding source digest", 272, b"\x00" * 32),
+                ("holding order", 192, baselines[witness][304:416]),
+                ("duplicate holding lifetime across kinds", 192 + 3 * 112 + 20, struct.pack("<Q", 255)),
+                ("item UID", items_start, b"\x00" * 8),
+                ("item order", items_start, baselines[witness][items_start + 88:items_start + 176]),
+                ("item owner", items_start + 8, b"\x00"),
+                ("absent item", items_start + 9, b"\x00"),
+                ("item reserved", items_start + 10, b"\x01"),
+                ("zero live owner", items_start + 16, b"\x00" * 8),
+                ("zero item root", items_start + 32, b"\x00" * 8),
+                ("live root mismatch", items_start + 32, struct.pack("<Q", 256)),
+                ("self parent", items_start + 40, struct.pack("<Q", 255)),
+                ("missing live parent", items_start + 88 + 40, struct.pack("<Q", 999)),
+                ("cross owner parent", items_start + 88 + 16, struct.pack("<Q", 8)),
+                ("cycle", items_start + 40, struct.pack("<Q", 256)),
+                ("destroyed zero revision", items_start + 2 * 88 + 48, b"\x00" * 8),
+                ("destroyed active owner", items_start + 2 * 88 + 8, b"\x01"),
+                ("pet context too large", items_start + 3 * 88 + 24, struct.pack("<Q", 2**31)),
+                ("collector context", items_start + 4 * 88 + 24, b"\x01"),
+                ("system owner", items_start + 5 * 88 + 16, b"\x01"),
+                ("item source digest", items_start + 56, b"\x00" * 32)):
+                baseline_case("baseline witness " + label,
+                              lambda f, o=offset, d=data: witness_change(f, o, d))
+            for label, offset, data in (
+                ("duplicate book revision", 64, struct.pack("<Q", 2)),
+                ("zero book revision", 64, b"\x00" * 8),
+                ("foreign book revision", 64, struct.pack("<Q", 2**64 - 1)),
+                ("source site", 74 + 28, struct.pack("<H", 5)),
+                ("deadline", 74 + 30, b"\x01"),
+                ("fence type", 74 + 52, b"\x01"),
+                ("fence id", 74 + 60, b"\x01"),
+                ("payload version", 74 + 26, b"\x02")):
+                baseline_case("baseline receipt " + label,
+                              lambda f, o=offset, d=data: rewrite_baseline_record(
+                                  f, lambda v, i, p: v.__setitem__(slice(o, o + len(d)), d)))
+            def record_intent_change(files, offset, data):
+                rewrite_baseline_record(files, lambda v, i, p: v.__setitem__(slice(i + offset, i + offset + len(data)), data))
+            for label, offset, data in (("policy", 16, struct.pack("<I", 2)),
+                                        ("compiler", 20, struct.pack("<I", 2)),
+                                        ("source preparation", 116, b"\x63"),
+                                        ("source sequence", 148, b"\x63")):
+                baseline_case("baseline intent " + label, lambda f, o=offset, d=data: record_intent_change(f, o, d))
+            def plan_change(files, offset, data):
+                rewrite_baseline_record(files, lambda v, i, p: v.__setitem__(slice(p + offset, p + offset + len(data)), data))
+            for label, offset, data in (
+                ("holding after", 256 + 72, b"\x63"),
+                ("holding before", 256 + 40, b"\x01"),
+                ("holding revision", 256 + 112, b"\x02"),
+                ("positive posting", 256 + 5 * 120 + 8, b"\x63"),
+                ("opening equity", 256 + 5 * 120 + 3 * 48 + 8, b"\x63"),
+                ("item snapshot", 256 + 5 * 120 + 6 * 48 + 16, b"\x63")):
+                baseline_case("baseline regenerated plan " + label,
+                              lambda f, o=offset, d=data: plan_change(f, o, d))
+            for name in (base + "0" * 32 + ".eab", base + "63" * 16 + ".eab",
+                         base + "f.ebi.tmp", base + "10.ebi", base + "F.ebi",
+                         base + operation.hex().upper() + ".eab", "baseline-malformed"):
+                baseline_case("untracked baseline filename " + name[-16:], lambda f, n=name: f.update({n: f[witness]}))
+            for label, mutate in baseline_cases:
+                files = dict(baselines)
+                mutate(files)
+                restore(files)
+                check(label, False)
+            for name in (head, reservation, witness):
+                restore(baselines)
+                (evidence / name).chmod(0o644)
+                check("nonprivate baseline " + name[-8:], False)
+                restore(baselines)
+                (evidence / name).unlink()
+                (evidence / name).symlink_to(evidence / witnesses[-1])
+                check("symlink baseline " + name[-8:], False)
+                restore(baselines)
+                os.link(evidence / name, evidence / "baseline-hardlink")
+                check("hardlinked baseline " + name[-8:], False)
+                restore(baselines)
+                (evidence / name).unlink()
+                os.mkfifo(evidence / name, 0o600)
+                check("FIFO baseline " + name[-8:] + " refuses without blocking", False)
+            restore(baselines)
+            check("native retained baseline books remain qualified", True)
+
+            restore({})
             subprocess.run([str(fixture), str(state), "source-claims"], env=environment, check=True)
             check("native cross-epoch claims and claimless rejected retry", True)
             sources = inventory(evidence)
