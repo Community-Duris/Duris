@@ -527,3 +527,20 @@ The source oracle now extracts the exact pulse/drain functions instead of includ
 ### Plan 1 qualification: real pooled bank reply loss and retained ACK
 
 The existing ambiguous-COMMIT bank case now enters the real coordinator with publication_required, hides exactly one real successful COMMIT reply, and requires replacement-session reconciliation, original-ID conflict refusal, retained restart readback and one publication ACK. Its one native wallet/bank effect, root, inbox/outbox and zero-held-lease assertions remain. The strict native bank binary d9e9119a748808c9ff055d1b55968102018f89d5899d561f62aedf658018e802 passes on MariaDB 10.11.14 and MySQL 8.0.46. Results: /opt/duris-plan1-qualification-20261004/p1-mariadb-1f915da1.9zGkki/bank/result.json and p1-mysql-1fcab7d2.TNBkdp/bank/result.json; each owned fixture's schema absence, server stop, identity and port rebind passed. Other SQL families/lifecycle failed separately and remain open; no game-wide or production authority was activated.
+
+### Plan 1 qualification: item topology refusal expectation
+
+The native item owner reproduced the dedicated ITEM_TRANSFER_TOPOLOGY_CARDINALITY
+refusal for the existing incomplete root/child handoff. The fixture previously
+expected generic EMSGSIZE. It now includes the existing error contract and checks
+that exact dedicated result; terminal refusal, all custody assertions and original
+cases are preserved. The corrected ASan/UBSan real-pool owner passes on MariaDB
+10.11.14 (4 seconds) and MySQL 8.0.46 (5 seconds), within the original 120-second
+runtime budget. Binary SHA256:
+52216a16da3e72040ba855c3a7519babd6c808e7e85fe9b97d785fe47535578d.
+Both native logs hash ab54436bac763fbec2a1705cfbecc601ad8ed6b806a3a7582d23b5881e0a42c1.
+Evidence roots: /opt/duris-plan1-qualification-20261004/p1-mariadb-d99e77d6.cmzbPu
+and p1-mysql-b96aebe6.taMU9X (item/result.json). The wrapper verified schema removal,
+owned process shutdown and both ports reusable. Production bytes remain identical
+to the V4 strict-build candidate. This fixture repair does not establish active
+ordinary-drop gameplay/restart or complete Plan 1.
