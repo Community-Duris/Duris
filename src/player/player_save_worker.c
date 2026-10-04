@@ -31,6 +31,9 @@ namespace
 struct queued_snapshot
 {
 	player_snapshot snapshot;
+	// Revision bookkeeping may narrow after an older ACK. It must not mutate
+	// the encoded identity of a receipt-bearing journal frame.
+	player_component_mask_t claimed_components = 0;
 	uint64_t queued_at_usec = 0;
 	unsigned int retry_count = 0;
 };
@@ -140,6 +143,12 @@ bool valid_snapshot(const player_snapshot &snapshot)
 	       !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
 	       snapshot.encoded_size_bound &&
 	       snapshot.encoded_size_bound <= PLAYER_SNAPSHOT_MAX_BYTES;
+}
+
+bool requires_sealed_identity(const player_snapshot &snapshot)
+{
+	return snapshot.death || !snapshot.quest_xp_receipts.empty() ||
+	       !snapshot.spell_effect_receipts.empty() || !snapshot.craft_receipts.empty();
 }
 
 void queue_ready_locked(int pid)
@@ -396,12 +405,14 @@ bool promote_pending_locked(int pid, pid_slot &slot)
 	    (slot.pending->snapshot.components & revision.queued_components) !=
 		    revision.queued_components)
 		return false;
-	/* An older exact ACK may remove a redundantly captured bit from the newer queued
-	 * identity. The value rows stay sealed; the authoritative mask narrows safely. */
-	slot.pending->snapshot.components = revision.queued_components;
+	// Keep the original typed body for repository application and journal ACK.
+	// Ordinary snapshots retain their existing narrowed-mask behavior.
+	if (!requires_sealed_identity(slot.pending->snapshot))
+		slot.pending->snapshot.components = revision.queued_components;
 	if (!player_revision_begin_inflight(pid, slot.pending->snapshot.revision,
-					    slot.pending->snapshot.components))
+					    revision.queued_components))
 		return false;
+	slot.pending->claimed_components = revision.queued_components;
 	slot.active = std::move(slot.pending);
 	slot.dispatched = false;
 	slot.deferred_original = false;
@@ -558,9 +569,9 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 				slots.erase(inserted.first);
 				return player_save_submit_result::revision_state_mismatch;
 			}
-			// Existing ordinary/typed mask behavior is unchanged here; preserving
-			// exact typed journal identity is a separate prerequisite.
-			snapshot.components = revision_state.queued_components;
+			if (!requires_sealed_identity(snapshot))
+				snapshot.components = revision_state.queued_components;
+			job->claimed_components = revision_state.queued_components;
 			job->snapshot = std::move(snapshot);
 			job->queued_at_usec = now_usec();
 			retained_bytes += job->snapshot.encoded_size_bound;
@@ -615,7 +626,7 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 			queue_ready_locked(snapshot.pid);
 			if (!player_revision_fail_inflight(slot.active->snapshot.pid,
 							   slot.active->snapshot.revision,
-							   slot.active->snapshot.components) ||
+							   slot.active->claimed_components) ||
 			    !player_revision_begin_inflight(snapshot.pid, snapshot.revision,
 							    snapshot.components))
 			{
@@ -623,6 +634,7 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 					cancel_ready_locked(snapshot.pid);
 				return player_save_submit_result::revision_state_mismatch;
 			}
+			pending->claimed_components = snapshot.components;
 		}
 		pending->snapshot = std::move(snapshot);
 		pending->queued_at_usec = now_usec();
@@ -705,6 +717,9 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 			continue;
 
 		pid_slot &slot = found->second;
+		// The worker result identifies the full sealed request. Public completion
+		// and revision ACK/failure expose only the mask this job actually claimed.
+		completion.components = slot.active->claimed_components;
 		const uint64_t ack_at = now_usec();
 		account_completion_locked(completion, ack_at);
 		bool finished = false;

@@ -837,7 +837,7 @@ flatfile production binary SHA-256
 f0c37cd6d62caef1a5481ba90b28c74592cd5a4206f10f473481fc4ff2414964.
 The separate observer binary supplies exact native readback only under a test
 macro; production does not enable it. The original frozen broad result remains
-831 passed, 11 skipped and 17 failed; a current-head broad run and full R1ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œR8
+831 passed, 11 skipped and 17 failed; a current-head broad run and full R1ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“R8
 qualification remain required. Release and activation remain blocked.
 
 
@@ -2871,3 +2871,32 @@ Plan 1 fixtures must retain the existing 13 fault cases and add second-phase
 inspection START loss/OOM/rollback refusal plus late retirement after resolution.
 The old 0055 owner and qualification remain historical. Plan 1, writer evidence,
 activation and release gates remain open.
+
+### Sealed worker identity implementation; Plan 1 tests deferred
+
+The worker now keeps a receipt-bearing or death snapshot's original component
+mask after journal append. A separate internal claimed mask records the narrower
+revision obligation after an older exact ACK. Initial admission, pending
+promotion, undispatched replacement, retry/failure and public completion use the
+claim for revision bookkeeping; repository application and journal ACK retain the
+sealed original body. Ordinary saves keep their existing narrowed-mask behavior.
+No receipt, death body, revision or public completion interface is invented.
+
+The source failure is the old assignment to `snapshot.components` at admission
+and promotion after append: the canonical typed journal ACK compares the encoded
+original body and refuses the changed mask. Immutable BEFORE manifest
+`tmp/worker-sealed-identity-before-v2.local/manifest.json` is SHA-256
+`d8d661504f138955954edd6156e22f388682be8578e182f6ecda82e171c2a604`,
+base `541f938499a7919bbc3ed3397c58076a6bf927a5`. Regression fixture preparation
+is independent; no compiler/native/SQL/gameplay qualification is run. This source
+implementation remains unqualified until the Plan 1 failure/fix batch.
+
+Shop retention slice `672389002` is integrated locally: stable operation ownership,
+canonical receipt retention, staged physical publication and started/returned
+handler fences. Its 37 prepared cases per SQL-header/flat profile are unexecuted.
+Schema-2 accounting admission, complete literal payload and cold-replay ownership
+remain shared dependencies. Recovery V3 has 18 unexecuted SQL cases, retaining the
+original 300-second compile/120-second aggregate runtime limits; preparation
+receipt `tmp/sql-recovery-cleanup-owner-prepared-v3.local.json` is SHA-256
+`386a9a75f93b58370c336863ec351b6911fdb6a5948ca3f24204af28274cc5a2`.
+No route, R1-R8, activation or release gate is promoted by source integration.
