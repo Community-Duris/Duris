@@ -1,5 +1,6 @@
 #include "combat/spell_wards.h"
 #include "combat/damage.h"
+#include "cmd/interp.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
 #include "magic/spells.h"
@@ -9,6 +10,7 @@
 #include "world/events.h"
 #include "world/falling.h"
 #include "world/specs.prototypes.h"
+#include "world/vnum.obj.h"
 
 #include <algorithm>
 #include <cassert>
@@ -19,16 +21,18 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 
 // Production ward/spell/codec units run against deterministic event and world
 // services. These fixtures do not claim to exercise SQL or the network loop.
 unsigned long long ne_event_tick = 100;
 P_nevent current_nevent = nullptr;
-index_data indexes[2] = {};
+index_data indexes[8] = {};
 P_index obj_index = indexes;
-int top_of_objt = 1;
+int top_of_objt = 7;
 P_char character_list = nullptr;
 P_room world = nullptr;
+extern const int top_of_world = 1;
 extern const int rev_dir[] = { 2, 3, 0, 1, 5, 4, 8, 9, 6, 7 };
 extern const racial_data_type racial_data[LAST_RACE + 1] = {};
 Skill skills[MAX_SKILLS] = {};
@@ -37,6 +41,13 @@ static bool dispel_save = false;
 static bool dispel_resist = false;
 static int dispel_save_checks = 0;
 static int dispel_damage_rolls = 0;
+static int portal_coin = 0;
+static int item_destroy_roll = 0;
+static int legacy_dispel_calls = 0;
+static P_char anchor_owner = nullptr;
+static P_obj portal_action_object = nullptr;
+static int portal_action_command = 0;
+static std::vector<std::pair<int, int>> number_requests;
 static std::map<P_char, std::string> transcript;
 static std::set<P_obj> decayed_objects;
 time_info_data age(P_char)
@@ -75,6 +86,7 @@ bool resists_spell(P_char, P_char)
 	return dispel_resist;
 }
 void logit(const char *, const char *, ...) {}
+void debug(const char *, ...) {}
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...)
 {
 	std::abort();
@@ -91,17 +103,74 @@ bool ac_can_see(P_char, P_char, bool)
 {
 	return true;
 }
-int invoke_object_special(P_obj, P_char, int, char *)
+int invoke_object_special(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	return 0;
+	if (cmd == CMD_DISPEL)
+		++legacy_dispel_calls;
+	return obj_index[obj->R_num].func.obj(obj, ch, cmd, arg);
 }
-int real_object(int)
+int real_object(int vnum)
 {
-	return 0;
+	for (int i = 0; i <= top_of_objt; ++i)
+		if (indexes[i].virtual_number == vnum)
+			return i;
+	return -1;
 }
-int number(int low, int)
+int real_room(int vnum)
 {
+	for (int i = 0; i <= top_of_world; ++i)
+		if (world[i].number == vnum)
+			return i;
+	return NOWHERE;
+}
+int number(int low, int high)
+{
+	number_requests.emplace_back(low, high);
+	if (low == 0 && high == 1)
+		return portal_coin;
+	if (low == 0 && high == 4)
+		return item_destroy_roll;
 	return low;
+}
+int is_Raidable(P_char, char *, int)
+{
+	return false; // Portal actions must remain available to non-raidable characters.
+}
+char *get_player_name_from_pid(int pid)
+{
+	static char name[] = "anchor owner";
+	return anchor_owner && GET_PID(anchor_owner) == pid ? name : nullptr;
+}
+P_char get_char_online(char *, bool)
+{
+	return anchor_owner;
+}
+P_char find_player_by_pid(int pid)
+{
+	return anchor_owner && GET_PID(anchor_owner) == pid ? anchor_owner : nullptr;
+}
+obj_affect *get_obj_affect(P_obj obj, int type)
+{
+	for (auto af = obj->affects; af; af = af->next)
+		if (af->type == type)
+			return af;
+	return nullptr;
+}
+void set_obj_affected(P_obj obj, int duration, sh_int spell, sh_int)
+{
+	auto af = new obj_affect{};
+	af->type = spell;
+	af->next = obj->affects;
+	obj->affects = af;
+	add_event(event_obj_affect, duration, nullptr, nullptr, obj, 0, &af, sizeof(af));
+}
+int portal_general_internal(P_obj obj, P_char, int cmd, char *, portal_action_messages *messages)
+{
+	assert(cmd != CMD_DISPEL);
+	assert(messages);
+	portal_action_object = obj;
+	portal_action_command = cmd;
+	return TRUE;
 }
 int dice(int count, int sides)
 {
@@ -112,6 +181,8 @@ int dice(int count, int sides)
 void Decay(P_obj obj)
 {
 	assert(decayed_objects.insert(obj).second);
+	if (OBJ_ROOM(obj) && obj_index[obj->R_num].func.obj)
+		invoke_object_special(obj, nullptr, CMD_DECAY, nullptr);
 	for (auto timer = obj->nevents; timer;)
 	{
 		auto next = timer->next_obj_nev;
@@ -127,7 +198,8 @@ void Decay(P_obj obj)
 			link = &(*link)->next_content;
 		assert(*link == obj);
 		*link = obj->next_content;
-		room.dir_option[obj->value[1]]->exit_info &= ~(EX_WALLED | EX_BREAKABLE);
+		if (obj->R_num == real_object(VOBJ_WALLS))
+			room.dir_option[obj->value[1]]->exit_info &= ~(EX_WALLED | EX_BREAKABLE);
 	}
 }
 void event_obj_affect(P_char, P_char, P_obj obj, void *)
@@ -413,73 +485,438 @@ static void test_dispel_walls(P_char caster)
 	rooms[1].dir_option[2] = &exits[1];
 	exits[0].to_room = 1;
 	exits[1].to_room = 0;
-	for (int trial : { 0, 1, 2 })
+	for (int kind = WALL_OF_FLAMES; kind <= WALL_OF_AIR; ++kind)
 	{
-		obj_data walls[2]{}, unrelated{};
-		obj_affect expiry[2]{};
+		if (kind == WALL_OUTPOST)
+			continue; // The untimed outpost case below covers its one-point wear.
+		for (int trial : { 0, 1, 2 })
+		{
+			obj_data walls[2]{}, unrelated{};
+			obj_affect expiry[2]{};
+			decayed_objects.clear();
+			for (int i = 0; i < 2; ++i)
+			{
+				walls[i].loc_p = LOC_ROOM;
+				walls[i].loc.room = i;
+				walls[i].value[0] = rooms[1 - i].number;
+				walls[i].value[1] = i ? 2 : 0;
+				walls[i].value[2] = trial == 2 ? 10 : 400;
+				walls[i].value[3] = kind;
+				walls[i].value[4] = 100;
+				walls[i].value[5] = trial == 1 ? pc.pid : 123;
+				rooms[i].contents = &walls[i];
+				exits[i].exit_info = EX_WALLED | EX_BREAKABLE;
+				expiry[i].type = TAG_OBJ_DECAY;
+				walls[i].affects = &expiry[i];
+				auto payload = &expiry[i];
+				add_event(event_obj_affect, 1800, nullptr, nullptr, &walls[i], 0,
+					  &payload, sizeof(payload));
+			}
+			unrelated = walls[1];
+			unrelated.nevents = nullptr;
+			unrelated.affects = nullptr;
+			unrelated.value[5] = 999;
+			unrelated.next_content = &walls[1];
+			rooms[1].contents = &unrelated;
+			caster->in_room = 0;
+			transcript.clear();
+			spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, nullptr,
+					   &walls[0]);
+			if (trial == 0)
+			{
+				assert(decayed_objects.empty());
+				assert(walls[0].value[2] == 386 && walls[1].value[2] == 386);
+				assert(ne_event_time(walls[0].nevents) == 1500);
+				assert(ne_event_time(walls[1].nevents) == 1500);
+				assert(transcript[caster].find("weakens") != std::string::npos);
+				ne_event_tick += 100;
+				caster->in_room = 1;
+				spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, nullptr,
+						   &walls[1]);
+				assert(walls[0].value[2] == 372 && walls[1].value[2] == 372);
+				assert(ne_event_time(walls[0].nevents) == 1100 &&
+				       ne_event_time(walls[1].nevents) == 1100);
+				nevent_reschedule_after(nevent_handle_from_event(walls[0].nevents),
+							100);
+				nevent_reschedule_after(nevent_handle_from_event(walls[1].nevents),
+							100);
+				spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, nullptr,
+						   &walls[1]);
+			}
+			assert(decayed_objects.size() == 2);
+			assert(decayed_objects.count(&walls[0]) &&
+			       decayed_objects.count(&walls[1]));
+			assert(!walls[0].nevents && !walls[1].nevents);
+			assert(!(exits[0].exit_info & (EX_WALLED | EX_BREAKABLE)));
+			assert(!(exits[1].exit_info & (EX_WALLED | EX_BREAKABLE)));
+			assert(rooms[1].contents == &unrelated);
+			assert(transcript[caster].find(trial == 1 ? "dispels" : "breaks") !=
+			       std::string::npos);
+		}
+	}
+	// Untimed physical walls retain exactly their legacy strength damage;
+	// Dispel Magic does not create a decay event or add another damage packet.
+	for (int kind : { WALL_OUTPOST, WALL_OF_STONE })
+	{
+		obj_data walls[2]{};
 		decayed_objects.clear();
+		number_requests.clear();
 		for (int i = 0; i < 2; ++i)
 		{
 			walls[i].loc_p = LOC_ROOM;
 			walls[i].loc.room = i;
 			walls[i].value[0] = rooms[1 - i].number;
 			walls[i].value[1] = i ? 2 : 0;
-			walls[i].value[2] = trial == 2 ? 10 : 400;
-			walls[i].value[3] = WALL_OF_STONE;
+			walls[i].value[2] = 400;
+			walls[i].value[3] = kind;
 			walls[i].value[4] = 100;
-			walls[i].value[5] = trial == 1 ? pc.pid : 123;
+			walls[i].value[5] = 123;
 			rooms[i].contents = &walls[i];
-			exits[i].exit_info = EX_WALLED | EX_BREAKABLE;
-			expiry[i].type = TAG_OBJ_DECAY;
-			walls[i].affects = &expiry[i];
-			auto payload = &expiry[i];
-			add_event(event_obj_affect, 1800, nullptr, nullptr, &walls[i], 0, &payload,
-				  sizeof(payload));
 		}
-		unrelated = walls[1];
-		unrelated.nevents = nullptr;
-		unrelated.affects = nullptr;
-		unrelated.value[5] = 999;
-		unrelated.next_content = &walls[1];
-		rooms[1].contents = &unrelated;
-		caster->in_room = 0;
-		transcript.clear();
 		spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, nullptr, &walls[0]);
-		if (trial == 0)
-		{
-			assert(decayed_objects.empty());
-			assert(walls[0].value[2] == 386 && walls[1].value[2] == 386);
-			assert(ne_event_time(walls[0].nevents) == 1500);
-			assert(ne_event_time(walls[1].nevents) == 1500);
-			assert(transcript[caster].find("weakens") != std::string::npos);
-			ne_event_tick += 100;
-			caster->in_room = 1;
-			spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, nullptr,
-					   &walls[1]);
-			assert(walls[0].value[2] == 372 && walls[1].value[2] == 372);
-			assert(ne_event_time(walls[0].nevents) == 1100 &&
-			       ne_event_time(walls[1].nevents) == 1100);
-			nevent_reschedule_after(nevent_handle_from_event(walls[0].nevents), 100);
-			nevent_reschedule_after(nevent_handle_from_event(walls[1].nevents), 100);
-			spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, nullptr,
-					   &walls[1]);
-		}
-		assert(decayed_objects.size() == 2);
-		assert(decayed_objects.count(&walls[0]) && decayed_objects.count(&walls[1]));
-		assert(!walls[0].nevents && !walls[1].nevents);
-		assert(!(exits[0].exit_info & (EX_WALLED | EX_BREAKABLE)));
-		assert(!(exits[1].exit_info & (EX_WALLED | EX_BREAKABLE)));
-		assert(rooms[1].contents == &unrelated);
-		assert(transcript[caster].find(trial == 1 ? "dispels" : "breaks") !=
-		       std::string::npos);
+		const int legacy_damage = kind == WALL_OUTPOST ? 1 : 14;
+		assert(walls[0].value[2] == 400 - legacy_damage);
+		assert(walls[1].value[2] == 400 - legacy_damage);
+		assert(!walls[0].nevents && !walls[1].nevents && decayed_objects.empty());
+		assert(number_requests.size() == (kind == WALL_OUTPOST ? 1 : 2));
 	}
+	obj_data mundane{};
+	mundane.R_num = 7;
+	mundane.affected[0].modifier = 12;
+	number_requests.clear();
+	spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, nullptr, &mundane);
+	assert(mundane.affected[0].modifier == 12 && !mundane.nevents);
+	assert(number_requests.empty() && decayed_objects.empty());
 	caster->only.pc = nullptr;
 	caster->in_room = 0;
 	world = nullptr;
 }
 
+static void test_dispel_portals(P_char caster)
+{
+	room_data rooms[2]{};
+	world = rooms;
+	rooms[0].number = 101;
+	rooms[1].number = 102;
+	const int old_level = GET_LEVEL(caster);
+	for (int kind : { 2, 3, 4 })
+	{
+		for (int trial = 0; trial < 11; ++trial)
+		{
+			obj_data portals[2]{}, unrelated{}, duplicate{};
+			obj_affect expiry[2]{};
+			decayed_objects.clear();
+			transcript.clear();
+			number_requests.clear();
+			legacy_dispel_calls = 0;
+			portal_coin = trial == 2 ? 1 : 0;
+			caster->player.level = trial == 0			       ? 45 :
+					       trial == 1 || trial == 9 || trial == 10 ? 46 :
+					       trial == 2			       ? 49 :
+											 50;
+			for (int i = 0; i < 2; ++i)
+			{
+				portals[i].R_num = kind;
+				portals[i].loc_p = LOC_ROOM;
+				portals[i].loc.room = i;
+				portals[i].extra2_flags = ITEM2_MAGIC;
+				portals[i].value[0] = rooms[1 - i].number;
+				portals[i].value[1] = RACE_HUMAN;
+				portals[i].value[2] = 20;
+				portals[i].value[3] = 56;
+				portals[i].value[4] = 3;
+				portals[i].value[5] = 2;
+				portals[i].value[6] = 1;
+				portals[i].value[7] = 777;
+				portals[i].timer[0] = 999;
+				portals[i].timer[1] = 1000;
+				rooms[i].contents = &portals[i];
+				if (trial != 9)
+				{
+					expiry[i].type = TAG_OBJ_DECAY;
+					portals[i].affects = &expiry[i];
+					auto af = &expiry[i];
+					add_event(event_obj_affect,
+						  trial == 10 ? 1 :
+						  i	      ? 160 :
+								120,
+						  nullptr, nullptr, &portals[i], 0, &af,
+						  sizeof(af));
+				}
+			}
+			unrelated = portals[1];
+			unrelated.nevents = nullptr;
+			unrelated.affects = nullptr;
+			unrelated.value[7] = 888;
+			unrelated.next_content = &portals[1];
+			rooms[1].contents = &unrelated;
+			if (trial == 5)
+				portals[0].value[0] =
+					9999; // Invalid destination must not index world[-1].
+			if (trial == 6)
+				portals[1].value[0] =
+					9999; // Same ID without a reciprocal link is not a pair.
+			if (trial == 7)
+				unrelated.next_content =
+					nullptr; // Missing counterpart must not fall through.
+			if (trial == 8)
+			{
+				duplicate = portals[1];
+				duplicate.nevents = nullptr;
+				duplicate.affects = nullptr;
+				duplicate.next_content = rooms[1].contents;
+				rooms[1].contents = &duplicate;
+			}
+			// The old thresholds depend on character level, not the spell's level.
+			spell_dispel_magic(1, caster, nullptr, SPELL_TYPE_SPELL, nullptr,
+					   &portals[0]);
+			const bool blocked = trial == 0 || (trial >= 5 && trial <= 8) || trial == 9;
+			if (blocked)
+			{
+				assert(decayed_objects.empty());
+				if (trial != 9)
+				{
+					assert(ne_event_time(portals[0].nevents) == 120);
+					assert(ne_event_time(portals[1].nevents) == 160);
+				}
+				else
+					assert(!portals[0].nevents && !portals[1].nevents);
+			}
+			else if (trial == 1)
+			{
+				assert(decayed_objects.empty());
+				assert(ne_event_time(portals[0].nevents) == 108);
+				assert(ne_event_time(portals[1].nevents) == 108);
+				assert(transcript[caster].find("shortening") != std::string::npos);
+				ne_event_tick += 10;
+				spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, nullptr,
+						   &portals[1]);
+				assert(ne_event_time(portals[0].nevents) == 88);
+				assert(ne_event_time(portals[1].nevents) == 88);
+			}
+			else
+			{
+				assert(decayed_objects.size() == 2);
+				assert(decayed_objects.count(&portals[0]) &&
+				       decayed_objects.count(&portals[1]));
+				assert(!portals[0].nevents && !portals[1].nevents);
+				assert(transcript[caster].find(trial == 10 ? "exhausts" :
+									     "dispels") !=
+				       std::string::npos);
+			}
+			assert(!decayed_objects.count(&unrelated) &&
+			       !decayed_objects.count(&duplicate));
+			assert(legacy_dispel_calls == 0);
+			for (auto &portal : portals)
+			{
+				assert(portal.extra2_flags == ITEM2_MAGIC);
+				assert(portal.value[2] == 20 && portal.value[3] == 56);
+				assert(portal.value[4] == 3 && portal.value[5] == 2 &&
+				       portal.value[6] == 1);
+				assert(portal.timer[0] == 999 && portal.timer[1] == 1000);
+				while (portal.nevents)
+					nevent_cancel(nevent_handle_from_event(portal.nevents));
+			}
+			for (auto request : number_requests)
+				assert(request.first == 0 && request.second == 1);
+			if (GET_LEVEL(caster) == 50 || trial == 0)
+				assert(number_requests.empty());
+		}
+	}
+	caster->player.level = old_level;
+	portal_coin = 0;
+	world = nullptr;
+}
+
+static void test_portal_actions_without_raid_equipment()
+{
+	char_data traveler{};
+	traveler.specials.position = POS_STANDING | STAT_NORMAL;
+	assert(!is_Raidable(&traveler, nullptr, 0));
+	obj_data portal{};
+	char argument[] = "portal";
+	for (auto handler : { portal_door, portal_wormhole, portal_etherportal })
+	{
+		for (int command : { CMD_ENTER, CMD_LOOK })
+		{
+			transcript.clear();
+			portal_action_object = nullptr;
+			portal_action_command = 0;
+			assert(handler(&portal, &traveler, command, argument) == TRUE);
+			assert(portal_action_object == &portal && portal_action_command == command);
+			assert(transcript[&traveler].empty());
+		}
+	}
+}
+
+static void test_dispel_stone_anchors(P_char caster)
+{
+	room_data rooms[2]{};
+	world = rooms;
+	char_data owner{};
+	pc_only_data pc{};
+	pc.pid = 555;
+	owner.only.pc = &pc;
+	owner.specials.position = POS_STANDING | STAT_NORMAL;
+	anchor_owner = &owner;
+	for (int kind : { 5, 6 })
+	{
+		for (int remaining : { 3000, 300, 80, 1, -1, -2 })
+		{
+			obj_data anchor{};
+			obj_affect expiry{};
+			anchor.R_num = kind;
+			anchor.loc_p = LOC_ROOM;
+			anchor.loc.room = 0;
+			anchor.value[0] = pc.pid;
+			rooms[0].contents = &anchor;
+			decayed_objects.clear();
+			transcript.clear();
+			number_requests.clear();
+			legacy_dispel_calls = 0;
+			const int spell = kind == 5 ? SPELL_MOONSTONE : SPELL_BLOODSTONE;
+			affected_type tracking{};
+			tracking.type = spell;
+			tracking.flags = AFFTYPE_NODISPEL | AFFTYPE_NOSAVE | AFFTYPE_NOAPPLY;
+			tracking.duration = 10;
+			affect_to_char(&owner, &tracking);
+			if (remaining != -2)
+			{
+				expiry.type = TAG_OBJ_DECAY;
+				anchor.affects = &expiry;
+				if (remaining >= 0)
+				{
+					auto af = &expiry;
+					add_event(event_obj_affect, remaining, nullptr, nullptr,
+						  &anchor, 0, &af, sizeof(af));
+				}
+			}
+			spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, nullptr, &anchor);
+			assert(legacy_dispel_calls == 0 && number_requests.empty());
+			if (remaining == 1)
+				assert(decayed_objects.count(&anchor));
+			else
+			{
+				const int expected = remaining == 3000 ? 300 :
+						     remaining == 300  ? 270 :
+						     remaining == 80   ? 72 :
+									 1;
+				assert(ne_event_time(anchor.nevents) == expected);
+				assert(transcript[caster].find("shortening") != std::string::npos);
+				// The shortened deadline runs the normal object decay callback,
+				// which notifies the owner and removes the tracking affect.
+				auto timer = anchor.nevents;
+				ne_event_tick = timer->due_tick;
+				current_nevent = timer;
+				timer->func(nullptr, nullptr, &anchor, timer->data);
+				current_nevent = nullptr;
+				nevent_cancel(nevent_handle_from_event(timer));
+			}
+			assert(!owner.affected && !anchor.nevents);
+			assert(transcript[&owner].find("fades to nothingness") !=
+			       std::string::npos);
+			if (remaining == -2)
+				delete anchor
+					.affects; // Only this fixture asks set_obj_affected to allocate.
+		}
+		// Preserve the deliberate ordinary-enchantment continuation and its
+		// one-in-five destruction roll for anchors bearing ITEM2_MAGIC.
+		for (int destruction_roll : { 0, 1 })
+		{
+			obj_data anchor{};
+			obj_affect expiry{};
+			anchor.R_num = kind;
+			anchor.loc_p = LOC_ROOM;
+			anchor.loc.room = 0;
+			anchor.value[0] = pc.pid;
+			anchor.extra2_flags = ITEM2_MAGIC;
+			anchor.affected[0].modifier = 12;
+			rooms[0].contents = &anchor;
+			expiry.type = TAG_OBJ_DECAY;
+			anchor.affects = &expiry;
+			auto af = &expiry;
+			add_event(event_obj_affect, 3000, nullptr, nullptr, &anchor, 0, &af,
+				  sizeof(af));
+			decayed_objects.clear();
+			item_destroy_roll = destruction_roll;
+			spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, nullptr, &anchor);
+			if (destruction_roll == 0)
+				assert(decayed_objects.count(&anchor) && !anchor.nevents);
+			else
+			{
+				assert(decayed_objects.empty() &&
+				       ne_event_time(anchor.nevents) == 300);
+				assert(!(anchor.extra2_flags & ITEM2_MAGIC) &&
+				       anchor.affected[0].modifier == 0);
+				nevent_cancel(nevent_handle_from_event(anchor.nevents));
+			}
+		}
+	}
+	item_destroy_roll = 0;
+	anchor_owner = nullptr;
+	world = nullptr;
+}
+
+void run_portal_owner_check(P_char, P_obj, bool);
+static void test_portal_owner_lifetime()
+{
+	room_data rooms[2]{};
+	rooms[0].number = 101;
+	rooms[1].number = 102;
+	world = rooms;
+	char_data owner{};
+	pc_only_data pc{};
+	pc.pid = 555;
+	owner.only.pc = &pc;
+	anchor_owner = &owner;
+	for (int trial : { 0, 1, 2, 3 })
+	{
+		obj_data portal{};
+		portal.R_num = 2;
+		portal.loc_p = LOC_ROOM;
+		portal.loc.room = 0;
+		portal.value[0] = 102;
+		rooms[0].contents = &portal;
+		decayed_objects.clear();
+		owner.in_room = trial == 0 ? 0 : trial == 1 || trial == 3 ? 1 : NOWHERE;
+		// The other end has disappeared; the surviving owner's check must
+		// not dereference an extracted portal. Either destination remains an
+		// allowed owner position until this side's own expiry runs.
+		auto other = new obj_data{};
+		other->R_num = 2;
+		other->loc_p = LOC_ROOM;
+		other->loc.room = 1;
+		rooms[1].contents = other;
+		Decay(other);
+		delete other;
+		decayed_objects.clear();
+		run_portal_owner_check(&owner, &portal, trial == 3);
+		if (trial < 2)
+		{
+			assert(decayed_objects.empty() &&
+			       ne_event_time(portal.nevents) == WAIT_SEC);
+			nevent_cancel(nevent_handle_from_event(portal.nevents));
+		}
+		else
+			assert(decayed_objects.count(&portal) && !portal.nevents);
+	}
+	anchor_owner = nullptr;
+	world = nullptr;
+}
+
 int main()
 {
+	indexes[0].virtual_number = VOBJ_WALLS;
+	indexes[2].virtual_number = 751;
+	indexes[2].func.obj = portal_door;
+	indexes[3].virtual_number = 770;
+	indexes[3].func.obj = portal_wormhole;
+	indexes[4].virtual_number = 780;
+	indexes[4].func.obj = portal_etherportal;
+	indexes[5].virtual_number = 419;
+	indexes[5].func.obj = moonstone;
+	indexes[6].virtual_number = 433;
+	indexes[6].func.obj = moonstone;
 	char_data attacker{}, victim{}, second{};
 	for (int spell :
 	     { SPELL_MINOR_GLOBE, SPELL_SPIRIT_WARD, SPELL_GREATER_SPIRIT_WARD, SPELL_GLOBE })
@@ -724,6 +1161,10 @@ int main()
 	dispel_save = false;
 	test_dispel_durations(&attacker, &victim);
 	test_dispel_walls(&attacker);
+	test_dispel_portals(&attacker);
+	test_portal_actions_without_raid_equipment();
+	test_dispel_stone_anchors(&attacker);
+	test_portal_owner_lifetime();
 
 	// Score identifies both sources even if the broken equipment pool is first.
 	cast(&victim, SPELL_GLOBE, 8);
