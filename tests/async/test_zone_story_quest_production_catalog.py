@@ -1729,7 +1729,91 @@ assert obj_bodies[27039].split("~")[4].split()[0]=="13"
 assert (ROOT/"areas/shp/halfcut.shp").read_text(encoding="utf8").startswith("#27072~\nN\n27006\n27010\n27011\n27046\n27047\n27048\n0")
 assert "flaming" not in inventory_items[27037]["name"] and "flaming" in inventory_items[27046]["name"]
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut"):
+# Scorched Valley's exact deliveries retain supplied proof and foreign ownership.
+# Native lifecycle/dispatch facts are evidence for pending repairs, not repaired here.
+scorch=inventory_module.area_evidence(ROOT,"scorchvalley")
+scorch_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="scorchvalley")
+scorch_stories={s["id"]:s for s in scorch_map["stories"]}
+assert (scorch_map["schema_version"],scorch_map["revision"],scorch_map["coverage"])==(3,1,"complete")
+assert len(scorch_stories)==9 and len(scorch_map["contacts"])==22 and not scorch_map["exclusions"]
+assert sum(t.get("optional",False) for s in scorch_stories.values() for t in s["steps"])==22
+assert (len(scorch["requests"]),len(scorch["dialogue"]),len(scorch["mobs"]),len(scorch["items"]),len(scorch["reset_commands"]))==(9,11,60,55,211)
+assert [(a["kind"],a["vnum"],a["function"]) for a in scorch["special_assignments"]]==[
+    ("mob",71223,"block_up"),("mob",71259,"yeenoghu"),("obj",71231,"artifact_invisible")]
+bindings=[b for s in scorch_stories.values() for b in s["contracts"]]
+assert len(bindings)==9 and {tuple(sorted(b.items())) for b in bindings}=={
+    tuple(sorted(r["block"]["binding"].items())) for r in scorch["requests"]}
+assert all(s["steps"][-1]["contracts"]==s["contracts"] for s in scorch_stories.values())
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==712]
+assert (len(units),sum(u["achievement"] for u in units),sum(u["daily_candidate"] for u in units))==(9,9,9)
+by_line={r["block"]["line"]:r["block"] for r in scorch["requests"]}
+assert all(all(k=="I" for k,n in b["give"]) and b["binding"]["completion_key"].endswith("disappear=0") for b in by_line.values())
+for line,required,reward in (
+    (23,[71205],[71218]),(89,[71212],[71213]),(113,[71227,71009,28980],[71226]),
+    (129,[71228],[71230]),(165,[71219,71203,71204],[71220]),(181,[71250],[71251]),
+    (206,[71240],[71235]),(228,[71239],[71224,71244,71245,71246]),
+    (256,[71224,71244,71245,71246],[71248])):
+    assert by_line[line]["give"]==[("I",v) for v in required]
+    assert by_line[line]["receive"]==[("I",v) for v in reward]
+    assert all(v in inventory_items for v in required+reward)
+assert scorch_stories["wildmage-four-rings"]["steps"][0]["contracts"]==scorch_stories["seeker-tallin-blood"]["contracts"]
+assert [t["item_vnums"] for t in scorch_stories["seeker-tallin-blood"]["steps"][:-1]]==[
+    [71201],[71206],[71208],[71236],[71237],[71239]]
+contacts={c["mob_vnum"]:c for c in scorch_map["contacts"]}
+for v,c in contacts.items():
+    assert c["keyword"] in scorch["mobs"][v]["keywords"] and len(c["topics"])<=32
+    native=set(t for b in scorch["dialogue"] if b["giver_vnum"]==v for t in b["body"][0].rstrip("~").split())
+    assert set(c["topics"])<=native
+for b in scorch["dialogue"]:
+    assert set(b["body"][0].rstrip("~").split())&set(contacts[b["giver_vnum"]]["topics"])
+assert len(contacts[71236]["topics"])==31
+assert "stays" in scorch_stories["council-godly-magic"]["summary"]
+parent=room=None;sources=collections.defaultdict(list);families=set()
+assert collections.Counter(r["command"] for r in scorch["reset_commands"])=={
+    "M":114,"F":31,"E":22,"G":15,"D":14,"O":9,"P":6}
+for r in scorch["reset_commands"]:
+    c,v=r["command"],r["arguments"]
+    assert v[4]==100 and v[5:]==[0,0,0]
+    if c in ("M","F"):parent,room=v[1],v[3]
+    families.add((c,tuple(v[:3]),parent if c in ("G","E") else None))
+    if c in ("G","E"):sources[v[1]].append((parent,room,v[2]))
+assert len(families)==118
+for item,npc,room in ((71201,71201,71203),(71206,71232,71277),(71208,71234,71279),
+    (71236,71254,71281),(71237,71236,71283),(71203,71214,71244),(71204,71213,71243),
+    (71227,71210,71242),(71240,71255,71223),(71212,71246,71323),(71228,71248,71326)):
+    assert sources[item]==[(npc,room,1)]
+assert sources[71214]==[(71244,71321,1)] # E after an F belongs to Miska, not the Queen.
+assert not sources[71215]
+for area,item,npc,room in (("torg",28980,28937,29077),("fields_between",71009,71038,71151)):
+    parent=location=None;found=[]
+    for r in inventory_module.area_evidence(ROOT,area)["reset_commands"]:
+        c,v=r["command"],r["arguments"]
+        if c in ("M","F"):parent,location=v[1],v[3]
+        if c in ("G","E") and v[1]==item:found.append((parent,location,v[2]))
+    assert found==[(npc,room,1)]
+room_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/wld/scorchvalley.wld").read_text(encoding="utf8"),re.M|re.S)}
+assert set(room_bodies)==set(range(71201,71333))
+assert len({(b.split("~")[0].strip(),b.split("~")[1].strip()) for b in room_bodies.values()})==78
+for room,target in ((71201,576166),(71326,9122),(71330,29071),(71331,71140)):
+    assert f"0 0 {target}" in room_bodies[room]
+for room,key,target in ((71203,71201,71204),(71267,71206,71270),(71279,71208,71280),(71281,71236,71282)):
+    assert f"3 {key} {target}" in room_bodies[room]
+obj_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/obj/scorchvalley.obj").read_text(encoding="utf8"),re.M|re.S)}
+for v,target in ((71209,71310),(71210,71284)):
+    values=list(map(int,obj_bodies[v].split("~")[4].split()[:15]))
+    assert values[0]==25 and values[11:14]==[target,7,-1]
+assert list(map(int,obj_bodies[71238].split("~")[4].split()[:15]))[11:14]==[500,29,71237]
+assert obj_bodies[71212].split("~")[4].split()[0]=="13"
+assert not (ROOT/"areas/shp/scorchvalley.shp").exists()
+assert [r["arguments"][1:4] for r in scorch["reset_commands"] if r["command"]=="P" and r["arguments"][1] in (71239,71250)]==[[71250,1,71249],[71239,1,71238]]
+# Preserve the identified native dispatch evidence; a future intentional repair
+# should replace these assertions with its focused executable qualification.
+scorch_special=(ROOT/"src/specs/specs.scorchvalley.c").read_text(encoding="utf8")
+boss=scorch_special.split("int yeenoghu(",1)[1]
+assert "if (cmd == CMD_SET_PERIODIC)\n\t\treturn FALSE;" in boss and "if (cmd)\n\t\treturn FALSE;" in boss
+assert "#define CMD_MOB_COMBAT -102" in (ROOT/"src/cmd/interp.h").read_text(encoding="utf8")
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

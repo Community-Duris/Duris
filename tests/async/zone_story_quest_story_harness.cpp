@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 63 &&
+		require(catalog.story_mappings.size() == 64 &&
 				tracker.summary_for(7, 42).total == 1690,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -3828,6 +3828,127 @@ int main(int argc, char **argv)
 				recovered_halfcut.progress_for_zone(7, 42, 270).completed == 13 &&
 				recovered_halfcut.progress_for_zone(7, 42, 270).total == 13,
 			"Halfcut frozen receipt recovery changed independent identity or invented an extra campaign");
+
+		const auto &scorch_map = *std::find_if(
+			catalog.story_mappings.begin(), catalog.story_mappings.end(),
+			[](const auto &mapping) { return mapping.source_area == "scorchvalley"; });
+		const auto &scorch_blood = story_for("scorchvalley", "seeker-tallin-blood");
+		const auto &scorch_rings = story_for("scorchvalley", "wildmage-four-rings");
+		const auto &scorch_heads = story_for("scorchvalley", "advisor-three-heads");
+		service supplied_scorch(catalog);
+		require(supplied_scorch.discover_zone(7, 42, 712, 71201, 100, "arrival") ==
+					result::applied &&
+				supplied_scorch.render_journal(7, 42, 712, 10, 1, 101, false, false)
+						.find("] " + scorch_rings.title + "\r\n") ==
+					std::string::npos,
+			"Scorched discovery revealed an unmet wildmage request");
+		require(supplied_scorch.meet_npc(7, 42, 71253, 29071, 101) == result::rejected &&
+				supplied_scorch.meet_npc(7, 42, 71256, 71140, 101) ==
+					result::rejected &&
+				supplied_scorch.discover_zone(7, 42, 289, 29071, 100, "arrival") ==
+					result::applied &&
+				supplied_scorch.discover_zone(7, 42, 710, 71140, 100, "arrival") ==
+					result::applied,
+			"Scorched foreign encounter bypassed physical discovery or valid arrival failed");
+		for (const auto &contact : scorch_map.contacts)
+		{
+			const int room = contact.mob_vnum == 71253 ? 29071 :
+					 contact.mob_vnum == 71256 ? 71140 :
+								     71201;
+			require(supplied_scorch.meet_npc(7, 42, contact.mob_vnum, room, 101) ==
+					result::applied,
+				"Scorched fixture foreign/local encounter failed");
+		}
+		const auto scorch_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Scorched journal section missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		for (int item : { 71224, 71244, 71245, 71246, 71239, 71227, 71009, 28980 })
+			supplies.carried[item] = 1;
+		const auto scorch_before = supplied_scorch.serialize_state();
+		journal = supplied_scorch.render_journal(7, 42, 712, 10, 1, 102, false, false,
+							 &supplies);
+		for (const auto *entry : { &scorch_blood, &scorch_rings, &scorch_heads })
+			require(scorch_section(*entry).find("Next: " + entry->steps.back().text) !=
+					std::string::npos,
+				"Scorched supplied proof was blocked by personal keys, history or foreign campaign");
+		require(scorch_section(scorch_rings)
+						.find("[Pending] " +
+						      scorch_rings.steps.front().text) !=
+					std::string::npos &&
+				scorch_section(scorch_blood)
+						.find("[Missing now] " +
+						      scorch_blood.steps.front().text) !=
+					std::string::npos &&
+				supplied_scorch.serialize_state() == scorch_before &&
+				supplied_scorch.progress_for_zone(7, 42, 712).total == 9 &&
+				supplied_scorch.progress_for_zone(7, 42, 712).completed == 0,
+			"Scorched optional route checks granted access, history or credit");
+		for (const auto &step : scorch_rings.steps)
+		{
+			if (step.kind != "carried_item")
+				continue;
+			const auto item = step.item_vnums.front();
+			supplies.carried.erase(item);
+			supplies.equipped[14] = item;
+			supplies.carried[71205] = 4;
+			journal = supplied_scorch.render_journal(7, 42, 712, 10, 1, 103, false,
+								 false, &supplies);
+			require(scorch_section(scorch_rings).find("[Missing now] " + step.text) !=
+					std::string::npos,
+				"Scorched worn or heirloom proof replaced an exact colored ring");
+			supplies.equipped.clear();
+			supplies.carried[item] = 1;
+		}
+		supplies.carried.erase(71227);
+		supplies.carried[71240] = 1;
+		journal = supplied_scorch.render_journal(7, 42, 712, 10, 1, 104, false, false,
+							 &supplies);
+		require(scorch_section(scorch_heads)
+					.find("[Missing now] " + scorch_heads.steps.front().text) !=
+				std::string::npos,
+			"Scorched other commander's magic substituted for the accepted head");
+		record(supplied_scorch, scorch_blood.contracts.front(), "scorch-blood", 712, 71140);
+		supplies.carried.erase(71224);
+		journal = supplied_scorch.render_journal(7, 42, 712, 10, 1, 105, false, false,
+							 &supplies);
+		require(scorch_section(scorch_rings)
+						.find("[Recorded] " +
+						      scorch_rings.steps.front().text) !=
+					std::string::npos &&
+				scorch_section(scorch_rings)
+						.find("[Missing now] " +
+						      scorch_rings.steps[1].text) !=
+					std::string::npos &&
+				supplied_scorch.progress_for_zone(7, 42, 712).completed == 1 &&
+				supplied_scorch.progress_for_zone(7, 42, 710).completed == 0,
+			"Scorched producer history restored spent rings, completed necklace or transferred ownership");
+		service independent_scorch(catalog);
+		record(independent_scorch, scorch_rings.contracts.front(), "scorch-supplied-rings",
+		       712, 71264);
+		record(independent_scorch,
+		       story_for("scorchvalley", "council-godly-magic").contracts.front(),
+		       "scorch-council", 712, 29071);
+		service restored_scorch(catalog);
+		require(restored_scorch.deserialize_state(independent_scorch.serialize_state(),
+							  &error) &&
+				restored_scorch.progress_for_zone(7, 42, 712).completed == 2 &&
+				restored_scorch.progress_for_zone(7, 42, 289).completed == 0,
+			"Scorched supplied necklace/council recovery invented producer or foreign credit");
+		for (const auto &entry : scorch_map.stories)
+			if (entry.id != scorch_rings.id &&
+			    entry.id != story_for("scorchvalley", "council-godly-magic").id)
+				record(restored_scorch, entry.contracts.front(), entry.id.c_str(),
+				       712, 71283);
+		service recovered_scorch(catalog);
+		require(recovered_scorch.deserialize_state(restored_scorch.serialize_state(),
+							   &error) &&
+				recovered_scorch.progress_for_zone(7, 42, 712).completed == 9 &&
+				recovered_scorch.progress_for_zone(7, 42, 712).total == 9,
+			"Scorched frozen recovery changed independent identity or invented an extra campaign");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

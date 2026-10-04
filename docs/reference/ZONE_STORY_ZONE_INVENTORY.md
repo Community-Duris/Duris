@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 63 authored journals.
+2668 distinct Q contracts; 64 authored journals.
 
 Regenerate with:
 
@@ -192,7 +192,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Village of Refugees (`ruins`) | 2 | 11 | 0 | Fallback | [1 × a pitch-black raven's feather; 1 × a bright white feather; 1 × a red-tailed hawk's feather; other required items → a soft feathered ring](../../areas/qst/ruins.qst#L16) | — |
 | Sarmiz'Duul (`sarmiz`) | 8 | 12 | 6 | Yes | [1 × a scroll covered with magical formulas; 1 × a demon's heart; 1 × a bag of magical dust; other required items → a staff of power](../../areas/qst/sarmiz.qst#L328) | crew_shop_proc, erzul_proc, inn, money_changer, ship_shop_proc |
 | The Savannah of Broken Trusts (`savannah`) | 17 | 17 | 6 | Yes | [3 × an elephant's tusk → an ivory curio](../../areas/qst/savannah.qst#L406) | — |
-| The Scorched Valley (`scorchvalley`) | 9 | 11 | 4 | Fallback | [1 × the red ring of perfection; 1 × the blue ring of perfection; 1 × the green ring of perfection; other required items → a necklace of perfection](../../areas/qst/scorchvalley.qst#L256) | artifact_invisible, block_up, yeenoghu |
+| The Scorched Valley (`scorchvalley`) | 9 | 11 | 4 | Yes | [1 × the red ring of perfection; 1 × the blue ring of perfection; 1 × the green ring of perfection; other required items → a necklace of perfection](../../areas/qst/scorchvalley.qst#L256) | artifact_invisible, block_up, yeenoghu |
 | Sea Kingdom (`seakngdm`) | 1 | 1 | 0 | Fallback | [1 × a half of a silver amulet → a sapphire eye](../../areas/qst/seakngdm.qst#L9) | SeaKingdom_Tsunami, glowing_necklace |
 | The Great Shaboath (`shabo`) | 2 | 7 | 0 | Fallback | [1 × a sphere of crystallized magic; 1 × a sphere of crystallized magic; 1 × a sphere of crystallized magic; other required items → an insubstantial key](../../areas/qst/shabo.qst#L87) | aboleth_pendant, artifact_invisible, artifact_stone, cyvrand_shout, finslayer_air, flayed_mind_mask |
 | Shady Grove (`shady`) | 3 | 5 | 0 | Yes | [1 × a diamond-studded collar → the blood sword of the ancients](../../areas/qst/shady.qst#L11) | hardworking_fisherman, inn, orcish_jailkeeper, orcish_woman, pet_shops, stray_dog |

@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 63 authored journals, accounting-gated player surfaces, starter/town
+**Status: 64 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -15,7 +15,9 @@ Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
 the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
 Ship Yards, Ultarium, the Surface Realm, Tharnadia, Mini Zones and the City
 of Torrhan, Golden Hall of the Crown, Ashrumite Village and The Hall of the
-Ancients, Sarmiz'Duul, Duke Delwyn, Home of the Divine and The Halfcut Hills now have complete source story maps; their active-world journeys remain unqualified. Savannah projects seventeen
+Ancients, Sarmiz'Duul, Duke Delwyn, Home of the Divine, The Halfcut Hills and
+The Scorched Valley now have complete source story maps; their active-world
+journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
 checks. The [Savannah dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md)
@@ -522,6 +524,31 @@ wandering, inn/shop and epic teacher bindings are real; source generation,
 recipient episodes and successful access need committed journeys. Neither
 unbound defender nor blowgun procedure is newly enabled. The exact fix/news
 handoff is recorded separately from journal guidance and pending proposals.
+
+The Scorched Valley's [comprehensive dossier](zone-stories/THE_SCORCHED_VALLEY.md)
+covers nine deliveries/eleven addressed families, 132 rooms, sixty mobiles,
+fifty-five objects and 211 resets/118 families. Revision one adds nine
+independent outcomes, twenty-two contacts and twenty-two optional checks.
+Shield, temple, inner-sanctum, vault and chest keys explain the blood route;
+blood gives four distinct rings, then those rings give a necklace. Supplied
+blood/rings fit without enforcing a personal route. The advisor is both the
+final chest-key holder and the recipient of three other requests; qualify
+source and recipient episodes without making a receipt restore a dead NPC.
+
+Foreign heads, Mount Banishment essence and Torg/Fields Between recipient
+encounters retain Scorched Valley ownership. Physical-room discovery must
+precede those encounters, as normal arrival does. The runtime hint still
+points to the physical area's journal; plan an owning-journal referral without
+auto-discovering a remote area or changing credit. Sack-captive, society membership,
+bodyguard resummoning and council curse are narrative state, not checked
+transactions. Actual banner holders precede F followers; pit hide is ground
+proof rather than a skinning event. Contact topic selection spans all native
+families within the existing display limit. Yeenoghu rejects combat dispatch
+and declines periodic scheduling; restoration, outer attack-loop safety and
+balance remain a separate planned repair. Commander-head and departure text
+also need deliberate fixes. Full Rod of Seven Parts lore has no reviewed
+assembly/finale terminal. This checkpoint ships no native repair or new
+event/schema path; actual future repairs require clear fix commits and news.
 
 ## Accounting requirement and delivery sequence
 
@@ -1234,7 +1261,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 178 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 177 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1257,6 +1284,18 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
 
 
+- [x] Complete Scorched Valley's nine-delivery/eleven-addressed source dossier:
+  nine independent outcomes, twenty-two contacts/twenty-two optional checks,
+  complete 118 reset families, distinct heads/banners/colors, real temple key
+  chain and foreign source/recipient ownership. Native repairs remain pending.
+- [ ] Qualify the advisor's chest-key/recipient episode, nested blood/cart
+  sources and actual foreign encounters. Route encounter hints to discovered
+  owning journals, with honest referral when the owner is unknown; preserve
+  physical discovery and save rollback. Choose truthful commander-head and
+  departure text, or explicit alternative/lifecycle design. Restore Yeenoghu
+  through one intended dispatch path with callback safety and live balance
+  proof in a separate fix. Add actual captive/resummon/society/curse or rod
+  assembly/finale endpoints only after builder design and accepted transactions.
 - [x] Complete The Halfcut Hills' thirteen-delivery/fifteen-addressed source
   dossier: thirteen independent outcomes, nineteen contacts/twenty-four optional
   checks, exact miner/badge/note/scalp variants, all 177 reset families and
@@ -1480,6 +1519,7 @@ contract classification; it does not claim complete objective coverage.
 | Duke Delwyn | 1 | Complete: six independent deliveries/five paid services | [Source-comprehensive dossier](zone-stories/DUKE_DELWYN.md); nineteen contacts/all nine addressed families and seventeen optional checks | Six achievements/potential dailies; four paid textile stages and coin service guarded; live access/source/episodes open | Exact bell/cog, banner, knight and two-item warning; trap/falling/container lineage, atomic fees, occasion/service/peaceful handover decisions pending; no native repair ships |
 | Home of the Divine | 1 | Complete: twenty independent outcomes/twelve crafting or access services | [Source-comprehensive dossier](zone-stories/HOME_OF_THE_DIVINE.md); 27 contacts/all nineteen useful addressed families and 48 optional checks | Twenty potential candidates do not certify missing bounty reward, fresh scale or source supply; six mixed fees guarded | Exact four tokens/seven hearts/nine treasures, competing token and Pure-Dark receipts; missing reward/preflight, duplicate stock, touch/enter/prison/trap/falls, rare wandering and retiring episodes pending; no native repair ships |
 | The Halfcut Hills | 1 | Complete: thirteen independent deliveries | [Source-comprehensive dossier](zone-stories/THE_HALFCUT_HILLS.md); nineteen contacts/all fifteen addressed families and twenty-four optional checks | Thirteen potential candidates do not guarantee stock or missing drow payout | Exact miner/badge/note and competing scalp guidance; separate crossbow scheduler/continuation fix ships. Missing reward/preflight, real rescue/branch/attempt, source/container/wandering and grab/say/enter/pull qualification pending |
+| The Scorched Valley | 1 | Complete: nine independent deliveries | [Source-comprehensive dossier](zone-stories/THE_SCORCHED_VALLEY.md); twenty-two contacts/all eleven addressed families and twenty-two optional checks | Nine potential candidates still require live stock/access/payout qualification | Five-key blood route → four colors → necklace; foreign heads/essence/recipients, advisor source/recipient episode and narrative state boundaries. Yeenoghu dispatch/safety/balance, clue/departure fixes and rod/finale design remain pending; no native repair ships |
 
 ## Twin Towers evidence and decisions
 

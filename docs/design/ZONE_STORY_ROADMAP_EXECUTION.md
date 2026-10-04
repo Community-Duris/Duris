@@ -98,9 +98,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 40 | Duke Delwyn | [Comprehensive source dossier](zone-stories/DUKE_DELWYN.md): 53 blocks/eleven exchanges/nine addressed + 33 ambient families, 207 rooms/96 mobs/41 objects, 278 resets/170 families; automatic teacher/shared trap/falling and reciprocal surface boundary | Revision one: six outcomes/five paid services, nineteen contacts/seventeen optional checks; exact bell/cog, four-stage banner, knight and two-item warning guidance | No native repair ships; mixed/coin payments guarded, live source/container lineage, trap/fall/safe return, occasion/advertised service/peaceful handover and campaign decisions pending |
 | 41 | Home of the Divine | [Comprehensive source dossier](zone-stories/HOME_OF_THE_DIVINE.md): all 52 blocks/32 exchanges/twenty raw M families, 122 rooms/62 mobs/83 objects/one shop, 240 resets/156 families; shared item teleport, shop/forge and epic teacher | Revision one: twenty outcomes/twelve services, 27 contacts/48 optional checks; exact tokens/hearts/treasures, independent crafting/access and foreign returns | No native repair ships; missing bounty reward/preflight, guarded scale/six mixed fees, two-copy weapon supply, rare wandering, access/trap/fall/container and recipient episodes pending |
 | 42 | The Halfcut Hills | [Comprehensive source dossier](zone-stories/THE_HALFCUT_HILLS.md): 28 blocks/thirteen deliveries/fifteen addressed, 470 rooms/83 mobs/sixty objects/one shop, 413 resets/177 families; bound crossbow plus shared switch/teleport/inn/shop/epic teacher | Revision one: thirteen independent outcomes, nineteen contacts/twenty-four optional checks; exact miners/badges/note and competing trophies | Separate crossbow scheduler/continuation fix ships; missing drow reward/preflight, source/recipient/container/wandering/access, real home arrival and branch/attempt campaign decisions pending |
-| 43–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 43 | The Scorched Valley | [Comprehensive source dossier](zone-stories/THE_SCORCHED_VALLEY.md): twenty blocks/nine deliveries/eleven addressed; 132 rooms/sixty mobs/fifty-five objects/no local shop, 211 resets/118 families; three literal assignments and shared keys/container/rifts/artifact/combat | Revision one: nine outcomes, twenty-two contacts/twenty-two optional checks; exact foreign proof and blood-to-four-colors-to-necklace | No native repair ships. Advisor source/recipient episode, foreign encounters, nested/access evidence, Yeenoghu dispatch/safety/balance, truthful clue/departure and rod/state/finale design pending |
+| 44–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Scorched Valley (`scorchvalley`).
+The next area is Court of the Muse (`court`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -109,6 +110,8 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-SCORCH-ACCESS / EPISODES / OWNERSHIP | Five distinct keys lead to a locked, pickproof blood chest. Final key holder is advisor/recipient for three other requests. Bodyguard/recipients have foreign holding routes; exact Grog/Zuzon heads come from foreign zones. | Qualify key/open/container ancestry and source/recipient replacement episodes. Physical-room discovery is required and normal arrival supplies it; the immediate hint still uses the physical journal. Plan an owning-journal referral without remote discovery or changed credit, preserving supplied proof and contract ownership. |
+| ZSQ-SCORCH-DISPATCH / CONTENT / STATE | Yeenoghu rejects CMD_MOB_COMBAT and declines periodic registration; outer whirlwind/fetid traversal needs callback continuation review before activation. Head clue promises either commander but only one supplies accepted head; Q206 says departure without D. Captive/resummon/society/curse and rod/finale are narrative or lack endpoints. | Separate dispatch/safety/balance fix and truthful text or builder-selected actual alternatives/lifecycle. Define real entity/effect/assembly/finale transactions before new credit. No native repair ships; every implemented repair requires clear fix/news reporting. Curated contact topics cover all families without increasing the current limit. |
 | ZSQ-HALFCUT-REWARD / RESCUE / EPISODES | Drow request literally names absent item 25000 after potion 27056; reward item admission lacks loadability preflight. Four jar declarations support three miners/Bartis; acceptance retires recipients without home arrival. Bartis badge bundle must precede final jar in the same episode; faction scalps compete with six-proof delivery. | Builder selects intended reward; add pre-consumption/new-credit preflight preserving frozen obligations, then a separate native recipe fix. Qualify jar/container/scalp source generations and retiring NPC episodes. Select narrative rescue versus atomic movement, branch/attempt/all-stage policy without rejecting supplied independent proof. |
 | ZSQ-HALFCUT-PROCEDURES / ACCESS | Bound crossbow setup/periodic bug and unsafe continuation are repaired in a separate fix commit. Defender/blowgun procedures remain unbound; blowgun has a similar setup issue. Real switches/teleports use grab, say, enter and pull, with same-name stones; inn/teacher have shared bindings. | Qualify live volley balance/reset/combat accounting; choose placement/balance before enabling unbound hazards. Test numbered stone lookup, switch/opening/key/travel/fall and safe arrival, four jar ancestry and wandering encounters. Review distinct scalp aliases and spelling as separate future fix/news work; do not invent access/history achievements. |
 | ZSQ-DIVINE-REWARD / SCALE / SETTLEMENT | Relazier bounty names missing object 31341; native admission does not validate reward-item loadability before offering consumption. Generic scale 392 has an inactive-accounting-only death source. Six mixed crafting fees stay guarded; Wicks's item-only cash rewards already have a durable path. | Builder selects intended bounty reward. Add pre-consumption item preflight/new-credit guard while preserving frozen obligations, then a distinct tested native recipe fix. Qualify recoverable scale death issuance and atomic fee/XP/output settlement; do not conflate reward cash with paid services or weaken guards. |
@@ -2056,3 +2059,67 @@ All 2668 definitions, revision-two fingerprint, registry and other 62 maps
 remain unchanged. Catalog: 63 maps/1690 achievements/1490 potential dailies/
 2225 rows. Original 220-area order remains intact: first 42 comprehensive,
 178 pending. Continue with The Scorched Valley.
+
+## The Scorched Valley completed source map — October 3, 2026
+
+The [dossier](zone-stories/THE_SCORCHED_VALLEY.md) explains all twenty native
+blocks: nine Q and eleven addressed M. Complete review covers 132 rooms/
+seventy-eight prose/seventeen headers/seventeen metadata/eighty-three exit
+families, sixty mobiles, fifty-five objects and 211 resets/118 families. No
+local shop exists. Reviewed all three literal assignments, shared combat and
+periodic dispatch, artifact effect, keys/containers, item rifts, F follower
+ancestry, wandering, foreign producers and native settlement/recovery.
+
+Revision one has nine independent outcomes, twenty-two contacts and twenty-two
+optional checks. Survivor heirloom, captive sack, three exact heads, bodyguard
+essence, collector banners/hide and charm, council component, blood and four
+rings retain exact native identities. All recipients stay after acceptance.
+One reward object is named two bubbles. Two same-named commanders carry
+different head/magic proof; the pit hide is ground proof, not a skinning event.
+Five keys explain the temple blood route; the final chest key is carried by
+the advisor who receives three other requests. Killing him can remove those
+interactions until replacement. Supplied keys/blood/rings fit without enforced
+personal source history; earlier receipts cannot restore NPCs or spent proof.
+
+Bodyguard essence leads from a holding source into Mount Banishment. Council
+advisor and seeker lead into Torg and Fields Between. Grog and Zuzon provide
+foreign heads. The accepted contracts remain Scorched Valley outcomes even
+when a recipient is encountered elsewhere; qualify actual visibility, arrival,
+recovery and completion instead of deriving ownership from room location. Physical-area discovery is
+required before encounters, and normal arrival supplies it. The immediate
+runtime hint still points to the physical journal; plan an owning-journal
+referral for discovered owners and honest guidance for unknown owners,
+without auto-discovering remote areas or changing contract credit.
+
+**Pending actual repairs, none shipped:** Yeenoghu's bound procedure rejects
+the server's -102 combat command and declines periodic scheduling. Ordinary
+combat/gear exist, but the authored heal/breath/whirlwind/bite lack a normal
+dispatch path. Choose one intended cadence and qualify actor/target callback
+survival, outer room traversal, each branch and live balance/accounting before
+restoration. The commander-head clue exceeds the one exact accepted source,
+and council-advisor runs-off text conflicts with disappear=0. Prefer truthful
+text or deliberate builder-selected alternatives/lifecycle, with separate
+fix commits and prominent PR/news trigger/before-after/proof entries.
+
+Sack-captive, resummoning, society membership and a council curse narrate state
+without actual entity/effect transactions. The Rod of Seven Parts is one full
+weapon object with no reviewed active reset/producer/assembly/finale terminal.
+Keep that as lore until intended sources and endpoints are designed. The worn
+fog wisp has actual say-invisible cooldown behavior, and the two enter-rifts
+have reciprocal destinations; neither is a delivery receipt. Holding exits
+can strand mobiles, and rare prose is not a rare reset percentage. Live
+distribution and actual source generations need qualification before repair.
+
+Advisor forty-six native aliases exceed the thirty-two-topic display bound.
+Its contact selects thirty-one valid aliases covering all five families; the
+index keeps every alias. No parser/schema expansion is needed to show useful
+clues. Focused fixtures cover exact terms/families/source parents/access values,
+supplied four-color proof, optional history, spent/wrong/worn proof, read-only
+rendering, independent receipts and cold recovery. Synthetic receipts do not
+certify an actual chest/foreign/captive/boss or full-accounting journey.
+
+All 2668 definitions, revision-two fingerprint, registry and other sixty-three
+maps remain unchanged. Catalog: 64 maps/1690 achievements/1490 potential
+dailies/2225 rows. Original 220-area order stays intact: first forty-three
+source-comprehensive, 177 pending. Continue with Court of the Muse. Journal
+guidance and pending findings must not be reported as restored native gameplay.

@@ -177,6 +177,28 @@ struck-player warning. Unbound hazards, reward and minor
 alias/spelling proposals remain pending. Journal additions are not native
 quest repairs.
 
+Scorched Valley's [dossier](../design/zone-stories/THE_SCORCHED_VALLEY.md)
+shows a five-key route to blood, four exact colored rewards and a separate
+necklace delivery. Keys and producer history are optional guidance when
+supplied proof fits; possession does not prove opening or first recovery.
+The advisor carries the chest key and receives three other requests, so
+source and recipient episode policy matters. Foreign holding routes and
+foreign trophies do not transfer contract ownership to the encounter room.
+Qualify actual visibility, travel, container ancestry and accepted delivery.
+Physical-room discovery precedes an encounter; normal runtime arrival records
+it. The current immediate hint still uses the physical area's journal, so
+an owning-journal referral needs qualification without remote auto-discovery
+or changed credit. Keep the actual discovery guard in fixtures and runtime.
+
+Captive sack, resummoned bodyguard, society membership, curse and rod/battle
+finale need real supported state/terminal transactions before objective credit.
+Two same-named commanders carry different proof; native acceptance outranks
+an overly broad clue. Keep all useful dialogue families on a contact card,
+selecting valid synonyms within its thirty-two-topic limit; source indices
+retain every native alias. Yeenoghu's dispatch/safety/balance and truthful
+clue/departure work are pending actual repairs. This journal ships no native
+fix; later repairs need identifiable fix commits and clear PR/news evidence.
+
 ## Schema version 1
 
 Version 1 remains supported. Use version 2 or 3 for new starter and hometown
