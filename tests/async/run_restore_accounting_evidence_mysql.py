@@ -49,7 +49,8 @@ fixture = os.environ.get("DURIS_PLAN5_COIN_FIXTURE")
 if fixture:
     fixture_path = Path(fixture).resolve()
     assert any(fixture_path.is_relative_to((ROOT / directory).resolve()) for directory in
-               ("bin/tests/plan5-sql-baseline-restore-coins", "bin/tests/plan5-sql-baseline-restore-canonical"))
+               ("bin/tests/plan5-sql-baseline-restore-coins", "bin/tests/plan5-sql-baseline-restore-canonical",
+                "bin/tests/plan5-retained-namespace-coins", "bin/tests/plan5-retained-namespace-canonical"))
     payload = fixture_path.read_bytes()
     assert len(payload) <= 1024 * 1024
     offset = 0
@@ -138,6 +139,10 @@ def damaged(query, repair, code, params=None, repair_params=None, broken_fk=Fals
         execute(query, params)
     finally:
         execute("SET SESSION FOREIGN_KEY_CHECKS=1")
+    assert scalar("SELECT @@SESSION.foreign_key_checks") == 1
+    with reader.cursor() as cursor:
+        cursor.execute("SELECT @@SESSION.foreign_key_checks")
+        assert cursor.fetchone()[0] == 1
     old_money_checks()
     refused(code)
     try:
@@ -274,6 +279,19 @@ try:
     before = captured()
     old_money_checks()
     admitted()
+    # Valid ordinary capsules cannot replace their retained lifecycle namespace.
+    # The fixture owner models a damaged import; every reader keeps FK checks on.
+    damaged("DELETE FROM economic_lineage_state WHERE lineage=%s",
+            "INSERT INTO economic_lineage_state(lineage) VALUES(%s)",
+            "restore_economic_lineage_mismatch", (LINEAGE,))
+    epoch_created = scalar("SELECT created_at FROM economic_epoch WHERE lineage=X'" + LINEAGE.hex() +
+                           "' AND epoch=X'" + EPOCH.hex() + "'")
+    damaged("DELETE FROM economic_epoch WHERE lineage=%s AND epoch=%s",
+            "INSERT INTO economic_epoch(lineage,epoch,ordinal,transition_kind,transition_digest,"
+            "creating_operation_id,created_at) VALUES(%s,%s,1,1,%s,%s,%s)",
+            "restore_economic_epoch_mismatch", (LINEAGE, EPOCH),
+            (LINEAGE, EPOCH, bytes(32), OP, epoch_created), broken_fk=True)
+    assert captured() == before
     if os.environ.get("DURIS_PLAN5_CANONICAL_EVIDENCE") == "1":
         assert native_blocks, "canonical checks require actual native capsules"
         damaged("UPDATE economic_accounting_operation SET canonical_intent=CONCAT(UNHEX('00'),"
