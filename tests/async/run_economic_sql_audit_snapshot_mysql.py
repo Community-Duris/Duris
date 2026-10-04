@@ -25,16 +25,25 @@ from test_reconcile_economy_accounting import malformed_sources, source_identity
 
 INSTALL = bytes.fromhex("77" * 16)
 
+private_socket = (os.environ.get("DB_SOCKET", "").startswith("/plan5-restore-baseline-") and
+                  os.environ.get("TEST_DB_DISPOSABLE") == "1" and os.environ.get("ENVIRONMENT") == "test")
 if (os.environ.get("ECONOMIC_ACCOUNTING_DISPOSABLE_SCHEMA") != "1" or
-        os.environ.get("DB_HOST") != "127.0.0.1" or os.environ.get("DB_SOCKET")):
+        os.environ.get("DB_HOST") != "127.0.0.1" or (os.environ.get("DB_SOCKET") and not private_socket)):
     raise SystemExit("explicit disposable loopback database required")
 
 settings = {"host": "127.0.0.1", "port": int(os.environ.get("DB_PORT", "3306")),
             "user": os.environ["DB_USER"], "password": os.environ["DB_PASSWORD"],
             "autocommit": True, "cursorclass": pymysql.cursors.DictCursor,
             "connect_timeout": 5, "read_timeout": 20, "write_timeout": 5}
+if private_socket:
+    settings.pop("host")
+    settings.pop("port")
+    settings["unix_socket"] = os.environ["DB_SOCKET"]
 schema = "economic_schema_test_snapshot_" + uuid.uuid4().hex
 reader = "audit_" + uuid.uuid4().hex[:12]
+reader_host = "localhost" if private_socket else "127.0.0.1"
+transport_args = (["--socket", settings["unix_socket"]] if private_socket else
+                  ["--port", str(settings["port"])])
 assert re.fullmatch(r"economic_schema_test_snapshot_[0-9a-f]{32}", schema)
 assert re.fullmatch(r"audit_[0-9a-f]{12}", reader)
 
@@ -135,8 +144,8 @@ admin = pymysql.connect(**settings)
 try:
     with admin.cursor() as cursor:
         cursor.execute(f"CREATE DATABASE `{schema}`")
-        cursor.execute(f"CREATE USER '{reader}'@'127.0.0.1' IDENTIFIED BY 'disposable-audit-only'")
-        cursor.execute(f"GRANT SELECT ON `{schema}`.* TO '{reader}'@'127.0.0.1'")
+        cursor.execute(f"CREATE USER '{reader}'@'{reader_host}' IDENTIFIED BY 'disposable-audit-only'")
+        cursor.execute(f"GRANT SELECT ON `{schema}`.* TO '{reader}'@'{reader_host}'")
     setup = pymysql.connect(**(settings | {"database": schema}))
     try:
         with setup.cursor() as cursor:
@@ -164,7 +173,9 @@ try:
                            (OP, LINEAGE, EPOCH, hashlib.sha256(blob).digest(), blob))
             cursor.execute("INSERT INTO economic_accounting_operation VALUES "
                            "(%s,%s,%s,NULL,38,1,0,%s,2,0,0,0,NULL)",
-                           (OP, LINEAGE, EPOCH, bytes.fromhex("cc" * 48)))
+                           (OP, LINEAGE, EPOCH, struct.pack("<HH", 10, 1) + blob[48:64] + EPOCH + blob[72:80] + bytes(4)))
+            cursor.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
+                           (LINEAGE, struct.pack("<HH", 10, 1) + blob[48:64] + EPOCH + blob[72:80] + bytes(4), OP))
             cursor.execute("INSERT INTO economic_sql_lifecycle_installation VALUES "
                            "(%s,%s,%s,%s,2,%s,1)",
                            (INSTALL, LINEAGE, EPOCH, OP, EPOCH))
@@ -496,12 +507,12 @@ try:
             assert snapshot["native_mapping_coverage"]["wallet_rows"] == 3
             assert snapshot["native_mapping_coverage"]["unmapped_wallet_rows"] == 1
             assert snapshot["source_claim_coverage"] == {
-                "source_operations": 5, "missing_claim_operations": 0,
+                "source_operations": 6, "missing_claim_operations": 0,
                 "duplicate_source_values": 0}
             assert snapshot["source_event_policy_coverage"] == {
-                "required_committed_operations": 2,
+                "required_committed_operations": 3,
                 "missing_required_source_events": 0}
-            assert len(snapshot["source_claims"]) == 5
+            assert len(snapshot["source_claims"]) == 6
             assert all(
                 row["operation_inbox_receipt"] == {
                     "status": 1, "result_code": row["operation_result_code"],
@@ -1015,7 +1026,8 @@ try:
             assert [(row["before_revision"], row["revision"])
                     for row in unattributed_86] == [(1, 2)]
             before_provenance = json.dumps(historical_uid_snapshot, sort_keys=True)
-            provenance = view(historical_uid_snapshot, {}, "provenance", 100, uid=86)
+            historical_uid_report = Reconciler().audit(historical_uid_snapshot)
+            provenance = view(historical_uid_snapshot, historical_uid_report, "provenance", 100, uid=86)
             assert provenance["count"] == 2, provenance
             assert [(row["operation_id"], row["revision"], row["action"])
                     for row in provenance["rows"]] == [
@@ -1024,11 +1036,12 @@ try:
             assert provenance["coverage"] == {
                 "lineage": LINEAGE.hex(), "selected_epoch": EPOCH.hex(), "complete": False,
                 "quiescent": True, "lineage_history_available": True,
-                "unattributed_history_available": True}
+                "unattributed_history_available": True,
+                "exception_count": historical_uid_report["exception_count"]}
             with tempfile.TemporaryDirectory(prefix="audit-provenance-") as temporary:
                 output = Path(temporary) / "snapshot.json"
                 command = [sys.executable, str(ROOT / "scripts/economic_sql_audit_snapshot.py"),
-                           "--host", "127.0.0.1", "--port", str(settings["port"]),
+                           "--host", "127.0.0.1", *transport_args,
                            "--user", reader, "--database", schema,
                            "--lineage", LINEAGE.hex(), "--epoch", EPOCH.hex(),
                            "--output", str(output)]
@@ -1043,7 +1056,7 @@ try:
                         capture_output=True, text=True, timeout=30)
                     assert result.returncode == 1, result.stderr
                     assert json.loads(result.stdout) == view(
-                        historical_uid_snapshot, {}, "provenance", limit, uid=86)
+                        historical_uid_snapshot, historical_uid_report, "provenance", limit, uid=86)
                     assert output.read_bytes() == before_cli
             assert json.dumps(historical_uid_snapshot, sort_keys=True) == before_provenance
             assert capture(audit, LINEAGE, EPOCH) == historical_uid_snapshot
@@ -1054,7 +1067,6 @@ try:
                         if row["uid"] == 86)["origin"] == "creation"
             assert any(row["operation_id"] == prior_item_root.hex()
                        for row in historical_uid_snapshot["native"]["lineage_uid_references"])
-            historical_uid_report = Reconciler().audit(historical_uid_snapshot)
             assert historical_uid_report["exception_counts"] == {
                 **expected_exceptions,
                 "evidence_loss": 1,
@@ -1252,7 +1264,7 @@ try:
             with tempfile.TemporaryDirectory(prefix="duris-sql-audit-") as directory:
                 output = Path(directory) / "partial.json"
                 command = [sys.executable, str(ROOT / "scripts/economic_sql_audit_snapshot.py"),
-                           "--host", "127.0.0.1", "--port", str(settings["port"]),
+                           "--host", "127.0.0.1", *transport_args,
                            "--user", reader, "--database", schema,
                            "--lineage", LINEAGE.hex(), "--epoch", EPOCH.hex(),
                            "--output", str(output)]
@@ -1419,5 +1431,5 @@ try:
 finally:
     with admin.cursor() as cursor:
         cursor.execute(f"DROP DATABASE IF EXISTS `{schema}`")
-        cursor.execute(f"DROP USER IF EXISTS '{reader}'@'127.0.0.1'")
+        cursor.execute(f"DROP USER IF EXISTS '{reader}'@'{reader_host}'")
     admin.close()

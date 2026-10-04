@@ -156,6 +156,32 @@ class ItemRevisionTests(unittest.TestCase):
 
 
 class OriginTests(unittest.TestCase):
+    def test_baseline_claim_books_are_cached_and_globally_bounded(self):
+        current, retained = EPOCH.hex(), "88" * 16
+        claims = [{"operation_reason": 38, "operation_id": OP.hex(),
+                   "operation_lineage": LINEAGE.hex(), "operation_epoch": value}
+                  for value in (current, retained, retained)]
+        cursor = mock.Mock()
+        cursor.fetchone.return_value = {"row_count": 2, "blob_bytes": 1000}
+        origins = {"baseline_source_events": {OP.hex(): "aa" * 48}}
+        with mock.patch.object(snapshot_exporter, "read_origins_in_transaction", return_value=origins) as read:
+            snapshot_exporter.bind_baseline_claim_witnesses(cursor, LINEAGE, EPOCH, claims, origins)
+            read.assert_called_once_with(cursor, LINEAGE, bytes.fromhex(retained))
+        self.assertEqual([row["baseline_witness"]["epoch"] for row in claims], [current, retained, retained])
+        for bounds in ({"row_count": 100_001, "blob_bytes": 1},
+                       {"row_count": 1, "blob_bytes": snapshot_exporter.MAX_INPUT_BYTES + 1}):
+            cursor.fetchone.return_value = bounds
+            with mock.patch.object(snapshot_exporter, "read_origins_in_transaction") as read:
+                with self.assertRaisesRegex(snapshot_exporter.ExportError, "baseline claim witness source"):
+                    snapshot_exporter.bind_baseline_claim_witnesses(cursor, LINEAGE, EPOCH, claims, origins)
+                read.assert_not_called()
+        cursor.fetchone.return_value = {"row_count": 2, "blob_bytes": 1000}
+        with mock.patch.object(snapshot_exporter, "read_origins_in_transaction", side_effect=OriginError("missing book")):
+            snapshot_exporter.bind_baseline_claim_witnesses(cursor, LINEAGE, EPOCH, claims, origins)
+        self.assertIsNone(claims[1]["baseline_witness"])
+        self.assertIsNone(claims[2]["baseline_witness"])
+        self.assertTrue(all(call.args[0].startswith("SELECT ") for call in cursor.execute.call_args_list))
+
     def test_native_numeric_holding_order_at_unsigned_boundaries(self):
         for first, second in ((255, 256), (65535, 65536), (2**32 - 1, 2**32),
                               (2**63 - 1, 2**63), (2**64 - 2, 2**64 - 1)):
@@ -272,6 +298,9 @@ class OriginTests(unittest.TestCase):
         self.assertEqual(result["account_origins"], account_origins)
         self.assertEqual(result["item_origins"], item_origins)
         self.assertEqual(result["baseline_operation_ids"], [OP.hex()])
+        expected_source = (struct.pack("<HH", 10, 1) + bytes.fromhex("44" * 16) +
+                           EPOCH + (1).to_bytes(8, "little") + bytes(4)).hex()
+        self.assertEqual(result["baseline_source_events"], {OP.hex(): expected_source})
         self.assertEqual(connection.rollbacks, 1)
         self.assertTrue(connection.scan.closed)
         statements = [sql.upper() for sql, _ in connection.scan.statements]
