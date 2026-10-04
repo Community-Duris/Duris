@@ -88,6 +88,19 @@ def account_key(value: object) -> tuple[str, int, int, int]:
     return raw[:16].hex(), kind, identity, context
 
 
+def decode_source_event(value: object) -> tuple[int, str, str, int, int]:
+    """Decode the native S48 identity without invoking a mutation codec."""
+    if not isinstance(value, str) or not HEX_SOURCE_EVENT.fullmatch(value):
+        raise SnapshotError("invalid source event")
+    raw = bytes.fromhex(value)
+    kind = int.from_bytes(raw[:2], "little")
+    if (raw[2:4] != b"\x01\x00" or not 1 <= kind <= 23 or
+            not any(raw[4:20]) or not any(raw[20:36])):
+        raise SnapshotError("invalid source event")
+    return (kind, raw[4:20].hex(), raw[20:36].hex(),
+            int.from_bytes(raw[36:44], "little"), int.from_bytes(raw[44:48], "little"))
+
+
 def unsigned_revision(value: object) -> bool:
     return type(value) is int and 0 <= value < 2**64
 
@@ -503,9 +516,12 @@ class Reconciler:
             source = op.get("source_event")
             if policy and policy.get("source_event_required") and source is None and op.get("outcome") == "committed":
                 self.emit("missing_source_event", operation_id=op_id)
-            if source is not None and op.get("outcome") == "committed":
-                if not isinstance(source, str) or not re.fullmatch(r"[0-9a-f]{96}", source):
+            if source is not None:
+                try:
+                    decode_source_event(source)
+                except SnapshotError:
                     self.emit("invalid_source_event", operation_id=op_id)
+            if source is not None and op.get("outcome") == "committed":
                 claim = claims.get((lineage, source))
                 if not claim or claim.get("operation_id") != op_id:
                     self.emit("missing_source_claim", operation_id=op_id)
@@ -533,6 +549,10 @@ class Reconciler:
             if link not in linked_children:
                 self.emit("unlinked_child", operation_id=link[0], child_index=link[1])
         for claim in claims.values():
+            try:
+                decode_source_event(claim.get("source_event"))
+            except SnapshotError:
+                self.emit("invalid_source_claim", operation_id=claim.get("operation_id"))
             op = operations.get((claim.get("operation_id"),))
             if (op is not None and claim.get("operation_reason") is not None and
                     claim.get("operation_reason") != op.get("reason")):
@@ -1362,6 +1382,11 @@ class Reconciler:
                       not HEX_SOURCE_EVENT.fullmatch(source_event))) or
                     (backend == "sql_partial" and "source_event" not in root)):
                 raise SnapshotError("invalid lineage UID reference root")
+            if source_event is not None:
+                try:
+                    decode_source_event(source_event)
+                except SnapshotError:
+                    self.emit("invalid_lineage_uid_reference_root", operation_id=operation_id)
             if backend == "sql_partial" and (
                     not isinstance(inbox_receipt, dict) or
                     set(inbox_receipt) != {"status", "result_code", "failure_stage",
@@ -1781,7 +1806,9 @@ class Reconciler:
                 if created or retired:
                     self.emit("missing_coin_pile_lifecycle_source", operation_id=operation_id)
                 continue
-            if not isinstance(source_event, str) or not HEX_SOURCE_EVENT.fullmatch(source_event):
+            try:
+                decode_source_event(source_event)
+            except SnapshotError:
                 self.emit("invalid_coin_pile_lifecycle_source", operation_id=operation_id)
                 continue
             raw = bytes.fromhex(source_event)
