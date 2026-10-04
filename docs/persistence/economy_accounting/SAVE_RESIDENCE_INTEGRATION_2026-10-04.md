@@ -449,3 +449,21 @@ using existing owners and both builds, with real coordinator/pool lost-reply and
 restart checks, flatfile bank/item parity and the guarded lifecycle procedure.
 It adds no new framework, activity support or acceptance gate. Unsupported broader
 routes remain required in their owning plans; full R1–R8 and release remain open.
+
+## Plan 1 qualification: strict loader compile correction
+
+The first native strict SQL and flatfile builds both reproduced narrowing of the
+recovery-template read error's conditional `EIO`/`EILSEQ` value into its existing
+unsigned error field. An explicit unsigned conversion preserves those outcomes
+and removes the diagnostic without changing warnings, parser behavior or limits.
+The original source is `tmp/plan1-template-loader-before-20261004.local.c`.
+
+Both corrected production builds pass in the combined working source:
+SQL 142.924 seconds and flatfile 12.268 seconds, each within the original 600-second
+build limit with two jobs. `tmp/plan1-production-builds-20261004-v4.local.json`
+binds logs, binaries and immutable native source manifest
+`6cbe982a58d0f84bb7194cc51cebf8ebe8e5ee75e34274f0d4b453bab98517f8`.
+Earlier failed attempts remain intact. These results qualify the combined source
+bytes for compilation, not intermediate Git heads or native gameplay/release.
+Other diagnosed compile corrections are recorded separately below. Plan 1's
+native, publication, persistence and recovery qualification continues.

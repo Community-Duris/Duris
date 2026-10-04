@@ -2904,7 +2904,8 @@ std::string read_recovery_template_string(FILE *file)
 	for (;;)
 	{
 		if (!fgets(line, MAX_STRING_LENGTH - 5, file))
-			throw template_read_failure{ ferror(file) ? EIO : EILSEQ };
+			throw template_read_failure{ static_cast<unsigned int>(
+				ferror(file) ? EIO : EILSEQ) };
 		const size_t input_length = strlen(line);
 		if (!input_length)
 			throw template_read_failure{ EILSEQ };
