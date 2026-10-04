@@ -161,7 +161,10 @@ bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &co
 // held. All other recovery, target-login and pinned-death fences still refuse.
 bool player_save_pipeline_authoritative_hydration_admitted(int pid);
 // Called only after the coordinator has durably acknowledged publication. This
-// original-ID release needs no live actor and cannot allocate or fail afterward.
+// original-ID release needs no live actor and does not allocate. After exact
+// guard release it notifies only the captured active worker request, outside
+// pipeline locks. Wake acceptance survives worker parking; it does not prove
+// a clean mutation census or authorize the preceding critical ACK.
 void player_save_pipeline_sql_drop_publication_acknowledged(
 	const critical_operation_id &operation_id) noexcept;
 
