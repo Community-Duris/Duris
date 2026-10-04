@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 					"met NPC was missing");
 		}
 		require(catalog.story_mappings.size() == 97 &&
-				tracker.summary_for(7, 42).total == 1596,
+				tracker.summary_for(7, 42).total == 1594,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7549,6 +7549,141 @@ int main(int argc, char **argv)
 					recovered.has_discovered(7, 42, 5000) &&
 					!recovered.has_discovered(7, 42, 530),
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
+		}
+
+		{
+			const auto &mayor = story_for("goblinht", "request-70000-cac0cf228598");
+			const auto &ghost = story_for("goblinht", "request-70001-9d1b3f918a96");
+			const auto &dart = story_for("goblinht", "request-70022-009f889c6ed6");
+			const auto &crown = story_for("goblinht", "request-70022-365c2ffdeedb");
+			const auto &pouch = story_for("goblinht", "request-70022-05103b66908e");
+			const auto &letter = story_for("goblinht", "request-70060-66ce3d7172b6");
+			const auto &skulls = story_for("goblinht", "request-70078-1fbc546637b6");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 700, 70296, 100, "arrival") ==
+					result::applied,
+				"Moregeeth discovery failed");
+			require(journey.render_journal(7, 42, 700, 10, 1, 101, false, false)
+						.find(crown.title) == std::string::npos,
+				"Moregeeth exposed unmet recipient");
+			for (const auto &actor :
+			     { std::pair{ 70000, 70001 }, std::pair{ 70001, 70002 },
+			       std::pair{ 70022, 70173 }, std::pair{ 70060, 70204 },
+			       std::pair{ 70078, 70276 }, std::pair{ 70031, 70176 },
+			       std::pair{ 70023, 70029 }, std::pair{ 70104, 70352 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 102) ==
+						result::applied,
+					"Moregeeth encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Moregeeth section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[70013] = 4;
+			supplies.carried[70075] = 4;
+			supplies.equipped[1] = 70014;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 700, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(crown).find("[Ready now] " + crown.steps[2].text) !=
+					std::string::npos,
+				"Moregeeth exact heart missing");
+			for (size_t i : { 3U, 4U, 5U })
+				require(section(crown).find("[Missing now] " +
+							    crown.steps[i].text) !=
+						std::string::npos,
+					"Moregeeth duplicate/worn component replaced ALL set");
+			require(section(skulls).find("[Missing now] " + skulls.steps[0].text) !=
+					std::string::npos,
+				"Moregeeth four skulls satisfied five-copy recipe");
+			for (int kind : { 70030, 70001, 70014, 70015, 70016, 70021, 70065, 70093 })
+				supplies.carried[kind] = 1;
+			supplies.carried[70075] = 5;
+			journal = journey.render_journal(7, 42, 700, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto *entry :
+			     { &mayor, &ghost, &dart, &crown, &pouch, &letter, &skulls })
+				for (const auto &step : entry->steps)
+					if (step.kind == "carried_item" &&
+					    step.item_vnums.front() != 70057 &&
+					    step.item_vnums.front() != 70019 &&
+					    step.item_vnums.front() != 70022 &&
+					    step.item_vnums.front() != 412)
+						require(section(*entry).find("[Ready now] " +
+									     step.text) !=
+								std::string::npos,
+							"Moregeeth supplied materials forced source history");
+			require(section(crown).find("[Missing now] " + crown.steps[1].text) !=
+						std::string::npos &&
+					section(pouch).find("[Missing now] " +
+							    pouch.steps[0].text) !=
+						std::string::npos,
+				"Moregeeth supplied materials fabricated access keys");
+			require(journey.serialize_state() == before,
+				"Moregeeth readiness mutated history");
+			// Synthetic receipts qualify projection only, not actual opening, traps,
+			// pickup, travel, coin fees, settlement, NPC removal or daily renewal.
+			record(journey, dart.contracts.front(), "moregeeth-paid-dart", 700, 70173);
+			record(journey, skulls.contracts.front(), "moregeeth-paid-skulls", 700,
+			       70276);
+			require(journey.progress_for_zone(7, 42, 700).completed == 0 &&
+					dart.category == "service" && skulls.category == "service",
+				"Moregeeth paid crafts granted story credit");
+			record(journey, pouch.contracts.front(), "moregeeth-pouch", 700, 70173);
+			supplies.carried.erase(70021);
+			journal = journey.render_journal(7, 42, 700, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(pouch).find("[Missing now] " + pouch.steps[1].text) !=
+						std::string::npos &&
+					section(crown).find("[Missing now] " +
+							    crown.steps[1].text) !=
+						std::string::npos,
+				"Moregeeth pouch receipt restored spent material or missing key");
+			require(journey.progress_for_zone(7, 42, 700).completed == 1 &&
+					journey.evidence_for(crown.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Moregeeth pouch history completed crown");
+			for (const auto &entry :
+			     { std::pair{ &mayor, 70001 }, std::pair{ &ghost, 70002 },
+			       std::pair{ &crown, 70173 }, std::pair{ &letter, 70204 } })
+			{
+				const auto id = std::string("moregeeth-outcome-") + entry.first->id;
+				record(journey, entry.first->contracts.front(), id.c_str(), 700,
+				       entry.second);
+			}
+			supplies.carried.erase(70065);
+			supplies.carried.erase(70014);
+			journal = journey.render_journal(7, 42, 700, 10, 1, 122, false, false,
+							 &supplies);
+			require(section(letter).find("[Missing now] " + letter.steps[1].text) !=
+						std::string::npos &&
+					section(crown).find("[Missing now] " +
+							    crown.steps[3].text) !=
+						std::string::npos,
+				"Moregeeth accepted outcome restored spent letter/ring");
+			auto replay = completion(pouch.contracts.front(), "moregeeth-pouch", 120);
+			replay.transaction.zone_number = 700;
+			replay.transaction.room_vnum = 70173;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Moregeeth pouch replay duplicated outcome");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 700).completed == 5 &&
+					recovered.progress_for_zone(7, 42, 700).total == 5 &&
+					recovered.evidence_for(ghost.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(crown.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(dart.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(skulls.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Moregeeth cold recovery lost stories or paid receipts");
 		}
 
 		{

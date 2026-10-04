@@ -124,6 +124,16 @@ assert fields_between['stories'][6]['steps'][0]['contracts']==fields_between['st
 assert [t['item_vnums'] for t in fields_between['stories'][2]['steps'] if t['kind']=='carried_item']==[[71003],[71026],[71010],[71011],[71012],[71013],[71014]]
 assert all(t.get('optional') for s in fields_between['stories'] for t in s['steps'][:-1])
 
+goblinht=next(m for m in catalog['story_mappings'] if m['source_area']=='goblinht')
+assert (goblinht['schema_version'],goblinht['revision'],goblinht['coverage'])==(3,2,'complete')
+assert len(goblinht['stories'])==7 and len(goblinht['contacts'])==21 and len(goblinht['exclusions'])==2
+assert sum(s['category']=='story' for s in goblinht['stories'])==5
+assert sum(s['category']=='service' for s in goblinht['stories'])==2
+assert report['eligible_by_zone']['700']==5 and sum(len(c['topics']) for c in goblinht['contacts'])==22
+assert sum(t.get('optional',False) for s in goblinht['stories'] for t in s['steps'])==15
+assert goblinht['stories'][3]['steps'][0]['contracts']==goblinht['stories'][4]['contracts']
+assert goblinht['stories'][6]['steps'][0]['count']==5
+
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'
 assert len(tower['stories']) == 4 and len(tower['contacts']) == 14 and not tower['exclusions']

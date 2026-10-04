@@ -1,19 +1,31 @@
 {
-  "schema_version": 2,
-  "revision": 1,
+  "schema_version": 3,
+  "revision": 2,
   "source_area": "goblinht",
   "coverage": "complete",
-  "introduction": "Explore The Town of Moregeeth and meet its people to uncover local requests.",
+  "introduction": "Follow the rivalry among Moreg, Dura and Tala, bring Glub the killer’s sword, and recover Gimbatul’s pouch before gathering four distinct planar components. Keep real access keys, the trapped letter desk, recipient availability and paid crafting visible as separate steps.",
   "orientation": [
-    "Start with look and exits to learn your surroundings.",
-    "Use help home to learn about hometowns and help quest for quest commands."
+    "Arrive from the Trukt tunnels at the outpost, or from the Surface gravel path through the cave passage. The small hole between the two cave ends is a secret closed door: search and open it when needed. The staff fast-track room above the inn is not a normal player entrance.",
+    "The town has upper and lower streets joined by ladders. The Street of Guilds leads to the academy, conjurer classroom, temple and inn; the Street of the Dead leads to the cemetery and guards’ barracks. Doorways, guards, shops and training do not by themselves create quest achievements.",
+    "Moreg accepts Dura’s exact hidden severed-head item for a lockpick called the key to Moregeeth and 10,000 copper. He also wears Pig-Sticker, the weapon Glub wants. Consider Moreg’s turn-in before recovering that weapon; supplied exact items skip personal kills and routes.",
+    "The cemetery caretaker carries the rusty key to the sepulchres. Glub accepts Pig-Sticker for a spectral sword and leaves. His promise to hunt the killer in the netherworld is narration, without a separate tracked hunt. The cemetery’s secret slab leads to Tala’s guild.",
+    "Gimbatul’s component pouch is in the open stone table beyond the academy’s locked northern private-room door. The sticky key carried by the resident in the sign room on the Street of Harlots opens that door; the academy side is pickproof. The pouch is a potion-shaped quest item, not a container of loose components.",
+    "Return the pouch to Gimbatul for the magical key. Unlock and open the pickproof upper classroom door to the Chamber of Portals. Current keys explain access, while an already open route or supplied exact components does not require your own earlier key receipt.",
+    "The Chamber of Portals has four routes: STARE flame for fire, ENTER oval mirror for earth, TOUCH crystal for water, and ENTER circular mirror for air. At the respective arrival points, STARE flame, PUSH boulder, TOUCH crystal, and SOUTH through the smoke return to the chamber. Read the destination before choosing a route.",
+    "Recover the fire pendant worn by the efreeti scout, stone heart held by the dao noble, watery ring worn by the marid noble and sylph’s wings worn by the jann. Present all four exact kinds together. Four copies of one kind cannot replace the set; equipped items must be removed before offering.",
+    "Gimbatul leaves after making the elemental crown. While he is present, finish any desired pouch return or paid obsidian enchanting first. The paid enchantment needs the exact sharp obsidian dart stocked by the roguish merchant plus 10,000 copper; other obsidian objects do not satisfy it.",
+    "Tala wants Dura’s short letter to Ungal, found inside the closed, locked and trapped desk in the assassin combat room. Search and open the hidden gaming-room trap door or abandoned-hovel panel to reach the rogue guild. PICK desk or knock can attempt the repaired lock; DISARM desk handles its opening trap separately. Obtain and examine the exact letter.",
+    "Tala returns Dura’s head with a refusal. The drinking woman returns a bottle of rot gut with a nonterminal response. Neither exchange is a new story achievement. Tala’s letter reward is zombie flesh; her threatened spectre transformation has no separate confirmed campaign outcome.",
+    "The shamanic merchant crafts a necklace for five distinct bat skulls plus 500 copper. The five bats in the cave by the lake each start carrying one skull. Surface-passage bats and guano in the recess are different sources. This paid craft and the obsidian enchantment grant no story achievement or daily credit.",
+    "Gorblag in the academy and Gorblog in the illusionist tower each accept five copper for a plastic package. These coin-only supporting services, ordinary purchases, training, inn rent, bank services and bartender world quests remain separate systems. Described bribes, vault entry and enslaved people have no additional local accepted campaign.",
+    "Keep questions, recovery, access, current loose materials and accepted outcomes distinct. Only five qualifying exact exchanges grant local quest outcomes; discovery has its own achievement. Active, ready accounting is required for all new discovery, encounter, journal, achievement and daily credit. Frozen reward recovery remains separate."
   ],
   "contacts": [
     {
       "mob_vnum": 70000,
       "name": "Moreg",
       "keyword": "moreg",
-      "description": "Start with these conversation topics, then follow the requests below.",
+      "description": "In the mayor’s office north of the grand entry hall. Ask dura; accepts her exact head. Wears Pig-Sticker, also requested by Glub. Completing Moreg’s turn-in before recovering his sword avoids waiting for his return.",
       "topics": [
         "dura"
       ]
@@ -22,69 +34,174 @@
       "mob_vnum": 70001,
       "name": "the ghost of Glub",
       "keyword": "glub",
-      "description": "Start with these conversation topics, then follow the requests below.",
+      "description": "In the locked sepulchre reached down from the cemetery. Ask hello or pain; accepts Pig-Sticker and then leaves. Other cemetery ghosts are different actors.",
       "topics": [
-        "pain"
+        "hello",
+        "hi",
+        "pain",
+        "rest",
+        "end"
       ]
     },
     {
       "mob_vnum": 70022,
       "name": "Gimbatul",
       "keyword": "gimbatul",
-      "description": "Start with these conversation topics, then follow the requests below.",
+      "description": "In the upper conjurer classroom. Ask spell or components for the pouch, enchanting or agree for the paid dart service. Accepts the four planar items together for the crown and then leaves, closing his other exchanges while absent.",
       "topics": [
         "spell",
+        "components",
         "enchanting",
-        "agree"
+        "enchantments",
+        "agree",
+        "yes"
       ]
     },
     {
       "mob_vnum": 70023,
       "name": "Gorblag",
       "keyword": "gorblag",
-      "description": "Check this person's requests below and examine them for clues.",
+      "description": "The sorcerer master in the Sorcerer’s Academy accepts five copper for a plastic package. This coin-only supporting service grants no story achievement or daily credit; his apprentice’s private room holds Gimbatul’s missing pouch.",
       "topics": []
     },
     {
       "mob_vnum": 70031,
       "name": "a goblin slut",
       "keyword": "slut",
-      "description": "Check this person's requests below and examine them for clues.",
+      "description": "The drinking goblin woman in Brogan’s Bar returns the offered bottle of rot gut. This is a nonterminal response, rather than a completed drinking quest.",
       "topics": []
     },
     {
       "mob_vnum": 70060,
       "name": "Tala",
       "keyword": "tala",
-      "description": "Start with these conversation topics, then follow the requests below.",
+      "description": "In the dark chamber beyond the cemetery’s secret slab. Ask dura, revenge or spite. Wants the short letter for zombie flesh; returns Dura’s head with a refusal. Her revenge narration does not record a completed campaign.",
       "topics": [
-        "dura"
+        "dura",
+        "revenge",
+        "spite"
       ]
     },
     {
       "mob_vnum": 70078,
       "name": "a shamanic merchant",
       "keyword": "shaman",
-      "description": "Start with these conversation topics, then follow the requests below.",
+      "description": "At the back of the shaman cave. Ask hi or materials. Needs five exact bat skulls and 500 copper for the paid necklace craft. Ordinary stock sales and crafting remain supporting services.",
       "topics": [
         "hi",
-        "material"
+        "gold",
+        "material",
+        "materials",
+        "skull",
+        "skulls",
+        "make"
       ]
     },
     {
       "mob_vnum": 70104,
       "name": "Gorblog",
       "keyword": "gorblog",
-      "description": "Check this person's requests below and examine them for clues.",
+      "description": "At the top of the illusionist tower east of the main intersection. Accepts five copper for the same plastic package as Gorblag. The copied response says Gorblag; this actor’s actual name and command keyword are Gorblog.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70034,
+      "name": "Dura, mistress of pain",
+      "keyword": "dura",
+      "description": "Behind the hinged altar in the temple of Loviatar. Starts carrying the hidden exact severed-head item for Moreg. No corpse-carving controller is needed; temple priestesses and apprentices are different actors.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70006,
+      "name": "a homely prostitute",
+      "keyword": "prostitute",
+      "description": "The instance in the room with the hanging sign carries the sticky key to the academy’s northern private room. Other instances on the Street of Harlots do not start with that key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70058,
+      "name": "a cemetery caretaker",
+      "keyword": "caretaker",
+      "description": "In the dirty hovel beside the cemetery. Carries the rusty key for locked sepulchres; this is distinct from the academy and portal keys.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70017,
+      "name": "a dao noble",
+      "keyword": "dao",
+      "description": "In the earth pocket. Wears the stone heart as a held item. ENTER oval mirror reaches this pocket; PUSH boulder returns at the arrival point.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70014,
+      "name": "a marid noble",
+      "keyword": "marid",
+      "description": "In the water pocket. Wears the watery ring. TOUCH crystal reaches and leaves this pocket at its arrival point.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70011,
+      "name": "a powerful jann",
+      "keyword": "jann",
+      "description": "In the air pocket. Wears the sylph’s wings. ENTER circular mirror reaches this pocket; SOUTH at the smoky arrival point returns.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70021,
+      "name": "an efreeti scout",
+      "keyword": "efreeti",
+      "description": "In the fire pocket. Wears the fire pendant. STARE flame reaches and leaves this pocket at its arrival point.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70073,
+      "name": "Ungal",
+      "keyword": "ungal",
+      "description": "In the assassin combat room north of the Rogue’s Supply Shop. His fixed metal desk contains Dura’s letter; the letter is not reset on Ungal himself. Handle its lock and opening trap separately.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70072,
+      "name": "a roguish merchant",
+      "keyword": "roguish",
+      "description": "At the Rogue’s Supply Shop. Stocks the sharp obsidian dart and fine lockpick. These purchases are support for paid enchanting and desk access; they are not quest completion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70070,
+      "name": "Zagh",
+      "keyword": "zagh",
+      "description": "In the hidden rogue training room. Stocks ordinary lockpicks, disguise kit and ward mechanisms. Guild training and those purchases remain separate from accepted local requests.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70057,
+      "name": "a vampire bat",
+      "keyword": "vampire",
+      "description": "Five bats reset in the dark cave by the lake, each with one bat skull. The cave’s recess holds bat guano, a different material. Bats in the surface passage use another prototype without skull supply.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70028,
+      "name": "Brogan",
+      "keyword": "brogan",
+      "description": "At the Inn of the Twisted Spine, upstairs from the bar. RENT is an inn service, rather than a local story outcome. Bouncers follow him.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70029,
+      "name": "a gruff bartender",
+      "keyword": "bartender",
+      "description": "In Brogan’s Bar. Supplies food and rot gut; ASK bartender quest belongs to the separate world-quest system. Its targets, payments and completion remain outside these fixed zone-story exchanges.",
       "topics": []
     }
   ],
   "stories": [
     {
       "id": "request-70000-cac0cf228598",
-      "title": "Deliver 1 x Dura's severed head",
-      "category": "request",
-      "summary": "Bring 1 x Dura's severed head. Reward: 10,000 copper, 1 x the key to Moregeeth.",
+      "title": "Moreg: end Dura’s blackmail",
+      "category": "story",
+      "summary": "Bring Dura’s exact severed-head item to Moreg for the key to Moregeeth and 10,000 copper. The reward called a key is a lockpick, not the sticky or magical access key. Moreg also carries the sword Glub wants; consider this turn-in while Moreg is still present.",
       "contracts": [
         {
           "giver_vnum": 70000,
@@ -94,33 +211,34 @@
       "steps": [
         {
           "id": "item-1",
-          "text": "Carry 1 x Dura's severed head",
+          "text": "Carry Dura’s severed head",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
           "item_vnums": [
             70030
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "Dura starts carrying the exact hidden head behind the temple altar. This is a reset quest item, rather than a head produced by carving an ordinary corpse. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
         },
         {
           "id": "turn-in",
-          "text": "Complete the requested exchange",
+          "text": "Complete this exact exchange",
           "kind": "completion",
-          "hint": "Give the requested items to this request giver.",
           "contracts": [
             {
               "giver_vnum": 70000,
               "completion_key": "give=I:70030;receive=C:10000,I:70028;disappear=0"
             }
-          ]
+          ],
+          "hint": "Only accepted exchange records this outcome. Questions, current materials, access and recovery are separate facts. Rewards require settlement. Paid services grant no story achievement or daily credit; daily candidates still need a present recipient and fresh stock."
         }
       ]
     },
     {
       "id": "request-70001-9d1b3f918a96",
-      "title": "Deliver 1 x a short sword named 'Pig-Sticker'",
-      "category": "request",
-      "summary": "Bring 1 x a short sword named 'Pig-Sticker'. Reward: 1 x a spectral short sword.",
+      "title": "Glub: return the killer’s sword",
+      "category": "story",
+      "summary": "Bring Glub the exact short sword named Pig-Sticker for a spectral short sword. Moreg wears Pig-Sticker. Recovering his weapon can remove another request giver until he returns; supplied exact swords skip that journey. Glub leaves after acceptance, without a separate recorded netherworld hunt.",
       "contracts": [
         {
           "giver_vnum": 70001,
@@ -129,34 +247,46 @@
       ],
       "steps": [
         {
-          "id": "item-1",
-          "text": "Carry 1 x a short sword named 'Pig-Sticker'",
+          "id": "cemetery-key",
+          "text": "Optional access: carry the rusty cemetery key",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            70057
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The cemetery caretaker in the dirty hovel carries the rusty key for the locked sepulchres. The entrance to Glub’s sepulchre is pickable; an already open route needs no key. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "item-1",
+          "text": "Carry the short sword named Pig-Sticker",
+          "kind": "carried_item",
           "item_vnums": [
             70001
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "Moreg wears this exact sword in his office north of the grand entry hall. Remove it if equipped. Ordinary steel shortswords, the training dagger and other spectral swords do not substitute. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
         },
         {
           "id": "turn-in",
-          "text": "Complete the requested exchange",
+          "text": "Complete this exact exchange",
           "kind": "completion",
-          "hint": "Give the requested items to this request giver.",
           "contracts": [
             {
               "giver_vnum": 70001,
               "completion_key": "give=I:70001;receive=I:70002;disappear=1"
             }
-          ]
+          ],
+          "hint": "Only accepted exchange records this outcome. Questions, current materials, access and recovery are separate facts. Rewards require settlement. Paid services grant no story achievement or daily credit; daily candidates still need a present recipient and fresh stock."
         }
       ]
     },
     {
       "id": "request-70022-009f889c6ed6",
-      "title": "Deliver 10,000 copper, 1 x a sharp obsidian dart",
-      "category": "request",
-      "summary": "Bring 10,000 copper, 1 x a sharp obsidian dart. Reward: 1 x an enchanted obsidian dart.",
+      "title": "Paid service: enchant an obsidian dart",
+      "category": "service",
+      "summary": "Gimbatul accepts the exact sharp obsidian dart plus 10,000 copper for an enchanted obsidian dart. This is a paid crafting service, with no story achievement or daily credit. Other obsidian objects and conversation alone do not fulfill the recipe.",
       "contracts": [
         {
           "giver_vnum": 70022,
@@ -166,33 +296,34 @@
       "steps": [
         {
           "id": "item-1",
-          "text": "Carry 1 x a sharp obsidian dart",
+          "text": "Carry the sharp obsidian dart",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
           "item_vnums": [
             70093
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "The roguish merchant in the Rogue’s Supply Shop stocks this exact dart. A bought or supplied dart works; generic obsidian, the bowl in the temple and a previously enchanted dart do not substitute. The 10,000-copper fee remains required. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
         },
         {
           "id": "turn-in",
-          "text": "Complete the requested exchange",
+          "text": "Complete this exact exchange",
           "kind": "completion",
-          "hint": "Give the requested items to this request giver.",
           "contracts": [
             {
               "giver_vnum": 70022,
               "completion_key": "give=C:10000,I:70093;receive=I:70094;disappear=0"
             }
-          ]
+          ],
+          "hint": "Only accepted exchange records this outcome. Questions, current materials, access and recovery are separate facts. Rewards require settlement. Paid services grant no story achievement or daily credit; daily candidates still need a present recipient and fresh stock."
         }
       ]
     },
     {
       "id": "request-70022-365c2ffdeedb",
-      "title": "Deliver 1 x a stone heart, 1 x a ring of water, 1 x the wings of a sylph, 1 x a pendant of fire",
-      "category": "request",
-      "summary": "Bring 1 x a stone heart, 1 x a ring of water, 1 x the wings of a sylph, 1 x a pendant of fire. Reward: 1 x an elemental crown.",
+      "title": "Gimbatul: gather the four planar components",
+      "category": "story",
+      "summary": "Bring the stone heart, watery ring, sylph’s wings and fire pendant together for the elemental crown. The four local planar pockets have different entry and return commands. Gimbatul disappears after this exchange; finish any desired pouch or paid enchanting exchange before turning in the crown while he is present.",
       "contracts": [
         {
           "giver_vnum": 70022,
@@ -201,64 +332,92 @@
       ],
       "steps": [
         {
-          "id": "item-1",
-          "text": "Carry 1 x a stone heart",
+          "id": "optional-pouch-route",
+          "text": "Optional earlier route: return the component pouch",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 70022,
+              "completion_key": "give=I:70021;receive=I:70022;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "That exchange grants the magical access key. An exact supplied key, already open door or supplied planar components skips personal pouch history. A receipt does not restore a spent pouch or missing key."
+        },
+        {
+          "id": "portal-key",
+          "text": "Optional access: carry the magical portal key",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            70022
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Gimbatul’s pouch reward fits the locked upper door from his classroom into the Chamber of Portals. The classroom side is pickproof. It survives ordinary unlocking. This is different from the sticky key and Moreg’s lockpick. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "item-1",
+          "text": "Carry the stone heart",
+          "kind": "carried_item",
           "item_vnums": [
             70013
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "The dao noble in the earth pocket wears this exact heart as a held item. ENTER the oval mirror to reach earth, and PUSH the boulder at its arrival point to return. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
         },
         {
           "id": "item-2",
-          "text": "Carry 1 x a ring of water",
+          "text": "Carry the watery ring",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
           "item_vnums": [
             70014
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "The marid noble in the water pocket wears this exact ring. TOUCH the crystal in the portal chamber to reach water; TOUCH the crystal at the water arrival point to return. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
         },
         {
           "id": "item-3",
-          "text": "Carry 1 x the wings of a sylph",
+          "text": "Carry the sylph’s wings",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
           "item_vnums": [
             70015
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "The powerful jann in the air pocket wears these exact wings. ENTER the circular mirror to reach air; SOUTH at its smoky arrival point returns to the chamber. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
         },
         {
           "id": "item-4",
-          "text": "Carry 1 x a pendant of fire",
+          "text": "Carry the fire pendant",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
           "item_vnums": [
             70016
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "The efreeti scout in the fire pocket wears this exact pendant. STARE flame in the chamber reaches fire; STARE flame at its arrival point returns. The similarly named blue flames are not TOUCH portals. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
         },
         {
           "id": "turn-in",
-          "text": "Complete the requested exchange",
+          "text": "Complete this exact exchange",
           "kind": "completion",
-          "hint": "Give the requested items to this request giver.",
           "contracts": [
             {
               "giver_vnum": 70022,
               "completion_key": "give=I:70013,I:70014,I:70015,I:70016;receive=I:70017;disappear=1"
             }
-          ]
+          ],
+          "hint": "Only accepted exchange records this outcome. Questions, current materials, access and recovery are separate facts. Rewards require settlement. Paid services grant no story achievement or daily credit; daily candidates still need a present recipient and fresh stock."
         }
       ]
     },
     {
       "id": "request-70022-05103b66908e",
-      "title": "Deliver 1 x a pouch of spell components",
-      "category": "request",
-      "summary": "Bring 1 x a pouch of spell components. Reward: 1 x a magical key.",
+      "title": "Gimbatul: recover the component pouch",
+      "category": "story",
+      "summary": "Return Gimbatul’s exact spell-component pouch for the magical key to the Chamber of Portals. The pouch lies inside the stone table in the academy’s locked private room. Although named a pouch, it is a potion by item type; drinking it spends a material needed here.",
       "contracts": [
         {
           "giver_vnum": 70022,
@@ -267,34 +426,46 @@
       ],
       "steps": [
         {
-          "id": "item-1",
-          "text": "Carry 1 x a pouch of spell components",
+          "id": "sticky-key",
+          "text": "Optional access: carry the sticky key",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            70019
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A homely prostitute in the room with the hanging sign on the Street of Harlots carries the sticky key. It survives ordinary unlocking of the academy’s private-room door. The academy side is pickproof; supplied pouches need no key history. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "item-1",
+          "text": "Carry the spell-component pouch",
+          "kind": "carried_item",
           "item_vnums": [
             70021
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "Unlock and open the northern door from the Sorcerer’s Academy, then get the exact pouch from the stone table. The table is open and fixed in place; it need not be picked up. Generic shop components do not replace this potion-shaped quest item. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
         },
         {
           "id": "turn-in",
-          "text": "Complete the requested exchange",
+          "text": "Complete this exact exchange",
           "kind": "completion",
-          "hint": "Give the requested items to this request giver.",
           "contracts": [
             {
               "giver_vnum": 70022,
               "completion_key": "give=I:70021;receive=I:70022;disappear=0"
             }
-          ]
+          ],
+          "hint": "Only accepted exchange records this outcome. Questions, current materials, access and recovery are separate facts. Rewards require settlement. Paid services grant no story achievement or daily credit; daily candidates still need a present recipient and fresh stock."
         }
       ]
     },
     {
       "id": "request-70060-66ce3d7172b6",
-      "title": "Deliver 1 x a short letter",
-      "category": "request",
-      "summary": "Bring 1 x a short letter. Reward: 1 x a patch of zombie flesh.",
+      "title": "Tala: uncover Dura’s hired assassin",
+      "category": "story",
+      "summary": "Deliver the short letter found in Ungal’s desk to Tala for a patch of zombie flesh. Read the letter to connect Dura and Ungal. Tala returns a submitted Dura head without completing this request; the letter outcome does not record Ungal’s death or transformation into a spectre.",
       "contracts": [
         {
           "giver_vnum": 70060,
@@ -303,34 +474,48 @@
       ],
       "steps": [
         {
-          "id": "item-1",
-          "text": "Carry 1 x a short letter",
+          "id": "desk-picks",
+          "text": "Optional preparation: carry suitable lockpicks",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            412,
+            70060,
+            70028
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Ungal’s large metal desk is closed, locked and trapped. PICK desk can attempt the lock with suitable skill and picks; knock can also attempt it when available. DISARM desk addresses the opening trap separately. The repaired keyhole permits attempts, without removing the lock, trap or normal failure chances. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+        },
+        {
+          "id": "item-1",
+          "text": "Carry the short letter to Ungal",
+          "kind": "carried_item",
           "item_vnums": [
             70065
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "Reach the assassin’s combat room through the hidden trap door under the Gilt-edged Truffle gaming room, or the hidden panel from the abandoned hovel. Search and open the route, then open the desk after handling its lock and trap. Get and examine the exact letter; supplied letters skip personal desk history. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
         },
         {
           "id": "turn-in",
-          "text": "Complete the requested exchange",
+          "text": "Complete this exact exchange",
           "kind": "completion",
-          "hint": "Give the requested items to this request giver.",
           "contracts": [
             {
               "giver_vnum": 70060,
               "completion_key": "give=I:70065;receive=I:70066;disappear=0"
             }
-          ]
+          ],
+          "hint": "Only accepted exchange records this outcome. Questions, current materials, access and recovery are separate facts. Rewards require settlement. Paid services grant no story achievement or daily credit; daily candidates still need a present recipient and fresh stock."
         }
       ]
     },
     {
       "id": "request-70078-1fbc546637b6",
-      "title": "Deliver 500 copper, 5 x a bat skull",
-      "category": "request",
-      "summary": "Bring 500 copper, 5 x a bat skull. Reward: 1 x a necklace of bat skulls.",
+      "title": "Paid service: make the bat-skull necklace",
+      "category": "service",
+      "summary": "Bring five separate exact bat skulls plus 500 copper to the shamanic merchant for his necklace of bat skulls. This is a paid crafting service, with no story achievement or daily credit. Similar bats and other skulls are not interchangeable sources.",
       "contracts": [
         {
           "giver_vnum": 70078,
@@ -340,25 +525,26 @@
       "steps": [
         {
           "id": "item-1",
-          "text": "Carry 5 x a bat skull",
+          "text": "Carry five bat skulls",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
           "item_vnums": [
             70075
           ],
-          "count": 5
+          "count": 5,
+          "optional": true,
+          "hint": "Five vampire bats in the dark cave by the lake each start with one exact skull. The separate vampire bats along the surface cave passage carry none in their resets. Recover five distinct copies; bat guano in the cave recess and whole corpses do not substitute. The 500-copper fee remains required. Carry exact materials loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
         },
         {
           "id": "turn-in",
-          "text": "Complete the requested exchange",
+          "text": "Complete this exact exchange",
           "kind": "completion",
-          "hint": "Give the requested items to this request giver.",
           "contracts": [
             {
               "giver_vnum": 70078,
               "completion_key": "give=C:500,I:70075,I:70075,I:70075,I:70075,I:70075;receive=I:70074;disappear=0"
             }
-          ]
+          ],
+          "hint": "Only accepted exchange records this outcome. Questions, current materials, access and recovery are separate facts. Rewards require settlement. Paid services grant no story achievement or daily credit; daily candidates still need a present recipient and fresh stock."
         }
       ]
     }

@@ -2729,3 +2729,29 @@ consumption beside the next action. Keep historical completion separate from
 materials ready now. Active, ready accounting is required for all new tracking;
 frozen recovery remains separate. Synthetic projections do not qualify played
 pickup, offers, settlement, movement, campaign state or daily renewal.
+
+
+## Moregeeth: shared recipient availability and typed access sources
+
+The [complete dossier](zone-stories/THE_TOWN_OF_MOREGEETH.md) upgrades the
+existing journal without changing its seven IDs/contracts. Five outcomes and
+two zero-achievement paid services explain the native source; the actual desk
+keyhole repair is a separate named commit7b916b887 with regression and news.
+
+| Requirement | Concrete evidence | Implementation/qualification plan |
+| --- | --- | --- |
+| Availability across cards | Moreg wears Glub’s sword; Gimbatul disappears after crown, closing pouch/enchanting paths | Model admitted actor instance/retirement/reset state and next actions. Qualify source recovery, supplied items, absent givers, concurrency, D rollback/recovery and renewed stock; preserve optional order. |
+| Typed reward versus item name | Moregeeth key is a lockpick; sticky/magical/rusty keys differ; pouch is a potion | Use exact kind/handler/reset evidence. Qualify current custody, wear/consumption/transfer and actual key matching. Do not infer universal unlocking or a pouch container from names. |
+| Optional chain and public route | Pouch reward grants magical key to pickproof classroom door | Keep earlier receipt optional and current key/material state separate. Qualify reward settlement, UNLOCK/OPEN, already-open passage and supplied components without forcing personal source history. |
+| Four automatic travel commands | STARE139 flame, TOUCH320 crystal, ENTER7 mirrors and SOUTH3 smoke | Freeze selected object/command/destination and actual movement for future personal-travel facts. Qualify commands, terrain, grids, return and rollback; room-plane names do not change journal owner. |
+| Locked trapped container source | Letter P-reset inside desk, not carried by Ungal | Isolated actual keyhole fix permits attempts, retaining lock/trap. Qualify skill/knock failure/success, DISARM/OPEN trap, current loose custody, source root and acceptance. Saved-instance changes require separate operational treatment. |
+| Repeated kinds plus fee | Five skull roots AND500 copper; dart AND10,000 copper | Add fee readiness without awarding story/daily credit to services. Qualify exact all-roots/currency settlement, partial inputs, shortages, concurrent offers, replay and compensation. |
+| Nonterminal response and copied narration | Tala returns head; woman returns bottle; Gimbatul/Gorblog captions use other names | Preserve nonterminal meaning and replacement-root lineage. Builder decides separate prose fixes or durable campaign adapters before rescue/hunt/revenge completion predicates. |
+
+Cards should place the next action beside missing current materials and access,
+show five distinct skull copies versus four different planar kinds, and warn
+when a recipient’s departure closes another exchange. Historical receipt,
+materials ready now, fee readiness and actual world state remain distinct.
+Active, ready accounting is required; frozen recovery is separate. Synthetic
+projection tests do not qualify played source/trap/travel/fees/actor lifecycle,
+reward settlement, database persistence or daily renewal.

@@ -66,6 +66,7 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [208a56840](https://github.com/Community-Duris/Duris/commit/208a56840acb100fc20dbec4b0af9a80a6cd0914): Cloister Mahr acceptance caption | Brother Mahr accepts adamantite tablet 67100 for recommendation 67101; the acceptance caption now says tablet instead of letter. Exactly one native word changes, in a separate fix commit with its focused regression. Requirements, rewards, departure and all other native bytes remain intact. | **Brother Mahr now correctly identifies the intruder's tablet when accepting it, making the Cloister's recommendation quest clearer.** Original wording fails; corrected caption/contract and exact-byte scope pass. Played turn-in/settlement remains unqualified. |
 | [7baa78c3c](https://github.com/Community-Duris/Duris/commit/7baa78c3c8ee67a2059c314e6372f5ae1843e989): Ixarkon direction clues | LOOK descriptions in11 rooms now match12 reciprocal routes: slave pens, garden path, tower gate, camp approaches, sandstone passage, Rockspire tunnel, dwelling and water cavern. Exactly12 direction words change; all routes/metadata/quests/resets remain intact. | **Ixarkon's slave pens, fungal gardens, towers, camp approaches, Rockspire tunnels and water cavern now give directions that match their exits.** Original12 clue checks fail; corrected clues, reciprocal exits/door metadata and exact native scope pass. Live LOOK/traversal remains unqualified. |
 | [45bb3c948](https://github.com/Community-Duris/Duris/commit/45bb3c94896411cb06ce835b42824da8144d7936): Du'Maathe northwest parapet clue | LOOK at37248 now says north rather than south, agreeing with the title and northern/western reciprocal wall roads. Exactly one native word changes; all other bytes remain intact. | **Du'Maathe Castle's northwest parapet now correctly identifies its position in the room description.** Original clue fails; corrected clue/title/reciprocal routes and retained southwestern corner pass. Live LOOK/traversal remains unqualified. |
+| [7b916b887](https://github.com/Community-Duris/Duris/commit/7b916b887): Moregeeth letter desk | Exactly one native keyhole field changes -1→0, allowing normal PICK/KNOCK attempts. Closed/locked state, opening trap, letter placement and Tala exchange remain intact. | Player-facing: “Moregeeth’s trapped letter desk now permits normal lockpicking or knock attempts, restoring access to the letter for Tala’s quest.” Original regression fails; repaired source/exact bytes pass. Played skill/trap/pickup/offer/settlement remains unqualified; saved instances are not rewritten. |
 
 ## Progress
 
@@ -148,9 +149,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 75 | Du'Maathe Castle | [Comprehensive dossier](zone-stories/DU_MAATHE_CASTLE.md): all21 blocks/506 rooms/92 mobiles/49 objects/419 resets/one shop and bounded foreign/shared closure | New schema3/revision1: four lord stories/four potion services;15 contacts/15 aliases/14 optional checks. Exact two-input/three-output granular batch and distinct keys; supplied potion/tooth branches | Separate one-word parapet repair45bb3c948. Missing blue horn, foreign price mismatch/fee guards, loader/reset visibility, consumed recipe lineage and actual potion/campaign/renewal predicates remain plans |
 | 76 | Tundra | [Comprehensive dossier](zone-stories/TUNDRA.md): all20 blocks/175 rooms/26 mobiles/32 objects/246 resets/one shop and bounded foreign/shared closure | New schema3/revision1: six stories/one paid armor service;16 contacts/16 aliases/14 optional checks. Four different books → snowy boots → Eleadora; three seafood kinds → fishbone key; independent gland/shell rewards and head retirement | No native repair. Branch/trap availability, inactive/signposted routes, land-coded docks, absent fish shop, paid guards, partial foreign supply, actual switch/key/source and campaign/renewal remain plans |
 | 77 | The Fields Between | [Comprehensive dossier](zone-stories/FIELDS_BETWEEN.md): all17 blocks/153 rooms/68 mobiles/33 objects/286 resets and bounded foreign/shared closure | New schema3/revision1: seven stories;22 contacts/81 aliases/17 optional checks. Timmy alloy → letter → roaming mother; shared mithril, manuscript/bananas, orders/gift, five distinct heads and portable-rift offering | Actual pickup repair is separate fix05eeca928 with news below. Roaming/ownership, source lineage, portal consumption, narration versus campaign and unresolved prose remain plans |
-| 78–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 78 | The Town of Moregeeth | [Comprehensive dossier](zone-stories/THE_TOWN_OF_MOREGEETH.md): all20 blocks/353 rooms/109 mobiles/96 objects/549 resets/ten shops and bounded foreign/shared closure | Schema3/revision2 preserves seven IDs: five stories/two paid services;21 contacts/22 aliases/15 optional checks. Pouch → key → four planar components; exact head, killer’s sword and trapped letter | Actual desk-keyhole repair is separate fix7b916b887 with news. Actor availability/retirement, access/portal commands, container/trap lineage, fees and narrative campaigns remain qualification plans |
+| 79–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Town of Moregeeth (`goblinht`).
+The next area is Ceothia (`ceothia`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -159,6 +161,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-MOREGEETH-AVAILABILITY / KEY / PORTAL / CONTAINER / FEE | Moreg carries another recipient’s sword; Gimbatul leaves after crown; pouch grants a real access key; four planar routes use different commands; letter is inside a locked trapped desk; paid crafts require all item roots and fees. | Five source-guided outcomes and two zero-achievement services ship. One-field keyhole fix7b916b887 is actual repair; qualify source/current custody, skill/trap/portal actions, NPC retirement, wallet settlement and reset. Campaign/prose additions remain builder decisions. |
 | ZSQ-FIELDS-BETWEEN-SHARED-SUPPLY / PORTAL / OWNERSHIP / CAMPAIGN | Two consumers share scarce alloy; floor portal is consumed; mother crosses into Scorched Valley; foreign seekers retain foreign ownership; narration promises unconfirmed escape, transformation and reunion. | Seven outcomes ship as source guidance/projection. Isolated pickup fix05eeca928 is actual repair; qualify admitted sources, transfer, ENTER/offer, actor roaming/retirement, ownership, settlement and renewal. Builder decides other prose/controller intent. |
 | ZSQ-TUNDRA-AVAILABILITY / FISHING / ROUTES / MIRROR / ALL-INPUTS | Eleadora head retires giver; actors can wander into loading traps. Dock is land and fishmonger lacks a shop; signposted/legacy routes are unusable. Four books and three seafood kinds need ALL; Bom supplies only two seafood kinds. Mirror automatically binds PUSH with asymmetric reset state. | Six stories/one service ship as guidance/projection. Builder chooses availability/shop/route intent before isolated native fixes. Qualify actual catch/source, partial foreign supply, shared switch/keys, paid order, actor retirement and daily renewal. No native Tundra repair ships. |
 | ZSQ-MNTCASTL-SUPPLY / BATCH / LOADED-STATE / CAMPAIGN | Exact blue horn has no active producer; granular batch consumes sand and foreign recipe for three outputs. Foreign clothing prices disagree with captions and paid routes remain guarded. Raw hidden bits are discarded by loader; D resets determine actual gate visibility. | Four stories/four services ship as guidance/projection. Builder selects horn/price/visibility intent; qualify indexed input/output lineage, actual SEARCH/UNLOCK/key break and potion use/foreign campaign before new objectives. One-word parapet repair ships separately. |
@@ -4200,3 +4203,53 @@ dailies/2203 rows. Queue: **77/220 source-comprehensive,143 pending; The Town
 of Moregeeth next**. The full goal remains active. Active, ready accounting is
 mandatory; frozen recovery remains separate. No accounting activation, DB/server
 operation, migration, deployment or merge occurred.
+
+
+## Priority 78 checkpoint: The Town of Moregeeth
+
+The [comprehensive dossier](zone-stories/THE_TOWN_OF_MOREGEETH.md) closes all20
+native blocks (M8/Q6/MA1/QA5),353 rooms/148 complete prose families/26 headers/
+1350 exact exits/17 exit-text families/no room extras,109 mobiles/105 full prose
+families,96 objects and549 resets/442 exact/453 parent-aware families. All nine
+addressed families/22 aliases, ten shops, thirteen imported prototypes, eight
+unlimited type25 portals, shared inn/world-quest/bank/training/justice behavior,
+all713 active portals and five boundary edges/full foreign neighbors were reviewed.
+No foreign quest/reset/portal supplies an omitted local material or outcome.
+
+Schema3/revision2 retains all seven old IDs/contracts and four exclusions, with
+five story outcomes and two paid services. Fifteen optional checks explain
+14 current material/access conditions and one earlier pouch receipt. Pouch →
+magical key → four exact planar components is useful preparation, without
+forcing personal history for supplied materials. Moreg wears Glub's requested
+sword; recovery can remove another giver. Glub and Gimbatul retire after their
+specific rewards. Moreg's reward called a key is actually a lockpick. Pouch is
+a potion, letter is inside Ungal's desk and five skulls come from five cave bats.
+STARE flame/ENTER mirrors/TOUCH crystal/SOUTH smoke use verified current commands.
+
+**Actual native repair, separate fix [7b916b887](https://github.com/Community-Duris/Duris/commit/7b916b887):
+Fix Moregeeth letter quest desk keyhole.** Before, the closed locked desk's
+negative key field made PICK and KNOCK reject it before an attempt. Exactly
+one field now enables attempts with keyhole zero. Lock, acid opening trap,
+letter reset/text and Tala reward remain intact. Original-data regression fails;
+repaired data and exact-byte scope pass. Played skill/trap/pickup/offer/settlement
+remains unqualified; saved instances are not rewritten. **News-ready:**
+“Moregeeth's trapped letter desk now permits normal lockpicking or knock
+attempts, restoring access to the letter for Tala's quest.”
+
+Other findings remain proposals: copied Gimbatul/Gorblog captions, distinct
+same-name actors, narrated bribes/vault/rescue/ghost hunt/revenge and no durable
+campaign endings. Actual admitted source/transfer, container/skill/trap/portal
+movement, fee/all-root settlement, actor removal, public access and renewal
+need qualification. No new kill gate, guaranteed roll, universal key, extra
+achievement per keyword or campaign finale is invented.
+
+Focused source/schema/C++ projections, full production regression, maintained
+build, formatting, links, original queue, all2668 definitions, fingerprint/
+revision/registry/prior96 other journals and exact prior PR/news preservation
+are required. Catalog:97 journals/1594 achievement units/1449 potential dailies/
+2203 rows; paid-service classification removes two inappropriate achievement
+units without changing native contracts or daily count. Queue: **78/220
+source-comprehensive,142 pending; Ceothia next**. Full goal remains active.
+Active, ready accounting is mandatory; frozen recovery remains separate.
+No accounting activation, DB/server operation, migration, deployment or merge
+occurred. Synthetic receipts do not qualify played transactions or persistence.

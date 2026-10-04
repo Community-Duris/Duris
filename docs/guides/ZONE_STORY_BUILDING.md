@@ -1815,3 +1815,32 @@ need explicit durable campaign adapters before completion credit.
 Active, ready accounting remains mandatory. Current availability, source versus
 gift, portal travel, actor retirement and reset renewal need actual admitted
 state. Synthetic receipts establish projection/replay/recovery behavior only.
+
+
+## Moregeeth example: recipient availability, real keys and trapped containers
+
+The [dossier](../design/zone-stories/THE_TOWN_OF_MOREGEETH.md) and
+[sidecar](../../areas/story/goblinht.story.json) retain seven existing IDs and
+exact bindings, with five stories/two paid services. Explain Gimbatul’s pouch →
+magical key → four planar components as optional preparation; supplied items
+and open public routes skip personal history. Moreg wears Glub’s sword, and
+Gimbatul leaves after the crown: shared actor availability can affect another
+card without enforcing an artificial quest order.
+
+Read actual types and reset parents. Moreg’s key reward is a lockpick, the
+component pouch a potion, and Ungal’s letter is nested inside a trapped desk.
+The sticky, magical and rusty keys open different doors. Four different planar
+kinds are an ALL set; five bat skulls need five separate copies. Paid item/coin
+crafts retain their exact accepted receipts without story achievement/daily credit.
+
+Check command constants before writing travel hints: STARE flame139, TOUCH
+crystal320, ENTER mirrors7 and SOUTH smoke3 are real routes. Plane names and
+narrated magical protection do not supply a new campaign controller. Questions,
+opening, reading, pickup, traversal and accepted outcome are distinct facts.
+
+The desk’s actual negative-keyhole repair7b916b887 is separate, one field only,
+retains the lock/trap/letter exchange and has original-fails/repaired-passes
+source proof and a prominent news sentence. Skill rolls and trap handling still
+apply. Copied captions and threatened ghost/assassin campaigns remain pending
+builder decisions. Active, ready accounting is required for new tracking;
+frozen recovery and source-versus-played qualification remain separate.
