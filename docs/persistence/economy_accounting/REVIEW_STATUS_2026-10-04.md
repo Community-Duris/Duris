@@ -21,8 +21,9 @@ All22 prepared checked-release cases and all14 startup/held-save cases now pass
 on both engines. Private expectation repairs preserve closed pre-start mutation,
 closed post-start registration, retained original holds and explicit resume;
 ID-only acknowledgements cannot release restored ownership. Original failures
-remain preserved. Current-source18-case recovery-session execution and the actual
-ordinary-drop gameplay/two-cold-boot journey remain required and unfinished.
+remain preserved. All18 current-source recovery-session cases now pass on both
+engines, including inspection failures and late lease retirement. The actual
+ordinary-drop gameplay/two-cold-boot journey remains required and unfinished.
 These results do not complete Plan 1 or qualify actual active ordinary-drop
 publication/restart. See the consolidated report for exact inputs and logs.
 
@@ -31,6 +32,12 @@ Plan5 `e694798f6` and `bbb72ecff` are integrated as `47aa60de0` and
 reservation inventory. The fifth orphan coverage count is mandatory; old
 four-count snapshots require recapture. Peer engine evidence remains specific
 to its original native tree, not the combined candidate.
+
+Plan5 retained SQL baseline restore slice `be91ba2aa` is integrated as
+`589893f08`. Its independent retained-book reader and native restore evidence
+remain specific to the peer's inputs. The shared SQL initialization witness
+request is recorded in the existing Plan5 handoff; it is full-release work,
+not an additional independent Plan1 acceptance gate.
 
 Latest Plan5 slice `a5d26b658` is imported as `cd0fbebb6`; see
 [its projection report](PLAN5_SQL_BASELINE_PROJECTION_SLICE_2026-10-04.md).

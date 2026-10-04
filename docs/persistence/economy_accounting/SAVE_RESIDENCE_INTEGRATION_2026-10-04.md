@@ -631,3 +631,37 @@ These tests exercise actual pipeline/worker/journal/repository/pool with control
 world and receipt leaves; they do not prove actual guarded gameplay ACK or cold
 native graph reconstruction. Those remain assigned acceptance, together with the
 already-prepared18 recovery-session cases on the current production source.
+
+### Plan 1 qualification: native recovery-session owner
+
+All18 original prepared recovery cases now pass on MariaDB10.11.14 (13 seconds)
+and MySQL8.0.46 (11 seconds), within the original120-second aggregate bound.
+The246.98-second compile stays within300 seconds and binds unchanged production
+source9fabe54bb. Cases cover original-session rollback/retirement, replacement
+apply, creation proof, inspection's second transaction, journal proof and an
+already-durable resolution surviving late lease retirement.
+
+The private fixture needed link closure for its unselected flatfile branch,
+cleanup of its synthetic healthy-case active selector, and a caller-owned read
+transaction for its two record-bound boot inspections. Flatfile sentinels abort
+if unexpectedly selected; they provide no recovery proof. Synthetic cleanup runs
+after all healthy native/receipt/journal/pool assertions and retains history.
+Record inspection now confirms original-session rollback and idle/reconnect
+state before the unchanged complete payload/UID/component/wallet assertion.
+All18 cases, fault seams, assertions and original budgets remain. Failed V3–V6
+attempts are preserved; no production source, guard or loader behavior changed.
+
+Evidence roots /opt/duris-plan1-qualification-20261004/p1-recovery-v7-mariadb-92b12791.lnAOkb
+and p1-recovery-v7-mysql-098e0a9b.G6Bfbn contain recovery/result.json, pinned
+native-evidence/results.json and final teardown-result.json. Both final reports
+verify owned server identity, schema absence, shutdown and successful port rebind.
+Binary15a7cce3658a64a5945d6111a51d19540afb86b8852f4c70779d2f11d8d8e932;
+metadata bb328c2acaf1faf9d78577a22890b8c705347d82f13a19dca28d8eb0103ee6d7.
+Runtime result hashes9bf2599b00cdfc639dae4b1d4bd8313ac74d693627db548ebb4e8d1ee9145f7d
+and5ed16c4e8393d128e19c6688a6f60194323bc47be6dc22c42bd56b4c15e9ab28.
+
+The existing active ordinary-drop journey remains unfinished: real inactive
+creation/get/save and disposable lifecycle activation now execute, but the
+literal-checkpoint wait fails. Prior failed attempts remain preserved. Required
+guarded gameplay ACK and two full-world cold boots, Plans2–4, combined Plan5
+qualification and full release remain open. No new acceptance gate is added.

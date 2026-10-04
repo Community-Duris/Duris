@@ -12,8 +12,9 @@ player journey.
 
 Plan 1's major qualification batch is underway on production source `9fabe54bb`.
 Both strict builds, focused components, worker/journal guard cases and both-engine
-bank/coin/item coordinator/pool checks plus maintained lifecycle,22 checked-release and14 startup cases pass within their stated scopes. Current-source recovery-session
-reruns and native production publication/recovery remain open. No R1–R8 or
+bank/coin/item coordinator/pool checks plus maintained lifecycle,22 checked-release,
+14 startup and18 recovery-session cases pass within their stated scopes on both
+engines. Native production publication/recovery remains open. No R1–R8 or
 major-plan acceptance gate is waived or marked complete by these partial results.
 
 ## Product boundary

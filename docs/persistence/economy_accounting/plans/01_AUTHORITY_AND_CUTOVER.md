@@ -22,8 +22,9 @@ ready and its existing qualification batch is underway. Preserve original source
 and regression owners for failure/fix proof. Production source `9fabe54bb` passes
 both strict builds; focused components and worker/journal guards pass within
 their stated scopes, and real pooled bank passes both SQL engines. Remaining
-current-source recovery-session checks plus actual publication/recovery still prevent Plan 1
-completion. Do not expand its independent acceptance or add optional gates.
+actual publication/recovery still prevents Plan 1 completion. All18 current-source
+recovery-session cases now pass both engines with original assertions and limits.
+Do not expand its independent acceptance or add optional gates.
 
 Keep implementation within the group's R1–R8 contract and this plan's independent
 acceptance. Ordinary save projections do not need an additional economic receipt
