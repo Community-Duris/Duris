@@ -23,8 +23,15 @@ is integrated by cherry-pick in `e5a458f70`; see
 [its report](PLAN5_CANONICAL_RESTORE_EVIDENCE_SLICE_2026-10-04.md).
 Its 3,026 native decoder decisions and both-engine restore evidence remain
 specific to its consumed inputs/native tree `d9a9610f3`. They do not qualify
-the combined candidate; command-preimage binding and baseline parity remain open.
-The source milestone candidate through `258f27b95` includes the twenty-one slices
+the combined candidate; command-preimage binding and complete world/native baseline evidence remain open.
+Plan5 native baseline claim audit `17b824618cb1ba6c20f8a2feebde8d65d0e559eb`
+is integrated in `ad504f5c0`; see
+[its native audit report](PLAN5_NATIVE_SQL_BASELINE_CLAIMS_SLICE_2026-10-04.md).
+Native exact replay/claim reconciliation and damage cuts qualify its consumed
+inputs only; fixture holdings/items remain absent and export remains partial.
+Shared native case registration is committed in `4e5faf66a`, unexecuted.
+
+The source milestone candidate through `6d42ad788` includes the twenty-three slices
 below, plus the local Plan5 integrations described above. Plan5's reports remain evidence of
 its own inputs, not of this combined source candidate. Root checkout WIP is preserved.
 
@@ -58,6 +65,8 @@ Parallel specialists use bounded file ownership; primary integrates and reviews.
 | `95d03d02f` | [Reserved journal connection](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#follow-on-journal-connection): exclusive PID reservation, fresh frame observation, individual apply/aggregate checkpoint scopes and enabled namespace-loss refusal. | Ownership disabled; complete native callers/census, serialized lifecycle, clean critical ACK, actual revisit/startup and runtime qualification remain open. |
 | `c292cb0f0` | [SQL participant gates](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#independent-sql-participants): enabled recovery/retained-death mutations borrow the caller scope; admission refusal precedes SQL and preserves cleanup output. | Source only; outer transaction/lease disposal/journal resolution, independent pet writer and other native owners remain open. |
 | `258f27b95` | [Outer SQL mutation gates](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#outer-sql-mutation-boundaries): death-conflict and quarantine owners borrow before native work; pooled admission spans lease disposal/replacement and recovery spans journal resolution. | Source only; actual caller residence, other native writers, serial lifecycle, complete census/critical ACK and production startup/revisit remain open. |
+| `bef2f797f` | [Positive-PID synchronous save owner](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#positive-pid-synchronous-save-owner): claims/scopes span pre-save mutations, SQL, exact-session cleanup and restoration/posthooks; pet participant borrows. | Source only; PID-zero, caller-owned transactions, direct migration/independent writers and native qualification remain open. |
+| `6d42ad788` | [Restored ordinary-drop production integration](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#restored-ordinary-drop-production-integration): phased SQL startup, actor-independent movement dispatch, fresh journal/control census, original-slot reserved native publication and coordinator-guarded ACK/hold clear/wake/revisit. | Ownership disabled; complete writer/shutdown integration, legitimate overlapping-save/rejected-outcome disposition, full graph/live-producer coverage and qualification remain open. |
 
 Source reviewers found no remaining blocker in each slice's stated narrow scope.
 This is source review, not native/build/gameplay/persistence/recovery acceptance.

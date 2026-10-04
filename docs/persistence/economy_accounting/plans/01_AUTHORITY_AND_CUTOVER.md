@@ -840,11 +840,13 @@ hydration/nonthrowing enrollment are not implemented. No checks or milestone pus
 
 ## October 4 integration priority
 
-The current source checkpoint is5766555f8. Replay ownership and the complete
+The current source checkpoint is6d42ad788. Replay ownership and the complete
 indexed SQL boot recovery catalog are implemented but unqualified; the latter
-is consumed by private all-absent reconstruction. Production delivery claims,
-mutation census, fresh reserved journal scan, coordinator ACK reservation and
-release-driven revisit are still unwired. Finish that actual SQL recovery path
+is consumed by private all-absent reconstruction. Positive-PID synchronous save ownership, phased SQL startup, actor-independent
+restored ordinary-drop dispatch, fresh journal/control census, private guarded ACK
+and release-driven reserved revisit are now connected source. Ownership stays
+disabled pending complete native writers/shutdown, legitimate overlapping-save
+and rejected-outcome disposition and full graph/live producer coverage. Finish that actual SQL recovery path
 before adding more isolated prerequisites, then the native baseline/cutover/pause
 owner and existing flatfile bank/item parity. Keep the stated independent
 acceptance: missing Plans2–4 coverage must refuse activation, but those writers

@@ -267,3 +267,20 @@ quarantine native boundaries. Pool admission spans lease disposal/replacement;
 quarantine admission spans replacement/proof/journal resolution. Actual caller
 residence, other native writers, serial lifecycle, census/ACK and startup/revisit
 remain open. All new source remains unqualified; ownership remains disabled.
+
+
+## Connected production source follow-up
+
+Primary commits bef2f797f and6d42ad788 connect positive-PID synchronous save
+ownership/native cleanup and restored ordinary SQL-drop startup/publication/guarded
+ACK/hold clear/reserved replay revisit. Ownership is still disabled; full native
+writers/shutdown, overlapping-save/rejected-outcome disposition, graph/live producer
+coverage and major-plan qualification remain open. No new tests or qualified push.
+See the maintained SAVE_RESIDENCE_INTEGRATION_2026-10-04.md report.
+
+Plan5 native SQL baseline claim slice17b824618 is integrated in ad504f5c0; its
+native owner/audit proof remains input-specific and authority export partial.
+Primary registered its claim and origin cases in4e5faf66a, once per internally
+executed engine pair, with explicit opt-in and required-case/skip enforcement.
+Registration is unexecuted; unchanged original budgets remain required. Marker-v2,
+`.elr`, command-preimage and whole-candidate release handoffs remain open.

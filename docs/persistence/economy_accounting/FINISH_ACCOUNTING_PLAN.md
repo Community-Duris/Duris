@@ -52,7 +52,7 @@ backend limitations and the tested revision before checking off acceptance.
 ## Current source preparation checkpoint
 
 The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
-remote histories and unqualified source milestones through258f27b95. New source
+remote histories and unqualified source milestones through6d42ad788. New source
 prerequisites cover allocation-safe publication cleanup, checkpoint-spanning save
 execution guards, bounded runtime UID-root census, authority-bound native baseline
 initialization markers, ordinary item receipt sealing with ACK-only conflict
@@ -95,9 +95,21 @@ and journal resolution. Actual caller residence, other native writers, serial
 lifecycle, complete census/ACK and startup/revisit remain open. Inactive bodies
 are preserved; no qualification ran.
 
-Production restored-save/actorless publication ownership, complete mutation census,
-critical ACK reservation, production wake/replay integration, complete ordinary-graph enrollment, authentic
-native baseline boundary authority and Plan5 marker-v2 consumers remain pending. Native writer integration,
+Positive-PID synchronous ownership is connected in bef2f797f. SQL boot now prepares
+saves before critical restore, and restored ordinary-drop movement dispatch uses
+an actor-independent original-slot owner through fresh journal/control census,
+native graph publication/cleanup, coordinator-guarded ACK and exact hold clear in
+6d42ad788. Release-driven replay reacquires reservations; stopped/failed namespaces
+are not retried. Production ownership remains disabled. Complete native writers,
+serialized shutdown, legitimate overlapping-save/rejected-outcome disposition,
+full ordinary graph/live producer coverage and qualification remain required.
+Plan5 native baseline claim audit17b824618 is integrated in ad504f5c0 and native
+claim/origin cases registered in4e5faf66a; peer evidence qualifies its own inputs,
+not this combined source. Fixture holdings/items remain absent and export partial.
+
+Complete native mutation census and owned shutdown, legitimate overlapping-save/
+rejected-outcome completion, full ordinary-graph/live-producer coverage, authentic
+native baseline/cutover/pause authority and Plan5 marker-v2 consumers remain pending. Native writer integration,
 current semantic registry/matrix anchors and executable route proof remain open.
 Testing stays deferred until each major plan is ready; no new source qualification
 or milestone push occurred. Preserve all original BEFORE sources, oracles and budgets.
