@@ -289,6 +289,17 @@ totals beyond signed 64-bit refuse using wide decimal arithmetic. Pre-opening
 history is excluded. An economic-only shop effect needs no invented legacy
 currency row. These checks do not replace full economic source/custody
 reconciliation or route qualification.
+Before SQL qualification succeeds, retained economic evidence is checked across
+all epochs. Each root must retain its declared account effects, postings,
+children and item references with contiguous indexes. Orphan detail rows,
+missing or conflicting root receipts and retained source claims, broken child
+or item-ledger links, denomination/value disagreement, unbalanced roots and
+posting/effect disagreement refuse qualification. These are independent
+SELECT-only checks; a failure leaves the imported authority intact for diagnosis.
+An empty inactive history remains eligible. No adjustment or activation is
+performed. Canonical plan decoding, policy-required sources, native custody,
+opening/epoch authority, publication recovery and allocator continuity still
+need their applicable independent qualification evidence.
 Runtime boot uses only the
 new socket. Flatfile restore verifies copied bytes before mutation, runs native
 authority replay, and validates existing account, snapshot, and world catalog bytes.
