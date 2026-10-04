@@ -369,6 +369,24 @@ static void sql_pool_retire_borrowed_slot(int slot)
 		pthread_cond_signal(&pool_cond);
 }
 
+bool sql_pool_retire_owned_connection(MYSQL *conn)
+{
+	if (!conn)
+		return false;
+	pthread_mutex_lock(&pool_mutex);
+	bool retired = false;
+	if (pool)
+		for (int i = 0; i < pool_size; ++i)
+			if (pool[i].conn == conn && pool[i].in_use)
+			{
+				sql_pool_retire_borrowed_slot(i);
+				retired = true;
+				break;
+			}
+	pthread_mutex_unlock(&pool_mutex);
+	return retired;
+}
+
 MYSQL *sql_pool_replace_connection(MYSQL *conn)
 {
 	MYSQL *replacement = NULL;
@@ -514,6 +532,12 @@ void sql_pool_release(MYSQL *conn)
 void sql_pool_discard_connection(MYSQL *conn)
 {
 	(void)conn;
+}
+
+bool sql_pool_retire_owned_connection(MYSQL *conn)
+{
+	(void)conn;
+	return false;
 }
 
 MYSQL *sql_pool_replace_connection(MYSQL *conn)

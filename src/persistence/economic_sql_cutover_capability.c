@@ -45,7 +45,7 @@ bool query_lock_owner(MYSQL *connection, const char *name, unsigned long *owner,
 	uint64_t parsed_owner = 0;
 	const auto row_length = std::char_traits<char>::length(row[0]);
 	const auto parsed = std::from_chars(row[0], row[0] + row_length, parsed_owner);
-	if (parsed.ec != std::errc{} || parsed.ptr != row[0] + row_length ||
+	if (parsed.ec != std::errc{} || parsed.ptr != row[0] + row_length || !parsed_owner ||
 	    parsed_owner > std::numeric_limits<unsigned long>::max())
 		return false;
 	*owner = static_cast<unsigned long>(parsed_owner);
@@ -60,28 +60,6 @@ bool owns_exact_lock(MYSQL *connection, const char *name, unsigned long session)
 	return mysql_thread_id(connection) == session &&
 	       query_lock_owner(connection, name, &owner, &has_owner) && has_owner &&
 	       owner == session;
-}
-
-bool release_lock_and_verify(MYSQL *connection, const char *name, unsigned long session)
-{
-	if (!connection || mysql_thread_id(connection) != session ||
-	    !reconnect_disabled(connection))
-		return false;
-	char query[160];
-	const int length = std::snprintf(query, sizeof(query), "SELECT RELEASE_LOCK('%s')", name);
-	if (length < 0 || static_cast<size_t>(length) >= sizeof(query) ||
-	    mysql_real_query(connection, query, static_cast<unsigned long>(length)))
-		return false;
-	result_ptr result(mysql_store_result(connection), mysql_free_result);
-	if (!result || mysql_num_rows(result.get()) != 1 || mysql_num_fields(result.get()) != 1 ||
-	    !mysql_fetch_row(result.get()))
-		return false;
-	// Prove that this exact session no longer owns the named fence.
-	unsigned long owner = 0;
-	bool has_owner = false;
-	return mysql_thread_id(connection) == session &&
-	       query_lock_owner(connection, name, &owner, &has_owner) &&
-	       (!has_owner || owner != session);
 }
 
 bool exact_live_transaction(MYSQL *connection, unsigned long session)
@@ -114,10 +92,14 @@ bool economic_sql_lifecycle_guard::acquire_cutover_capability(
 		if (!critical_command_coordinator_owner::acquire_cutover_lease(
 			    drain_timeout_msec, &generation, &lease_id))
 			return false;
+		// Bind immediately. Failed SQL validation retains the exact coordinator
+		// lease until checked guard cleanup, rather than discarding its identity.
+		coordinator_release_ = critical_command_coordinator_owner::release_cutover_lease;
+		coordinator_generation_ = generation;
+		coordinator_lease_id_ = lease_id;
 		if (!is_valid_authority())
 		{
-			critical_command_coordinator_owner::release_cutover_lease(generation,
-										  lease_id);
+			acquisition_confirmed_ = false;
 			return false;
 		}
 	}
@@ -125,21 +107,15 @@ bool economic_sql_lifecycle_guard::acquire_cutover_capability(
 	{
 		if (generation && lease_id)
 		{
-			try
-			{
-				critical_command_coordinator_owner::release_cutover_lease(
-					generation, lease_id);
-			}
-			catch (...)
-			{
-			}
+			coordinator_release_ =
+				critical_command_coordinator_owner::release_cutover_lease;
+			coordinator_generation_ = generation;
+			coordinator_lease_id_ = lease_id;
+			acquisition_confirmed_ = false;
 		}
 		return false;
 	}
 
-	coordinator_release_ = critical_command_coordinator_owner::release_cutover_lease;
-	coordinator_generation_ = generation;
-	coordinator_lease_id_ = lease_id;
 	output->sql_authority_id_ = authority_id_;
 	output->sql_session_ = session_;
 	output->coordinator_generation_ = generation;
@@ -223,6 +199,7 @@ bool economic_sql_cutover_transaction_owner::begin(
 		return false;
 	}
 
+	owner_thread_ = guard.owner_thread_;
 	connection_ = exact_connection;
 	session_ = exact_session;
 	sql_authority_id_ = guard.authority_id_;
@@ -246,6 +223,10 @@ bool economic_sql_cutover_transaction_owner::begin(
 	guard.coordinator_lease_id_ = 0;
 	guard.connection_ = nullptr;
 	guard.session_ = 0;
+	guard.owner_thread_ = {};
+	guard.acquisition_confirmed_ = false;
+	guard.runtime_release_attempted_ = false;
+	guard.writer_release_attempted_ = false;
 	guard.runtime_lock_ = false;
 	guard.writer_lock_ = false;
 	guard.maintenance_ = false;
@@ -416,11 +397,14 @@ bool economic_sql_cutover_transaction_owner::finish_publication(
 	return false;
 #else
 	if (!lifetime_guard || lifetime_guard->connection_ || lifetime_guard->session_ ||
-	    lifetime_guard->runtime_lock_ || lifetime_guard->writer_lock_ ||
-	    lifetime_guard->maintenance_ || lifetime_guard->local_runtime_ ||
-	    lifetime_guard->local_maintenance_ || lifetime_guard->coordinator_release_ ||
-	    lifetime_guard->authority_id_ || lifetime_guard->coordinator_generation_ ||
-	    lifetime_guard->coordinator_lease_id_ || lifetime_guard->local_exclusive_.owns_lock() ||
+	    lifetime_guard->owner_thread_ != std::thread::id{} ||
+	    lifetime_guard->acquisition_confirmed_ || lifetime_guard->runtime_release_attempted_ ||
+	    lifetime_guard->writer_release_attempted_ || lifetime_guard->runtime_lock_ ||
+	    lifetime_guard->writer_lock_ || lifetime_guard->maintenance_ ||
+	    lifetime_guard->local_runtime_ || lifetime_guard->local_maintenance_ ||
+	    lifetime_guard->coordinator_release_ || lifetime_guard->authority_id_ ||
+	    lifetime_guard->coordinator_generation_ || lifetime_guard->coordinator_lease_id_ ||
+	    lifetime_guard->local_exclusive_.owns_lock() ||
 	    lifetime_guard->local_exclusive_.mutex() || !publication_pending_ ||
 	    !is_valid_for_publication())
 		return false;
@@ -441,6 +425,8 @@ bool economic_sql_cutover_transaction_owner::finish_publication(
 	// All remaining writes are non-throwing. The SQL locks stay owned by this
 	// exact session and the local mutex stays locked as unique_lock ownership moves.
 	static_assert(std::is_nothrow_move_assignable_v<std::unique_lock<std::shared_mutex>>);
+	lifetime_guard->acquisition_confirmed_ = true;
+	lifetime_guard->owner_thread_ = owner_thread_;
 	lifetime_guard->connection_ = connection_;
 	lifetime_guard->session_ = session_;
 	lifetime_guard->runtime_lock_ = runtime_lock_;
@@ -456,6 +442,7 @@ bool economic_sql_cutover_transaction_owner::finish_publication(
 	publication_pending_ = false;
 	connection_ = nullptr;
 	session_ = 0;
+	owner_thread_ = {};
 	sql_authority_id_ = 0;
 	coordinator_generation_ = 0;
 	coordinator_lease_id_ = 0;
@@ -473,21 +460,31 @@ bool economic_sql_cutover_transaction_owner::release_after_terminal() noexcept
 #ifdef __NO_MYSQL__
 	return false;
 #else
-	if (!active_ || publication_pending_ ||
+	if (owner_thread_ != std::this_thread::get_id() || !active_ || publication_pending_ ||
 	    terminal_outcome_ == economic_sql_cutover_terminal_outcome::unresolved || !connection_)
 		return false;
 	if (!sql_resources_released_)
 	{
 		try
 		{
-			if (writer_lock_ &&
-			    !release_lock_and_verify(
-				    connection_, "duris:economic_sql_currency_writers", session_))
-				return false;
-			if (runtime_lock_ &&
-			    !release_lock_and_verify(
-				    connection_, ECONOMIC_SQL_BOOT_MAINTENANCE_LOCK_NAME, session_))
-				return false;
+			if (writer_lock_)
+			{
+				if (!economic_sql_lifecycle_guard::release_named_lock(
+					    connection_, session_,
+					    "duris:economic_sql_currency_writers",
+					    &writer_release_attempted_))
+					return false;
+				writer_lock_ = false;
+			}
+			if (runtime_lock_)
+			{
+				if (!economic_sql_lifecycle_guard::release_named_lock(
+					    connection_, session_,
+					    ECONOMIC_SQL_BOOT_MAINTENANCE_LOCK_NAME,
+					    &runtime_release_attempted_))
+					return false;
+				runtime_lock_ = false;
+			}
 			if (local_exclusive_.owns_lock())
 				local_exclusive_.unlock();
 			if (local_runtime_ || local_maintenance_)
@@ -514,6 +511,7 @@ bool economic_sql_cutover_transaction_owner::release_after_terminal() noexcept
 	terminal_ = true;
 	connection_ = nullptr;
 	session_ = 0;
+	owner_thread_ = {};
 	sql_authority_id_ = 0;
 	coordinator_generation_ = 0;
 	coordinator_lease_id_ = 0;

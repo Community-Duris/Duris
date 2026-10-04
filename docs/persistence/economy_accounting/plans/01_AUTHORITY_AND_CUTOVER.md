@@ -723,3 +723,14 @@ narrow interface requests and independently committed slices for integration on
 one tested candidate; do not duplicate Plan5 mutation/tooling work. Local Git
 integration is explicitly authorized; GitHub PR merge/deploy/production activation
 remain prohibited. Normal milestone publication follows combined-source checks.
+
+### Current source preparation under plan-level test batching
+
+Worker sealed identity and lifecycle cleanup propagation are implemented locally
+but unqualified. See the October 3 review checkpoint for exact BEFORE/prepared
+receipt pins, thread/session ownership, native pooled retirement, direct-DB
+fail-closed policy and preserved known/ambiguous outcomes. Update maintained
+fixture-double link closures for the new exact pool retirement API before the
+Plan 1 batch. Restored-save production admission/hydration/replay wiring, runtime
+recovery and current-candidate native/gameplay/SQL/flatfile qualification remain
+open. No historical passing test qualifies these newer sources.

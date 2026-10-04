@@ -20,7 +20,7 @@ struct runtime_owner
 	std::unique_ptr<economic_sql_lifecycle_guard> authority;
 	pid_t process = 0;
 
-	void release() noexcept
+	bool release() noexcept
 	{
 		if (process && process != getpid())
 		{
@@ -30,14 +30,26 @@ struct runtime_owner
 			(void)authority.release();
 			(void)connection.release();
 			process = 0;
-			return;
+			return true;
 		}
+		if (authority && !authority->release())
+			return false;
 		authority.reset();
 		connection.reset();
 		process = 0;
+		return true;
 	}
 
-	~runtime_owner() { release(); }
+	~runtime_owner()
+	{
+		if (!release())
+		{
+			// Process exit is the terminal boundary for an unresolved original
+			// session. Do not destroy its mutex owner or close a borrowed handle.
+			(void)authority.release();
+			(void)connection.release();
+		}
+	}
 };
 
 runtime_owner &owner()
@@ -54,32 +66,33 @@ bool sql_economic_runtime_start() noexcept
 		auto &runtime = owner();
 		if (runtime.connection || runtime.authority)
 			return false;
-		std::unique_ptr<MYSQL, decltype(&mysql_close)> connection(
-			sql_open_configured_connection(0), mysql_close);
-		if (!connection)
+		runtime.connection.reset(sql_open_configured_connection(0));
+		if (!runtime.connection)
 			return false;
-		auto authority = std::make_unique<economic_sql_lifecycle_guard>();
-		if (economic_sql_lifecycle_guard::acquire_runtime(connection.get(),
-								  authority.get()))
+		runtime.process = getpid();
+		runtime.authority = std::make_unique<economic_sql_lifecycle_guard>();
+		if (economic_sql_lifecycle_guard::acquire_runtime(runtime.connection.get(),
+								  runtime.authority.get()) ||
+		    !duris_sql_exclusion_guard_bind_economic_runtime(runtime.connection.get()))
+		{
+			(void)runtime.release();
 			return false;
-		if (!duris_sql_exclusion_guard_bind_economic_runtime(connection.get()))
-			return false;
+		}
 		bool active = false;
 		if (economic_sql_accounting_lifecycle_transaction::recover_runtime(
-			    connection.get(), *authority, &active) ||
+			    runtime.connection.get(), *runtime.authority, &active) ||
 		    active != economic_gameplay_authority::active())
 		{
 			economic_gameplay_authority::clear_sql_runtime();
+			(void)runtime.release();
 			return false;
 		}
-		runtime.connection = std::move(connection);
-		runtime.authority = std::move(authority);
-		runtime.process = getpid();
 		return true;
 	}
 	catch (...)
 	{
 		economic_gameplay_authority::clear_sql_runtime();
+		(void)owner().release();
 		return false;
 	}
 }
@@ -87,7 +100,7 @@ bool sql_economic_runtime_start() noexcept
 void sql_economic_runtime_shutdown() noexcept
 {
 	economic_gameplay_authority::clear_sql_runtime();
-	owner().release();
+	(void)owner().release();
 }
 #else
 bool sql_economic_runtime_start() noexcept
