@@ -1,4 +1,5 @@
 #include "player/player_save_journal.h"
+#include "player/player_save_execution_guard.h"
 
 #include "player/player_snapshot_codec.h"
 
@@ -1329,6 +1330,13 @@ player_save_journal_diagnostic player_save_journal_diagnostic_copy(int pid)
 
 player_save_journal_result player_save_journal_append(const player_snapshot &snapshot)
 {
+	player_save_execution_guard::permit execution(snapshot.pid);
+	// Invalid PIDs cannot own a hold; preserve existing journal validation,
+	// initialization/quota precedence and append-failure accounting for them.
+	if (snapshot.pid > 0 && !execution)
+		return execution.result() == player_save_execution_guard::admission::held ?
+			       player_save_journal_result::replay_deferred :
+			       player_save_journal_result::replay_blocked;
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	if (!health.initialized)
 		return player_save_journal_result::not_initialized;
@@ -1421,6 +1429,11 @@ player_save_journal_result player_save_journal_checkpoint(int pid,
 {
 	if (pid <= 0 || !durable_revision)
 		return player_save_journal_result::corrupt_data;
+	player_save_execution_guard::permit execution(pid);
+	if (!execution)
+		return execution.result() == player_save_execution_guard::admission::held ?
+			       player_save_journal_result::replay_deferred :
+			       player_save_journal_result::replay_blocked;
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	if (!health.initialized)
 		return player_save_journal_result::not_initialized;
@@ -1488,6 +1501,39 @@ player_save_journal_result checkpoint_proven(const std::map<int, player_revision
 {
 	if (acknowledged.empty() && proofs.empty())
 		return player_save_journal_result::ok;
+	// Own every affected PID before any compaction. These independent counted
+	// permits reject a restored hold even for callers outside replay/workers.
+	std::vector<player_save_execution_guard::permit> checkpoint_permits;
+	try
+	{
+		if (acknowledged.size() > checkpoint_permits.max_size() ||
+		    proofs.size() > checkpoint_permits.max_size() - acknowledged.size())
+			return player_save_journal_result::replay_blocked;
+		checkpoint_permits.reserve(acknowledged.size() + proofs.size());
+		for (const auto &[pid, revision] : acknowledged)
+		{
+			(void)revision;
+			checkpoint_permits.emplace_back(pid);
+			if (!checkpoint_permits.back())
+				return checkpoint_permits.back().result() ==
+						       player_save_execution_guard::admission::held ?
+					       player_save_journal_result::replay_deferred :
+					       player_save_journal_result::replay_blocked;
+		}
+		for (const auto &proof : proofs)
+		{
+			checkpoint_permits.emplace_back(proof.pid);
+			if (!checkpoint_permits.back())
+				return checkpoint_permits.back().result() ==
+						       player_save_execution_guard::admission::held ?
+					       player_save_journal_result::replay_deferred :
+					       player_save_journal_result::replay_blocked;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_save_journal_result::replay_blocked;
+	}
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	if (!health.initialized)
 		return player_save_journal_result::not_initialized;
@@ -1652,6 +1698,9 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 			}
 		}
 	}
+	// Retain every replay permit through both aggregate checkpoint exits.
+	// Stage token storage AND every PID entry before invoking any native apply.
+	std::vector<std::pair<int, player_save_execution_guard::permit>> execution_permits;
 	std::map<int, player_revision_t> acknowledged;
 	std::vector<operation_record_proof> proven_operations;
 	std::set<int> runtime_quarantined_pids;
@@ -1698,9 +1747,39 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 					  return left.snapshot.revision < right.snapshot.revision;
 				  return left.record_id < right.record_id;
 			  });
+		size_t pid_count = 0;
+		int previous_pid = 0;
+		for (const auto &frame : frames)
+			if (frame.snapshot.pid != previous_pid)
+			{
+				++pid_count;
+				previous_pid = frame.snapshot.pid;
+			}
+		execution_permits.reserve(pid_count);
+		previous_pid = 0;
+		for (const auto &frame : frames)
+			if (frame.snapshot.pid != previous_pid)
+			{
+				execution_permits.emplace_back(frame.snapshot.pid,
+							       frame.snapshot.pid);
+				previous_pid = frame.snapshot.pid;
+				if (execution_permits.back().second.result() ==
+				    player_save_execution_guard::admission::unavailable)
+					return player_save_journal_result::replay_blocked;
+			}
+		size_t permit_index = 0;
 		std::unordered_map<std::string, std::vector<const journal_frame *>> identities;
 		for (const journal_frame &frame : frames)
 		{
+			while (execution_permits[permit_index].first < frame.snapshot.pid)
+				++permit_index;
+			if (execution_permits[permit_index].second.result() ==
+			    player_save_execution_guard::admission::held)
+			{
+				deferred_pid = frame.snapshot.pid;
+				replay_has_deferred = true;
+				continue;
+			}
 			if (runtime_quarantined_pids.count(frame.snapshot.pid) ||
 			    frame.snapshot.pid == deferred_pid)
 				continue;
@@ -1948,8 +2027,7 @@ bool recovery_generation_matches(const player_save_recovery_record &record)
 	if (!archive_recovery_frames(record.replacement.pid, &frames, &digest) ||
 	    digest != record.archive_digest || policy_pids.count(record.replacement.pid))
 		return false;
-	return std::all_of(frames.begin(), frames.end(),
-			   [&](const player_snapshot &frame)
+	return std::all_of(frames.begin(), frames.end(), [&](const player_snapshot &frame)
 			   { return frame.revision < record.replacement.revision; });
 }
 } // namespace

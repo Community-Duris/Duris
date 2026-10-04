@@ -89,8 +89,10 @@ player_save_journal_collect_retained(std::vector<player_save_journal_retained_fr
 // A deferred apply retains all frames for that PID, including earlier proofs
 // from this pass, and skips later same-PID callbacks. Other PIDs may checkpoint.
 // replay_deferred keeps the existing global replay/load gate closed. The caller
-// must reinstall durable authority before reopen/replay and retain a later wake;
-// this per-pass marker does not fence independent ACK/checkpoint callers.
+// must reinstall durable authority before reopen/replay and retain a later wake.
+// Installed private execution holds now independently fence ordinary/exact
+// checkpoints; the per-pass marker alone is neither a resident hold nor proof
+// of clean census, critical publication ACK authority or eventual wake delivery.
 player_save_journal_result player_save_journal_replay(player_save_apply_fn apply, void *context);
 player_save_journal_health player_save_journal_health_copy(void);
 

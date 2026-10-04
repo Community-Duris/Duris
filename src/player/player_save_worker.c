@@ -1,5 +1,6 @@
 #include "net/network_wakeup.h"
 #include "player/player_save_worker.h"
+#include "player/player_save_execution_guard.h"
 #include "sql/sql_thread_init.h"
 
 #include "persistence/persistence_observability.h"
@@ -248,18 +249,37 @@ void worker_main()
 		trace.attempt = job->retry_count;
 		persistence_trace_record(trace);
 		const uint64_t started = now_usec();
+		// Admission and execution share the leaf guard. Keep this owner until
+		// journal ACK/terminal handling and completion staging have finished;
+		// a new publication hold cannot overtake an admitted ordinary save.
+		player_save_execution_guard::permit execution(pid);
 		player_save_apply_result applied = {};
-		try
+		if (execution.result() == player_save_execution_guard::admission::held)
 		{
-			applied = apply_callback(job->snapshot, apply_context);
+			applied = { player_save_apply_outcome::deferred, 0, 0 };
 		}
-		catch (const std::bad_alloc &)
+		else if (execution.result() == player_save_execution_guard::admission::unavailable)
 		{
+			// Allocation/capacity failure has no release-triggered wake. Use
+			// the existing bounded failure retry rather than parking as held.
 			applied = { player_save_apply_outcome::retryable_failure, 0, ENOMEM };
 		}
-		catch (...)
+		else
 		{
-			applied = { player_save_apply_outcome::terminal_failure, 0, EFAULT };
+			try
+			{
+				applied = apply_callback(job->snapshot, apply_context);
+			}
+			catch (const std::bad_alloc &)
+			{
+				applied = { player_save_apply_outcome::retryable_failure, 0,
+					    ENOMEM };
+			}
+			catch (...)
+			{
+				applied = { player_save_apply_outcome::terminal_failure, 0,
+					    EFAULT };
+			}
 		}
 		// Keep the journal record when a receipt-bearing save's claimed success
 		// belongs to a different durable revision.

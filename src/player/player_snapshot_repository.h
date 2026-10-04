@@ -37,6 +37,12 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 // releases or replaces it. A successful save result is not session reuse proof.
 // Reuse-sensitive callers must inspect the cleanup overload on every return;
 // legacy callers must conservatively retire a handle when cleanup is uncertain.
+// The ordinary execution guard ends when borrowed apply returns. A caller
+// participating in restored-hold registration must retain an outer execution
+// permit through confirmed disposal of retire_required cleanup; this overload
+// alone cannot prove that the borrowed transaction/session has been retired.
+// The pooled wrapper owns that full interval. Recovery/death-conflict outer
+// mutation coverage remains a separate integration requirement.
 player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 							  const player_snapshot &snapshot);
 player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,

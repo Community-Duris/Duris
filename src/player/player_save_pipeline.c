@@ -12,6 +12,7 @@
 #include "flatfile/flatfile_player_repository.h"
 #include "player/player_save_journal.h"
 #include "player/player_save_worker.h"
+#include "player/player_save_execution_guard.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_snapshot_repository.h"
@@ -72,6 +73,7 @@ size_t retained_bytes = 0;
 bool stop_requested = false;
 bool accepting = false;
 bool execution_started = false;
+bool shutdown_incomplete = false;
 bool append_inflight = false;
 int append_inflight_pid = 0;
 player_revision_t append_inflight_revision = 0;
@@ -89,6 +91,7 @@ struct literal_inventory_checkpoint
 	critical_operation_id operation_id = {};
 	bool held = false;
 	bool restored_sql_drop = false;
+	uint64_t execution_hold_generation = 0;
 };
 std::array<literal_inventory_checkpoint, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS>
 	literal_inventory_checkpoints = {};
@@ -810,12 +813,17 @@ bool player_save_pipeline_prepare(const char *journal_directory, void (*verify_r
 		return false;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
-		if (health.initialized)
+		if (health.initialized || shutdown_incomplete)
 			return false;
 	}
+	if (!player_save_execution_guard::begin_registration())
+		return false;
 	replay_gate.begin_replay();
 	if (!player_save_journal_init(journal_directory, PLAYER_SAVE_JOURNAL_MAX_BYTES))
+	{
+		player_save_execution_guard::end_registration();
 		return false;
+	}
 	try
 	{
 		if (verify_resolved_recovery)
@@ -824,6 +832,7 @@ bool player_save_pipeline_prepare(const char *journal_directory, void (*verify_r
 	catch (...)
 	{
 		player_save_journal_shutdown();
+		player_save_execution_guard::end_registration();
 		return false;
 	}
 	{
@@ -869,6 +878,7 @@ bool player_save_pipeline_start(void)
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		execution_started = true;
+		player_save_execution_guard::end_registration();
 		accepting = true;
 		update_depth_locked();
 	}
@@ -904,7 +914,11 @@ void player_save_pipeline_shutdown(void)
 	for (terminal_fence &fence : terminal_fences)
 		clear_terminal_fence_locked(fence);
 	target_save_login_fences.fill({});
-	literal_inventory_checkpoints.fill({});
+	shutdown_incomplete = !player_save_execution_guard::discard_quiesced_holds();
+	if (!shutdown_incomplete)
+		literal_inventory_checkpoints.fill({});
+	// A later drain alone must not permit preparation against another journal.
+	// Only a successful explicit shutdown retry clears this resident state.
 	retained_bytes = 0;
 	accepting = false;
 	execution_started = false;
@@ -1349,7 +1363,9 @@ bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &co
 			return false;
 		const int pid = static_cast<int>(payload.from_owner.id);
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
-		if (!health.initialized || stop_requested)
+		// This slice covers ordinary apply/checkpoint exclusion. Other native
+		// mutation owners and publication reservations remain unintegrated.
+		if (!health.initialized || stop_requested || execution_started)
 			return false;
 		literal_inventory_checkpoint *slot = nullptr;
 		for (auto &candidate : literal_inventory_checkpoints)
@@ -1357,16 +1373,34 @@ bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &co
 			if (candidate.token.pid == pid ||
 			    (candidate.held &&
 			     candidate.operation_id.bytes == command.operation_id.bytes))
-				return candidate.restored_sql_drop && candidate.held &&
-				       candidate.token.pid == pid &&
-				       candidate.token.root_uid == payload.selected_item_uid &&
-				       candidate.operation_id.bytes == command.operation_id.bytes &&
-				       candidate.payload == frozen;
+			{
+				uint64_t generation = 0;
+				if (!candidate.restored_sql_drop || !candidate.held ||
+				    candidate.token.pid != pid ||
+				    candidate.token.root_uid != payload.selected_item_uid ||
+				    candidate.operation_id.bytes != command.operation_id.bytes ||
+				    candidate.payload != frozen ||
+				    !player_save_execution_guard::install_hold(
+					    pid, command.operation_id, &generation))
+					return false;
+				if (generation != candidate.execution_hold_generation)
+				{
+					player_save_execution_guard::poison_integrity();
+					return false;
+				}
+				return true;
+			}
 			if (!candidate.token.pid && !slot)
 				slot = &candidate;
 		}
 		if (!slot || !literal_inventory_capacity_locked(frozen.size()))
 			return false;
+		uint64_t generation = 0;
+		if (!player_save_execution_guard::install_hold(pid, command.operation_id,
+							       &generation))
+			return false;
+		// All fallible command allocation/validation precedes guard installation.
+		slot->execution_hold_generation = generation;
 		slot->token.pid = pid;
 		slot->token.root_uid = payload.selected_item_uid;
 		slot->payload = std::move(frozen);
@@ -1389,7 +1423,19 @@ void player_save_pipeline_sql_drop_publication_acknowledged(
 	for (auto &checkpoint : literal_inventory_checkpoints)
 		if (checkpoint.token.pid && checkpoint.held &&
 		    checkpoint.operation_id.bytes == operation_id.bytes)
+		{
+			if (!checkpoint.restored_sql_drop)
+			{
+				checkpoint = {};
+				continue;
+			}
+			auto original = std::move(checkpoint);
 			checkpoint = {};
+			if (!player_save_execution_guard::release_hold(
+				    original.token.pid, operation_id,
+				    original.execution_hold_generation))
+				checkpoint = std::move(original);
+		}
 }
 
 player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int save_intent,
@@ -2251,6 +2297,11 @@ bool player_save_pipeline_authoritative_hydration_admitted(int pid)
 void player_save_pipeline_reset_for_tests(void)
 {
 	player_save_pipeline_shutdown();
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (shutdown_incomplete)
+			return;
+	}
 	player_save_worker_reset_for_tests();
 	player_revision_reset_for_tests();
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
