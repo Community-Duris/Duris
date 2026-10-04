@@ -2,6 +2,7 @@
 // selects an active epoch or runs a production lifecycle/activation owner.
 #include "flatfile/flatfile_accounting_authority.h"
 #include "economy/economic_currency_adapter.h"
+#include "flatfile/flatfile_accounting_baseline.h"
 #include <cassert>
 #include <cstring>
 #include <filesystem>
@@ -21,6 +22,10 @@ class flatfile_accounting_test_access
 	static constexpr auto initialize_evidence_bucket =
 		&flatfile_accounting_authority_storage::initialize_evidence_bucket;
 	static constexpr auto stage = &flatfile_accounting_storage::stage;
+	static constexpr auto stage_source_claim = &flatfile_accounting_storage::stage_source_claim;
+	static constexpr auto initialize_baseline =
+		&flatfile_accounting_baseline_storage::initialize;
+	static constexpr auto stage_baseline = &flatfile_accounting_baseline_storage::stage;
 	static auto commit(const std::string &root, const flatfile_authority_lock &lock,
 			   const std::vector<flatfile_authority_operation> &operations,
 			   std::string *error)
@@ -35,7 +40,7 @@ static critical_operation_id id(uint64_t value)
 		result.bytes[i] = static_cast<uint8_t>(value >> (8 * i));
 	return result;
 }
-static flatfile_accounting_record record(uint32_t sequence, bool large)
+static flatfile_accounting_record record(uint32_t sequence, bool large, bool source = false)
 {
 	flatfile_accounting_record value;
 	critical_operation_id operation = {};
@@ -45,25 +50,29 @@ static flatfile_accounting_record record(uint32_t sequence, bool large)
 	currency_command_payload payload = {};
 	payload.pid = 11;
 	payload.racewar = 1;
-	payload.reason = currency_reason_type::atm_deposit;
+	payload.reason = source ? currency_reason_type::wallet_reward :
+				  currency_reason_type::atm_deposit;
+	payload.reason_id = source ? 3 : 0;
 	strcpy(payload.account_name.data(), "renamed");
-	payload.wallet_delta.amount[0] = -10;
-	payload.bank_delta.amount[0] = 10;
-	assert(currency_command_build(&value.command, operation, payload, UINT64_MAX, UINT64_MAX,
-				      critical_source_site::command,
-				      critical_deadline_class::interactive));
+	payload.wallet_delta.amount[0] = source ? 10 : -10;
+	payload.bank_delta.amount[0] = source ? 0 : 10;
+	assert(currency_command_build(
+		&value.command, operation, payload, UINT64_MAX, UINT64_MAX,
+		source ? critical_source_site::recovery : critical_source_site::command,
+		source ? critical_deadline_class::recovery : critical_deadline_class::interactive));
 	value.command.accepted_at_usec = 1;
 	economic_currency_authority state;
-	state.epoch = id(50);
+	state.epoch = id(source && sequence == 2 ? 51 : 50);
 	state.wallet_account = { id(1), economic_account_kind::wallet, 3, 0 };
 	state.bank_account = { id(1), economic_account_kind::bank, 2, 1 };
 	state.player_fence = value.command.keys[0];
 	state.bank_fence = value.command.keys[1];
 	state.state.wallet.amount[0] = 100;
 	state.state.bank.amount[0] = 50;
-	assert(economic_bank_transfer_intent(
-		       value.command, state.epoch, state.wallet_account, state.bank_account,
-		       &value.command.accounting_intent) == economic_accounting_error::ok);
+	const auto freeze = source ? economic_quest_wallet_reward_intent :
+				     economic_bank_transfer_intent;
+	assert(freeze(value.command, state.epoch, state.wallet_account, state.bank_account,
+		      &value.command.accounting_intent) == economic_accounting_error::ok);
 	value.command.schema_version = 2;
 	economic_frozen_intent intent;
 	assert(economic_intent_decode(value.command.accounting_intent, &intent) ==
@@ -86,9 +95,11 @@ static flatfile_accounting_record record(uint32_t sequence, bool large)
 	else
 	{
 		std::optional<economic_prepared_currency> prepared;
-		assert(economic_bank_transfer_prepare(value.command, intent, state,
-						      currency_revision_policy::flatfile_legacy,
-						      &prepared) == economic_accounting_error::ok);
+		const auto prepare = source ? economic_quest_wallet_reward_prepare :
+					      economic_bank_transfer_prepare;
+		assert(prepare(value.command, intent, state,
+			       currency_revision_policy::flatfile_legacy,
+			       &prepared) == economic_accounting_error::ok);
 		assert(economic_plan_encode(prepared->plan(), &value.plan) ==
 		       economic_accounting_error::ok);
 		std::array<uint8_t, CURRENCY_RESULT_PAYLOAD_BYTES> result = {};
@@ -138,7 +149,8 @@ int main(int argc, char **argv)
 		       critical_operation_id_is_zero(control().active_epoch));
 		return 0;
 	}
-	assert(mode == "lifetimes" || mode == "records");
+	assert(mode == "lifetimes" || mode == "records" || mode == "source-claims" ||
+	       mode == "baseline");
 	for (size_t bucket = 0; bucket < 256; ++bucket)
 	{
 		assert(access::initialize_native_bucket(root, lock, control().revision, bucket,
@@ -183,7 +195,43 @@ int main(int argc, char **argv)
 	       0);
 	commit();
 	assert(critical_operation_id_is_zero(control().active_epoch));
-	if (mode == "records")
+	if (mode == "baseline")
+	{
+		economic_baseline_batch batch;
+		batch.lineage = id(1);
+		batch.epoch = id(50);
+		batch.preparation_id = id(52);
+		batch.actor_id = 7;
+		batch.opening_account = { id(1), economic_account_kind::opening, 1, 0 };
+		batch.boundary_digest.fill(1);
+		batch.coverage_digest.fill(2);
+		economic_digest native_digest;
+		native_digest.fill(3);
+		batch.holdings.push_back({ { id(1), economic_account_kind::wallet, 3, 0 },
+					   { 100, 0, 0, 0 },
+					   0,
+					   native_digest });
+		std::optional<economic_prepared_baseline> prepared;
+		assert(economic_baseline_prepare(batch, &prepared) ==
+		       economic_accounting_error::ok);
+		critical_command command;
+		assert(economic_baseline_command_build(*prepared, 1, &command) ==
+		       economic_accounting_error::ok);
+		assert(access::initialize_evidence_bucket(root, lock, control().revision,
+							  command.operation_id.bytes[0], id(8),
+							  &operations, &error) == 0);
+		commit();
+		assert(access::initialize_baseline(root, lock, id(1), id(50), batch.opening_account,
+						   id(53), &operations,
+						   &error) == flatfile_accounting_status::ok);
+		commit();
+		assert(access::stage_baseline(root, lock, command, *prepared, &operations,
+					      &error) == flatfile_accounting_status::ok);
+		commit();
+		assert(critical_operation_id_is_zero(control().active_epoch));
+		return 0;
+	}
+	if (mode == "records" || mode == "source-claims")
 	{
 		for (size_t bucket : { 1, 2 })
 		{
@@ -192,12 +240,41 @@ int main(int argc, char **argv)
 								  &error) == 0);
 			commit();
 		}
-		// More than 8 MiB seals the first segment; every record is native-encoded.
-		// Operation identities are distinct, and one successful receipt/plan is retained.
-		for (uint32_t sequence = 1; sequence <= 23; ++sequence)
+		// Records mode seals the first segment. Source mode retains two successful
+		// claims and two claimless rejections. No native domain effect is applied.
+		for (uint32_t sequence = 1; sequence <= (mode == "records" ? 23u : 4u); ++sequence)
 		{
-			auto value = record(sequence, sequence != 1);
+			auto value = record(sequence, mode == "records" && sequence != 1,
+					    mode == "source-claims");
+			if (mode == "source-claims" && sequence >= 3)
+			{
+				value.plan.clear();
+				value.result_code = EEXIST;
+				if (sequence == 4)
+				{
+					// A rejected retry may share a successful root's source.
+					economic_frozen_intent intent, original;
+					assert(economic_intent_decode(
+						       value.command.accounting_intent, &intent) ==
+					       economic_accounting_error::ok);
+					assert(economic_intent_decode(
+						       record(1, false, true)
+							       .command.accounting_intent,
+						       &original) == economic_accounting_error::ok);
+					intent.admission.metadata.source_event =
+						original.admission.metadata.source_event;
+					value.command.schema_version = 1;
+					value.command.accounting_intent.clear();
+					assert(economic_intent_freeze(
+						       value.command, intent.admission,
+						       &value.command.accounting_intent) ==
+					       economic_accounting_error::ok);
+					value.command.schema_version = 2;
+				}
+			}
 			assert(access::stage(root, lock, value, &operations, &error) ==
+			       flatfile_accounting_status::ok);
+			assert(access::stage_source_claim(root, lock, value, &operations, &error) ==
 			       flatfile_accounting_status::ok);
 			commit();
 		}

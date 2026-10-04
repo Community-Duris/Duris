@@ -40,7 +40,9 @@ def build_fixture(destination):
     return build_native(
         destination,
         ["tests/async/flatfile_restore_authority_fixture.cpp",
-         "src/flatfile/flatfile_accounting_authority.c", *SOURCES[1:]],
+         "src/flatfile/flatfile_accounting_authority.c",
+         "src/flatfile/flatfile_accounting_baseline.c", "src/economy/economic_baseline_adapter.c",
+         "src/economy/economic_baseline_codec.c", "src/economy/economic_baseline_command.c", *SOURCES[1:]],
         ["-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-O1", "-g",
          "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
          "-DDURIS_FLATFILE_ACCOUNTING_TEST", "-Isrc", "-pthread"],
@@ -355,6 +357,114 @@ int main(int argc, char **argv) {
             check("FIFO active operation segment refuses without blocking", False)
             restore(records)
             check("clean native retained records remain qualified", True)
+
+            restore({})
+            subprocess.run([str(fixture), str(state), "baseline"], env=environment, check=True)
+            assert not list(evidence.glob("source-claim-*.bin"))
+            check("native baseline own witness book needs no common claim", True)
+
+            restore({})
+            subprocess.run([str(fixture), str(state), "source-claims"], env=environment, check=True)
+            check("native cross-epoch claims and claimless rejected retry", True)
+            sources = inventory(evidence)
+            claims = sorted(name for name in sources if name.startswith("source-claim-"))
+            assert len(claims) == 2
+            claim = next(name for name in claims if sources[name][112:128] == sources[index][80:96])
+            claim_cases = []
+            def claim_case(label, mutate):
+                claim_cases.append((label, mutate))
+            for name in claims:
+                claim_case("missing native source claim " + name,
+                           lambda f, n=name: f.pop(n))
+            for label, offset, data in (
+                ("magic", 0, b"X"), ("version", 8, struct.pack("<I", 2)),
+                ("length", 12, struct.pack("<I", 87)), ("lineage", 48, b"\x63"),
+                ("kind", 64, b"\x63"), ("event version", 66, b"\x02"),
+                ("source identity", 68, b"\x63"), ("generation", 84, b"\x63"),
+                ("sequence", 100, b"\x63"), ("slot", 108, b"\x63"),
+                ("operation", 112, b"\x63"), ("outcome", 128, b"\x02"),
+                ("reserved", 129, b"\x01")):
+                claim_case("source claim " + label,
+                           lambda f, o=offset, d=data: change(f, claim, o, d))
+            claim_case("source claim checksum", lambda f: f.update({claim: f[claim][:-1] + b"\x01"}))
+            claim_case("source claim truncated", lambda f: f.update({claim: f[claim][:-1]}))
+            claim_case("source claim trailing bytes", lambda f: f.update({claim: f[claim] + b"\x00"}))
+            claim_case("source claim too large", lambda f: f.update({claim: f[claim] + b"\x00" * 128}))
+            for name in ("source-claim-" + "0" * 64 + ".bin", claim[:-4] + ".tmp",
+                         claim[:13] + claim[13:-4].upper() + ".bin",
+                         claim.replace("source-claim-", "source-claim"), claim[:-4] + "0.bin"):
+                claim_case("untracked source claim/name " + name,
+                           lambda f, n=name: f.update({n: f[claim]}))
+            claim_case("swapped source claim bodies", lambda f: f.update({
+                claims[0]: sources[claims[1]], claims[1]: sources[claims[0]]}))
+
+            source_segment = "bucket-01-0.eas"
+            def source_record(row):
+                segment, offset, size = struct.unpack_from("<III", sources[index], 128 + row * 64)
+                assert segment == 0
+                value = sources[source_segment][80 + offset:80 + offset + size]
+                keys, revs, payload = struct.unpack_from("<III", value, 74 + 40)
+                intent = 74 + 52 + keys * 16 + revs * 24 + payload + 4
+                return value, offset, intent, 74 + struct.unpack_from("<I", value, 48)[0]
+            first_source, _, first_intent, _ = source_record(0)
+            first_event = first_source[first_intent + 112:first_intent + 160]
+            def rewrite_source_record(files, row, event, present=True):
+                original, offset, intent, plan = source_record(row)
+                value = bytearray(original)
+                value[intent + 27] = present
+                value[intent + 112:intent + 160] = event
+                value[plan + 100] = present
+                value[plan + 104:plan + 152] = event
+                intent_size = struct.unpack_from("<I", value, intent + 8)[0]
+                value[plan + 152:plan + 184] = hashlib.sha256(
+                    b"DURIS-ECONOMIC-INTENT-V1\x00" + value[intent:intent + intent_size]).digest()
+                value = rehash(value)
+                segment = bytearray(files[source_segment])
+                segment[80 + offset:80 + offset + len(value)] = value
+                files[source_segment] = rehash(segment)
+                change(files, index, 96 + row * 64, hashlib.sha256(value).digest())
+            claim_case("duplicate source on successful root in another epoch",
+                       lambda f: rewrite_source_record(f, 1, first_event))
+            claim_case("orphan claim after root drops source metadata",
+                       lambda f: rewrite_source_record(f, 0, b"\x00" * 48, False))
+            claim_case("baseline source kind cannot bypass a common root claim",
+                       lambda f: (f.pop(claim), rewrite_source_record(
+                           f, 0, struct.pack("<H", 10) + first_event[2:])))
+
+            rejected, _, rejected_intent, _ = source_record(2)
+            rejected_body = (rejected[rejected_intent + 32:rejected_intent + 48] +
+                             rejected[rejected_intent + 112:rejected_intent + 160] +
+                             rejected[rejected_intent + 64:rejected_intent + 80] +
+                             b"\x01" + b"\x00" * 7)
+            rejected_name = "source-claim-" + hashlib.sha256(rejected_body[:64]).hexdigest() + ".bin"
+            rejected_claim = (b"DURSCL1\x00" + struct.pack("<II", 1, 88) +
+                              hashlib.sha256(rejected_body).digest() + rejected_body)
+            claim_case("orphan source claim owned by rejected receipt",
+                       lambda f: f.update({rejected_name: rejected_claim}))
+            claim_case("claim assigned to rejected retry of successful source",
+                       lambda f: change(f, claim, 112, source_record(3)[0][82:98]))
+            for label, mutate in claim_cases:
+                files = dict(sources)
+                mutate(files)
+                restore(files)
+                check(label, False)
+            restore(sources)
+            target = evidence / claim
+            target.chmod(0o644)
+            check("nonprivate source claim", False)
+            restore(sources)
+            target.unlink()
+            target.symlink_to(evidence / claims[1])
+            check("symlink source claim", False)
+            restore(sources)
+            os.link(evidence / claim, evidence / "source-claim-hardlink")
+            check("hardlinked source claim", False)
+            restore(sources)
+            (evidence / claim).unlink()
+            os.mkfifo(evidence / claim, 0o600)
+            check("FIFO source claim refuses without blocking", False)
+            restore(sources)
+            check("native cross-epoch source claims remain qualified", True)
         print(json.dumps({"positive_stores": successes, "refused_corruptions": refusals,
                           "native_invocations_per_case": 2, "economic_bytes_unchanged": True,
                           "qualifier_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),

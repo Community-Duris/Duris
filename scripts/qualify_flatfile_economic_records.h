@@ -51,8 +51,9 @@ class checker
 	identity lineage = {};
 	std::set<identity> epochs;
 	std::set<std::string> expected_files;
+	std::vector<digest> claimed_events;
 
-	void record(std::span<const uint8_t> encoded, const identity &operation) const
+	void record(std::span<const uint8_t> encoded, const identity &operation)
 	{
 		need(encoded.size() >= 48 && encoded.size() <= record_limit);
 		reader in{ unwrap(encoded, "DURECR2") };
@@ -166,6 +167,42 @@ class checker
 		     counts[3] <= 6000 && counts[4] <= 6000 && counts[5] <= 3000 &&
 		     plan.size() == 256 + counts[0] * 120 + counts[1] * 48 +
 					    (counts[3] + counts[4]) * 64 + counts[5] * 128);
+		if (type == 20 || number(intent, 24, 2) == 38 || number(event, 0, 2) == 10)
+		{
+			// Native baselines retain dedupe in their witness/reservation book,
+			// not a common source-claim file. Book qualification remains separate.
+			need(type == 20 && number(intent, 24, 2) == 38 && intent[27] == 1 &&
+			     number(intent, 12, 4) == 4 && intent[26] == 2 &&
+			     !nonzero(intent.subspan(80, 16)) && number(event, 0, 2) == 10 &&
+			     same(event.subspan(20, 16), intent.subspan(48, 16)) &&
+			     number(event, 44, 4) == 0 && payload.size() == 48 &&
+			     same(payload.first(4),
+				  { reinterpret_cast<const uint8_t *>("EBC1"), 4 }) &&
+			     number(payload, 4, 2) == 1 && number(payload, 6, 2) == 48 &&
+			     !nonzero(payload.subspan(12, 4)) && nonzero(payload.subspan(16, 32)));
+			return;
+		}
+		if (intent[27])
+		{
+			// The claim key is lineage-wide, including earlier retained epochs.
+			bytes expected(lineage.begin(), lineage.end());
+			expected.insert(expected.end(), event.begin(), event.end());
+			const auto key = hash(expected);
+			std::string name = "source-claim-";
+			constexpr char digits[] = "0123456789abcdef";
+			for (auto byte : key)
+			{
+				name += digits[byte >> 4];
+				name += digits[byte & 15];
+			}
+			name += ".bin";
+			expected.insert(expected.end(), operation.begin(), operation.end());
+			put(expected, 1, 1);
+			put(expected, 0, 7);
+			need(frame(directory, name, "DURSCL1", 136) == expected);
+			need(claimed_events.size() < buckets * bucket_capacity);
+			claimed_events.push_back(key);
+		}
 	}
 	void bucket(size_t bucket)
 	{
@@ -258,9 +295,36 @@ class checker
 		for (size_t index = 0; index < 256; ++index)
 			if (control[16520 + index / 8] & (1u << (index % 8)))
 				bucket(index);
+		// At most 256 * 4096 keys (32 MiB of digests), bounded by the native
+		// index format. Keep no unbounded map of roots or retained record bytes.
+		std::sort(claimed_events.begin(), claimed_events.end());
+		need(std::adjacent_find(claimed_events.begin(), claimed_events.end()) ==
+		     claimed_events.end());
+		size_t observed_claims = 0;
 		for (const auto &file : std::filesystem::directory_iterator(directory))
-			if (file.path().filename().string().starts_with("bucket-"))
-				need(expected_files.contains(file.path().filename().string()));
+		{
+			const auto name = file.path().filename().string();
+			if (name.starts_with("bucket-"))
+				need(expected_files.contains(name));
+			else if (name.starts_with("source-claim"))
+			{
+				need(name.size() == 81 && name.starts_with("source-claim-") &&
+				     name.ends_with(".bin"));
+				digest key = {};
+				for (size_t i = 0; i < 64; ++i)
+				{
+					const auto c = name[13 + i];
+					need((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'));
+					key[i / 2] = static_cast<uint8_t>(
+						(key[i / 2] << 4) |
+						(c <= '9' ? c - '0' : c - 'a' + 10));
+				}
+				need(std::binary_search(claimed_events.begin(),
+							claimed_events.end(), key));
+				++observed_claims;
+			}
+		}
+		need(observed_claims == claimed_events.size());
 	}
 };
 } // namespace restore_economic_records
