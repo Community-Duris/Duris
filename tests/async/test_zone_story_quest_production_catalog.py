@@ -2313,7 +2313,7 @@ assert sum(d["daily_eligible"] for d in definitions.values())==9
 assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
 assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
-assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1654
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1638
 sources=collections.defaultdict(list);parent=None;room=None
 for reset in crakkaro["reset_commands"]:
     c,v=reset["command"],reset["arguments"]
@@ -2503,7 +2503,92 @@ assert all(v not in all_items for v in (6070,6109,6110))
 assert all(str(v) in (ROOT/"areas/shp/desolate.shp").read_text(encoding="utf8") and v in sources for v in (6070,6109,6110))
 assert "Shipped native repair" in (ROOT/"docs/design/zone-stories/DESOLATE.md").read_text(encoding="utf8")
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate"):
+# Rift Valley Jungle preserves count, role, token and native recipient semantics.
+rift=inventory_module.area_evidence(ROOT,"rftjngle")
+rift_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="rftjngle")
+rift_stories={s["id"]:s for s in rift_map["stories"]}
+assert (rift_map["schema_version"],rift_map["revision"],rift_map["coverage"])==(3,1,"complete")
+assert len(rift_stories)==24 and len(rift_map["contacts"])==49 and len(rift_map["exclusions"])==3
+assert collections.Counter(s["category"] for s in rift_stories.values())=={"story":12,"service":12}
+assert collections.Counter(t["kind"] for s in rift_stories.values() for t in s["steps"] if t.get("optional"))=={"carried_item":28,"completion":2}
+assert (len(rift["requests"]),len(rift["dialogue"]),len(rift["mobs"]),len(rift["items"]),len(rift["reset_commands"]))==(28,37,220,220,828)
+assert collections.Counter(b["kind"] for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/rftjngle.qst")=={"Q":28,"M":37}
+assert collections.Counter(r["command"] for r in rift["reset_commands"])=={"M":411,"E":139,"O":121,"G":96,"D":42,"F":11,"P":8}
+by_line={r["block"]["line"]:r["block"] for r in rift["requests"]}
+for line,giver,required,rewards,disappear in (
+ (29,80070,[80067]*3+[80065],[80066],1),(65,80071,[80067],[80067],0),
+ (89,80080,[80078]*2+[('C',10000)],[80079],0),(100,80080,[80077]*2+[('C',10000)],[80080],0),
+ (113,80080,[80021]*2+[('C',10000)],[80023],0),(125,80080,[80024],[80024],0),
+ (135,80134,[80134],[80135],0),(153,80136,[80137],[80138],1),(187,80147,[80144],[80145],0),
+ (219,80148,[80077]*3+[80078]*3,[80139,80140,80141],0),(234,80148,[80024],[80025],0),
+ (242,80149,[80142],[80143],0),(251,80149,[80058],[80059],0),(279,80155,[80154],[80155],1),
+ (333,80156,[80157],[80196],1),(350,80157,[80157],[80196],1),
+ (366,80158,[80172],[80173],1),(382,80159,[80170],[80171],1),(400,80160,[80166],[80167],1),(417,80161,[80168],[80169],1),
+ (474,80175,[('C',5000),80060],[80061],0),(485,80175,[('C',5000),80062],[80063,80064],0),
+ (495,80175,[('C',5000),80028],[80199],0),(507,80175,[('C',5000),80075],[80076],0),
+ (615,80209,[80053]*5+[80054]*5+[80055]*5,[80057],0),
+ (647,80210,[80149],[80177,('C',25000)],1),(699,80211,[80153],[80153],0),(707,80211,[80150],[80203],1)):
+    goals=lambda xs:[v if isinstance(v,tuple) else ('I',v) for v in xs]
+    assert by_line[line]["giver_vnum"]==giver and by_line[line]["give"]==goals(required) and by_line[line]["receive"]==goals(rewards),line
+    assert by_line[line]["binding"]["completion_key"].endswith('disappear='+str(disappear))
+bindings=[b for s in rift_map["stories"]+rift_map["exclusions"] for b in s["contracts"]]
+assert len(bindings)==28 and {tuple(sorted(b.items())) for b in bindings}=={tuple(sorted(b["binding"].items())) for b in by_line.values()}
+assert all(t["optional"] for s in rift_stories.values() for t in s["steps"][:-1])
+assert all(s["steps"][-1]["contracts"]==s["contracts"] for s in rift_stories.values())
+assert rift_stories["couatl-stolen-eggs"]["steps"][0]["contracts"]==[by_line[65]["binding"]]
+assert [(t["item_vnums"],t["count"]) for t in rift_stories["couatl-stolen-eggs"]["steps"] if t["kind"]=="carried_item"]==[([80067],3),([80065],1)]
+assert rift_stories["leather-white-tiger"]["steps"][0]["contracts"]==[by_line[125]["binding"]]
+assert [(t["item_vnums"],t["count"]) for t in rift_stories["leather-mixed-skins"]["steps"][:-1]]==[([80077],3),([80078],3)]
+assert [(t["item_vnums"],t["count"]) for t in rift_stories["weaver-quetzel-cloak"]["steps"][:-1]]==[([80053],5),([80054],5),([80055],5)]
+assert rift_stories["dragon-crystal-staff"]["contracts"]==[by_line[333]["binding"],by_line[350]["binding"]]
+assert [t["item_vnums"] for t in rift_stories["chief-summerstorm-proof"]["steps"][:-1]]==[[80154]]
+assert [t["item_vnums"] for t in rift_stories["scout-chief-proof"]["steps"][:-1]]==[[80150]]
+assert {tuple(sorted(b.items())) for e in rift_map["exclusions"] for b in e["contracts"]}=={tuple(sorted(by_line[n]["binding"].items())) for n in (65,125,699)}
+defs={r["block"]["line"]:r["definition"] for r in rift["requests"]}
+assert sum(d["daily_eligible"] for d in defs.values())==17
+assert all(not defs[n]["daily_eligible"] and defs[n]["daily_exclusion"]=='Unsupported durable offering' for n in (89,100,113,474,485,495,507,615))
+assert all(not defs[n]["daily_eligible"] and defs[n]["daily_exclusion"]=='Item exchange' for n in (65,125,699))
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==800]
+assert len(units)==24 and sum(u["achievement"] for u in units)==12 and sum(u["daily_candidate"] for u in units)==11
+contacts={c["mob_vnum"]:c for c in rift_map["contacts"]}
+assert {b["giver_vnum"] for b in rift["dialogue"]}<=contacts.keys()
+assert set(contacts[80194]["topics"])=={'names','wall','quest','map','abandon','resign'}
+assert contacts[80123]["topics"]==['quest','map','abandon','resign']
+assert rift["special_assignments"]==[{"kind":"mob","vnum":80194,"function":"world_quest","source":"src/specs/specs.assign.c","line":762},{"kind":"mob","vnum":80123,"function":"world_quest","source":"src/specs/specs.assign.c","line":763}]
+assert rift["zone"]["reset_mode"]==2
+sources=collections.defaultdict(list);owner=None;room=None
+for r in rift["reset_commands"]:
+    c,v=r["command"],r["arguments"]
+    if c in 'MF':owner=v[1];room=v[3]
+    if c in 'GE':sources[v[1]].append((c,owner,room,v[4],v[3]))
+assert sources[80065]==[('E',80072,80441,100,15)]
+assert sources[80157]==[('G',80173,80323,100,0)]
+assert sources[80149]==[('E',80154,80266,100,16)]
+assert sources[80150]==[('E',80155,80266,30,16)] and sources[80153]==[('G',80155,80266,100,0)]
+assert sources[80154]==[('G',80196,80352,40,0)]
+assert sources[80053]==[('G',80053,80440,100,0)]*3 and sources[80054]==[('G',80053,80440,100,0)]*2
+assert sources[80055]==[('G',80054,80440,100,0)]*3
+assert all(sources[v]==[('G',80212,80444,100,0)] for v in (80166,80168,80170,80172))
+assert not any(re.search(r'^([MF])\s+\d+\s+80157\b',(ROOT/'areas/zon'/str(row['zone']['source_area']+'.zon')).read_text(encoding='utf8'),re.M) for row in rows)
+objects=dawndale_bodies('rftjngle','obj');world=dawndale_bodies('rftjngle','wld');mob_bodies=dawndale_bodies('rftjngle','mob')
+assert len(world)==470
+teachers={v for v,b in mob_bodies.items() if int(b.split('~')[4].split()[0])&32768}
+assert teachers=={80170,80175,80176,80186,80187,80195,80196,80197,80198,80199,80205,80210}
+assert all('level' in contacts[v]['topics'] for v in teachers) and 80178 not in teachers
+assert not int(mob_bodies[80212].split('~')[4].split()[0])&(2|64)
+for obj,origin,target,command in ((80158,80061,80162,5),(80159,80162,80061,6),(80160,80072,80164,5),(80161,80164,80072,6),(80162,80060,80161,7),(80163,80161,80060,7),(80164,80071,80163,5),(80165,80163,80071,6)):
+    assert objvalues(objects[obj])[0]==25 and objvalues(objects[obj])[11:15]==[target,command,-1,0]
+    assert any(r['command']=='O' and r['arguments'][1:5]==[obj,1,origin,100] for r in rift['reset_commands'])
+assert objvalues(objects[80206])[0]==13 and objvalues(objects[80200])[0]==13 and objvalues(objects[80200])[7]==0
+assert all(objvalues(objects[v])[6]&4096 and 'secret' in next(t['hint'] for s in rift_stories.values() for t in s['steps'] if t['kind']=='carried_item' and t['item_vnums']==[v]) for v in (80067,80065,80028,80144,80157,80166,80168,80170,80172))
+egg_loads=[r['arguments'][3:5] for r in rift['reset_commands'] if r['command']=='O' and r['arguments'][1]==80067]
+assert egg_loads==[[80130,25],[80145,70],[80152,50],[80193,25],[80200,99]]
+for item,source,roll in ((80134,80046,100),(80137,80220,100),(80142,80023,30),(80144,80333,100),(80028,80201,10)):
+    assert any(r['command']=='O' and r['arguments'][1:5]==[item,1,source,roll] for r in rift['reset_commands'])
+assert re.search(r'\bD2\s+[^~]*~[^~]*~\s+0 0 228371\b',world[80460],re.S)
+assert re.search(r'\bD1\s+[^~]*~[^~]*~\s+0 0 568516\b',world[80469],re.S)
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

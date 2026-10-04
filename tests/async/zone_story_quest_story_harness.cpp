@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 73 &&
-				tracker.summary_for(7, 42).total == 1654,
+		require(catalog.story_mappings.size() == 74 &&
+				tracker.summary_for(7, 42).total == 1638,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -5211,6 +5211,150 @@ int main(int argc, char **argv)
 					recovered.progress_for_zone(7, 42, 222).completed == 9 &&
 					recovered.progress_for_zone(7, 42, 222).total == 9,
 				"Desolate cold recovery changed story/service outcome totals");
+		}
+
+		{
+			const auto &map = *std::find_if(catalog.story_mappings.begin(),
+							catalog.story_mappings.end(),
+							[](const auto &m)
+							{ return m.source_area == "rftjngle"; });
+			const auto &eggs = story_for("rftjngle", "couatl-stolen-eggs");
+			const auto &skins = story_for("rftjngle", "leather-mixed-skins");
+			const auto &boots = story_for("rftjngle", "leather-white-tiger");
+			const auto &chief = story_for("rftjngle", "chief-summerstorm-proof");
+			const auto &scout = story_for("rftjngle", "scout-chief-proof");
+			const auto &staff = story_for("rftjngle", "dragon-crystal-staff");
+			const auto &feathers = story_for("rftjngle", "weaver-quetzel-cloak");
+			const auto &air = story_for("rftjngle", "release-air");
+			const auto &water = story_for("rftjngle", "release-water");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 800, 80000, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 800, 10, 1, 101, false, false)
+							.find("] " + eggs.title + "\r\n") ==
+						std::string::npos,
+				"Rift discovery exposed an unmet recipe");
+			for (const auto &contact : map.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 80000, 102) ==
+						result::applied,
+					"Rift source, role or recipient encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Rift journal section missing");
+				const auto end = journal.find("\r\n[", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[80067] = 2;
+			supplies.equipped[15] = 80065;
+			supplies.carried[80077] = 6;
+			supplies.carried[80053] = 15;
+			supplies.carried[80153] = 1;
+			supplies.carried[80172] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 800, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(eggs).find("[Missing now] " + eggs.steps[1].text) !=
+						std::string::npos &&
+					section(eggs).find("[Missing now] " + eggs.steps[2].text) !=
+						std::string::npos &&
+					section(skins).find("[Ready now] " + skins.steps[0].text) !=
+						std::string::npos &&
+					section(skins).find("[Missing now] " +
+							    skins.steps[1].text) !=
+						std::string::npos &&
+					section(feathers).find("[Missing now] " +
+							       feathers.steps[1].text) !=
+						std::string::npos &&
+					section(feathers).find("[Missing now] " +
+							       feathers.steps[2].text) !=
+						std::string::npos &&
+					section(scout).find("[Missing now] " +
+							    scout.steps[0].text) !=
+						std::string::npos &&
+					section(air).find("[Missing now] " + air.steps[0].text) !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 800).completed == 0,
+				"Rift wrong counts/kinds, worn proof or rendering invented source or completion credit");
+			record(journey, eggs.steps[0].contracts.front(), "rift-young-referral", 800,
+			       80136);
+			record(journey, boots.steps[0].contracts.front(), "rift-white-refusal", 800,
+			       80288);
+			const auto head_refusal = std::find_if(
+				catalog.definitions.begin(), catalog.definitions.end(),
+				[&](const auto &definition) {
+					return definition.giver_vnum == 80211 &&
+					       map.exclusions.count(definition.definition_id);
+				});
+			require(head_refusal != catalog.definitions.end(),
+				"Rift scout's excluded head refusal is missing");
+			record(journey, head_refusal->definition_id, "rift-head-refusal", 800,
+			       80000);
+			record(journey, boots.contracts.front(), "rift-boots-service", 800, 80261);
+			journal = journey.render_journal(7, 42, 800, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(eggs).find("[Recorded] " + eggs.steps[0].text) !=
+						std::string::npos &&
+					section(eggs).find("[Missing now] " + eggs.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 800).completed == 0,
+				"Rift optional referrals/refusals or service created story credit or restored eggs");
+			supplies.carried[80067] = 3;
+			supplies.carried[80065] = 1;
+			supplies.carried[80078] = 3;
+			supplies.carried[80054] = 5;
+			supplies.carried[80055] = 5;
+			supplies.carried[80150] = 1;
+			supplies.carried[80154] = 1;
+			supplies.carried[80157] = 1;
+			supplies.carried[80166] = 1;
+			journal = journey.render_journal(7, 42, 800, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto *entry :
+			     { &eggs, &skins, &feathers, &chief, &scout, &staff, &air })
+				require(section(*entry).find("Next: " + entry->steps.back().text) !=
+						std::string::npos,
+					"Rift exact supplied proof required personal source history or confused distinct counts");
+			require(journey.progress_for_zone(7, 42, 800).completed == 0 &&
+					section(feathers).find("currently guarded") !=
+						std::string::npos,
+				"Rift possession executed a guarded batch or paid craft");
+			record(journey, scout.contracts.front(), "rift-scout-proof", 800, 80000);
+			require(journey.evidence_for(chief.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.progress_for_zone(7, 42, 800).completed == 1,
+				"Rift scout required or completed opposing chief branch");
+			record(journey, chief.contracts.front(), "rift-chief-proof", 800, 80266);
+			record(journey, staff.contracts[0], "rift-woodcarver", 800, 80152);
+			record(journey, staff.contracts[1], "rift-dragon-alternative", 800, 80152);
+			require(journey.progress_for_zone(7, 42, 800).completed == 3,
+				"Rift staff alternatives counted as two outcomes");
+			record(journey, air.contracts.front(), "rift-air-proof", 800, 80161);
+			require(journey.evidence_for(water.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.progress_for_zone(7, 42, 800).completed == 4,
+				"Rift one elemental completed another or a combined campaign");
+			for (const auto &entry : map.stories)
+				if (entry.category != "service" && entry.id != feathers.id &&
+				    entry.id != chief.id && entry.id != scout.id &&
+				    entry.id != staff.id && entry.id != air.id)
+					record(journey, entry.contracts.front(), entry.id.c_str(),
+					       800, 80000);
+			auto replay = completion(scout.contracts.front(), "rift-scout-proof", 120);
+			replay.transaction.zone_number = 800;
+			replay.transaction.room_vnum = 80000;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Rift receipt replay was not idempotent");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 800).completed == 11 &&
+					recovered.progress_for_zone(7, 42, 800).total == 12 &&
+					recovered.evidence_for(feathers.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Rift cold recovery changed independent story outcomes or completed the guarded batch");
 		}
 
 		std::cout

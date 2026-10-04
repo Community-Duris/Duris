@@ -916,3 +916,52 @@ Native Endurance/Courage direction text is corrected in separate `fix` commit
 source proof and explicit PR/news. Three absent shop-stock references and other
 presentation/intent decisions are pending proposals. Keep implemented fixes,
 guidance and new capability plans clearly distinct when reporting zone changes.
+
+### Rift Valley Jungle: root counts, source instances and recipient meaning
+
+The [dossier](../design/zone-stories/RFTJNGLE.md) and
+[journal](../../areas/story/rftjngle.story.json) show 12 outcomes/12 services/three
+non-credit referral/refusals over 28 exchanges, 49 contacts/30 optional checks.
+Three matching eggs + one guard differ from three unique caches; six skins are
+three of each kind; fifteen feathers are five of each color. One optional step
+per distinct kind and a count safely explain current material readiness.
+
+The 15-root feather request is guarded by the 14-root durable limit. Extending
+the catalog alone would misrepresent acceptance: expand request/continuation,
+ownership/tree/serialization/result/recovery bounds together, with whole-batch
+conservation and rejection/replay/disconnect/crash proof. Seven mixed-fee crafts
+need atomic wallet/item/reward/recipient/receipt settlement, retaining service
+classification. Do not remove fees or split one native recipe to make it eligible.
+
+Trace actual reset owners and instance supply. Green/yellow feathers sit on
+different bright-quetzel loads; only one young-couatl load has hide. A ranger
+can wander from local connected loads into four foreign planes. Secret item
+search reveals differ from acquisition and another player's handoff. Add accepted
+UID/revision/source-instance/reset/owner/reveal and transfer provenance before
+claiming first-person recovery. Possession hints remain independent and read-only.
+
+Inspect both prose and actual contract. Chief/scout ask for heads but accept
+amulet/rod; the actual mangled head is rejected. The engineer's plans actually
+load in elven guard quarters despite his cave clue. Journal guidance may show
+the accepted proofs and real source while recording the wording/placement
+questions for builders. Never silently substitute an imagined input or spawn.
+
+Group two equivalent staff recipients as one OR outcome. The dragon prototype
+has no active reset/transition, so guide the reachable woodcarver route. Four
+elemental exchanges are independent; departures do not certify travel home.
+Plan actual transformation/relocation/ghost events and an explicit scoped AND
+campaign before making those story milestones. Faction exclusivity is a builder
+choice; current native opposite requests coexist. Decorative compartment/axe/
+recipe lore supplies no endpoint without new zone logic.
+
+Actual item portal commands and return pairs are source evidence; successful
+arrival/return and survival still need accepted runtime policy. Computed teacher
+guidance, native M and procedural bartender quests are different roles. Generated
+assignments need actor/start/target/type/count/payout/abandonment episodes and
+foreign ownership before journal integration, not keyword or static recipe credit.
+
+Five Moonhollow route words are repaired in separate `fix` commit `f5d5b2a5ccfbb9fccc8f5570079dd3394c74ed54`,
+with focused original-fails/repaired-passes source proof and explicit PR/news.
+Head/token wording, reward names, cave clue, absent dragon transition and stale
+historical boundary are pending intent-dependent fixes. Keep implemented native
+repairs prominent and separate from guidance and proposed capabilities.

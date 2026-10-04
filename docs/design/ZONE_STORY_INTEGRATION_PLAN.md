@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 73 authored journals, accounting-gated player surfaces, starter/town
+**Status: 74 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -615,6 +615,21 @@ passage. Refugee BOOM/new camp, follower relocation, drow tunneling, captain
 curse/ritual and telescope installation need builder-selected accepted endpoints.
 Fossil follow-up and Ender's victim-message key are pending content repairs.
 No native repair or accounting activation ships with this journal.
+
+Rift Valley Jungle's [comprehensive dossier](zone-stories/RFTJNGLE.md) adds
+twelve outcomes/twelve services and three non-credit referrals/refusals, covering
+all 28 exchanges with 49 contacts/30 optional checks. Three eggs + hunter guard;
+exact two-kind skin crafts; real amulet/rod faction proofs; alternative staff
+recipients; four independent elemental amulets/paired portals; fifteen-root feather
+cloak; ancient sword → Mistwalker. Expand full-batch root settlement, seven atomic
+mixed craft payments, secret reveal/first-source provenance, instance-sensitive
+supplies, accepted dialogue/role/travel/actor and scoped faction/elemental AND
+campaigns, plus procedural assignment/count/payout episodes. Head/token wording,
+alligator/azurian reward names, cave/guardroom plan clue, unspawned dragon and
+historical surface boundary need builder decisions. **Actual native repair:** five
+Moonhollow route descriptions corrected in separate fix commit `f5d5b2a5ccfbb9fccc8f5570079dd3394c74ed54`,
+with source proof and news handoff. Catalog: 74 maps/1638 achievements/1465
+potential dailies/2212 rows; native recipes and identity unchanged.
 
 Desolate's [comprehensive dossier](zone-stories/DESOLATE.md) adds nine story
 outcomes and two services across all eleven exchanges, twenty-seven contacts and
@@ -1426,7 +1441,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 168 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 167 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1449,6 +1464,12 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
 
 
+- [x] Complete Rift Valley Jungle's all 65-block source dossier: twelve outcomes,
+  twelve services/three exclusions, 49 contacts/30 preparation checks. Preserve
+  exact source instances, probabilities, proofs, alternative and independent
+  outcomes. Expand 15-root batch/payment/provenance/role/travel/actor/campaign and
+  procedural episode support. Five native direction fixes ship separately with
+  news; plot/dragon/boundary intent remains pending.
 - [x] Complete Desolate's eleven-exchange/one-addressed source dossier:
   nine outcomes/two services, twenty-seven contacts and sixteen optional checks;
   nested monkey/chain custody, guarded wheel fee, distinct badges, foreign letter,
@@ -1760,6 +1781,7 @@ contract classification; it does not claim complete objective coverage.
 | Crakkaros' Liar | 1 | Complete: six stories/five services cover all eleven exchanges | [Source-comprehensive dossier](zone-stories/CRAKKAROS_LIAR.md); twenty-nine contacts/all nine addressed families and twenty-seven optional checks | Five authored story candidates; nine native candidates unchanged, fur guarded and woman story only | Mount-aware sources, actual shelf custody, bounded batch/recovery and successful access/finale events planned; sculpture/alias/key/exterior decisions pending, no native repair ships |
 | Rogue Plains | 1 | Complete: seven story outcomes cover all nine exchanges | [Source-comprehensive dossier](zone-stories/ROGUE_PLAINS.md); twenty-four contacts/all three addressed families and sixteen optional checks | Seven grouped candidates; nine native candidates unchanged, orc renewal unqualified | Foreign owner, distinct source proof, R/owner extraction, accepted access/actual set effects/reset episodes planned; native wording/type/set/route intent pending, no native repair ships |
 | Desolate | 1 | Complete: nine story outcomes/two services cover eleven exchanges | [Source-comprehensive dossier](zone-stories/DESOLATE.md); 27 contacts/16 optional checks | Eight story candidates; nine native candidates unchanged, mixed fee guarded | Atomic fee/content-tree/control/phase/trial/effect and foreign-scope work planned; south/west button-direction repair ships separately with news, three absent shop references pending |
+| Rift Valley Jungle | 1 | Complete: 12 stories/12 services/3 excluded contracts, 28 native exchanges | [Comprehensive dossier](zone-stories/RFTJNGLE.md); 49 contacts/30 optional checks | 11 story candidates; 17 native candidates unchanged; 15-root and seven fees guarded | Full-batch/payment/provenance/reveal/role/travel/actor/AND/procedural events planned; five native direction corrections in separate fix/news; plot/dragon/boundary intent pending |
 
 ## Twin Towers evidence and decisions
 

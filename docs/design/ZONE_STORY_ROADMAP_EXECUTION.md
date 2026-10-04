@@ -45,6 +45,8 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 
 | Fix reference | Shipped behavior | News treatment |
 | --- | --- | --- |
+| [f5d5b2a5c](https://github.com/Community-Duris/Duris/commit/f5d5b2a5ccfbb9fccc8f5570079dd3394c74ed54): Rift Valley Jungle / Moonhollow directions | Five description words now match reciprocal exits: wall cave south, office west, armory east, forge south and branch home north. Exits, locks, recipes and resets are unchanged. | Player-facing: “Moonhollow's wall, guard office, armory, forge and canopy-home directions now match their actual exits.” Original source regression fails; all five repaired routes and exact native-byte scope pass. Live LOOK/traversal remains unqualified. |
+| [b1ff082bc](https://github.com/Community-Duris/Duris/commit/b1ff082bc03ae579aceec97b5d3ebd878bf2eea7): Desolate Master trial directions | Endurance's button is described on the southern wall and Courage's on the western wall, matching their real controls. Only two description words changed. | Player-facing: “Desolate's Master trial now gives the correct button directions in the Tests of Endurance and Courage.” Original-fails/repaired-passes source and exact-byte checks passed; live trial journey remains unqualified. |
 | [b0e4ea60a](https://github.com/Community-Duris/Duris/commit/b0e4ea60a9937da5fd1789edd43402cb59672ef5): quest journal naming | Journals/dailies qualify duplicate area names with the source area, and lookup accepts those exact qualified alternatives. Previously the ambiguity prompt could request a full name that was still ambiguous. | Player-facing: “Quest journals now distinguish areas that share the same name.” Feature/journey lookup regression evidence is recorded in the qualification document. |
 | [b0e4ea60a](https://github.com/Community-Duris/Duris/commit/b0e4ea60a9937da5fd1789edd43402cb59672ef5): quest state integrity | Save/recovery validation rejects missing required metadata and mismatched observation IDs; later accounting integration preserves caller-owned deletion and retry obligations. | Player-facing: “Zone quest progress saving and recovery now reject inconsistent records.” SQL/flat-file and feature regression evidence is recorded in the qualification document. |
 | [492c6f1bd](https://github.com/Community-Duris/Duris/commit/492c6f1bd7635f22782888a3567763b7b90a39eb): shared prototype audit | Builder source lookup includes active administrative-area prototypes, resolving valid paper 5 without adding discoverable ownership. Production regression verifies both facts. | Builder-facing audit correction. The Tharnadia map exchange already existed; do not announce a repaired paper quest. |
@@ -108,9 +110,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 50 | Crakkaros' Liar | [Comprehensive source dossier](zone-stories/CRAKKAROS_LIAR.md): all twenty blocks/eleven QA/nine MA; 372 rooms/37 mobs/68 objects, 501 resets/199 families, mounted centaur, shared P/switch/key execution and inactive ocean boundary | Revision one: six stories/five services, 29 contacts/27 optional checks; five authored story daily candidates, nine native candidates unchanged | No native repair ships. Fourteen-root guard versus seventeen furs, R owner extraction, actual shelf custody, secret/key/retiring episodes and finale adapters planned; sculpture/aliases/reverse key/exterior intent pending |
 | 51 | Rogue Plains | [Comprehensive source dossier](zone-stories/ROGUE_PLAINS.md): all twelve blocks/nine Q/three addressed M; 158 rooms/58 mobs/57 objects, 223 resets/127 families, direct Master procedure, mount/container/portal/aerial execution and foreign Balance owner | Revision one: seven outcomes, 24 contacts/16 optional checks; seven grouped story daily candidates, nine native candidates unchanged | No native repair ships. Accepted source/effect/access/reset episodes and R/owner extraction planned; identical proof, sword/hammer wording, meat/wand/set intent and historical northern connection need builder qualification |
 | 52 | Desolate | [Comprehensive source dossier](zone-stories/DESOLATE.md): all twelve blocks/eleven Q/one addressed M, 168 rooms/114 mobs/92 objects/three shops, 400 resets/289 families; direct Master/computed teacher, container/fee/control/phase and foreign letter execution | Revision one: nine stories/two services, 27 contacts/16 optional checks, eight story daily candidates | Separate native south/west trial-button text fix ships with original-fails/repaired-passes source proof and news; missing stock/other intent pending. Atomic fee, content-tree preview/predicates, control/phase/trial/effect and foreign scope planned |
-| 53–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 53 | Rift Valley Jungle | [Comprehensive dossier](zone-stories/RFTJNGLE.md): 65 blocks, 470 rooms/220 mobs/220 objects/eight shops/828 resets; direct procedural hosts/computed teachers, source instances/secret search/paired portals/foreign boundaries | 12 outcomes/12 services/3 excluded contracts, 49 contacts/30 optional checks; 11 story candidates | Separate five-direction native fix/news ships; 15-root batch/seven fees guarded, plot/dragon/historical boundary pending; provenance/role/travel/actor/AND/procedural lifecycle planned |
+| 54–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Rift Valley Jungle (`rftjngle`).
+The next area is The Transparent Tower (`trnsptow`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -119,6 +122,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-RIFT-BATCH / ROLE / ACTOR / BRANCH | Feather cloak needs 15 roots beyond 14 maximum; seven mixed-fee crafts are guarded. Source instances/color counts, secret reveal, token/head disagreement, unspawned dragon alternative and wandering foreign ranger. Two procedural hosts have their own assignment/count/payout authority. |12 outcomes/12 services/3 exclusions ship with 30 optional checks. Extend complete-batch bounds and atomic craft payments; accept source/reveal/dialogue/role/travel/actor and scoped AND/faction/procedural events. Native five-direction fix/news separate; plot/dragon/historical boundary decisions pending. |
 | ZSQ-DESOLATE-PAYMENT / TREE / PHASE / TRIAL | Rod + wheel + five platinum is guarded; monkey container holds a separately required chain. Timed random exit changes north route and zone flags. Secret switches clear one side; trial controls lack ordered/defeat terminal; foreign referral returns original letter. | Nine outcomes/two services and optional histories ship. Add atomic wallet/item/reward/recovery, destructive descendant preview, content predicates, accepted targeted controls/arrival, phase generation/episode and scoped trial/foreign AND campaigns. Native south/west direction repair ships separately with news; three absent stock refs and other intent remain pending. |
 | ZSQ-ROGUE-ALTERNATIVES / FOREIGN / EFFECT | Two giant recipes each give one outcome; distinct promises/flesh share visible names. Sijona resolves through foreign Balance; sigil uses direct seven-member slot counting, unlike eight-member adapter. Containers are pickable; mounts change actual E/G ownership. | OR outcomes plus separately optional producer histories ship; native owner preserved. Expand causal UID/source/custody, R/rider/owner, successful key/pick/portal/aerial/actual set effects and resetting/retiring episodes. Wording, aliases, item/set intent and historical route are proposed decisions, not shipped repairs. |
 | ZSQ-CRAKKARO-BATCH / MOUNT / CONTENT | Seventeen-fur reward is beyond fourteen-root durable support; mounted centaur is omitted by M/F-only sources and post-R E/G belongs to the mount. Four required badges plus unrelated badge look identical; P selects actual same-prototype container. Sculpture expects absent block; exterior room only exists in inactive ocean maps. | Versioned bounded batch/recovery, committed UID/source/custody and R/rider/owner extraction; qualified key/control/arrival/retiring/reset episodes and builder-selected AND finale. Separate future native badge/key/control/route decisions and news proof; none ships here. |
@@ -2639,3 +2643,55 @@ journals remain unchanged. Live acquisition/hand-ins, mixed payment, wandering,
 trial/phase/fall/return/set and renewal remain unqualified. 52/220 source maps
 complete, 168 pending; Rift Valley Jungle is next. No DB/account/server operation,
 generated-world edit, activation or merge; the full roadmap remains active.
+
+## Rift Valley Jungle completed source map — October 4, 2026
+
+The [dossier](zone-stories/RFTJNGLE.md) covers all 65 blocks/28 Q/37 addressed M,
+470 rooms/325 prose/34 headers/69 metadata/267 exit families, 220 mobs/220
+objects/eight shops and 828 resets/499 families. Both procedural hosts, 12 computed
+teachers, secret searches, exact source instances, portal pairs, current/fall
+hazards and active/historical foreign boundaries were reviewed.
+
+Twelve outcomes/twelve services/three excluded referral/refusals classify every
+native exchange. Forty-nine contacts and 30 optional checks explain egg counts,
+distinct skins/colors, actual faction tokens, staff recipient alternatives,
+elemental proofs and ancient sword recovery. Seventeen native daily shapes remain;
+eleven authored story candidates remain. Fifteen-feather acceptance exceeds 14
+durable roots; seven mixed-fee crafts remain guarded. Source-comprehensive mapping
+does not claim those guarded native transactions or actor effects are implemented.
+
+Expand full-batch request/continuation/tree/serialization/recovery bounds together,
+atomic item/wallet/reward/receipt/recipient craft settlement, committed source/
+instance/owner/reveal provenance, role-sensitive accepted dialogue, exact travel/
+arrival/return and actual actor transformation/relocation/ghost lifecycle. A scoped
+four-element AND campaign and optional faction policy need explicit builder design;
+current independent native receipts remain valid. Procedural assignments need
+actor/start/target/type/count/payout/abandonment episode identity and foreign owner,
+without duplicate local static daily credit. Mercenary payout guard stays visible.
+
+**Implemented native repair:** `f5d5b2a5ccfbb9fccc8f5570079dd3394c74ed54`,
+`fix: correct five Moonhollow route descriptions`. Wall cave north→south;
+Moonstone return east→west; armory entrance south→east; forge return east→south;
+narrow-branch home west→north. Actual reciprocal exits prove the directions.
+Original focused test fails; repaired test passes; only five scoped native words
+changed. **News:** “Moonhollow's wall, guard office, armory, forge and canopy-home directions now match their actual exits.” Live LOOK/traversal remains unqualified.
+Keep this separate from journal guidance and pending proposals in PR/news.
+
+**Pending native findings:** dialogue asks for heads but actual amulet/rod recipes
+accept tokens; real mangled head is refused. Engineer cave clue conflicts with
+plans in elven guard quarters. Alligator inputs yield azurian-named armor. Crystal
+dragon alternative has no active reset/transition; ordinary woodcarver route
+exists. Decorative iron amulet/axe has no opening/code-word endpoint. 80460S
+targets 228371 found only in inactive historical surface files; valid modern
+surface and three Woodseer entrances remain. Confirm builder intent before each
+separate native fix and qualify its actual interaction; do not call all quests broken.
+
+Source and actual C++ journal qualification cover exact counts/kinds, worn versus
+loose proofs, optional/non-credit histories, service exclusion, one staff outcome,
+independent faction/elemental receipts, read-only render/replay/cold recovery and
+accounting gates. Catalog 74 maps/1638 achievements/1465 potential dailies/2212
+rows; 2668 native definitions/revision 2/fingerprint/registry/prior 73 maps unchanged.
+Live source recovery, searches, hand-ins, guarded batch/payments, roaming, portal
+survival/return, actor effects and renewal remain unqualified. 53/220 complete,
+167 pending; The Transparent Tower is next. No DB/account/server operation,
+generated area output, accounting activation or merge. Full roadmap stays active.
