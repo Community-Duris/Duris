@@ -1,4 +1,5 @@
 #include "player/player_death_conflict_repository.h"
+#include "player/player_sql_transaction_cleanup.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_snapshot_repository.h"
 #include "sql/sql_pool.h"
@@ -69,33 +70,19 @@ struct transaction
 {
 	MYSQL *connection;
 	unsigned long session;
-	bool pending = false;
-	explicit transaction(MYSQL *input)
+	player_sql_transaction_cleanup &owner;
+	explicit transaction(MYSQL *input, player_sql_transaction_cleanup &cleanup)
 		: connection(input)
 		, session(mysql_thread_id(input))
+		, owner(cleanup)
 	{
 		execute(connection, "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE");
-		try
-		{
-			execute(connection, "START TRANSACTION");
-			pending = true;
-			active(connection, session);
-		}
-		catch (...)
-		{
-			// A throwing constructor has no destructor; also close a START
-			// whose reply was lost, without ever enabling automatic reconnect.
-			if (mysql_thread_id(connection) == session)
-				(void)mysql_query(connection, "ROLLBACK");
-			throw;
-		}
-	}
-	~transaction()
-	{
-		if (pending && mysql_thread_id(connection) == session)
-			(void)mysql_query(connection, "ROLLBACK");
+		owner.starting();
+		execute(connection, "START TRANSACTION");
+		active(connection, session);
 	}
 };
+
 std::string hex(std::string_view bytes)
 {
 	static constexpr char digits[] = "0123456789abcdef";
@@ -405,13 +392,15 @@ player_death_conflict_result commit(transaction &tx, outcome success, player_rev
 	active(tx.connection, tx.session);
 	try
 	{
+		tx.owner.committing();
 		execute(tx.connection, "COMMIT");
 	}
 	catch (const failure &error)
 	{
 		return { outcome::commit_unknown, error.code, source };
 	}
-	tx.pending = false;
+	if (!tx.owner.committed())
+		return { outcome::commit_unknown, ENOTCONN, source };
 	require(mysql_thread_id(tx.connection) == tx.session &&
 			!(tx.connection->server_status & SERVER_STATUS_IN_TRANS),
 		ENOTCONN);
@@ -447,140 +436,208 @@ player_save_apply_result save_failure(unsigned int code)
 } // namespace
 #endif
 
-static player_death_conflict_result
-retain_death_conflict(MYSQL *connection, const player_snapshot &request, bool terminal) noexcept
+static player_death_conflict_result retain_death_conflict(MYSQL *connection,
+							  const player_snapshot &request,
+							  bool terminal,
+							  player_sql_cleanup *cleanup) noexcept
 {
 #ifdef __NO_MYSQL__
 	(void)connection;
 	(void)request;
 	(void)terminal;
+	if (cleanup)
+		*cleanup = {};
 	return { player_death_conflict_outcome::failed, ENOTSUP, 0 };
 #else
+	player_sql_cleanup local;
+	auto &proof = cleanup ? *cleanup : local;
+	player_sql_transaction_cleanup owner(connection, proof);
 	try
 	{
-		valid_request(request);
-		const auto request_bytes = wire(request);
-		const auto request_hash = digest(request_bytes);
-		idle(connection);
-		// Serialize new unresolved evidence with the maintenance source gate.
-		// This is not a currency mutation; it must nevertheless prevent a
-		// cutover from racing a newly retained unresolved case.
-		economic_sql_currency_writer_guard writer;
-		const auto admission =
-			economic_sql_currency_writer_guard::acquire(connection, &writer);
-		require(admission == 0, admission);
-		transaction tx(connection);
-		const auto pid = std::to_string(request.pid);
-		const auto revision = std::to_string(request.revision);
-		const auto corpse = std::to_string(request.death->corpse.front().object_uid);
-		const auto operation =
-			"UNHEX('" + hex(bytes(request.death->operation_id.bytes)) + "')";
-		auto existing = read_record(connection,
-					    "operation_id=" + operation + " OR (pid=" + pid +
-						    " AND (save_revision=" + revision +
-						    " OR corpse_item_uid=" + corpse + "))",
-					    true);
-		active(connection, tx.session);
-		if (existing)
+		auto run = [&]() -> player_death_conflict_result
 		{
-			if (existing->pid != request.pid ||
-			    existing->identity.save_revision != request.revision ||
-			    existing->identity.operation_id.bytes !=
-				    request.death->operation_id.bytes ||
-			    existing->request_hash != request_hash)
-				return { outcome::identity_conflict, EEXIST, 0 };
-			if (terminal)
-				return complete_terminal(tx, request, *existing);
-			return { outcome::already_retained, 0, existing->identity.source_revision };
-		}
-		execute(connection,
-			"SELECT save_revision FROM player_data WHERE pid=" + pid + " FOR UPDATE");
-		result_ptr result(mysql_store_result(connection), mysql_free_result);
-		require(bool(result), sql_error(connection));
-		require(mysql_num_rows(result.get()) == 1 && mysql_num_fields(result.get()) == 1,
-			ENOENT);
-		const auto row = mysql_fetch_row(result.get());
-		const auto lengths = mysql_fetch_lengths(result.get());
-		require(row && lengths && row[0]);
-		const auto source_revision = number({ row[0], lengths[0] });
-		result.reset();
-		if (source_revision >= request.revision)
-			return { outcome::stale_revision, ESTALE, source_revision };
-		if (terminal)
-		{
-			// A new ID must not overwrite an unresolved case's terminal state.
-			execute(connection,
-				"SELECT operation_id FROM player_death_conflict_evidence WHERE pid=" +
-					pid + " LIMIT 1 FOR UPDATE");
-			result_ptr cases(mysql_store_result(connection), mysql_free_result);
-			require(bool(cases), sql_error(connection));
-			require(mysql_num_rows(cases.get()) == 0, EEXIST);
-		}
-		auto retained = request;
-		retained.schema_version =
-			player_snapshot_death_evidence_schema(request.schema_version);
-		retained.death->conflict_evidence =
-			observations(connection, tx.session, request, request_bytes.size());
-		const auto payload = wire(retained);
-		active(connection, tx.session);
-		execute(connection,
-			"INSERT INTO player_death_conflict_evidence (operation_id,pid,save_revision,source_revision,"
-			"corpse_item_uid,request_hash,payload_hash,payload) VALUES (" +
-				operation + ',' + pid + ',' + revision + ',' +
-				std::to_string(source_revision) + ',' + corpse + ",UNHEX('" +
-				hex(request_hash) + "'),UNHEX('" + hex(digest(payload)) +
-				"'),UNHEX('" + hex(payload) + "'))");
-		active(connection, tx.session);
-		require(mysql_affected_rows(connection) == 1);
-		if (terminal)
-		{
-			// Hash-checked exact read-back and terminal writes share this one
-			// transaction: no archive-only completion can authorize extraction.
-			auto verified = read_record(
-				connection, "pid=" + pid + " AND operation_id=" + operation, true);
-			require(bool(verified) && verified->request_hash == request_hash &&
-				verified->identity.source_revision == source_revision);
-			return complete_terminal(tx, request, *verified);
-		}
-		return commit(tx, outcome::retained, source_revision);
+			valid_request(request);
+			const auto request_bytes = wire(request);
+			const auto request_hash = digest(request_bytes);
+			idle(connection);
+			// Serialize new unresolved evidence with the maintenance source gate.
+			// This is not a currency mutation; it must nevertheless prevent a
+			// cutover from racing a newly retained unresolved case.
+			economic_sql_currency_writer_guard writer;
+			const auto admission =
+				economic_sql_currency_writer_guard::acquire(connection, &writer);
+			require(admission == 0, admission);
+			auto work = [&]() -> player_death_conflict_result
+			{
+				transaction tx(connection, owner);
+				const auto pid = std::to_string(request.pid);
+				const auto revision = std::to_string(request.revision);
+				const auto corpse =
+					std::to_string(request.death->corpse.front().object_uid);
+				const auto operation =
+					"UNHEX('" + hex(bytes(request.death->operation_id.bytes)) +
+					"')";
+				auto existing = read_record(
+					connection,
+					"operation_id=" + operation + " OR (pid=" + pid +
+						" AND (save_revision=" + revision +
+						" OR corpse_item_uid=" + corpse + "))",
+					true);
+				active(connection, tx.session);
+				if (existing)
+				{
+					if (existing->pid != request.pid ||
+					    existing->identity.save_revision != request.revision ||
+					    existing->identity.operation_id.bytes !=
+						    request.death->operation_id.bytes ||
+					    existing->request_hash != request_hash)
+						return { outcome::identity_conflict, EEXIST, 0 };
+					if (terminal)
+						return complete_terminal(tx, request, *existing);
+					return { outcome::already_retained, 0,
+						 existing->identity.source_revision };
+				}
+				execute(connection,
+					"SELECT save_revision FROM player_data WHERE pid=" + pid +
+						" FOR UPDATE");
+				result_ptr result(mysql_store_result(connection),
+						  mysql_free_result);
+				require(bool(result), sql_error(connection));
+				require(mysql_num_rows(result.get()) == 1 &&
+						mysql_num_fields(result.get()) == 1,
+					ENOENT);
+				const auto row = mysql_fetch_row(result.get());
+				const auto lengths = mysql_fetch_lengths(result.get());
+				require(row && lengths && row[0]);
+				const auto source_revision = number({ row[0], lengths[0] });
+				result.reset();
+				if (source_revision >= request.revision)
+					return { outcome::stale_revision, ESTALE, source_revision };
+				if (terminal)
+				{
+					// A new ID must not overwrite an unresolved case's terminal state.
+					execute(connection,
+						"SELECT operation_id FROM player_death_conflict_evidence WHERE pid=" +
+							pid + " LIMIT 1 FOR UPDATE");
+					result_ptr cases(mysql_store_result(connection),
+							 mysql_free_result);
+					require(bool(cases), sql_error(connection));
+					require(mysql_num_rows(cases.get()) == 0, EEXIST);
+				}
+				auto retained = request;
+				retained.schema_version = player_snapshot_death_evidence_schema(
+					request.schema_version);
+				retained.death->conflict_evidence = observations(
+					connection, tx.session, request, request_bytes.size());
+				const auto payload = wire(retained);
+				active(connection, tx.session);
+				execute(connection,
+					"INSERT INTO player_death_conflict_evidence (operation_id,pid,save_revision,source_revision,"
+					"corpse_item_uid,request_hash,payload_hash,payload) VALUES (" +
+						operation + ',' + pid + ',' + revision + ',' +
+						std::to_string(source_revision) + ',' + corpse +
+						",UNHEX('" + hex(request_hash) + "'),UNHEX('" +
+						hex(digest(payload)) + "'),UNHEX('" + hex(payload) +
+						"'))");
+				active(connection, tx.session);
+				require(mysql_affected_rows(connection) == 1);
+				if (terminal)
+				{
+					// Hash-checked exact read-back and terminal writes share this one
+					// transaction: no archive-only completion can authorize extraction.
+					auto verified = read_record(
+						connection,
+						"pid=" + pid + " AND operation_id=" + operation,
+						true);
+					require(bool(verified) &&
+						verified->request_hash == request_hash &&
+						verified->identity.source_revision ==
+							source_revision);
+					return complete_terminal(tx, request, *verified);
+				}
+				return commit(tx, outcome::retained, source_revision);
+			};
+			// Finalize before releasing the writer fence, including a throwing START
+			// constructor. The transaction destructor is not the cleanup proof.
+			try
+			{
+				const auto result = work();
+				owner.finish();
+				return result;
+			}
+			catch (...)
+			{
+				owner.finish();
+				throw;
+			}
+		};
+		const auto result = run();
+		owner.finish();
+		if (proof.disposition == player_sql_cleanup_disposition::retire_required &&
+		    result.outcome != outcome::commit_unknown)
+			return { outcome::failed, proof.cleanup_error ? proof.cleanup_error : EIO,
+				 result.source_revision };
+		return result;
 	}
 	catch (const failure &error)
 	{
+		owner.finish();
+		if (owner.commit_attempted())
+			return { outcome::commit_unknown, error.code, 0 };
 		return { error.code == EEXIST || error.code == 1062 ? outcome::identity_conflict :
 								      outcome::failed,
 			 error.code, 0 };
 	}
 	catch (const std::bad_alloc &)
 	{
-		return { outcome::failed, ENOMEM, 0 };
+		owner.finish();
+		return { owner.commit_attempted() ? outcome::commit_unknown : outcome::failed,
+			 ENOMEM, 0 };
 	}
 	catch (...)
 	{
-		return { outcome::failed, EIO, 0 };
+		owner.finish();
+		return { owner.commit_attempted() ? outcome::commit_unknown : outcome::failed, EIO,
+			 0 };
 	}
 #endif
 }
 
 player_death_conflict_result player_death_conflict_retain(MYSQL *connection,
+							  const player_snapshot &request,
+							  player_sql_cleanup *cleanup) noexcept
+{
+	return retain_death_conflict(connection, request, false, cleanup);
+}
+
+player_death_conflict_result player_death_conflict_retain(MYSQL *connection,
 							  const player_snapshot &request) noexcept
 {
-	return retain_death_conflict(connection, request, false);
+	return player_death_conflict_retain(connection, request, nullptr);
 }
 
 player_save_apply_result player_death_conflict_apply(MYSQL *connection,
-						     const player_snapshot &request) noexcept
+						     const player_snapshot &request,
+						     player_sql_cleanup *cleanup) noexcept
 {
 #ifdef __NO_MYSQL__
 	(void)connection;
 	(void)request;
+	if (cleanup)
+		*cleanup = {};
 	return { player_save_apply_outcome::terminal_failure, 0, ENOTSUP };
 #else
+	player_sql_cleanup local;
+	auto &proof = cleanup ? *cleanup : local;
+	player_sql_transaction_cleanup entry(connection, proof);
 	try
 	{
 		idle(connection);
 		if (!request.death)
-			return player_snapshot_repository_apply(connection, request);
+			return player_snapshot_repository_apply(connection, request, &proof);
 		valid_request(request);
+		player_save_apply_result original{};
+		bool has_original = false;
 		{
 			economic_sql_currency_writer_guard writer;
 			const auto admission =
@@ -591,20 +648,29 @@ player_save_apply_result player_death_conflict_apply(MYSQL *connection,
 				"pid=" + std::to_string(request.pid) + " AND operation_id=UNHEX('" +
 					hex(bytes(request.death->operation_id.bytes)) + "')",
 				false);
+			require(entry.same_session(), ENOTCONN);
 			if (!existing)
 			{
-				const auto ordinary =
-					player_snapshot_repository_apply(connection, request);
-				if (ordinary.outcome !=
+				original = player_snapshot_repository_apply(connection, request,
+									    &proof);
+				if (original.outcome !=
 					    player_save_apply_outcome::terminal_failure ||
-				    ordinary.error_code !=
+				    original.error_code !=
 					    PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH)
-					return ordinary;
+					return original;
+				has_original = true;
+				// Preserve the exact original custody diagnosis/witness. A destructor's
+				// best-effort rollback or the participant's idle gate is not this proof.
+				if (!proof.rollback_confirmed || proof.cleanup_error ||
+				    proof.disposition !=
+					    player_sql_cleanup_disposition::idle_verified ||
+				    mysql_thread_id(connection) != proof.original_session)
+					return original;
 			}
 		}
-		// Reacquire admission and locked evidence after normal rollback. The
-		// participant verifies the exact mismatch again, never an arbitrary error.
-		const auto completed = retain_death_conflict(connection, request, true);
+		// The retained participant owns a separate checked transaction. Ordinary
+		// cleanup can authorize its admission, never certify its later cleanup.
+		const auto completed = retain_death_conflict(connection, request, true, &proof);
 		if (completed.outcome == outcome::terminal_committed ||
 		    completed.outcome == outcome::already_terminal)
 			return { completed.outcome == outcome::terminal_committed ?
@@ -614,6 +680,9 @@ player_save_apply_result player_death_conflict_apply(MYSQL *connection,
 		if (completed.outcome == outcome::commit_unknown)
 			return { player_save_apply_outcome::ambiguous_commit,
 				 completed.source_revision, completed.error_code };
+		if (has_original &&
+		    proof.disposition == player_sql_cleanup_disposition::retire_required)
+			return original;
 		return save_failure(completed.error_code);
 	}
 	catch (const failure &error)
@@ -631,6 +700,12 @@ player_save_apply_result player_death_conflict_apply(MYSQL *connection,
 #endif
 }
 
+player_save_apply_result player_death_conflict_apply(MYSQL *connection,
+						     const player_snapshot &request) noexcept
+{
+	return player_death_conflict_apply(connection, request, nullptr);
+}
+
 player_save_apply_result player_death_conflict_apply_from_pool(const player_snapshot &request,
 							       void *context)
 {
@@ -641,22 +716,29 @@ player_save_apply_result player_death_conflict_apply_from_pool(const player_snap
 #else
 	if (!request.death)
 		return player_snapshot_repository_apply_from_pool(request, context);
-	MYSQL *connection = sql_pool_acquire();
-	if (!connection)
+	player_sql_pool_lease lease(sql_pool_acquire());
+	if (!lease.get())
 		return save_failure(ETIMEDOUT);
-	auto applied = player_death_conflict_apply(connection, request);
+	player_sql_cleanup cleanup;
+	auto applied = player_death_conflict_apply(lease.get(), request, &cleanup);
+	lease.reuse(cleanup);
 	if (applied.outcome == player_save_apply_outcome::ambiguous_commit ||
 	    connection_error(applied.error_code))
 	{
-		connection = sql_pool_replace_connection(connection);
-		if (connection)
-		{
-			// Same-request replay proves a terminal receipt, not merely a counter
-			// that an unrelated checkpoint could have advanced.
-			applied = player_death_conflict_apply(connection, request);
-		}
+		if (!lease.replace())
+			return applied;
+		const auto replay = player_death_conflict_apply(lease.get(), request, &cleanup);
+		lease.reuse(cleanup);
+		// A replacement readback failure cannot erase the original uncertainty.
+		if (applied.outcome != player_save_apply_outcome::ambiguous_commit ||
+		    ((replay.outcome == player_save_apply_outcome::applied ||
+		      replay.outcome == player_save_apply_outcome::already_applied) &&
+		     replay.durable_revision == request.revision))
+			applied = replay;
+		else
+			applied.error_code = replay.error_code ? replay.error_code :
+								 applied.error_code;
 	}
-	sql_pool_release(connection);
 	return applied;
 #endif
 }

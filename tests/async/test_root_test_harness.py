@@ -77,6 +77,8 @@ expected_resource_intensive = {
 assert runner.RESOURCE_INTENSIVE_TEST_NAMES == expected_resource_intensive
 assert runner.MANUAL_ONLY_TEST_NAMES == {
     "test_player_save_journal_quarantine.py",
+    "test_player_snapshot_exception_mysql.py",
+    "test_player_death_conflict_exception_mysql.py",
     "test_staging_migration_fork_mysql.py",
     "test_quest_recovery_read_budget_mysql.py",
     "test_economic_accounting_schema_mysql.py",
