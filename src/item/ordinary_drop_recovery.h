@@ -3,6 +3,15 @@
 
 #include "persistence/critical_command_completion.h"
 
+struct player_item_snapshot;
+enum class inert_item_stage_result;
+
+// Pure, bounded SQL recovery representability check shared by live admission
+// and all-absent enrollment. No capture, parser, allocation or authority update.
+// Source/UID uniqueness and canonical byte validation remain caller duties.
+inert_item_stage_result ordinary_drop_recovery_eligibility(const player_item_snapshot *items,
+							   size_t count) noexcept;
+
 enum class ordinary_drop_observation_status : uint8_t
 {
 	verified_existing,
@@ -12,6 +21,7 @@ enum class ordinary_drop_observation_status : uint8_t
 	refused,
 	unavailable,
 	published,
+	verified_rejected,
 };
 
 struct ordinary_drop_observation
@@ -37,6 +47,8 @@ ordinary_drop_recovery_observe_existing(const critical_command &original_command
 // unsupported activity/procedure/timer representations remain held. A published
 // result requires confirmed SQL cleanup; uncertain cleanup retains any enrolled
 // graph for exact re-observation. No economic mutation or publication ACK occurs.
+// A definitive rejection verifies the unchanged native source and original
+// no-effect receipt instead; it never reconstructs or moves a graph.
 ordinary_drop_observation
 ordinary_drop_recovery_publish(const critical_command &original_command,
 			       const critical_completion &sealed_completion) noexcept;

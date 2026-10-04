@@ -1421,13 +1421,22 @@ bool critical_command_coordinator_acknowledge_publication(
 			return outcome == critical_apply_outcome::applied ||
 			       outcome == critical_apply_outcome::already_applied;
 		};
+		const bool same_outcome =
+			(success(receipt.outcome) && success(owner.completion_.outcome)) ||
+			(receipt.outcome == critical_apply_outcome::terminal_failure &&
+			 owner.completion_.outcome == critical_apply_outcome::terminal_failure &&
+			 receipt.error_code && owner.completion_.error_code &&
+			 receipt.disposition == critical_completion_disposition::execution &&
+			 owner.completion_.disposition ==
+				 critical_completion_disposition::execution &&
+			 receipt.failure_stage == critical_failure_stage::none &&
+			 owner.completion_.failure_stage == critical_failure_stage::none);
 		std::vector<uint8_t> frozen;
 		if (critical_command_encode(state.command, &frozen) !=
 			    critical_command_codec_result::ok ||
 		    frozen != owner.frozen_ ||
 		    receipt.operation_id.bytes != owner.completion_.operation_id.bytes ||
-		    !success(receipt.outcome) || !success(owner.completion_.outcome) ||
-		    receipt.disposition != owner.completion_.disposition ||
+		    !same_outcome || receipt.disposition != owner.completion_.disposition ||
 		    receipt.durable_revision != owner.completion_.durable_revision ||
 		    receipt.error_code != owner.completion_.error_code ||
 		    receipt.failure_stage != owner.completion_.failure_stage ||

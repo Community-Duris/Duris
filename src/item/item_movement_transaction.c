@@ -15,6 +15,7 @@
 #include "persistence/persistence_checkpoint.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
+#include "player/inert_item_stage.h"
 #include "player/player_load_items.h"
 #include "player/player_save_pipeline.h"
 #include "core/prototypes.h"
@@ -1858,7 +1859,7 @@ void publish_live_drop(std::unordered_map<std::string, pending_movement>::iterat
 	auto &entry = found->second;
 	entry.ordinary_receipt_sealed = true;
 	const auto original_receipt = entry.completed;
-	if (!entry.live_drop_acknowledged && committed)
+	if (!entry.live_drop_acknowledged && !never_admitted)
 	{
 		entry.publication_inflight = true;
 		const auto physical = ordinary_drop_recovery_publish_live(*entry.live_drop_command,
@@ -1876,8 +1877,14 @@ void publish_live_drop(std::unordered_map<std::string, pending_movement>::iterat
 			found->second.publication_status = publication_state::blocked;
 			return;
 		}
-		if (physical.status != ordinary_drop_observation_status::published &&
-		    physical.status != ordinary_drop_observation_status::verified_existing)
+		const bool proven =
+			committed ?
+				(physical.status == ordinary_drop_observation_status::published ||
+				 physical.status ==
+					 ordinary_drop_observation_status::verified_existing) :
+				(physical.status ==
+				 ordinary_drop_observation_status::verified_rejected);
+		if (!proven)
 		{
 			// One bounded attempt per completion pulse, without a lifetime cap
 			// that would abandon a recoverable original publication obligation.
@@ -1993,7 +2000,10 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			return;
 		}
 		pending.erase(found);
-		++health.committed;
+		if (committed)
+			++health.committed;
+		else
+			++health.rejected;
 		account_health();
 		return;
 	}
@@ -2523,6 +2533,10 @@ static bool submit_movement(P_char actor, P_obj root, P_obj target_container,
 		return reject_with(reject, item_movement_reject::snapshot_failure);
 	if (live_drop_token && !live_drop_source_owned(root, from_owner, snapshots))
 		return reject_with(reject, item_movement_reject::topology_mismatch);
+	if (live_drop_token &&
+	    ordinary_drop_recovery_eligibility(snapshots.data(), snapshots.size()) !=
+		    inert_item_stage_result::ok)
+		return reject_with(reject, item_movement_reject::active_accounting_unsupported);
 	std::vector<item_transfer_entry> items;
 	try
 	{
@@ -2779,6 +2793,10 @@ bool item_movement_transaction_prepare_sql_drop(P_char actor, P_obj root,
 			    player_snapshot_capture_result::ok ||
 		    !live_drop_source_owned(root, owner.owner, snapshots))
 			return reject_with(reject, item_movement_reject::topology_mismatch);
+		if (ordinary_drop_recovery_eligibility(snapshots.data(), snapshots.size()) !=
+		    inert_item_stage_result::ok)
+			return reject_with(reject,
+					   item_movement_reject::active_accounting_unsupported);
 	}
 	catch (const std::bad_alloc &)
 	{

@@ -124,6 +124,7 @@
 #include "persistence/maintenance_snapshot.h"
 #include "persistence/critical_command_coordinator.h"
 #include "economy/economic_command_admission.h"
+#include "economy/economic_gameplay_authority.h"
 #include "persistence/critical_command_repository.h"
 #include "persistence/critical_outbox.h"
 #include "persistence/corpse_lifecycle_transaction.h"
@@ -1006,6 +1007,23 @@ int run_the_game(int port, int sslport)
 		player_save_pipeline_prepare(journal_directory,
 					     player_quarantine_recovery_revalidate_selected);
 #endif
+#ifndef __NO_MYSQL__
+	// Runtime SQL boot has already recovered the selected durable authority.
+	// Preparation/revalidation must finish at epoch zero; critical replay then
+	// installs its original holds before any ordinary save execution starts.
+	const bool owned_accounting_boot = economic_gameplay_authority::active();
+	if (owned_accounting_boot)
+	{
+		uint64_t ownership_epoch = 0;
+		if (!player_saves_ready ||
+		    !player_save_execution_guard::begin_ownership_epoch(&ownership_epoch))
+		{
+			fprintf(stderr,
+				"Active accounting save ownership unavailable; aborting boot.\n");
+			_exit(1);
+		}
+	}
+#endif
 	if (!player_saves_ready)
 	{
 		logit(LOG_STATUS,
@@ -1034,6 +1052,16 @@ int run_the_game(int port, int sslport)
 						  critical_extension_validator);
 	if (!critical_commands_ready)
 	{
+#ifndef __NO_MYSQL__
+		if (owned_accounting_boot)
+		{
+			// Replay may already retain original holds. Never discard them or
+			// enter gameplay after partial initialization of active authority.
+			fprintf(stderr,
+				"Active accounting critical recovery unavailable; aborting boot.\n");
+			_exit(1);
+		}
+#endif
 		if (critical_command_coordinator_shutdown())
 		{
 			player_death_restitution_runtime_abort_all();
@@ -1053,6 +1081,12 @@ int run_the_game(int port, int sslport)
 	// retains its original slots for shutdown/restart, rather than running past it.
 	if (player_saves_ready && critical_commands_ready && !player_save_pipeline_start())
 	{
+		if (owned_accounting_boot)
+		{
+			fprintf(stderr,
+				"Active accounting save execution unavailable; aborting boot.\n");
+			_exit(1);
+		}
 		logit(LOG_STATUS,
 		      "Player save execution unavailable; prepared recovery remains held.");
 		persistence_alert(AVATAR, "player_save", "pipeline", "none", "none", "start_failed",

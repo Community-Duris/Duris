@@ -360,3 +360,92 @@ major-plan readiness. Ownership enable and Plan 1 acceptance remain unfinished.
 The existing native lifecycle harness already composes install, incomplete-evidence
 refusal, activate, pause and reactivate for independent acceptance; production's
 stopped-runtime maintenance caller and full release coverage remain separate work.
+
+## Selected-authority ownership boot connection
+
+The production SQL boot previously prepared save recovery, restored critical
+commands and started saves without calling the existing ownership-epoch primitive.
+That left the completed residence/reservation connections disabled. This is a
+source-established missing caller; runtime failure/fix checks remain deferred.
+
+SQL startup now enables the existing epoch only when runtime recovery has already
+selected verified active gameplay authority. Journal preparation and bounded
+resolved-recovery revalidation finish at epoch zero; unresolved PIDs retain their
+existing fences. The epoch begins before critical outbox/replay initialization,
+original hold installation and ordinary worker/dispatcher start. Active failure
+at preparation, epoch begin, critical recovery or save execution exits before
+gameplay or dependent cleanup. Existing ancillary joinable threads require the
+same terminal process boundary already used for unresolved owned shutdown.
+
+Inactive SQL and flatfile startup retain their existing behavior. No setting,
+activation decision, maintenance write, journal format or new authority mechanism
+was added. Header comments now describe the connected caller. Before source is
+preserved in `tmp/ownership-boot-before-20261004/comm.c`. Independent source review,
+changed-line formatting and diff hygiene passed. This source connection is
+unqualified; no compiler/tests/native SQL/gameplay/recovery ran and no production
+accounting was activated. Rejected restored outcomes, complete supported graph
+recovery, stopped-runtime maintenance, flatfile parity and major-plan acceptance
+remain open; all applicable R1–R8 gates are retained.
+
+## Definitive rejected ordinary-drop disposition
+
+The original recovery owner accepted only successful ordinary-drop results, so a
+genuine retained rejection could not discharge its restored hold. The private
+coordinator ACK also accepted only success. Live rejected drops previously skipped
+native proof. These are source-established missing paths; no new runtime RED ran.
+
+The existing receipt verifier now returns a canonical original rejection only
+after checking exact committed inbox identity, command/key hashes, result code,
+failure stage and retained body, the rejected accounting root and empty native
+movement history, room literals and outbox. The native observation separately
+locks the original lineage, season, source-owner row and complete source custody/literals
+on one reconnect-disabled session. It accepts an unchanged offline source without
+materializing it, or an exact complete carried projection; partial, misplaced,
+foreign or conflicting projections remain held. Existing owner counters may advance
+for other roots, while exact item revisions/topology and literals must agree.
+Existing zero-revision owner rows are valid; missing owner rows remain unavailable.
+The destination row is not required for rejection: a first-use room may still
+lack it when an earlier collector preflight refuses before the native transfer.
+No destination row is created or changed merely to settle that rejection.
+
+Rejection invokes no object handlers, enrollment or movement. Live partial-handler
+state refuses rejection. Confirmed original-session cleanup precedes guarded ACK.
+The restored owner retains its fresh journal/control census and exact publication
+reservation; coordinator compares the whole original command/result and preserves
+generation, durable checkpoint and exact hold-release ordering. Live ACK/release
+retries retain the original token and do not repeat a successful ACK. Restored
+health records rejection rather than success; notification remains after ACK.
+
+The seven changed source files are recovery C/H, movement C, repository C/H,
+pipeline C and coordinator C. Original sources are retained in
+`tmp/rejected-ordinary-drop-before-20261004` and
+`tmp/rejected-drop-proof-before-20261004`. Independent source review, changed-line
+formatting and diff hygiene passed. No compiler/tests/native SQL/gameplay/recovery
+ran. This slice remains unqualified; supported graph admission/recovery alignment
+and major-plan acceptance remain open. No new schema, authority framework or
+acceptance gate was added; inactive paths retain their behavior.
+
+## Ordinary-drop admission and recovery eligibility
+
+Live ordinary SQL drop admission previously accepted literal graphs that the
+existing all-absent recovery owner could not enroll. The shared bounded classifier
+now reuses that owner's existing prototype, activity, parent and inert-literal
+checks before literal checkpoint preparation, before hold/submission and before
+cold enrollment. Unsupported graphs refuse before mutation. The depth comparison
+matches the existing capture/codec limit; source identity and canonical bytes
+remain caller duties. Existing-graph observation and rejection behavior are unchanged.
+
+The three source files are recovery C/H and movement C. Original copies remain in
+`tmp/ordinary-drop-eligibility-before-20261004`. Final source pins are
+`c897665e29b8f7dfb79a2ced7df7b74da71d355ae50e2e2ea1a192aa312397e4`,
+`d2fd723751acac041873624fbf3a43d33f6b286533975f831a425abe24d6cca7` and
+`dd24c1217387f8c89088e5631838195735474cd849ab8b9239437ad506f6ca0a`, respectively.
+Independent source review, changed-line formatting and diff hygiene passed.
+No tests, compiler, native SQL, gameplay or recovery checks have run for this slice.
+
+This closes the identified production source prerequisite for Plan 1's existing
+independent qualification batch. The primary will now qualify the combined source
+using existing owners and both builds, with real coordinator/pool lost-reply and
+restart checks, flatfile bank/item parity and the guarded lifecycle procedure.
+It adds no new framework, activity support or acceptance gate. Unsupported broader
+routes remain required in their owning plans; full R1–R8 and release remain open.
