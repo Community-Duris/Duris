@@ -3,6 +3,7 @@
 
 #include "player/player_snapshot.h"
 #include "persistence/persistence_diagnostics.h"
+#include "player/player_save_replay_ownership.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -150,6 +151,9 @@ enum class player_save_submit_result : uint8_t
 	worker_unavailable,
 	journal_failure,
 	durably_spilled,
+	// Replay/another explicit ownership scope prevents admission. Retain the
+	// original capture and claim; this is not failure/quarantine/retry exhaustion.
+	replay_busy,
 };
 
 struct player_save_worker_health
@@ -199,6 +203,27 @@ bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
 					  player_save_journal_terminal_fn terminal = nullptr);
 player_save_submit_result player_save_worker_submit(player_snapshot snapshot);
 player_save_submit_result player_save_worker_submit_retained(player_snapshot *snapshot);
+// Transfer a previously admitted exact-PID claim only with accepted/coalesced
+// snapshot consumption. Every refusal leaves both caller owners unchanged.
+// Call outside an already-entered execution scope for this same claim; the
+// append hook gets its own bounded scope. Existing claims can drain/transfer
+// while a replay ticket is pending. Disabled epochs permit an empty claim.
+player_save_submit_result
+player_save_worker_submit_owned_retained(player_snapshot *snapshot,
+					 player_save_execution_guard::resident_claim &residence);
+// Completion stays copyable. This separate move-only residence must remain
+// with the exact delivery through all receipt callbacks, including failures.
+// Nonfinal retry results keep the claim on the retained worker job and carry
+// no receipts. A final envelope receives it before that job is retired.
+struct player_save_owned_completion
+{
+	player_save_completion completion = {};
+	player_save_execution_guard::resident_claim residence;
+};
+size_t player_save_worker_pulse_owned(player_save_owned_completion *completions_out,
+				      size_t capacity);
+// Legacy pulse does not consume claim-bearing results. It preserves inactive
+// behavior; enabled production owners must use the owned delivery API.
 size_t player_save_worker_pulse(player_save_completion *completions_out, size_t capacity);
 // Return true while this PID has a queued or executing worker snapshot.  The
 // player save/login fence uses this exact-PID query; aggregate health is not a
@@ -213,6 +238,16 @@ struct player_save_deferred_identity
 	uint64_t request_generation = 0;
 	uint64_t worker_lifecycle = 0;
 };
+struct player_save_ownership_waiter
+{
+	player_save_deferred_identity identity;
+	uint64_t epoch = 0;
+};
+// Bounded, allocation-free exact identities, including the scope-check window
+// before park. The release-event owner observes current per-PID availability
+// then uses resume_deferred_exact; no polling/background retry is installed.
+size_t player_save_worker_ownership_waiters(player_save_ownership_waiter *out,
+					    size_t capacity) noexcept;
 // Snapshot only the active original owner, including before it parks. Capture
 // under the releasing owner's fence, then notify after its successful release.
 // No callback is invoked and no queue storage is allocated. Output is unchanged

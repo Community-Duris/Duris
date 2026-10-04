@@ -138,6 +138,14 @@ inline bool end_ownership_epoch(uint64_t epoch) noexcept
 	return true;
 }
 
+// Return the actual epoch even after integrity refusal; callers must not turn a
+// poisoned enabled epoch into an inactive/unowned admission bypass.
+inline uint64_t current_ownership_epoch() noexcept
+{
+	std::lock_guard<std::mutex> lock(detail::mutex);
+	return detail::ownership_epoch;
+}
+
 class resident_claim
 {
     public:
@@ -192,6 +200,49 @@ class resident_claim
 	~resident_claim() noexcept { release(); }
 	ownership_status result() const noexcept { return status_; }
 	explicit operator bool() const noexcept { return generation_ != 0; }
+	bool matches_current(int pid) const noexcept
+	{
+		std::lock_guard<std::mutex> lock(detail::mutex);
+		const auto found = detail::resident_claims.find(generation_);
+		return pid > 0 && pid == pid_ && detail::valid_epoch_locked(epoch_) &&
+		       generation_ && found != detail::resident_claims.end() &&
+		       found->second == pid;
+	}
+	// Only an exact retained immutable body may derive another delivery owner.
+	// The source owner checks those bytes; this is not admission for a new body.
+	// Existing pinned retries must drain even after a replay ticket becomes pending.
+	static resident_claim derive_existing(const resident_claim &original) noexcept
+	{
+		resident_claim out;
+		std::lock_guard<std::mutex> lock(detail::mutex);
+		const auto claim = detail::resident_claims.find(original.generation_);
+		const auto state = detail::owned_pids.find(original.pid_);
+		if (!detail::valid_epoch_locked(original.epoch_) || !original.generation_ ||
+		    claim == detail::resident_claims.end() || claim->second != original.pid_ ||
+		    state == detail::owned_pids.end() || !state->second.claims ||
+		    state->second.reserved)
+			return out;
+		out.status_ = ownership_status::unavailable;
+		if (detail::resident_claims.size() >= detail::max_resident_claims ||
+		    !detail::generation_available_locked())
+			return out;
+		try
+		{
+			out.generation_ = detail::next_owner_generation + 1;
+			detail::resident_claims.emplace(out.generation_, original.pid_);
+			detail::next_owner_generation = out.generation_;
+			++state->second.claims;
+			out.epoch_ = original.epoch_;
+			out.pid_ = original.pid_;
+			out.status_ = ownership_status::allowed;
+			detail::changed_locked();
+		}
+		catch (const std::bad_alloc &)
+		{
+			out.generation_ = 0;
+		}
+		return out;
+	}
 
     private:
 	friend class execution_scope;
@@ -500,6 +551,7 @@ struct ownership_observation
 {
 	uint64_t epoch = 0, change_sequence = 0, resident_count = 0;
 	bool replay_pending = false, replay_reserved = false, executing = false;
+	bool publication_held = false;
 	bool available = false;
 };
 inline ownership_observation observe_ownership(uint64_t epoch, int pid) noexcept
@@ -511,6 +563,7 @@ inline ownership_observation observe_ownership(uint64_t epoch, int pid) noexcept
 	out.epoch = epoch;
 	out.change_sequence = detail::ownership_change;
 	out.available = true;
+	out.publication_held = detail::held_locked(pid);
 	const auto found = detail::owned_pids.find(pid);
 	if (found != detail::owned_pids.end())
 	{
@@ -526,6 +579,21 @@ inline void signal_ownership_change(uint64_t epoch) noexcept
 	std::lock_guard<std::mutex> lock(detail::mutex);
 	if (detail::valid_epoch_locked(epoch))
 		detail::changed_locked();
+}
+// The existing dispatcher uses this event for new work, stop and ownership
+// release. Queue owners signal after publication; no periodic ownership retry.
+inline void wait_ownership_change(uint64_t epoch, uint64_t observed) noexcept
+{
+	if (detail::current_scope)
+		return;
+	std::unique_lock<std::mutex> lock(detail::mutex);
+	if (!detail::valid_epoch_locked(epoch))
+		return;
+	detail::ownership_event().wait(lock,
+				       [&] {
+					       return !detail::valid_epoch_locked(epoch) ||
+						      detail::ownership_change != observed;
+				       });
 }
 // External dispatcher observes sequence BEFORE inspecting its queues. No caller
 // waits while holding pipeline/worker/journal/SQL locks or an execution scope.
