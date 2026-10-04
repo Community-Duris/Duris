@@ -135,6 +135,7 @@
 #include "item/item_uid_allocator.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_accounting_dispatch.h"
+#include "flatfile/flatfile_economic_runtime.h"
 #include "economy/auction_transaction.h"
 #include "economy/collector_catalog_cache.h"
 #include "economy/collector_listing_pipeline.h"
@@ -655,6 +656,11 @@ int main(int argc, char **argv)
 	{
 		fatal_boot_error("comm", "MySQL initialization failed!");
 	}
+	// Resolve only an already selected, receipt-bearing native authority before
+	// item/world hydration and before choosing save replay ownership. This never
+	// installs a baseline or infers activation from configuration.
+	if (!persistence_mode_requires_mysql() && !flatfile_economic_runtime_start())
+		fatal_boot_error("comm", "Flatfile accounting runtime evidence unavailable");
 	if (!persistence_mode_requires_mysql() &&
 	    !item_uid_allocator_reserve(nullptr, ITEM_UID_BOOT_RESERVATION))
 		fatal_boot_error("comm", "Could not reserve a collision-free flat item UID range");
@@ -1197,7 +1203,13 @@ int run_the_game(int port, int sslport)
 			player_save_pipeline_shutdown();
 	}
 
-	/* Don't need this anymore, as dropped artis are handled in real time on the DB.
+	// Refused/cancelled shutdown and copyover retain their runtime projection.
+	// Pwipe skips ordinary asynchronous owner closure and is not this boundary.
+	if (critical_coordinator_stopped && owned_saves_stopped && !_pwipe && !_copyover &&
+	    !persistence_mode_requires_mysql())
+		flatfile_economic_runtime_shutdown();
+
+		/* Don't need this anymore, as dropped artis are handled in real time on the DB.
 	// Look for dropped artis and remove them from the next boot.
 	dropped_arti_hunt();
 	*/

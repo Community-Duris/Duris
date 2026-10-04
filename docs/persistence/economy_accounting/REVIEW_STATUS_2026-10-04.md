@@ -340,3 +340,19 @@ number of source helpers or prepared cases. These two new issues have separate
 local source commits; no compiler/tests/native/SQL/gameplay/AST qualification or
 verified milestone push occurred. The goal remains active and merge readiness
 is unproven.
+
+
+## Latest source integration after the independent Plan1 milestone
+
+The normally pushed 6379c713a coin/collector/shared-owner milestone is source
+reviewed, not natively qualified. Independent Plan5 present-file lifecycle audit
+9306818b5 is imported and normally pushed in 621ba722b; eight exact peer blobs,
+two Python AST inputs and diff hygiene pass. Combined native qualification is open.
+
+The next 14-input native origin/flat runtime milestone integrates catalog v3,
+protected lifecycle-file registration, full retained/current startup proof and
+trusted same-process shutdown. Source review and formatting pass. Current Plan5
+v1/v2 readers do not yet qualify v3; original compatibility/fault/gameplay checks
+stay deferred to major-plan readiness. Central flat coin admission stays closed,
+inactive behavior and SQL qualification scope are preserved, and remaining money,
+item/domain writers plus activation-owner and release evidence remain required.

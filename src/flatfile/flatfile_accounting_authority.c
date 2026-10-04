@@ -682,17 +682,24 @@ void active_crosslink(const std::string &root, const flatfile_economic_control &
 	need(!nonzero(mapping.retiring_operation), ESTALE);
 	need(at < index.size() && index[at].active == mapping.account.authority_id);
 }
-void validate_tombstone(const std::string &root, const flatfile_economic_control &control,
-			const native_entry &entry,
-			const flatfile_accounting_staging_view *view = nullptr)
+void validate_tombstone_identity(const native_entry &entry, const flatfile_economic_mapping &last)
 {
 	need(!entry.active);
-	auto last = mapping_by_id(root, control, entry.last, view);
-	auto current = native_key(last.account.kind, last.account.context_id, last.locator);
+	const auto current = native_key(last.account.kind, last.account.context_id, last.locator);
 	need(current.size() >= 12 && entry.key.size() >= 12 &&
 	     std::equal(current.begin(), current.begin() + 12, entry.key.begin()));
 	if (last.account.kind != economic_account_kind::bank)
 		need(current == entry.key);
+	if (!nonzero(last.retiring_operation))
+		need(last.account.kind == economic_account_kind::bank && current != entry.key);
+}
+void validate_tombstone(const std::string &root, const flatfile_economic_control &control,
+			const native_entry &entry,
+			const flatfile_accounting_staging_view *view = nullptr)
+{
+	auto last = mapping_by_id(root, control, entry.last, view);
+	validate_tombstone_identity(entry, last);
+	auto current = native_key(last.account.kind, last.account.context_id, last.locator);
 	if (!nonzero(last.retiring_operation))
 	{
 		need(last.account.kind == economic_account_kind::bank && current != entry.key);
@@ -1421,4 +1428,84 @@ unsigned int flatfile_accounting_staging_view::epoch(const critical_operation_id
 {
 	return flatfile_accounting_authority_storage::read_epoch(root_, lock_, this, lineage, epoch,
 								 out, error);
+}
+
+unsigned int flatfile_accounting_authority_storage::read_all_mappings_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	std::vector<flatfile_economic_mapping> *out, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			need(out && !root.empty() && lock.matches(root), EINVAL);
+			recover(root, lock);
+			const auto control = load_control(root);
+			mappings all;
+			all.reserve(control.next_mapping_id - 1);
+			std::array<native_index, FLATFILE_ECONOMIC_METADATA_BUCKETS> indexes;
+			for (size_t slot = 0; slot < indexes.size(); ++slot)
+			{
+				auto values = load_mappings(root, control, slot);
+				for (auto &value : values)
+					all.push_back(std::move(value));
+				indexes[slot] = load_native(root, control, slot);
+			}
+			need(all.size() == control.next_mapping_id - 1);
+			std::sort(all.begin(), all.end(), [](const auto &a, const auto &b)
+				  { return a.account.authority_id < b.account.authority_id; });
+			std::map<bytes, const native_entry *> links;
+			for (const auto &index : indexes)
+				for (const auto &entry : index)
+					need(links.emplace(entry.key, &entry).second);
+			auto mapping = [&](uint64_t id) -> const flatfile_economic_mapping &
+			{
+				need(id && id <= all.size());
+				const auto &value = all[id - 1];
+				need(value.account.authority_id == id);
+				return value;
+			};
+			auto current_link =
+				[&](const flatfile_economic_mapping &value) -> const native_entry &
+			{
+				const auto key = native_key(value.account.kind,
+							    value.account.context_id,
+							    value.locator);
+				const auto at = links.find(key);
+				need(at != links.end());
+				return *at->second;
+			};
+			for (size_t i = 0; i < all.size(); ++i)
+			{
+				const auto &value = mapping(i + 1);
+				const auto &entry = current_link(value);
+				if (!nonzero(value.retiring_operation))
+					need(entry.active == value.account.authority_id &&
+					     entry.last == entry.active);
+				else
+					// An existing bank may rename into a retired alias even when
+					// its lifetime ID is older. last identifies the latest alias
+					// assignment, not monotonically increasing bank lifetimes.
+					need((value.account.kind == economic_account_kind::bank ||
+					      entry.last >= value.account.authority_id) &&
+					     entry.active != value.account.authority_id);
+			}
+			for (const auto &[key, pointer] : links)
+			{
+				const auto &entry = *pointer;
+				const auto &last = mapping(entry.last);
+				if (entry.active)
+					need(!nonzero(last.retiring_operation) &&
+					     native_key(last.account.kind, last.account.context_id,
+							last.locator) == key);
+				else
+				{
+					validate_tombstone_identity(entry, last);
+					if (!nonzero(last.retiring_operation))
+						need(current_link(last).active ==
+						     last.account.authority_id);
+				}
+			}
+			*out = std::move(all);
+		},
+		error);
 }

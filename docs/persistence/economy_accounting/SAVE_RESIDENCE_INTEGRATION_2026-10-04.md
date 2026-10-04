@@ -880,3 +880,43 @@ three remain unqualified on every backend. The global net increase is 18;
 coordinate changes are not counts of newly discovered writers, and inventory
 is not executable qualification. Historical rebinding and all original route
 acceptance remain open.
+
+
+### October 4 retained flat runtime and lifecycle-origin source milestone
+
+The native catalog now records origin in version 3 at row offset 97, preserving
+the 160-byte row and canonical lifecycle receipt version 1. Generic baseline
+initialization cannot masquerade as the lifecycle owner, even when every operation
+ID coincides. Versions 1/2 retain unknown origin; unrelated rewrites do not infer
+or promote it. The original atomic baseline/catalog/control/common receipt/selection
+bundle owns this field. Both central lifecycle inventories register the immutable
+`file:economic-lifecycle-receipt`; private source descriptors remain protected.
+
+Configured-root flat startup now verifies selected lifecycle origin, original-ID
+receipt, complete book/index/mapping structure and current native wallet/bank
+coverage under identity then authority locks before selecting a read-only admission
+projection. Current aliases and lifetimes come from native authority; original
+receipt names remain historical. Missing or corrupt proof refuses. A valid absent
+or inactive root preserves legacy behavior; no baseline or activation is created.
+Retired bank aliases allow a lower latest lifetime ID after a valid rename while
+preserving exact retirement and alias crosslinks. Non-bank ordering stays checked.
+
+The trusted startup runs before UID/world hydration and replay-owner selection.
+The same process clears its regular projection only after successful owned-save
+and coordinator shutdown under the existing lifecycle guard. Refused/cancelled
+closure, copyover, pwipe and the separate SQL qualification scope retain it.
+Central flat coin admission remains closed pending the original route qualification.
+
+These 14 inputs are source-integrated and independently reviewed, with changed-line
+clang 18 fixed points, immutable pins, Python AST/JSON and diff hygiene only.
+Original native compatibility, atomic fault/recovery and gameplay batches remain
+pending. The current independent Plan5 reader supports v1/v2, so it cannot qualify
+new v3 state until its matching slice is integrated. Production accounting remains
+inactive; no data conversion or release gate is added. Plan1's original frozen
+acceptance evidence is preserved rather than relabeled for these later inputs.
+Private input receipt: tmp/accounting-flat-runtime-origin-integration-20261004.local.json.
+
+Plan5 present-file lifecycle audit slice 9306818b5 is imported and normally pushed
+in 621ba722b, with all eight imported blobs equal to the peer and both Python ASTs
+passing. Its native results qualify its own consumed tree, not this newer source.
+Combined release, all remaining writers/item/domains and original R1–R8 stay open.

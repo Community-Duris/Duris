@@ -386,6 +386,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_accounting_dispatch.o \
 				 flatfile/flatfile_accounting_baseline.o \
 				 flatfile/flatfile_accounting_lifecycle_transaction.o \
+				 flatfile/flatfile_economic_runtime.o \
 				 flatfile/flatfile_item_accounting_reference.o \
 				 flatfile/flatfile_account_repository.o \
 				 flatfile/flatfile_account_delete.o \

@@ -117,6 +117,13 @@ class flatfile_accounting_authority_storage
 	friend class flatfile_accounting_test_access;
 #endif
 	using operations = std::vector<flatfile_authority_operation>;
+	// Full bounded current metadata census, including retired mappings and renamed
+	// bank tombstones. No current native balance or activation authority implied.
+	static unsigned int read_all_mappings_locked(const std::string &,
+						     const flatfile_authority_lock &,
+						     std::vector<flatfile_economic_mapping> *,
+						     std::string *);
+
 	static unsigned int read_control(const std::string &, const flatfile_authority_lock &,
 					 const flatfile_accounting_staging_view *,
 					 flatfile_economic_control *, std::string *);

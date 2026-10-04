@@ -133,3 +133,14 @@ Central flat coin admission stays closed until native active bootstrap and this
 plan's original qualification pass. Other money writers and source policies
 remain required. See the consolidated integration report for source inputs;
 new native/gameplay/restart checks wait for this major plan's readiness batch.
+
+
+### October 4 flat runtime source prerequisite integrated; unqualified
+
+Configured-root boot verifies the retained lifecycle and complete current native
+mapping/wallet/bank census before selecting the accounting admission projection
+and owned save replay. It creates no baseline or activation. Successful shutdown
+clears only after the original save/coordinator owners close; copyover and refused
+shutdown retain it. Central flat coin admission remains closed. Native v3 format
+compatibility and matching Plan5 reader integration, then this plan's original
+backend/gameplay/recovery batch, remain required.

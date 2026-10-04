@@ -938,3 +938,14 @@ for the permitted disposable synthetic-coverage fixture; no new production CLI
 or Plan5 waiver is needed. Plan1 remains incomplete. Continue original Plans2-4
 producer work in parallel; private collector and inert-money proposals remain
 unintegrated/unqualified and do not promote writer coverage or release readiness.
+
+
+### Current flat runtime/origin source handoff
+
+After the source-only 6379c713a shared-owner milestone and peer lifecycle-reader
+import 621ba722b, native v3 initialization origin, protected lifecycle-file
+registration, retained flat startup/current-source census and trusted shutdown
+are integrated as source-only work. Matching independent v3 consumption and
+original major-plan native/gameplay/recovery qualification remain pending.
+Central flat coin admission stays closed. No required route, inactive safety
+behavior, declined spell-path decision or original acceptance gate is changed.

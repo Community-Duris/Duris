@@ -45,6 +45,7 @@ class economic_gameplay_authority
 	friend class flatfile_accounting_lifecycle_transaction;
 	friend bool sql_economic_runtime_start() noexcept;
 	friend void sql_economic_runtime_shutdown() noexcept;
+	friend void flatfile_economic_runtime_shutdown() noexcept;
 #ifdef DURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST
 	friend class economic_gameplay_authority_test_access;
 #endif
@@ -74,6 +75,8 @@ class economic_gameplay_authority
 		std::span<const economic_gameplay_wallet_mapping> wallets,
 		std::span<const economic_gameplay_bank_mapping> banks);
 	static void clear_sql_runtime() noexcept;
+	// Trusted flat runtime shutdown only; never clears the SQL qualification scope.
+	static void clear_flat_runtime() noexcept;
 #ifdef DURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST
 	static void reset_for_tests();
 #endif

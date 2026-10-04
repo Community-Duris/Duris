@@ -8,10 +8,12 @@
     "Baseline/cutover, source-event dedupe, item UID lifetime, lifecycle retirement and restore/reconciliation remain activation blockers."
   ],
   "candidate_worktree_evidence": {
-    "base_commit": "db682ade5201611e3811efe6225dfd82a42cf101",
-    "scope": "31-file coin/collector/shared owner composition; no native qualification or complete census claim",
+    "base_commit": "621ba722b2cd9ac49297062c54662a0f4b9ac532",
+    "scope": "39 production-source inputs plus central lifecycle validator/manifest; coin/collector and native v3 flat startup are source-integrated only. No compiler/native/gameplay qualification or complete census claim.",
     "source_pins": {
-      "src/Makefile": "f8da5e0c9bb000accfd9cc3957b88ae0e19d9190c061761fd7008f9ebdef990c",
+      "migrations/data_lifecycle_manifest.json": "b37efc35e5865e466a5623e11f1f43f587d63ffa3de25acfe769faec79508fbf",
+      "scripts/validate_data_lifecycle.py": "948868127e84196d4998159c58e9114a8bdb0eaead2495d0d9da0f86d5f904ca",
+      "src/Makefile": "a1001cc386ac461f54dbf98b03b5b177eae378529333ee87c15ac32f9c54ef6d",
       "src/economy/coin_physical_recovery.c": "a64e8f47c814aeb34c11ea3e6051f2527b3d2b80da5963a9a0175b149d30b8ae",
       "src/economy/coin_physical_recovery.h": "c68cc556958cc45b8e71260824f4ac717d060cd7750bd45d57a45b798bccaf9a",
       "src/economy/collector_purchase_publication.c": "7ca24ec6b64fb1a1a12517d39efa26bf39629f01b475ac972c507a98a9800f36",
@@ -25,12 +27,20 @@
       "src/economy/currency_transaction.h": "fa8fa610b7af6b485575cebb22d3fab61f7adc8abdd480585ce1549795516035",
       "src/economy/economic_command_admission.c": "4d19e7292b9da2286ef7149b78e301fd8f7e4678a6f4540e79fa7d32364f79d7",
       "src/economy/economic_command_admission.h": "b39124f83bc383a4b00aec2f70c1d8bac6a3515a5ee531f6f92104b9b5b2e072",
-      "src/economy/economic_gameplay_authority.c": "fab5cf26a39abc5e3c3995b988477d36c7ef5cebdfd9bf48532c5b397e980348",
-      "src/economy/economic_gameplay_authority.h": "d9108e235bd4c164d7da1e41cd401cb54bc921737b87bda12acb20b95defe0f7",
+      "src/economy/economic_gameplay_authority.c": "6ae1f4de8b6d7c01b0715971a603d22d29d164a0f31cd589ebe70c2de9fee813",
+      "src/economy/economic_gameplay_authority.h": "1f6c4bbddf3d8c48927d1730b0f6646e4fb00bb371259ea87b22fc22f681774a",
+      "src/flatfile/flatfile_accounting_authority.c": "887e40389a376bfc8ae635f9ea38b9fb2a24e4c7189d421fded745ad9644f00c",
+      "src/flatfile/flatfile_accounting_authority.h": "cc0d3ac9580c5ec586b1809818160e15725370eeea98c7b7d6abf2d5e53149c7",
+      "src/flatfile/flatfile_accounting_baseline.c": "477745c7587704b9c644578b00cfe7dd35f41a1eadeb7c60935543d676213c6b",
+      "src/flatfile/flatfile_accounting_baseline.h": "998e8272a511b8299e40035b6432b8c018cd82dd46b5b98ae43d56c3f9c7345a",
       "src/flatfile/flatfile_accounting_coin_transaction.c": "33bb8a2ff118f56e014334407a4e692f0cf6c13129d5c423a0801b556328deb6",
       "src/flatfile/flatfile_accounting_coin_transaction.h": "5748b372071de1d681b2d81886439b3975382454462aa95f00451d034c483329",
+      "src/flatfile/flatfile_accounting_lifecycle_transaction.c": "f5828b2fdb91ab66ba95928a34fefae4182a0b37b204fd9c2d71ba6e41bce098",
+      "src/flatfile/flatfile_accounting_lifecycle_transaction.h": "fe491f88ad0fa3bd9f64077345c226d039c1b022c928f8b405c135199b0d273b",
+      "src/flatfile/flatfile_economic_runtime.c": "a0ced8bfd8d6e1611086388c0e5fe4987aaea7c96c0ffd2e7c27401574c7363c",
+      "src/flatfile/flatfile_economic_runtime.h": "68ec558f35fb45e539fa3269cd0523af6c4d1facb7ea7f70281d45ff6c294cdf",
       "src/flatfile/flatfile_player_repository.c": "efc58eb49106a20d0a533d5a71592b8c257fcbf7b17ced077a4421c409f9c93a",
-      "src/net/comm.c": "e548eefb57307c0ee304dc65fc850a4f0244f050fc4af721bb92424fbd76f812",
+      "src/net/comm.c": "0a74166be1f5e32248a672fa6029a7b4c51982aafbf203e1748b749c487aa103",
       "src/persistence/critical_command.c": "7aa70842722b523573cc75e8ecabccfe44e8705353cb16a2a43089f43fc38556",
       "src/persistence/critical_command_coordinator.c": "3d45e3913f6bdea35f4b0ced31a98a7fcdf8cf18ec316e4ffb04083693448afb",
       "src/persistence/critical_command_coordinator.h": "8b3157873ab3277c87106908d5bd32c025e59469fee2a372c0cf1ff09adc8c27",
@@ -52152,7 +52162,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          821
+          845
         ],
         "file": "src/flatfile/flatfile_accounting_lifecycle_transaction.c",
         "function": "flatfile_accounting_lifecycle_transaction::install",
