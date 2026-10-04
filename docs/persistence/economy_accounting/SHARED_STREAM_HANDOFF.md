@@ -255,3 +255,9 @@ Worker aa385e73b and pipeline c6b607d41 are separate unqualified source commits.
 The corrected worker V2 receipt preserves an insufficient V1 BEFORE-header overlay
 and pins the exact original header; only worker.c/h differ in533 frozen inputs.
 These source inventory observations are not native failure or acceptance evidence.
+
+Primary follow-on source95d03d02f connects reserved fresh journal replay and
+separate callback/checkpoint scopes, refusing enabled missing/corrupt namespaces.
+Ownership stays disabled; complete native callers/census, serial lifecycle, actual
+revisit/startup, critical ACK and major-plan qualification remain required. No
+new compiler/tests/native/SQL/gameplay/services or qualified push occurred.

@@ -52,7 +52,7 @@ backend limitations and the tested revision before checking off acceptance.
 ## Current source preparation checkpoint
 
 The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
-remote histories and unqualified source milestones through6ef8abb88. New source
+remote histories and unqualified source milestones through95d03d02f. New source
 prerequisites cover allocation-safe publication cleanup, checkpoint-spanning save
 execution guards, bounded runtime UID-root census, authority-bound native baseline
 initialization markers, ordinary item receipt sealing with ACK-only conflict
@@ -81,8 +81,10 @@ remain source-only/unverified in semantic metadata76588bc86.
 Save residence is now connected through capture, retained queues, worker execution
 and final receipt delivery in6ef8abb88. The existing dispatcher uses release events
 and skips held/busy PIDs; enabled stop preserves exact originals rather than
-claiming a completed lifecycle. Ownership remains disabled until native/journal
-participants, fresh reserved replay, complete census and critical ACK are integrated.
+claiming a completed lifecycle. Journal replay now reserves available PIDs and rereads frames before scoped apply
+and aggregate checkpoint in95d03d02f. Ownership remains disabled until complete
+native callers/census, serialized lifecycle, actual revisit/startup and critical ACK
+are integrated and qualified.
 Plan5 canonical restore slice57d4d99b2 is imported in e5a458f70; its report qualifies
 only its own consumed inputs. All new primary source remains unqualified.
 

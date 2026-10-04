@@ -24,7 +24,7 @@ is integrated by cherry-pick in `e5a458f70`; see
 Its 3,026 native decoder decisions and both-engine restore evidence remain
 specific to its consumed inputs/native tree `d9a9610f3`. They do not qualify
 the combined candidate; command-preimage binding and baseline parity remain open.
-The source milestone candidate through `6ef8abb88` includes the eighteen slices
+The source milestone candidate through `95d03d02f` includes the nineteen slices
 below, plus the local Plan5 integrations described above. Plan5's reports remain evidence of
 its own inputs, not of this combined source candidate. Root checkout WIP is preserved.
 
@@ -55,6 +55,7 @@ Parallel specialists use bounded file ownership; primary integrates and reviews.
 | `241e54162` | [Replay ownership foundation](REPLAY_OWNERSHIP_PREPARATION_2026-10-04.md): exact resident claims, per-PID tickets/reservations, top-scope nested borrowing and release notification; inactive path preserved. | No production enable; complete resident delivery, mutation owners, fresh reserved journal scan, ACK and replay revisit remain open. |
 | `5766555f8` | [Complete boot recovery catalog](BOOT_OBJECT_TEMPLATE_CATALOG_PREPARATION_2026-10-04.md): nonfatal staged SQL catalog of every indexed prototype; reconstruction uses sealed pure lookup rather than starter-only cache. | Source-only; loader parity/boot cost/native qualification, activity bookkeeping and production recovery remain open. |
 | `6ef8abb88` | [Connected save residence](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md): claims span capture, queues, workers and final receipts; release events wake exact originals; bounded scans retain exhausted captures and stop preserves unjournaled bytes. | Ownership disabled; native/journal entries, fresh reserved replay, complete census, lifecycle completion, critical ACK and runtime qualification remain open. |
+| `95d03d02f` | [Reserved journal connection](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md#follow-on-journal-connection): exclusive PID reservation, fresh frame observation, individual apply/aggregate checkpoint scopes and enabled namespace-loss refusal. | Ownership disabled; complete native callers/census, serialized lifecycle, clean critical ACK, actual revisit/startup and runtime qualification remain open. |
 
 Source reviewers found no remaining blocker in each slice's stated narrow scope.
 This is source review, not native/build/gameplay/persistence/recovery acceptance.
