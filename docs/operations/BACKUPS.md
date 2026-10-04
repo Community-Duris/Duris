@@ -305,6 +305,16 @@ new socket. Flatfile restore verifies copied bytes before mutation, runs native
 authority replay, and validates existing account, snapshot, and world catalog bytes.
 Full player/domain loads run after WAL replay, allowing a durable first snapshot
 to materialize its missing projection. These loads reject lossy topology repair.
+Flatfile preflight and postflight also independently read retained economic
+authority metadata after native authority replay. A present control record must
+retain its exact epoch catalog, mapping lifetimes and native indexes, with valid
+framing, hashes, sequence and cross-links. Renamed bank tombstones, retired and
+recreated lifetimes, unsigned revision counters and partial inactive bootstrap
+remain readable. Missing or corrupt metadata refuses qualification without
+changing the retained evidence. Absent or empty accounting storage remains
+eligible for legacy inactive installations. This gate does not validate retained
+operation segments, source claims, pile heads, baseline witnesses, native
+custody or activation readiness; those require their separate release evidence.
 Before boot, both journal types are scanned with the production codecs. A
 corrupt/unsupported frame or interrupted temporary journal blocks qualification.
 Validated quarantine archives and admission fences are preserved. An unreplayable
