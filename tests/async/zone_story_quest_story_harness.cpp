@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 65 &&
-				tracker.summary_for(7, 42).total == 1690,
+		require(catalog.story_mappings.size() == 66 &&
+				tracker.summary_for(7, 42).total == 1688,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -4067,6 +4067,148 @@ int main(int argc, char **argv)
 				recovered_court.progress_for_zone(7, 42, 67).completed == 9 &&
 				recovered_court.progress_for_zone(7, 42, 67).total == 9,
 			"Court recovery multiplied friend instances or invented a ritual/campaign finale");
+
+		const auto &snogres_map = *std::find_if(
+			catalog.story_mappings.begin(), catalog.story_mappings.end(),
+			[](const auto &mapping) { return mapping.source_area == "snogres"; });
+		const auto &snogres_pyramid = story_for("snogres", "lich-three-shards");
+		const auto &snogres_green = story_for("snogres", "lich-reverse-hourglass");
+		const auto &snogres_tentacle = story_for("snogres", "lich-illithid-tentacle");
+		const auto &snogres_armor = story_for("snogres", "leppts-remorhaz-armor");
+		service supplied_snogres(catalog);
+		require(supplied_snogres.discover_zone(7, 42, 877, 87700, 100, "arrival") ==
+					result::applied &&
+				supplied_snogres.render_journal(7, 42, 877, 10, 1, 101, false,
+								false)
+						.find("] " + snogres_pyramid.title + "\r\n") ==
+					std::string::npos,
+			"Snow discovery revealed an unmet lich request");
+		require(supplied_snogres.meet_npc(7, 42, 87742, 660001, 101) == result::rejected &&
+				supplied_snogres.discover_zone(7, 42, 5000, 660001, 101,
+							       "arrival") == result::applied &&
+				supplied_snogres.meet_npc(7, 42, 87742, 660001, 102) ==
+					result::applied,
+			"Snow foreign tinker ignored physical surface discovery");
+		require(supplied_snogres.meet_npc(7, 42, 87733, 87798, 102) == result::applied,
+			"Snow lich encounter fixture failed");
+		const auto snogres_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Snow journal section missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		for (int item : { 87713, 87730, 87731, 87710, 87711 })
+			supplies.carried[item] = 1;
+		supplies.carried[87725] = 5;
+		supplies.carried[87724] = 1;
+		const auto snogres_before = supplied_snogres.serialize_state();
+		journal = supplied_snogres.render_journal(7, 42, 877, 10, 1, 103, false, false,
+							  &supplies);
+		require(snogres_section(snogres_pyramid)
+						.find("Next: " +
+						      snogres_pyramid.steps.back().text) !=
+					std::string::npos &&
+				snogres_section(snogres_pyramid)
+						.find("[Pending] " +
+						      snogres_pyramid.steps.front().text) !=
+					std::string::npos &&
+				snogres_section(snogres_armor)
+						.find("[Missing now] " +
+						      snogres_armor.steps.front().text) !=
+					std::string::npos &&
+				snogres_section(snogres_armor).find("2,500 platinum") !=
+					std::string::npos &&
+				snogres_section(snogres_armor).find("guarded") !=
+					std::string::npos &&
+				snogres_section(snogres_tentacle)
+						.find("[Missing now] " +
+						      snogres_tentacle.steps.front().text) !=
+					std::string::npos,
+			"Snow supplied shards required histories, five hides fit, fee vanished or whip replaced tentacle");
+		supplies.carried[87725] = 6;
+		journal = supplied_snogres.render_journal(7, 42, 877, 10, 1, 104, false, false,
+							  &supplies);
+		require(snogres_section(snogres_armor)
+						.find("[Ready now] " +
+						      snogres_armor.steps.front().text) !=
+					std::string::npos &&
+				supplied_snogres.serialize_state() == snogres_before &&
+				supplied_snogres.progress_for_zone(7, 42, 877).total == 7 &&
+				supplied_snogres.progress_for_zone(7, 42, 877).completed == 0,
+			"Snow readiness wrote state, qualified payment or awarded a personal kill");
+		for (const auto &step : snogres_pyramid.steps)
+		{
+			if (step.kind != "carried_item")
+				continue;
+			const auto item = step.item_vnums.front();
+			supplies.carried.erase(item);
+			supplies.equipped[14] = item;
+			supplies.carried[87732] = 1;
+			journal = supplied_snogres.render_journal(7, 42, 877, 10, 1, 105, false,
+								  false, &supplies);
+			require(snogres_section(snogres_pyramid).find("[Missing now] " + step.text) !=
+					std::string::npos,
+				"Snow worn shard or reward pyramid replaced exact proof");
+			supplies.equipped.clear();
+			supplies.carried[item] = 1;
+		}
+		supplies.carried.erase(87730);
+		supplies.carried[87713] = 3;
+		journal = supplied_snogres.render_journal(7, 42, 877, 10, 1, 106, false, false,
+							  &supplies);
+		require(snogres_section(snogres_pyramid)
+					.find("[Missing now] " + snogres_pyramid.steps[4].text) !=
+				std::string::npos,
+			"Snow duplicate green shards replaced the distinct yellow kind");
+		supplies.carried[87730] = 1;
+		supplies.carried.erase(87713);
+		record(supplied_snogres, snogres_green.contracts.front(), "snogres-green", 877,
+		       87798);
+		journal = supplied_snogres.render_journal(7, 42, 877, 10, 1, 107, false, false,
+							  &supplies);
+		require(snogres_section(snogres_pyramid)
+						.find("[Recorded] " +
+						      snogres_pyramid.steps.front().text) !=
+					std::string::npos &&
+				snogres_section(snogres_pyramid)
+						.find("[Missing now] " +
+						      snogres_pyramid.steps[3].text) !=
+					std::string::npos,
+			"Snow producer history restored spent green proof");
+		// Synthetic receipt projection: the guarded mixed coin exchange is not executed here.
+		auto wrong_snogres_owner =
+			completion(snogres_armor.contracts.front(), "snogres-wrong-owner", 120);
+		wrong_snogres_owner.transaction.zone_number = 5000;
+		wrong_snogres_owner.transaction.room_vnum = 660001;
+		require(supplied_snogres.record_completion(wrong_snogres_owner) == result::rejected,
+			"Snow foreign service accepted physical area as contract owner");
+		record(supplied_snogres, snogres_armor.contracts.front(), "snogres-armor-service",
+		       877, 660001);
+		for (const auto &excluded : snogres_map.exclusions)
+			record(supplied_snogres, excluded.first, "snogres-hide-refusal", 877,
+			       87798);
+		require(supplied_snogres.progress_for_zone(7, 42, 877).completed == 1 &&
+				supplied_snogres.progress_for_zone(7, 42, 5000).completed == 0,
+			"Snow service/refusal awarded achievement or foreign physical zone stole ownership");
+		service independent_snogres(catalog);
+		record(independent_snogres, snogres_pyramid.contracts.front(),
+		       "snogres-supplied-pyramid", 877, 87798);
+		service restored_snogres(catalog);
+		require(restored_snogres.deserialize_state(independent_snogres.serialize_state(),
+							   &error) &&
+				restored_snogres.progress_for_zone(7, 42, 877).completed == 1,
+			"Snow supplied pyramid recovery invented three producer histories or a ritual");
+		for (const auto &entry : snogres_map.stories)
+			if (entry.category != "service" && entry.id != snogres_pyramid.id)
+				record(restored_snogres, entry.contracts.front(), entry.id.c_str(),
+				       877, 87798);
+		service recovered_snogres(catalog);
+		require(recovered_snogres.deserialize_state(restored_snogres.serialize_state(),
+							    &error) &&
+				recovered_snogres.progress_for_zone(7, 42, 877).completed == 7 &&
+				recovered_snogres.progress_for_zone(7, 42, 877).total == 7,
+			"Snow recovery counted service/refusal or invented kills, transformation or reunion");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

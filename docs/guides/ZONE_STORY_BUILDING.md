@@ -216,6 +216,26 @@ pouch/clue text need deliberate separate content fixes; seasonal/audience,
 fishing or soul-extraction objectives need real accepted endpoints. No native
 repair or new schema path ships with the journal; later fixes need clear news.
 
+Valley of the Snow Ogres' [dossier](../design/zone-stories/VALLEY_OF_THE_SNOW_OGRES.md)
+shows three distinct producer rewards and independent shard assembly, with
+optional personal histories that never replace current proof. A same-kind
+hide refusal is explicitly excluded; the full six-hide/two-weapon/2,500-platinum
+armor recipe is a non-credit service, with mixed settlement guarded. Its tinker
+has an active foreign dispersal source: distinguish physical discovery, actual
+encounter and contract ownership rather than calling a missing local reset an
+absent NPC. Missing stalk and limited hide caps need deliberate source plans.
+
+Trace actual command dispatch and assignment replacement. Push rock clears
+only one blocked state; secrecy/opening and living guards remain independent.
+A specific golem binding overrides block_dir, and the lich's teacher flag
+does not install another function. Axe/whip hit 1000 callbacks are connected,
+whereas the berserker's command/setup combination lacks its normal route.
+Target reversal, helper-count/prototype mismatch, virtual-versus-real room
+replacement and unsafe equipment continuation need separate focused repairs.
+Do not enable dormant behavior while mapping. Accepted source, control, entity,
+effect and reunion transactions are prerequisites for deeper credit; actual
+future fixes need clear commits/news. No native repair ships with this journal.
+
 ## Schema version 1
 
 Version 1 remains supported. Use version 2 or 3 for new starter and hometown

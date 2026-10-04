@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 65 authored journals, accounting-gated player surfaces, starter/town
+**Status: 66 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -16,7 +16,8 @@ the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
 Ship Yards, Ultarium, the Surface Realm, Tharnadia, Mini Zones and the City
 of Torrhan, Golden Hall of the Crown, Ashrumite Village and The Hall of the
 Ancients, Sarmiz'Duul, Duke Delwyn, Home of the Divine, The Halfcut Hills,
-The Scorched Valley and Court of the Muse now have complete source story maps;
+The Scorched Valley, Court of the Muse and Valley of the Snow Ogres now have
+complete source story maps;
 their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
@@ -569,6 +570,28 @@ qualification. Pouch/flower prose and unsupported trap damage declarations
 need deliberate separate fixes; seasonal effects, learned topics, source
 lineage and audience need accepted endpoints before credit. This checkpoint
 ships no native repair, runtime/schema path or accounting activation.
+
+Valley of the Snow Ogres' [comprehensive dossier](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md)
+covers fifteen native blocks/nine exchanges/six addressed families, one hundred
+rooms, forty-four mobiles, thirty-eight objects and two hundred resets/eighty
+families. Revision one adds seven outcomes, one armor service and one excluded
+hide refusal, sixteen contacts and fifteen optional checks. Hourglass, eye and
+tentacle produce three distinct shards; their histories stay optional for a
+supplied-shard pyramid exchange. Hydra head, stalk and scale remain independent.
+Leppts wanders from an active surface source; his foreign encounter does not
+transfer ownership. Six hides, two exact weapons and 2,500 platinum remain a
+guarded support service, without achievement/daily credit.
+
+No active stalk producer was found; three declared hides/cap three do not
+establish six-copy supply. Keep active reset-generation guards and qualify
+renewal rather than inferring mode-zero availability. Push rock clears the
+grotto's blocked state; reveal/open and the pit fiend are separate prerequisites.
+The lake descent avoids the falling shaft. Pending separate repairs include
+reversed remorhaz burn targets, golem helper count/spawn mismatch and real-room
+replacement, repop guards, dormant berserker cadence/selection and equipment
+custody. Axe/whip hits and lich hunting are connected callbacks. Actual sources,
+controls, kills, transformation and reunion need accepted endpoints before
+credit. This checkpoint ships no native repair or accounting activation.
 
 ## Accounting requirement and delivery sequence
 
@@ -1281,7 +1304,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 176 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 175 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1304,6 +1327,15 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
 
 
+- [x] Complete Snow Ogres' nine-exchange/six-addressed source dossier:
+  seven independent outcomes/one service/one refusal, sixteen contacts and
+  fifteen optional checks; all eighty reset families and foreign Leppts source.
+- [ ] Select/qualify missing stalk and sufficient hide supply, active generation
+  and renewal, distinct weapons and full atomic fee settlement. Qualify grotto
+  control/reveal/open/fiend, falling/alternate access and foreign owner hints.
+  Repair remorhaz targeting, golem helpers/replacement/repop and berserker
+  cadence/selection with focused proofs before enabling or claiming effects;
+  design source/entity/equipment/reunion endpoints and report actual fixes as news.
 - [x] Complete Court of the Muse's nine-delivery/six-addressed source dossier:
   nine independent outcomes, twenty-five contacts/sixteen optional checks,
   all ninety-two reset families, seasonal producers/admission and twelve scales.
@@ -1549,6 +1581,7 @@ contract classification; it does not claim complete objective coverage.
 | The Halfcut Hills | 1 | Complete: thirteen independent deliveries | [Source-comprehensive dossier](zone-stories/THE_HALFCUT_HILLS.md); nineteen contacts/all fifteen addressed families and twenty-four optional checks | Thirteen potential candidates do not guarantee stock or missing drow payout | Exact miner/badge/note and competing scalp guidance; separate crossbow scheduler/continuation fix ships. Missing reward/preflight, real rescue/branch/attempt, source/container/wandering and grab/say/enter/pull qualification pending |
 | The Scorched Valley | 1 | Complete: nine independent deliveries | [Source-comprehensive dossier](zone-stories/THE_SCORCHED_VALLEY.md); twenty-two contacts/all eleven addressed families and twenty-two optional checks | Nine potential candidates still require live stock/access/payout qualification | Five-key blood route → four colors → necklace; foreign heads/essence/recipients, advisor source/recipient episode and narrative state boundaries. Yeenoghu dispatch/safety/balance, clue/departure fixes and rod/finale design remain pending; no native repair ships |
 | Court of the Muse | 1 | Complete: nine independent deliveries | [Source-comprehensive dossier](zone-stories/COURT_OF_THE_MUSE.md); twenty-five contacts/all six addressed families and sixteen optional checks | Nine potential candidates still require live stock/access/payout qualification | Four exact seasonal tokens → admission; twelve scales, shared friends and exact soul/wand sources. Real book/dew keys and competing use; cave/pouch/trap fixes, safe access/reset/return and seasonal/audience endpoints remain pending; no native repair ships |
+| Valley of the Snow Ogres | 1 | Complete: seven outcomes, one armor service and one refusal exclusion | [Source-comprehensive dossier](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md); sixteen contacts/all six addressed families and fifteen optional checks | Seven potential candidates need actual source/access/payout qualification; mixed armor payment guarded | Distinct shard producers → pyramid; independent trophies; surface Leppts six-hide/two-weapon/2,500-platinum commission. Stalk/hide sources, active renewal, controls and custom lifecycle/target/cadence repairs pending; no native repair ships |
 
 ## Twin Towers evidence and decisions
 

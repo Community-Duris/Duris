@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 44 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 45 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -111,6 +111,13 @@ twelve scales retire the fisherman, while shared friends and exact soul/wand
 sources retain their own outcomes. Book/dew keys work despite locket clues;
 dew competes with its offering. Cave/pouch/trap fixes, access/reset/return and
 seasonal/audience transactions remain pending. No native repair ships.
+Valley of the Snow Ogres' [completed dossier](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md)
+adds seven outcomes/one armor service/one refusal exclusion, sixteen contacts
+and fifteen optional checks. Three distinct shard producers lead to an
+independent pyramid exchange; supplied proof fits without earlier history.
+Surface Leppts' six-hide/two-weapon/2,500-platinum service remains guarded.
+Missing stalk and three-hide supply, actual grotto/fall access, foreign ownership
+and custom burn/golem/toss/equipment repairs need qualification. None ships here.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
 ## Reviewed first integrations
@@ -236,7 +243,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 42 | [The Halfcut Hills](zone-stories/THE_HALFCUT_HILLS.md) (`halfcut`) | Wagon medicine → wounded dwarf; four brown jars → three miners + Bartis; three distinct badges → complete badge before final jar → note → sentry earring; raid leader scalp → Remi; four competing faction scalps + Bartis/Hulkuis → one six-proof belt delivery. | Source-comprehensive, revision one: thirteen outcomes/nineteen contacts/all fifteen addressed families/twenty-four optional checks. Separate bound crossbow fix ships. Missing drow reward/preflight, recipient/source episodes, containers/wandering, real access/rescue/branch/campaign qualification pending. |
 | 43 | [The Scorched Valley](zone-stories/THE_SCORCHED_VALLEY.md) (`scorchvalley`) | Pit heirloom → survivor; frost giant sack / three local-and-foreign heads / Mount Banishment essence → advisor; two distinct banners + pit hide / cart charm → collector; godly magic → Torg advisor; five-key temple blood → Fields Between seeker → four distinct rings → wandering wildmage necklace. | Source-comprehensive, revision one: nine outcomes/twenty-two contacts/all eleven addressed families/twenty-two optional checks. Source/recipient episodes, foreign encounters, nested recovery and actual access need qualification. Yeenoghu dispatch/safety/balance and clue/departure repairs remain pending; no native fix or invented captive/resummon/society/curse/rod finale credit. |
 | 44 | [Court of the Muse](zone-stories/COURT_OF_THE_MUSE.md) (`court`) | Frost thief snowflake / Tookles petal pouch / Grielda dew / stump red leaf → four seasonal favors → four distinct tokens → priestess admission key; twelve koi scales → necklace; obsidian → either friend → sunshine; initial soul essence → Kyra → decay; icy diamond wand → Larissa → stud. | Source-comprehensive, revision one: nine outcomes/twenty-five contacts/all six addressed families/sixteen optional checks. Supplied tokens preserve optional history; no ritual, audience, fishing or soul-extraction credit. Book/dew keys, competing use, source/retiring episodes, traps and safe access/return need qualification; cave/pouch/trap repairs pending, no native fix. |
-| 45 | Valley of the Snow Ogres (`snogres`) | [Meet the giver → 6 × a substantial chunk of remorhaz hide; 1 × an onyx-hilted cold-iron claymore; 1 × an onyx-hilted cold-iron greatsword → a magical pair of remorhaz hide vambraces](../../areas/qst/snogres.qst#L159) | 9 Q; 6 dialogue; 4 candidate link items |
+| 45 | [Valley of the Snow Ogres](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md) (`snogres`) | Chieftain hourglass / rare astereater eye / illithid tentacle → three distinct shards → lich pyramid; independent hydra head / sundew stalk / dragon scale; hide refusal → surface Leppts six-hide + exact claymore/greatsword + 2,500-platinum armor commission. | Source-comprehensive, revision one: seven outcomes/one service/one excluded refusal, sixteen contacts/all six addressed families/fifteen optional checks. Supplied shards preserve optional history; no personal kills, ritual or transformation credit. Stalk/hide supply, active renewal, mixed payment, grotto/fall/foreign access and custom targeting/helper/cadence/custody repairs pending; no native fix. |
 | 46 | The Mountain Valley of Dawndale (`airshipgrave`) | [Meet the giver → 2 × a vial of liquid sunlight; 1 × a handful of combustable rock dust; 1 × a bucket of rank pool water and the remaining ingredients → the lost blade of the Astral Dancer, 'Ender'](../../areas/qst/airshipgrave.qst#L101) | 13 Q; 4 dialogue; 4 candidate link items |
 | 47 | The 222nd Layer of the Abyss (`juiblex`) | [Meet the giver → 1 × the head of the lost wildmage; 1 × the head of the lost wildmage; 1 × the head of the lost great wildmage and the remaining ingredients → a necklace of wildmage scalps](../../areas/qst/juiblex.qst#L593) | 23 Q; 25 dialogue; 3 candidate link items |
 | 48 | The Minizones of the Surface (`surfacemini`) | [Meet the giver → 8 × a fire gland → an elixir of the pyro-mage](../../areas/qst/surfacemini.qst#L261) | 25 Q; 32 dialogue; 3 candidate link items |

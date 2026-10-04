@@ -100,9 +100,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 42 | The Halfcut Hills | [Comprehensive source dossier](zone-stories/THE_HALFCUT_HILLS.md): 28 blocks/thirteen deliveries/fifteen addressed, 470 rooms/83 mobs/sixty objects/one shop, 413 resets/177 families; bound crossbow plus shared switch/teleport/inn/shop/epic teacher | Revision one: thirteen independent outcomes, nineteen contacts/twenty-four optional checks; exact miners/badges/note and competing trophies | Separate crossbow scheduler/continuation fix ships; missing drow reward/preflight, source/recipient/container/wandering/access, real home arrival and branch/attempt campaign decisions pending |
 | 43 | The Scorched Valley | [Comprehensive source dossier](zone-stories/THE_SCORCHED_VALLEY.md): twenty blocks/nine deliveries/eleven addressed; 132 rooms/sixty mobs/fifty-five objects/no local shop, 211 resets/118 families; three literal assignments and shared keys/container/rifts/artifact/combat | Revision one: nine outcomes, twenty-two contacts/twenty-two optional checks; exact foreign proof and blood-to-four-colors-to-necklace | No native repair ships. Advisor source/recipient episode, foreign encounters, nested/access evidence, Yeenoghu dispatch/safety/balance, truthful clue/departure and rod/state/finale design pending |
 | 44 | Court of the Muse | [Comprehensive source dossier](zone-stories/COURT_OF_THE_MUSE.md): fifteen blocks/nine deliveries/six addressed; ninety-nine rooms/thirty-six mobs/forty-three objects/one shop, 209 resets/ninety-two families; shared teachers, doors, traps, portals, fall/current | Revision one: nine outcomes, twenty-five contacts/sixteen optional checks; four distinct seasonal producers/admission, twelve scales and exact independent requests | No native repair ships. Cave/pouch/trap decisions, competing dew/source/retiring episodes, actual access/key destruction/reset return and seasonal/audience endpoints pending |
-| 45–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 45 | Valley of the Snow Ogres | [Comprehensive source dossier](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md): fifteen blocks/nine exchanges/six addressed; one hundred rooms/forty-four mobs/thirty-eight objects, two hundred resets/eighty families; twelve literal assignments/shared switch and bounded surface source | Revision one: seven outcomes/one service/one refusal, sixteen contacts/fifteen optional checks; distinct shards, exact trophies and six-hide/full-fee armor | No native repair ships. Stalk/hide generation/renewal, mixed payment, control/access/foreign owner and burn/golem/toss/equipment fixes/endpoints pending |
+| 46–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Valley of the Snow Ogres (`snogres`).
+The next area is The Mountain Valley of Dawndale (`airshipgrave`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -111,6 +112,8 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-SNOGRES-SUPPLY / FEES / OWNERSHIP | Stalk 87719 lacks an active producer. Four remorhaz have three hides/cap three, versus six-copy armor; inactive brass-old-1 does not supply the live world. Leppts is supplied from Surface 660001 and wanders, owning a Snow contract. Full fee is 2,500 platinum; mixed payment guarded. Mode zero alone does not settle renewal. | Choose sufficient intended stalk/hide generation and caps; qualify accepted renewal, retained/supplied proof and exact distinct weapons/full atomic payment. Keep active reset guards; improve already-discovered foreign owner referral without auto-discovering it. Preserve service/refusal non-credit classification. |
+| ZSQ-SNOGRES-ACCESS / ACTORS / EFFECTS | Push rock clears forward blocked state but secret/closed and a separate pit-fiend guard remain. Two real falling rooms have a lake alternative. Remorhaz burn damages the owner; golem counts 87743 but spawns 87734 and retreats to raw vnum 87798. Berserker is disconnected from normal combat; axe/whip and lich hunt are connected. Leggings move equipment directly. | Qualify actual controls/reveal/open/return. Separate target, helper/prototype/real-room/preflight and repop guard repairs; repair cadence/selection/continuation before enabling throws. Design accepted actor/effect/custody/reunion episodes with recovery and focused proofs. No native fix ships; later fixes need separate commits and explicit news. |
 | ZSQ-COURT-ACCESS / CONTENT / TRAPS | Cave locket clues actually key to book/dew; shared lookup permits both. Dew is also consumed for Spring. Pouch description conflicts with whole-flower text. Spring/Summer/Autumn tokens, autumn mask and diamond stud declare damage codes absent from trap dispatch; Winter has real cold pickup damage. Forward admission key breaks; reverse key zero is normally opened reciprocally but reset/restart is separate. | Choose truthful cave/pouch wording and intended supported trap data in separate fix/news commits. Qualify reveal/unlock/open, competing-use ordering, exact GET/retry/charge persistence, damage continuation, key destruction and ordinary versus restored-lock return. Do not infer all visits are stranded or treat unreset world-file four as secret. |
 | ZSQ-COURT-SOURCES / RITUALS / AUDIENCE | Four exact tokens accept supplied materials without personal favors. Fifteen koi-scale declarations support twelve; fisherman retires. Two friends share one contract; eight initial essence carriers do not cover every later matching mob. Seasonal rituals, fishing lesson, soul extraction, Muse audience and elk-heart finale lack accepted endpoints. | Qualify live source/recipient generations and personal lineage separately; preserve nine independent outcomes. Add explicit actor/effect/access/audience/finale transactions and AND/attempt policy only for builder-selected objectives. Shop and shared class-matched level teachers remain context, not extra credit. |
 | ZSQ-SCORCH-ACCESS / EPISODES / OWNERSHIP | Five distinct keys lead to a locked, pickproof blood chest. Final key holder is advisor/recipient for three other requests. Bodyguard/recipients have foreign holding routes; exact Grog/Zuzon heads come from foreign zones. | Qualify key/open/container ancestry and source/recipient replacement episodes. Physical-room discovery is required and normal arrival supplies it; the immediate hint still uses the physical journal. Plan an owning-journal referral without remote discovery or changed credit, preserving supplied proof and contract ownership. |
@@ -2182,3 +2185,57 @@ All 2668 native definitions, revision-two fingerprint, registry and other
 sixty-four journals stay unchanged. Catalog: 65 maps/1690 achievements/1490
 potential dailies/2225 rows. Original order: forty-four source-comprehensive,
 176 pending. Continue with Valley of the Snow Ogres (`snogres`).
+
+## Valley of the Snow Ogres completed source map — October 3, 2026
+
+The [dossier](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md) explains all fifteen
+blocks/eight Q/one QA/six M, nine exchanges, one hundred rooms/seventy-one
+prose groups/twenty-nine headers/thirty metadata/sixty-eight exit families,
+forty-four mobs, thirty-eight objects and two hundred resets/eighty families.
+Twelve literal assignments resolve to eleven bindings because the golem's
+specific procedure replaces block_dir; an automatic switch adds a shared binding.
+Complete local procedures, relevant dispatch, generation/control/quest paths
+and bounded foreign source/boundary evidence were reviewed. No local shop.
+
+Revision one projects seven independent outcomes, one support armor service
+and one excluded hide refusal, sixteen contacts/all six addressed families and
+fifteen optional checks. Chieftain hourglass, rare astereater eye and enslaver
+tentacle give three distinct shards for a separate pyramid delivery. Optional
+producer histories do not reject supplied matching shards or replace spent
+proof. Independent hydra head, stalk and scale retain exact rewards. Narrated
+kills, ritual and lich transformation have no extra accepted terminal.
+
+**Pending repairs, none shipped:** choose the missing active sundew-stalk source
+and sufficient hide supply. Four remorhaz have three hide declarations/cap
+three for six-copy armor. Inactive brass-old-1 is not live stock; same-kind
+lich refusal does not multiply supply. Source generation/renewal and historical
+copies need qualification before claiming absolute impossibility. Leppts has
+an active Surface dispersal reset and wanders; Snow ownership stays separate
+from physical discovery. Mixed payment for two exact cold-iron weapons/six
+hides/2,500 platinum remains guarded and gives no achievement/daily credit.
+
+Push rock clears the blocked grotto wall, leaving secret/closed and pit-fiend
+conditions independent. Two hundred-percent falling rooms have an alternate
+lake/lava-tube route. World F20 without a down exit is cleared by the loader.
+The lich's assigned shout overrides automatic teaching, while actual hunt
+uses opponent/runtime IDs. Axe/whip melee 1000 callbacks are connected.
+
+Remorhaz retaliation damages its owner rather than attacker. Golem counts
+small helpers but creates large ones, passes a null periodic target to initial
+combat, and uses a virtual room number for low-health replacement. Cadaver
+repop lacks missing-template/null-spawn checks. Berserker rejects the normal
+combat command and needs target-selection/callback repairs before reactivation.
+Skull leggings need durable custody across automatic equipment replacement;
+axe follow-up needs effect/survival qualification. Separate deliberate fixes,
+actual-procedure tests and accepted actor/effect/source/reunion endpoints are
+planned; no unsafe dormant path is enabled as journal authoring.
+
+Production/native fixtures cover exact classification, dialogue, reset ancestry,
+rare chance and source gaps; supplied distinct shards/wrong/worn/spent proof,
+five-versus-six hides, read-only readiness, foreign owner encounter and independent
+receipt recovery. A synthetic service receipt is not a successful guarded
+coin transaction. All 2668 definitions, revision-two fingerprint, registry
+and other sixty-five maps are unchanged. Catalog: 66 maps/1688 achievements/
+1490 potential dailies/2224 rows. Two fallback achievement units are removed
+by service/refusal classification. Original order: forty-five source-comprehensive,
+175 pending. Continue with Dawndale. Active accounting remains mandatory.

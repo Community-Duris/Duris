@@ -1885,7 +1885,89 @@ for v,damage,level in ((6714,9,16),(6715,12,16),(6716,9,16),(6717,3,16),(6721,12
 assert (ROOT/"areas/shp/court.shp").read_text(encoding="utf8").startswith("#6728~")
 assert sources[6706]==[(6728,6794,999)]
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court"):
+# Snow Ogres retains distinct shards and exact support terms without personal-kill credit.
+# Source gaps and control declarations are evidence for pending qualification, not repairs.
+snogres=inventory_module.area_evidence(ROOT,"snogres")
+snogres_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="snogres")
+snogres_stories={s["id"]:s for s in snogres_map["stories"]}
+assert (snogres_map["schema_version"],snogres_map["revision"],snogres_map["coverage"])==(3,1,"complete")
+assert len(snogres_stories)==8 and len(snogres_map["contacts"])==16 and len(snogres_map["exclusions"])==1
+assert sum(s["category"]=="service" for s in snogres_stories.values())==1
+assert sum(t.get("optional",False) for s in snogres_stories.values() for t in s["steps"])==15
+assert (len(snogres["requests"]),len(snogres["dialogue"]),len(snogres["mobs"]),len(snogres["items"]),len(snogres["reset_commands"]))==(9,6,44,38,200)
+assert collections.Counter(b["kind"] for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/snogres.qst")=={"Q":8,"QA":1,"M":6}
+bindings=[b for s in list(snogres_stories.values())+snogres_map["exclusions"] for b in s["contracts"]]
+assert len(bindings)==9 and {tuple(sorted(b.items())) for b in bindings}=={
+    tuple(sorted(r["block"]["binding"].items())) for r in snogres["requests"]}
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==877]
+assert (len(units),sum(u["achievement"] for u in units),sum(u["daily_candidate"] for u in units))==(8,7,7)
+by_line={r["block"]["line"]:r["block"] for r in snogres["requests"]}
+for line,required,reward in ((19,[("I",87706)],87713),(34,[("I",87713),("I",87730),("I",87731)],87732),
+    (54,[("I",87715)],87730),(64,[("I",87717)],87731),(71,[("I",87716)],87729),
+    (83,[("I",87719)],87727),(91,[("I",87718)],87714),(108,[("I",87725)],87725),
+    (159,[("C",2500000)]+[("I",87725)]*6+[("I",87710),("I",87711)],87728)):
+    assert by_line[line]["give"]==required and by_line[line]["receive"]==[("I",reward)]
+    assert by_line[line]["binding"]["completion_key"].endswith("disappear=0")
+pyramid=snogres_stories["lich-three-shards"]
+assert [t["contracts"] for t in pyramid["steps"][:3]]==[
+    snogres_stories[k]["contracts"] for k in ("lich-reverse-hourglass","lich-astereater-eye","lich-illithid-tentacle")]
+assert [t["item_vnums"] for t in pyramid["steps"][3:-1]]==[[87713],[87730],[87731]]
+armor=snogres_stories["leppts-remorhaz-armor"]
+assert armor["steps"][0]["count"]==6 and "2,500 platinum" in armor["steps"][-1]["hint"]
+assert "guarded" in armor["steps"][-1]["hint"]
+assert snogres_map["exclusions"][0]["contracts"]==[by_line[108]["binding"]]
+contacts={c["mob_vnum"]:c for c in snogres_map["contacts"]}
+for v,c in contacts.items():
+    assert c["keyword"] in snogres["mobs"][v]["keywords"] and len(c["topics"])<=32
+    native=set(t for b in snogres["dialogue"] if b["giver_vnum"]==v for t in b["body"][0].rstrip("~").split())
+    assert set(c["topics"])==native
+for b in snogres["dialogue"]:
+    assert set(b["body"][0].rstrip("~").split())&set(contacts[b["giver_vnum"]]["topics"])
+parent=room=None;sources=collections.defaultdict(list);families=set();mob_sources=collections.defaultdict(list)
+assert collections.Counter(r["command"] for r in snogres["reset_commands"])=={"M":139,"E":22,"F":18,"G":15,"D":4,"O":2}
+for r in snogres["reset_commands"]:
+    c,v=r["command"],r["arguments"]
+    assert v[5:]==[0,0,0]
+    if c in ("M","F"):parent,room=v[1],v[3];mob_sources[v[1]].append((room,v[4]))
+    families.add((c,tuple(v[:3]),parent if c in ("G","E") else None))
+    if c in ("G","E"):sources[v[1]].append((parent,room,v[2]))
+assert len(families)==80
+assert sources[87706]==[(87729,87793,1)] and sources[87710]==sources[87711]==[(87704,87763,1)]
+assert sources[87725]==[(87724,r,3) for r in (87747,87754,87759)]
+assert mob_sources[87724]==[(r,100) for r in (87747,87752,87754,87759)]
+for v,room,chance in ((87725,87746,35),(87736,87735,20),(87737,87722,15),(87715,87730,5),(87735,87739,15),(87741,87717,40)):
+    assert mob_sources[v]==[(room,chance)]
+assert not mob_sources[87742] and not sources[87719]
+active=[row.split()[0] for row in (ROOT/"areas/AREA").read_text().splitlines() if row.strip() and not row.startswith("*")]
+assert "brass-old-1" not in active
+active_stalk=[];active_hides=[];leppts_sources=[]
+for area in active:
+    for line,raw in enumerate((ROOT/f"areas/zon/{area}.zon").read_text(errors="replace").splitlines(),1):
+        m=re.match(r"^([MOGEPF])\s+((?:-?\d+\s*)+)",raw)
+        if not m:continue
+        c=m[1];v=list(map(int,m[2].split()))
+        if c in "OGEP" and v[1]==87719:active_stalk.append((area,line))
+        if c in "OGEP" and v[1]==87725:active_hides.append((area,line))
+        if c=="M" and v[1]==87742:leppts_sources.append((area,v[2:5]))
+assert not active_stalk and len(active_hides)==3 and {a for a,l in active_hides}=={"snogres"}
+assert leppts_sources==[("surface",[1,660001,100])]
+assert not any(("I",87719) in b["receive"] for b in inventory_module.native_blocks(ROOT))
+assert [(b["giver_vnum"],b["give"]) for b in inventory_module.native_blocks(ROOT) if ("I",87725) in b["receive"]]==[(87733,[("I",87725)])]
+room_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/wld/snogres.wld").read_text(encoding="utf8"),re.M|re.S)}
+assert set(room_bodies)==set(range(87700,87800))
+assert len({(b.split("~")[0].strip(),b.split("~")[1].strip()) for b in room_bodies.values()})==71
+for room,flags,key,target in ((87717,13,0,87718),(87718,5,0,87717),(87745,5,0,87746),
+    (87746,5,0,87745),(87758,0,0,87766),(87700,0,0,620605)):
+    assert f"{flags} {key} {target}" in room_bodies[room]
+assert "D5" not in room_bodies[87720] and re.search(r"\bF\s+20\b",room_bodies[87720])
+for v in (87794,87795):assert "D5" in room_bodies[v] and re.search(r"\bF\s+100\b",room_bodies[v])
+obj_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/obj/snogres.obj").read_text(encoding="utf8"),re.M|re.S)}
+values=list(map(int,obj_bodies[87735].split("~")[4].split()[:15]))
+assert values[0]==29 and values[11:15]==[270,87717,3,0]
+assert len(snogres["special_assignments"])==12
+assert [(a["vnum"],a["function"]) for a in snogres["special_assignments"] if a["vnum"]==87734]==[(87734,"block_dir"),(87734,"snogres_flesh_golem")]
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
