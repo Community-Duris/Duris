@@ -14,6 +14,7 @@
 #include <condition_variable>
 #include <deque>
 #include <memory>
+#include <limits>
 #include <mutex>
 #include <new>
 #include <thread>
@@ -37,6 +38,8 @@ struct queued_snapshot
 	player_component_mask_t claimed_components = 0;
 	uint64_t queued_at_usec = 0;
 	unsigned int retry_count = 0;
+	uint64_t request_generation = 0;
+	bool wake_pending = false;
 };
 
 static_assert(std::is_nothrow_move_assignable_v<player_snapshot>);
@@ -111,6 +114,11 @@ void *journal_context = nullptr;
 player_save_worker_health health = {};
 size_t retained_bytes = 0;
 bool stop_requested = false;
+// Process-local identities remain monotonic through shutdown/reset. They do not
+// change snapshot bytes or grant repository execution authority.
+uint64_t next_request_generation = 0;
+uint64_t worker_lifecycle = 0;
+bool wake_turn = false;
 
 uint64_t now_usec()
 {
@@ -209,6 +217,33 @@ void update_depth_health_locked()
 	update_max(health.high_water_bytes, retained_bytes);
 }
 
+bool notified_deferred_locked(const pid_slot &slot) noexcept
+{
+	return slot.active && !slot.dispatched && slot.deferred && slot.active->wake_pending;
+}
+
+bool has_notified_deferred_locked() noexcept
+{
+	return std::any_of(slots.begin(), slots.end(), [](const auto &entry)
+			   { return notified_deferred_locked(entry.second); });
+}
+
+bool notify_active_locked(int pid, const player_save_deferred_identity *identity) noexcept
+{
+	const auto found = slots.find(pid);
+	if (!health.running || stop_requested || !apply_callback || found == slots.end() ||
+	    !found->second.active)
+		return false;
+	auto &job = *found->second.active;
+	if (identity && (identity->revision != job.snapshot.revision ||
+			 identity->request_generation != job.request_generation ||
+			 identity->worker_lifecycle != worker_lifecycle))
+		return false;
+	job.wake_pending = true;
+	job_available.notify_one();
+	return true;
+}
+
 void worker_main()
 {
 #ifndef __NO_MYSQL__
@@ -226,17 +261,43 @@ void worker_main()
 		{
 			std::unique_lock<std::mutex> lock(worker_mutex);
 			job_available.wait(lock,
-					   [] { return stop_requested || !ready_pids.empty(); });
+					   [] {
+						   return stop_requested || !ready_pids.empty() ||
+							  has_notified_deferred_locked();
+					   });
 			if (stop_requested && ready_pids.empty())
 				break;
-			pid = ready_pids.front();
-			ready_pids.pop_front();
-			ready_set.erase(pid);
-			auto found = slots.find(pid);
+			auto found = slots.end();
+			const bool select_wake = !stop_requested &&
+						 has_notified_deferred_locked() &&
+						 (ready_pids.empty() || wake_turn);
+			if (!select_wake)
+			{
+				pid = ready_pids.front();
+				ready_pids.pop_front();
+				ready_set.erase(pid);
+				found = slots.find(pid);
+				wake_turn = true;
+			}
+			else
+			{
+				found = std::find_if(
+					slots.begin(), slots.end(), [](const auto &entry)
+					{ return notified_deferred_locked(entry.second); });
+				if (found != slots.end())
+				{
+					pid = found->first;
+					found->second.deferred = false;
+					wake_turn = false;
+				}
+			}
 			if (found == slots.end() || !found->second.active ||
 			    found->second.dispatched || found->second.deferred)
 				continue;
 			found->second.dispatched = true;
+			// This attempt checks the guard after consuming the prior notification.
+			// A newer notification during that check remains sticky through park.
+			found->second.active->wake_pending = false;
 			job = found->second.active.get();
 			update_depth_health_locked();
 		}
@@ -402,6 +463,9 @@ void worker_main()
 					      });
 			if (results.size() < PLAYER_SAVE_WORKER_MAX_RESULTS)
 			{
+				// A nondeferred result belongs to this completed attempt; do not
+				// carry a release notification into a later retry or replacement.
+				slots.at(pid).active->wake_pending = false;
 				results.push_back(std::move(completion));
 				network_wakeup_notify();
 			}
@@ -467,6 +531,15 @@ bool player_save_worker_init(player_save_apply_fn apply, void *context, unsigned
 		std::lock_guard<std::mutex> lock(worker_mutex);
 		if (health.running || !workers.empty())
 			return false;
+		if (worker_lifecycle == std::numeric_limits<uint64_t>::max())
+			return false;
+		++worker_lifecycle;
+		for (auto &[pid, slot] : slots)
+		{
+			(void)pid;
+			if (slot.active)
+				slot.active->wake_pending = false;
+		}
 		apply_callback = apply;
 		apply_context = context;
 		stop_requested = false;
@@ -503,6 +576,12 @@ void player_save_worker_shutdown(void)
 		std::lock_guard<std::mutex> lock(worker_mutex);
 		stop_requested = true;
 		health.stop_pending = true;
+		for (auto &[pid, slot] : slots)
+		{
+			(void)pid;
+			if (slot.active)
+				slot.active->wake_pending = false;
+		}
 		job_available.notify_all();
 		result_available.notify_all();
 	}
@@ -555,6 +634,9 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 	if (!health.running || stop_requested || !apply_callback)
 		return durably_journaled ? player_save_submit_result::durably_spilled :
 					   player_save_submit_result::worker_unavailable;
+	if (next_request_generation == std::numeric_limits<uint64_t>::max())
+		return durably_journaled ? player_save_submit_result::durably_spilled :
+					   player_save_submit_result::capacity_exceeded;
 
 	auto found = slots.find(snapshot.pid);
 	if (found == slots.end())
@@ -592,6 +674,7 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 			if (!requires_sealed_identity(snapshot))
 				snapshot.components = revision_state.queued_components;
 			job->claimed_components = revision_state.queued_components;
+			job->request_generation = ++next_request_generation;
 			job->snapshot = std::move(snapshot);
 			job->queued_at_usec = now_usec();
 			retained_bytes += job->snapshot.encoded_size_bound;
@@ -660,6 +743,7 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 			}
 			pending->claimed_components = revision.queued_components;
 		}
+		pending->request_generation = ++next_request_generation;
 		pending->snapshot = std::move(snapshot);
 		pending->queued_at_usec = now_usec();
 		retained_bytes =
@@ -868,21 +952,30 @@ bool player_save_worker_resume_deferred(int pid) noexcept
 	if (pid <= 0)
 		return false;
 	std::lock_guard<std::mutex> lock(worker_mutex);
+	return notify_active_locked(pid, nullptr);
+}
+
+bool player_save_worker_deferred_identity(int pid, player_save_deferred_identity *out) noexcept
+{
+	if (pid <= 0 || !out)
+		return false;
+	std::lock_guard<std::mutex> lock(worker_mutex);
 	const auto found = slots.find(pid);
 	if (!health.running || stop_requested || !apply_callback || found == slots.end() ||
-	    !found->second.active || found->second.dispatched || !found->second.deferred)
+	    !found->second.active)
 		return false;
-	try
-	{
-		queue_ready_locked(pid);
-	}
-	catch (const std::bad_alloc &)
-	{
-		return false;
-	}
-	found->second.deferred = false;
-	update_depth_health_locked();
+	const auto &job = *found->second.active;
+	*out = { pid, job.snapshot.revision, job.request_generation, worker_lifecycle };
 	return true;
+}
+
+bool player_save_worker_resume_deferred_exact(const player_save_deferred_identity &identity) noexcept
+{
+	if (identity.pid <= 0 || !identity.revision || !identity.request_generation ||
+	    !identity.worker_lifecycle)
+		return false;
+	std::lock_guard<std::mutex> lock(worker_mutex);
+	return notify_active_locked(identity.pid, &identity);
 }
 
 player_save_worker_health player_save_worker_health_copy(void)

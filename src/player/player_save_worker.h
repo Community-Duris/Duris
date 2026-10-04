@@ -204,13 +204,30 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 // player save/login fence uses this exact-PID query; aggregate health is not a
 // sufficient admission check for a recipient-only operation.
 bool player_save_worker_pid_pending(int pid);
-// Schedule one parked original request. This is a wakeup, not authority to apply:
-// the callback must recheck its gate. False leaves the request parked, including
-// on allocation failure. Call outside pipeline/journal locks; repeated wakeups
-// cannot queue duplicate execution. A wake before parking returns false: its
-// owner must retain the wake and retry, rather than consume a one-shot event.
-// The normal pipeline does not use this yet. Journal replay has its own deferred
-// result; this wake schedules only the retained worker request.
+// Process-local original request identity, not an authority or encoded revision.
+// Generations never reset; worker shutdown/reinitialization invalidates old tokens.
+struct player_save_deferred_identity
+{
+	int32_t pid = 0;
+	player_revision_t revision = 0;
+	uint64_t request_generation = 0;
+	uint64_t worker_lifecycle = 0;
+};
+// Snapshot only the active original owner, including before it parks. Capture
+// under the releasing owner's fence, then notify after its successful release.
+// No callback is invoked and no queue storage is allocated. Output is unchanged
+// on refusal; pending/replacement bodies have independent identities.
+bool player_save_worker_deferred_identity(int pid, player_save_deferred_identity *out) noexcept;
+// Accept one sticky notification for this exact resident identity, even while
+// dispatched before parking. Repeated notifications coalesce. A parked notified
+// owner is selected without ready-queue allocation and rechecks the execution
+// guard/callback gate; if still held it parks again without polling. False means
+// stopped, absent or identity mismatch, never a queue-allocation retry obligation.
+// No callback or ACK is performed here. Call outside pipeline/journal locks.
+bool player_save_worker_resume_deferred_exact(const player_save_deferred_identity &) noexcept;
+// Compatibility convenience: atomically notify the currently active original.
+// Cross-owner delayed notifications must use the exact identity API above so an
+// old release cannot wake a replacement or a later worker lifecycle.
 bool player_save_worker_resume_deferred(int pid) noexcept;
 player_save_worker_health player_save_worker_health_copy(void);
 void player_save_worker_reset_for_tests(void);
