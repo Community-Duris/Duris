@@ -34,6 +34,7 @@
 #include "economy/tradeskill.h"
 #include "economy/crafting.h"
 #include "economy/currency_transaction.h"
+#include "economy/coin_physical_publication.h"
 #include "economy/economic_gameplay_authority.h"
 #include "economy/collector_presence.h"
 #include "world/vnum.obj.h"
@@ -3887,7 +3888,7 @@ bool coin_put_destination_custody(P_char actor, P_obj container, item_owner_iden
 // Capture the intended amount and descriptions without changing the live pile.
 static bool prepare_coin_pile(P_obj money, const item_owner_identity &owner, P_obj parent,
 			      bool creation, const std::array<int32_t, 4> &after,
-			      coin_transfer_endpoint *endpoint)
+			      coin_transfer_endpoint *endpoint, bool literal = false)
 {
 	if (!money || !money->obj_uid || money->type != ITEM_MONEY || money->contains || !endpoint)
 		return false;
@@ -3940,7 +3941,8 @@ static bool prepare_coin_pile(P_obj money, const item_owner_identity &owner, P_o
 			  OBJ_VNUM(money),
 			  creation ? item_custody_state::absent : item_custody_state::active };
 	std::vector<player_item_snapshot> snapshots;
-	if (player_item_snapshot_tree_capture(money, &snapshots, nullptr) !=
+	if ((literal ? player_item_snapshot_tree_capture_literal(money, &snapshots, nullptr) :
+		       player_item_snapshot_tree_capture(money, &snapshots, nullptr)) !=
 		    player_snapshot_capture_result::ok ||
 	    snapshots.size() != 1)
 		return false;
@@ -3960,6 +3962,22 @@ static bool prepare_coin_pile(P_obj money, const item_owner_identity &owner, P_o
 	} rendered;
 	rendered.object.type = ITEM_MONEY;
 	rendered.object.ex_description = &rendered.detail;
+	if (literal)
+	{
+		// The scoped publisher supports the native canonical money renderer.
+		// Prove its opening strings/weight before admitting a committed rewrite,
+		// rather than discovering unsupported source text after the debit.
+		const auto &opening = creation ? candidate.after : candidate.before;
+		std::copy(opening.begin(), opening.end(), rendered.object.value);
+		add_coins(&rendered.object, 0, 0, 0, 0);
+		if (!rendered.object.description || !rendered.object.short_description ||
+		    !rendered.detail.description || snapshots[0].extra_descriptions.size() != 1 ||
+		    snapshots[0].description != rendered.object.description ||
+		    snapshots[0].short_description != rendered.object.short_description ||
+		    snapshots[0].extra_descriptions[0].description != rendered.detail.description ||
+		    snapshots[0].weight != rendered.object.weight)
+			return false;
+	}
 	const auto &amounts = consumed ? candidate.before : candidate.after;
 	std::copy(amounts.begin(), amounts.end(), rendered.object.value);
 	add_coins(&rendered.object, 0, 0, 0, 0);
@@ -4197,9 +4215,11 @@ struct coin_pickup_context
 
 static_assert(sizeof(coin_pickup_context) <= CURRENCY_PENDING_CONTEXT_MAX_BYTES);
 
-static bool coin_get_completion(P_char actor, bool committed, const coin_transfer_payload &payload,
-				const coin_transfer_result &result, unsigned int error_code,
-				const uint8_t *encoded, size_t encoded_size)
+static bool coin_get_completion_impl(P_char actor, bool committed,
+				     const coin_transfer_payload &payload,
+				     const coin_transfer_result &result, unsigned int error_code,
+				     const uint8_t *encoded, size_t encoded_size,
+				     bool physically_published)
 {
 	coin_pickup_context context = {};
 	if (!encoded || encoded_size != sizeof(context))
@@ -4211,7 +4231,8 @@ static bool coin_get_completion(P_char actor, bool committed, const coin_transfe
 			bulk_gets.erase(context.actor_pid);
 		return true;
 	}
-	if (committed && !publish_coin_pile(payload.source, result.piles[0], context.container_uid))
+	if (committed && !physically_published &&
+	    !publish_coin_pile(payload.source, result.piles[0], context.container_uid))
 	{
 		if (context.bulk)
 			bulk_gets.erase(context.actor_pid);
@@ -4295,6 +4316,23 @@ static bool coin_get_completion(P_char actor, bool committed, const coin_transfe
 		}
 	}
 	return true;
+}
+
+static bool coin_get_completion(P_char actor, bool committed, const coin_transfer_payload &payload,
+				const coin_transfer_result &result, unsigned int error_code,
+				const uint8_t *encoded, size_t encoded_size)
+{
+	return coin_get_completion_impl(actor, committed, payload, result, error_code, encoded,
+					encoded_size, false);
+}
+
+static bool coin_get_notification(P_char actor, bool committed,
+				  const coin_transfer_payload &payload,
+				  const coin_transfer_result &result, unsigned int error_code,
+				  const uint8_t *encoded, size_t encoded_size)
+{
+	return coin_get_completion_impl(actor, committed, payload, result, error_code, encoded,
+					encoded_size, true);
 }
 
 struct coin_admission_context
@@ -4381,6 +4419,11 @@ static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int show
 {
 	if (!actor || !IS_PC(actor) || !money || money->type != ITEM_MONEY ||
 	    item_movement_transaction_player_busy(actor))
+		return false;
+	const bool accounted = economic_gameplay_authority::active();
+	if (accounted && (container || !OBJ_IN_ROOM(money, actor->in_room) ||
+			  (options && options->allow_source_move) ||
+			  !coin_physical_publication_room_safe(actor->in_room, money)))
 		return false;
 	item_owner_identity source = {};
 	const bool requested_source = options && item_owner_identity_valid(options->source);
@@ -4488,11 +4531,17 @@ static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int show
 			context.allow_source_move = options->allow_source_move;
 			context.amount_limit = options->amount_limit;
 		}
-		return prepare_coin_pile(money, source, parent, false, remainder,
-					 &payload.source) &&
+		return prepare_coin_pile(money, source, parent, false, remainder, &payload.source,
+					 accounted) &&
 		       currency_transaction_coin_wallet(actor, value, &payload.destination) &&
-		       currency_transaction_submit_coin(actor, payload, coin_get_completion,
-							&context, sizeof(context));
+		       currency_transaction_submit_coin(
+			       actor, payload, coin_get_completion, &context, sizeof(context),
+			       accounted ?
+				       coin_publication_callbacks{
+					       coin_physical_publication_publish,
+					       coin_get_notification,
+					       coin_physical_publication_release } :
+				       coin_publication_callbacks{});
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -4569,17 +4618,8 @@ bool publish_coin_put(P_char actor, const coin_debit_context &context)
 	return publish_transient_coin_put(actor, container, old_money, context);
 }
 
-void publish_coin_drop(P_char actor, const coin_debit_context &context)
+void notify_coin_drop(P_char actor, const coin_debit_context &context)
 {
-	P_obj money = create_money(context.amount[0], context.amount[1], context.amount[2],
-				   context.amount[3]);
-	if (!money)
-	{
-		refund_committed_coin_debit(actor, coin_debit_value(context), context.room);
-		send_to_char("The coins could not be placed; your wallet is being restored.\r\n",
-			     actor);
-		return;
-	}
 	const int64_t value = coin_debit_value(context);
 	if (context.flags & COIN_DEBIT_ALL)
 	{
@@ -4618,7 +4658,127 @@ void publish_coin_drop(P_char actor, const coin_debit_context &context)
 		      context.amount[3], context.amount[2], context.amount[1], context.amount[0],
 		      world[context.room].number);
 	}
+}
+
+void publish_coin_drop(P_char actor, const coin_debit_context &context)
+{
+	P_obj money = create_money(context.amount[0], context.amount[1], context.amount[2],
+				   context.amount[3]);
+	if (!money)
+	{
+		refund_committed_coin_debit(actor, coin_debit_value(context), context.room);
+		send_to_char("The coins could not be placed; your wallet is being restored.\r\n",
+			     actor);
+		return;
+	}
+	notify_coin_drop(actor, context);
 	obj_to_room(money, context.room);
+}
+
+static bool coin_drop_notification(P_char actor, bool committed,
+				   const coin_transfer_payload &payload,
+				   const coin_transfer_result &, unsigned int,
+				   const uint8_t *encoded, size_t encoded_size)
+{
+	coin_debit_context context = {};
+	if (!encoded || encoded_size != sizeof(context))
+		return false;
+	memcpy(&context, encoded, sizeof(context));
+	if (context.action != coin_debit_action::drop ||
+	    context.amount != payload.destination.after)
+		return false;
+	if (!committed)
+	{
+		item_transfer_payload pile = {};
+		if (!item_transfer_command_decode_payload(payload.destination.change, &pile))
+			return false;
+		P_obj staged = nullptr;
+		P_obj slow = object_list, fast = object_list;
+		for (P_obj object = object_list; object; object = object->next)
+		{
+			if (fast && fast->next)
+			{
+				fast = fast->next->next;
+				slow = slow->next;
+				if (fast == slow)
+					return false;
+			}
+			else
+				fast = nullptr;
+			if (object->obj_uid == pile.selected_item_uid)
+			{
+				if (staged)
+					return false;
+				staged = object;
+			}
+		}
+		item_ownership_runtime_entry current = {};
+		if (staged && OBJ_NOWHERE(staged) &&
+		    !item_ownership_runtime_lookup(staged->obj_uid, &current))
+		{
+			std::vector<player_item_snapshot> captured;
+			std::vector<uint8_t> bytes;
+			if (player_item_snapshot_tree_capture_literal(staged, &captured, nullptr) !=
+				    player_snapshot_capture_result::ok ||
+			    captured.size() != 1)
+				return false;
+			captured[0].equipment_slot = -1;
+			if (player_item_snapshot_list_encode(captured, &bytes) !=
+				    player_snapshot_codec_result::ok ||
+			    bytes.size() != pile.item_blob_size ||
+			    !std::equal(bytes.begin(), bytes.end(), pile.item_blob.begin()))
+				return false;
+			extract_obj(staged, FALSE);
+		}
+	}
+	if (actor)
+	{
+		if (committed && actor->in_room == context.room)
+			notify_coin_drop(actor, context);
+		else if (committed)
+			send_to_char("The coins were dropped in the original room.\r\n", actor);
+		else
+			send_to_char("The coin transfer did not commit; nothing changed.\r\n",
+				     actor);
+	}
+	return true;
+}
+
+static bool submit_accounted_coin_drop(P_char actor, const coin_debit_context &context)
+{
+	if (!actor || !IS_PC(actor) || GET_PID(actor) <= 0 || context.room != actor->in_room ||
+	    context.room < 0 || context.room > top_of_world ||
+	    std::any_of(context.amount.begin(), context.amount.end(),
+			[](int32_t amount) { return amount < 0; }) ||
+	    item_movement_transaction_player_busy(actor))
+		return false;
+	P_obj money = create_money(context.amount[0], context.amount[1], context.amount[2],
+				   context.amount[3]);
+	if (!money)
+		return false;
+	bool submitted = false;
+	try
+	{
+		coin_transfer_payload payload;
+		const item_owner_identity destination{
+			item_owner_type::room, static_cast<uint64_t>(world[context.room].number), 0
+		};
+		submitted = coin_physical_publication_room_safe(context.room, money) &&
+			    currency_transaction_coin_wallet(actor, -coin_debit_value(context),
+							     &payload.source) &&
+			    prepare_coin_pile(money, destination, nullptr, true, context.amount,
+					      &payload.destination, true) &&
+			    currency_transaction_submit_coin(
+				    actor, payload, nullptr, &context, sizeof(context),
+				    { coin_physical_publication_publish, coin_drop_notification,
+				      coin_physical_publication_release });
+	}
+	catch (const std::bad_alloc &)
+	{
+	}
+	if (!submitted)
+		extract_obj(money, FALSE);
+	return submitted;
 }
 
 void coin_debit_completion(P_char actor, bool committed, const currency_command_result &,
@@ -4683,6 +4843,8 @@ bool submit_coin_debit(P_char actor, const coin_debit_context &context)
 	const int64_t value = coin_debit_value(context);
 	if (!actor || value <= 0)
 		return false;
+	if (context.action == coin_debit_action::drop && economic_gameplay_authority::active())
+		return submit_accounted_coin_drop(actor, context);
 	if (context.action == coin_debit_action::give && economic_gameplay_authority::active())
 	{
 		P_char recipient = find_character_by_runtime_id(context.target_runtime_id);
