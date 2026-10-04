@@ -33,6 +33,7 @@ SOURCE_FILE_FIXES = {
 }
 
 OFFLINE_WRITERS = {
+    "repair.player_item_payload": "Reconstructs missing physical payload for an existing selected player UID under an approved offline plan and runtime exclusion. Custody, root, parent, revision and supply remain unchanged; this is neither issuance nor an economic adjustment.",
     "import.legacy_dump": "Guarded local import replaces native rows from a legacy dump; it is an offline migration boundary, not a gameplay credit.",
     "import.currency_baselines": "Creates opening wallet/bank baseline witnesses for an authorized cutover; it must not alter live holdings or masquerade as issuance.",
     "restore.qualification": "Restores into an isolated qualification target; it is not permission to promote that target to live authority.",
@@ -486,6 +487,8 @@ def source_definition_lines(path: Path, function: str | None) -> list[int]:
 
 
 def source_targets(route_id: str, disposition: str) -> dict:
+    if route_id == "repair.player_item_payload":
+        return {"holding_effect": "No wallet or bank mutation, issuance, retirement or accounting root.", "custody_effect": OFFLINE_WRITERS[route_id], "native_state_targets": ["player_items and player_item_runtime_state for the retained UID", "player_item_affects and player_item_extra_descr", "player_death_restitution_receipt and player_death_restitution_item payload_repair audit rows"]}
     if disposition == "non_writer_candidate":
         return {"holding_effect": "none in this function for economy/custody scope", "custody_effect": "none", "native_state_targets": []}
     if disposition == "dormant_writer_candidate":

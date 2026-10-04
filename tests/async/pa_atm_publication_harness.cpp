@@ -1,5 +1,6 @@
 #include "core/prototypes.h"
 #include "core/utils.h"
+#include "economy/account_bank_balances.h"
 #include "economy/currency_transaction.h"
 #include "economy/economic_currency_adapter.h"
 #include "economy/economic_gameplay_authority.h"
@@ -26,6 +27,11 @@
 #include <vector>
 #include <sys/stat.h>
 #include <unistd.h>
+
+// This component owns one synthetic online player, exposed through the lookup
+// below. There are no additional descriptors or linkdead characters.
+P_desc descriptor_list = nullptr;
+P_char character_list = nullptr;
 
 class economic_gameplay_authority_test_access
 {

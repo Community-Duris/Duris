@@ -8,16 +8,19 @@ NAME="duris-collector-owner-$$-$RANDOM"
 PASSWORD="collector-owner-$$-$RANDOM"
 IMAGE="${COLLECTOR_OWNER_DB_IMAGE:-mariadb:10.11}"
 BIND_ADDRESS="${COLLECTOR_OWNER_BIND_ADDRESS:-127.0.0.1}"
-cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
+SQL_FIXTURE_CONTAINER_ID=
+cleanup() { [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -f "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then
     PASSWORD_ENV=MARIADB_ROOT_PASSWORD
 else
     PASSWORD_ENV=MYSQL_ROOT_PASSWORD
 fi
-docker run -d --name "$NAME" -p "${BIND_ADDRESS}::3306" \
-    -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" >/dev/null
-mapping="$(docker port "$NAME" 3306/tcp)"
+source "$ROOT/tests/async/_sql_fixture_network.sh"
+sql_fixture_network
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" "${SQL_FIXTURE_NETWORK[@]}" \
+    -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}")
+mapping="$(sql_fixture_mapping "$NAME")"
 export ENVIRONMENT=test DB_HOST="${COLLECTOR_OWNER_DB_HOST:-127.0.0.1}"
 export DB_PORT="${mapping##*:}"
 export DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"

@@ -3521,8 +3521,28 @@ Buy - Last Edited: 2014-09-11 01:08:14 by lohrr
 These commands are used for making purchases or selling items in the various shops
 found around Duris. The prices in these shops will be affected slightly by how
 personable you are and how charismatic you are.
-You can now buy <item> <container> <quantity> to buy up to 9 of an item at a time.
-Note: This doesn't work at the epic shop, as it's a special shop.
+Syntax: buy <item>
+        buy <item> quantity <1-50>
+        buy <item> quantity <1-50> into <container>
+        buy <item> <container> [quantity] (historical form)
+
+Produced stock marked [quantity 1-50] in list supports quantity orders.
+Use an item keyword or the numbered list selector, for example:
+  buy ration quantity 10
+  buy #3 quantity 10 into backpack
+  buy arrow quiver 50
+
+Without into, delivery is to your inventory. Containers must be carried,
+open, and able to hold the item. Quantities must be whole numbers from
+1 through 50; invalid quantities, destinations, or extra arguments buy
+nothing and charge nothing. Quantity orders do not work at the epic shop.
+
+The order shows quantity, destination, unit price, and total. Each copy
+completes before the next begins. A stopped order reports how many were
+delivered and the actual charge. Unpurchased copies are not charged.
+If delivery is rejected after payment, the result identifies the pending
+refund for that copy. If a committed delivery is delayed, wait or reconnect;
+do not buy it again.
 ==See also==
 * Shops
 * Value
@@ -6423,6 +6443,25 @@ Dispel Magic - Last Edited: 2007-04-20 14:02:09 by Unknown
 * Type of spell:  Generic
 If successful, this spell will dispel some of the spells (if any)
 surrounding the victim or remove any enchantments on an object.
+Each eligible spell receives its own check. A successful check removes
+the spell. An ordinary timed spell that resists loses 10% of its remaining
+duration, with a minimum of one tick. Exhausting its duration ends it.
+Each active Minor Globe, Spirit Ward, Greater Spirit Ward, and Globe
+receives its own check, including wards from worn equipment. A ward that
+resists loses duration and capacity as if it absorbed a similar-circle
+damage spell, and may break. This wear causes no hit-point damage.
+Equipment wards return at their original renewal time; cast wards need
+a new cast.
+Magical barriers such as Wall of Stone lose both strength and duration
+when they resist. Both sides weaken together, and both disappear when
+the barrier is dispelled or exhausted. Messages identify spells and
+barriers that were dispelled, weakened, or broken. Protected effects
+remain protected; permanent effects have no duration to shorten.
+
+Portals have no raidable requirement; their dispel level rules still apply.
+An eligible failed attempt shortens a timed portal's remaining life by 10%.
+Both ends weaken together. Moonstones and bloodstones retain their short
+expiry after a dispel, and repeated dispels can only make that expiry sooner.
 The following help topics also matched your search:
  Potion of Dispel Magic
 #0
@@ -9685,10 +9724,13 @@ Globe of Invulnerability - Last Edited: 2007-04-20 14:02:09 by Unknown
 * Cumulative:     No
 * Duration:       Dependent on proficiency of caster
 * Type of spell:  Protection
-"Globe of Invulnerability" encases the victim in a powerful energy barrier
-which is capable of blocking a great deal of spells. The number of blocked
-attacks upon the globe has no affect on its duration, and the globe
-provides no protection at all from physical assault.
+"Globe of Invulnerability" encases the victim in a powerful, renewable
+energy barrier which blocks eligible spells of circles 1 through 6. A cast
+globe normally lasts 8 ticks; Conjurers receive 15 ticks, Summoners 12 ticks,
+and other casters receive 8 ticks. It has a finite damage budget (400 damage
+per normal tick by default), so sufficiently heavy spell damage can break it
+and continue through to the victim. It provides no protection from physical
+assault, and a group globe gives each recipient an independent ward.
 See also:Minor Globe of Invulnerability|minor globe of invulnerability ,Group Globe of Invulnerability|group globe of invulnerability
 The following help topics also matched your search:
  Group Globe of Invulnerability
@@ -10768,8 +10810,10 @@ Greater Spirit Ward - Last Edited: 2007-04-20 14:02:09 by Unknown
 * Cumulative:     No
 * Duration:       Dependent on proficiency of caster
 * Type of spell:  Spiritual
-"Greater Spirit Ward" protects the victim from lower circle spells and
-gives slight protection against (un)holy word.
+"Greater Spirit Ward" protects the victim from spells of circles 1 through 5
+and gives slight protection against (un)holy word. It has a finite damage
+budget (300 damage per normal tick by default); eligible spell damage wears
+down that budget, while ordinary expiry still follows the spell duration.
 ==See also==
 Spirit Ward
 #0
@@ -10985,7 +11029,9 @@ Group Globe of Invulnerability - Last Edited: 2007-04-20 14:02:09 by Unknown
 * * Type of spell:  Protection
 This spell is identical to Globe of Invulnerability, the only difference
 being that the casting of the spell encases everyone in the caster's group
-inside a globe.
+inside a globe. Each group member receives an independent duration and
+damage budget; damage absorbed by one member never consumes another member's
+ward.
 ==See also==
 * Minor Globe of Invulnerability
 #0
@@ -14765,10 +14811,11 @@ Minor Globe of Invulnerability - Last Edited: 2007-04-20 14:02:09 by Unknown
 * Cumulative:     No
 * Duration:       Dependent on proficiency of caster
 * Type of spell:  Protection
-This spell encases the victim in a weak energy barrier which is capable of
-blocking low level spells. The number of blocked attacks upon the globe has
-no bearing on its duration and the globe provides no protection at all from
-physic l assault.
+This spell encases the victim in a renewable weak energy barrier which blocks
+eligible spells of circles 1 through 3. A cast minor globe lasts 6 ticks and
+has a finite damage budget (150 damage per normal tick by default); eligible
+spell damage wears it down and overflow continues normally. It provides no
+protection at all from physical assault.
 	See also:Globe of Invulnerability|globe of invulnerability ,Group Globe of Invulnerability|group globe of invulnerability
 #0
 

@@ -22,7 +22,9 @@ HARNESS += r'''
 #include <thread>
 
 struct char_data { int pid; unsigned int runtime_flags = 0; bool npc = false; };
-struct obj_data { uint64_t obj_uid; };
+struct obj_data { uint64_t obj_uid; int value[8] = {}; };
+#define CORPSE_SAVEID 6
+void death_recovery_correlation(uint64_t, char *output) { output[0] = 0; }
 #define IS_SET(flag, bit) ((flag) & (bit))
 #define IS_NPC(ch) ((ch)->npc)
 #define GET_PID(ch) ((ch)->pid)

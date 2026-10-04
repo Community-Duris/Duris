@@ -525,6 +525,27 @@ flatfile_player_load_result verify_death_receipt(const std::string &root,
 		&stored, error);
 	if (read != flatfile_player_load_result::ok)
 		return read;
+	if (!stored.death)
+		return flatfile_player_load_result::invalid;
+	// The committed disposition may additionally retain durable-only descendants
+	// discovered under the authority lock. They are evidence, never recaptured
+	// request bytes. Compare every original field exactly after checking and
+	// removing only those additional custody rows from this comparison copy.
+	std::unordered_set<uint64_t> requested, roots;
+	for (const auto &row : request.death->custody)
+	{
+		requested.insert(row.item.item_uid);
+		roots.insert(row.item.root_item_uid);
+	}
+	for (const auto &row : stored.death->custody)
+		if (!requested.contains(row.item.item_uid) &&
+		    (!roots.contains(row.item.root_item_uid) ||
+		     row.item.expected_state != item_custody_state::active ||
+		     row.owner.type != item_owner_type::player ||
+		     row.owner.id != static_cast<uint64_t>(request.pid) || row.owner.context_id))
+			return flatfile_player_load_result::invalid;
+	std::erase_if(stored.death->custody,
+		      [&](const auto &row) { return !requested.contains(row.item.item_uid); });
 	auto expected = request;
 	std::vector<uint8_t> expected_bytes, stored_bytes;
 	return encode_file(&expected, &expected_bytes) && encode_file(&stored, &stored_bytes) &&
@@ -1582,6 +1603,31 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 	if (snapshot.death)
 	{
 		player_snapshot disposition = snapshot;
+		std::unordered_set<uint64_t> captured, roots;
+		for (const auto &row : disposition.death->custody)
+		{
+			captured.insert(row.item.item_uid);
+			roots.insert(row.item.root_item_uid);
+		}
+		uint64_t owner_revision = 0;
+		std::vector<flatfile_item_ownership_record> active;
+		if (flatfile_item_repository_load_owner_locked(
+			    root, authority,
+			    { item_owner_type::player, static_cast<uint64_t>(snapshot.pid), 0 },
+			    &owner_revision, &active, error) != flatfile_item_repository_result::ok)
+			return { player_save_apply_outcome::retryable_failure, 0, EIO };
+		for (const auto &row : active)
+			if (row.state == item_custody_state::active &&
+			    row.owner.type == item_owner_type::player &&
+			    row.owner.id == static_cast<uint64_t>(snapshot.pid) &&
+			    !row.owner.context_id && roots.contains(row.root_item_uid) &&
+			    !captured.contains(row.item_uid))
+				disposition.death->custody.push_back(
+					{ { row.item_uid, row.root_item_uid, row.parent_item_uid,
+					    row.item_revision, row.vnum, row.state },
+					  row.owner,
+					  owner_revision });
+
 		if (!encode_file(&disposition, &death_bytes))
 			return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
 		materialized.death.reset();

@@ -158,6 +158,7 @@ OBJS =  $(SHIP_OBJS) \
 				 magic/spell_incendiary_cloud.o \
 				 magic/spell_spore_cloud.o \
 				 magic/spell_alignment_dispel.o \
+				 magic/spell_dispel_magic.o \
 				 magic/spell_sunray.o \
 				 magic/spell_obtenebration.o \
 				 world/achievements.o \
@@ -311,6 +312,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/nevent_periodic.o \
 				 combat/training_dummy.o \
 				 combat/attack_continuation.o \
+				 combat/spell_wards.o \
 				 combat/hit_calculations.o \
 				 combat/defense_resolution.o \
 				 combat/attack_cadence.o \

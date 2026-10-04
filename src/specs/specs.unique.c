@@ -4,6 +4,7 @@
 
 #include "core/prototypes.h"
 #include "combat/defense_resolution.h"
+#include "combat/spell_wards.h"
 #include "core/structs.h"
 #include "core/utility.h"
 #include "core/utils.h"
@@ -675,7 +676,8 @@ int vapor(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 		// It's on body
 		if (OBJ_WORN_BY(obj, ch) && !affected_by_spell(ch, SPELL_GLOBE) &&
-		    !IS_AFFECTED2(ch, AFF2_GLOBE))
+		    !IS_AFFECTED2(ch, AFF2_GLOBE) &&
+		    spell_ward_item_callback_allowed(ch, SPELL_GLOBE))
 		{
 			if (IS_PC(ch))
 			{

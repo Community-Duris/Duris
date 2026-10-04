@@ -7,6 +7,11 @@ TEST_JOBS ?= 0
 TEST_MATCH ?=
 TEST_TIMEOUT ?=
 TEST_REPORT ?= bin/test-results.json
+TEST_PROFILE ?= core
+TEST_CPU_BUDGET ?=
+TEST_MEMORY_MB ?= 4096
+TEST_DURATIONS ?=
+TEST_JUNIT ?= bin/test-results.xml
 PACKAGE_DIR := bin/packages
 BUILD_DEPS_PACKAGE := $(PACKAGE_DIR)/duris-build-deps_1.0_all.deb
 
@@ -55,7 +60,7 @@ AREA_WORLD_DIRECT_INPUTS := \
 
 .PHONY: \
 	help all build build-server build-editor build-area-tools world \
-	build-deps-package test test-all test-python test-native test-list test-db \
+	build-deps-package test test-all test-fast test-python test-native test-list test-db test-integration \
 	security-sbom security-check clean clean-all
 
 help:
@@ -64,6 +69,7 @@ help:
 		'  make                 Build the server, area editor, and area tools' \
 		'  make test            Run deterministic local regression tests' \
 		'  make test-all        Build everything, generate world data, and test' \
+		'  make test-fast       Run the explicit fast profile after world setup' \
 		'  make test-list       List tests discovered by the regression runner' \
 		'  make test-db         Run isolated Docker/MySQL integration tests' \
 		'  make build-deps-package  Build the Debian metapackage under bin/packages' \
@@ -74,7 +80,12 @@ help:
 		'' \
 		'Test controls:' \
 		'  TEST_JOBS=N          Worker count; 0 selects a bounded automatic value' \
-		'  TEST_MATCH=TEXT      Run Python tests whose filename contains TEXT'
+		'  TEST_MATCH=TEXT      Run Python tests whose filename contains TEXT' \
+		'  TEST_PROFILE=NAME    core, fast, native, journey, database, recovery' \
+		'  TEST_CPU_BUDGET=N    CPU reservations; default respects cgroup quota' \
+		'  TEST_MEMORY_MB=N     Memory reservations; default 4096 MiB' \
+		'  TEST_DURATIONS=PATH  Previous JSON timings for longest-first scheduling' \
+		'  TEST_JUNIT=PATH      Case-level XML; default bin/test-results.xml'
 
 all: build
 
@@ -140,7 +151,10 @@ world: build-area-tools
 	fi
 
 test-python: world
-	$(PYTHON) tests/run_regression_tests.py --jobs "$(TEST_JOBS)" $(if $(strip $(TEST_MATCH)),--match "$(TEST_MATCH)",) $(if $(strip $(TEST_TIMEOUT)),--timeout "$(TEST_TIMEOUT)",) --report "$(TEST_REPORT)"
+	$(PYTHON) tests/run_regression_tests.py --jobs "$(TEST_JOBS)" --profile "$(TEST_PROFILE)" --memory-mb "$(TEST_MEMORY_MB)" $(if $(strip $(TEST_CPU_BUDGET)),--cpu-budget "$(TEST_CPU_BUDGET)",) $(if $(strip $(TEST_DURATIONS)),--durations "$(TEST_DURATIONS)",) $(if $(strip $(TEST_MATCH)),--match "$(TEST_MATCH)",) $(if $(strip $(TEST_TIMEOUT)),--timeout "$(TEST_TIMEOUT)",) $(if $(strip $(TEST_JUNIT)),--junit "$(TEST_JUNIT)",) --report "$(TEST_REPORT)"
+
+test-fast: world
+	+$(MAKE) test-python TEST_PROFILE=fast
 
 test-native:
 	tests/async/run_signal_handlers.sh
@@ -152,9 +166,13 @@ test: test-python test-native
 test-all: build
 	+$(MAKE) test
 
-test-list:
-	$(PYTHON) tests/run_regression_tests.py --list $(if $(strip $(TEST_MATCH)),--match "$(TEST_MATCH)",)
+test-integration:
+	$(PYTHON) tests/run_integration_matrix.py $(if $(strip $(TEST_ENGINE)),--engine "$(TEST_ENGINE)",) $(if $(strip $(TEST_MATCH)),--match "$(TEST_MATCH)",)
 
+test-list:
+	$(PYTHON) tests/run_regression_tests.py --list --profile "$(TEST_PROFILE)" $(if $(strip $(TEST_MATCH)),--match "$(TEST_MATCH)",)
+
+# The full disposable matrix is also available as make test-integration.
 # These suites create and destroy their own MySQL containers. They are kept out
 # of test-all because Docker is intentionally not a core build dependency.
 test-db:

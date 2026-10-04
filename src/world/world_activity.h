@@ -32,6 +32,8 @@ struct world_activity_health
 	uint64_t wake_promotions;
 	uint64_t wake_events;
 	uint64_t stale_wake_handles;
+	uint64_t repaired_mundane_handles;
+	uint64_t topology_changes;
 };
 
 void world_activity_reload();
@@ -48,6 +50,8 @@ void world_activity_character_leave(P_char ch);
 void world_activity_player_enter(P_char ch);
 void world_activity_player_leave(P_char ch);
 void world_activity_promote_character(P_char ch);
+/* Call after publishing a live exit change. Regions stay stable until rebuild. */
+void world_activity_room_exits_changed(int room);
 
 /* The ordinary mobile event is cached on the character with a scheduler
  * sequence so zone wakeups do not scan the full character event list. */
