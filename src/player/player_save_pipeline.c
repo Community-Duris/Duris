@@ -1419,23 +1419,44 @@ bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &co
 void player_save_pipeline_sql_drop_publication_acknowledged(
 	const critical_operation_id &operation_id) noexcept
 {
-	std::lock_guard<std::mutex> lock(pipeline_mutex);
-	for (auto &checkpoint : literal_inventory_checkpoints)
-		if (checkpoint.token.pid && checkpoint.held &&
-		    checkpoint.operation_id.bytes == operation_id.bytes)
-		{
-			if (!checkpoint.restored_sql_drop)
+	std::array<player_save_deferred_identity, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS> wakes{};
+	size_t wake_count = 0;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		for (auto &checkpoint : literal_inventory_checkpoints)
+			if (checkpoint.token.pid && checkpoint.held &&
+			    checkpoint.operation_id.bytes == operation_id.bytes)
 			{
+				if (!checkpoint.restored_sql_drop)
+				{
+					checkpoint = {};
+					continue;
+				}
+				// Capture only the active request protected by this original hold.
+				// No callback is invoked under either owner's mutex. A later PID
+				// replacement must never inherit this release notification.
+				player_save_deferred_identity wake{};
+				const bool active = player_save_worker_deferred_identity(
+					checkpoint.token.pid, &wake);
+				auto original = std::move(checkpoint);
 				checkpoint = {};
-				continue;
+				if (!player_save_execution_guard::release_hold(
+					    original.token.pid, operation_id,
+					    original.execution_hold_generation))
+				{
+					checkpoint = std::move(original);
+					continue;
+				}
+				if (active)
+					wakes[wake_count++] = wake;
 			}
-			auto original = std::move(checkpoint);
-			checkpoint = {};
-			if (!player_save_execution_guard::release_hold(
-				    original.token.pid, operation_id,
-				    original.execution_hold_generation))
-				checkpoint = std::move(original);
-		}
+	}
+	// Accepted notices live on the exact retained worker request, including
+	// a dispatch that has observed the hold but has not parked yet. Dispatch
+	// still acquires the execution guard; a notice supplies no SQL authority.
+	// A missing/stopped/replaced request cannot consume another job's notice.
+	for (size_t index = 0; index < wake_count; ++index)
+		(void)player_save_worker_resume_deferred_exact(wakes[index]);
 }
 
 player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int save_intent,
