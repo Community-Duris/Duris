@@ -676,6 +676,8 @@ try:
                                (orphan, bytes.fromhex("02" * 16)))
                 writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
                                "(%s,0,0,999,0,1,%s,0)", (orphan, orphan))
+                writer.execute("INSERT INTO economic_baseline_reservation VALUES (%s,%s,2,%s,%s)",
+                               (bytes([77]) * 16, bytes([88]) * 16, 2**64 - 1, orphan))
 
             def orphan_readback():
                 with setup.cursor() as reader_cursor:
@@ -694,8 +696,8 @@ try:
                 "scope": "database", "table_counts": dict.fromkeys(exporter.ORPHAN_EVIDENCE_SOURCES, 1)}
             rootless_lookup = view(orphan_cut, {}, "operation", 100, operation_id=orphan.hex())
             assert rootless_lookup["record_counts"]["operations"] == 0
-            assert rootless_lookup["record_counts"]["orphan_evidence"] == 4
-            assert rootless_lookup["count"] == 4
+            assert rootless_lookup["record_counts"]["orphan_evidence"] == 5
+            assert rootless_lookup["count"] == 5
             assert orphan_readback() == before_orphans
             with setup.cursor() as writer:
                 for table, _, _ in exporter.ORPHAN_EVIDENCE_SOURCES.values():
