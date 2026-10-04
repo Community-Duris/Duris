@@ -3058,3 +3058,18 @@ it has not run. Historical source_commit/census and generated matrix are preserv
 until full current-source reanchoring at the major-plan integration batch. Pending
 source integration is explicit; these rows do not establish lexical completeness,
 executable route proof or any release/activation qualification.
+
+
+Coin review regression preparation is now60 cases per SQL-header/flat profile:
+25physical and35owner,120 total future executions. The original39/profile cases
+remain, with18 correction-specific semantic regressions and3 preserved refusal
+controls. Negative and >INT_MAX bank vectors are structurally wire-valid under the
+existing codec; they are range-preservation controls, not new semantic failures.
+Raw INT64_MIN wire bytes require decoder refusal and form the malformed-wire
+control. Source inspection established this distinction; no cases were executed.
+Runner SHA-25604b6c296926ee6fe722353b54b9289a5942fc7e75366f662275e6766cf31beb8
+and native harnessf362e20c01dacc68306a47348ae5f232d62396ec86954ca37bfb701774e2d744.
+Original300-second compile/30-second per-case bounds remain unchanged/unmeasured.
+Use the preserved6b6b7c10c candidate for correction-specific paired checks; initial
+physical adapter absence/compile failure is not semantic BEFORE evidence. Actual
+producer/backend/restart qualification remains required.
