@@ -583,8 +583,10 @@ class Reconciler:
                 self.emit("unlinked_child", operation_id=link[0], child_index=link[1])
         for claim in claims.values():
             kind = None
+            source_parts = None
             try:
-                kind = decode_source_event(claim.get("source_event"))[0]
+                source_parts = decode_source_event(claim.get("source_event"))
+                kind = source_parts[0]
             except SnapshotError:
                 self.emit("invalid_source_claim", operation_id=claim.get("operation_id"))
             op = operations.get((claim.get("operation_id"),))
@@ -598,10 +600,6 @@ class Reconciler:
                 self.emit("unknown_source_claim_policy", operation_id=claim.get("operation_id"))
             elif kind is not None and not source_kind_allowed(reason, kind):
                 self.emit("unauthorized_source_claim", operation_id=claim.get("operation_id"))
-            if reason == 38:
-                self.emit("baseline_source_claim", operation_id=claim.get("operation_id"),
-                          source_event=claim.get("source_event"))
-                continue
             inbox_receipt = claim.get("operation_inbox_receipt")
             durable_receipt = (
                 isinstance(inbox_receipt, dict) and
@@ -616,6 +614,29 @@ class Reconciler:
                 type(inbox_receipt.get("committed_at_present")) is bool and
                 inbox_receipt.get("committed_at_present") is True and
                 claim.get("operation_result_code") == 0)
+            if reason == 38:
+                witness = claim.get("baseline_witness")
+                witnessed = (
+                    snapshot.get("backend") == "sql_partial" and kind == 10 and
+                    isinstance(witness, dict) and
+                    set(witness) == {"lineage", "epoch", "operation_id", "source_event"} and
+                    witness.get("lineage") == lineage and
+                    witness.get("epoch") == claim.get("operation_epoch") and
+                    isinstance(witness.get("epoch"), str) and
+                    HEX_ID.fullmatch(witness["epoch"]) is not None and witness["epoch"] != "0" * 32 and
+                    source_parts[2] == witness["epoch"] and source_parts[4] == 0 and
+                    witness.get("operation_id") == claim.get("operation_id") and
+                    isinstance(witness.get("operation_id"), str) and
+                    HEX_ID.fullmatch(witness["operation_id"]) is not None and witness["operation_id"] != "0" * 32 and
+                    witness.get("source_event") == claim.get("source_event"))
+                if not witnessed:
+                    self.emit("baseline_source_claim", operation_id=claim.get("operation_id"),
+                              source_event=claim.get("source_event"))
+                elif (claim.get("lineage") != lineage or claim.get("operation_lineage") != lineage or
+                      claim.get("operation_source_event") != claim.get("source_event") or
+                      claim.get("operation_outcome") != "committed" or not durable_receipt):
+                    self.emit("orphan_source_claim", operation_id=claim.get("operation_id"))
+                continue
             linked = (op and op.get("outcome") == "committed" and
                       op.get("source_event") == claim.get("source_event"))
             if op and "operation_epoch" in claim:

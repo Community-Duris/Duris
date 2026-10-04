@@ -451,6 +451,41 @@ class ReconciliationTests(unittest.TestCase):
         self.assertIn("unknown_policy_reason", self.codes(snapshot))
         self.assertIn("unknown_source_claim_policy", self.codes(snapshot))
 
+    def test_sql_baseline_claim_requires_witness_and_durable_root(self):
+        for claim_epoch in (EPOCH, "88" * 16):
+            with self.subTest(epoch=claim_epoch):
+                snapshot = clean_snapshot()
+                snapshot["backend"] = "sql_partial"
+                snapshot["complete"] = False
+                raw = bytes.fromhex(source_identity(kind=10, identity="71"))
+                source = (raw[:20] + bytes.fromhex(claim_epoch) + raw[36:]).hex()
+                claim = {"lineage": LINEAGE, "source_event": source, "operation_id": "72" * 16,
+                         "operation_lineage": LINEAGE, "operation_epoch": claim_epoch,
+                         "operation_reason": 38, "operation_source_event": source,
+                         "operation_outcome": "committed", "operation_result_code": 0,
+                         "operation_inbox_receipt": {"status": 1, "result_code": 0,
+                                                     "failure_stage": 0, "committed_at_present": True},
+                         "baseline_witness": {"lineage": LINEAGE, "epoch": claim_epoch,
+                                              "operation_id": "72" * 16, "source_event": source}}
+                snapshot["source_claims"].append(claim)
+                codes = self.codes(snapshot)
+                self.assertNotIn("baseline_source_claim", codes)
+                self.assertNotIn("orphan_source_claim", codes)
+                for field, changed in (("lineage", "73" * 16), ("epoch", "74" * 16),
+                                       ("operation_id", "75" * 16), ("source_event", SOURCE)):
+                    original = claim["baseline_witness"][field]
+                    claim["baseline_witness"][field] = changed
+                    self.assertIn("baseline_source_claim", self.codes(snapshot))
+                    claim["baseline_witness"][field] = original
+                claim["operation_inbox_receipt"]["committed_at_present"] = False
+                self.assertIn("orphan_source_claim", self.codes(snapshot))
+                claim["operation_inbox_receipt"]["committed_at_present"] = True
+                claim["operation_source_event"] = SOURCE
+                self.assertIn("orphan_source_claim", self.codes(snapshot))
+                claim["operation_source_event"] = source
+                snapshot["backend"] = "disposable"
+                self.assertIn("baseline_source_claim", self.codes(snapshot))
+
     def test_source_identity_version_kind_and_unsigned_bounds(self):
         for kind in range(1, 24):
             for sequence in (0, 2**64 - 1):

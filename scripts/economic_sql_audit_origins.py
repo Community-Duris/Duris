@@ -198,11 +198,18 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
             raise OriginError("baseline origin collection limit exceeded")
     if (witnesses[-1]["operation_id"] if witnesses else None) != control["last_operation_id"]:
         raise OriginError("baseline control terminal witness mismatch")
+    baseline_sources = {}
+    for row in witnesses:
+        blob = row["canonical_witness"]
+        # Native baseline source identity is preparation/epoch/batch, slot zero.
+        source = struct.pack("<HH", 10, 1) + blob[48:64] + epoch + blob[72:80] + bytes(4)
+        baseline_sources[row["operation_id"].hex()] = source.hex()
     result = {"format": "economic_sql_audit_origins_v1", "lineage": lineage.hex(),
               "epoch": epoch.hex(), "control_revision": control["revision"],
               "witness_count": len(witnesses), "account_origins": holdings,
               "item_origins": items,
-              "baseline_operation_ids": [row["operation_id"].hex() for row in witnesses]}
+              "baseline_operation_ids": [row["operation_id"].hex() for row in witnesses],
+              "baseline_source_events": baseline_sources}
     encoded = json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
     if len(encoded) > MAX_INPUT_BYTES:
         raise OriginError("origin export exceeds audit input limit")
