@@ -155,6 +155,28 @@ enforce allegiance, free a prisoner or complete a crafting campaign. Wrong
 heart aliases and empty prose are pending repairs, with distinct fix/news
 entries only after implementation. No native repair ships in this checkpoint.
 
+The Halfcut Hills' [dossier](../design/zone-stories/THE_HALFCUT_HILLS.md)
+shows why three same-story rescues, a badge bundle and a note return remain
+independent native outcomes. Prior producer receipts are optional when supplied
+matching material is accepted. A retiring recipient needs an episode policy:
+offer Bartis's badges before his final jar in the same episode. Four actual
+jar declarations are adequate source quantity, but closed-container ancestry
+and live stock still need qualification. Narrated drinking/disappearance of
+type-13 quest props does not establish an actual rescued NPC arrival home.
+
+The six-scalp bundle and four faction requests compete for exact materials;
+duplicate names/keywords do not permit type substitution or prove personal
+kills. Keep branch/attempt and full campaign policy explicit. Missing drow
+reward 25000 needs builder-selected terms and loadability preflight before
+consumption/new credit, preserving frozen obligations. Shared grab/say/enter/
+pull commands, numbered black stones, key/opening and safe travel need real
+events. Inn and table-based epic teacher bindings exist without extra local
+literal assignments. The crossbow scheduler/continuation is a separate shipped
+fix with focused proof and a news sentence; a second separate fix delivers its
+struck-player warning. Unbound hazards, reward and minor
+alias/spelling proposals remain pending. Journal additions are not native
+quest repairs.
+
 ## Schema version 1
 
 Version 1 remains supported. Use version 2 or 3 for new starter and hometown

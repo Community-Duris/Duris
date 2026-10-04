@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 62 authored journals, accounting-gated player surfaces, starter/town
+**Status: 63 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -15,7 +15,7 @@ Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
 the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
 Ship Yards, Ultarium, the Surface Realm, Tharnadia, Mini Zones and the City
 of Torrhan, Golden Hall of the Crown, Ashrumite Village and The Hall of the
-Ancients, Sarmiz'Duul, Duke Delwyn and Home of the Divine now have complete source story maps; their active-world journeys remain unqualified. Savannah projects seventeen
+Ancients, Sarmiz'Duul, Duke Delwyn, Home of the Divine and The Halfcut Hills now have complete source story maps; their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
 checks. The [Savannah dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md)
@@ -498,6 +498,30 @@ guard until recoverable custom death issuance is qualified. Key/trap/fall/
 container/rare-wander and retiring-recipient journeys need accepted evidence;
 first ownership, successful freeing, allegiance, war and personal crafting
 campaigns remain untracked. No native repair ships in this checkpoint.
+
+The Halfcut Hills' [comprehensive dossier](zone-stories/THE_HALFCUT_HILLS.md)
+covers all thirteen deliveries/fifteen addressed families, 470 rooms, 83
+mobiles, sixty objects, one six-stock shop and 413 resets/177 families. Revision
+one has thirteen independent outcomes, nineteen contacts and twenty-four
+optional checks. Four brown jars support three miner deliveries and Bartis;
+three exact badge parts form one bundle, then his final jar produces the note
+for the sentry. Offer badges before that jar in the same recipient episode.
+Supplied proof remains valid without personal rescue history. Four faction
+scalp requests compete with the larger six-proof bundle; no rescue arrival,
+personal kill, allegiance or takeover state is inferred.
+
+The bound crossbow scheduler is repaired in a distinct fix commit: setup only
+registers, periodic pulses retain three lanes/four bolts, and character identity,
+death/removal/movement interrupt further damage. A second separate fix delivers
+the previously suppressed struck-player warning through the correct audience.
+The drow's literal item reward
+25000 is absent and remains a builder-selected repair/admission blocker. Reward
+loadability preflight must precede consumption/new credit without discarding
+frozen obligations. Shared grab/say/enter/pull routes, doors, closed containers,
+wandering, inn/shop and epic teacher bindings are real; source generation,
+recipient episodes and successful access need committed journeys. Neither
+unbound defender nor blowgun procedure is newly enabled. The exact fix/news
+handoff is recorded separately from journal guidance and pending proposals.
 
 ## Accounting requirement and delivery sequence
 
@@ -1210,7 +1234,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 179 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 178 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1233,6 +1257,17 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
 
 
+- [x] Complete The Halfcut Hills' thirteen-delivery/fifteen-addressed source
+  dossier: thirteen independent outcomes, nineteen contacts/twenty-four optional
+  checks, exact miner/badge/note/scalp variants, all 177 reset families and
+  real shared access/lodging/teacher bindings. Repair bound crossbow scheduling
+  and interrupted volleys in a separate tested fix/news commit.
+- [ ] Select the missing drow reward and add reward loadability admission
+  before consumption/new credit while preserving frozen obligations. Qualify
+  four-jar/closed-container ancestry, exact competing scalp generation,
+  retiring Bartis/sentry episodes and numbered black stones. Choose narrative
+  retirement versus real home arrival, branch/attempt and full campaign policy;
+  no additional history/kill/access credit until accepted evidence is durable.
 - [x] Complete Home of the Divine's 32-exchange/twenty-raw-addressed source
   dossier: twenty independent outcomes/twelve services, 27 contacts and 48
   optional checks; exact elemental, heart, treasure, crafting/key and foreign
@@ -1444,6 +1479,7 @@ contract classification; it does not claim complete objective coverage.
 | Sarmiz'Duul | 1 | Complete: eight independent native deliveries; custom moonstone guidance without invented terminal | [Source-comprehensive dossier](zone-stories/SARMIZ_DUUL.md); 24 contacts/all thirteen raw addressed families and nineteen optional checks | Eight achievements/potential dailies; source and retiring episodes open; pirate core unavailable with accounting active | Exact three/four-item and supplied-proof routes, independent receipt recovery; custom targeting/seed/assembly/ring/crew, missing stock and potion/campaign repairs pending with news handoff |
 | Duke Delwyn | 1 | Complete: six independent deliveries/five paid services | [Source-comprehensive dossier](zone-stories/DUKE_DELWYN.md); nineteen contacts/all nine addressed families and seventeen optional checks | Six achievements/potential dailies; four paid textile stages and coin service guarded; live access/source/episodes open | Exact bell/cog, banner, knight and two-item warning; trap/falling/container lineage, atomic fees, occasion/service/peaceful handover decisions pending; no native repair ships |
 | Home of the Divine | 1 | Complete: twenty independent outcomes/twelve crafting or access services | [Source-comprehensive dossier](zone-stories/HOME_OF_THE_DIVINE.md); 27 contacts/all nineteen useful addressed families and 48 optional checks | Twenty potential candidates do not certify missing bounty reward, fresh scale or source supply; six mixed fees guarded | Exact four tokens/seven hearts/nine treasures, competing token and Pure-Dark receipts; missing reward/preflight, duplicate stock, touch/enter/prison/trap/falls, rare wandering and retiring episodes pending; no native repair ships |
+| The Halfcut Hills | 1 | Complete: thirteen independent deliveries | [Source-comprehensive dossier](zone-stories/THE_HALFCUT_HILLS.md); nineteen contacts/all fifteen addressed families and twenty-four optional checks | Thirteen potential candidates do not guarantee stock or missing drow payout | Exact miner/badge/note and competing scalp guidance; separate crossbow scheduler/continuation fix ships. Missing reward/preflight, real rescue/branch/attempt, source/container/wandering and grab/say/enter/pull qualification pending |
 
 ## Twin Towers evidence and decisions
 

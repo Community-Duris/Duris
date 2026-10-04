@@ -1,0 +1,806 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "halfcut",
+  "coverage": "complete",
+  "introduction": "Explore the hills, help trapped miners and choose how to spend the raid camp's competing trophies. Thirteen exact deliveries remain independent. Active, ready accounting is required; confirmed rescue, personal kills, access and full campaigns require additional accepted evidence.",
+  "orientation": [
+    "The northern trail connects to the Great Forest of Aravne. Ask the dwarf sentry about the mine or where, then meet Bartis and ask worried, miners and free. The mine lies beyond its ownership sign and leads to hidden refuges, a stone giant cavern and Bartis's office. A clue or a discovered zone does not prove successful travel.",
+    "A wandering stone giant carries a closed wooden box with four brown-jar declarations. Recover the jars for the two different old miners, the young miner in the well, and Bartis. Each recipient consumes one jar and retires. These quest props narrate travel home; native acceptance does not invoke a potion effect or track a village arrival.",
+    "Three distinct badge parts from the miner exchanges combine at Bartis for one complete badge. Supplied matching parts fit without earlier rescue receipts. Offer that bundle before Bartis's final jar if using the same episode; the final jar gives his note and 150000 copper, then removes him and his remaining carried sources.",
+    "Bring Bartis's exact note to the sentry for the earring; he also retires. This independent request does not verify a complete personal rescue campaign. Each accepted delivery is its own receipt, and optional producer history cannot replace spent items or restore a recipient.",
+    "The wounded dwarf takes the exact green potion inside the northern wagon, gives cash and experience, and stays. The shop's flaming green potion is different. Narrated drinking does not record a checked poison cure or a healed character.",
+    "Wandering Remi accepts the raid leader's own scalp for a staff. The raid leader instead takes six distinct proofs: four faction leaders plus Bartis and Hulkuis. Four faction requests consume the same scalps as that bundle. Spend copies deliberately; neither a receipt nor one scalp satisfies all requests.",
+    "The drow's duergar-scalp request names potion 27056 and absent item 25000. Current journal readiness cannot guarantee payout, and the request needs a builder-selected reward repair and pre-consumption loadability checks before a safe attempt. No guessed coin or experience replacement is applied.",
+    "Grab the hidden rope on the trail for its blocked western cave route. In that cave, the two same-named black stones use grab and lead to different plateaus; select the intended object carefully. Enter the stone well to reach the young miner. Say windship by the marble slab for the crypt route. These are native switch/teleport commands, not learned-topic achievements.",
+    "Examine the stone giant office desk and pull its lever for the blocked western bedroom door, then open the door. The LARGE key carried by the hill giant guard opens the separate cavern door. Room hazards, falls, one-way passages and survival need their own qualified arrival evidence; a key or clue receipt does not prove safe passage.",
+    "The bound kobold crossbow ambusher now registers periodic pulses and attacks its three nearby lanes, with four bolts per present player; loading does not fire a volley, and removal, death or movement interrupts further bolts. The separate defender/blowgun procedures are unbound and remain outside current gameplay. Combat does not record a personal quest kill.",
+    "The inn room has a real shared rent handler, the supplier has six stock kinds, and wandering A'den has shared Improved Listen teaching. Ordinary shop, lodging and skill settlement remain separate. Rare/dispersal and container/reset declarations explain possible sources without promising fresh supply or a particular encounter; branch, attempt and source-generation policies remain open."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 27001,
+      "name": "an old dwarf",
+      "keyword": "slagtooth",
+      "description": "Town inn. The room supports the shared rent command; Slagtooth's invitation is not a journal quest or a verified lodging journey.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 27002,
+      "name": "a wounded dwarf",
+      "keyword": "wounded",
+      "description": "Town wounded dwarf. Ask hi, hello, wounded or poison for the wagon medicine clue. The green potion is different from the supplier's flaming green potion.",
+      "topics": [
+        "hi",
+        "hello",
+        "wounded",
+        "poison"
+      ]
+    },
+    {
+      "mob_vnum": 27005,
+      "name": "a sentry dwarf",
+      "keyword": "dwarf",
+      "description": "Dwarf sentry on the trail. Ask mine or where about Bartis and the note. His actual keyword is dwarf; the note request retires him.",
+      "topics": [
+        "mine",
+        "where"
+      ]
+    },
+    {
+      "mob_vnum": 27009,
+      "name": "a kobold",
+      "keyword": "kobold",
+      "description": "Kobold ambusher in the hidden alcove. Its bound crossbow procedure fires periodically into three nearby lanes; combat is an access hazard, not a quest completion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 27033,
+      "name": "Remi Threepockets",
+      "keyword": "remi",
+      "description": "Wandering Remi, initially in the outdoor dispersal source. Ask evils, evil or raid about the exact raid leader scalp; a particular encounter location is not guaranteed.",
+      "topics": [
+        "evils",
+        "evil",
+        "raid"
+      ]
+    },
+    {
+      "mob_vnum": 27035,
+      "name": "A'den the Bard",
+      "keyword": "aden",
+      "description": "Wandering bard A'den. Shared epic teaching offers Improved Listen with an eighty-percent Listen prerequisite. Skill eligibility and settlement are separate from quest receipts.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 27058,
+      "name": "a wandering stone giant",
+      "keyword": "wandering",
+      "description": "Wandering stone giant, initially near the mine office. Carries the closed wooden box with four brown-jar reset declarations. Open and recover the contents; the box is not itself an offering.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 27059,
+      "name": "the old miner",
+      "keyword": "old",
+      "description": "First old miner in a hidden mine refuge. One jar gives badge part 27040 and 2000 experience, then retires him. Distinguish the same-named second miner.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 27060,
+      "name": "the young miner",
+      "keyword": "young",
+      "description": "Young miner inside the stone well. Enter the well from the giant gathering cavern. One jar gives broken badge 27042 and 2500 experience, then retires him.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 27063,
+      "name": "Hulkuis",
+      "keyword": "hulkuis",
+      "description": "Stone giant leader's office. Carries exact scalp 27058. Examine the desk for the separate pull-lever bedroom route; its use does not complete a scalp quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 27065,
+      "name": "Bartis",
+      "keyword": "bartis",
+      "description": "Hidden mine office. Ask worried, miner, miners or free. Three exact badge parts give a complete badge and leave him present; a brown jar gives note and cash, then retires him. Offer badges first in the same episode.",
+      "topics": [
+        "worried",
+        "miner",
+        "miners",
+        "free"
+      ]
+    },
+    {
+      "mob_vnum": 27068,
+      "name": "a hill giant guard",
+      "keyword": "hill",
+      "description": "Hill giant cavern entrance guard. Carries the LARGE key for the cavern door. Key custody does not prove unlocking or passage.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 27071,
+      "name": "the old miner",
+      "keyword": "old",
+      "description": "Second old miner in the other hidden refuge. One jar gives different badge piece 27041 and 20000 experience, then retires him; this is a distinct recipient and reward.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 27072,
+      "name": "the dwarf supplier",
+      "keyword": "dwarf",
+      "description": "Town supplier. Six stock kinds include crossbow, quiver and flaming green potion; the quest's green potion is not sold here. Ordinary shop settlement is separate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 27078,
+      "name": "the raid leader",
+      "keyword": "leader",
+      "description": "Raid leader's large tent. Ask worried, rook, plan or help about six exact proofs. Carries his own scalp for Remi. A supplied six-proof bundle does not establish allegiance or mine takeover.",
+      "topics": [
+        "worried",
+        "rook",
+        "plan",
+        "help"
+      ]
+    },
+    {
+      "mob_vnum": 27080,
+      "name": "the head Orc",
+      "keyword": "orc",
+      "description": "Head orc's tent. Ask goblin, gumbling or mad. One goblin scalp pays cash and experience; his own orc scalp supplies a different request.",
+      "topics": [
+        "goblin",
+        "gumbling",
+        "mad"
+      ]
+    },
+    {
+      "mob_vnum": 27081,
+      "name": "the head Goblin",
+      "keyword": "goblin",
+      "description": "Head goblin's tent. Ask orc, ponder, pondering, something or kill. One orc scalp pays cash and experience; his own scalp competes between requests.",
+      "topics": [
+        "orc",
+        "ponder",
+        "pondering",
+        "something",
+        "kill"
+      ]
+    },
+    {
+      "mob_vnum": 27082,
+      "name": "the Drow leader",
+      "keyword": "drow",
+      "description": "Drow leader's tent. Ask duergar. Its duergar-scalp request names missing reward item 25000 and needs repair before a safe attempt.",
+      "topics": [
+        "duergar"
+      ]
+    },
+    {
+      "mob_vnum": 27083,
+      "name": "the head Duergar",
+      "keyword": "duergar",
+      "description": "Head duergar's tent. Ask drow, mad or bite. One drow scalp pays cash and experience; the larger bundle also consumes that scalp.",
+      "topics": [
+        "drow",
+        "mad",
+        "bite"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "wounded-dwarf-potion",
+      "title": "Medicine for the wounded dwarf",
+      "category": "request",
+      "summary": "Bring the exact wagon green potion for 25000 copper and 25000 experience. The dwarf stays and narrates drinking; the receipt does not prove a checked poison cure.",
+      "contracts": [
+        {
+          "giver_vnum": 27002,
+          "completion_key": "give=I:27037;receive=C:25000,E:25000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-27037",
+          "text": "Carry a green potion",
+          "kind": "carried_item",
+          "item_vnums": [
+            27037
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact green potion is inside the wagon near the northern trail. Recover it from the wagon before offering. The shop's flaming green potion is a different item. The recipient narrates drinking, without a checked cure or healed NPC state. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27002,
+              "completion_key": "give=I:27037;receive=C:25000,E:25000;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome. Dialogue, recovery, combat, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "first-old-miner-jar",
+      "title": "A jar for the first old miner",
+      "category": "story",
+      "summary": "Bring one brown jar to the old miner in the first hidden refuge. He gives badge part 27040 and 2000 experience, then retires. His disappearance narrates escape without a tracked home arrival.",
+      "contracts": [
+        {
+          "giver_vnum": 27059,
+          "completion_key": "give=I:27039;receive=E:2000,I:27040;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-27039",
+          "text": "Carry a brown jar",
+          "kind": "carried_item",
+          "item_vnums": [
+            27039
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Four matching brown jars are declared inside the closed wooden box carried by a wandering stone giant, initially in the mine near Bartis's office. Open and recover the contents; the box itself is not a jar. Each of the three miners and Bartis consumes one copy. These jars are quest props, not usable potion items, and the native exchanges retire the recipients rather than track their arrival home. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27059,
+              "completion_key": "give=I:27039;receive=E:2000,I:27040;disappear=1"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient retires after acceptance. Only this accepted delivery owns its outcome. Dialogue, recovery, combat, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "second-old-miner-jar",
+      "title": "A jar for the second old miner",
+      "category": "story",
+      "summary": "Bring one brown jar to the distinct old miner in the other hidden refuge. He gives badge piece 27041 and 20000 experience, then retires. The same visible name does not make his reward or recipient interchangeable.",
+      "contracts": [
+        {
+          "giver_vnum": 27071,
+          "completion_key": "give=I:27039;receive=E:20000,I:27041;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-27039",
+          "text": "Carry a brown jar",
+          "kind": "carried_item",
+          "item_vnums": [
+            27039
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Four matching brown jars are declared inside the closed wooden box carried by a wandering stone giant, initially in the mine near Bartis's office. Open and recover the contents; the box itself is not a jar. Each of the three miners and Bartis consumes one copy. These jars are quest props, not usable potion items, and the native exchanges retire the recipients rather than track their arrival home. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27071,
+              "completion_key": "give=I:27039;receive=E:20000,I:27041;disappear=1"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient retires after acceptance. Only this accepted delivery owns its outcome. Dialogue, recovery, combat, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "young-miner-jar",
+      "title": "A jar for the miner in the well",
+      "category": "story",
+      "summary": "Enter the stone well and bring one brown jar to the young miner. He gives broken badge 27042 and 2500 experience, then retires; his promised village reunion is narrative.",
+      "contracts": [
+        {
+          "giver_vnum": 27060,
+          "completion_key": "give=I:27039;receive=E:2500,I:27042;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-27039",
+          "text": "Carry a brown jar",
+          "kind": "carried_item",
+          "item_vnums": [
+            27039
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Four matching brown jars are declared inside the closed wooden box carried by a wandering stone giant, initially in the mine near Bartis's office. Open and recover the contents; the box itself is not a jar. Each of the three miners and Bartis consumes one copy. These jars are quest props, not usable potion items, and the native exchanges retire the recipients rather than track their arrival home. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27060,
+              "completion_key": "give=I:27039;receive=E:2500,I:27042;disappear=1"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient retires after acceptance. Only this accepted delivery owns its outcome. Dialogue, recovery, combat, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "bartis-three-badges",
+      "title": "Three distinct badges for Bartis",
+      "category": "story",
+      "summary": "Offer badge part 27040, piece 27041 and broken badge 27042 together for complete badge 27043. Bartis stays. This single bundle accepts supplied matching parts without requiring three earlier personal rescue receipts. Offer it before his final jar in the same episode.",
+      "contracts": [
+        {
+          "giver_vnum": 27065,
+          "completion_key": "give=I:27040,I:27041,I:27042;receive=I:27043;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-61",
+          "text": "First old miner's delivery recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27059,
+              "completion_key": "give=I:27039;receive=E:2000,I:27040;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted delivery explains a preparation route. Supplied exact material fits without this history. A receipt cannot replace spent proof, establish first recovery, or prove that a miner arrived home."
+        },
+        {
+          "id": "history-136",
+          "text": "Second old miner's delivery recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27071,
+              "completion_key": "give=I:27039;receive=E:20000,I:27041;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted delivery explains a preparation route. Supplied exact material fits without this history. A receipt cannot replace spent proof, establish first recovery, or prove that a miner arrived home."
+        },
+        {
+          "id": "history-75",
+          "text": "Young miner's delivery recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27060,
+              "completion_key": "give=I:27039;receive=E:2500,I:27042;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted delivery explains a preparation route. Supplied exact material fits without this history. A receipt cannot replace spent proof, establish first recovery, or prove that a miner arrived home."
+        },
+        {
+          "id": "material-27040",
+          "text": "Carry part of a miner's badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            27040
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The old miner in one hidden mine refuge gives this exact badge part for a brown jar, then retires. The second old miner gives a different part; three copies of one part cannot replace the three exact kinds. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-27041",
+          "text": "Carry a piece of a miner's badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            27041
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The second old miner in the other hidden mine refuge gives this exact badge piece for a brown jar, then retires. His visible name matches the first old miner, but this part and his experience reward differ. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-27042",
+          "text": "Carry a broken badge of the miner",
+          "kind": "carried_item",
+          "item_vnums": [
+            27042
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The young miner inside the well gives this broken badge for a brown jar and retires. Enter the stone well in the giant gathering cavern; the ordinary up exit returns from its interior. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27065,
+              "completion_key": "give=I:27040,I:27041,I:27042;receive=I:27043;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome. Dialogue, recovery, combat, travel and other requests remain separate. Offer the badge bundle before the final jar if using the same Bartis episode; the jar retires him."
+        }
+      ]
+    },
+    {
+      "id": "bartis-final-jar",
+      "title": "Bartis's final jar and note",
+      "category": "story",
+      "summary": "One brown jar gives Bartis's note and 150000 copper, then retires him. The native exchange does not require earlier miner or badge receipts. To complete both Bartis requests in one episode, offer the badge bundle before this jar; his carried scalp can also disappear.",
+      "contracts": [
+        {
+          "giver_vnum": 27065,
+          "completion_key": "give=I:27039;receive=C:150000,I:27044;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-27039",
+          "text": "Carry a brown jar",
+          "kind": "carried_item",
+          "item_vnums": [
+            27039
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Four matching brown jars are declared inside the closed wooden box carried by a wandering stone giant, initially in the mine near Bartis's office. Open and recover the contents; the box itself is not a jar. Each of the three miners and Bartis consumes one copy. These jars are quest props, not usable potion items, and the native exchanges retire the recipients rather than track their arrival home. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27065,
+              "completion_key": "give=I:27039;receive=C:150000,I:27044;disappear=1"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient retires after acceptance. Only this accepted delivery owns its outcome. Dialogue, recovery, combat, travel and other requests remain separate. Offer the badge bundle before the final jar if using the same Bartis episode; the jar retires him."
+        }
+      ]
+    },
+    {
+      "id": "sentry-bartis-note",
+      "title": "Return Bartis's note to the sentry",
+      "category": "story",
+      "summary": "Bring the exact note to the dwarf sentry for a gold-sparkling earring; the sentry retires. This independent note delivery does not require a personal miner-rescue campaign.",
+      "contracts": [
+        {
+          "giver_vnum": 27005,
+          "completion_key": "give=I:27044;receive=I:27045;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "history-121",
+          "text": "Bartis's note delivery recorded",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27065,
+              "completion_key": "give=I:27039;receive=C:150000,I:27044;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "This optional accepted delivery explains a preparation route. Supplied exact material fits without this history. A receipt cannot replace spent proof, establish first recovery, or prove that a miner arrived home."
+        },
+        {
+          "id": "material-27044",
+          "text": "Carry a note from Bartis",
+          "kind": "carried_item",
+          "item_vnums": [
+            27044
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Bartis gives this exact note and 150000 copper for a brown jar, then retires. Offer the three distinct miner badge parts before that final jar if using the same Bartis episode. The sentry also retires after accepting the note. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27005,
+              "completion_key": "give=I:27044;receive=I:27045;disappear=1"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient retires after acceptance. Only this accepted delivery owns its outcome. Dialogue, recovery, combat, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "remi-raid-leader",
+      "title": "The raid leader's scalp for Remi",
+      "category": "request",
+      "summary": "Bring raid leader scalp 27051 to wandering Remi for the thin black staff. He stays. This exact trophy request does not check the whole raiding party's defeat or a personal kill.",
+      "contracts": [
+        {
+          "giver_vnum": 27033,
+          "completion_key": "give=I:27051;receive=I:27060;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-27051",
+          "text": "Carry the leader's scalp",
+          "kind": "carried_item",
+          "item_vnums": [
+            27051
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The raid leader carries his own exact scalp in the large tent. Remi wanders from the outdoor dispersal source; his request accepts this trophy without checking destruction of the whole raid. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27033,
+              "completion_key": "give=I:27051;receive=I:27060;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome. Dialogue, recovery, combat, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "raid-leader-six-scalps",
+      "title": "Six proofs for the raid leader",
+      "category": "story",
+      "summary": "Offer the orc, drow, goblin and duergar scalps plus Bartis's and Hulkuis's scalps together for the duergar belt. The leader stays. This is one six-item delivery, without six tracked personal kills, mine ownership or a checked takeover; faction requests compete for four of these proofs.",
+      "contracts": [
+        {
+          "giver_vnum": 27078,
+          "completion_key": "give=I:27052,I:27053,I:27054,I:27055,I:27057,I:27058;receive=I:27059;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-27052",
+          "text": "Carry the orc's scalp",
+          "kind": "carried_item",
+          "item_vnums": [
+            27052
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The head orc carries the orc scalp in his raid tent. The head goblin's separate request and the raid leader's six-proof bundle both consume this exact kind; one copy cannot supply both. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-27053",
+          "text": "Carry the drow's scalp",
+          "kind": "carried_item",
+          "item_vnums": [
+            27053
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The drow leader carries the drow scalp in his tent. The head duergar's separate request and the raid leader's six-proof bundle compete for this same material. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-27054",
+          "text": "Carry the goblin's scalp",
+          "kind": "carried_item",
+          "item_vnums": [
+            27054
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The head goblin carries the goblin scalp in his tent. The head orc's separate request and the raid leader's six-proof bundle compete for it. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-27055",
+          "text": "Carry the duergar's scalp",
+          "kind": "carried_item",
+          "item_vnums": [
+            27055
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The head duergar carries the duergar scalp in his tent. The drow leader's separate request and the raid leader's six-proof bundle compete for it. The drow request names an absent reward item and needs repair before a safe attempt. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-27057",
+          "text": "Carry Bartis' scalp",
+          "kind": "carried_item",
+          "item_vnums": [
+            27057
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Bartis carries his exact scalp in the hidden mine office. His final brown-jar exchange retires him and can remove that carried source. Rescue and raid proof need a deliberate episode policy; an earlier receipt cannot supply a scalp. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "material-27058",
+          "text": "Carry Hulkuis' scalp",
+          "kind": "carried_item",
+          "item_vnums": [
+            27058
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Hulkuis carries his exact scalp in the stone giant leader's office. Examine the desk for the separate bedroom lever clue. Its use is not required by the native scalp delivery. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27078,
+              "completion_key": "give=I:27052,I:27053,I:27054,I:27055,I:27057,I:27058;receive=I:27059;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome. Dialogue, recovery, combat, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "orc-goblin-scalp",
+      "title": "The goblin's scalp for the orc",
+      "category": "request",
+      "summary": "Bring the exact goblin scalp to the head orc for 15000 copper and 25000 experience. He stays. Spending this proof leaves that copy unavailable for the raid leader's six-item request.",
+      "contracts": [
+        {
+          "giver_vnum": 27080,
+          "completion_key": "give=I:27054;receive=C:15000,E:25000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-27054",
+          "text": "Carry the goblin's scalp",
+          "kind": "carried_item",
+          "item_vnums": [
+            27054
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The head goblin carries the goblin scalp in his tent. The head orc's separate request and the raid leader's six-proof bundle compete for it. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27080,
+              "completion_key": "give=I:27054;receive=C:15000,E:25000;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome. Dialogue, recovery, combat, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "goblin-orc-scalp",
+      "title": "The orc's scalp for the goblin",
+      "category": "request",
+      "summary": "Bring the exact orc scalp to the head goblin for 20000 copper and 15000 experience. He stays. The raid leader's bundle also consumes this proof.",
+      "contracts": [
+        {
+          "giver_vnum": 27081,
+          "completion_key": "give=I:27052;receive=C:20000,E:15000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-27052",
+          "text": "Carry the orc's scalp",
+          "kind": "carried_item",
+          "item_vnums": [
+            27052
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The head orc carries the orc scalp in his raid tent. The head goblin's separate request and the raid leader's six-proof bundle both consume this exact kind; one copy cannot supply both. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27081,
+              "completion_key": "give=I:27052;receive=C:20000,E:15000;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome. Dialogue, recovery, combat, travel and other requests remain separate."
+        }
+      ]
+    },
+    {
+      "id": "drow-duergar-scalp",
+      "title": "The duergar's scalp for the drow",
+      "category": "request",
+      "summary": "The drow leader accepts duergar scalp 27055 and declares potion 27056 plus item 25000, which is absent from the object data. He stays. This request needs a builder-selected reward repair and loadability checks before a safe attempt; journal readiness does not certify payout.",
+      "contracts": [
+        {
+          "giver_vnum": 27082,
+          "completion_key": "give=I:27055;receive=I:25000,I:27056;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-27055",
+          "text": "Carry the duergar's scalp",
+          "kind": "carried_item",
+          "item_vnums": [
+            27055
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The head duergar carries the duergar scalp in his tent. The drow leader's separate request and the raid leader's six-proof bundle compete for it. The drow request names an absent reward item and needs repair before a safe attempt. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27082,
+              "completion_key": "give=I:27055;receive=I:25000,I:27056;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome. Dialogue, recovery, combat, travel and other requests remain separate. The second declared reward item is absent. Material readiness cannot certify safe payout; reward repair and pre-consumption loadability checks are pending."
+        }
+      ]
+    },
+    {
+      "id": "duergar-drow-scalp",
+      "title": "The drow's scalp for the duergar",
+      "category": "request",
+      "summary": "Bring the exact drow scalp to the head duergar for 20000 copper and 25000 experience. He stays. This and the raid leader's six-item bundle are independent competing deliveries.",
+      "contracts": [
+        {
+          "giver_vnum": 27083,
+          "completion_key": "give=I:27053;receive=C:20000,E:25000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-27053",
+          "text": "Carry the drow's scalp",
+          "kind": "carried_item",
+          "item_vnums": [
+            27053
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The drow leader carries the drow scalp in his tent. The head duergar's separate request and the raid leader's six-proof bundle compete for this same material. Supplied matching material also fits; current possession does not prove a personal kill or first recovery. Offer it loose in your inventory, rather than worn or inside a container."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete the accepted delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 27083,
+              "completion_key": "give=I:27053;receive=C:20000,E:25000;disappear=0"
+            }
+          ],
+          "hint": "Meet the recipient and offer every exact item together. The recipient stays after acceptance. Only this accepted delivery owns its outcome. Dialogue, recovery, combat, travel and other requests remain separate."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

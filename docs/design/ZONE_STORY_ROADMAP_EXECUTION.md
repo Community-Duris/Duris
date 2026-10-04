@@ -49,6 +49,8 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [b0e4ea60a](https://github.com/Community-Duris/Duris/commit/b0e4ea60a9937da5fd1789edd43402cb59672ef5): quest state integrity | Save/recovery validation rejects missing required metadata and mismatched observation IDs; later accounting integration preserves caller-owned deletion and retry obligations. | Player-facing: “Zone quest progress saving and recovery now reject inconsistent records.” SQL/flat-file and feature regression evidence is recorded in the qualification document. |
 | [492c6f1bd](https://github.com/Community-Duris/Duris/commit/492c6f1bd7635f22782888a3567763b7b90a39eb): shared prototype audit | Builder source lookup includes active administrative-area prototypes, resolving valid paper 5 without adding discoverable ownership. Production regression verifies both facts. | Builder-facing audit correction. The Tharnadia map exchange already existed; do not announce a repaired paper quest. |
 | [7297b964e](https://github.com/Community-Duris/Duris/commit/7297b964ed3996c33a90dae4172cd0875addf174): Hall Shadow of Sin | Its gaze checks the actual opponent for Freedom of Movement rather than the callback actor. Periodic null actors no longer crash; bystander protection is not consumed, and target text substitutes correctly. | Player-facing: “The Shadow of Sin now correctly checks its opponent's Freedom of Movement, fixing a combat crash and misleading target text.” Actual procedure/null/unrelated-actor/effect/immunity regression and server build passed; live gameplay qualification remains open. |
+| [b28262d8c](https://github.com/Community-Duris/Duris/commit/b28262d8cc8dfe6156df70f162981399d18be717): Halfcut crossbow ambusher | Setup registers periodic scheduling without firing; pulses keep three lanes/four bolts/player-only targets. Runtime identity checks stop volleys after death, movement, removal or storage reuse; missing lanes do not hide later lanes. Unbound procedures remain unbound. | Player-facing: “The Halfcut Hills kobold crossbow ambusher now fires on its scheduled pulses and stops interrupted volleys safely.” Actual-procedure regression passes and original fails setup; maintained build/format pass. Live balance/reset/accounting journey remains unqualified. |
+| [348eccdf3](https://github.com/Community-Duris/Duris/commit/348eccdf3261e62aa8984ac0868b98adfa815a06): Halfcut struck-player warning | The crossbow's direct warning uses TO_CHAR for its player actor/recipient, so the shared audience filter delivers it. Previously TO_VICT suppressed that message; the room warning and four-bolt damage remain unchanged. | Player-facing addition: “The Halfcut Hills crossbow warning now reaches each struck player.” Audience regression fails the preceding procedure and passes with the fix; maintained build/format pass. This is a separate actual repair from journal authoring. |
 
 ## Progress
 
@@ -95,9 +97,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 39 | Sarmiz'Duul | [Comprehensive source dossier](zone-stories/SARMIZ_DUUL.md): 21 blocks/eight exchanges/thirteen raw addressed families, 583 rooms/57 mobs/61 objects/four shops, 535 resets/199 families, five literal procedures plus foreign custom moonstone execution | Revision one: eight outcomes, 24 contacts/nineteen optional checks; exact courtship/relic/royal/conspiracy recipes, supplied foreign proof and custom guidance | No native repair ships; active-accounting pirate core guard retained; recipient targeting, partial seed/assembly/payment ordering, unfinished multi-core behavior, missing mount stock, potion prose/type and campaign/access/episode qualification pending |
 | 40 | Duke Delwyn | [Comprehensive source dossier](zone-stories/DUKE_DELWYN.md): 53 blocks/eleven exchanges/nine addressed + 33 ambient families, 207 rooms/96 mobs/41 objects, 278 resets/170 families; automatic teacher/shared trap/falling and reciprocal surface boundary | Revision one: six outcomes/five paid services, nineteen contacts/seventeen optional checks; exact bell/cog, four-stage banner, knight and two-item warning guidance | No native repair ships; mixed/coin payments guarded, live source/container lineage, trap/fall/safe return, occasion/advertised service/peaceful handover and campaign decisions pending |
 | 41 | Home of the Divine | [Comprehensive source dossier](zone-stories/HOME_OF_THE_DIVINE.md): all 52 blocks/32 exchanges/twenty raw M families, 122 rooms/62 mobs/83 objects/one shop, 240 resets/156 families; shared item teleport, shop/forge and epic teacher | Revision one: twenty outcomes/twelve services, 27 contacts/48 optional checks; exact tokens/hearts/treasures, independent crafting/access and foreign returns | No native repair ships; missing bounty reward/preflight, guarded scale/six mixed fees, two-copy weapon supply, rare wandering, access/trap/fall/container and recipient episodes pending |
-| 42–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 42 | The Halfcut Hills | [Comprehensive source dossier](zone-stories/THE_HALFCUT_HILLS.md): 28 blocks/thirteen deliveries/fifteen addressed, 470 rooms/83 mobs/sixty objects/one shop, 413 resets/177 families; bound crossbow plus shared switch/teleport/inn/shop/epic teacher | Revision one: thirteen independent outcomes, nineteen contacts/twenty-four optional checks; exact miners/badges/note and competing trophies | Separate crossbow scheduler/continuation fix ships; missing drow reward/preflight, source/recipient/container/wandering/access, real home arrival and branch/attempt campaign decisions pending |
+| 43–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Halfcut Hills (`halfcut`).
+The next area is The Scorched Valley (`scorchvalley`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -106,6 +109,8 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-HALFCUT-REWARD / RESCUE / EPISODES | Drow request literally names absent item 25000 after potion 27056; reward item admission lacks loadability preflight. Four jar declarations support three miners/Bartis; acceptance retires recipients without home arrival. Bartis badge bundle must precede final jar in the same episode; faction scalps compete with six-proof delivery. | Builder selects intended reward; add pre-consumption/new-credit preflight preserving frozen obligations, then a separate native recipe fix. Qualify jar/container/scalp source generations and retiring NPC episodes. Select narrative rescue versus atomic movement, branch/attempt/all-stage policy without rejecting supplied independent proof. |
+| ZSQ-HALFCUT-PROCEDURES / ACCESS | Bound crossbow setup/periodic bug and unsafe continuation are repaired in a separate fix commit. Defender/blowgun procedures remain unbound; blowgun has a similar setup issue. Real switches/teleports use grab, say, enter and pull, with same-name stones; inn/teacher have shared bindings. | Qualify live volley balance/reset/combat accounting; choose placement/balance before enabling unbound hazards. Test numbered stone lookup, switch/opening/key/travel/fall and safe arrival, four jar ancestry and wandering encounters. Review distinct scalp aliases and spelling as separate future fix/news work; do not invent access/history achievements. |
 | ZSQ-DIVINE-REWARD / SCALE / SETTLEMENT | Relazier bounty names missing object 31341; native admission does not validate reward-item loadability before offering consumption. Generic scale 392 has an inactive-accounting-only death source. Six mixed crafting fees stay guarded; Wicks's item-only cash rewards already have a durable path. | Builder selects intended bounty reward. Add pre-consumption item preflight/new-credit guard while preserving frozen obligations, then a distinct tested native recipe fix. Qualify recoverable scale death issuance and atomic fee/XP/output settlement; do not conflate reward cash with paid services or weaken guards. |
 | ZSQ-DIVINE-SUPPLY / ACCESS / EPISODES | Final forge route needs two cap-one Riser/shard copies and 300000 copper. Real enter/touch routes, two different keys, closed P containers, trapped claw, falls, rare holding/dead-end wandering and retiring recipients affect supply; token and Relazier branches compete. | Qualify exact UID allocation, empty-zone resets, actor survival/arrival, parent/location lineage, recipient episodes and foreign ownership. Builder selects scarcity/branch policy; preserve supplied independent receipts. Safe travel, freeing prisoners, personal kills and full campaigns need their own accepted terminals. |
 | ZSQ-DIVINE-CONTENT / SHARED ROLES | Four heart extra-description aliases name the wrong heart; several success strings and rare-room prose are empty. Emition shop/smith and Snent epic teaching have real shared bindings despite no local literal special. Reln's thousandfold jade fee matches dialogue. | Add truthful aliases/messages and qualify holding stranding before any builder-approved layout change. Keep price and binding facts intact. Actual later repairs require identifiable fix commits and prominent trigger/before-after/proof/news entries; this journal checkpoint ships none. |
@@ -1986,3 +1991,68 @@ native definitions, revision-two fingerprint, zone registry and other 61 maps
 remain unchanged. Catalog: 62 maps, 1690 achievements, 1490 potential dailies,
 2225 rows. Original 220-area order remains intact: first 41 comprehensive,
 179 pending. Continue with The Halfcut Hills.
+
+## The Halfcut Hills completed source map — October 3, 2026
+
+The [dossier](zone-stories/THE_HALFCUT_HILLS.md) explains all twenty-eight
+native blocks: twelve Q, one QA and fifteen addressed M families. Complete
+source review covers 470 rooms/208 prose groups/38 headers/48 metadata groups/
+242 exit families, 83 mobiles, sixty objects, one six-stock shop and all
+413 resets/177 families. The sole literal special is the crossbow ambusher;
+shared switches, teleports, inn, shop, epic teaching, doors, falling, wandering,
+native acceptance and reward recovery are reviewed. The surface boundary
+is reciprocal, and switch/teleport destinations exist. Inactive similarly
+named area files are not substituted for active Halfcut source.
+
+Revision one has thirteen independent outcomes, nineteen contacts and
+twenty-four optional checks. Three jar-to-badge deliveries, the exact badge
+bundle, Bartis's final jar and sentry note return explain the longer rescue
+route without enforcing personal rescue history. The bundle should precede
+Bartis's retirement in one episode. Four P jar declarations are sufficient
+declared quantity, with live ancestry/stock qualification open. Type-13 jars
+are quest props; disappearing miners do not record actual home arrival.
+Same-named old miners have different badges and E2000/E20000 rewards.
+
+The wounded dwarf's green potion is the wagon content, not the supplier's
+flaming green stock. Remi's raid-leader scalp and the leader's six distinct
+proofs remain independent. Four faction requests compete for the larger
+bundle's material; Bartis retirement can remove its carried scalp source.
+One accepted bundle does not prove six personal kills or mine takeover.
+Producer history cannot replace spent material or restore a recipient.
+
+**Shipped actual repair:** the bound crossbow now registers without setup
+damage, fires three periodic lanes/four bolts at players, and stops interrupted
+volleys by re-resolving runtime identities. The focused actual-procedure test
+passes; the original fails setup. A second separate fix changes the suppressed
+struck-player warning to the correct audience, with a preceding-version failure
+and fixed delivery-count regression. Maintained build and changed/staged formatting
+pass. See the distinct fix commit/news entry above. Unbound defender/blowgun
+procedures and all native world/Q terms are unchanged. No live balance,
+reset availability or complete combat/accounting journey is claimed.
+
+**Pending actual quest repair:** the drow's second reward is literally
+`R I 25000`, absent from all object files. Do not guess currency, experience
+or object substitution. Builder selects intended terms; add reward loadability
+preflight before offering consumption/new credit, preserving frozen obligations.
+Journal readiness/static candidacy cannot certify payout, and the valid first
+potion reward does not resolve the missing second item. No reward repair or
+admission guard ships in this checkpoint.
+
+Grab rope and grab the two different same-name black stones; enter the well;
+say windship at the crypt slab; pull the office lever, then open the bedroom
+door. LARGE key opens a different cavern gate. Closed container ancestry,
+source generations, wandering/numbered object selection, door/trap/fall and
+confirmed destination/survival need accepted evidence. Inn and A'den's Improved
+Listen teaching really are bound shared roles. Minor aliases/spelling and
+unbound procedure placement remain balanced proposals. Actual future fixes
+need separate identifiable commits and prominent player-news evidence.
+
+Existing source/native fixtures verify thirteen exact identities/all topics,
+materials and actual access/reset constants, missing reward, supplied badge/
+note preparation, wrong/worn proof, read-only views, spent material despite
+producer history, independent receipts and cold recovery. Synthetic receipt
+recovery does not instantiate missing reward or prove a player's actual journey.
+All 2668 definitions, revision-two fingerprint, registry and other 62 maps
+remain unchanged. Catalog: 63 maps/1690 achievements/1490 potential dailies/
+2225 rows. Original 220-area order remains intact: first 42 comprehensive,
+178 pending. Continue with The Scorched Valley.

@@ -1659,7 +1659,77 @@ for v,target,cmd in ((40720,40773,7),(40721,40758,7),(40723,40781,320),(40724,40
     assert values[0]==25 and values[11:14]==[target,cmd,-1]
 assert (ROOT/"areas/shp/divhome.shp").read_text(encoding="utf8").startswith("#40712~")
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome"):
+# Halfcut's longer rescue and raid narratives still accept independent,
+# supplied exact proof. A journal cannot repair missing native reward identity.
+halfcut=inventory_module.area_evidence(ROOT,"halfcut")
+halfcut_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="halfcut")
+halfcut_stories={s["id"]:s for s in halfcut_map["stories"]}
+assert (halfcut_map["schema_version"],halfcut_map["revision"],halfcut_map["coverage"])==(3,1,"complete")
+assert len(halfcut_stories)==13 and len(halfcut_map["contacts"])==19 and not halfcut_map["exclusions"]
+assert sum(t.get("optional",False) for s in halfcut_stories.values() for t in s["steps"])==24
+assert (len(halfcut["requests"]),len(halfcut["dialogue"]),len(halfcut["mobs"]),len(halfcut["items"]),len(halfcut["reset_commands"]),len(halfcut["special_assignments"]))==(13,15,83,60,413,1)
+assert [(a["kind"],a["vnum"],a["function"]) for a in halfcut["special_assignments"]]==[("mob",27009,"crossbow_ambusher")]
+bindings=[b for s in halfcut_stories.values() for b in s["contracts"]]
+assert len(bindings)==13 and {tuple(sorted(b.items())) for b in bindings}=={
+    tuple(sorted(r["block"]["binding"].items())) for r in halfcut["requests"]}
+assert all(s["steps"][-1]["contracts"]==s["contracts"] for s in halfcut_stories.values())
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==270]
+assert (len(units),sum(u["achievement"] for u in units),sum(u["daily_candidate"] for u in units))==(13,13,13)
+by_line={r["block"]["line"]:r["block"] for r in halfcut["requests"]}
+assert all(all(k=="I" for k,n in b["give"]) for b in by_line.values())
+assert by_line[13]["give"]==[("I",27037)] and by_line[13]["receive"]==[("C",25000),("E",25000)]
+assert by_line[61]["receive"]==[("E",2000),("I",27040)]
+assert by_line[136]["receive"]==[("E",20000),("I",27041)]
+assert by_line[75]["receive"]==[("I",27042),("E",2500)]
+assert by_line[112]["give"]==[("I",27040),("I",27041),("I",27042)]
+assert by_line[121]["receive"]==[("C",150000),("I",27044)]
+assert by_line[231]["receive"]==[("I",27056),("I",25000)] and 25000 not in inventory_items
+assert "absent" in halfcut_stories["drow-duergar-scalp"]["summary"]
+assert by_line[177]["give"]==[("I",27052),("I",27053),("I",27054),("I",27055),("I",27057),("I",27058)]
+for consumer,item in ((197,27054),(214,27052),(231,27055),(246,27053)):
+    assert by_line[consumer]["give"]==[("I",item)] and ("I",item) in by_line[177]["give"]
+assert [t["contracts"] for t in halfcut_stories["bartis-three-badges"]["steps"][:3]]==[
+    halfcut_stories[id]["contracts"] for id in ("first-old-miner-jar","second-old-miner-jar","young-miner-jar")]
+assert halfcut_stories["sentry-bartis-note"]["steps"][0]["contracts"]==halfcut_stories["bartis-final-jar"]["contracts"]
+assert "before" in halfcut_stories["bartis-three-badges"]["summary"]
+contacts={c["mob_vnum"]:c for c in halfcut_map["contacts"]}
+for v,c in contacts.items():assert c["keyword"] in halfcut["mobs"][v]["keywords"]
+assert contacts[27005]["keyword"]=="dwarf" and contacts[27035]["keyword"]=="aden"
+for b in halfcut["dialogue"]:
+    assert set(b["body"][0].rstrip("~").split())<=set(contacts[b["giver_vnum"]]["topics"])
+parent=room=None;sources=collections.defaultdict(list);families=set()
+assert collections.Counter(r["command"] for r in halfcut["reset_commands"])=={
+    "M":309,"D":42,"E":23,"G":19,"O":13,"P":7}
+for r in halfcut["reset_commands"]:
+    c,v=r["command"],r["arguments"]
+    assert v[4]==100 and v[5:]==[0,0,0]
+    if c=="M":parent,room=v[1],v[3]
+    families.add((c,tuple(v[:3]),parent if c in ("G","E") else None))
+    if c in ("G","E") and v[1] in (27038,27051,27052,27053,27054,27055,27057,27058):sources[v[1]].append((parent,room,v[2]))
+assert len(families)==177 and sources[27038]==[(27058,27396,1)]
+for item,npc,room in ((27051,27078,27465),(27052,27080,27469),(27053,27082,27467),(27054,27081,27468),(27055,27083,27466),(27057,27065,27433),(27058,27063,27431)):
+    assert sources[item]==[(npc,room,1)]
+jars=[r["arguments"][1:4] for r in halfcut["reset_commands"] if r["command"]=="P" and r["arguments"][1]==27039]
+assert jars==[[27039,4,27038]]*4
+room_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/wld/halfcut.wld").read_text(encoding="utf8"),re.M|re.S)}
+assert set(room_bodies)==set(range(27001,27471))
+assert len({(b.split("~")[0].strip(),b.split("~")[1].strip()) for b in room_bodies.values()})==208
+assert "0 0 629274" in room_bodies[27001] and "0 0 27423" in room_bodies[27429]
+assert "524288" in room_bodies[27121]
+assert "9 0 27432" in room_bodies[27431]
+assert "27033 27450" in room_bodies[27440] and "27033 27440" in room_bodies[27450]
+obj_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/obj/halfcut.obj").read_text(encoding="utf8"),re.M|re.S)}
+for v,target,cmd in ((27024,27242,65),(27025,27380,65),(27029,27429,7),(27035,27453,17)):
+    values=list(map(int,obj_bodies[v].split("~")[4].split()[:15]))
+    assert values[0]==25 and values[11:14]==[target,cmd,-1]
+for v,cmd,room in ((27020,65,27046),(27031,340,27431)):
+    values=list(map(int,obj_bodies[v].split("~")[4].split()[:15]))
+    assert values[0]==29 and values[11:14]==[cmd,room,3]
+assert obj_bodies[27039].split("~")[4].split()[0]=="13"
+assert (ROOT/"areas/shp/halfcut.shp").read_text(encoding="utf8").startswith("#27072~\nN\n27006\n27010\n27011\n27046\n27047\n27048\n0")
+assert "flaming" not in inventory_items[27037]["name"] and "flaming" in inventory_items[27046]["name"]
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

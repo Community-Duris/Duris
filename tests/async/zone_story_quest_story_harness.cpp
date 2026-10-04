@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 62 &&
+		require(catalog.story_mappings.size() == 63 &&
 				tracker.summary_for(7, 42).total == 1690,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -3700,6 +3700,134 @@ int main(int argc, char **argv)
 				restored_divine.progress_for_zone(7, 42, 407).completed == 20 &&
 				restored_divine.progress_for_zone(7, 42, 407).total == 20,
 			"Divine recovery counted support services or invented a full crafting/war finale");
+
+		const auto &halfcut_map = *std::find_if(
+			catalog.story_mappings.begin(), catalog.story_mappings.end(),
+			[](const auto &mapping) { return mapping.source_area == "halfcut"; });
+		const auto &halfcut_badges = story_for("halfcut", "bartis-three-badges");
+		const auto &halfcut_note = story_for("halfcut", "sentry-bartis-note");
+		const auto &halfcut_scalps = story_for("halfcut", "raid-leader-six-scalps");
+		service supplied_halfcut(catalog);
+		require(supplied_halfcut.discover_zone(7, 42, 270, 27001, 100, "arrival") ==
+					result::applied &&
+				supplied_halfcut.render_journal(7, 42, 270, 10, 1, 101, false,
+								false)
+						.find("] " + halfcut_badges.title + "\r\n") ==
+					std::string::npos,
+			"Halfcut discovery revealed an unmet Bartis request");
+		for (const auto &contact : halfcut_map.contacts)
+			require(supplied_halfcut.meet_npc(7, 42, contact.mob_vnum, 27001, 101) ==
+					result::applied,
+				"Halfcut fixture encounter failed");
+		const auto halfcut_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Halfcut journal section missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		for (int item : { 27037, 27039, 27040, 27041, 27042, 27044, 27052, 27053, 27054,
+				  27055, 27057, 27058 })
+			supplies.carried[item] = 1;
+		const auto halfcut_before = supplied_halfcut.serialize_state();
+		journal = supplied_halfcut.render_journal(7, 42, 270, 10, 1, 102, false, false,
+							  &supplies);
+		for (const auto *entry : { &halfcut_badges, &halfcut_note, &halfcut_scalps })
+			require(halfcut_section(*entry).find("Next: " + entry->steps.back().text) !=
+					std::string::npos,
+				"Halfcut supplied proof was blocked by optional personal preparation");
+		require(halfcut_section(halfcut_badges)
+						.find("[Pending] " +
+						      halfcut_badges.steps.front().text) !=
+					std::string::npos &&
+				halfcut_section(story_for("halfcut", "drow-duergar-scalp"))
+						.find("absent") != std::string::npos &&
+				supplied_halfcut.serialize_state() == halfcut_before &&
+				supplied_halfcut.progress_for_zone(7, 42, 270).total == 13 &&
+				supplied_halfcut.progress_for_zone(7, 42, 270).completed == 0,
+			"Halfcut hints granted history, hid missing reward or changed independent credit");
+		for (const auto *entry : { &halfcut_badges, &halfcut_scalps })
+			for (const auto &step : entry->steps)
+			{
+				if (step.kind != "carried_item")
+					continue;
+				const auto item = step.item_vnums.front();
+				supplies.carried.erase(item);
+				supplies.equipped[14] = item;
+				supplies.carried[27043] = 6;
+				journal = supplied_halfcut.render_journal(7, 42, 270, 10, 1, 103,
+									  false, false, &supplies);
+				require(halfcut_section(*entry).find(
+						"[Missing now] " + step.text) != std::string::npos,
+					"Halfcut worn or wrong badge/scalp replaced an exact loose material");
+				supplies.equipped.clear();
+				supplies.carried[item] = 1;
+			}
+		const auto &halfcut_medicine = story_for("halfcut", "wounded-dwarf-potion");
+		supplies.carried.erase(27037);
+		supplies.carried[27046] = 3;
+		journal = supplied_halfcut.render_journal(7, 42, 270, 10, 1, 104, false, false,
+							  &supplies);
+		require(halfcut_section(halfcut_medicine)
+					.find("[Missing now] " +
+					      halfcut_medicine.steps.front().text) !=
+				std::string::npos,
+			"Halfcut shop's flaming green potion substituted for wagon medicine");
+		for (const auto *id :
+		     { "first-old-miner-jar", "second-old-miner-jar", "young-miner-jar" })
+		{
+			const auto &entry = story_for("halfcut", id);
+			record(supplied_halfcut, entry.contracts.front(), id, 270, 27429);
+		}
+		supplies.carried.erase(27040);
+		journal = supplied_halfcut.render_journal(7, 42, 270, 10, 1, 105, false, false,
+							  &supplies);
+		require(halfcut_section(halfcut_badges)
+						.find("[Recorded] " +
+						      halfcut_badges.steps.front().text) !=
+					std::string::npos &&
+				halfcut_section(halfcut_badges)
+						.find("[Missing now] " +
+						      halfcut_badges.steps[3].text) !=
+					std::string::npos &&
+				supplied_halfcut.progress_for_zone(7, 42, 270).completed == 3,
+			"Halfcut rescue history replaced spent badge or credited the whole campaign");
+		const auto &halfcut_final_jar = story_for("halfcut", "bartis-final-jar");
+		record(supplied_halfcut, halfcut_final_jar.contracts.front(), "halfcut-final-jar",
+		       270, 27433);
+		supplies.carried.erase(27044);
+		journal = supplied_halfcut.render_journal(7, 42, 270, 10, 1, 106, false, false,
+							  &supplies);
+		require(halfcut_section(halfcut_note)
+						.find("[Recorded] " +
+						      halfcut_note.steps.front().text) !=
+					std::string::npos &&
+				halfcut_section(halfcut_note)
+						.find("[Missing now] " +
+						      halfcut_note.steps[1].text) !=
+					std::string::npos &&
+				supplied_halfcut.progress_for_zone(7, 42, 270).completed == 4,
+			"Halfcut final jar invented badge bundle, restored recipient or supplied spent note");
+		service independent_halfcut(catalog);
+		record(independent_halfcut, halfcut_badges.contracts.front(),
+		       "halfcut-supplied-badges", 270, 27433);
+		record(independent_halfcut, halfcut_note.contracts.front(), "halfcut-supplied-note",
+		       270, 27005);
+		service restored_halfcut(catalog);
+		require(restored_halfcut.deserialize_state(independent_halfcut.serialize_state(),
+							   &error) &&
+				restored_halfcut.progress_for_zone(7, 42, 270).completed == 2,
+			"Halfcut supplied independent bundle/note recovery invented personal rescues");
+		for (const auto &entry : halfcut_map.stories)
+			if (entry.id != halfcut_badges.id && entry.id != halfcut_note.id)
+				record(restored_halfcut, entry.contracts.front(), entry.id.c_str(),
+				       270, 27433);
+		service recovered_halfcut(catalog);
+		require(recovered_halfcut.deserialize_state(restored_halfcut.serialize_state(),
+							    &error) &&
+				recovered_halfcut.progress_for_zone(7, 42, 270).completed == 13 &&
+				recovered_halfcut.progress_for_zone(7, 42, 270).total == 13,
+			"Halfcut frozen receipt recovery changed independent identity or invented an extra campaign");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;
