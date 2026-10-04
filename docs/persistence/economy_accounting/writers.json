@@ -46432,6 +46432,66 @@
         ]
       ],
       "evidence": []
+    },
+    {
+      "id": "recovery.inert_literal_staging",
+      "path": "src/player/inert_item_stage.c",
+      "symbol": "prepare_inert_item_stage",
+      "reason": "item_create",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Allocates a private discard-only object from a complete retained SQL literal. Assigns the supplied existing UID without issuance, registry admission, global lists/counts, native holdings or custody effects. Prepared prototype identity is a caller prerequisite; unsupported behavior refuses before acquisition.",
+      "authority_boundary": "Private memory projection only; current SQL epoch/custody/literal authority, full physical graph proof and final enrollment require a separate owner. No new accounting root.",
+      "current_support": "Source-only opt-in prerequisite without production caller or ownership-release API; native fixtures unexecuted, backend/gameplay/recovery qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Prepared new module has no in-tree production caller. Final enrollment/publication is not implemented. Semantic classification is pending current-source census/site reanchoring."
+    },
+    {
+      "id": "recovery.inert_literal_cleanup",
+      "path": "src/player/inert_item_stage.c",
+      "symbol": "inert_item_stage::reset",
+      "reason": "item_destroy",
+      "integration_issue": 490,
+      "owner": "primary / shared recovery integration",
+      "coverage": "legacy",
+      "classification": "Returns private unpublished pooled memory and owned strings/description nodes. No extraction, normal object/effect/procedure/event callback or runtime/native custody retirement occurs.",
+      "authority_boundary": "Private memory projection only; current SQL epoch/custody/literal authority, full physical graph proof and final enrollment require a separate owner. No new accounting root.",
+      "current_support": "Source-only opt-in prerequisite without production caller or ownership-release API; native fixtures unexecuted, backend/gameplay/recovery qualification unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Prepared new module has no in-tree production caller. Final enrollment/publication is not implemented. Semantic classification is pending current-source census/site reanchoring."
     }
   ],
   "census": [
@@ -63391,8 +63451,12 @@
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
   },
   "pending_source_integration": {
-    "candidate_commit": "4268b190b6b2f03c21d96ae789611712919295e1",
-    "status": "Source rows prepared; full current census/site reanchoring and generated matrix remain pending major-plan integration.",
-    "qualified": false
+    "candidate_commit": "b36e9690ffab46575b76f9ceb7734d93490fadb5",
+    "status": "Source rows prepared, including inert unpublished allocation/cleanup; historical census/source anchors and generated matrix remain unchanged pending full major-plan integration.",
+    "qualified": false,
+    "prepared_nonwriter_routes": [
+      "recovery.inert_literal_staging",
+      "recovery.inert_literal_cleanup"
+    ]
   }
 }

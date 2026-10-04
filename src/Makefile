@@ -527,6 +527,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_load_topology.o \
 				 player/player_load_pipeline.o \
 				 player/player_load_items.o \
+				 player/inert_item_stage.o \
 				 player/player_load_pets.o \
 				 player/pet_restore_state.o \
 				 player/pet_restore_runtime.o \
