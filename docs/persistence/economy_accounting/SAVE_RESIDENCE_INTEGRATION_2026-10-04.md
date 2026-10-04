@@ -4,6 +4,10 @@ Status: source implemented and reviewed; **unqualified**. This connects the
 existing replay-ownership leaf to save capture, queues, workers and receipt
 delivery. Ownership remains disabled in production. Plan 1 is not complete.
 
+Latest result: actual ordinary-drop publication and the two-cold-boot gate now
+pass on both SQL engines after the equipment-census fix detailed at the end.
+Earlier unfinished statements below retain their dated input-specific context.
+
 ## Established missing behavior
 
 At source base `d92474bd6`, pipeline queues retained bare snapshots, worker slots
@@ -699,3 +703,68 @@ Plan5 imports are pushed normally through `c8f593617` to canonical
 `Community-Duris/Duris` experimental-accounting. Remote readback confirms that
 exact head. This publishes incremental review work; Plan1 and full release remain
 incomplete. No private Plan2/4 source or production activation was published.
+
+### Plan 1 qualification: complete-world equipment census and actual ordinary drop
+
+V7 diagnostics proved real ordinary-drop COMMIT and the exact retained receipt
+on both SQL engines, but native source observation refused with E2BIG before
+placement. V8 located `equipment_slot`: visited=1000001, global_objects=3141,
+top_of_world=253260, character_visits=16758, equipment_slots=720561,
+nonempty_equipment=47. Empty fixed MAX_WEAR slots exhausted the graph budget.
+The production correction skips empty slots before charging the existing
+counter. MAX_WEAR, the one-million reference cap and all UID/link/cycle/conflict
+checks remain unchanged.
+
+Candidate V9 changes exactly this source among the frozen1248 production inputs.
+Normalized source SHA256:
+`e4f7edefc1b36bf045e09f9af8d1c7d5bb5034ab7ba234f541fc79885ed6cd50`.
+Existing qualified objects were reused; the changed module was forced through
+strict SQL and flatfile compilation/linking (31.098/26.473 seconds), within the
+original600-second bounds. These are incremental production builds, not new
+clean-build claims. Changed-line clang-format-18 and diff checks pass.
+Strict binaries: `93307022f7f1e573f5faa760b142fae123e030a0f7c4ca5a230102fcb667af35`
+(SQL) and `0db024d3215e791dd21bb1bb80c4c24c5733412fdb043fb884a35d3bd71e5da2`
+(flatfile).
+
+The full-world gameplay owner now passes real inactive create/get/save, guarded
+disposable baseline installation, selected-active ordinary `do_drop`, literal
+checkpoint/source export, durable critical journal, exact native ownership,
+accounting and payload proof, real guarded ACK and two full native cold boots
+per engine. Original UIDs/topology/literal bytes and durable proof remain unchanged;
+Redis is disabled. Its synthetic route manifest is not game-wide coverage.
+
+MariaDB10.11.14 completes in135 seconds; MySQL8.0.46 in169 seconds, within the
+original600-second journey limit. Boot/drop/shutdown bounds remain unchanged.
+V11 retries only an explicit busy response with journal and literal checkpoint
+absent; neither successful final run needed a retry. Earlier V9 MariaDB save
+conflict, V9 MySQL shutdown failure, V10 save-pending diagnostic and all V6–V8
+failures remain preserved. No failed attempt is relabeled passing.
+
+Observer binary:
+`4cfa154fd96d5077790a0c964dc8c3601291aff1b0ce884208fe2af19a5e99fa`
+(production census correction, existing SQL boot-observer macro only).
+Source exporter: `7be13961f976ddb9cbab032ab6091fd144e745375505b1a5cbef34dc2b6632c8`.
+Lifecycle helper:
+`dffe44ab362e97a10d48761c5a131feb28d0cc79e87492ccea8898ac7af9935a`.
+Helpers retain their independently pinned earlier input closures; they are not
+claimed rebuilt against all later source. V11 runner:
+`4599df9f7c7665ec2fe304f3e45225b6175ce69b16b5b0d4c6467d8e65f6c74a`;
+wrapper: `1a62fd54dbec69752551b4a64d228289c8c40c29df1c50044e843820a9261844`.
+
+Owned roots under `/opt/duris-plan1-qualification-20261004/`:
+`p1d-mariadb-c2341407.2Tj6yc`, `p1d-mysql-f2565cab.sT1IMn`.
+Each `active_drop/result.json` and final teardown verify owned server identity,
+schema absence, process shutdown and port reuse. Result SHA256s:
+`5828864a08ec4f4e0dd9f23864aa00af6d78ba5025967b54e7ebf27e34d69479`,
+`cb7f28d336dced1b726eb356897129c5120c9a2e3139b9ac748b92ca721cef94`.
+Native reports: `source-candidate-v4/tmp/sql-room-recovery-7e9c6120d71f499e`
+and `sql-room-recovery-32ed58cca8194719`, qualification hashes
+`c264e156a3678e83af5ed5ac0b943f0cb468c64819de1b3f4371725eae85b359`,
+`17042be4367f678ccf18ecf7224003c22a9ebd6cc01aa47aa0ce4d51a74d408e`.
+
+This solves the complete-world census issue and required bounded drop route.
+Maintain the executed gameplay owner and consolidate original independent Plan1
+acceptance next. Plans2–4 source integration, full backend/writer/day-one coverage,
+combined Plan5 qualification and activation-owner/verifier integration remain.
+Coverage remains false, release blocked and production accounting inactive.
+No optional framework or acceptance gate was added.

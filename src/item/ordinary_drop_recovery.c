@@ -333,12 +333,15 @@ compare_graph(const item_transfer_payload &payload, const item_transfer_result &
 		}
 		for (int slot = 0; slot < MAX_WEAR; ++slot)
 		{
-			if (++visited > census_limit)
-				return observed(ordinary_drop_observation_status::unavailable,
-						E2BIG);
 			P_obj object = character->equipment[slot];
 			if (!object)
 				continue;
+			// The fixed-size equipment array is bounded by MAX_WEAR. Charge
+			// populated slots, rather than exhausting the graph census on empty
+			// equipment in an otherwise valid complete world.
+			if (++visited > census_limit)
+				return observed(ordinary_drop_observation_status::unavailable,
+						E2BIG);
 			if (const auto error = visit_link(object, ++generation))
 				return link_failure(error);
 			if (expected.find(object->obj_uid) != expected.end())

@@ -22,8 +22,12 @@ ready and its existing qualification batch is underway. Preserve original source
 and regression owners for failure/fix proof. Production source `9fabe54bb` passes
 both strict builds; focused components and worker/journal guards pass within
 their stated scopes, and real pooled bank passes both SQL engines. Remaining
-actual publication/recovery still prevents Plan 1 completion. All18 current-source
-recovery-session cases now pass both engines with original assertions and limits.
+actual publication/recovery was the remaining gameplay gap. The ordinary single-root
+drop now passes real producer, guarded ACK and two full-world cold boots on both
+engines after the bounded equipment-census fix. All18 current-source
+recovery-session cases pass both engines with original assertions and limits.
+Maintain the executed regression and consolidate this plan's original independent
+acceptance next; other plans and complete writer/activation evidence remain open.
 Do not expand its independent acceptance or add optional gates.
 
 Keep implementation within the group's R1–R8 contract and this plan's independent
