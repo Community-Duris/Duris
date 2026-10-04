@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import economic_sql_audit_snapshot as exporter  # noqa: E402
 from economic_sql_audit_snapshot import capture  # noqa: E402
-from reconcile_economy_accounting import Reconciler, SnapshotError  # noqa: E402
+from reconcile_economy_accounting import Reconciler, SnapshotError, view  # noqa: E402
 from test_economic_sql_audit_origins import EPOCH, LINEAGE, OPENING, OP, key, witness  # noqa: E402
 
 INSTALL = bytes.fromhex("77" * 16)
@@ -923,6 +923,42 @@ try:
                                if row["uid"] == 86]
             assert [(row["before_revision"], row["revision"])
                     for row in unattributed_86] == [(1, 2)]
+            before_provenance = json.dumps(historical_uid_snapshot, sort_keys=True)
+            provenance = view(historical_uid_snapshot, {}, "provenance", 100, uid=86)
+            assert provenance["count"] == 2, provenance
+            assert [(row["operation_id"], row["revision"], row["action"])
+                    for row in provenance["rows"]] == [
+                        (prior_item_root.hex(), 1, "create"),
+                        (prior_unlinked_operation.hex(), 2, "destroy")]
+            assert provenance["coverage"] == {
+                "lineage": LINEAGE.hex(), "selected_epoch": EPOCH.hex(), "complete": False,
+                "quiescent": True, "lineage_history_available": True,
+                "unattributed_history_available": True}
+            with tempfile.TemporaryDirectory(prefix="audit-provenance-") as temporary:
+                output = Path(temporary) / "snapshot.json"
+                command = [sys.executable, str(ROOT / "scripts/economic_sql_audit_snapshot.py"),
+                           "--host", "127.0.0.1", "--port", str(settings["port"]),
+                           "--user", reader, "--database", schema,
+                           "--lineage", LINEAGE.hex(), "--epoch", EPOCH.hex(),
+                           "--output", str(output)]
+                subprocess.run(command, env=dict(os.environ, DB_PASSWORD="disposable-audit-only"),
+                               check=True, timeout=30)
+                assert json.loads(output.read_text(encoding="utf-8")) == historical_uid_snapshot
+                before_cli = output.read_bytes()
+                for limit in (0, 1, 100):
+                    result = subprocess.run(
+                        [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                         str(output), "--view", "provenance", "--uid", "86", "--limit", str(limit)],
+                        capture_output=True, text=True, timeout=30)
+                    assert result.returncode == 1, result.stderr
+                    assert json.loads(result.stdout) == view(
+                        historical_uid_snapshot, {}, "provenance", limit, uid=86)
+                    assert output.read_bytes() == before_cli
+            assert json.dumps(historical_uid_snapshot, sort_keys=True) == before_provenance
+            assert capture(audit, LINEAGE, EPOCH) == historical_uid_snapshot
+            print("UID provenance: prior-epoch creation and unattributed retirement are "
+                  "visible through SELECT-only export/CLI; bounded counts and unchanged "
+                  "authority passed", flush=True)
             assert next(row for row in historical_uid_snapshot["item_origins"]
                         if row["uid"] == 86)["origin"] == "creation"
             assert any(row["operation_id"] == prior_item_root.hex()

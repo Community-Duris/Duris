@@ -2038,13 +2038,15 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
         if any(not unsigned_revision(row["revision"]) for row in rows):
             raise SnapshotError("invalid native holding revision")
     elif name == "provenance":
-        if uid is None:
+        if type(uid) is not int or not 0 < uid < 2**64:
             raise SnapshotError("provenance requires --uid")
         rows = [{"uid": uid, "operation_id": row["operation_id"],
                  "event_index": row["event_index"], "revision": row["revision"],
                  "root": row["root"], "parent": row["parent"], "owner": row["owner"],
                  "state": row["state"], "action": row["action"]}
-                for row in snapshot["ownership_events"]
+                for row in (snapshot["ownership_events"] +
+                            (snapshot["native"].get("uid_history_events") or []) +
+                            (snapshot["native"].get("unattributed_uid_events") or []))
                 if row.get("uid") == uid and isinstance(row.get("operation_id"), str)
                 and HEX_ID.fullmatch(row["operation_id"]) and type(row.get("event_index")) is int
                 and type(row.get("revision")) is int and type(row.get("root")) is int
@@ -2053,7 +2055,18 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                 and all(type(part) is int for part in row["owner"])
                 and row.get("state") in ("live", "tombstone", "quarantined")
                 and row.get("action") in ("create", "move", "destroy", "quarantine")]
-        rows.sort(key=lambda row: (row["revision"], row["operation_id"]))
+        # The epoch and lineage collections can project the same native event.
+        # Deduplicate exact projections; conflicting positions stay visible.
+        unique = {json.dumps(row, sort_keys=True): row for row in rows}
+        rows = sorted(unique.values(),
+                      key=lambda row: (row["revision"], row["operation_id"], row["event_index"]))
+        return {**bounded_rows(rows, limit), "coverage": {
+            "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
+            "complete": snapshot.get("complete") is True,
+            "quiescent": snapshot.get("quiescent") is True,
+            "lineage_history_available": isinstance(snapshot["native"].get("uid_history_events"), list),
+            "unattributed_history_available": isinstance(
+                snapshot["native"].get("unattributed_uid_events"), list)}}
     elif name == "supply":
         totals: dict[tuple, int] = defaultdict(int)
         effect_kind = {(row["operation_id"], row["account_index"]): account_key(row["account_key"])[1]
