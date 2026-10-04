@@ -18,7 +18,8 @@ import struct
 import sys
 
 from economic_sql_audit_origins import ITEM_STATES, OriginError, identity, read_origins_in_transaction
-from reconcile_economy_accounting import MAX_INPUT_BYTES, MAX_ROWS, REGISTRY_PATH, TABLES
+from reconcile_economy_accounting import (MAX_INPUT_BYTES, MAX_ROWS, ORPHAN_EVIDENCE_SOURCES,
+                                          REGISTRY_PATH, TABLES)
 
 MAX_ITEM_PAYLOAD_BYTES = 4 * 1024 * 1024
 MAX_ITEM_ROWS = 8192
@@ -169,6 +170,24 @@ def scoped_rows(cursor, table: str, columns: str, lineage: bytes, epoch: bytes,
         f"SELECT {columns} FROM {table} e JOIN economic_accounting_operation o "
         "ON o.operation_id=e.operation_id WHERE o.lineage=%s AND o.epoch=%s "
         f"AND o.reason<>38 ORDER BY {order}", (lineage, epoch))
+
+
+def read_orphan_evidence(cursor) -> tuple[list[dict], dict]:
+    # Without a root there is no trusted lineage/epoch to filter on. Capture
+    # database-wide anomalies in this same read view, never a commit watermark.
+    result = []
+    counts = {}
+    for name, (table, index, _) in ORPHAN_EVIDENCE_SOURCES.items():
+        rows = bounded(cursor,
+            f"SELECT e.operation_id,e.{index} AS row_index FROM {table} e "
+            "LEFT JOIN economic_accounting_operation o ON o.operation_id=e.operation_id "
+            f"WHERE o.operation_id IS NULL ORDER BY e.operation_id,e.{index}")
+        if len(result) + len(rows) > MAX_ROWS:
+            raise ExportError("SQL orphan evidence collection exceeds row limit")
+        counts[name] = len(rows)
+        result.extend({"table": name, "operation_id": hex_id(row["operation_id"]),
+                       "row_index": row["row_index"]} for row in rows)
+    return result, {"scope": "database", "table_counts": counts}
 
 
 def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool) -> dict:
@@ -1383,6 +1402,7 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)
+        evidence["orphan_evidence"], evidence["orphan_evidence_coverage"] = read_orphan_evidence(cursor)
         lineage_uid_references, lineage_uid_reference_roots, lineage_uid_reference_coverage = (
             read_lineage_uid_references(cursor, lineage))
         native, gaps, coverage = read_native(cursor, lineage)
