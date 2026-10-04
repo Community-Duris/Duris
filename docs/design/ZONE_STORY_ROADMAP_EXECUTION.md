@@ -67,6 +67,8 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | [7baa78c3c](https://github.com/Community-Duris/Duris/commit/7baa78c3c8ee67a2059c314e6372f5ae1843e989): Ixarkon direction clues | LOOK descriptions in11 rooms now match12 reciprocal routes: slave pens, garden path, tower gate, camp approaches, sandstone passage, Rockspire tunnel, dwelling and water cavern. Exactly12 direction words change; all routes/metadata/quests/resets remain intact. | **Ixarkon's slave pens, fungal gardens, towers, camp approaches, Rockspire tunnels and water cavern now give directions that match their exits.** Original12 clue checks fail; corrected clues, reciprocal exits/door metadata and exact native scope pass. Live LOOK/traversal remains unqualified. |
 | [45bb3c948](https://github.com/Community-Duris/Duris/commit/45bb3c94896411cb06ce835b42824da8144d7936): Du'Maathe northwest parapet clue | LOOK at37248 now says north rather than south, agreeing with the title and northern/western reciprocal wall roads. Exactly one native word changes; all other bytes remain intact. | **Du'Maathe Castle's northwest parapet now correctly identifies its position in the room description.** Original clue fails; corrected clue/title/reciprocal routes and retained southwestern corner pass. Live LOOK/traversal remains unqualified. |
 | [7b916b887](https://github.com/Community-Duris/Duris/commit/7b916b887): Moregeeth letter desk | Exactly one native keyhole field changes -1→0, allowing normal PICK/KNOCK attempts. Closed/locked state, opening trap, letter placement and Tala exchange remain intact. | Player-facing: “Moregeeth’s trapped letter desk now permits normal lockpicking or knock attempts, restoring access to the letter for Tala’s quest.” Original regression fails; repaired source/exact bytes pass. Played skill/trap/pickup/offer/settlement remains unqualified; saved instances are not rewritten. |
+| [5b4c4f34a](https://github.com/Community-Duris/Duris/commit/5b4c4f34a151f624d21558fb86cb815f05cf76b1): Braddistock entry refusal | Spirit's existing speech now goes to the blocked player with CRLF, rather than the descriptorless NPC. Exactly two native lines; level threshold, gate and observer actions remain intact. Separate fix commit with actual production-function regression. | **Braddistock Mansion's spirit now delivers its entry refusal directly to the blocked player.** Original function fails; repaired player-recipient/exact-line, level14/15, trusted/null/periodic/self/unrelated-command controls pass. Maintained build/format/exact native-byte scope pass; played network entry remains unqualified. |
+| [d2a64432d](https://github.com/Community-Duris/Duris/commit/d2a64432d81c6f98c497f14a47334a85c6dd39e0): withdraw Fields Between portability repair | Restores original TAKE=0 and weight1,000,000 for unlimited rift71030; full object file matches pre-fix bytes. Prior05eeca928 introduced an unjustified portable escape capability. | **Withdraw earlier pickup/delivery news.** Quest/source inconsistency remains unresolved. Unsafe prototype fails restriction regression; restored data passes. No deployment or saved-instance change occurred. |
 
 ## Progress
 
@@ -148,12 +150,13 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 74 | Ixarkon | [Comprehensive dossier](zone-stories/IXARKON.md): all18 blocks/201 rooms/51 mobiles/44 objects/385 resets/five shops and complete shared/foreign closure | Revision2 upgrades existing three identities: two stories/one service;16 contacts/22 aliases/four optional checks. Independent spore and amulet returns; optional paid banker route and supplied amulet | Native direction clues repaired separately in7baa78c3c. Mixed fee guards, absent veil ingress/guarded binding, random arrival, open bridge controller, source custody and actual rescue/peace/renewal remain plans |
 | 75 | Du'Maathe Castle | [Comprehensive dossier](zone-stories/DU_MAATHE_CASTLE.md): all21 blocks/506 rooms/92 mobiles/49 objects/419 resets/one shop and bounded foreign/shared closure | New schema3/revision1: four lord stories/four potion services;15 contacts/15 aliases/14 optional checks. Exact two-input/three-output granular batch and distinct keys; supplied potion/tooth branches | Separate one-word parapet repair45bb3c948. Missing blue horn, foreign price mismatch/fee guards, loader/reset visibility, consumed recipe lineage and actual potion/campaign/renewal predicates remain plans |
 | 76 | Tundra | [Comprehensive dossier](zone-stories/TUNDRA.md): all20 blocks/175 rooms/26 mobiles/32 objects/246 resets/one shop and bounded foreign/shared closure | New schema3/revision1: six stories/one paid armor service;16 contacts/16 aliases/14 optional checks. Four different books → snowy boots → Eleadora; three seafood kinds → fishbone key; independent gland/shell rewards and head retirement | No native repair. Branch/trap availability, inactive/signposted routes, land-coded docks, absent fish shop, paid guards, partial foreign supply, actual switch/key/source and campaign/renewal remain plans |
-| 77 | The Fields Between | [Comprehensive dossier](zone-stories/FIELDS_BETWEEN.md): all17 blocks/153 rooms/68 mobiles/33 objects/286 resets and bounded foreign/shared closure | New schema3/revision1: seven stories;22 contacts/81 aliases/17 optional checks. Timmy alloy → letter → roaming mother; shared mithril, manuscript/bananas, orders/gift, five distinct heads and portable-rift offering | Actual pickup repair is separate fix05eeca928 with news below. Roaming/ownership, source lineage, portal consumption, narration versus campaign and unresolved prose remain plans |
+| 77 | The Fields Between | [Comprehensive dossier](zone-stories/FIELDS_BETWEEN.md): all17 blocks/153 rooms/68 mobiles/33 objects/286 resets and bounded foreign/shared closure | New schema3/revision1: seven stories;22 contacts/81 aliases/17 optional checks. Timmy alloy → letter → roaming mother; shared mithril, manuscript/bananas, orders/gift, five distinct heads and unresolved fixed-rift request | Portability fix05eeca928 withdrawn; correctiond2a64432d restores original restrictions. No pickup-fix news. Roaming/ownership, source lineage, portal consumption, narration versus campaign and unresolved prose remain plans |
 | 78 | The Town of Moregeeth | [Comprehensive dossier](zone-stories/THE_TOWN_OF_MOREGEETH.md): all20 blocks/353 rooms/109 mobiles/96 objects/549 resets/ten shops and bounded foreign/shared closure | Schema3/revision2 preserves seven IDs: five stories/two paid services;21 contacts/22 aliases/15 optional checks. Pouch → key → four planar components; exact head, killer’s sword and trapped letter | Actual desk-keyhole repair is separate fix7b916b887 with news. Actor availability/retirement, access/portal commands, container/trap lineage, fees and narrative campaigns remain qualification plans |
 | 79 | Ceothia | [Comprehensive dossier](zone-stories/CEOTHIA.md): all21 blocks/295 rooms/110 mobiles/33 objects/510 resets/one shop and bounded timeline/shared closure | Six cards bind nine recipes: one four-way guild choice, three independent Lenbrea rewards, paired crates and legacy scroll;17 contacts/22 aliases/17 optional checks | No native repair ships. Actor availability, source/gift custody, keys/container/travel/effects and campaign prerequisites remain plans; pool targeting and legacy tablet/learning are explicit repair proposals |
-| 80–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 80 | Braddistock Mansion (brad) | [Comprehensive dossier](zone-stories/BRADDISTOCK_MANSION_1350.md): all14 owned Tower blocks/48 mansion rooms/14 mobiles/73 objects/175 resets; full local gate and bounded foreign closure | Schema3/revision2 preserves5 IDs/bindings;16 contacts/32 aliases/ten optional checks; local exploration guidance and five physically Tower exchanges | Separate entry-refusal recipient/CRLF fix ships. Physical affiliation/discovery/renewal, learned clues/source/access, alchemy/boat/campaign and missing stock are explicit plans |
+| 81–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Braddistock Mansion (`brad`).
+The next area is The Desert City of Venan'Trut (`desert`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -162,9 +165,11 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-BRAD-PHYSICAL-AFFILIATION / DISCOVERY / RENEWAL / EXPLORATION | Five Tower contracts retain Braddistock credit ownership; Tower encounters do not discover this journal, and owner reset mode differs from physical retiring recipients. Local exploration has no native terminal. | Keep canonical receipt identities. Add explicit physical affiliation/referrals and real source/actor renewal; admitted clue/access/custody and builder-designed lab/smuggler/campaign endpoints. Entry speech repair ships separately; missing key/weapon supply and copied prose remain proposals. |
 | ZSQ-CEOTHIA-CHOICE / TIMELINE / TARGETED-EFFECT / LEGACY-TRAINING | Four retiring guild alternatives, three independent Lenbrea rewards, breaking keys, two nested crates, foreign timeline proofs, imported agility pool and legacy tablet/scroll differ from modern epic purchases. | Six source-guided cards ship. Qualify source/recipient reset episodes, actual access/travel/targeted effects and shared-material ownership; define all-stage campaign and restore/retire legacy training only with builder intent. Pool target ambiguity is a pending shared repair, not shipped news. |
 | ZSQ-MOREGEETH-AVAILABILITY / KEY / PORTAL / CONTAINER / FEE | Moreg carries another recipient’s sword; Gimbatul leaves after crown; pouch grants a real access key; four planar routes use different commands; letter is inside a locked trapped desk; paid crafts require all item roots and fees. | Five source-guided outcomes and two zero-achievement services ship. One-field keyhole fix7b916b887 is actual repair; qualify source/current custody, skill/trap/portal actions, NPC retirement, wallet settlement and reset. Campaign/prose additions remain builder decisions. |
-| ZSQ-FIELDS-BETWEEN-SHARED-SUPPLY / PORTAL / OWNERSHIP / CAMPAIGN | Two consumers share scarce alloy; floor portal is consumed; mother crosses into Scorched Valley; foreign seekers retain foreign ownership; narration promises unconfirmed escape, transformation and reunion. | Seven outcomes ship as source guidance/projection. Isolated pickup fix05eeca928 is actual repair; qualify admitted sources, transfer, ENTER/offer, actor roaming/retirement, ownership, settlement and renewal. Builder decides other prose/controller intent. |
+| ZSQ-FIELDS-BETWEEN-RIFT-HOTFIX-REPLACEMENT | Owner confirmed non-takeable rift71030 was an intentional old hotfix for a game-breaking escape mechanic. Original restrictions are restored; legacy delivery source remains unresolved. | Required builder follow-up: preferably distinct inert non-teleport proof while live portal stays fixed, or source-bound interaction/retirement. Define source/gifts, recipe/receipt versioning, PvP restrictions and accounting/renewal qualification; separate reviewed implementation and final-behavior news. |
+| ZSQ-FIELDS-BETWEEN-SHARED-SUPPLY / PORTAL / OWNERSHIP / CAMPAIGN | Two consumers share scarce alloy; floor portal is consumed; mother crosses into Scorched Valley; foreign seekers retain foreign ownership; narration promises unconfirmed escape, transformation and reunion. | Seven outcomes ship as source guidance/projection. Portability fix05eeca928 is withdrawn; original restrictions restored by correctiond2a64432d; qualify admitted sources, transfer, ENTER/offer, actor roaming/retirement, ownership, settlement and renewal. Builder decides other prose/controller intent. |
 | ZSQ-TUNDRA-AVAILABILITY / FISHING / ROUTES / MIRROR / ALL-INPUTS | Eleadora head retires giver; actors can wander into loading traps. Dock is land and fishmonger lacks a shop; signposted/legacy routes are unusable. Four books and three seafood kinds need ALL; Bom supplies only two seafood kinds. Mirror automatically binds PUSH with asymmetric reset state. | Six stories/one service ship as guidance/projection. Builder chooses availability/shop/route intent before isolated native fixes. Qualify actual catch/source, partial foreign supply, shared switch/keys, paid order, actor retirement and daily renewal. No native Tundra repair ships. |
 | ZSQ-MNTCASTL-SUPPLY / BATCH / LOADED-STATE / CAMPAIGN | Exact blue horn has no active producer; granular batch consumes sand and foreign recipe for three outputs. Foreign clothing prices disagree with captions and paid routes remain guarded. Raw hidden bits are discarded by loader; D resets determine actual gate visibility. | Four stories/four services ship as guidance/projection. Builder selects horn/price/visibility intent; qualify indexed input/output lineage, actual SEARCH/UNLOCK/key break and potion use/foreign campaign before new objectives. One-word parapet repair ships separately. |
 | ZSQ-IXARKON-FEE / VEIL / BRIDGE / CAMPAIGN | The red cap plus1000platinum preparation is blocked under active accounting; sealed veil chamber has no ordinary ingress and assigned room19890 is absent. Bridge starts open and its one-way unblocking switches cannot retract it. | Two stories/one supporting service ship as guidance/projection. Design atomic fee settlement, guarded intended ingress and accepted random arrival/restoration, controller semantics and explicit rescue/peace endpoints. Direction text alone is repaired separately. |
@@ -4179,15 +4184,15 @@ Mother can emerge into Scorched Valley; receipt ownership stays Fields Between.
 Seeker/Marvin requests, advisor's three heads, brewer's foreign fez continuation,
 Winterhaven memory and epic TOUCH remain their own systems/owners.
 
-**Actual native repair, separate fix [05eeca928](https://github.com/Community-Duris/Duris/commit/05eeca928):
-Fix Fields Between shaman quest rift pickup.** Before, the requested small
-circular rift lacked TAKE and weighed1,000,000 despite portable prose. Exactly
-two prototype fields now give TAKE and weight one. Source placement, visibility,
-unlimited ENTER destination/return gateway, request and reward are retained.
-Original-data regression fails; repaired data and other fixed portals pass.
-Played pickup/offer/settlement remains unqualified; saved instances are not
-rewritten. **News-ready:** “The Fields Between's small circular rift can now be
-picked up and delivered to Grog's shaman bodyguard for his quest.”
+**Correctiond2a64432d: portability repair05eeca928 is withdrawn.** Quest prose
+was incorrectly used to justify TAKE and weight-one on unlimited ENTER portal
+71030. Shared inventory selection makes that a PvP escape-capability change.
+Original TAKE=0/weight1,000,000 are restored; the entire object file exactly matches
+pre-fix bytes. Unsafe prototype fails the new policy regression; restored source
+passes. No deployed or saved-instance rewrite occurred. **Do not announce rift
+pickup/delivery as fixed.** Native source/quest conflict remains a builder decision:
+separate non-teleport proof, source-bound interaction or intentional retirement.
+No replacement or new portability is implemented.
 
 Pending proposals are separate: narrated escape/transform/reunion lacks durable
 world transitions; permanent chamber-rift prose has no placed portal; portable
@@ -4300,3 +4305,77 @@ Active, ready accounting is mandatory; frozen recovery is separate. Synthetic
 receipts do not qualify played source/access/travel/pool/learning/crew/offer/
 settlement/actor lifecycle/database persistence/daily renewal. No accounting
 activation, DB/server operation, migration, deployment or merge occurred.
+
+
+## Priority80 checkpoint: Braddistock Mansion (brad)
+
+The [comprehensive dossier](zone-stories/BRADDISTOCK_MANSION_1350.md) distinguishes
+this zone1350 mansion from older zone13 Braddistock. All48 complete rooms/47 full
+prose families/five headers/99 exits/83 text families/26 extras in25 families,
+14 mobiles/14 prose families,73 objects and175 resets/116 exact/125 parent-aware
+families were read. No local Q/shop file, room F/T, object T, portal or switch was
+found. All14 owned M9/Q5 Tower blocks, twelve full imported material/reward
+prototypes, twelve foreign actors/placement rooms/reset groups, shared ration/
+torch, all713 portals and reciprocal Tharnadia boundary were closed.
+
+Schema3/revision2 preserves all five story IDs and bindings, with16 contacts/
+32 aliases/ten optional checks (nine carried materials/one earlier Isabia
+receipt). Staff, fixed head, five distinct pieces, supplied ring and bone key
+remain exact independent exchanges. Local books, Ned, secret cellar/skeletons,
+alchemy, static corpse, smuggler cargo and boat are exploration guidance,
+without fabricated learned, source, travel, rescue or campaign completion.
+Skeleton135040 is NOLOCATE rather than invisible/secret; book flags5 are closed,
+unlocked; valid world door kind2 is pickable. Missing iron key135050 does not
+prove a blocked non-pickproof strongbox; local maul is not older bound1372.
+
+**Actual native repair:** separate fix5b4c4f34a sends the spirit's existing refusal
+to the blocked player with CRLF. Exactly two native lines. Original isolated
+production function fails; repaired recipient/exact-line and unchanged threshold,
+staff/null/periodic/self/direction/action controls pass. Maintained build/format/
+exact-byte checks pass; played entry remains pending. News wording is recorded
+prominently in the repair ledger above and PR. Earlier repairs remain intact.
+
+The physical story/credit owner gap is substantive: Tower giver VNUMs assign
+zone1350, while encounters/placement/reset are1340. Keep frozen native ownership;
+add explicit physical affiliation/referrals and discovered-area presentation,
+then qualify real source/retiring-recipient renewal independently of owner mode.
+Mansion clue/access/container/source provenance and actual alchemy/smuggler/
+Sargon/rift/escort terminals need admitted events and builder-selected semantics.
+Missing key/weapon sources and copied prose are proposals, not shipped repairs.
+
+Required validation: focused source/schema and native entry fixtures; full
+production regression; all98 Python/C++ journals/file-loader/projection journeys;
+maintained build; formatting/whitespace/source links; five preserved IDs/bindings,
+96 unchanged other journals plus the explicitly corrected Fields journal/all2668 definitions/fingerprint/revision/registry/original220
+queue; exact previous47897-byte PR archive and nine prior repair/accounting
+sections. Catalog totals unchanged:98 journals/1591 achievements/1446 potential
+dailies/2200 rows. **80/220 source-comprehensive,140 pending; The Desert City of
+Venan'Trut (`desert`) next.** Full goal remains active. Accounting must be active
+and ready; frozen recovery is separate. Synthetic receipts do not qualify played
+source/access/combat/offer/settlement/retirement/renewal/database persistence.
+No accounting activation, DB/server operation, migration, deployment or merge.
+
+
+## Native mechanics review rule after Fields Between correction
+
+Do not infer authorization to enable disabled mechanics from quest prose.
+Mechanical changes to portable travel/escape, combat access, charges, source
+scarcity or controller activation need an explicit intended design and review
+across the game. Keep existing restrictions and record conflicts as builder
+questions until resolved. Native text/output corrections remain distinct from
+availability and balance changes. The withdrawn rift repair and its correction
+remain traceable in separate commits and historical PR archives; current docs
+and news must state the final behavior, rather than preserve a false repair claim.
+
+
+## Required builder follow-up confirmed by owner: Fields Between rift
+
+The owner confirmed that non-takeable rift71030 was an old deliberate hotfix for
+its game-breaking escape mechanic. Keep the restored original restrictions.
+ZSQ-FIELDS-BETWEEN-RIFT-HOTFIX-REPLACEMENT is required follow-up in the
+[zone dossier](zone-stories/FIELDS_BETWEEN.md) and shared plan: design an inert
+non-teleport quest proof, a fixed-source interaction or deliberate retirement;
+qualify PvP restrictions, source/gift rules, changed native contract/legacy
+receipt compatibility and active-accounting source/settlement/recovery/renewal.
+No replacement or new portal mobility is implemented. Any later fix gets its
+own reviewed commit and final-behavior news; the old pickup claim is withdrawn.

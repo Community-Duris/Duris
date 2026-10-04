@@ -2708,16 +2708,16 @@ discovery, encounter, journal, achievement and daily credit; frozen recovery
 remains separate.
 
 
-## Fields Between: shared scarce stock and portable quest portals
+## Fields Between: shared scarce stock and a fixed-portal quest conflict
 
 The [complete dossier](zone-stories/FIELDS_BETWEEN.md) adds seven independent
-stories and a separately committed native pickup repair. A static journal can
+stories; its attempted portability repair was withdrawn and original restrictions restored. A static journal can
 explain each exact request; deeper progress needs admitted semantic facts.
 
 | Requirement | Concrete evidence | Implementation/qualification plan |
 | --- | --- | --- |
 | Shared scarce material | Weaponsmith's33-percent/cap-one dark mithril feeds Timmy and professor separately | Track current roots and consumed quantities per accepted exchange; expose absence honestly. Qualify supplied copies, second stock, concurrent offers, reset lineage and spent history; preserve builder scarcity. |
-| Portable quest portal | Rift71030 is floor-reset, ENTER-enabled and consumed by shaman's exchange; living rift is a different actor | Keep actual pickup repair05eeca928 separate/news-ready. Qualify visibility/capacity, durable pickup, ENTER/return and offering/recovery. Freeze selected root/command/destination before personal travel credit. |
+| Fixed-portal quest conflict | Rift71030 has original TAKE=0/weight1,000,000 and unlimited ENTER; making it portable would expand PvP escape use | Correctiond2a64432d withdraws05eeca928 and restores original restrictions. Builder must choose non-teleport proof, source-bound interaction or retirement, then review PvP implications and qualify source/acceptance/recovery. No pickup-fix news or portable source ships. |
 | Canonical owner across physical zones | Mother moves to Scorched Valley; seeker and Marvin move into Fields Between with foreign requests | Retain physical-discovery/accounting guard; refer to already discovered owner journal without auto-discovering it. Qualify roaming/absence, multiple owners, encounter hints, acceptance, retirement and rollback. |
 | Exact bundles and ambiguous names | Five different head kinds; manuscript worn as shield; bananas/prepared body type13 | Show every material row and native acceptance. Qualify duplicate kinds, worn/nested roots, partial offers, supplied copies and indexed reward lineage; do not infer CARVE/BOOK/FOOD from names. |
 | Optional chain versus campaign | Mithril produces letter; mother accepts supplied letter. Captions promise escape, reunion and restoration | Keep earlier history optional and current letter required. Builder chooses clarified narration or explicit all-stage campaign with durable actor/world state, prerequisites, compensation and recovery. |
@@ -2789,3 +2789,69 @@ proof, qualification limits and prominent news. Active, ready accounting remains
 mandatory for new tracking; frozen recovery is separate. Source/projection
 proof does not qualify played source/access/effects/teaching/crew/settlement,
 database persistence or daily renewal.
+
+
+## Braddistock: physical affiliation, canonical owner and exploration
+
+The [complete zone1350 dossier](zone-stories/BRADDISTOCK_MANSION_1350.md) and
+schema3/revision2 sidecar preserve the five Tower exchange identities while
+explaining mansion exploration. Existing giver-range ownership is shared by
+catalog/runtime; physically meeting Tower recipients does not discover the
+owning mansion journal. Owner mode2 also advertises potential repeatability
+for D1 actors physically in reset-mode0 Tower. These are explicit capability
+gaps; a narrative sidecar alone cannot repair presentation or renewal policy.
+
+| Requirement | Evidence | Implementation and acceptance plan |
+| --- | --- | --- |
+| Physical affiliation distinct from credit owner | Five Tower recipients exceed its134141 top, so canonical owner is Braddistock1350 | Add builder-authored physical locations/referrals or encounter-view references to canonical contracts. Keep immutable native IDs, receipt owner and recovery. Select discovery/presentation policy explicitly; test discovered Tower/undiscovered mansion, both discovered, unseen givers, multiple locations, ANSI/GMCP, old receipts, cold upgrade and erasure. Do not award mansion discovery for a foreign encounter. |
+| Renewal from actual actor/source episodes | Owner mode2 versus physical Tower mode0; Azlion/Darrin retire | Daily admission must verify admitted renewable physical recipient/material episodes rather than owner reset metadata alone. Cover absence, D1 retirement, shared caps, wandering/holding rooms, repeated instance kinds, reset failure, concurrent completion and recovery. Existing metadata is potential candidacy, not qualified stock. |
+| Learned clues and access prerequisites | Tome/note, room extras, secret doors, scratched key, nested loot | Add accepted LOOK/READ/SEARCH/PICK/KNOCK/UNLOCK/OPEN/GET facts with actual target/root/parent, source revision, episode and committed transition. Qualify blindness, denial, wrong target, already-open/shared doors, failures, breaking/spent keys, reset/cold recovery and supplied items. Current readiness cannot prove learned or traversed stages. |
+| Source versus supplied proof | Fixed head, equipped staff, five distinct pieces, static corpse/nested pebble and gifted ring | Separate source admission, first successful recovery and handoff custody per UID. Exact current supplies remain accepted unless builder specifies a new explicit source objective. Cover duplicate/worn/foreign roots, parent containers, competing key use, atomic all-input/reward settlement, retry and cold recovery. |
+| Real campaign endpoints | Azlion rift text, Darrin sacrifice, Isabia farewell, Sargon threat, alchemy and boat voyage | Builder defines stage/all-stage versus independent exchange, personal/group attribution, actor/world transitions, actual arrival/defeat/return and renewal. Implement transactional adapters and recovery before credit. Do not detect completion from lore text or presume a missing route should be added. |
+| Builder-selected stock/content repair | No identified fresh key135050/maul135071/sword135073; boat weight/prose and copied library topic | Confirm intended sources/behavior. PICK/KNOCK alternatives prevent claiming a proven strongbox blocker; older maul1372 binding does not justify binding local135071. Selected repairs require separate named fix, original-fails/repaired-passes proof, played limits and prominent news. |
+
+The player view should show where to meet each giver, which exact pieces are
+ready now, which earlier exchanges are recorded, and which access/source/escort
+facts remain untracked. Cross-zone referrals should link to canonical cards
+without duplicating denominators, outcomes or renown. Local mansion exploration
+can become a builder-authored campaign once its accepted clue/access/finale
+predicates are supported; until then it remains useful truthful guidance.
+
+Separate fix5b4c4f34a repairs only the entry refusal's recipient/newline, with its
+own executable production-function test and news entry. It changes no level
+policy or quest credit. Active, ready accounting remains mandatory for all new
+tracking; frozen recovery is separate. Projection/source tests do not qualify
+played access/custody/combat/settlement/actor renewal/database persistence.
+
+
+## Mechanical intent before availability repairs
+
+Fields Between's portability change was an incorrect assumption, now withdrawn.
+A quest text saying an object is easy to pick up does not justify removing
+original pickup/weight restrictions from an unlimited teleport. Treat disabled
+travel, combat/access gates, charges, source scarcity and inactive controllers as
+intent questions, separate from naming/output corrections. Keep original behavior
+until an explicit intended design is reviewed. Prefer a non-teleport quest proof,
+a source-bound interaction or deliberate legacy retirement when resolving this
+specific request; no replacement is implemented here. Test the existing restriction
+and unsafe counterexample, then the approved design's gameplay/accounting/recovery
+journey. A test that only asserts the assumed new capability is insufficient.
+
+
+## Builder-required: Fields Between legacy rift hotfix replacement
+
+**ZSQ-FIELDS-BETWEEN-RIFT-HOTFIX-REPLACEMENT.** The owner confirmed that the
+non-takeable rift was an intentional old hotfix for a game-breaking escape
+mechanic. Preserve that protection. The [builder follow-up](zone-stories/FIELDS_BETWEEN.md)
+requires an explicitly designed replacement for the unresolved shaman request:
+prefer a distinct inert, non-teleport remnant while keeping the live portal
+fixed; consider a source-bound interaction or retirement as alternatives.
+
+Choose source/stock/quantity, gift versus personal source, actual shaman outcome
+and renewal. A changed native input needs deliberate contract/mapping versioning
+with legacy receipt/frozen recovery compatibility. Acceptance must prove no
+inventory/equipment/floor travel effect on the new proof, unchanged live portal
+restrictions, exact source/custody/consumption/reward settlement under active,
+ready accounting, retries/concurrency/rollback/cold recovery and played quest
+behavior. Implement in a separate reviewed fix and update news only for that
+final behavior. No replacement or mobility change is implemented here.

@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "revision": 1,
+  "revision": 2,
   "source_area": "fields_between",
   "coverage": "complete",
   "introduction": "Trace Timmy’s letter from the ruined farmhouse to his mother, explore the wildmage tower, and follow the raiders’ requests for exact materials. Keep five different heads, two independent uses of scarce alloy, real access keys and the portable rift visible as separate steps.",
@@ -12,7 +12,7 @@
     "For the brewer, recover the exact manuscript worn as a shield by the tower’s monkeys and the banana clump carried by the octopus cook. Bring both together. The hungry ape, loose quills and paper are not their sources. Ask the bored troll brewer about food or book; the bored ogre raiders are different actors.",
     "Grog wants five different hidden head items: elements, nature, creatures, space-and-time and great wildmage. Bring all five together. Their similar names do not make them interchangeable; ordinary carved heads do not substitute. Supplied exact heads need no personal kills or earlier tower journey.",
     "The vampire outside the great wildmage’s chamber carries the spiral key. It survives ordinary unlocking of the locked southern pickproof door. The thorny key fits the tower entrance instead. Inside, TOUCH the rune-covered stone belongs to the epic system, and the memory supports a foreign Winterhaven request.",
-    "The small circular rift is a hidden portable item placed on the floor of the space-and-time wildmage’s room. The living dimensional-rift creature on the stairs does not drop it. ENTER the small rift reaches a looping dark place; walking any ordinary direction loops there. ENTER gateway returns to the fields entrance.",
+    "The small circular rift remains fixed on the floor of the space-and-time wildmage’s room. Its ordinary pickup route is unavailable. The living dimensional-rift creature on the stairs does not drop a portable copy. ENTER the fixed rift reaches a looping dark place; ENTER gateway returns to the fields entrance. The shaman’s delivery request currently has no verified ordinary source.",
     "Grog’s orc shaman bodyguard accepts that exact small rift for a band of the winds. Offering consumes the rift; use it before offering if you want its journey. His promised departure has no separate confirmed escape. The coil carried by the dark beast beyond the rift has no local accepted exchange.",
     "A secret break in the foliage connects the overgrown fields eastward into the raider woods. SEARCH and open it when needed. In the camp, the ruffian at the bar carries Grox’s orders and the mess-hall cook carries the seasoned boy’s body. Deliver both together. Grog’s eastern hut door is separately closed.",
     "The professor asks for the torturer’s crunching box and a dark-mithril bar as inspiration for tipped boots. His injury and chant are reward narration. The raider smith’s repair talk and vampire’s serving talk do not configure shops; captive wildmages and the wildmagical landscape do not create additional rescue or restoration quests.",
@@ -86,7 +86,7 @@
       "mob_vnum": 71040,
       "name": "the orc shaman bodyguard",
       "keyword": "bodyguard",
-      "description": "The orc shaman follows Grog with two burly ogre guards. Ask free or way. Needs the small circular rift; ordinary bullied orc shamans elsewhere do not accept it.",
+      "description": "The orc shaman follows Grog with two burly ogre guards. Ask free or way. He requests the small circular rift, but that item cannot be picked up through ordinary play; this delivery route is currently unavailable.",
       "topics": [
         "free",
         "way",
@@ -466,9 +466,9 @@
     },
     {
       "id": "shaman-portable-rift",
-      "title": "The shaman bodyguard: offer a way out",
+      "title": "The shaman’s circular-rift request: source unavailable",
       "category": "story",
-      "summary": "Bring Grog’s orc shaman bodyguard the small circular rift for a band of the winds. This exact portable rift is separate from the living dimensional-rift creature. Acceptance records the offering; his promised escape has no separate completed journey or removal.",
+      "summary": "The shaman requests the small circular rift for the band of winds. The placed rift remains fixed and ordinary pickup is unavailable, so this delivery has no verified ordinary source. Entering the fixed portal is separate from this unresolved request; his promised escape is not a recorded journey.",
       "contracts": [
         {
           "giver_vnum": 71040,
@@ -478,14 +478,14 @@
       "steps": [
         {
           "id": "rift",
-          "text": "Carry the small circular rift",
+          "text": "Requested circular rift in loose inventory (normal pickup unavailable)",
           "kind": "carried_item",
           "item_vnums": [
             71030
           ],
           "count": 1,
           "optional": true,
-          "hint": "Find this hidden, portable rift on the floor of the space-and-time wildmage’s room. The living dimensional rift downstairs does not drop it. ENTER the small rift leads to a looping dark place; ENTER gateway returns to the fields entrance. Offering consumes the rift, so use it before offering if you want that journey. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory."
+          "hint": "The placed rift retains its original pickup restrictions. The living rift creature does not produce the requested item. Do not treat it as a portable escape item; this delivery source remains unresolved. Current item readiness does not establish an ordinary acquisition route."
         },
         {
           "id": "turn-in",
@@ -497,7 +497,7 @@
               "completion_key": "give=I:71030;receive=I:71033;disappear=0"
             }
           ],
-          "hint": "Only acceptance records this outcome. Questions, materials ready now, recovery and travel are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access."
+          "hint": "This legacy request has no verified ordinary pickup route. Native acceptance, if an exact supplied item exists, is separate from portal travel or the shaman’s escape; no portable source is enabled by the journal."
         }
       ]
     },

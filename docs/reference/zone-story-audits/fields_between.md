@@ -14,7 +14,7 @@ python3 scripts/zone_story_quest_zone_inventory.py --area-evidence fields_betwee
 | 71036 | `give=I:71007,I:71008;receive=I:71020;disappear=0` | story: Grox: deliver the orders and gift | [areas/qst/fields_between.qst:10](../../../areas/qst/fields_between.qst#L10) |
 | 71037 | `give=I:71005,I:71016;receive=I:71024;disappear=0` | story: The brewer: bring reading and bananas | [areas/qst/fields_between.qst:42](../../../areas/qst/fields_between.qst#L42) |
 | 71038 | `give=I:71010,I:71011,I:71012,I:71013,I:71014;receive=I:71017;disappear=0` | story: Grog: recover five different wildmage heads | [areas/qst/fields_between.qst:95](../../../areas/qst/fields_between.qst#L95) |
-| 71040 | `give=I:71030;receive=I:71033;disappear=0` | story: The shaman bodyguard: offer a way out | [areas/qst/fields_between.qst:125](../../../areas/qst/fields_between.qst#L125) |
+| 71040 | `give=I:71030;receive=I:71033;disappear=0` | story: The shaman’s circular-rift request: source unavailable | [areas/qst/fields_between.qst:125](../../../areas/qst/fields_between.qst#L125) |
 | 71056 | `give=I:71021,I:71022;receive=I:71023;disappear=0` | story: The professor: inspire a devious invention | [areas/qst/fields_between.qst:147](../../../areas/qst/fields_between.qst#L147) |
 | 71065 | `give=I:71021;receive=I:71027;disappear=1` | story: Timmy: help the transformed boy write home | [areas/qst/fields_between.qst:190](../../../areas/qst/fields_between.qst#L190) |
 | 71066 | `give=I:71027;receive=I:71028;disappear=0` | story: His mother: deliver Timmy’s letter | [areas/qst/fields_between.qst:222](../../../areas/qst/fields_between.qst#L222) |

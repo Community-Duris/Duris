@@ -7552,6 +7552,136 @@ int main(int argc, char **argv)
 		}
 
 		{
+			const auto &azlion = story_for("brad", "request-134146-a4f6aa87c7b1");
+			const auto &jenifer = story_for("brad", "request-134150-cc22370abf33");
+			const auto &darrin = story_for("brad", "request-134162-0aa9fcadf7a5");
+			const auto &danthas = story_for("brad", "request-134167-d86a832b706b");
+			const auto &isabia = story_for("brad", "request-134169-05c42346bab0");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1340, 134112, 100, "arrival") ==
+					result::applied,
+				"Braddistock physical Tower discovery failed");
+			for (const auto &actor :
+			     { std::pair{ 134146, 134112 }, std::pair{ 134150, 134127 },
+			       std::pair{ 134162, 134138 }, std::pair{ 134167, 134140 },
+			       std::pair{ 134169, 134042 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 101) ==
+						result::applied,
+					"Braddistock physical Tower encounter failed");
+			require(!journey.has_discovered(7, 42, 1350) &&
+					journey.render_journal(7, 42, 1350, 10, 1, 102, false,
+							       false)
+							.find("Undiscovered") != std::string::npos,
+				"Braddistock physical encounter fabricated mansion discovery or exposed owning journal");
+			auto wrong_owner = completion(danthas.contracts.front(),
+						      "brad-wrong-physical-owner", 120);
+			wrong_owner.transaction.zone_number = 1340;
+			wrong_owner.transaction.room_vnum = 134140;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Braddistock physical area replaced canonical receipt owner");
+			// A supplied ring fits without this player's Isabia, rescue or source history.
+			record(journey, danthas.contracts.front(), "brad-supplied-ring", 1350,
+			       134140);
+			require(journey.progress_for_zone(7, 42, 1350).completed == 1 &&
+					journey.evidence_for(isabia.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					!journey.has_discovered(7, 42, 1350),
+				"Braddistock supplied ring invented earlier receipt or local admission");
+			require(journey.discover_zone(7, 42, 1350, 135001, 103, "arrival") ==
+					result::applied,
+				"Braddistock explicit road discovery failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Braddistock story section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[134131] = 5;
+			supplies.equipped[18] = 134105;
+			supplies.carried[134144] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 1350, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(darrin).find("[Ready now] " + darrin.steps[0].text) !=
+					std::string::npos,
+				"Braddistock first piece readiness missing");
+			for (size_t i : { 1U, 2U, 3U, 4U })
+				require(section(darrin).find("[Missing now] " +
+							     darrin.steps[i].text) !=
+						std::string::npos,
+					"Braddistock repeated first piece replaced another exact kind");
+			require(section(azlion).find("[Missing now] " + azlion.steps[0].text) !=
+					std::string::npos,
+				"Braddistock equipped staff counted as loose offering");
+			require(section(danthas).find("[Pending] " + danthas.steps[0].text) !=
+						std::string::npos &&
+					section(danthas).find("[Ready now] " +
+							      danthas.steps[1].text) !=
+						std::string::npos,
+				"Braddistock supplied ring required earlier personal rescue");
+			for (int item : { 134105, 134006, 134132, 134133, 134134, 134135, 134048 })
+				supplies.carried[item] = 1;
+			journal = journey.render_journal(7, 42, 1350, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto *entry : { &azlion, &jenifer, &darrin, &danthas, &isabia })
+				for (const auto &step : entry->steps)
+					if (step.kind == "carried_item")
+						require(section(*entry).find("[Ready now] " +
+									     step.text) !=
+								std::string::npos,
+							"Braddistock supplied exact materials required personal source, access or combat");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 1350).completed == 1,
+				"Braddistock readiness or prose fabricated historical outcomes");
+			// Synthetic receipts test projection, not actual source/entry/escort/rift,
+			// Sargon combat, settlement, NPC retirement or physical reset renewal.
+			record(journey, azlion.contracts.front(), "brad-cold-iron-staff", 1350,
+			       134112);
+			record(journey, jenifer.contracts.front(), "brad-joseph-head", 1350,
+			       134127);
+			record(journey, darrin.contracts.front(), "brad-five-distinct-pieces", 1350,
+			       134138);
+			record(journey, isabia.contracts.front(), "brad-bone-key", 1350, 134042);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 1350, 10, 1, 122, false, false,
+							 &supplies);
+			require(section(danthas).find("[Recorded] " + danthas.steps[0].text) !=
+						std::string::npos &&
+					section(danthas).find("[Missing now] " +
+							      danthas.steps[1].text) !=
+						std::string::npos,
+				"Braddistock old receipt restored consumed ring");
+			for (const auto *entry : { &azlion, &jenifer, &darrin, &danthas, &isabia })
+				for (const auto &step : entry->steps)
+					if (step.kind == "carried_item")
+						require(section(*entry).find("[Missing now] " +
+									     step.text) !=
+								std::string::npos,
+							"Braddistock accepted outcome recreated spent material");
+			auto replay = completion(darrin.contracts.front(),
+						 "brad-five-distinct-pieces", 120);
+			replay.transaction.zone_number = 1350;
+			replay.transaction.room_vnum = 134138;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Braddistock exact receipt replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 1350).completed == 5 &&
+					recovered.progress_for_zone(7, 42, 1350).total == 5 &&
+					recovered.progress_for_zone(7, 42, 1340).completed == 0,
+				"Braddistock cold recovery lost outcomes or credited physical Tower");
+			for (const auto *entry : { &azlion, &jenifer, &darrin, &danthas, &isabia })
+				require(recovered.evidence_for(entry->contracts.front(), 2)
+							.successful_attempts == 1,
+					"Braddistock preserved native receipt missing after recovery");
+		}
+
+		{
 			const auto &guild = story_for("ceothia", "choose-surviving-thief-guild");
 			const auto &badge = story_for("ceothia", "lenbrea-ceothian-badge");
 			const auto &horn = story_for("ceothia", "lenbrea-flickering-dragon-horn");

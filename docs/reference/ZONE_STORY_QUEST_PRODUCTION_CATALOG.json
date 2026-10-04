@@ -85042,7 +85042,7 @@
           ]
         },
         {
-          "description": "The orc shaman follows Grog with two burly ogre guards. Ask free or way. Needs the small circular rift; ordinary bullied orc shamans elsewhere do not accept it.",
+          "description": "The orc shaman follows Grog with two burly ogre guards. Ask free or way. He requests the small circular rift, but that item cannot be picked up through ordinary play; this delivery route is currently unavailable.",
           "keyword": "bodyguard",
           "mob_vnum": 71040,
           "name": "the orc shaman bodyguard",
@@ -85234,7 +85234,7 @@
         "For the brewer, recover the exact manuscript worn as a shield by the tower\u2019s monkeys and the banana clump carried by the octopus cook. Bring both together. The hungry ape, loose quills and paper are not their sources. Ask the bored troll brewer about food or book; the bored ogre raiders are different actors.",
         "Grog wants five different hidden head items: elements, nature, creatures, space-and-time and great wildmage. Bring all five together. Their similar names do not make them interchangeable; ordinary carved heads do not substitute. Supplied exact heads need no personal kills or earlier tower journey.",
         "The vampire outside the great wildmage\u2019s chamber carries the spiral key. It survives ordinary unlocking of the locked southern pickproof door. The thorny key fits the tower entrance instead. Inside, TOUCH the rune-covered stone belongs to the epic system, and the memory supports a foreign Winterhaven request.",
-        "The small circular rift is a hidden portable item placed on the floor of the space-and-time wildmage\u2019s room. The living dimensional-rift creature on the stairs does not drop it. ENTER the small rift reaches a looping dark place; walking any ordinary direction loops there. ENTER gateway returns to the fields entrance.",
+        "The small circular rift remains fixed on the floor of the space-and-time wildmage\u2019s room. Its ordinary pickup route is unavailable. The living dimensional-rift creature on the stairs does not drop a portable copy. ENTER the fixed rift reaches a looping dark place; ENTER gateway returns to the fields entrance. The shaman\u2019s delivery request currently has no verified ordinary source.",
         "Grog\u2019s orc shaman bodyguard accepts that exact small rift for a band of the winds. Offering consumes the rift; use it before offering if you want its journey. His promised departure has no separate confirmed escape. The coil carried by the dark beast beyond the rift has no local accepted exchange.",
         "A secret break in the foliage connects the overgrown fields eastward into the raider woods. SEARCH and open it when needed. In the camp, the ruffian at the bar carries Grox\u2019s orders and the mess-hall cook carries the seasoned boy\u2019s body. Deliver both together. Grog\u2019s eastern hut door is separately closed.",
         "The professor asks for the torturer\u2019s crunching box and a dark-mithril bar as inspiration for tipped boots. His injury and chant are reward narration. The raider smith\u2019s repair talk and vampire\u2019s serving talk do not configure shops; captive wildmages and the wildmagical landscape do not create additional rescue or restoration quests.",
@@ -85242,7 +85242,7 @@
         "Foreign seekers can arrive in the fields from inaccessible loading rooms: the seeker from Torg belongs to Scorched Valley, while Blaxor and Marvin belong to Juiblex. Their requests do not become local quests because of their location. The great chamber\u2019s described permanent rift has no matching placed portal; use the verified small-rift route instead.",
         "Carry exact materials loose; worn, nested, spent or handed-away copies remain missing. Questions and source recovery explain progress without granting each keyword an achievement. Only accepted exact exchanges record outcomes. Active, ready accounting is required for all new discovery, encounter, journal, achievement and daily credit; frozen reward recovery remains separate."
       ],
-      "revision": 1,
+      "revision": 2,
       "schema_version": 3,
       "source_area": "fields_between",
       "stories": [
@@ -85457,14 +85457,14 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Find this hidden, portable rift on the floor of the space-and-time wildmage\u2019s room. The living dimensional rift downstairs does not drop it. ENTER the small rift leads to a looping dark place; ENTER gateway returns to the fields entrance. Offering consumes the rift, so use it before offering if you want that journey. Carry the exact item loose. Worn, nested, spent and handed-away copies do not count; supplied copies need no personal source victory.",
+              "hint": "The placed rift retains its original pickup restrictions. The living rift creature does not produce the requested item. Do not treat it as a portable escape item; this delivery source remains unresolved. Current item readiness does not establish an ordinary acquisition route.",
               "id": "rift",
               "item_vnums": [
                 71030
               ],
               "kind": "carried_item",
               "optional": true,
-              "text": "Carry the small circular rift"
+              "text": "Requested circular rift in loose inventory (normal pickup unavailable)"
             },
             {
               "contracts": [
@@ -85473,14 +85473,14 @@
                   "giver_vnum": 71040
                 }
               ],
-              "hint": "Only acceptance records this outcome. Questions, materials ready now, recovery and travel are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access.",
+              "hint": "This legacy request has no verified ordinary pickup route. Native acceptance, if an exact supplied item exists, is separate from portal travel or the shaman\u2019s escape; no portable source is enabled by the journal.",
               "id": "turn-in",
               "kind": "completion",
               "text": "Complete this exact exchange"
             }
           ],
-          "summary": "Bring Grog\u2019s orc shaman bodyguard the small circular rift for a band of the winds. This exact portable rift is separate from the living dimensional-rift creature. Acceptance records the offering; his promised escape has no separate completed journey or removal.",
-          "title": "The shaman bodyguard: offer a way out"
+          "summary": "The shaman requests the small circular rift for the band of winds. The placed rift remains fixed and ordinary pickup is unavailable, so this delivery has no verified ordinary source. Entering the fixed portal is separate from this unresolved request; his promised escape is not a recorded journey.",
+          "title": "The shaman\u2019s circular-rift request: source unavailable"
         },
         {
           "category": "story",
@@ -130035,54 +130035,179 @@
     {
       "contacts": [
         {
-          "description": "Check this person's requests below and examine them for clues.",
-          "keyword": "huge",
+          "description": "Tower summoning chamber: ask power for the held cold-iron staff request; the broadsword reward retires him without actually spawning the narrated rift.",
+          "keyword": "azlion",
           "mob_vnum": 134146,
           "name": "Azlion the planetar",
-          "topics": []
+          "topics": [
+            "urian",
+            "shadowborn",
+            "shadow",
+            "ritual",
+            "sargon",
+            "darkness",
+            "master",
+            "lord",
+            "evil",
+            "power",
+            "circle",
+            "freedom",
+            "favour"
+          ]
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
+          "description": "Tower farmhouse: accepts the exact ogre-carried head of Joseph for 100,000 experience; no addressed quest topic is defined.",
           "keyword": "jenifer",
           "mob_vnum": 134150,
           "name": "Jenifer",
           "topics": []
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
-          "keyword": "father",
+          "description": "Tower Church of Holy Light: ask star; exchanges all five different Star Stone pieces for the Star Key, then leaves.",
+          "keyword": "darrin",
           "mob_vnum": 134162,
           "name": "Father Darrin",
-          "topics": []
+          "topics": [
+            "urian",
+            "shadowborn",
+            "master",
+            "tower",
+            "black",
+            "shadow",
+            "sargon",
+            "god",
+            "negative",
+            "evil",
+            "key",
+            "stone",
+            "keystone",
+            "star"
+          ]
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
-          "keyword": "scout",
+          "description": "Tower staging room with outward exits: ask isabia; bring her exact loose ring for bladesinger leggings. Availability and wandering need qualification.",
+          "keyword": "danthas",
           "mob_vnum": 134167,
           "name": "Danthas, the elven scout",
+          "topics": [
+            "noble",
+            "isabia",
+            "elf"
+          ]
+        },
+        {
+          "description": "Tower prison: ask key or prison; accepts Cardinal Faethron's bone key for her ring. Farewell text does not remove her instance.",
+          "keyword": "isabia",
+          "mob_vnum": 134169,
+          "name": "Isabia, the elven noble",
+          "topics": [
+            "key",
+            "prison"
+          ]
+        },
+        {
+          "description": "Tower foyer: carries Joseph Hammerson's head. The request accepts that exact item without your own kill or decapitation.",
+          "keyword": "ogre",
+          "mob_vnum": 134004,
+          "name": "an ogre mercenary",
           "topics": []
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
-          "keyword": "noble",
-          "mob_vnum": 134169,
-          "name": "Isabia, the elven noble",
+          "description": "Tower captain's quarters: carried source of the first Star Stone piece.",
+          "keyword": "kinslor",
+          "mob_vnum": 134040,
+          "name": "Kinslor Elfslayer",
+          "topics": []
+        },
+        {
+          "description": "Tower personal chambers: carried source of the second Star Stone piece. The book describes the larger Star Stone threat.",
+          "keyword": "mordren",
+          "mob_vnum": 134062,
+          "name": "Lord Mordren Ap'Dethyin",
+          "topics": []
+        },
+        {
+          "description": "Tower unholy temple: carries the third Star Stone piece and bone key. The key's chest use and Isabia delivery compete for the same object.",
+          "keyword": "cardinal",
+          "mob_vnum": 134081,
+          "name": "Cardinal Faethron",
+          "topics": []
+        },
+        {
+          "description": "Tower stasis chambers: carries the fourth Star Stone piece and audience key. The stasis-key route belongs to the separate Tower journal.",
+          "keyword": "earlion",
+          "mob_vnum": 134091,
+          "name": "Earlion that Is",
+          "topics": []
+        },
+        {
+          "description": "Tower audience chamber: carries the last Star Stone piece and treasury key; the piece receipt is not a recorded personal defeat.",
+          "keyword": "urian",
+          "mob_vnum": 134133,
+          "name": "Urian Shadowborn",
+          "topics": []
+        },
+        {
+          "description": "Tower arbysal audience chamber: holds the cold-iron staff. Recover it to loose inventory before giving it to Azlion.",
+          "keyword": "conjurer",
+          "mob_vnum": 134148,
+          "name": "an excited conjurer",
+          "topics": []
+        },
+        {
+          "description": "Mansion approach: blocks ordinary northward entry above level14, with trusted staff bypass. This is a level gate, without a quest unlock.",
+          "keyword": "spirit",
+          "mob_vnum": 135014,
+          "name": "the spirit of Lord Braddistock",
+          "topics": []
+        },
+        {
+          "description": "Mansion southern bedroom beyond the scratched-key door: armed thief, without a native quest reward or departure event.",
+          "keyword": "ned",
+          "mob_vnum": 135003,
+          "name": "Ned Shakeshaft",
+          "topics": []
+        },
+        {
+          "description": "Mansion skeleton room beyond the cellar's barred door: the note's clue leads farther east toward the laboratory, without a learned clue receipt.",
+          "keyword": "skeleton",
+          "mob_vnum": 135008,
+          "name": "a skeleton",
+          "topics": []
+        },
+        {
+          "description": "Lower smuggler cavern: equipped enemy amid silk and brandy stores. No native cargo delivery or smuggler-campaign terminal is bound.",
+          "keyword": "sanbalet",
+          "mob_vnum": 135009,
+          "name": "Sanbalet, the chief smuggler",
           "topics": []
         }
       ],
       "coverage": "complete",
       "exclusions": [],
-      "introduction": "Explore Braddistock Mansion and meet its people to uncover local requests.",
+      "introduction": "Explore the abandoned mansion's clues, secret cellar and smuggler cave. Five recorded exchanges take place in the Tower of Darkness: free Azlion, report Joseph's fate, assemble Darrin's Star Key and carry Isabia's ring to Danthas. These Tower requests currently appear in this mansion's journal.",
       "orientation": [
-        "Start with look and exits to learn your surroundings.",
-        "Use help home to learn about hometowns and help quest for quest commands."
+        "This is Braddistock Mansion (brad), entered from Tharnadia's sea wall onto the short rocky road. It is separate from the older Braddistock area. The spirit on the road blocks ordinary northward entry above level 14; trusted staff bypass that rule. No quest hand-in opens this gate.",
+        "Inspect the entrance-floor tracks and the mansion's rooms. The library's closed tome contains a note pointing beyond the skeletons. OPEN the tome and GET the note; reading that clue is useful guidance, without a recorded learned-topic achievement.",
+        "The scratched key on the main bedroom floor fits the southern bedroom door. Ned Shakeshaft waits beyond it with his dagger; no native request or rescue reward is attached to him. Closed chests and furniture contain ordinary supplies and treasures, distinct from accepted quest outcomes.",
+        "Search the secret southern cellar door, then inspect and open the eastern barred door toward the skeleton room. Search the next secret eastern door to reach the laboratory. These are real exit and door routes, with normal search, lock and combat requirements; the journal does not record their discovery or traversal as completed stages.",
+        "The laboratory's alchemy book, golden skull, apple, rose and set of five weights tell an alchemist's story. The weights are one treasure object. The alchemist\u2019s skeleton container holds the pebble, and tables hold scrolls. No bound alchemy conversion or laboratory finale was found; a book or pebble is not proof of performing one.",
+        "Sanbalet and the smugglers occupy the lower caverns with brandy kegs and silk bolts. These are treasure items, not a named turn-in. The glowing boat is an ordinary boat in the sea cave; the current cave has no exit to the sea or implemented smuggling voyage. Exploration, combat and loot have no authored local quest terminal here.",
+        "The five cards below describe requests in the Tower of Darkness. Meeting those givers in the Tower does not itself open this mansion's journal; visit the mansion to discover it. Consult the Tower's own journal for its access requests. Some givers leave after a hand-in, and return availability is not guaranteed.",
+        "Azlion waits in the Tower's summoning chamber. Ask power, circle, freedom or favour for his staff request, and urian or sargon for the larger threat. The excited conjurer holds the cold-iron staff in the arbysal audience chamber; recover it to loose inventory and give it to Azlion for the Redemption of Light broadsword. Azlion leaves, but the described rift is not spawned by the exchange.",
+        "Jenifer waits in the Tower's farmhouse. The ogre mercenary in the foyer carries Joseph Hammerson's decapitated head. Give that exact head to Jenifer for 100,000 experience. Supplying it is accepted without this player's personal kill or first recovery history.",
+        "Father Darrin waits in the Church of Holy Light. Ask key, stone, keystone or star. The first through last Star Stone pieces belong to Kinslor, Lord Mordren, Cardinal Faethron, Earlion that Is and Urian Shadowborn. Five different loose pieces are required together; duplicate copies of one piece cannot replace another. Darrin gives the Star Key and leaves.",
+        "The Star Key's actual Tower hill, keystone and prison access differs from receiving it. The rift, Sargon battle and return route need their own successful travel and outcome evidence before a campaign can be completed. The current exchange does not prove that Sargon was defeated or that the world was saved.",
+        "Ask Isabia key or prison in the Tower's prison room. Cardinal Faethron carries her bone key, which also opens a different chest. Give the exact key to Isabia for her ring; despite her farewell, the native exchange leaves her instance present. Deliver the loose ring to Danthas for bladesinger leggings. His staged starting room and possible wandering make actual encounter availability a separate concern.",
+        "Earlier Isabia completion is optional guidance for Danthas; a supplied matching ring is valid. ASK aliases are response topics rather than separate achievements. Current materials, earlier accepted receipts, source recovery, physical access and actual reward completion are distinct facts.",
+        "Discovery has its own achievement. Active, ready accounting is required for quest journals, achievements and daily credit. A daily listing does not guarantee that the recipient is present or that fresh materials are available."
       ],
-      "revision": 1,
-      "schema_version": 2,
+      "revision": 2,
+      "schema_version": 3,
       "source_area": "brad",
       "stories": [
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:134105;receive=I:134106;disappear=1",
@@ -130093,12 +130218,13 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "The excited conjurer holds this exact staff in the Tower's arbysal audience chamber. Loose matching supplies qualify; equipment does not.",
               "id": "item-1",
               "item_vnums": [
                 134105
               ],
               "kind": "carried_item",
+              "optional": true,
               "text": "Carry 1 x a long cold-iron staff"
             },
             {
@@ -130108,17 +130234,17 @@
                   "giver_vnum": 134146
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Give the exact loose bundle to this recipient in the Tower of Darkness. Only the accepted native exchange records this outcome.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Return the staff to Azlion"
             }
           ],
-          "summary": "Bring 1 x a long cold-iron staff. Reward: 1 x a broadsword of glowing light.",
-          "title": "Deliver 1 x a long cold-iron staff"
+          "summary": "Tower of Darkness: return the exact cold-iron staff to Azlion for the broadsword of glowing light, named Redemption of Light. The exchange retires Azlion; its rift is narrated rather than created.",
+          "title": "Break Azlion's binding circle"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:134006;receive=E:100000;disappear=0",
@@ -130129,12 +130255,13 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "The ogre mercenary carries this exact head in the Tower foyer. This is item proof rather than a personal kill objective.",
               "id": "item-1",
               "item_vnums": [
                 134006
               ],
               "kind": "carried_item",
+              "optional": true,
               "text": "Carry 1 x the decapitated head of Joseph Hammerson"
             },
             {
@@ -130144,17 +130271,17 @@
                   "giver_vnum": 134150
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Give the exact loose bundle to this recipient in the Tower of Darkness. Only the accepted native exchange records this outcome.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Report Joseph\u2019s fate to Jenifer"
             }
           ],
-          "summary": "Bring 1 x the decapitated head of Joseph Hammerson. Reward: 100,000 experience.",
-          "title": "Deliver 1 x the decapitated head of Joseph Hammerson"
+          "summary": "Tower of Darkness: show Jenifer Joseph Hammerson's exact decapitated head for 100,000 experience. A supplied head is valid without personal combat history.",
+          "title": "Tell Jenifer Joseph's fate"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:134131,I:134132,I:134133,I:134134,I:134135;receive=I:134125;disappear=1",
@@ -130165,52 +130292,57 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Kinslor carries the first piece in the Tower captain's quarters.",
               "id": "item-1",
               "item_vnums": [
                 134131
               ],
               "kind": "carried_item",
+              "optional": true,
               "text": "Carry 1 x the first piece of the Star Stone"
             },
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Lord Mordren carries the second piece in his Tower personal chambers.",
               "id": "item-2",
               "item_vnums": [
                 134132
               ],
               "kind": "carried_item",
+              "optional": true,
               "text": "Carry 1 x the second piece of the Star Stone"
             },
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Cardinal Faethron carries the third piece in the Tower unholy temple, alongside the different bone key.",
               "id": "item-3",
               "item_vnums": [
                 134133
               ],
               "kind": "carried_item",
+              "optional": true,
               "text": "Carry 1 x the third piece of the Star Stone"
             },
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Earlion that Is carries the fourth piece in the Tower stasis chambers. The statue's stasis-key access is a separate Tower outcome.",
               "id": "item-4",
               "item_vnums": [
                 134134
               ],
               "kind": "carried_item",
+              "optional": true,
               "text": "Carry 1 x the fourth piece of the Star Stone"
             },
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Urian Shadowborn carries the last piece in the Tower audience chamber. A supplied exact piece need not prove personal combat.",
               "id": "item-5",
               "item_vnums": [
                 134135
               ],
               "kind": "carried_item",
+              "optional": true,
               "text": "Carry 1 x the last piece of the Star Stone"
             },
             {
@@ -130220,17 +130352,17 @@
                   "giver_vnum": 134162
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Give the exact loose bundle to this recipient in the Tower of Darkness. Only the accepted native exchange records this outcome.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Exchange all five different pieces with Darrin"
             }
           ],
-          "summary": "Bring 1 x the first piece of the Star Stone, 1 x the second piece of the Star Stone, 1 x the third piece of the Star Stone, 1 x the fourth piece of the Star Stone, 1 x the last piece of the Star Stone. Reward: 1 x the Star Key.",
-          "title": "Deliver 1 x the first piece of the Star Stone, 1 x the second piece of the Star Stone, 1 x the third piece of the Star Stone, 1 x the fourth piece of the Star Stone, 1 x the last piece of the Star Stone"
+          "summary": "Tower of Darkness: bring five different Star Stone pieces together to Father Darrin for the Star Key. His retirement and the accepted reward do not complete the Sargon campaign.",
+          "title": "Assemble Darrin's Star Key"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:134144;receive=I:134145;disappear=0",
@@ -130240,13 +130372,27 @@
           "id": "request-134167-d86a832b706b",
           "steps": [
             {
+              "contracts": [
+                {
+                  "completion_key": "give=I:134048;receive=I:134144;disappear=0",
+                  "giver_vnum": 134169
+                }
+              ],
+              "hint": "Optional earlier route: a supplied ring is accepted without your own Isabia receipt, physical rescue or escort.",
+              "id": "earlier-isabia",
+              "kind": "completion",
+              "optional": true,
+              "text": "Earlier accepted bone-key exchange with Isabia"
+            },
+            {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Isabia's bone-key exchange gives this exact ring. Supplied loose rings are valid; previous completion does not restore a spent ring.",
               "id": "item-1",
               "item_vnums": [
                 134144
               ],
               "kind": "carried_item",
+              "optional": true,
               "text": "Carry 1 x a ring of elven nobility"
             },
             {
@@ -130256,17 +130402,17 @@
                   "giver_vnum": 134167
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Give the exact loose bundle to this recipient in the Tower of Darkness. Only the accepted native exchange records this outcome.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Deliver the ring to Danthas"
             }
           ],
-          "summary": "Bring 1 x a ring of elven nobility. Reward: 1 x the leggings of the bladesingers.",
-          "title": "Deliver 1 x a ring of elven nobility"
+          "summary": "Tower of Darkness: bring Isabia's exact ring to Danthas for the leggings of the bladesingers. An earlier personal Isabia receipt is optional; no escort or reunion outcome is recorded.",
+          "title": "Carry Isabia's ring to Danthas"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:134048;receive=I:134144;disappear=0",
@@ -130277,12 +130423,13 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Cardinal Faethron carries this bone key in the Tower temple. Using it for a chest and giving it away are different actions.",
               "id": "item-1",
               "item_vnums": [
                 134048
               ],
               "kind": "carried_item",
+              "optional": true,
               "text": "Carry 1 x a bone key"
             },
             {
@@ -130292,14 +130439,14 @@
                   "giver_vnum": 134169
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Give the exact loose bundle to this recipient in the Tower of Darkness. Only the accepted native exchange records this outcome.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Give the bone key to Isabia"
             }
           ],
-          "summary": "Bring 1 x a bone key. Reward: 1 x a ring of elven nobility.",
-          "title": "Deliver 1 x a bone key"
+          "summary": "Tower of Darkness: give Cardinal Faethron's exact bone key to Isabia for her ring. The native farewell leaves her present, without an escort or actual departure receipt.",
+          "title": "Bring Isabia the Cardinal's key"
         }
       ]
     },

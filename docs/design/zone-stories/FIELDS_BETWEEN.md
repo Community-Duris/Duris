@@ -2,7 +2,7 @@
 
 Priority 77 of the original roadmap. **Source-comprehensive; played qualification
 remains pending.** The new [journal](../../../areas/story/fields_between.story.json)
-uses schema three, revision one: seven story outcomes, 22 contacts, all ten
+uses schema three, revision two: seven story outcomes, 22 contacts, all ten
 addressed topic families and 81 aliases. Seventeen optional checks separate 16
 present materials/access keys from one earlier receipt. All seven item-only
 outcomes, including Timmy's retiring exchange, remain potential daily candidates.
@@ -10,19 +10,25 @@ Discovery keeps its own achievement. All new discovery, encounter, journal,
 achievement and daily credit requires **active, ready accounting**; frozen reward
 recovery remains separate.
 
-**Actual native repair, separate commit:** [05eeca928](https://github.com/Community-Duris/Duris/commit/05eeca928),
-`Fix Fields Between shaman quest rift pickup`. The small circular rift was
-described as easy to pick up and required by the shaman, but had no TAKE flag and
-weight 1,000,000. Exactly two prototype fields now make it takeable and weight
-one. The floor source, visibility flags, unlimited ENTER command, destination,
-return gateway, exact request and reward are retained. The
-[focused regression](../../../tests/async/test_fields_between_portable_rift.py)
-fails on the original data and passes on the repair. Normal pickup still needs
-visibility and available carrying capacity; a played pickup/offer/settlement
-journey remains unqualified. Existing saved instances are not rewritten.
+**Portability repair withdrawn:** earlier commit05eeca928 incorrectly added
+TAKE and reduced rift71030's weight from1,000,000 to1 based on quest prose.
+Because the shared ENTER handler can select inventory portals and the rift has
+unlimited charges, that change introduced an unjustified portable escape
+capability on a PvP MUD. It was not a routine quest repair.
 
-**News-ready:** “The Fields Between's small circular rift can now be picked up
-and delivered to Grog's shaman bodyguard for his quest.”
+Separate **[correctiond2a64432d](https://github.com/Community-Duris/Duris/commit/d2a64432d81c6f98c497f14a47334a85c6dd39e0)**
+restores TAKE=0 and weight1,000,000. The entire object file exactly matches its
+pre-portability-fix bytes; fixed floor placement, destination, unlimited charges,
+other portals and native recipe remain intact. The
+[policy regression](../../../tests/async/test_fields_between_portable_rift.py)
+now fails on the unsafe portable prototype and passes the original restrictions.
+No deployment or existing-instance rewrite occurred.
+
+**Withdrawn news claim:** do not announce rift pickup or shaman delivery as fixed.
+Ordinary acquisition remains unavailable. Builder intent must choose a separate
+non-teleport proof, source-bound interaction or deliberate recipe retirement;
+no such replacement is implemented. Schema revision2 keeps the native story ID/
+binding but explicitly labels the unresolved source instead of advising pickup.
 
 ## Complete source closure
 
@@ -59,7 +65,7 @@ enforced admission or difficulty. Physical membership is all 153 rooms
   [teleport selection](../../../src/magic/spell_travel.c#L930), CMD_ENTER seven
   and unlimited charge -1: farmhouse 71001→71104, door 71002→71014,
   small rift 71030→71153 and gateway 71031→71001. All six ordinary exits from
-  71153 loop to itself. The portable floor rift is not produced by killing
+  71153 loop to itself. The fixed floor rift is not produced by killing
   dimensional-rift mobile 71067. The great chamber's described permanent rift
   has no placed matching portal. All 713 active portal prototypes were checked;
   only these four target a local room.
@@ -80,7 +86,7 @@ enforced admission or difficulty. Physical membership is all 153 rooms
 | Grox 71036, Q10 | Orders 71007 from ruffian 71035 at bar 71136 AND prepared boy's body 71008 from cook 71052 at mess hall 71139 | Mask of luck 71020. Neither an ordinary corpse nor a personal earlier Grog receipt is required. |
 | Brewer 71037, Q42 | Manuscript 71005 worn by monkey horde 71028 at study 71114 AND banana clump 71016 carried by octopus 71041 at kitchen 71119 | Fez of clarity 71024. Remove a worn manuscript before offering; ape 71062 and quills are not producers. The recipient is a troll despite the accepted caption saying ogre. |
 | Grog 71038, Q95 | Elements head 71010 from 71046/71123; nature head 71011 from 71047/71122; creatures head 71012 from 71048/71125; space/time head 71013 from 71049/71126; great head 71014 from 71050/71128 | Crown 71017. All five distinct kinds together; five duplicate copies do not satisfy it. Captive mage/spellcasting narration adds no extra actor action or rescue objective. |
-| Shaman 71040, Q125 | Small circular rift 71030, floor O at 71126, following source-specific pickup repair | Band of winds 71033. Offering consumes the portal; ENTER use beforehand is independent. No D, actual escape, teleport or campaign ending is implemented by this receipt. |
+| Shaman 71040, Q125 | Small circular rift71030, floor O at71126, original TAKE=0/weight1,000,000; ordinary pickup unavailable | Band of winds71033. Legacy recipe retained, without a verified ordinary delivery route. A supplied exact root would be consumed; fixed ENTER use is independent. No D, actual escape, teleport or campaign ending is implemented by this receipt. |
 | Professor 71056, Q147 | Crunching box 71022 from torturer 71055/71132 AND dark mithril 71021 from weaponsmith 71051/71149, uncommon stock | Tipped boots 71023. Item-only narrative request, without a fee or shop. Timmy needs a separate bar. The laboratory's mithril prose supplies no loose bar. |
 | Timmy 71065, Q190 | Dark mithril 71021; recipient may be present at farmhouse 71104 reached by ENTER | Letter 71027; D retires Timmy after acceptance. No actual human restoration or professor delivery is recorded. Daily candidacy does not guarantee a fresh mouse or bar. |
 | Mother 71066, Q222 | Letter 71027 from Timmy or a supplied exact copy; recipient loads at 71152 and can wander down to Scorched Valley stable 71265 | Sorrow veil 71028; no D despite promised departure. Optional Timmy history never replaces current letter custody or proves reunion. Canonical ownership stays Fields Between across the boundary. |
@@ -126,11 +132,11 @@ party, captive wildmages and scenery remain supporting systems/context.
 | Finding | Current guidance | Plan before deeper credit or native change |
 | --- | --- | --- |
 | Two consumers of uncommon alloy | Show separate current mithril rows and warn that either accepted offer consumes the bar | Admit source identity, reset generation, quantity, consumption and output lineage; qualify second-stock availability, donated copies and concurrent offers. Preserve intentional scarcity unless a builder chooses otherwise. |
-| Portable portal consumed as a quest material | Distinguish floor rift, living creature, ENTER journey, looping destination and consumed offering | Qualify actual pickup visibility/capacity, durable movement, ENTER/return, offering and recovery. Add admitted selected portal/root/destination facts before travel achievements; retain the isolated pickup repair and its news note. |
+| Fixed portal requested as quest material | Native recipe conflicts with original pickup restrictions; inventory ENTER would enable portable escape if made takeable | Original TAKE/weight restored. Builder decides non-teleport proof, source-bound interaction or retirement. Qualify chosen source/acceptance/recovery and PvP implications before a separately authorized design; do not restore portability from prose. |
 | Similar names, different kinds | Name all five source heads and both manuscript/banana inputs | Test strict ALL bundles, duplicate kinds, worn shield, nested roots, wrong source, partial selections and exact supplied items against native transactions. Never infer CARVE or reading controllers from names. |
 | Cross-zone recipients and hints | Mother belongs here while physically in Scorched Valley; foreign seekers keep their owning journals | Route encounter hints to an already discovered owning journal, or provide a referral without discovering a remote zone. Qualify physical discovery, ownership, retirement, roaming, unavailable giver and rollback. |
 | Narrated transformation, escape and reunion | Credit the actual alloy, portal and letter receipts only | Builder chooses caption clarification or explicit durable campaign stages. Record actor/state transition, prerequisites and rollback before declaring Timmy human, mother reunited, shaman escaped or captives freed. |
-| Unbound/stale source descriptions | Great chamber's permanent-rift prose lacks a matching placed portal; portable-rift slain lore differs from floor reset; troll reward caption says ogre; two mages share elements keywords; dispatch caption has stale room number | These remain pending builder decisions, separate from the shipped pickup repair. Choose precise prose/aliases or an intentional controller/source change, then isolated regression, commit and news note. Do not guess a destination or add a new kill gate. |
+| Unbound/stale source descriptions | Great chamber's permanent-rift prose lacks a matching placed portal; portable-rift slain lore differs from floor reset; troll reward caption says ogre; two mages share elements keywords; dispatch caption has stale room number | These remain pending builder decisions; the pickup repair has been withdrawn. Choose precise prose/aliases or an intentional controller/source change, then isolated regression, commit and news note. Do not guess a destination or add a new kill gate. |
 | Epic/memory and possible portable shared scenery | Imported stone, memory and fixed portals remain independent systems | Qualify TOUCH admission/settlement and foreign rewards; keep unavailable paid guards. Shared level-60 pickup override can affect nominally fixed objects; observe actual presence before promising exits and use separately reviewed source-specific intent for any change. |
 
 Player cards should show the seven exact outcomes, a distinct row for every
@@ -147,3 +153,47 @@ recovery, without proving played pickup, native offer acceptance, reward
 settlement, actor movement/retirement, database persistence or daily renewal.
 No accounting activation, DB/server operation, migration, deployment or merge
 is part of this checkpoint. The full 220-zone goal remains active.
+
+
+## PvP balance boundary for mapping repairs
+
+Quest prose does not authorize restoring a disabled mechanical capability.
+Before changing pickup/weight, charges, teleport targeting, escape access,
+combat admission, source scarcity or a disabled controller, establish explicit
+builder intent and review its effect across the game. A focused test that asserts
+new portability merely tests an assumption; it does not validate that assumption
+or qualify PvP balance. Keep the original restriction while resolving the quest
+inconsistency in the plan. Fixed original portal travel is unchanged by this
+correction; direct ENTER still has existing command/arena/transport restrictions.
+
+
+## Builder-required follow-up: replace the legacy rift hotfix safely
+
+**ZSQ-FIELDS-BETWEEN-RIFT-HOTFIX-REPLACEMENT — pending builder design.**
+The owner clarified on October4,2026 that making rift71030 non-takeable was an
+old intentional hotfix for the game-breaking escape mechanic it introduced.
+The protection was deliberate. The original implementation may not be the best
+long-term quest design, but removing the restriction is not an acceptable quest
+repair. Preserve the restored original TAKE/weight and fixed portal behavior
+until the replacement is explicitly designed and reviewed.
+
+Preferred candidate: give the shaman a separate inert rift remnant as quest
+proof, while the working portal stays stationary. The new proof must have no
+ITEM_TELEPORT type, ENTER dispatch, travel procedure or escape effect. A builder
+could instead choose an interaction at the fixed rift or intentionally retire
+the old hand-in; those are design alternatives, not implemented mechanics.
+The slain-rift description may inform an intended producer, but does not itself
+establish a kill/drop controller or authorize binding one.
+
+| Builder decision / acceptance | Required proof before implementation or release |
+| --- | --- |
+| Exact producer, acquisition and giver | Choose a distinct inert proof VNUM/source, amount, stock/reset rules and shaman input. Define personal first source versus valid gifts and any combat prerequisite explicitly; no automatic kill requirement from prose. |
+| Preserve PvP mobility restrictions | Fixed portal71030 remains non-takeable at original weight; proof cannot teleport from inventory, equipment, containers or floor. Review pickup, DROP/GET/gifts, combat/escape, charges/cooldown and any shared selector behavior; no new unrestricted portable travel. |
+| Native hand-in and player explanation | Decide reward/departure/repeatability and replace stale pickup/escape guidance. Explain how to obtain the inert proof and what completing the quest actually does; do not promise player travel or shaman departure without implemented outcomes. |
+| Contract and historical receipt compatibility | A new input changes native completion identity. Version the mapping deliberately, retain legacy receipts/frozen recovery and decide old/new achievement/daily grouping; test upgrades, replay, erasure and cold recovery without silently rewriting historical credit. |
+| Accounting and transaction qualification | Active, ready accounting is mandatory. Admit real source/root/custody, exact consumption and reward settlement; test insufficient/duplicate/worn/nested inputs, gifts, retries, rollback, concurrent offers, actor retirement and actual renewal. |
+| Reviewable fix and news | Separate implementation commit with explicit intended balance, original restriction/counterexample tests and played quest qualification. Withdrawn portability claim stays withdrawn; announce only the implemented final quest behavior. |
+
+This follow-up is required builder work, not a promise that the current legacy
+request can be completed through ordinary pickup. No replacement proof, producer,
+portal mobility, quest recipe or new credit is enabled by this documentation.

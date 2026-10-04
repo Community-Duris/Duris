@@ -114,7 +114,7 @@ assert [t['item_vnums'] for t in tundra['stories'][5]['steps'] if t['kind'] == '
 assert all(t.get('optional') for s in tundra['stories'] for t in s['steps'][:-1])
 
 fields_between=next(m for m in catalog['story_mappings'] if m['source_area']=='fields_between')
-assert (fields_between['schema_version'],fields_between['revision'],fields_between['coverage'])==(3,1,'complete')
+assert (fields_between['schema_version'],fields_between['revision'],fields_between['coverage'])==(3,2,'complete')
 assert len(fields_between['stories'])==7 and len(fields_between['contacts'])==22 and not fields_between['exclusions']
 assert all(s['category']=='story' for s in fields_between['stories'])
 assert report['eligible_by_zone']['710']==7
@@ -144,6 +144,16 @@ assert len(ceothia['stories'][0]['contracts'])==4 and len({c['giver_vnum'] for c
 assert ceothia['stories'][1]['steps'][0]['contracts']==ceothia['stories'][0]['contracts']
 assert ceothia['stories'][4]['steps'][1]['count']==2
 assert all(t.get('optional') for s in ceothia['stories'] for t in s['steps'][:-1])
+
+brad=next(m for m in catalog['story_mappings'] if m['source_area']=='brad')
+assert (brad['schema_version'],brad['revision'],brad['coverage'])==(3,2,'complete')
+assert len(brad['stories'])==5 and len(brad['contacts'])==16 and not brad['exclusions']
+assert report['eligible_by_zone']['1350']==5 and all(s['category']=='story' for s in brad['stories'])
+assert sum(len(c['topics']) for c in brad['contacts'])==32
+assert sum(t.get('optional',False) for s in brad['stories'] for t in s['steps'])==10
+assert brad['stories'][3]['steps'][0]['contracts']==brad['stories'][4]['contracts']
+assert [t['item_vnums'] for t in brad['stories'][2]['steps'][:-1]]==[[134131],[134132],[134133],[134134],[134135]]
+assert all(t.get('optional') for s in brad['stories'] for t in s['steps'][:-1])
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

@@ -4523,11 +4523,11 @@ assert 'economic_source_kind::crafting' in tradeskill
 assert not re.search(r'^Duris3\s', (ROOT/'areas/AREA').read_text(encoding='utf8'),re.M)
 
 
-# Fields Between: shared mithril, five distinct heads, portable portal and roaming mother.
+# Fields Between: shared mithril, distinct heads, restored fixed portal and roaming mother.
 import subprocess
 fields_between=inventory_module.area_evidence(ROOT,'fields_between')
 mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='fields_between')
-assert (mapping['schema_version'],mapping['revision'],mapping['coverage'])==(3,1,'complete')
+assert (mapping['schema_version'],mapping['revision'],mapping['coverage'])==(3,2,'complete')
 assert len(mapping['stories'])==7 and len(mapping['contacts'])==22 and not mapping['exclusions']
 assert all(s['category']=='story' for s in mapping['stories'])
 assert collections.Counter(t['kind'] for s in mapping['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':16,'completion':1}
@@ -4804,7 +4804,93 @@ assert 'fixed, closed and locked; ordinary lockpicking or knock' in stories['mer
 
 
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone", "opalphoenix", "mira", "surfacekeeps", "icecrag", "cloister", "willem", "ixarkon", "mntcastl", "tundra", "fields_between", "goblinht", "ceothia"):
+# Braddistock1350: preserve canonical ownership while explaining the physical Tower story.
+brad=inventory_module.area_evidence(ROOT,'brad')
+brad_mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='brad')
+assert (brad_mapping['schema_version'],brad_mapping['revision'],brad_mapping['coverage'])==(3,2,'complete')
+assert len(brad_mapping['stories'])==5 and len(brad_mapping['contacts'])==16 and not brad_mapping['exclusions']
+assert all(s['category']=='story' for s in brad_mapping['stories'])
+assert collections.Counter(t['kind'] for s in brad_mapping['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':9,'completion':1}
+brad_blocks=[b for b in inventory_module.native_blocks(ROOT) if 134142<=b['giver_vnum']<=135048]
+assert collections.Counter(b['kind'] for b in brad_blocks)=={'M':9,'Q':5}
+assert {b['source'] for b in brad_blocks}=={'areas/qst/lortower.qst'}
+brad_by_line={b['line']:b for b in brad_blocks if 'binding' in b}
+brad_ids=['request-134146-a4f6aa87c7b1','request-134150-cc22370abf33','request-134162-0aa9fcadf7a5','request-134167-d86a832b706b','request-134169-05c42346bab0']
+assert [s['id'] for s in brad_mapping['stories']]==brad_ids
+for story,(line,giver,inputs,outputs,retire) in zip(brad_mapping['stories'],(
+ (201,134146,[('I',134105)],[('I',134106)],True),
+ (218,134150,[('I',134006)],[('E',100000)],False),
+ (266,134162,[('I',134131),('I',134132),('I',134133),('I',134134),('I',134135)],[('I',134125)],True),
+ (292,134167,[('I',134144)],[('I',134145)],False),
+ (304,134169,[('I',134048)],[('I',134144)],False),
+)):
+ b=brad_by_line[line];assert (b['giver_vnum'],b['give'],b['receive'],b['disappear'])==(giver,inputs,outputs,retire)
+ assert story['contracts']==[b['binding']] and story['steps'][-1]['contracts']==story['contracts']
+ d=next(r['definition'] for r in brad['requests'] if r['block']['line']==line)
+ assert (d['zone_number'],d['source_area'],d['daily_eligible'])==(1350,'brad',True)
+ assert 'Tower of Darkness' in story['summary']
+assert brad_mapping['stories'][3]['steps'][0]['contracts']==brad_mapping['stories'][4]['contracts']
+assert [t['item_vnums'] for t in brad_mapping['stories'][2]['steps'][:-1]]==[[134131],[134132],[134133],[134134],[134135]]
+assert all(t.get('optional') for s in brad_mapping['stories'] for t in s['steps'][:-1])
+assert not any(s['steps'][-1].get('optional') for s in brad_mapping['stories'])
+brad_units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==1350]
+assert (len(brad_units),sum(u['achievement'] for u in brad_units),sum(u['daily_candidate'] for u in brad_units))==(5,5,5)
+brad_contacts={c['mob_vnum']:c for c in brad_mapping['contacts']}
+assert sum(len(c['topics']) for c in brad_contacts.values())==32
+for b in brad['dialogue']:assert set(b['body'][0].rstrip('~').split())<=set(brad_contacts[b['giver_vnum']]['topics'])
+for v,c in brad_contacts.items():assert c['keyword'] in inventory_mobs[v]['keywords']
+for v in (134150,135014,135003,135008,135009):assert brad_contacts[v]['topics']==[]
+brad_rooms=dawndale_bodies('brad','wld');brad_mobs=dawndale_bodies('brad','mob');brad_objects=dawndale_bodies('brad','obj')
+assert (len(brad_rooms),len(brad_mobs),len(brad_objects))==(48,14,73)
+assert set(brad_rooms)==set(range(135001,135049)) and set(brad_mobs)==set(range(135001,135015)) and set(brad_objects)==set(range(135001,135074))
+assert (brad['zone']['first_vnum'],brad['zone']['last_vnum'],brad['zone']['reset_mode'])==(134142,135048,2)
+assert len({tuple(b.split('~')[:2]) for b in brad_rooms.values()})==47
+assert len({b.split('~')[2].splitlines()[1] for b in brad_rooms.values()})==5
+assert len({b.split('~')[3] for b in brad_mobs.values()})==14
+brad_exits=[x for b in brad_rooms.values() for x in re.finditer(r'\bD(\d+)\s+([^~]*)~([^~]*)~\s*(-?\d+)\s+(-?\d+)\s+(-?\d+)',b,re.S)]
+assert len(brad_exits)==99 and len({(x[2],x[3]) for x in brad_exits})==83
+brad_extras=[x.groups() for b in brad_rooms.values() for x in re.finditer(r'^E\s*\n([^~]*)~([^~]*)~',b,re.M)]
+assert len(brad_extras)==26 and len(set(brad_extras))==25
+assert not any(re.search(r'^[FT]\b',b,re.M) for b in brad_rooms.values())
+assert not any(re.search(r'^T\b',b,re.M) for b in brad_objects.values())
+assert not any(objvalues(b)[0] in (25,29) for b in brad_objects.values())
+assert not (ROOT/'areas/qst/brad.qst').exists() and not (ROOT/'areas/shp/brad.shp').exists()
+assert not any(int(b.split('~')[2].split()[1])&(1<<19) for b in brad_rooms.values())
+assert {(x['kind'],x['vnum'],x['function']) for x in brad['special_assignments']}=={('mob',135014,'braddistock')}
+assert objvalues(brad_objects[135003])[0]==15 and objvalues(brad_objects[135003])[12:14]==[5,-1]
+assert objvalues(brad_objects[135040])[0]==15 and objvalues(brad_objects[135040])[6]&32768 and not objvalues(brad_objects[135040])[6]&(32|4096)
+assert objvalues(brad_objects[135046])[0]==15 and objvalues(brad_objects[135046])[12:14]==[13,135050]
+assert objvalues(brad_objects[135052])[0]==22 and objvalues(brad_objects[135033])[0]==objvalues(brad_objects[135034])[0]==8
+assert re.search(r'\bD2\s+[^~]*~[^~]*~\s*2 135016 135027\b',brad_rooms[135026],re.S)
+assert re.search(r'\bD0\s+[^~]*~[^~]*~\s*1 135016 135026\b',brad_rooms[135027],re.S)
+brad_resets=brad['reset_commands'];assert len(brad_resets)==175
+assert collections.Counter(r['command'] for r in brad_resets)=={'D':10,'O':74,'P':26,'M':48,'E':17}
+assert len({(r['command'],tuple(r['arguments'])) for r in brad_resets})==116
+parent=None;families=[]
+for r in brad_resets:
+ if r['command']=='M':parent=(r['command'],tuple(r['arguments']))
+ families.append((r['command'],tuple(r['arguments']),parent if r['command'] in ('E','G','F') else None))
+assert len(set(families))==125
+assert sum(r['command']=='P' and r['arguments'][3]==135024 for r in brad_resets)==9
+assert any(r['command']=='P' and r['arguments'][1:4]==[135004,1,135003] for r in brad_resets)
+assert any(r['command']=='P' and r['arguments'][1]==135042 and r['arguments'][3]==135040 for r in brad_resets)
+assert not any(r['command'] in ('O','P','G','E') and r['arguments'][1] in (135050,135071,135073) for r in brad_resets)
+brad_tower_objects=dawndale_bodies('lortower','obj')
+assert [objvalues(brad_tower_objects[v])[0] for v in (134105,134006,134048,134125,134144,134145)]==[4,12,12,12,13,9]
+assert all(objvalues(brad_tower_objects[v])[0]==12 for v in range(134131,134136))
+brad_tower_resets=(ROOT/'areas/zon/lortower.zon').read_text(encoding='utf8')
+for giver,room in ((134146,134112),(134150,134127),(134162,134138),(134167,134140),(134169,134042)):
+ assert re.search(rf'^M 0 {giver} 1 {room} 100\b',brad_tower_resets,re.M)
+for source,item,room in ((134004,134006,134010),(134040,134131,134018),(134062,134132,134029),(134081,134048,134039),(134081,134133,134039),(134091,134134,134046),(134133,134135,134122)):
+ assert re.search(rf'^M 0 {source} 1 {room}[^\n]*\n(?:(?!M |O ).*\n)*?G 1 {item} 1 ',brad_tower_resets,re.M)
+assert re.search(r'^M 0 134148 1 134114[^\n]*\nE 1 134105 1 18 ',brad_tower_resets,re.M)
+assert inventory_module.area_evidence(ROOT,'lortower')['zone']['reset_mode']==0
+assert 'obj_index[real_object0(1372)].func.obj = jet_black_maul;' in (ROOT/'src/specs/specs.assign.c').read_text(encoding='utf8')
+assert 'send_to_char(' in (ROOT/'src/specs/specs.braddistock.c').read_text(encoding='utf8')
+assert (ROOT/'tests/async/test_braddistock_entry.py').exists()
+
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone", "opalphoenix", "mira", "surfacekeeps", "icecrag", "cloister", "willem", "ixarkon", "mntcastl", "tundra", "fields_between", "goblinht", "ceothia", "brad"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

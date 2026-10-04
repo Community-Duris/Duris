@@ -1804,13 +1804,15 @@ The monkey manuscript is actually worn as a shield; bananas and the prepared
 body are miscellaneous quest items. Guide exact loose custody without inventing
 reading, eating, corpse creation or personal victory prerequisites.
 
-Trace automatic type25 ENTER behavior alongside resets. The small circular
-rift is placed on the floor, distinct from the living rift creature. ENTER
-reaches a looping room and its gateway returns to the fields; offering consumes
-the portable rift. Native pickup fix05eeca928 is separate, narrowly changes TAKE
-and weight and has a news-ready note. Other source-description discrepancies
-remain pending builder choices. Narrated escape, human restoration and reunion
-need explicit durable campaign adapters before completion credit.
+Trace automatic type25 ENTER behavior alongside resets. Rift71030 is fixed on
+the floor with original TAKE=0/weight1,000,000. Earlier portability fix05eeca928
+was incorrect and withdrawn by correctiond2a64432d: inventory ENTER would make
+this unlimited portal an unintended portable escape tool. Native quest prose
+alone does not authorize enabling disabled mechanics. The shaman's delivery
+source remains unavailable; builder intent must choose a non-teleport proof,
+source-bound interaction or recipe retirement. Do not advertise pickup as fixed.
+Existing fixed travel remains separate from any accepted native supplied-item
+receipt. Narrated escape/restoration/reunion still needs explicit campaign facts.
 
 Active, ready accounting remains mandatory. Current availability, source versus
 gift, portal travel, actor retirement and reset renewal need actual admitted
@@ -1877,3 +1879,46 @@ ready accounting. Source review and synthetic receipts do not qualify actual
 source/trap/door/travel/effect/learning/crew/offer/settlement or daily renewal.
 No native repair ships with this journal checkpoint. Future implemented repairs
 need a separate named fix commit and prominent PR news; proposals stay labeled.
+
+
+## Braddistock example: keep physical location and credit owner explicit
+
+The [zone1350 dossier](../design/zone-stories/BRADDISTOCK_MANSION_1350.md) and
+[sidecar](../../areas/story/brad.story.json) preserve five native IDs/bindings
+while explaining their actual Tower locations. A giver's current VNUM range
+sets credit ownership; its declared area/reset room can differ. Sidecars cannot
+currently borrow a foreign binding or discover the owner from an encounter.
+Record the mismatch, source/recipient episodes and a physical-referral plan;
+do not silently migrate native receipts or imply reliable daily renewal.
+
+Use ten optional preparation checks: nine exact loose inputs and one earlier
+Isabia receipt for Danthas. Five different Star Stone pieces are distinct kinds,
+not five copies of any piece. The conjurer's held staff must become loose. The
+head is fixed carried proof; ring type13 TRASH and bone key type12 OTHER are
+valid exact offerings. Supplied ring/materials do not require personal source,
+combat, earlier receipt, escort or travel. An old receipt cannot restore supplies.
+
+Local books, extra descriptions, secret cellar, skeletons, alchemy and smuggler
+cave can explain an exploration story without inventing native completion.
+Validate types, bit positions and actual bindings: skeleton135040 has NOLOCATE,
+not invisible/secret; book flags5 are closed/unlocked; world door kind2 is valid
+pickable encoding; boat type22 is not teleport; local maul135071 is not older
+bound1372. Missing strongbox key source still permits ordinary PICK/KNOCK where
+admitted. Builder intent is needed before adding stock, lab conversion or voyage.
+
+Separate fix5b4c4f34a restores the spirit's refusal speech to the blocked player
+with a newline. Its threshold/staff bypass and observer messages stay intact;
+original-fails/repaired-passes isolated production-function proof is distinct
+from a played network journey. Keep native repairs in named fix commits and
+prominent PR news; stock, prose, campaign and physical-referral proposals remain
+labeled. Active, ready accounting is mandatory; frozen recovery is separate.
+
+
+For Fields Between, the owner confirmed that the original non-takeable flag
+was an intentional hotfix for a game-breaking escape mechanic. Required builder
+follow-up ZSQ-FIELDS-BETWEEN-RIFT-HOTFIX-REPLACEMENT must preserve that protection
+while designing a proper quest proof or fixed-source interaction. Prefer an
+inert non-teleport remnant; version changed native inputs/receipts explicitly
+and qualify source/gifts, PvP restrictions and accounting settlement/recovery.
+The [full acceptance checklist](../design/zone-stories/FIELDS_BETWEEN.md) keeps
+this pending work separate from shipped fixes and news.
