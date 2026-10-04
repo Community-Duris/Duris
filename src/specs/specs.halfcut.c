@@ -95,7 +95,7 @@ int crossbow_ambusher(P_char ch, P_char /*player*/, int cmd, char * /*arg*/)
 				act("A crossbow bolt flies in from the north, striking $N!", 0,
 				    player, 0, player, TO_ROOM);
 				act("A crossbow bolt flies in from the north striking you!", 0,
-				    player, 0, player, TO_VICT);
+				    player, 0, player, TO_CHAR);
 				damage(ch, player, dice(2, 4) + 10, TYPE_UNDEFINED);
 			}
 		}

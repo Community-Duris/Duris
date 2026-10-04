@@ -16,7 +16,7 @@ PRELUDE = r'''
 #include <unordered_map>
 #include <vector>
 constexpr int TRUE=1, FALSE=0, CMD_SET_PERIODIC=-10, CMD_PERIODIC=0;
-constexpr int NOWHERE=-1, TO_ROOM=1, TO_VICT=2, TYPE_UNDEFINED=-1;
+constexpr int NOWHERE=-1, TO_ROOM=1, TO_VICT=2, TO_CHAR=3, TYPE_UNDEFINED=-1;
 struct Character {
     uint64_t runtime_id=0;
     int in_room=0, hits=0;
@@ -43,8 +43,10 @@ int real_room0(int vnum) {
     return vnum==27139 ? 1 : vnum==27137 ? 2 : vnum==27136 ? 3 : 0;
 }
 int dice(int count,int sides) { assert(count==2 && sides==4); return 5; }
-void act(const char *,int,P_char ch,void *,P_char target,int) {
+void act(const char *,int,P_char ch,void *,P_char target,int audience) {
     assert(ch==target && char_in_list(target) && target->alive);
+    // Production act suppresses the actor unless the audience is TO_CHAR.
+    if (audience==TO_VICT && ch==target) return;
     ++messages;
 }
 bool damage(P_char ch,P_char target,int amount,int type) {
