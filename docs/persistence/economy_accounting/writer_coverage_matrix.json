@@ -2,33 +2,70 @@
   "artifact_kind": "source_reviewed_economy_item_writer_coverage_matrix",
   "blockers": [
     "Gameplay writers outside the qualified bank/baseline and eligible item custody slices still use schema-1 legs or direct legacy mutations; block those writers after accounting activation until typed schema-2 authorization and atomic evidence are attached.",
-    "Every current lexical candidate is mapped, but route reachability, backend behavior and executable evidence remain unqualified.",
+    "465 unique lexical candidate sites remain unmapped; classify real writers vs projections/cleanup/staging before release.",
     "The SQL coin component has balanced postings, but no complete gameplay route is qualified; legacy currency/item/domain ledgers are not substitutes.",
     "Every supported MySQL/MariaDB and flat-file backend needs same-root state/evidence/receipt atomicity and verified post-commit publication/reconnect handling.",
     "Baseline/cutover, source-event dedupe, item UID lifetime, lifecycle retirement and restore/reconciliation remain activation blockers."
   ],
-  "candidate_worktree_evidence": null,
+  "candidate_worktree_evidence": {
+    "base_commit": "db682ade5201611e3811efe6225dfd82a42cf101",
+    "scope": "31-file coin/collector/shared owner composition; no native qualification or complete census claim",
+    "source_pins": {
+      "src/Makefile": "f8da5e0c9bb000accfd9cc3957b88ae0e19d9190c061761fd7008f9ebdef990c",
+      "src/economy/coin_physical_recovery.c": "a64e8f47c814aeb34c11ea3e6051f2527b3d2b80da5963a9a0175b149d30b8ae",
+      "src/economy/coin_physical_recovery.h": "c68cc556958cc45b8e71260824f4ac717d060cd7750bd45d57a45b798bccaf9a",
+      "src/economy/collector_purchase_publication.c": "7ca24ec6b64fb1a1a12517d39efa26bf39629f01b475ac972c507a98a9800f36",
+      "src/economy/collector_repository.c": "4a4467a8330a9b25e3d417b147834ed231558acceeafe4736754d0681acf57fd",
+      "src/economy/collector_repository.h": "2b5cea486a07731dd3066231d0b8eead7781a5d047d25e6c066ea9b79b791866",
+      "src/economy/collector_service.c": "6745b7195d6a3fea29d1c055361b5cc7946d89425d4869fc8d2d9edf87bf1da9",
+      "src/economy/collector_service.h": "93e570d53700b31019ac9e981e737d2a1f2361bcc4fe82be021677e4fee42d2c",
+      "src/economy/collector_transaction.c": "f0dfb12bcfc4b1efc6369e0bc19d9b15d4e07543360320df5614a34d19bf8ddf",
+      "src/economy/collector_transaction.h": "e079d6188874f2cc05b73a7aaf919fef077d8445070074cbad8ea5f1ce2b44b9",
+      "src/economy/currency_transaction.c": "4e505f698b8c266bac8b16f31e31a75e059e93a43fe1b40dbf9d23884f6152c7",
+      "src/economy/currency_transaction.h": "fa8fa610b7af6b485575cebb22d3fab61f7adc8abdd480585ce1549795516035",
+      "src/economy/economic_command_admission.c": "4d19e7292b9da2286ef7149b78e301fd8f7e4678a6f4540e79fa7d32364f79d7",
+      "src/economy/economic_command_admission.h": "b39124f83bc383a4b00aec2f70c1d8bac6a3515a5ee531f6f92104b9b5b2e072",
+      "src/economy/economic_gameplay_authority.c": "fab5cf26a39abc5e3c3995b988477d36c7ef5cebdfd9bf48532c5b397e980348",
+      "src/economy/economic_gameplay_authority.h": "d9108e235bd4c164d7da1e41cd401cb54bc921737b87bda12acb20b95defe0f7",
+      "src/flatfile/flatfile_accounting_coin_transaction.c": "33bb8a2ff118f56e014334407a4e692f0cf6c13129d5c423a0801b556328deb6",
+      "src/flatfile/flatfile_accounting_coin_transaction.h": "5748b372071de1d681b2d81886439b3975382454462aa95f00451d034c483329",
+      "src/flatfile/flatfile_player_repository.c": "efc58eb49106a20d0a533d5a71592b8c257fcbf7b17ced077a4421c409f9c93a",
+      "src/net/comm.c": "e548eefb57307c0ee304dc65fc850a4f0244f050fc4af721bb92424fbd76f812",
+      "src/persistence/critical_command.c": "7aa70842722b523573cc75e8ecabccfe44e8705353cb16a2a43089f43fc38556",
+      "src/persistence/critical_command_coordinator.c": "3d45e3913f6bdea35f4b0ced31a98a7fcdf8cf18ec316e4ffb04083693448afb",
+      "src/persistence/critical_command_coordinator.h": "8b3157873ab3277c87106908d5bd32c025e59469fee2a372c0cf1ff09adc8c27",
+      "src/persistence/critical_command_repository.c": "7b4ea4a96fc58f8deb5a8c5cce4b19218049667289c3b7fd63a0bf6fd72544ee",
+      "src/persistence/critical_command_repository.h": "157fb58754a939a1a93108ab6b80609924c3fc51e2239419fc3852616f82ccdd",
+      "src/player/inert_item_stage.c": "3f62fecb86f85419aa3598500093e6f000abc8c6b22ef4748040d27261ab221b",
+      "src/player/inert_item_stage.h": "8f389331e401b16d85712cec8323e1fe5bf7ef9fbc2f4f163769ec9dcfc40be4",
+      "src/player/player_save_execution_guard.h": "91e9f23b2e37fd922df47df9e657db5810b34adba080a9dc170e6f417240e2ce",
+      "src/player/player_save_pipeline.c": "694a72833a14d72c59ab313d17d818ffede3104cbf2e35fd6c56847d6cfad50d",
+      "src/player/player_save_pipeline.h": "890d36897cde73775541704051b5fe33115a28a350aff2150c5de54ee66f39e0",
+      "src/player/player_snapshot_repository.c": "58d5bbd01c3b48d496369b92b64178d6d5e0ec3ce4c30efca22eed3d09e8eb8f"
+    },
+    "status": "source_integrated_unqualified"
+  },
   "counts": {
     "dormant_writer_candidates": 14,
-    "draft_registry_rows": 872,
-    "function_definition_anchors_verified": 864,
-    "matrix_rows": 872,
+    "draft_registry_rows": 885,
+    "function_definition_anchors_verified": 877,
+    "matrix_rows": 885,
     "non_function_candidate_anchors": 8,
-    "non_writer_or_out_of_scope_candidates": 97,
+    "non_writer_or_out_of_scope_candidates": 106,
     "offline_operational_writer_routes": 4,
     "routes_with_current_schema_1_path": 85,
     "routes_with_schema_2_gameplay_producer": 15,
     "routes_with_unified_double_entry_evidence": 2,
-    "runtime_mutation_and_projection_routes": 757,
+    "runtime_mutation_and_projection_routes": 761,
     "supplemental_candidates_found": 0
   },
   "coverage_complete": false,
   "disposition_counts": {
     "dormant_writer_candidate": 14,
-    "non_writer_candidate": 97,
+    "non_writer_candidate": 106,
     "offline_operational_writer": 4,
-    "runtime_mutation_route": 691,
-    "runtime_projection_route": 66
+    "runtime_mutation_route": 692,
+    "runtime_projection_route": 69
   },
   "global_schema_and_accounting_evidence": {
     "critical_command_accounting_schema_2": "src/persistence/critical_command.h:10",
@@ -40,35 +77,35 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 872 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
-    "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
+    "The matrix reconciles 885 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The 465 unmapped lexical sites may include shared helpers, staging, recovery or unrelated mutations; review each before release.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2818,
-    "current_unique_path_line_family_sites": 2759,
-    "draft_registry_census_complete": true,
+    "current_occurrences": 2836,
+    "current_unique_path_line_family_sites": 2777,
+    "draft_registry_census_complete": false,
     "draft_source_commit": "5f542e9cf769dfa7ef89e28ce4845d7495d4e1b3",
-    "draft_to_current_unique_sites_added": 0,
-    "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2759,
+    "draft_to_current_unique_sites_added": 470,
+    "draft_to_current_unique_sites_removed": 464,
+    "draft_unique_sites": 2771,
     "family_occurrences": {
-      "coin_assignment": 164,
-      "coin_bulk_mutation": 16,
+      "coin_assignment": 172,
+      "coin_bulk_mutation": 23,
       "direct_cash_assignment": 12,
-      "economic_submit": 188,
-      "item_lifecycle": 1147,
-      "item_publication": 1063,
+      "economic_submit": 186,
+      "item_lifecycle": 1151,
+      "item_publication": 1064,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
       "sql_economy": 56
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 872-row registry maps 2759 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2759,
-    "mapped_unique_sites_from_draft_rows": 2759,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 885-row registry maps 2312 current unique sites; 465 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2312,
+    "mapped_unique_sites_from_draft_rows": 2776,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
-    "unmapped_current_unique_sites": 0
+    "unmapped_current_unique_sites": 465
   },
   "method": {
     "candidate_source": "docs/persistence/economy_accounting/writers.json (source-reviewed registry, including legacy settlement definitions)",
@@ -118,7 +155,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1952
+          1953
         ],
         "file": "src/account/account.c",
         "function": "cleanup_temp_char",
@@ -5820,7 +5857,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3639
+          3696
         ],
         "file": "src/cmd/actobj.c",
         "function": "refund_committed_coin_debit",
@@ -5885,7 +5922,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4130
+          4204
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_put",
@@ -6013,13 +6050,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4681
+          4897
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_debit",
         "original_draft_symbol": "submit_coin_debit"
       },
-      "source_classification": "Wallet-to-pile transfer, including actual pile UID creation or merge; neither issuance nor expense. Current debit precedes live publication.",
+      "source_classification": "Active ordinary-room single-root drop prepares one typed wallet/pile root and retains physical publication through durable ACK. Inactive legacy debit/refund remains; unsupported active placement refuses. Source implemented, actual producer/backend/recovery qualification pending.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -6077,7 +6114,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3813
+          3870
         ],
         "file": "src/cmd/actobj.c",
         "function": "begin_coin_give_credit",
@@ -6124,7 +6161,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3888
+          3945
         ],
         "file": "src/cmd/actobj.c",
         "function": "prepare_coin_pile",
@@ -6189,13 +6226,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4379
+          4473
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_get",
         "original_draft_symbol": "submit_coin_get"
       },
-      "source_classification": "Partial/full pile pickup; unknown pile first admitted separately.",
+      "source_classification": "Active ordinary-room single-root full/partial pickup prepares one typed pile/wallet root and retains exact literal/native result publication through ACK. Containers and unsupported active placement remain refused; inactive legacy behavior remains. Source implemented, actual backend/cold recovery qualification pending.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -6253,7 +6290,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3752
+          3809
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_give",
@@ -6379,13 +6416,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          809
+          1274
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_coin",
         "original_draft_symbol": "currency_transaction_submit_coin"
       },
-      "source_classification": "Coin dispatch builds wallet and pile commands; one root must cover money and UID payload.",
+      "source_classification": "Schema-2 physical coin dispatch validates immutable command/result terms before projection, retains original receipt conflicts and revalidates body/account/race and physical proof for every ACK attempt. Generic owner does not link native world publication. Source-only; complete active producer and recovery journeys unqualified.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -6551,7 +6588,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1498
+          1559
         ],
         "file": "src/economy/collector_repository.c",
         "function": "collector_repository_apply_item_boundary",
@@ -6922,7 +6959,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          654
+          803
         ],
         "file": "src/economy/collector_service.c",
         "function": "handle_found",
@@ -6987,7 +7024,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2374
+          2437
         ],
         "file": "src/economy/collector_repository.c",
         "function": "collector_repository_execute",
@@ -7048,7 +7085,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          265
+          619
         ],
         "file": "src/economy/collector_transaction.c",
         "function": "collector_transaction_submit",
@@ -9300,7 +9337,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1169
+          1634
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_payment",
@@ -9364,7 +9401,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1079
+          1544
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_reward",
@@ -9665,8 +9702,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          481,
-          12691
+          486,
+          12763
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -9922,7 +9959,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1130
+          1595
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_prepare_identify",
@@ -10234,7 +10271,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1385
+          1388
         ],
         "file": "src/persistence/critical_command_repository.c",
         "function": "execute_currency_state",
@@ -10295,7 +10332,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          955
+          1420
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_prepared",
@@ -10487,7 +10524,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          624
+          1089
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_publish_wallet",
@@ -10612,7 +10649,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1050
+          1515
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_wallet_value",
@@ -16352,7 +16389,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2378
+          2435
         ],
         "file": "src/cmd/actobj.c",
         "function": "start_bulk_get",
@@ -16413,7 +16450,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3422
+          3479
         ],
         "file": "src/cmd/actobj.c",
         "function": "drop_transient_object",
@@ -16601,7 +16638,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          828
+          880
         ],
         "file": "src/cmd/actobj.c",
         "function": "defer_durable_put",
@@ -16663,7 +16700,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          455
+          456
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_container_get",
@@ -17101,8 +17138,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3009,
-          3021
+          3541,
+          3553
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17164,7 +17201,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1288
+          1408
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17226,7 +17263,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1188
+          1308
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17411,7 +17448,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1069
+          1189
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -17594,7 +17631,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6497
+          6715
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_drink",
@@ -17656,7 +17693,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10183
+          10401
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_empty_objects",
@@ -18347,7 +18384,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7866
+          8084
         ],
         "file": "src/cmd/actobj.c",
         "function": "remove_item",
@@ -18409,7 +18446,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7800
+          8018
         ],
         "file": "src/cmd/actobj.c",
         "function": "execute_wear",
@@ -18533,7 +18570,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          910
+          1030
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -18595,7 +18632,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          917
+          1037
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -18826,7 +18863,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6695
+          6913
         ],
         "file": "src/cmd/actobj.c",
         "function": "apply_eaten_item",
@@ -19668,7 +19705,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3257
+          3789
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19730,7 +19767,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3069
+          3601
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -19794,7 +19831,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3120
+          3177
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_junk",
@@ -19855,7 +19892,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4722
+          4940
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_dropalldot",
@@ -19977,7 +20014,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4839
+          5057
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_drop",
@@ -20038,7 +20075,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1348
+          1405
         ],
         "file": "src/cmd/actobj.c",
         "function": "get",
@@ -20099,7 +20136,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6009
+          6227
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_give",
@@ -20160,7 +20197,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6004
+          6222
         ],
         "file": "src/cmd/actobj.c",
         "function": "put",
@@ -20342,7 +20379,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9903
+          10121
         ],
         "file": "src/cmd/actobj.c",
         "function": "list_foods",
@@ -20716,7 +20753,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2152
+          2738
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -20961,7 +20998,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          728
+          780
         ],
         "file": "src/cmd/actobj.c",
         "function": "pet_give_completion",
@@ -21084,7 +21121,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9807
+          10025
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_apply_poison",
@@ -21367,7 +21404,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1564
+          1684
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21429,7 +21466,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1120
+          1240
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21797,7 +21834,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          975
+          1095
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -23135,7 +23172,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6326
+          6544
         ],
         "file": "src/cmd/actobj.c",
         "function": "weight_change_object",
@@ -24472,7 +24509,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2038
+          2163
         ],
         "file": "src/core/files.c",
         "function": "delete_character_result",
@@ -24863,8 +24900,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          306,
-          5518
+          311,
+          5588
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_account",
@@ -24928,8 +24965,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          281,
-          1254
+          286,
+          1300
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_player",
@@ -24990,8 +25027,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          722,
-          4847
+          737,
+          4950
         ],
         "file": "src/sql/sql.c",
         "function": "sql_pwipe",
@@ -25037,8 +25074,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          549,
-          2885
+          564,
+          2988
         ],
         "file": "src/sql/sql.c",
         "function": "sql_soft_delete_character",
@@ -30471,7 +30508,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4173
+          4301
         ],
         "file": "src/core/files.c",
         "function": "confiscate_all",
@@ -30518,7 +30555,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4077
+          4205
         ],
         "file": "src/core/files.c",
         "function": "confiscate_item",
@@ -30576,7 +30613,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4077
+          4205
         ],
         "file": "src/core/files.c",
         "function": "confiscate_item",
@@ -30636,7 +30673,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2278
+          2283
         ],
         "file": "src/player/player_snapshot_repository.c",
         "function": "apply_death",
@@ -30697,7 +30734,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1775
+          1810
         ],
         "file": "src/core/files.c",
         "function": "writeCharacter",
@@ -30757,7 +30794,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1775
+          1810
         ],
         "file": "src/core/files.c",
         "function": "writeCharacter",
@@ -30817,7 +30854,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2232
+          2360
         ],
         "file": "src/core/files.c",
         "function": "restoreStatus",
@@ -30971,7 +31008,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          846
+          851
         ],
         "file": "src/core/files.c",
         "function": "writeObjectlist",
@@ -31018,7 +31055,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1223
+          1228
         ],
         "file": "src/core/files.c",
         "function": "write_one_object",
@@ -31078,7 +31115,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1223
+          1228
         ],
         "file": "src/core/files.c",
         "function": "write_one_object",
@@ -31138,8 +31175,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          477,
-          12556
+          482,
+          12628
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -31199,8 +31236,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          246,
-          4160
+          251,
+          4230
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_status",
@@ -31261,7 +31298,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1775
+          1810
         ],
         "file": "src/core/files.c",
         "function": "writeCharacter",
@@ -32681,7 +32718,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3316
+          3444
         ],
         "file": "src/core/files.c",
         "function": "restoreObjects",
@@ -32742,7 +32779,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4680
+          4808
         ],
         "file": "src/core/files.c",
         "function": "restorePetStatus",
@@ -32789,7 +32826,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4468
+          4596
         ],
         "file": "src/core/files.c",
         "function": "writePet",
@@ -32915,7 +32952,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4468
+          4596
         ],
         "file": "src/core/files.c",
         "function": "writePet",
@@ -33163,7 +33200,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4895
+          5023
         ],
         "file": "src/core/files.c",
         "function": "restoreSavedItems",
@@ -33226,8 +33263,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          430,
-          11312
+          435,
+          11384
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33288,8 +33325,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          426,
-          9532
+          431,
+          9604
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_saved_item",
@@ -33350,8 +33387,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          422,
-          9478
+          427,
+          9550
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_saved_item",
@@ -33414,7 +33451,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3765
+          3893
         ],
         "file": "src/core/files.c",
         "function": "read_one_object",
@@ -33477,8 +33514,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          395,
-          8392
+          400,
+          8464
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33525,8 +33562,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          395,
-          8392
+          400,
+          8464
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33573,7 +33610,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          924
+          966
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_format_item_diff_fields_and_free_proto",
@@ -33636,7 +33673,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6382
+          6454
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_locker_items_filtered",
@@ -33699,8 +33736,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          264,
-          4625
+          269,
+          4695
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -33763,8 +33800,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          565,
-          7243
+          570,
+          7315
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_private_chest_items",
@@ -33827,8 +33864,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          430,
-          11312
+          435,
+          11384
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33875,8 +33912,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          430,
-          11312
+          435,
+          11384
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33939,7 +33976,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9620
+          9692
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -34001,7 +34038,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9620
+          9692
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -34048,7 +34085,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9572
+          9644
         ],
         "file": "src/sql/sql_player.c",
         "function": "discard_shopkeeper_restore_stage",
@@ -34095,7 +34132,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7392
+          7464
         ],
         "file": "src/sql/sql_player.c",
         "function": "free_temp_char",
@@ -34261,7 +34298,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1441
+          1442
         ],
         "file": "src/net/modify.c",
         "function": "mob_do_rename_hook",
@@ -36391,8 +36428,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          455,
-          12133
+          460,
+          12205
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -36451,8 +36488,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          447,
-          12015
+          452,
+          12087
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -36512,8 +36549,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          443,
-          11761
+          448,
+          11833
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -36917,7 +36954,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1221
+          1425
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_buy",
@@ -36980,7 +37017,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          420
+          675
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_submit_produced_continuation",
@@ -37105,7 +37142,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1101
+          1305
         ],
         "file": "src/economy/shop.c",
         "function": "get_purchase_obj",
@@ -37168,7 +37205,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          481
+          738
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_completion",
@@ -37229,7 +37266,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2948
+          3154
         ],
         "file": "src/economy/shop.c",
         "function": "transact",
@@ -37290,7 +37327,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1899
+          2105
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_peruse",
@@ -37353,7 +37390,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2154
+          2360
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_repair",
@@ -37416,7 +37453,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1618
+          1823
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -37479,7 +37516,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1618
+          1823
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -37541,7 +37578,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2268
+          2474
         ],
         "file": "src/economy/shop.c",
         "function": "shop_keeper",
@@ -37603,7 +37640,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1976
+          2182
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_list",
@@ -37794,7 +37831,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          467
+          724
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_route_invalid_cleanup",
@@ -37855,7 +37892,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          152
+          355
         ],
         "file": "src/economy/shop_trade_transaction.c",
         "function": "shop_trade_transaction_submit",
@@ -44983,7 +45020,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2535
+          2592
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_get",
@@ -48264,8 +48301,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1973,
-          2801
+          1997,
+          2825
         ],
         "file": "src/world/db.c",
         "function": "read_mobile",
@@ -48419,7 +48456,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3081
+          3429
         ],
         "file": "src/world/db.c",
         "function": "instantiate_object_template",
@@ -49468,7 +49505,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3199
+          3547
         ],
         "file": "src/world/db.c",
         "function": "read_object",
@@ -49528,7 +49565,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3314
+          3662
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50003,7 +50040,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3314
+          3662
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50064,7 +50101,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3314
+          3662
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50124,7 +50161,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3314
+          3662
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50184,7 +50221,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3314
+          3662
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50244,7 +50281,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3314
+          3662
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50291,7 +50328,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3314
+          3662
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50847,7 +50884,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2666
+          3198
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -50913,7 +50950,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          710
+          830
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -50963,7 +51000,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          760
+          880
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",
@@ -51079,8 +51116,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          264,
-          4625
+          269,
+          4695
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -51266,7 +51303,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          11126
+          11198
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_room_item_publish",
@@ -51328,7 +51365,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          11083
+          11155
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_room_item_place_restored",
@@ -51375,7 +51412,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          11109
+          11181
         ],
         "file": "src/sql/sql_player.c",
         "function": "~sql_room_item_stage_guard",
@@ -51623,10 +51660,687 @@
       },
       "source_classification": "Moonstone anchor dispel repairs a missing finite decay timer, shortens its deadline, or delegates exhausted retirement to Decay. Surviving anchors can also continue into ordinary enchantment removal.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Compares denomination-dependent text and weight on a stack-local zero-add renderer; it neither admits a UID nor changes a native holding."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Compares denomination-dependent text and weight on a stack-local zero-add renderer; it neither admits a UID nor changes a native holding.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Compares denomination-dependent text and weight on a stack-local zero-add renderer; it neither admits a UID nor changes a native holding.",
+      "id": "coin.retained_pile_rendering",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reason": "coin_transfer",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          88
+        ],
+        "file": "src/economy/coin_physical_publication.c",
+        "function": "source_matches",
+        "original_draft_symbol": "source_matches"
+      },
+      "source_classification": "Stack-local zero-add native coin renderer compares canonical opening/after text and weight. It neither admits a UID nor changes a native holding; the separate retained projection owns live changes.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "allow_projection_only_with_committed_identity",
+        "must_block_on_activation": false,
+        "required_policy": "Publishes a committed original-UID ordinary-room pile with retained exact literal/custody/result checks. Uncertain handler/materializer stages remain held; no second accounting root is created. Preserve existing UID/root/parent and receipt; emit no new issuance posting. Refuse mismatched/missing identity instead of minting or silently changing owner."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "currency_ledger captures native wallet/bank deltas, after-vectors and revisions on applicable SQL paths; no balancing counter-account/source posting is present in this route evidence."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "coin.retained_room_projection",
+      "native_effects": {
+        "custody_effect": "Coin pile UID and owner/root/parent transfer for floor/container custody.",
+        "holding_effect": "Wallet denomination vector and durable coin-pile value; NPC recipient/compensation branches may still be in-memory/direct.",
+        "native_state_targets": [
+          "PC.cash[0..3] / player_data denomination columns",
+          "P_obj.value[0..3]",
+          "item_current_owner.coin_payload",
+          "item_current_owner owner/root/parent/revision",
+          "item_ownership_ledger for covered custody path"
+        ]
+      },
+      "projection_rule": "Publishes a committed original-UID ordinary-room pile with retained exact literal/custody/result checks. Uncertain handler/materializer stages remain held; no second accounting root is created.",
+      "reason": "coin_transfer",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          203
+        ],
+        "file": "src/economy/coin_physical_publication.c",
+        "function": "coin_physical_publication_publish",
+        "original_draft_symbol": "coin_physical_publication_publish"
+      },
+      "source_classification": "Runtime projection of a committed original-UID ordinary-room pile. Literal bytes, denomination/custody and result identity must agree; uncertain materialization/handler stages remain held and post-ACK notifications are separate.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Allocates only private discard-only literal memory with a retained UID; no UID issuance, native holdings/custody, global object-list/index-count changes or registry admission. Final proof/enrollment is a separate owner."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Allocates only private discard-only literal memory with a retained UID; no UID issuance, native holdings/custody, global object-list/index-count changes or registry admission. Final proof/enrollment is a separate owner.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Allocates only private discard-only literal memory with a retained UID; no UID issuance, native holdings/custody, global object-list/index-count changes or registry admission. Final proof/enrollment is a separate owner.",
+      "id": "recovery.inert_literal_staging",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "ordinary_drop_recovery and coin_physical_recovery consume private inert stages; prepare_inert_money_stage now has a production source caller. Final enrollment is private to the validated recovery owners and not executable qualification.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          185
+        ],
+        "file": "src/player/inert_item_stage.c",
+        "function": "prepare_inert_item_stage",
+        "original_draft_symbol": "prepare_inert_item_stage"
+      },
+      "source_classification": "Allocates private discard-only literal memory from retained SQL or flat native payload with the existing UID. No UID issuance, registry admission, global lists/counts or durable holdings/custody effect occurs during staging; separate private validated owners may subsequently enroll it.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Releases only unpublished stage memory/strings/descriptions without extraction, effect/procedure/event callbacks or native/runtime custody retirement."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Releases only unpublished stage memory/strings/descriptions without extraction, effect/procedure/event callbacks or native/runtime custody retirement.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Releases only unpublished stage memory/strings/descriptions without extraction, effect/procedure/event callbacks or native/runtime custody retirement.",
+      "id": "recovery.inert_literal_cleanup",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "ordinary_drop_recovery and coin_physical_recovery consume private inert stages; prepare_inert_money_stage now has a production source caller. Final enrollment is private to the validated recovery owners and not executable qualification.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          89
+        ],
+        "file": "src/player/inert_item_stage.c",
+        "function": "inert_item_stage::reset",
+        "original_draft_symbol": "inert_item_stage::reset"
+      },
+      "source_classification": "Returns private unpublished pooled memory and owned strings/description nodes. No extraction, normal object/effect/procedure/event callback or runtime/native custody retirement occurs.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Reads exact committed inbox, historical economic root/payload and outbox inside caller-owned native locks; no native mutation, missing-command apply or transaction/ACK ownership."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Reads exact committed inbox, historical economic root/payload and outbox inside caller-owned native locks; no native mutation, missing-command apply or transaction/ACK ownership.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Reads exact committed inbox, historical economic root/payload and outbox inside caller-owned native locks; no native mutation, missing-command apply or transaction/ACK ownership.",
+      "id": "recovery.sql_ordinary_drop_receipt_observation",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "Opt-in graph owner consumes shared observation seams; no production dispatcher/ACK integration. Current-source semantic census and executable route reanchoring remain pending.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          3306
+        ],
+        "file": "src/persistence/critical_command_repository.c",
+        "function": "critical_command_repository_verify_ordinary_drop_in_transaction",
+        "original_draft_symbol": "critical_command_repository_verify_ordinary_drop_in_transaction"
+      },
+      "source_classification": "Reads exact committed inbox, historical economic root/payload and outbox inside caller-owned native locks; no native mutation, missing-command apply or transaction/ACK ownership.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Reads only an existing serialized owner-cache revision without inserting or hydrating missing metadata; no native custody or economic effect."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Reads only an existing serialized owner-cache revision without inserting or hydrating missing metadata; no native custody or economic effect.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Reads only an existing serialized owner-cache revision without inserting or hydrating missing metadata; no native custody or economic effect.",
+      "id": "recovery.runtime_owner_revision_observation",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "Opt-in graph owner consumes shared observation seams; no production dispatcher/ACK integration. Current-source semantic census and executable route reanchoring remain pending.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          527
+        ],
+        "file": "src/item/item_ownership_runtime.c",
+        "function": "item_ownership_runtime_peek_owner_revision",
+        "original_draft_symbol": "item_ownership_runtime_peek_owner_revision"
+      },
+      "source_classification": "Reads only an existing serialized owner-cache revision without inserting or hydrating missing metadata; no native custody or economic effect.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Observes exact original SQL-drop receipt and current epoch/season/custody/literal graph together with complete physical/runtime placement; no construction, repair, enrollment, issuance/destruction or publication ACK."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Observes exact original SQL-drop receipt and current epoch/season/custody/literal graph together with complete physical/runtime placement; no construction, repair, enrollment, issuance/destruction or publication ACK.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Observes exact original SQL-drop receipt and current epoch/season/custody/literal graph together with complete physical/runtime placement; no construction, repair, enrollment, issuance/destruction or publication ACK.",
+      "id": "recovery.ordinary_drop_graph_observation",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "Opt-in graph owner consumes shared observation seams; no production dispatcher/ACK integration. Current-source semantic census and executable route reanchoring remain pending.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1100
+        ],
+        "file": "src/item/ordinary_drop_recovery.c",
+        "function": "ordinary_drop_recovery_observe_existing",
+        "original_draft_symbol": "ordinary_drop_recovery_observe_existing"
+      },
+      "source_classification": "Observes exact original SQL-drop receipt and current epoch/season/custody/literal graph together with complete physical/runtime placement; no construction, repair, enrollment, issuance/destruction or publication ACK.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Pure bounded classification of literal/prototype eligibility; no allocation, pool access, hydration, native mutation or enrollment permission."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Pure bounded classification of literal/prototype eligibility; no allocation, pool access, hydration, native mutation or enrollment permission.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Pure bounded classification of literal/prototype eligibility; no allocation, pool access, hydration, native mutation or enrollment permission.",
+      "id": "recovery.inert_literal_eligibility",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "Opt-in source implementation has no production integration. Current-source semantic census/site reanchoring and executable qualification remain pending.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          179
+        ],
+        "file": "src/player/inert_item_stage.c",
+        "function": "inert_item_stage_eligibility",
+        "original_draft_symbol": "inert_item_stage_eligibility"
+      },
+      "source_classification": "Pure bounded classification of literal/prototype eligibility; no allocation, pool access, hydration, native mutation or enrollment permission.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Reconstructs only an entirely absent graph from exact original receipt/current SQL authority using retained UIDs and literals. Projection enrollment changes global/index/room/runtime caches without economic issuance, destruction or ACK."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Reconstructs only an entirely absent graph from exact original receipt/current SQL authority using retained UIDs and literals. Projection enrollment changes global/index/room/runtime caches without economic issuance, destruction or ACK.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Reconstructs only an entirely absent graph from exact original receipt/current SQL authority using retained UIDs and literals. Projection enrollment changes global/index/room/runtime caches without economic issuance, destruction or ACK.",
+      "id": "recovery.ordinary_drop_graph_reconstruction",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "Opt-in source implementation has no production integration. Current-source semantic census/site reanchoring and executable qualification remain pending.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1107
+        ],
+        "file": "src/item/ordinary_drop_recovery.c",
+        "function": "ordinary_drop_recovery_publish",
+        "original_draft_symbol": "ordinary_drop_recovery_publish"
+      },
+      "source_classification": "Reconstructs only an entirely absent graph from exact original receipt/current SQL authority using retained UIDs and literals. Projection enrollment changes global/index/room/runtime caches without economic issuance, destruction or ACK.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "lifecycle.flatfile_activation_install",
+      "native_effects": {
+        "custody_effect": "World/object/character/account lifecycle, item admission, retirement, storage repair, or projection as described per route.",
+        "holding_effect": "Conditional NPC/player/bank value retirement or issuance only where the route detail names it; reset/delete is not automatically a sink.",
+        "native_state_targets": [
+          "P_obj/P_char/world lists",
+          "player_data/account_banks",
+          "player_items/corpse_items/locker_items/saved_items/player_pet_items",
+          "item_current_owner/item_ownership_ledger where durable"
+        ]
+      },
+      "reachability_evidence": "Opt-in source implementation has no production integration. Current-source semantic census/site reanchoring and executable qualification remain pending.",
+      "reason": "baseline",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          821
+        ],
+        "file": "src/flatfile/flatfile_accounting_lifecycle_transaction.c",
+        "function": "flatfile_accounting_lifecycle_transaction::install",
+        "original_draft_symbol": "flatfile_accounting_lifecycle_transaction::install"
+      },
+      "source_classification": "Stages native mapping lifetimes, baseline opening evidence/reservations, immutable lifecycle receipt and epoch selection in one existing shared authority bundle.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Compares retained opening/result literals on detached stack-local objects; no UID admission or native holding change."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Compares retained opening/result literals on detached stack-local objects; no UID admission or native holding change.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Compares retained opening/result literals on detached stack-local objects; no UID admission or native holding change.",
+      "id": "coin.restored_pile_rendering",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "currency_transaction retained physical publication calls coin_physical_recovery_publish; the private projection owner is integrated. Enrollment uses retained original UID and private inert-stage release; scanner inventory alone cannot establish qualification.",
+      "reason": "coin_transfer",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          188
+        ],
+        "file": "src/economy/coin_physical_recovery.c",
+        "function": "opening_matches",
+        "original_draft_symbol": "opening_matches"
+      },
+      "source_classification": "Stack-local detached opening/result pile renderer compares canonical literals, weight and denominations without changing any native holding or admitting a UID.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "allow_projection_only_with_committed_identity",
+        "must_block_on_activation": false,
+        "required_policy": "Copies verified current native wallet/shared-bank vectors into exact original live bodies under retained receipt/current authority; no new posting. Preserve existing UID/root/parent and receipt; emit no new issuance posting. Refuse mismatched/missing identity instead of minting or silently changing owner."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "currency_ledger captures native wallet/bank deltas, after-vectors and revisions on applicable SQL paths; no balancing counter-account/source posting is present in this route evidence."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "coin.restored_balance_projection",
+      "native_effects": {
+        "custody_effect": "Coin pile UID and owner/root/parent transfer for floor/container custody.",
+        "holding_effect": "Wallet denomination vector and durable coin-pile value; NPC recipient/compensation branches may still be in-memory/direct.",
+        "native_state_targets": [
+          "PC.cash[0..3] / player_data denomination columns",
+          "P_obj.value[0..3]",
+          "item_current_owner.coin_payload",
+          "item_current_owner owner/root/parent/revision",
+          "item_ownership_ledger for covered custody path"
+        ]
+      },
+      "projection_rule": "Copies verified current native wallet/shared-bank vectors into exact original live bodies under retained receipt/current authority; no new posting.",
+      "reachability_evidence": "currency_transaction retained physical publication calls coin_physical_recovery_publish; the private projection owner is integrated. Enrollment uses retained original UID and private inert-stage release; scanner inventory alone cannot establish qualification.",
+      "reason": "coin_transfer",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          789
+        ],
+        "file": "src/economy/coin_physical_recovery.c",
+        "function": "project_bodies",
+        "original_draft_symbol": "project_bodies"
+      },
+      "source_classification": "Copies locked verified current native wallet/shared-bank vectors into the exact original player bodies after complete retained/current receipt and PID authority proof; no new financial effect or root.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "allow_projection_only_with_committed_identity",
+        "must_block_on_activation": false,
+        "required_policy": "Projects an original-UID committed room pile, including private inert-stage hydration and global/room enrollment not represented by scanner hits; complete native authority and guarded ACK remain mandatory. Preserve existing UID/root/parent and receipt; emit no new issuance posting. Refuse mismatched/missing identity instead of minting or silently changing owner."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "currency_ledger captures native wallet/bank deltas, after-vectors and revisions on applicable SQL paths; no balancing counter-account/source posting is present in this route evidence."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "coin.restored_room_projection",
+      "native_effects": {
+        "custody_effect": "Coin pile UID and owner/root/parent transfer for floor/container custody.",
+        "holding_effect": "Wallet denomination vector and durable coin-pile value; NPC recipient/compensation branches may still be in-memory/direct.",
+        "native_state_targets": [
+          "PC.cash[0..3] / player_data denomination columns",
+          "P_obj.value[0..3]",
+          "item_current_owner.coin_payload",
+          "item_current_owner owner/root/parent/revision",
+          "item_ownership_ledger for covered custody path"
+        ]
+      },
+      "projection_rule": "Projects an original-UID committed room pile, including private inert-stage hydration and global/room enrollment not represented by scanner hits; complete native authority and guarded ACK remain mandatory.",
+      "reachability_evidence": "currency_transaction retained physical publication calls coin_physical_recovery_publish; the private projection owner is integrated. Enrollment uses retained original UID and private inert-stage release; scanner inventory alone cannot establish qualification.",
+      "reason": "coin_transfer",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          890
+        ],
+        "file": "src/economy/coin_physical_recovery.c",
+        "function": "project",
+        "original_draft_symbol": "project"
+      },
+      "source_classification": "Projects the committed original-UID ordinary-room pile result after retained/current native proof. Includes private coin_physical_recovery_owner::enroll: original-UID runtime hydration and direct room/global linking plus prototype count; these enrollment effects have no lexical scanner occurrence. No issuance or new durable holding/custody event is inferred.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     }
   ],
   "schema_version": 1,
-  "source_state": "registry_source_commit",
+  "source_state": "published_base_with_unpublished_candidate_worktree",
   "top_dependencies": [
     {
       "dependency": "Freeze the complete writer registry, account/reason policy, actor/source provenance and typed intent facts; resolve all unclassified writer candidates.",

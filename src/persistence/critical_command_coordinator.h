@@ -10,6 +10,10 @@
 class economic_sql_lifecycle_guard;
 class economic_sql_cutover_transaction_owner;
 class player_save_restored_publication_owner;
+// Only an exact private pipeline owner can consume a canonical pre-admission
+// collector refusal. This neither checkpoints a journal nor fabricates ACK.
+bool critical_command_coordinator_cancel_collector_publication(
+	player_save_restored_publication_owner &);
 
 // Private coordinator-side lease operations used only by the SQL lifecycle
 // owner. They expose no readiness boolean or lease identity to public callers.

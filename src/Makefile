@@ -253,6 +253,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/collector_service.o \
 				 economy/collector_notification.o \
 				 economy/collector_transaction.o \
+				 economy/collector_purchase_publication.o \
 				 economy/collector_repository.o \
 				 economy/collector_accounting.o \
 				 persistence/economic_sql_collector_transaction.o \
@@ -553,6 +554,7 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_world_store.o \
 				 economy/currency_transaction.o \
 				 economy/coin_physical_publication.o \
+				 economy/coin_physical_recovery.o \
 				 player/player_revision_state.o \
 				 player/player_save_worker.o \
 				 player/player_save_journal.o \

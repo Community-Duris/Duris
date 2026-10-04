@@ -184,7 +184,8 @@ bool critical_command_envelope_valid(const critical_command &command)
 	     (command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
 	      (command.type != critical_command_type::account_bank &&
 	       command.type != critical_command_type::coin_transfer &&
-	       command.type != critical_command_type::item_transfer))) ||
+	       command.type != critical_command_type::item_transfer &&
+	       command.type != critical_command_type::collector))) ||
 	    command.accounting_intent.size() > CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES ||
 	    critical_operation_id_is_zero(command.operation_id) || !command.payload_version ||
 	    command.type < critical_command_type::test ||

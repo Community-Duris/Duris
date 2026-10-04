@@ -2,6 +2,7 @@
 #define DURIS_INERT_ITEM_STAGE_H
 
 #include "core/structs.h"
+#include <array>
 struct object_template;
 struct player_item_snapshot;
 struct mm_ds;
@@ -30,12 +31,20 @@ class inert_item_stage
 
     private:
 	friend class ordinary_drop_enrollment_owner;
+	friend class coin_physical_recovery_owner;
 	void reset() noexcept;
 	P_obj object_ = nullptr;
 	mm_ds *pool_ = nullptr;
+	static inert_item_stage_result allocate_literal(const object_template &,
+							const player_item_snapshot &,
+							inert_item_stage &) noexcept;
 	friend inert_item_stage_result prepare_inert_item_stage(const object_template &,
 								const player_item_snapshot &,
 								inert_item_stage &) noexcept;
+	friend inert_item_stage_result prepare_inert_money_stage(const player_item_snapshot &,
+								 uint64_t,
+								 const std::array<int32_t, 4> &,
+								 inert_item_stage &) noexcept;
 };
 
 // Pure bounded eligibility, with no allocation, pool access or output mutation.
@@ -49,4 +58,16 @@ inert_item_stage_result inert_item_stage_eligibility(const object_template &prot
 inert_item_stage_result prepare_inert_item_stage(const object_template &prototype,
 						 const player_item_snapshot &literal,
 						 inert_item_stage &output) noexcept;
+
+// Detached constructor for the existing single-root, full-literal room money
+// representation. Bind the original UID and values to denominations supplied by
+// the native owner; these arguments alone do not establish durable authority.
+// Uses only the sealed boot catalog and private pool/text allocation. No renderer,
+// UID issuance, global enrollment, custody update or publication ACK occurs.
+// Caller must prove the decoded graph has exactly one item and no children.
+// Failure preserves output. Generic item eligibility still refuses ITEM_MONEY.
+inert_item_stage_result
+prepare_inert_money_stage(const player_item_snapshot &literal, uint64_t original_uid,
+			  const std::array<int32_t, 4> &verified_denominations,
+			  inert_item_stage &output) noexcept;
 #endif

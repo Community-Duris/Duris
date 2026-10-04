@@ -4,6 +4,7 @@
 #include "player/player_revision_state.h"
 #include "persistence/critical_command.h"
 #include "persistence/critical_command_completion.h"
+#include "persistence/critical_command_coordinator.h"
 #include "player/player_save_replay_ownership.h"
 
 #include <atomic>
@@ -16,6 +17,7 @@ struct obj_data;
 typedef struct obj_data *P_obj;
 struct player_quest_xp_receipt_snapshot;
 struct player_spell_effect_receipt_snapshot;
+class collector_purchase_publication_owner;
 
 constexpr size_t PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS = 256;
 constexpr size_t PLAYER_SAVE_PIPELINE_MAX_BYTES = 32 * 1024 * 1024;
@@ -159,14 +161,33 @@ bool player_save_pipeline_literal_inventory_cancel(const player_literal_inventor
 // generation fences ordinary save apply and journal retirement; broader native
 // mutation coverage, clean census and critical-ACK reservation remain required.
 bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &command);
+// The same prepared original-command slot/reservation binds the wallet PID and
+// pile UID for supported single ordinary-room SQL coin drop/pickup replay.
+// Classification or a matching ID grants neither native proof nor ACK authority.
+bool player_save_pipeline_restore_sql_coin_obligation(const critical_command &command);
 // The restored slot owns publication and ACK together. No caller can construct
 // an ACK capability from a graph observation, operation ID or readiness bool.
+// Typed singleton purchase admission retains exact bytes before coordinator
+// admission. Flatfile stays closed until its native publication owner is present.
+critical_submit_result collector_purchase_submit_owned(critical_command command);
+bool player_save_pipeline_restore_sql_collector_purchase_obligation(const critical_command &);
+
 class player_save_restored_publication_owner final
 {
     public:
 	static bool publish(const critical_completion &completion) noexcept;
 
     private:
+	friend class collector_purchase_publication_owner;
+	// Only the integrated native collector owner can call this; a public true
+	// callback must never fabricate authority to consume a save reservation.
+	static bool publish_collector(const critical_command &, const critical_completion &,
+				      bool (*native_publish)(const critical_command &,
+							     const critical_completion &,
+							     void *) noexcept,
+				      void *) noexcept;
+	friend bool critical_command_coordinator_cancel_collector_publication(
+		player_save_restored_publication_owner &);
 	friend bool critical_command_coordinator_acknowledge_publication(
 		player_save_restored_publication_owner &owner);
 	player_save_restored_publication_owner(critical_command &&command,

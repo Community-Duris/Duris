@@ -43,6 +43,7 @@ struct operation_state
 	bool retain_until_publication;
 	bool publication_checkpointing = false;
 	bool admission_failure_queued;
+	bool collector_refusal_delivered = false;
 	critical_completion admission_failure_completion;
 	critical_completion publication_completion;
 };
@@ -1176,6 +1177,11 @@ critical_submit_result critical_command_coordinator_submit_internal(critical_com
 			command.accepted_at_usec = completed->second.command.accepted_at_usec;
 		if (!critical_command_equal(completed->second.command, command))
 			return critical_submit_result::identity_conflict;
+		// An attached completed cache entry has no retained operation to publish.
+		// A newly installed typed collector hold must receive definite refusal.
+		if (retain_until_publication && command.type == critical_command_type::collector &&
+		    player_save_execution_guard::publication_operation_held(command.operation_id))
+			return critical_submit_result::invalid;
 		++health.attached;
 		return critical_submit_result::attached;
 	}
@@ -1429,8 +1435,10 @@ bool critical_command_coordinator_acknowledge_publication(
 			 receipt.disposition == critical_completion_disposition::execution &&
 			 owner.completion_.disposition ==
 				 critical_completion_disposition::execution &&
-			 receipt.failure_stage == critical_failure_stage::none &&
-			 owner.completion_.failure_stage == critical_failure_stage::none);
+			 (receipt.failure_stage == critical_failure_stage::none ||
+			  (owner.command_.type == critical_command_type::coin_transfer &&
+			   critical_failure_stage_valid(receipt.failure_stage))) &&
+			 receipt.failure_stage == owner.completion_.failure_stage);
 		std::vector<uint8_t> frozen;
 		if (critical_command_encode(state.command, &frozen) !=
 			    critical_command_codec_result::ok ||
@@ -1501,12 +1509,61 @@ bool critical_command_coordinator_acknowledge_publication(
 	return consumed;
 }
 
+bool critical_command_coordinator_cancel_collector_publication(
+	player_save_restored_publication_owner &owner)
+{
+	if (!owner.reservation_.valid() || owner.acknowledged_ ||
+	    owner.command_.type != critical_command_type::collector ||
+	    !critical_completion_disposition_valid(owner.completion_) ||
+	    owner.completion_.disposition != critical_completion_disposition::never_admitted)
+		return false;
+	std::unique_lock<std::mutex> lock(coordinator_mutex);
+	const auto identity = operation_key(owner.completion_.operation_id);
+	auto found = operations.find(identity);
+	if (found == operations.end() || !operation_is_admission_failed(*found->second) ||
+	    !found->second->collector_refusal_delivered ||
+	    !found->second->retain_until_publication || found->second->publication_checkpointing ||
+	    !health.initialized || stop_requested || !owner.reservation_.valid())
+		return false;
+	const auto &receipt = found->second->admission_failure_completion;
+	std::vector<uint8_t> frozen;
+	if (critical_command_encode(found->second->command, &frozen) !=
+		    critical_command_codec_result::ok ||
+	    frozen != owner.frozen_ ||
+	    receipt.operation_id.bytes != owner.completion_.operation_id.bytes ||
+	    !critical_completion_disposition_valid(receipt) ||
+	    receipt.disposition != owner.completion_.disposition ||
+	    receipt.outcome != owner.completion_.outcome ||
+	    receipt.error_code != owner.completion_.error_code ||
+	    receipt.attempt != owner.completion_.attempt ||
+	    receipt.queued_at_usec != owner.completion_.queued_at_usec ||
+	    receipt.completed_at_usec != owner.completion_.completed_at_usec ||
+	    receipt.durable_revision != owner.completion_.durable_revision ||
+	    receipt.failure_stage != owner.completion_.failure_stage ||
+	    receipt.result_size != owner.completion_.result_size ||
+	    receipt.result_payload != owner.completion_.result_payload)
+		return false;
+	++guarded_publications_inflight;
+	remove_fences(identity, found->second->command);
+	operations.erase(found);
+	owner.acknowledged_ = true;
+	update_depth();
+	lock.unlock();
+	const bool consumed = owner.consume_acknowledged_hold();
+	lock.lock();
+	--guarded_publications_inflight;
+	publication_checkpoint_finished.notify_all();
+	work_available.notify_all();
+	return consumed;
+}
+
 void queue_unqueued_admission_failures_locked()
 {
 	for (const auto &[identity, state] : operations)
 	{
 		(void)identity;
-		if (!operation_is_admission_failed(*state) || state->admission_failure_queued)
+		if (!operation_is_admission_failed(*state) || state->admission_failure_queued ||
+		    state->collector_refusal_delivered)
 			continue;
 		if (!completion_delivery.try_enqueue(critical_completion_channel::admission_failure,
 						     state->admission_failure_completion))
@@ -1608,14 +1665,21 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 		release_keys(identity, state.command);
 		remove_fences(identity, state.command);
 		completions[published++] = completion;
-		operations.erase(found);
+		if (state.retain_until_publication &&
+		    state.command.type == critical_command_type::collector &&
+		    player_save_execution_guard::publication_operation_held(
+			    state.command.operation_id))
+			state.collector_refusal_delivered = true;
+		else
+			operations.erase(found);
 	}
 	if (published < capacity)
 	{
 		for (auto found = operations.begin(); found != operations.end(); ++found)
 		{
 			if (!operation_is_admission_failed(*found->second) ||
-			    found->second->admission_failure_queued)
+			    found->second->admission_failure_queued ||
+			    found->second->collector_refusal_delivered)
 				continue;
 			const std::string identity = found->first;
 			const critical_completion completion =
@@ -1623,7 +1687,13 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 			release_keys(identity, found->second->command);
 			remove_fences(identity, found->second->command);
 			completions[published++] = completion;
-			operations.erase(found);
+			if (found->second->retain_until_publication &&
+			    found->second->command.type == critical_command_type::collector &&
+			    player_save_execution_guard::publication_operation_held(
+				    found->second->command.operation_id))
+				found->second->collector_refusal_delivered = true;
+			else
+				operations.erase(found);
 			break;
 		}
 	}

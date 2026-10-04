@@ -138,6 +138,19 @@ void currency_transaction_handle_completions(const critical_completion *completi
 // Called only from the coordinator's validated journal-replay observer under
 // its mutex. Must not call coordinator APIs or issue a replacement operation.
 bool currency_transaction_restore_replayed_command(const critical_command &command);
+// Primary-owned native room-coin recovery handoff, invoked only for a restored
+// schema-2 ordinary single-root drop/pickup. It must verify the original retained
+// receipt and current wallet/bank/pile authority, publish idempotently under the
+// original save reservation, then perform guarded ACK and consume that hold.
+// True means that entire original obligation has completed; false or an exception
+// retains it. No implementation or native proof is supplied by this domain owner.
+bool coin_physical_publication_restore_and_acknowledge(
+	const critical_command &original_command, const critical_completion &sealed_completion);
+// Allocation-free synchronous reentry check for that owner immediately before
+// its guarded ACK. This observation is NOT native proof or an ACK capability.
+bool currency_transaction_restored_coin_receipt_current(
+	const critical_command &original_command,
+	const critical_completion &sealed_completion) noexcept;
 void currency_transaction_player_ready(P_char character);
 currency_transaction_health currency_transaction_health_copy(void);
 void currency_transaction_reset_for_tests(void);

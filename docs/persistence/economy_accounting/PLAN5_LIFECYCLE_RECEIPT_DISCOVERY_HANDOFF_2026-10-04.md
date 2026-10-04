@@ -116,3 +116,49 @@ Read-only operator output will remain aggregate and will not export aliases.
 
 No activation, server boot, production mutation, audit correction or shared
 file edit accompanies this request. R1–R8 and release remain open.
+
+## Primary interface decision; source prepared, unqualified
+
+The primary verified the same-ID general-participant counterexample and prepared
+the minimal seven-file native change. Independent persistence source review
+accepted it; it is not yet integrated or natively qualified. Plan5 can prepare
+its independent consumer against this interface while native qualification and
+the matching combined-candidate evidence remain pending.
+
+`epochs.eae` catalog envelope version3 retains the160-byte row. Immediately after
+the initialization-state byte at row offset96, row offset97 is the new origin:
+`legacy_unknown=0`, `baseline_participant=1`, `lifecycle_owner=2`. The next six
+bytes stay zero; the original initializing operation starts at offset104 and
+the40-byte opening key at120. Versions1/2 decode origin unknown. Unrelated v3
+rewrites preserve that unknown; they do not migrate or infer provenance.
+
+Known origin requires initialized state. Lifecycle origin requires the epoch
+creator and initializer to match and transition kind1; duplicate lifecycle
+initialization IDs across retained epochs refuse. Generic initialization stamps
+baseline origin even when all IDs coincide. A separate private lifecycle entry
+stamps lifecycle origin in the existing book/catalog/control/baseline/common
+receipt/selection/`.elr` atomic bundle. Conflicting initialized origin cannot be
+adopted on retry. Neither origin selection nor migration is a public caller flag.
+
+The lifecycle receipt remains canonical version1, with its existing original
+request, epoch, initializer, opening and source bindings. Retained receipt retry
+rejects known generic origin; historical unknown receipts can still be validated
+without promotion. Complete required-file discovery must enumerate known
+lifecycle origins and use their already-recorded original initializing ID.
+Unknown initialized origin cannot earn complete lifecycle preservation proof.
+The complete encoded catalog remains bound by `authority.eal.epochs_digest`.
+Older readers reject v3; matching Plan5 reader integration is required before
+qualifying a new-format candidate.
+
+The prepared source also registers `file:economic-lifecycle-receipt` in both
+central inventory owners, using their existing manifest fields. Protected
+immutable aliases/source descriptors and original evidence remain retained;
+disclosure stays pending. No new store, receipt format, schema migration,
+retention policy, activation permission or additional release gate is added.
+
+Primary private input receipt:
+`tmp/lifecycle-initialization-origin-proposal-20261004/source-pins.local.json`.
+Authority source73a1ea641390a4d0e1d3440aefa77ee63a3cbdb5671a100714b51bbfb6dba68d;
+baseline source8b6dbff6d4249cad943c0c61134a703cff1c08934213415c3ee5c275f2687b13;
+lifecycle source3ddf535b07305e8305b05f5ecdd8be5fb317bcd50683de3e14f1e3c42b7a8e51.
+These are source-review inputs, not published production bytes or runtime proof.

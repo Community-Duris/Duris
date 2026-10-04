@@ -22,14 +22,18 @@
 #include "magic/spell_item_lifecycle.h"
 #include "item/item_movement_transaction.h"
 #include "item/ordinary_drop_recovery.h"
+#include "economy/coin_physical_recovery.h"
+#include "economy/currency_transaction.h"
 #include "persistence/critical_command_coordinator.h"
 #include "economy/item_transfer_accounting.h"
+#include "economy/collector_accounting.h"
 #include "persistence/sql_room_item_payload.h"
 #include "world/quest_reward_recovery.h"
 #include "player/craft_progression_hooks.h"
 
 #include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <array>
 #include <chrono>
 #include <condition_variable>
@@ -145,7 +149,6 @@ literal_inventory_checkpoint *find_literal_inventory_locked(int pid)
 	return nullptr;
 }
 
-#ifndef __NO_MYSQL__
 bool literal_inventory_capacity_locked(size_t incoming_bytes)
 {
 	if (incoming_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES)
@@ -158,7 +161,6 @@ bool literal_inventory_capacity_locked(size_t incoming_bytes)
 	}
 	return true;
 }
-#endif
 
 bool literal_inventory_blob(const player_snapshot &snapshot, uint64_t root_uid,
 			    std::vector<uint8_t> *blob)
@@ -1595,6 +1597,58 @@ bool player_save_pipeline_literal_inventory_cancel(const player_literal_inventor
 	return true;
 }
 
+static bool restore_sql_publication_obligation(const critical_command &command, int pid,
+					       uint64_t root_uid)
+{
+	std::vector<uint8_t> frozen;
+	if (pid <= 0 || !root_uid ||
+	    critical_command_encode(command, &frozen) != critical_command_codec_result::ok)
+		return false;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	// The typed caller classified the original immutable room operation.
+	// Registration remains closed before any execution owner starts.
+	if (!health.initialized || stop_requested || execution_started)
+		return false;
+	literal_inventory_checkpoint *slot = nullptr;
+	for (auto &candidate : literal_inventory_checkpoints)
+	{
+		if (candidate.token.pid == pid ||
+		    (candidate.held && candidate.operation_id.bytes == command.operation_id.bytes))
+		{
+			uint64_t generation = 0;
+			if (!candidate.restored_sql_drop || !candidate.held ||
+			    candidate.token.pid != pid || candidate.token.root_uid != root_uid ||
+			    candidate.operation_id.bytes != command.operation_id.bytes ||
+			    candidate.payload != frozen ||
+			    !player_save_execution_guard::install_hold(pid, command.operation_id,
+								       &generation))
+				return false;
+			if (generation != candidate.execution_hold_generation)
+			{
+				player_save_execution_guard::poison_integrity();
+				return false;
+			}
+			return true;
+		}
+		if (!candidate.token.pid && !slot)
+			slot = &candidate;
+	}
+	if (!slot || !literal_inventory_capacity_locked(frozen.size()))
+		return false;
+	uint64_t generation = 0;
+	if (!player_save_execution_guard::install_hold(pid, command.operation_id, &generation))
+		return false;
+	// All fallible command allocation/validation precedes guard installation.
+	slot->execution_hold_generation = generation;
+	slot->token.pid = pid;
+	slot->token.root_uid = root_uid;
+	slot->payload = std::move(frozen);
+	slot->operation_id = command.operation_id;
+	slot->held = true;
+	slot->restored_sql_drop = true;
+	return true;
+}
+
 bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &command)
 {
 #ifdef __NO_MYSQL__
@@ -1608,60 +1662,259 @@ bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &co
 			return false;
 		item_transfer_payload payload = {};
 		sql_room_item_payload_batch captured;
-		std::vector<uint8_t> frozen;
 		if (!item_transfer_command_decode_payload(command, &payload) ||
-		    !sql_room_item_payload_capture(payload, &captured) ||
-		    critical_command_encode(command, &frozen) != critical_command_codec_result::ok)
+		    !sql_room_item_payload_capture(payload, &captured))
 			return false;
-		const int pid = static_cast<int>(payload.from_owner.id);
-		std::lock_guard<std::mutex> lock(pipeline_mutex);
-		// This slice covers ordinary apply/checkpoint exclusion. Other native
-		// mutation owners and publication reservations remain unintegrated.
-		if (!health.initialized || stop_requested || execution_started)
-			return false;
-		literal_inventory_checkpoint *slot = nullptr;
-		for (auto &candidate : literal_inventory_checkpoints)
-		{
-			if (candidate.token.pid == pid ||
-			    (candidate.held &&
-			     candidate.operation_id.bytes == command.operation_id.bytes))
-			{
-				uint64_t generation = 0;
-				if (!candidate.restored_sql_drop || !candidate.held ||
-				    candidate.token.pid != pid ||
-				    candidate.token.root_uid != payload.selected_item_uid ||
-				    candidate.operation_id.bytes != command.operation_id.bytes ||
-				    candidate.payload != frozen ||
-				    !player_save_execution_guard::install_hold(
-					    pid, command.operation_id, &generation))
-					return false;
-				if (generation != candidate.execution_hold_generation)
-				{
-					player_save_execution_guard::poison_integrity();
-					return false;
-				}
-				return true;
-			}
-			if (!candidate.token.pid && !slot)
-				slot = &candidate;
-		}
-		if (!slot || !literal_inventory_capacity_locked(frozen.size()))
-			return false;
-		uint64_t generation = 0;
-		if (!player_save_execution_guard::install_hold(pid, command.operation_id,
-							       &generation))
-			return false;
-		// All fallible command allocation/validation precedes guard installation.
-		slot->execution_hold_generation = generation;
-		slot->token.pid = pid;
-		slot->token.root_uid = payload.selected_item_uid;
-		slot->payload = std::move(frozen);
-		slot->operation_id = command.operation_id;
-		slot->held = true;
-		slot->restored_sql_drop = true;
-		return true;
+		return restore_sql_publication_obligation(command,
+							  static_cast<int>(payload.from_owner.id),
+							  payload.selected_item_uid);
 	}
 	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+#endif
+}
+
+bool player_save_pipeline_restore_sql_coin_obligation(const critical_command &command)
+{
+	try
+	{
+		int pid = 0;
+		uint64_t uid = 0;
+		if (!coin_physical_recovery_identity(command, &pid, &uid))
+			return false;
+		return restore_sql_publication_obligation(command, pid, uid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+#ifndef __NO_MYSQL__
+namespace
+{
+bool collector_purchase_identity(const critical_command &command, int *pid, uint64_t *uid)
+{
+	economic_frozen_intent intent;
+	collector_command_payload payload;
+	collector::record original;
+	economic_account_key wallet, bank;
+	if (!command.publication_required || !critical_command_envelope_valid(command) ||
+	    collector_purchase_accounting_decode(command, &intent, &payload, &original, &wallet,
+						 &bank) != economic_accounting_error::ok ||
+	    !payload.actor_pid || payload.actor_pid > INT_MAX ||
+	    payload.action != collector_action::purchase || payload.item_count != 1 ||
+	    !payload.selected_item_uid)
+		return false;
+	*pid = static_cast<int>(payload.actor_pid);
+	*uid = payload.selected_item_uid;
+	return true;
+}
+}
+#endif
+
+bool player_save_pipeline_restore_sql_collector_purchase_obligation(const critical_command &command)
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	return false;
+#else
+	try
+	{
+		int pid = 0;
+		uint64_t uid = 0;
+		return collector_purchase_identity(command, &pid, &uid) &&
+		       restore_sql_publication_obligation(command, pid, uid);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+critical_submit_result collector_purchase_submit_owned(critical_command command)
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	return critical_submit_result::unavailable;
+#else
+	if (!nevent_is_game_thread())
+		return critical_submit_result::unavailable;
+	int pid = 0;
+	uint64_t uid = 0, generation = 0;
+	std::vector<uint8_t> frozen;
+	bool new_hold = false;
+	try
+	{
+		if (!collector_purchase_identity(command, &pid, &uid) ||
+		    critical_command_encode(command, &frozen) !=
+			    critical_command_codec_result::ok ||
+		    player_save_worker_pid_pending(pid))
+			return critical_submit_result::invalid;
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || stop_requested || !accepting || !execution_started ||
+		    !health.replay_complete || health.replay_blocked ||
+		    find_terminal_fence_locked(pid) || find_target_save_login_fence_locked(pid) ||
+		    append_inflight_pid == pid || any_snapshot_is_retained_locked(pid))
+			return critical_submit_result::unavailable;
+		auto *slot = find_literal_inventory_locked(pid);
+		if (slot)
+		{
+			if (!slot->held || !slot->restored_sql_drop || slot->payload != frozen ||
+			    slot->token.root_uid != uid ||
+			    slot->operation_id.bytes != command.operation_id.bytes)
+				return critical_submit_result::identity_conflict;
+			generation = slot->execution_hold_generation;
+		}
+		else
+		{
+			player_revision_snapshot revision = {};
+			if (player_revision_snapshot_copy(pid, &revision) &&
+			    (revision.overflowed || revision.dirty_components ||
+			     revision.unacknowledged_components || revision.queued_components ||
+			     revision.inflight_components ||
+			     revision.current_revision != revision.acknowledged_revision))
+				return critical_submit_result::unavailable;
+			for (auto &candidate : literal_inventory_checkpoints)
+				if (!candidate.token.pid)
+				{
+					slot = &candidate;
+					break;
+				}
+			if (!slot || !literal_inventory_capacity_locked(frozen.size()) ||
+			    !player_save_execution_guard::install_live_publication_hold(
+				    pid, command.operation_id, &generation))
+				return critical_submit_result::unavailable;
+			slot->token.pid = pid;
+			slot->token.root_uid = uid;
+			slot->execution_hold_generation = generation;
+			slot->operation_id = command.operation_id;
+			slot->payload = std::move(frozen);
+			slot->held = slot->restored_sql_drop = true;
+			new_hold = true;
+		}
+	}
+	catch (...)
+	{
+		return critical_submit_result::invalid;
+	}
+	// No fallible command allocation follows hold installation: ownership passes
+	// by move. A thrown coordinator path may have admitted it, so remains held.
+	critical_submit_result submitted;
+	const critical_operation_id operation = command.operation_id;
+	try
+	{
+		submitted = critical_command_coordinator_submit_for_publication(std::move(command));
+	}
+	catch (...)
+	{
+		return critical_submit_result::journal_uncertain;
+	}
+	if (!critical_submit_result_keeps_operation(submitted) && new_hold)
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		auto *slot = find_literal_inventory_locked(pid);
+		if (!slot || !slot->held || !slot->restored_sql_drop ||
+		    slot->operation_id.bytes != operation.bytes ||
+		    slot->execution_hold_generation != generation)
+		{
+			player_save_execution_guard::poison_integrity();
+			return critical_submit_result::journal_uncertain;
+		}
+		// Exact synchronous refusal occurred before coordinator journal admission.
+		if (!player_save_execution_guard::release_hold(pid, operation, generation))
+			return critical_submit_result::journal_uncertain;
+		*slot = {};
+	}
+	return critical_submit_result_keeps_operation(submitted) || new_hold ?
+		       submitted :
+		       critical_submit_result::journal_uncertain;
+#endif
+}
+
+bool player_save_restored_publication_owner::publish_collector(
+	const critical_command &original, const critical_completion &completion,
+	bool (*native_publish)(const critical_command &, const critical_completion &,
+			       void *) noexcept,
+	void *context) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)original;
+	(void)completion;
+	(void)native_publish;
+	(void)context;
+	return false;
+#else
+	if (!nevent_is_game_thread() || !native_publish ||
+	    !critical_completion_disposition_valid(completion) ||
+	    original.operation_id.bytes != completion.operation_id.bytes)
+		return false;
+	try
+	{
+		int pid = 0;
+		uint64_t uid = 0, generation = 0;
+		critical_command command;
+		std::vector<uint8_t> frozen;
+		if (!collector_purchase_identity(original, &pid, &uid) ||
+		    critical_command_encode(original, &frozen) != critical_command_codec_result::ok)
+			return false;
+		{
+			std::lock_guard<std::mutex> lock(pipeline_mutex);
+			const auto *slot = find_literal_inventory_locked(pid);
+			if (!health.initialized || stop_requested || !slot || !slot->held ||
+			    !slot->restored_sql_drop || slot->token.root_uid != uid ||
+			    slot->payload != frozen ||
+			    slot->operation_id.bytes != completion.operation_id.bytes ||
+			    find_terminal_fence_locked(pid) ||
+			    find_target_save_login_fence_locked(pid) ||
+			    append_inflight_pid == pid || any_snapshot_is_retained_locked(pid) ||
+			    critical_command_decode(frozen.data(), frozen.size(), &command) !=
+				    critical_command_codec_result::ok)
+				return false;
+			generation = slot->execution_hold_generation;
+		}
+		player_save_restored_publication_owner owner(
+			std::move(command), std::move(frozen), completion,
+			player_save_execution_guard::current_ownership_epoch(), pid, generation);
+		if (!owner.reservation_.valid() || player_save_worker_pid_pending(pid))
+			return false;
+		if (completion.disposition == critical_completion_disposition::never_admitted)
+			return critical_command_coordinator_cancel_collector_publication(owner);
+		player_revision_snapshot revision = {};
+		if (player_revision_snapshot_copy(pid, &revision) &&
+		    (revision.overflowed || revision.dirty_components ||
+		     revision.unacknowledged_components || revision.queued_components ||
+		     revision.inflight_components ||
+		     revision.current_revision != revision.acknowledged_revision))
+			return false;
+		std::vector<player_save_journal_retained_frame> originals;
+		if (player_save_journal_collect_publication_frames(
+			    pid, owner.reservation_, &originals) != player_save_journal_result::ok)
+			return false;
+		if (!originals.empty())
+		{
+			player_save_covered_revision covered;
+			if (!player_snapshot_repository_observe_covered_revision(
+				    pid, owner.reservation_, &covered) ||
+			    player_save_journal_retire_covered_ordinary(pid, owner.reservation_,
+									covered, originals) !=
+				    player_save_journal_result::ok)
+				return false;
+		}
+		if (player_save_journal_publication_census(pid, owner.reservation_) !=
+			    player_save_journal_result::ok ||
+		    !native_publish(owner.command_, completion, context) ||
+		    !owner.reservation_.valid() ||
+		    player_save_journal_publication_census(pid, owner.reservation_) !=
+			    player_save_journal_result::ok)
+			return false;
+		owner.publication_proven_ = true;
+		return critical_command_coordinator_acknowledge_publication(owner);
+	}
+	catch (...)
 	{
 		return false;
 	}
@@ -1682,10 +1935,6 @@ void player_save_pipeline_sql_drop_publication_acknowledged(
 
 bool player_save_restored_publication_owner::publish(const critical_completion &completion) noexcept
 {
-#ifdef __NO_MYSQL__
-	(void)completion;
-	return false;
-#else
 	if (!nevent_is_game_thread())
 		return false;
 	try
@@ -1716,6 +1965,15 @@ bool player_save_restored_publication_owner::publish(const critical_completion &
 			std::move(command), std::move(frozen), completion,
 			player_save_execution_guard::current_ownership_epoch(), pid, generation);
 		lock.unlock();
+		const bool coin = owner.command_.type == critical_command_type::coin_transfer;
+#ifdef __NO_MYSQL__
+		// Only the typed ordinary-room coin scope has a flat native publisher.
+		if (!coin)
+			return false;
+#endif
+		if (coin &&
+		    !currency_transaction_restored_coin_receipt_current(owner.command_, completion))
+			return false;
 		if (!owner.reservation_.valid() || player_save_worker_pid_pending(pid))
 			return false;
 		player_revision_snapshot revision = {};
@@ -1742,19 +2000,32 @@ bool player_save_restored_publication_owner::publish(const critical_completion &
 		if (player_save_journal_publication_census(pid, owner.reservation_) !=
 		    player_save_journal_result::ok)
 			return false;
-		const auto published = ordinary_drop_recovery_publish(owner.command_, completion);
-		const bool successful =
-			published.status == ordinary_drop_observation_status::verified_existing ||
-			published.status == ordinary_drop_observation_status::published;
-		const bool rejected =
-			published.status == ordinary_drop_observation_status::verified_rejected &&
-			completion.disposition == critical_completion_disposition::execution &&
-			completion.outcome == critical_apply_outcome::terminal_failure &&
-			completion.error_code &&
-			completion.failure_stage == critical_failure_stage::none;
-		if ((!successful && !rejected) ||
+		bool publication_complete = false;
+		if (coin)
+			publication_complete =
+				coin_physical_recovery_publish(owner.command_, completion);
+		else
+		{
+			const auto published =
+				ordinary_drop_recovery_publish(owner.command_, completion);
+			publication_complete =
+				published.status ==
+					ordinary_drop_observation_status::verified_existing ||
+				published.status == ordinary_drop_observation_status::published ||
+				(published.status ==
+					 ordinary_drop_observation_status::verified_rejected &&
+				 completion.disposition ==
+					 critical_completion_disposition::execution &&
+				 completion.outcome == critical_apply_outcome::terminal_failure &&
+				 completion.error_code &&
+				 completion.failure_stage == critical_failure_stage::none);
+		}
+		if (!publication_complete ||
 		    player_save_journal_publication_census(pid, owner.reservation_) !=
 			    player_save_journal_result::ok)
+			return false;
+		if (coin &&
+		    !currency_transaction_restored_coin_receipt_current(owner.command_, completion))
 			return false;
 		owner.publication_proven_ = true;
 		// The original hold/reservation survives fresh proof, confirmed native
@@ -1765,7 +2036,34 @@ bool player_save_restored_publication_owner::publish(const critical_completion &
 	{
 		return false;
 	}
-#endif
+}
+
+bool coin_physical_publication_restore_and_acknowledge(const critical_command &command,
+						       const critical_completion &completion)
+{
+	if (!currency_transaction_restored_coin_receipt_current(command, completion))
+		return false;
+	// The slot's original immutable encoding must match the domain handoff;
+	// an ID-only call cannot select or consume another publication obligation.
+	std::vector<uint8_t> frozen;
+	if (critical_command_encode(command, &frozen) != critical_command_codec_result::ok)
+		return false;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		bool found = false;
+		for (const auto &slot : literal_inventory_checkpoints)
+			if (slot.restored_sql_drop && slot.held &&
+			    slot.operation_id.bytes == command.operation_id.bytes)
+			{
+				if (slot.payload != frozen)
+					return false;
+				found = true;
+				break;
+			}
+		if (!found)
+			return false;
+	}
+	return player_save_restored_publication_owner::publish(completion);
 }
 
 bool player_save_restored_publication_owner::consume_acknowledged_hold() noexcept
@@ -2878,9 +3176,6 @@ bool player_save_pipeline_save_admitted(int pid)
 
 bool player_save_pipeline_authoritative_hydration_admitted(int pid)
 {
-#ifdef __NO_MYSQL__
-	return player_save_pipeline_save_admitted(pid);
-#else
 	if (pid <= 0 || player_save_journal_pid_quarantined(pid))
 		return false;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -2891,10 +3186,30 @@ bool player_save_pipeline_authoritative_hydration_admitted(int pid)
 	if (auto *literal = find_literal_inventory_locked(pid);
 	    literal && literal->held && !literal->restored_sql_drop)
 		return false;
+#ifdef __NO_MYSQL__
+	if (auto *literal = find_literal_inventory_locked(pid); literal && literal->held)
+	{
+		try
+		{
+			critical_command original;
+			int original_pid = 0;
+			uint64_t root_uid = 0;
+			if (critical_command_decode(literal->payload.data(),
+						    literal->payload.size(), &original) !=
+				    critical_command_codec_result::ok ||
+			    !coin_physical_recovery_identity(original, &original_pid, &root_uid) ||
+			    original_pid != pid || root_uid != literal->token.root_uid)
+				return false;
+		}
+		catch (...)
+		{
+			return false;
+		}
+	}
+#endif
 	if (terminal_fence *fence = find_terminal_fence_locked(pid); fence && fence->death_pinned)
 		return false;
 	return true;
-#endif
 }
 
 /** Stop the pipeline and clear worker, revision, and health state for an isolated test. */

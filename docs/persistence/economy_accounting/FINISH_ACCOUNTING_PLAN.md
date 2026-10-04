@@ -51,6 +51,13 @@ backend limitations and the tested revision before checking off acceptance.
 
 ## Current implementation and qualification checkpoint
 
+Plan1 independent acceptance is published in8586ba589; Plan5 baseline-marker
+readers and its lifecycle handoff are imported in db682ade5. Reviewed31-file
+coin/collector/shared-owner source integration now follows that qualified base.
+Those new inputs are unqualified; testing stays batched at major-plan readiness.
+Flat active bootstrap and remaining money/item/domain writers are still required.
+
+
 The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
 remote histories and primary production source through `9fabe54bb`, plus the
 qualified ordinary-drop equipment-census correction. Both strict server builds,

@@ -25,6 +25,24 @@ Plan5 retained namespace slice `7f64e1890` is imported and normally pushed in
 `b21b0c28d`. Its reader now retains original lineage/epoch joins and detects
 missing inactive namespaces; peer native evidence remains input-specific.
 
+Plan1 maintained regression and independent acceptance are published in
+`8586ba589`. Plan5 baseline-marker reader `d929fad52` and its lifecycle-discovery
+request `42594db01` are integrated and normally pushed in `db682ade5`, with exact
+remote readback. All eight imported files match the peer input; Python AST and
+diff checks pass. Its native results qualify the peer's consumed tree only;
+combined Plan5 qualification remains open. The narrow native origin decision is
+recorded in the imported handoff as source prepared and unqualified.
+
+Plans2/4 reviewed coin, collector admission/domain/publication, runtime payload,
+cold registration and offline publication slices are now source-integrated as
+one31-file candidate. Independent seam review passes, including both retained
+SQL proofs and corrected native object registration. No compiler or runtime
+qualification is claimed for these new inputs. The Plan1 milestone remains
+qualified at its original8586ba589 production closure; evidence is not relabeled
+for these later shared changes. Flat active bootstrap, remaining ordinary/item/domain writers, registry
+evidence and the original major-plan acceptance remain required. Testing stays
+batched at each major plan's readiness; no source inventory can close these gates.
+
 Peer `3b076856a` and `559dbd6fe` are imported as `67922f9e0` and `c8f593617`.
 The diagnostic now reads the native reason bytes; canonical retention checks
 reuse the independent restore qualifier at real inactive erasure/restart cuts.

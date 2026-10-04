@@ -2,6 +2,7 @@
 #include "economy/economic_command_admission.h"
 #include "economy/coin_transfer_accounting.h"
 #include "economy/item_transfer_accounting.h"
+#include "economy/collector_accounting.h"
 
 #include <atomic>
 #include <climits>
@@ -368,6 +369,89 @@ economic_gameplay_authority::prepare_coin_transfer(critical_command *command)
 								    destination, &intent);
 		if (result != error::ok)
 			return result;
+		frozen.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		frozen.accounting_intent = std::move(intent);
+		if (!supported_candidate(frozen))
+			return error::corrupt_evidence;
+		*command = std::move(frozen);
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+economic_accounting_error
+economic_gameplay_authority::prepare_collector_purchase(critical_command *command,
+							const collector::record &original_listing)
+{
+	using error = economic_accounting_error;
+	if (!command)
+		return error::invalid_identity;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		// The existing qualification projection admits wallet roots only.
+		if (selected && sql_wallet_root_scope(*selected))
+			return error::unauthorized;
+		auto supported_candidate = [](const critical_command &candidate)
+		{
+			auto projection = candidate;
+			if (!projection.accepted_at_usec)
+				projection.accepted_at_usec = 1;
+			return economic_command_admission_supported(projection);
+		};
+		if (command->schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+		{
+			// Historical replay keeps the admitted listing and lifetimes. A
+			// mutable catalog entry cannot replace its original frozen listing.
+			if (!supported_candidate(*command))
+				return error::unauthorized;
+			auto projection = *command;
+			if (!projection.accepted_at_usec)
+				projection.accepted_at_usec = 1;
+			economic_frozen_intent intent;
+			collector_command_payload payload;
+			collector::record retained_listing;
+			economic_account_key wallet, bank;
+			const auto status = collector_purchase_accounting_decode(
+				projection, &intent, &payload, &retained_listing, &wallet, &bank);
+			if (status != error::ok)
+				return status;
+			std::array<uint8_t, collector::encoded_record_bytes> retained{}, supplied{};
+			if (collector::record_encode(retained_listing, &retained) !=
+				    collector::codec_result::ok ||
+			    collector::record_encode(original_listing, &supplied) !=
+				    collector::codec_result::ok)
+				return error::invalid_identity;
+			return retained == supplied ? error::ok : error::payload_conflict;
+		}
+		if (!critical_command_legacy_execution_supported(*command))
+			return error::corrupt_evidence;
+		if (!selected)
+			return error::ok;
+		if (command->accepted_at_usec || command->publication_required)
+			return error::unauthorized;
+		collector_command_payload payload;
+		if (!collector_command_decode_payload(*command, &payload) ||
+		    payload.action != collector_action::purchase)
+			return error::corrupt_evidence;
+		std::string canonical;
+		if (!bank_locator(payload.account_name.data(), &canonical))
+			return error::invalid_identity;
+		const auto wallet = selected->wallets.find(payload.actor_pid);
+		const auto bank = selected->banks.find({ canonical, payload.racewar });
+		if (wallet == selected->wallets.end() || bank == selected->banks.end())
+			return error::incomplete_coverage;
+		critical_command frozen = *command;
+		std::vector<uint8_t> intent;
+		const auto status = collector_purchase_accounting_intent(frozen, selected->epoch,
+									 wallet->second,
+									 bank->second,
+									 original_listing, &intent);
+		if (status != error::ok)
+			return status;
 		frozen.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
 		frozen.accounting_intent = std::move(intent);
 		if (!supported_candidate(frozen))
