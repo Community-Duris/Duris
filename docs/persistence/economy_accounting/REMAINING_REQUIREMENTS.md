@@ -14,8 +14,11 @@ Plan 1's major qualification batch is underway on production source `9fabe54bb`.
 Both strict builds, focused components, worker/journal guard cases and both-engine
 bank/coin/item coordinator/pool checks plus maintained lifecycle,22 checked-release,
 14 startup and18 recovery-session cases pass within their stated scopes on both
-engines. Native production publication/recovery remains open. No R1–R8 or
-major-plan acceptance gate is waived or marked complete by these partial results.
+engines. The scoped ordinary SQL drop now passes actual gameplay publication,
+guarded ACK and two complete cold boots per engine after correcting empty-slot
+census exhaustion. Final Plan 1 acceptance consolidation and maintenance of that
+regression remain; Plans 2–4 and combined Plan 5 are unfinished. No R1–R8 or
+full-feature acceptance gate is waived by this scoped result.
 
 ## Product boundary
 

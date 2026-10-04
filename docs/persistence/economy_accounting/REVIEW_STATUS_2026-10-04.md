@@ -7,6 +7,22 @@ preparation status, not its bounded historical test evidence.
 
 ## Integrated candidate and ownership
 
+The ordinary-drop equipment-census issue is now qualified on both SQL engines.
+Empty fixed wear slots consumed the one-million graph-reference budget in the
+complete world, retaining a committed operation before placement and ACK. The
+fix charges populated references only, preserving all graph/cycle/alias bounds.
+Both strict production builds pass. Actual ordinary `do_drop`, original three-UID
+payload/custody, guarded ACK and two full-world cold boots pass on MariaDB
+10.11.14 (135 seconds) and MySQL 8.0.46 (169 seconds), within the original 600
+seconds per engine; Redis is disabled and all owned cleanup checks pass.
+See the consolidated report for exact inputs and preserved failed runs.
+Maintained gameplay-regression integration and original Plan 1 acceptance
+consolidation are next. Plans 2–4 remain source work, not qualified coverage.
+
+Plan5 retained namespace slice `7f64e1890` is imported and normally pushed in
+`b21b0c28d`. Its reader now retains original lineage/epoch joins and detects
+missing inactive namespaces; peer native evidence remains input-specific.
+
 Peer `3b076856a` and `559dbd6fe` are imported as `67922f9e0` and `c8f593617`.
 The diagnostic now reads the native reason bytes; canonical retention checks
 reuse the independent restore qualifier at real inactive erasure/restart cuts.

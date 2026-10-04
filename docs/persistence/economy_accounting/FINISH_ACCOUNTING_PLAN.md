@@ -52,11 +52,14 @@ backend limitations and the tested revision before checking off acceptance.
 ## Current implementation and qualification checkpoint
 
 The [October 4 review status](REVIEW_STATUS_2026-10-04.md) records integrated
-remote histories and primary production source through `9fabe54bb`. Both strict
-server builds pass, as do the existing focused components and 35 worker/journal
-guard cases per backend. Real bank coordinator/pool qualification passes on both
-SQL engines. Coin/item/lifecycle reruns and actual production publication/recovery
-acceptance remain open; no major-plan completion is claimed. The
+remote histories and primary production source through `9fabe54bb`, plus the
+qualified ordinary-drop equipment-census correction. Both strict server builds,
+focused components, 35 worker/journal guard cases per backend, bank/coin/item
+coordinator/pool, lifecycle, 22 checked-release, 14 startup and 18 recovery-session
+cases pass within their recorded input scopes. The actual ordinary drop now passes
+guarded ACK and two complete native cold boots on each SQL engine. The maintained
+gameplay regression and independent Plan 1 acceptance consolidation are next;
+Plans 2–4, combined Plan 5 and full R1–R8 release acceptance remain unfinished. The
 [consolidated save/recovery report](SAVE_RESIDENCE_INTEGRATION_2026-10-04.md)
 retains the exact slices, source-established gaps and evidence limits.
 
