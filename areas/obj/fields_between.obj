@@ -423,9 +423,9 @@ small circular rift~
 &+La small circular &+Wrift&N~
 &+LLying here is a rift which seems easy to pick up.&N~
 ~
-25 1 3 0 7 0 8392712 0 32768 0 0
+25 1 3 0 7 0 8392712 1 32768 0 0
 71153 7 -1 0 0 0 0 0
-1000000 0 100
+1 0 100
 E
 small circular rift~
 &+LThis dark rift seems to have been tamed by being slain.  Where it leads to,&N
