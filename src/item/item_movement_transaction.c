@@ -73,6 +73,9 @@ struct pending_movement
 	bool recovered_publication;
 	// Preserve completed effects independently of retry/disposition status.
 	bool craft_publication_started = false;
+	bool ordinary_receipt_sealed = false;
+	bool ordinary_publication_ready = false;
+	bool publication_inflight = false;
 	bool craft_publication_ready = false;
 	bool collector_invalidated;
 	critical_completion completed;
@@ -1594,16 +1597,36 @@ void retain_publication_failure(pending_movement &entry, const char *reason)
 					   publication_state::retrying;
 }
 
-/** Keep the authoritative craft receipt once any projection may have started. */
-bool same_craft_publication_receipt(const critical_completion &original,
-				    const critical_completion &incoming)
+/** Bind semantic receipt identity independently of delivery attempt/timestamps. */
+bool item_publication_receipt_valid(const critical_completion &completion)
+{
+	if (!critical_completion_disposition_valid(completion) ||
+	    !critical_failure_stage_valid(completion.failure_stage) ||
+	    completion.result_size > completion.result_payload.size())
+		return false;
+	switch (completion.outcome)
+	{
+	case critical_apply_outcome::applied:
+	case critical_apply_outcome::already_applied:
+	case critical_apply_outcome::retryable_failure:
+	case critical_apply_outcome::ambiguous_commit:
+	case critical_apply_outcome::terminal_failure:
+		return true;
+	}
+	return false;
+}
+
+/** Keep the authoritative item receipt before projection or notification. */
+bool same_item_publication_receipt(const critical_completion &original,
+				   const critical_completion &incoming)
 {
 	const auto durable_success = [](critical_apply_outcome outcome)
 	{
 		return outcome == critical_apply_outcome::applied ||
 		       outcome == critical_apply_outcome::already_applied;
 	};
-	return (original.outcome == incoming.outcome ||
+	return original.operation_id.bytes == incoming.operation_id.bytes &&
+	       (original.outcome == incoming.outcome ||
 		(durable_success(original.outcome) && durable_success(incoming.outcome))) &&
 	       original.disposition == incoming.disposition &&
 	       original.durable_revision == incoming.durable_revision &&
@@ -1716,9 +1739,9 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 {
 	pending_movement &entry = found->second;
 	entry.publication_attempted_this_batch = true;
-	if (entry.disposition_blocked)
+	if (entry.disposition_blocked || entry.publication_inflight)
 		return;
-	if (!critical_completion_disposition_valid(entry.completed))
+	if (!item_publication_receipt_valid(entry.completed))
 	{
 		entry.disposition_blocked = true;
 		retain_publication_failure(entry, "invalid_completion_disposition");
@@ -1758,6 +1781,8 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		account_health();
 		return;
 	}
+	if (entry.publication && !craft)
+		entry.ordinary_receipt_sealed = true;
 	if (craft)
 	{
 		actor = find_registered_craft_player(entry.actor_pid);
@@ -1777,8 +1802,12 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			return;
 		}
 	}
-	if (retained && entry.publication_status == publication_state::ack_pending)
+	if (retained && (entry.publication_status == publication_state::ack_pending ||
+			 entry.ordinary_publication_ready))
 	{
+		// Receipt conflicts cannot erase already verified physical publication.
+		// Canonical repair resumes only the original ACK/notification phase.
+		entry.publication_status = publication_state::ack_pending;
 		P_char completion_actor = actor;
 		if (entry.completion && !completion_actor)
 			completion_actor = find_live_player(entry.actor_pid);
@@ -1916,11 +1945,13 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			return;
 		}
 		const std::string pending_key = found->first;
+		const critical_completion original_receipt = entry.completed;
 		const auto context = entry.context;
 		const size_t context_size = entry.context_size;
 		const unsigned int error_code =
 			decoded || never_admitted ? entry.completed.error_code : EBADMSG;
 		bool published = false;
+		entry.publication_inflight = true;
 		try
 		{
 			published = entry.publication(entry.completed.operation_id, actor,
@@ -1934,6 +1965,26 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		auto current = pending.find(pending_key);
 		if (current == pending.end())
 			return;
+		current->second.publication_inflight = false;
+		const bool same_owner_receipt =
+			current->second.completion_ready &&
+			same_item_publication_receipt(original_receipt, current->second.completed);
+		if (!same_owner_receipt)
+		{
+			current->second.disposition_blocked = true;
+			retain_publication_failure(current->second,
+						   "changed_callback_owner_receipt");
+			current->second.publication_status = publication_state::blocked;
+		}
+		if (published && same_owner_receipt)
+			current->second.ordinary_publication_ready = true;
+		// Reentrant delivery may retain a contradiction while the callback runs.
+		// Its return cannot overwrite that state or authorize the original ACK.
+		if (current->second.disposition_blocked)
+		{
+			account_health();
+			return;
+		}
 		if (!published)
 		{
 			if (spell_component_retirement_waiting_for_effect(
@@ -3305,6 +3356,7 @@ void retry_publications(void)
 			if ((entry.publication ||
 			     entry.payload.reason == item_transfer_reason::craft) &&
 			    entry.completion_ready && !entry.disposition_blocked &&
+			    !entry.publication_inflight &&
 			    !entry.publication_attempted_this_batch &&
 			    (entry.publication_status == publication_state::ready ||
 			     entry.publication_status == publication_state::retrying ||
@@ -3320,6 +3372,7 @@ void retry_publications(void)
 	{
 		auto found = pending.find(key);
 		if (found == pending.end() || found->second.disposition_blocked ||
+		    found->second.publication_inflight ||
 		    found->second.publication_attempted_this_batch)
 			continue;
 		if (found->second.publication_status == publication_state::ack_pending)
@@ -3356,7 +3409,7 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 		auto &entry = found->second;
 		if (entry.disposition_blocked_this_batch)
 			continue;
-		if (!critical_completion_disposition_valid(completions[index]) ||
+		if (!item_publication_receipt_valid(completions[index]) ||
 		    (entry.completion_ready &&
 		     entry.completed.disposition != completions[index].disposition))
 		{
@@ -3366,23 +3419,42 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 			entry.publication_status = publication_state::blocked;
 			continue;
 		}
-		if (entry.craft_publication_started &&
-		    !same_craft_publication_receipt(entry.completed, completions[index]))
+		if ((entry.craft_publication_started || entry.ordinary_receipt_sealed) &&
+		    !same_item_publication_receipt(entry.completed, completions[index]))
 		{
 			entry.disposition_blocked = true;
 			entry.disposition_blocked_this_batch = true;
-			retain_publication_failure(entry, "changed_craft_publication_receipt");
+			retain_publication_failure(entry,
+						   entry.craft_publication_started ?
+							   "changed_craft_publication_receipt" :
+							   "changed_item_publication_receipt");
 			entry.publication_status = publication_state::blocked;
 			continue;
 		}
 		entry.completed = completions[index];
 		entry.completion_ready = true;
 		entry.disposition_blocked = false;
+		// Bind a definitive well-typed receipt during batch validation, before
+		// collector/registry/physical effects. Uncertain or malformed success
+		// remains repairable and cannot authorize publication.
+		if (entry.publication && entry.payload.reason != item_transfer_reason::craft &&
+		    entry.completed.outcome != critical_apply_outcome::retryable_failure &&
+		    entry.completed.outcome != critical_apply_outcome::ambiguous_commit)
+		{
+			item_transfer_result sealed_result = {};
+			if (entry.completed.disposition ==
+				    critical_completion_disposition::never_admitted ||
+			    item_transfer_command_decode_result(
+				    entry.completed.result_payload.data(),
+				    entry.completed.result_size, &sealed_result))
+				entry.ordinary_receipt_sealed = true;
+		}
 	}
 	for (size_t index = 0; index < count; ++index)
 	{
 		auto found = pending.find(operation_key(completions[index].operation_id));
 		if (found == pending.end() || found->second.disposition_blocked ||
+		    found->second.publication_inflight ||
 		    found->second.publication_attempted_this_batch)
 			continue;
 		const auto &completion = found->second.completed;
@@ -3399,7 +3471,8 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 		}
 		if ((found->second.publication ||
 		     found->second.payload.reason == item_transfer_reason::craft) &&
-		    found->second.publication_status == publication_state::ack_pending)
+		    (found->second.publication_status == publication_state::ack_pending ||
+		     found->second.ordinary_publication_ready))
 			publish(found, nullptr);
 		else if (found->second.actor_pid)
 		{
