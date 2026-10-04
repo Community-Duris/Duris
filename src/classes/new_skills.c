@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -3105,6 +3106,7 @@ void do_bind(P_char ch, char *arg, int /*cmd*/)
 	}
 
 	SET_BIT(t_char->specials.affected_by, AFF_BOUND);
+	telemetry_runtime_game_control_changed(t_char);
 	act("$n ties $N up.", TRUE, ch, 0, t_char, TO_NOTVICT);
 	act("You tie $N up.", TRUE, ch, 0, t_char, TO_CHAR);
 	act("$n ties you up.", TRUE, ch, 0, t_char, TO_VICT);
@@ -3212,6 +3214,7 @@ void do_unbind(P_char ch, char *arg, int /*cmd*/)
 	}
 
 	REMOVE_BIT(t_char->specials.affected_by, AFF_BOUND);
+	telemetry_runtime_game_control_changed(t_char);
 	send_to_char("You're now free of your bindings.\r\n", t_char);
 	CharWait(ch, 1 * PULSE_VIOLENCE);
 
@@ -3455,6 +3458,7 @@ void capture(P_char ch, P_char victim)
 		stop_fighting(victim);
 
 		SET_BIT(victim->specials.affected_by, AFF_BOUND);
+		telemetry_runtime_game_control_changed(victim);
 		SET_POS(victim, POS_PRONE + GET_STAT(victim));
 
 		act("You knock $N to the ground and bind $M up!", FALSE, ch, 0, victim, TO_CHAR);
@@ -4028,7 +4032,10 @@ void chant_chi_purge(int level, P_char ch, char * /*arg*/, int /*type*/, P_char 
 		    FALSE, ch, 0, victim, TO_CHAR);
 		affect_from_char(victim, SPELL_BLINDNESS);
 		if (IS_SET(victim->specials.affected_by, AFF_BLIND))
+		{
 			REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);
+			telemetry_runtime_game_control_changed(victim);
+		}
 	}
 
 	return;

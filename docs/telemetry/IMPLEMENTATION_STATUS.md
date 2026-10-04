@@ -42,6 +42,18 @@ work. A future production deployment is a separate operational decision.
 
 ## Qualified first-layer checks
 
+The native control-state increment adds final mutation callbacks and nested
+remove/reapply suppression to the existing bounded accumulator. The callback
+fixture verifies 18 final transitions without build hashing or outside/inactive
+enrollment. The maintained-affect ASan/UBSan journey verifies 26 final transitions
+across all eight selected states, expiry, overlap, refresh, refused unlink,
+`NOAPPLY`, equipment/save-style rebuilding and actual cure/broken-song callers;
+10 short timers are canceled and the scope finishes before character destruction.
+The full selected mutation/removal inventory, complete attempt denominators,
+qualified duration/action restrictions, retained definition-7 comparisons and
+personal-server qualification remain required. Live duration coverage stays zero
+with `CONTEXT_UNKNOWN`; all seven final requirements in issue #258 remain open.
+
 The SQL fixture loaded and verified the complete accounting migration manifest:
 53 steps through `0053_craft_progression`, independently on MariaDB 10.11.14 and
 MySQL 8.0.46. Each engine passed all eight record kinds, ten golden fixtures,

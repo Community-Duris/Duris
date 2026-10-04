@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "combat/defense_resolution.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -875,6 +876,7 @@ void song_broken(struct char_link_data *cld)
 	{
 	case SONG_SLEEP:
 		REMOVE_BIT(cld->linking->specials.affected_by, AFF_SLEEP);
+		telemetry_runtime_game_control_changed(cld->linking);
 		do_wake(cld->linking, NULL, CMD_WAKE);
 		do_alert(cld->linking, NULL, CMD_ALERT);
 		break;

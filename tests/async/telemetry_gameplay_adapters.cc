@@ -11,6 +11,13 @@
 #include "core/utils.h"
 #include "core/prototypes.h"
 #include "magic/spells.h"
+#ifdef TELEMETRY_TEST_NATIVE_AFFECTS
+#include "combat/spell_wards.h"
+#include "combat/racewar_stat_mods.h"
+#include "core/mm.h"
+#include "core/profile.h"
+#include <array>
+#endif
 
 #include "telemetry/telemetry_session.h"
 #include "telemetry_test_runtime.h"
@@ -74,6 +81,7 @@ int fixture_control_random = 0;
 
 // Game-service seams for the maintained blind/Stun and status-control spell bodies.
 // Affect mutation is isolated here; the running-server journey remains required.
+#ifndef TELEMETRY_TEST_NATIVE_AFFECTS
 affected_type *affect_to_char(P_char character, affected_type *effect)
 {
 	assert(!(effect->flags & AFFTYPE_NOAPPLY));
@@ -89,6 +97,7 @@ void affect_join(P_char character, affected_type *effect, int average_duration,
 	assert(!average_duration && !average_modifier && effect->type == SPELL_SLEEP);
 	(void)affect_to_char(character, effect);
 }
+#endif
 bool resists_spell(P_char, P_char)
 {
 	return fixture_control_resistance;
@@ -116,8 +125,10 @@ void MobStartFight(P_char character, P_char target)
 void StopMercifulAttackers(P_char) {}
 bool has_innate(P_char, int innate)
 {
+#ifndef TELEMETRY_TEST_NATIVE_AFFECTS
 	assert(innate == INNATE_EYELESS);
-	return fixture_control_eyeless;
+#endif
+	return innate == INNATE_EYELESS && fixture_control_eyeless;
 }
 bool isname(const char *name, const char *)
 {
@@ -159,6 +170,195 @@ P_char get_linked_char(P_char character, ush_int link)
 {
 	return character == fixture_pet && link == LNK_PET ? fixture_pet_master : nullptr;
 }
+
+#ifdef TELEMETRY_TEST_NATIVE_AFFECTS
+// Isolate scheduler/memory/UI/stat services, while executing the maintained
+// affect aggregation, flag-bank application, rebuild, unlink and expiry bodies.
+std::array<affected_type, 64> fixture_affect_pool{};
+std::array<bool, 64> fixture_affect_used{};
+mm_ds fixture_affect_allocator{};
+std::array<nevent_data, 128> fixture_affect_events{};
+std::array<event_short_affect_data, 128> fixture_affect_payloads{};
+std::size_t fixture_affect_event_count = 0U;
+unsigned fixture_affect_scheduled = 0U, fixture_affect_canceled = 0U, fixture_affect_deaths = 0U;
+unsigned long long ne_event_tick = 100U;
+bool do_profile = false;
+profile_timer short_affect_liveness_profile{};
+P_index obj_index = nullptr;
+extern const stat_data stat_factor[LAST_RACE + 1]{};
+extern const race_names race_names_table[LAST_RACE + 1]{};
+float combat_by_race[LAST_RACE + 1][3]{};
+float combat_by_class[CLASS_COUNT + 1][2]{};
+float pulse_all = 2.0F, shield_combat_mult = 1.0F, shield_combat_tank_mult = 1.0F;
+int damroll_cap = 255, hitroll_cap = 127;
+
+mm_ds *mm_create(const char *, size_t size, size_t next_offset, unsigned)
+{
+	assert(size == sizeof(affected_type) && next_offset == offsetof(affected_type, next));
+	return &fixture_affect_allocator;
+}
+void *_mm_get(mm_ds *allocator, const char *, int)
+{
+	assert(allocator == &fixture_affect_allocator);
+	for (std::size_t index = 0U; index < fixture_affect_pool.size(); ++index)
+		if (!fixture_affect_used[index])
+		{
+			fixture_affect_used[index] = true;
+			fixture_affect_pool[index] = {};
+			return &fixture_affect_pool[index];
+		}
+	std::abort();
+}
+void mm_release(mm_ds *allocator, void *effect)
+{
+	assert(allocator == &fixture_affect_allocator);
+	for (std::size_t index = 0U; index < fixture_affect_pool.size(); ++index)
+		if (effect == &fixture_affect_pool[index])
+		{
+			assert(fixture_affect_used[index]);
+			fixture_affect_used[index] = false;
+			return;
+		}
+	std::abort();
+}
+nevent_schedule_result add_event(event_func callback, int delay, P_char character, P_char victim,
+				 P_obj object, int, const void *payload, int payload_size)
+{
+	assert(callback && delay >= 0 && character && !victim && !object);
+	assert(fixture_affect_event_count < fixture_affect_events.size());
+	const auto index = fixture_affect_event_count++;
+	auto &event = fixture_affect_events[index];
+	event = {};
+	event.ch = character;
+	event.func = callback;
+	event.sequence = index + 1U;
+	event.due_tick = ne_event_tick + delay;
+	event.next_char_nev = character->nevents;
+	character->nevents = &event;
+	if (payload_size != 0)
+	{
+		assert(payload && payload_size == sizeof(event_short_affect_data));
+		std::memcpy(&fixture_affect_payloads[index], payload, payload_size);
+		event.data = &fixture_affect_payloads[index];
+		++fixture_affect_scheduled;
+	}
+	return { nevent_schedule_status::scheduled, { &event, event.sequence } };
+}
+P_nevent get_scheduled(P_char character, event_func_type callback)
+{
+	for (auto *event = character->nevents; event; event = event->next_char_nev)
+		if (event->func == callback)
+			return event;
+	return nullptr;
+}
+nevent_handle nevent_handle_from_event(P_nevent event)
+{
+	return { event, event ? event->sequence : 0U };
+}
+nevent_cancel_result nevent_cancel(nevent_handle handle)
+{
+	assert(handle.event && handle.sequence == handle.event->sequence);
+	handle.event->func = nullptr;
+	++fixture_affect_canceled;
+	return nevent_cancel_result::canceled;
+}
+void spell_ward_sync_timers(P_char) {}
+void spell_ward_equipment_sync(P_char) {}
+void spell_ward_mask_equipment_bits(unsigned long *) {}
+void spell_ward_cancel_events(P_char, affected_type *)
+{
+	std::abort();
+}
+void spell_ward_expire(P_char, affected_type *)
+{
+	std::abort();
+}
+void unlink_char_affect(P_char, affected_type *)
+{
+	std::abort();
+}
+void unlink_char_obj_affect(P_char, affected_type *)
+{
+	std::abort();
+}
+void gmcp_char_affects(P_char) {}
+int char_light(P_char)
+{
+	return 0;
+}
+int room_light(int, int)
+{
+	return 0;
+}
+void logit(const char *, const char *, ...) {}
+void statuslog(int, const char *, ...) {}
+void get_epic_stat_affects(P_char) {}
+void get_aura_affects(P_char)
+{
+	std::abort();
+}
+P_char in_command_aura(P_char)
+{
+	return nullptr;
+}
+int add_racewar_stat_mods(P_char, hold_data *)
+{
+	return 0;
+}
+int calculate_hitpoints2(P_char character)
+{
+	return character->points.base_hit;
+}
+int calculate_mana(P_char)
+{
+	return 0;
+}
+int vitality_limit(P_char)
+{
+	return 100;
+}
+int two_weapon_check(P_char)
+{
+	return 0;
+}
+bool is_wielding_paladin_sword(P_char)
+{
+	return false;
+}
+bool innate_two_daggers(P_char)
+{
+	return false;
+}
+float get_property(const char *, double fallback)
+{
+	return fallback;
+}
+int get_property(const char *, int fallback)
+{
+	return fallback;
+}
+void apply_reaver_mods(P_char) {}
+int GET_CHAR_SKILL_P(P_char, int)
+{
+	return 0;
+}
+int real_room0(int)
+{
+	return 0;
+}
+void StartRegen(P_char, regen_resource) {}
+void song_broken(char_link_data *);
+void do_wake(P_char character, char *, int)
+{
+	assert(!IS_AFFECTED(character, AFF_SLEEP));
+}
+void do_alert(P_char, char *, int) {}
+void die(P_char character, P_char)
+{
+	++fixture_affect_deaths;
+	delete character; // ASan verifies the already-finished scope never reads it again.
+}
+#endif
 
 namespace
 {
@@ -3480,6 +3680,325 @@ void check_native_build_capture(bool use_native = false, bool export_capture = f
 		fake.builds.size());
 }
 
+#ifdef TELEMETRY_TEST_NATIVE_AFFECTS
+void check_native_affect_mutations()
+{
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	telemetry_test_start_runtime(enabled_options());
+	room_data room{};
+	zone_data zone{};
+	zone.number = 1979;
+	world = &room;
+	zone_table = &zone;
+	top_of_world = top_of_zone_table = 0;
+	char_data player{}, target{};
+	pc_only_data pc{}, target_pc{};
+	pc.pid = 8988;
+	target_pc.pid = 8989;
+	player.only.pc = &pc;
+	target.only.pc = &target_pc;
+	player.in_room = target.in_room = 0;
+	player.next = &target;
+	character_list = &player;
+	player.player.level = target.player.level = 20;
+	player.player.m_class = target.player.m_class = CLASS_WARRIOR;
+	player.points.base_hit = target.points.base_hit = 300;
+	player.points.max_hit = target.points.max_hit = 300;
+	player.points.hit = target.points.hit = 300;
+	assert(telemetry_runtime_game_combat_engage(&player, &target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	const unsigned long first[] = { AFF_BLIND, 0U, 0U, 0U, 0U, AFF_SLEEP, 0U, AFF_BOUND };
+	const unsigned long second[] = {
+		0U,	   AFF2_STUNNED, AFF2_MAJOR_PARALYSIS, AFF2_MINOR_PARALYSIS,
+		AFF2_SLOW, 0U,		 AFF2_SILENCED,	       0U
+	};
+	std::vector<std::pair<std::uint16_t, std::uint16_t>> expected;
+	for (unsigned family = 0U; family < 8U; ++family)
+	{
+		affected_type prototype{};
+		prototype.type = 100 + family;
+		prototype.flags = AFFTYPE_SHORT;
+		prototype.duration = 5;
+		prototype.bitvector = first[family];
+		prototype.bitvector2 = second[family];
+		auto *effect = affect_to_char(&target, &prototype);
+		assert(effect && target.affected == effect &&
+		       telemetry_runtime_game_control_mask(&target) == (1U << family));
+		expected.emplace_back(0U, 1U << family);
+		auto *expiry = get_scheduled(&target, event_short_affect);
+		assert(expiry &&
+		       static_cast<event_short_affect_data *>(expiry->data)->af == effect);
+		assert(affect_total(&target, FALSE) == FALSE);
+		assert(telemetry_runtime_game_control_mask(&target) == (1U << family));
+		expiry->func(&target, nullptr, nullptr, expiry->data);
+		assert(!target.affected && telemetry_runtime_game_control_mask(&target) == 0U);
+		expected.emplace_back(1U << family, 0U);
+		// A retired timer payload cannot invent a second removal.
+		event_short_affect(&target, nullptr, nullptr, expiry->data);
+	}
+	// Overlapping affects preserve the flag until the final native owner is removed.
+	affected_type prototype{};
+	prototype.type = SPELL_BLINDNESS;
+	prototype.bitvector = AFF_BLIND;
+	auto *first_blind = affect_to_char(&target, &prototype);
+	prototype.type = SPELL_SLEEP;
+	auto *second_blind = affect_to_char(&target, &prototype);
+	expected.emplace_back(0U, 1U);
+	affect_remove(&target, first_blind);
+	assert(telemetry_runtime_game_control_mask(&target) == 1U);
+	affected_type orphan{};
+	affect_remove(&target, &orphan); // Refused unlink restores the same effective state.
+	assert(telemetry_runtime_game_control_mask(&target) == 1U);
+	affect_remove(&target, second_blind);
+	expected.emplace_back(1U, 0U);
+	// A native remove/reapply refresh and its canceled timer form one final state.
+	prototype = {};
+	prototype.type = SPELL_SLEEP;
+	prototype.bitvector = AFF_SLEEP;
+	prototype.flags = AFFTYPE_SHORT;
+	prototype.duration = 5;
+	(void)affect_to_char(&target, &prototype);
+	expected.emplace_back(0U, 32U);
+	affect_join(&target, &prototype, FALSE, FALSE);
+	assert(target.affected && target.affected->duration == 10 &&
+	       telemetry_runtime_game_control_mask(&target) == 32U);
+	affect_from_char(&target, SPELL_SLEEP);
+	expected.emplace_back(32U, 0U);
+	prototype = {};
+	prototype.type = SPELL_BLINDNESS;
+	prototype.bitvector = AFF_BLIND;
+	prototype.flags = AFFTYPE_NOAPPLY;
+	(void)affect_to_char(&target, &prototype);
+	assert(telemetry_runtime_game_control_mask(&target) == 0U);
+	affect_from_char(&target, SPELL_BLINDNESS);
+	// Maintained direct-removal callers also clear residual flags without an affect.
+	target.specials.affected_by = AFF_BLIND;
+	telemetry_runtime_game_control_changed(&target);
+	expected.emplace_back(0U, 1U);
+	spell_cure_blind(20, &player, nullptr, SPELL_TYPE_SPELL, &target, nullptr);
+	assert(telemetry_runtime_game_control_mask(&target) == 0U);
+	expected.emplace_back(1U, 0U);
+	target.specials.affected_by = AFF_SLEEP;
+	telemetry_runtime_game_control_changed(&target);
+	expected.emplace_back(0U, 32U);
+	affected_type song{};
+	song.type = SONG_SLEEP;
+	char_link_data link{};
+	link.linking = &target;
+	link.affect = &song;
+	song_broken(&link);
+	assert(telemetry_runtime_game_control_mask(&target) == 0U);
+	expected.emplace_back(32U, 0U);
+	// Execute the actual equipment aggregation and save-style remove/reapply.
+	obj_data gear{};
+	gear.R_num = -1;
+	gear.type = ITEM_ARMOR;
+	gear.bitvector = AFF_BLIND | AFF_SLEEP | AFF_BOUND;
+	gear.bitvector2 = AFF2_STUNNED | AFF2_MAJOR_PARALYSIS | AFF2_MINOR_PARALYSIS | AFF2_SLOW |
+			  AFF2_SILENCED;
+	target.equipment[0] = &gear;
+	all_affects(&target, TRUE);
+	assert(telemetry_runtime_game_control_mask(&target) == 255U);
+	expected.emplace_back(0U, 255U);
+	{
+		telemetry_control_mutation_scope save(&target);
+		all_affects(&target, FALSE);
+		assert(telemetry_runtime_game_control_mask(&target) == 0U);
+		telemetry_runtime_game_control_changed(&target);
+		(void)telemetry_runtime_game_battle_context(&target);
+		all_affects(&target, TRUE);
+		assert(telemetry_runtime_game_control_mask(&target) == 255U);
+	}
+	{
+		telemetry_control_mutation_scope removal(&target);
+		all_affects(&target, FALSE);
+		target.equipment[0] = nullptr;
+		all_affects(&target, TRUE);
+	}
+	assert(telemetry_runtime_game_control_mask(&target) == 0U);
+	expected.emplace_back(255U, 0U);
+	// This maintained rebuild can destroy its character; the scope finishes first.
+	auto *dead = new char_data{};
+	npc_only_data npc{};
+	dead->only.npc = &npc;
+	SET_BIT(dead->specials.act, ACT_ISNPC);
+	dead->in_room = 0;
+	dead->points.base_hit = dead->points.max_hit = 300;
+	dead->points.hit = -11;
+	assert(affect_total(dead, TRUE) == TRUE && fixture_affect_deaths == 1U);
+	assert(std::none_of(fixture_affect_used.begin(), fixture_affect_used.end(),
+			    [](bool used) { return used; }));
+	assert(fixture_affect_scheduled == 10U && fixture_affect_canceled == 10U);
+	assert(target.telemetry_control_rebuild_depth == 0U);
+	assert(telemetry_runtime_game_battle_leave(&target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	std::size_t transitions = 0U;
+	for (const auto &record : fake.controls)
+	{
+		const auto &value = record.payload.control;
+		assert(value.duration_coverage == 0U);
+		if (value.target.actor.actor_id == 8989U &&
+		    value.boundary == telemetry_control_boundary::state_changed)
+		{
+			assert(transitions < expected.size());
+			assert(value.before_mask == expected[transitions].first &&
+			       value.after_mask == expected[transitions].second);
+			++transitions;
+		}
+	}
+	assert(transitions == expected.size() && transitions == 26U);
+	character_list = nullptr;
+	world = nullptr;
+	zone_table = nullptr;
+	top_of_world = top_of_zone_table = -1;
+	std::puts(
+		"PASS: maintained affect functions and direct cure/song callers conserve 26 final control transitions across all eight statuses, expiry, overlap, refresh, refused removal, NOAPPLY, equipment and save rebuilds; 10 timers canceled and teardown is ASan-safe; coverage remains partial");
+}
+#endif
+
+void check_native_control_state_changes()
+{
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	telemetry_test_start_runtime(enabled_options());
+	room_data room{};
+	zone_data zone{};
+	zone.number = 1979;
+	world = &room;
+	zone_table = &zone;
+	top_of_world = top_of_zone_table = 0;
+	char_data player{}, target{}, outside{};
+	pc_only_data pc{}, target_pc{}, outside_pc{};
+	pc.pid = 8985;
+	target_pc.pid = 8986;
+	outside_pc.pid = 8987;
+	player.only.pc = &pc;
+	target.only.pc = &target_pc;
+	outside.only.pc = &outside_pc;
+	player.in_room = target.in_room = outside.in_room = 0;
+	assert(telemetry_runtime_game_combat_engage(&player, &target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	const unsigned long first[] = { AFF_BLIND, 0U, 0U, 0U, 0U, AFF_SLEEP, 0U, AFF_BOUND };
+	const unsigned long second[] = {
+		0U,	   AFF2_STUNNED, AFF2_MAJOR_PARALYSIS, AFF2_MINOR_PARALYSIS,
+		AFF2_SLOW, 0U,		 AFF2_SILENCED,	       0U
+	};
+	std::vector<std::pair<std::uint16_t, std::uint16_t>> expected;
+	fixture_crypto_heap_calls = 0U;
+	fixture_track_crypto = true;
+	for (unsigned family = 0U; family < 8U; ++family)
+	{
+		target.specials.affected_by = first[family];
+		target.specials.affected_by2 = second[family];
+		telemetry_runtime_game_control_changed(&target);
+		expected.emplace_back(0U, 1U << family);
+		target.specials.affected_by = target.specials.affected_by2 = 0U;
+		telemetry_runtime_game_control_changed(&target);
+		expected.emplace_back(1U << family, 0U);
+	}
+	// A save/rebuild with the same final mask cannot create intermediate rows.
+	{
+		telemetry_control_mutation_scope rebuild(&target);
+		target.specials.affected_by = AFF_BLIND;
+		telemetry_runtime_game_control_changed(&target);
+		{
+			telemetry_control_mutation_scope nested(&target);
+			target.specials.affected_by2 = AFF2_STUNNED;
+			telemetry_runtime_game_battle_build_changed(&target);
+			(void)telemetry_runtime_game_battle_context(&target);
+		}
+		target.specials.affected_by = target.specials.affected_by2 = 0U;
+		rebuild.finish();
+		rebuild.finish();
+	}
+	assert(target.telemetry_control_rebuild_depth == 0U);
+	// A compound mutation with a different final mask produces exactly one cut.
+	{
+		telemetry_control_mutation_scope rebuild(&target);
+		target.specials.affected_by = AFF_BLIND;
+		telemetry_runtime_game_control_changed(&target);
+		{
+			telemetry_control_mutation_scope nested(&target);
+			target.specials.affected_by2 = AFF2_STUNNED;
+		}
+	}
+	expected.emplace_back(0U, 3U);
+	{
+		telemetry_control_mutation_scope rebuild(&target);
+		target.specials.affected_by = 0U;
+		telemetry_runtime_game_control_changed(&target);
+		target.specials.affected_by2 = 0U;
+	}
+	expected.emplace_back(3U, 0U);
+	outside.specials.affected_by = AFF_SLEEP;
+	telemetry_runtime_game_control_changed(&outside);
+	telemetry_runtime_game_control_changed(nullptr);
+	fixture_track_crypto = false;
+	assert(fixture_crypto_heap_calls == 0U);
+	assert(telemetry_runtime_game_battle_leave(&target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	target.specials.affected_by = AFF_BOUND;
+	telemetry_runtime_game_control_changed(&target); // Inactive grace is not re-entry.
+	{
+		telemetry_control_mutation_scope null_scope(nullptr);
+		outside.telemetry_control_rebuild_depth = std::numeric_limits<std::uint32_t>::max();
+		telemetry_control_mutation_scope saturated(&outside);
+	}
+	assert(outside.telemetry_control_rebuild_depth ==
+	       std::numeric_limits<std::uint32_t>::max());
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	std::size_t transitions = 0U;
+	unsigned target_entries = 0U, target_departures = 0U;
+	for (const auto &record : fake.controls)
+	{
+		const auto &value = record.payload.control;
+		assert(value.target.actor.actor_id != 8987U);
+		assert(value.duration_coverage == 0U &&
+		       (value.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN));
+		if (value.target.actor.actor_id != 8986U)
+			continue;
+		target_entries += value.kind == telemetry_control_kind::state_entry;
+		target_departures += value.boundary == telemetry_control_boundary::actor_left;
+		if (value.boundary == telemetry_control_boundary::state_changed)
+		{
+			assert(transitions < expected.size());
+			assert(value.before_mask == expected[transitions].first &&
+			       value.after_mask == expected[transitions].second);
+			++transitions;
+		}
+	}
+	assert(transitions == expected.size() && target_entries == 1U && target_departures == 1U);
+	assert(fake.builds.size() == 2U); // Mutation observation does not read/hash a build.
+	character_list = nullptr;
+	world = nullptr;
+	zone_table = nullptr;
+	top_of_world = top_of_zone_table = -1;
+	std::puts(
+		"PASS: native control-state callbacks conserve 18 final transitions, suppress nested rebuilds, preserve partial coverage and exclude outside/inactive actors without build hashing");
+}
+
 void check_native_build_limits()
 {
 	fake_repository fake{};
@@ -3691,6 +4210,14 @@ void check_native_build_queue_loss()
 
 int main(int argc, char **argv)
 {
+#ifdef TELEMETRY_TEST_NATIVE_AFFECTS
+	if (argc == 2 && std::strcmp(argv[1], "--native-affects") == 0)
+	{
+		check_native_control_state_changes();
+		check_native_affect_mutations();
+		return 0;
+	}
+#endif
 	if (argc == 2 && std::strcmp(argv[1], "--native-build-context") == 0)
 	{
 		assert(CRYPTO_set_mem_functions(fixture_crypto_malloc, fixture_crypto_realloc,
@@ -3744,6 +4271,7 @@ int main(int argc, char **argv)
 					fixture_crypto_free) == 1);
 	check_native_build_context();
 	check_native_build_capture();
+	check_native_control_state_changes();
 	check_native_build_limits();
 	check_native_build_global_limit();
 	check_native_battle_context();

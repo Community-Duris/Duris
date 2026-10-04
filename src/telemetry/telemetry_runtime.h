@@ -437,6 +437,28 @@ void telemetry_runtime_game_combat_control(struct char_data *source, struct char
 /* Selected effective flag banks, read without changing gameplay. Elapsed state
  * is partial until the producer inventory covers every selected mutation. */
 std::uint16_t telemetry_runtime_game_control_mask(const struct char_data *target) noexcept;
+/* Observe a completed native flag mutation in an existing active battle. This
+ * does not hash a build, enroll an actor or attribute elapsed state to a caster. */
+void telemetry_runtime_game_control_changed(struct char_data *target) noexcept;
+/* Stack-only scope for remove/reapply operations. The character must remain
+ * alive until finish(); use it before teardown, never across character deletion.
+ * Nested scopes and runtime point reads cannot expose intermediate flag banks. */
+class telemetry_control_mutation_scope
+{
+    public:
+	explicit telemetry_control_mutation_scope(struct char_data *,
+						  bool observe_final = true) noexcept;
+	~telemetry_control_mutation_scope() noexcept;
+	void finish() noexcept;
+	telemetry_control_mutation_scope(const telemetry_control_mutation_scope &) = delete;
+	telemetry_control_mutation_scope &
+	operator=(const telemetry_control_mutation_scope &) = delete;
+
+    private:
+	struct char_data *character_;
+	std::uint16_t before_mask_;
+	bool observe_final_;
+};
 void telemetry_runtime_game_combat_control_result(
 	struct char_data *source, struct char_data *target, telemetry_control_family family,
 	telemetry_control_result result, std::uint16_t before_mask, std::int32_t configured_ticks,

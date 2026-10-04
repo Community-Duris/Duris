@@ -1,4 +1,5 @@
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "core/structs.h"
 #include "world/db.h"
 #include "world/hardcore_config.h"
@@ -265,6 +266,7 @@ void spell_cure_blind(int /*level*/, P_char /*ch*/, char * /*arg*/, int /*type*/
 	{
 		affect_from_char(victim, SPELL_BLINDNESS);
 		REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);
+		telemetry_runtime_game_control_changed(victim);
 		send_to_char("&+WYour vision returns!\n", victim);
 	}
 }

@@ -1536,6 +1536,7 @@ void all_affects(P_char ch, int mode)
 
 	if (ch == NULL) /* replaced call to SanityCheck with this */
 		return;
+	telemetry_control_mutation_scope control_state(ch, mode != FALSE);
 
 	/* Keep relative ward deadlines current before an equipment transition or
 	 * a full affect rebuild.  The equipment sync below only runs on the apply
@@ -1669,6 +1670,7 @@ char affect_total(P_char ch, int kill_ch)
 		return FALSE;
 	}
 
+	telemetry_control_mutation_scope control_state(ch);
 	all_affects(ch, FALSE); /*
 	                         * effectively resets character to a state
 	                         * with NO affects
@@ -1683,6 +1685,7 @@ char affect_total(P_char ch, int kill_ch)
 	all_affects(ch, TRUE); /*
 	                        * now add them all back
 	                        */
+	control_state.finish(); // The following death branch can destroy the character.
 
 	if (kill_ch && (GET_HIT(ch) < -10) && (GET_STAT(ch) != STAT_DEAD) &&
 	    (IS_NPC(ch) || !ch->desc || (ch->desc && (ch->desc->connected == CON_PLAYING))))
@@ -1879,6 +1882,7 @@ void event_short_affect(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 struct affected_type *affect_to_char(P_char ch, struct affected_type *af)
 {
 	struct affected_type *affected_alloc;
+	telemetry_control_mutation_scope control_state(ch);
 
 	if (!dead_affect_pool)
 		dead_affect_pool = mm_create("AFFECTS", sizeof(struct affected_type),
@@ -2049,6 +2053,7 @@ void affect_remove(P_char ch, struct affected_type *af)
 		      (ch ? "no affects." : "no ch."));
 		return;
 	}
+	telemetry_control_mutation_scope control_state(ch);
 
 	/*
 	 * remove structure *af from linked list
@@ -2142,6 +2147,7 @@ void affect_remove(P_char ch, struct affected_type *af)
 void affect_from_char(P_char ch, int skill)
 {
 	struct affected_type *hjp, *tmp;
+	telemetry_control_mutation_scope control_state(ch);
 
 	for (hjp = ch->affected; hjp; hjp = tmp)
 	{
@@ -2243,6 +2249,7 @@ void affect_join(P_char ch, struct affected_type *af, int avg_dur, int avg_mod)
 {
 	struct affected_type *hjp;
 	bool found = FALSE;
+	telemetry_control_mutation_scope control_state(ch);
 
 	for (hjp = ch->affected; !found && hjp; hjp = hjp->next)
 	{

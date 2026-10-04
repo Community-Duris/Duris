@@ -4744,7 +4744,10 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 			act("$n has a RUDE awakening!", TRUE, victim, 0, 0, TO_ROOM);
 			affect_from_char(victim, SPELL_SLEEP);
 			if (IS_AFFECTED(victim, AFF_SLEEP))
+			{
 				REMOVE_BIT(victim->specials.affected_by, AFF_SLEEP);
+				telemetry_runtime_game_control_changed(victim);
+			}
 			SET_POS(victim, GET_POS(victim) + STAT_NORMAL);
 		}
 
@@ -4764,6 +4767,7 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 					affect_remove(victim, af);
 			}
 			REMOVE_BIT(victim->specials.affected_by2, AFF2_MINOR_PARALYSIS);
+			telemetry_runtime_game_control_changed(victim);
 		}
 
 		/* if char is bound there is a chance the dam cut the binding */
@@ -4773,6 +4777,7 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 			{
 				/* ok char if free */
 				REMOVE_BIT(victim->specials.affected_by, AFF_BOUND);
+				telemetry_runtime_game_control_changed(victim);
 				act("$N's bindings are cut free!", FALSE, ch, 0, victim,
 				    TO_NOTVICT);
 				act("Your blow cuts through $N's bindings.", FALSE, ch, 0, victim,

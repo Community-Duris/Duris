@@ -6,6 +6,7 @@
  *************************************************************************** */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -761,7 +762,10 @@ void spell_cell_adjustment(int level, P_char ch, char * /*arg*/, int /*type*/, P
 		    TO_CHAR);
 		affect_from_char(victim, SPELL_BLINDNESS);
 		if (IS_SET(victim->specials.affected_by, AFF_BLIND))
+		{
 			REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);
+			telemetry_runtime_game_control_changed(victim);
+		}
 	}
 
 	return;

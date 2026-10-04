@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -976,6 +977,7 @@ void do_fire(P_char ch, char *argument, int cmd)
 			if (result == DAM_NONEDEAD)
 			{
 				REMOVE_BIT(victim->specials.affected_by, AFF_SLEEP);
+				telemetry_runtime_game_control_changed(victim);
 				if (affected_by_spell(victim, SPELL_SLEEP))
 				{
 					affect_from_char(victim, SPELL_SLEEP);

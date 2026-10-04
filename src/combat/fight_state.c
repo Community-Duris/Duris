@@ -144,7 +144,10 @@ void set_fighting(P_char ch, P_char vict)
 		affect_from_char(ch, SPELL_SLEEP);
 
 	if (IS_AFFECTED(ch, AFF_SLEEP))
+	{
 		REMOVE_BIT(ch->specials.affected_by, AFF_SLEEP);
+		telemetry_runtime_game_control_changed(ch);
+	}
 
 	if (IS_AFFECTED(ch, AFF_SNEAK))
 	{
@@ -711,11 +714,13 @@ void update_pos(P_char ch)
 				if (affected_by_spell(ch, SPELL_SLEEP))
 				{
 					REMOVE_BIT(ch->specials.affected_by, AFF_SLEEP);
+					telemetry_runtime_game_control_changed(ch);
 					affect_from_char(ch, SPELL_SLEEP);
 				}
 				if (affected_by_spell(ch, SONG_SLEEP))
 				{
 					REMOVE_BIT(ch->specials.affected_by, AFF_SLEEP);
+					telemetry_runtime_game_control_changed(ch);
 					affect_from_char(ch, SONG_SLEEP);
 				}
 				if (stat == STAT_SLEEPING)
@@ -734,11 +739,13 @@ void update_pos(P_char ch)
 		if (affected_by_spell(ch, SPELL_SLEEP))
 		{
 			REMOVE_BIT(ch->specials.affected_by, AFF_SLEEP);
+			telemetry_runtime_game_control_changed(ch);
 			affect_from_char(ch, SPELL_SLEEP);
 		}
 		if (affected_by_spell(ch, SONG_SLEEP))
 		{
 			REMOVE_BIT(ch->specials.affected_by, AFF_SLEEP);
+			telemetry_runtime_game_control_changed(ch);
 			affect_from_char(ch, SONG_SLEEP);
 		}
 		do_wake(ch, 0, -4);

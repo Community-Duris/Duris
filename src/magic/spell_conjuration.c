@@ -1,4 +1,5 @@
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -572,6 +573,7 @@ void spell_conjour_elemental(int level, P_char ch, char * /*arg*/, int /*type*/,
 		if (IS_SET(mob->specials.affected_by2, AFF2_SLOW))
 		{
 			REMOVE_BIT(mob->specials.affected_by2, AFF2_SLOW);
+			telemetry_runtime_game_control_changed(mob);
 		}
 
 		if (!IS_SET(mob->specials.affected_by, AFF_HASTE))
@@ -1077,6 +1079,7 @@ static void conjure_specialized(P_char ch, [[maybe_unused]] int level)
 		if (IS_SET(mob->specials.affected_by2, AFF2_SLOW))
 		{
 			REMOVE_BIT(mob->specials.affected_by2, AFF2_SLOW);
+			telemetry_runtime_game_control_changed(mob);
 		}
 
 		if (!IS_SET(mob->specials.affected_by, AFF_HASTE))

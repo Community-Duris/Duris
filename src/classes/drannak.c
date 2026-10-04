@@ -11,6 +11,7 @@
 #define TROPHY
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -1205,6 +1206,7 @@ void do_conjure(P_char ch, char *argument, int /*cmd*/)
 		// REMOVE_BIT(t_ch->specials.act, ACT_SENTINEL); Needed for mob to follow.
 
 		REMOVE_BIT(t_ch->specials.affected_by, AFF_SLEEP);
+		telemetry_runtime_game_control_changed(t_ch);
 		REMOVE_BIT(t_ch->specials.act, ACT_ELITE);
 		REMOVE_BIT(t_ch->specials.act, ACT_HUNTER);
 		REMOVE_BIT(t_ch->specials.act, ACT_PROTECTOR);

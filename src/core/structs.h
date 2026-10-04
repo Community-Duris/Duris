@@ -1568,6 +1568,8 @@ struct char_data
 	uint64_t telemetry_session_sequence;
 	uint64_t telemetry_session_producer_boot_id;
 	uint64_t telemetry_session_producer_process_id;
+	/* Nested native rebuilds are observed only after their final effective state. */
+	uint32_t telemetry_control_rebuild_depth;
 };
 
 /* ======================================================================== */

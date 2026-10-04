@@ -77,6 +77,31 @@ battle closure do not extend state through inactivity grace. Target state rows
 carry no guessed source/caster credit. The existing bounded build sampling pass
 supplies live point reads; there is no extra world traversal.
 
+Native final-state callbacks also observe completed selected-flag mutations in
+already active battles. They refresh the existing association and reuse the
+fixed target accumulator without hashing equipment or learned epics. Direct
+binding, cure, wake, damage-release and NPC conversion boundaries are wired;
+timed affect insertion, removal, expiry and refresh use the generic affect paths.
+These callbacks do not enroll outside actors, resume inactive grace participants
+or manufacture an accepted application/caster attribution.
+
+Nested remove/reapply operations use a stack scope and a runtime-only character
+depth. Intermediate reads are suppressed during affect rebuilds, equipment
+removal, character saves and pet saves. The outer completed operation observes a
+changed final mask once; an unchanged final mask emits no transition. The rebuild
+scope explicitly finishes before `affect_total` can destroy its character.
+Saturated depth remains suppressed instead of wrapping into a false final state.
+
+The callback fixture qualifies 18 ordered final transitions across all eight
+selected masks, nested suppression, outside/inactive exclusions and no build
+hashing. A separate ASan/UBSan journey executes the maintained affect aggregation,
+flag application, rebuild, insertion, removal, refresh and expiry bodies, plus
+the actual cure and broken-song callers. It checks 26 final transitions, overlapping
+owners, refused removal, `NOAPPLY`, equipment, save-style rebuilding, 10 canceled
+timers and character destruction after a completed scope. Scheduler, memory,
+UI and unrelated stat services are controlled fixture seams. This is not a
+running personal server or proof of every native producer/removal path.
+
 Live state coverage is zero with `CONTEXT_UNKNOWN` until the complete native
 mutation inventory is qualified. Gap rows clear masks, availability and
 coverage. Configuration-unavailable gaps also clear configuration/classifier/
@@ -126,6 +151,7 @@ alter kind-11 contribution coverage.
 python3 tests/async/test_telemetry_battle_contribution_contract.py
 python3 tests/async/test_telemetry_battle_contributions.py --sanitize
 python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize
+python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize --native-affects
 python3 tests/async/test_telemetry_repository.py
 python3 tests/async/test_telemetry_outage.py
 python3 tests/async/test_telemetry_runtime_integration.py

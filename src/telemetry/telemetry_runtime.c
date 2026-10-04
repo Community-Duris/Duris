@@ -3800,7 +3800,8 @@ void capture_control_state(const char_data *character,
 			   battle_emit_context &emitter) noexcept
 {
 	telemetry_battle_actor_context actor{};
-	if (!R.control.initialized || !game_battle_actor(character, &actor))
+	if (!character || character->telemetry_control_rebuild_depth != 0U ||
+	    !R.control.initialized || !game_battle_actor(character, &actor))
 		return;
 	auto value = control_basis(at, utc);
 	value.kind = telemetry_control_kind::state_entry;
@@ -3824,7 +3825,8 @@ void capture_battle_build(char_data *character, telemetry_monotonic_usec at, tel
 {
 	telemetry_battle_actor_context actor{};
 	telemetry_battle_contribution_context association{};
-	if (!character || !R.config_available || !game_battle_actor(character, &actor) ||
+	if (!character || character->telemetry_control_rebuild_depth != 0U || !R.config_available ||
+	    !game_battle_actor(character, &actor) ||
 	    !battle_contribution_context(actor.actor.actor_id, &association) ||
 	    association.actor.actor.kind != actor.actor.kind)
 		return;
@@ -4540,7 +4542,8 @@ telemetry_capture_result capture_battle_relation(struct char_data *source, struc
 }
 
 telemetry_capture_result game_battle_context_at(struct char_data *character,
-						telemetry_monotonic_usec at, telemetry_utc_usec utc)
+						telemetry_monotonic_usec at, telemetry_utc_usec utc,
+						bool capture_build = true)
 {
 	if (character == nullptr)
 		return game_capture_invalid();
@@ -4551,7 +4554,8 @@ telemetry_capture_result game_battle_context_at(struct char_data *character,
 	const auto observed =
 		telemetry_battle_context(&R.battle, actor, at, utc, emit_battle_fact, &emitter);
 	sync_battle_contributions(at, utc, emitter);
-	capture_battle_build(character, at, utc, emitter);
+	if (capture_build)
+		capture_battle_build(character, at, utc, emitter);
 	return battle_capture_from_update(observed, emitter);
 }
 
@@ -4972,6 +4976,54 @@ std::uint16_t telemetry_runtime_game_control_mask(const char_data *target) noexc
 	mask |= IS_AFFECTED2(target, AFF2_SILENCED) ? 64U : 0U;
 	mask |= IS_AFFECTED(target, AFF_BOUND) ? 128U : 0U;
 	return mask;
+}
+
+telemetry_control_mutation_scope::telemetry_control_mutation_scope(char_data *character,
+								   bool observe_final) noexcept
+	: character_(character)
+	, before_mask_(telemetry_runtime_game_control_mask(character))
+	, observe_final_(observe_final)
+{
+	if (character_ && character_->telemetry_control_rebuild_depth !=
+				  std::numeric_limits<std::uint32_t>::max())
+		++character_->telemetry_control_rebuild_depth;
+}
+
+telemetry_control_mutation_scope::~telemetry_control_mutation_scope() noexcept
+{
+	finish();
+}
+
+void telemetry_control_mutation_scope::finish() noexcept
+{
+	auto *character = character_;
+	character_ = nullptr;
+	if (!character || character->telemetry_control_rebuild_depth == 0U ||
+	    character->telemetry_control_rebuild_depth == std::numeric_limits<std::uint32_t>::max())
+		return; // Saturation stays suppressed; never wrap into a false final state.
+	if (--character->telemetry_control_rebuild_depth == 0U && observe_final_ &&
+	    before_mask_ != telemetry_runtime_game_control_mask(character))
+		telemetry_runtime_game_control_changed(character);
+}
+
+void telemetry_runtime_game_control_changed(char_data *character) noexcept
+{
+	if (!R.initialized || !R.enabled || R.shutdown_pending || !character ||
+	    character->telemetry_control_rebuild_depth != 0U || !R.control.initialized ||
+	    !ensure_current_config())
+		return;
+	telemetry_battle_contribution_context association{};
+	if (!native_contribution_context(character, &association))
+		return; // A status mutation alone cannot enroll an outside/inactive actor.
+	telemetry_monotonic_usec at = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	if (!game_time(&at, &utc))
+		return;
+	(void)game_battle_context_at(character, at, utc, false);
+	if (!native_contribution_context(character, &association))
+		return;
+	battle_emit_context emitter{};
+	capture_control_state(character, association, at, utc, emitter);
 }
 
 void telemetry_runtime_game_combat_control_result(char_data *source, char_data *target,

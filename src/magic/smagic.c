@@ -15,6 +15,7 @@
 #ifndef _SHAMAN_MAGIC_C_
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -799,6 +800,7 @@ void spell_restoration(int level, P_char ch, char * /*arg*/, int /*type*/, P_cha
 	{
 		affect_from_char(victim, SPELL_BLINDNESS);
 		REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);
+		telemetry_runtime_game_control_changed(victim);
 	}
 
 	if (IS_AFFECTED4(victim, AFF4_CARRY_PLAGUE))
@@ -3146,6 +3148,7 @@ void spell_purify_spirit(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
 	{
 		affect_from_char(victim, SPELL_BLINDNESS);
 		REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);
+		telemetry_runtime_game_control_changed(victim);
 		send_to_char("&+WYou can see once again!\r\n", victim);
 	}
 
@@ -4020,7 +4023,10 @@ void spell_greater_mending(int level, P_char ch, char * /*arg*/, int /*type*/, P
 		if (affected_by_spell(victim, SPELL_BLINDNESS))
 			affect_from_char(victim, SPELL_BLINDNESS);
 		if (IS_SET(victim->specials.affected_by, AFF_BLIND))
+		{
 			REMOVE_BIT(victim->specials.affected_by, AFF_BLIND);
+			telemetry_runtime_game_control_changed(victim);
+		}
 	}
 
 	if (IS_AFFECTED4(victim, AFF4_REV_POLARITY))

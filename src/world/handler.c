@@ -2201,6 +2201,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 
 	if (!saving)
 		clear_links(ch, obj, LNKFLG_BREAK_REMOVE);
+	telemetry_control_mutation_scope control_state(ch);
 	all_affects(ch, FALSE);
 	ch->equipment[pos] = NULL;
 	world_activity_object_leave(obj);
@@ -2208,6 +2209,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 	obj->loc_p = LOC_NOWHERE;
 	obj->loc.wearing = NULL; // must clear full pointer, not just int-sized loc.room
 	all_affects(ch, TRUE);
+	control_state.finish();
 
 	balance_affects(ch);
 

@@ -7,6 +7,7 @@
 #include "item/objmisc.h"
 #include "magic/spells.h"
 #include "net/gmcp.h"
+#include "telemetry/telemetry_runtime.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "world/specs.prototypes.h"
@@ -683,6 +684,7 @@ struct affected_type *spell_ward_apply_cast(P_char victim, const struct affected
 
 	if (af)
 	{
+		telemetry_control_mutation_scope control_state(victim);
 		spell_ward_sync_timers(victim);
 		spell_ward_cancel_events(victim, af);
 		all_affects(victim, FALSE);
