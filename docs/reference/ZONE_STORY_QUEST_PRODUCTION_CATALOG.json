@@ -47168,6 +47168,505 @@
     {
       "contacts": [
         {
+          "description": "At the reception library of Bone Fort Inn. Ask about hi, books, guests and boots. He needs all four different books together; the bookrack is not their source.",
+          "keyword": "man",
+          "mob_vnum": 13703,
+          "name": "a hunched man",
+          "topics": [
+            "hi",
+            "books",
+            "guests",
+            "boots"
+          ]
+        },
+        {
+          "description": "In the village blacksmith\u2019s hut, east of the village path. Ask about hi, scales or dragon. His red-scales AND 500-platinum order is currently unavailable with active accounting.",
+          "keyword": "blacksmith",
+          "mob_vnum": 13710,
+          "name": "a barbarian blacksmith",
+          "topics": [
+            "hi",
+            "scales",
+            "dragon"
+          ]
+        },
+        {
+          "description": "May emerge from a branching loading route into the ice forest. Ask about hi, boots or boot, malinar and sword. Her boots and head exchanges are independent; she leaves after the head exchange.",
+          "keyword": "eleadora",
+          "mob_vnum": 13716,
+          "name": "Eleadora, guardian of the ice forest",
+          "topics": [
+            "hi",
+            "boots",
+            "boot",
+            "malinar",
+            "sword"
+          ]
+        },
+        {
+          "description": "In the fisherman\u2019s home behind the locked western flap near the starving barbarian. Ask hi. A fishbone key from feeding the barbarian opens the flap and breaks on ordinary successful unlocking. Exact supplied materials do not require an earlier feeding receipt.",
+          "keyword": "shaman",
+          "mob_vnum": 13722,
+          "name": "a barbarian shaman",
+          "topics": [
+            "hi"
+          ]
+        },
+        {
+          "description": "At the bend beside the locked western flap to the shaman\u2019s home. Ask hi, hello or hey. Needs a clam AND pike AND lobster together; gives the fishbone key.",
+          "keyword": "starving",
+          "mob_vnum": 13723,
+          "name": "a starving barbarian",
+          "topics": [
+            "hi",
+            "hello",
+            "hey"
+          ]
+        },
+        {
+          "description": "Two strange-looking guests begin in inn bedrooms. Only the one in the far western bedroom starts carrying the hidden dark green book.",
+          "keyword": "guest",
+          "mob_vnum": 13704,
+          "name": "a strange guest",
+          "topics": []
+        },
+        {
+          "description": "Two shady travellers begin in inn bedrooms. Only the one with the working mirror starts carrying the hidden dark magenta book. PUSH that mirror opens the blocked northern passage.",
+          "keyword": "shady",
+          "mob_vnum": 13705,
+          "name": "a shady traveller",
+          "topics": []
+        },
+        {
+          "description": "Two human travellers begin in inn bedrooms. Only the one in the western bedroom nearest the stairs starts carrying the old book.",
+          "keyword": "human",
+          "mob_vnum": 13706,
+          "name": "a human traveller",
+          "topics": []
+        },
+        {
+          "description": "At the inn entrance, starts carrying the hidden dark black book. Other travellers and duplicate guests do not substitute for this fourth kind.",
+          "keyword": "dark",
+          "mob_vnum": 13707,
+          "name": "a dark traveller",
+          "topics": []
+        },
+        {
+          "description": "May reach the fire-beaten cave below the inn through its loading route. Starts carrying hidden red dragon scales. Scales recovery, personal victory and paid armor preparation are different facts.",
+          "keyword": "dragon",
+          "mob_vnum": 13701,
+          "name": "a thundering red dragon",
+          "topics": []
+        },
+        {
+          "description": "May emerge into the icy tundra from branching loading rooms. Starts with his own exact bloody head already carried. His rare grey giant boots do not satisfy Eleadora\u2019s snowy adventurer boots request.",
+          "keyword": "malinar",
+          "mob_vnum": 13717,
+          "name": "Malinar, blood enemy of Eleadora",
+          "topics": []
+        },
+        {
+          "description": "At the end of the village path beside the locked northern flap to the fishmonger\u2019s hut. Carries the hidden small wooden key. Her qc_action80 complaint is ambient dialogue, not an asked keyword or separate quest.",
+          "keyword": "wife",
+          "mob_vnum": 13725,
+          "name": "an angry barbarian wife",
+          "topics": []
+        },
+        {
+          "description": "In the fisherman\u2019s hut behind the locked northern flap. The wife\u2019s wooden key fits that flap and breaks on ordinary successful unlocking. His selling prose has no configured shop binding or accepted exchange.",
+          "keyword": "fishmonger",
+          "mob_vnum": 13724,
+          "name": "a barbarian fishmonger",
+          "topics": []
+        },
+        {
+          "description": "At the small general store reached from the snowy crossing or the Surface highway. Sells rations, water, a backpack, potions and bandages. Rations do not replace the three required seafood kinds.",
+          "keyword": "halfbreed",
+          "mob_vnum": 13719,
+          "name": "a barbarian-human halfbreed",
+          "topics": []
+        },
+        {
+          "description": "May reach the ancient workshop behind the Ice Lounge\u2019s visible closed southern door through a loading route. His invasion plans and laboratory are context; no local accepted invasion or research quest is bound.",
+          "keyword": "ixarvonl",
+          "mob_vnum": 13702,
+          "name": "Ixarvonl, the great illithid alchemist",
+          "topics": []
+        },
+        {
+          "description": "At the Ice Lounge below the Onyx Stairs. Open the visible closed southern door to the ancient workshop. The bartender has no configured shop or accepted exchange.",
+          "keyword": "bartender",
+          "mob_vnum": 13708,
+          "name": "a pale bartender",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Recover Bone Fort Inn\u2019s four stolen books, follow the snowy boots to Eleadora, help the hungry village and deliver foreign materials to its shaman. Keep exact item kinds, optional supply routes, two different keys and Eleadora\u2019s departure visible while exploring the tundra.",
+      "orientation": [
+        "Bone Fort Inn\u2019s hunched man accepts four different books together for snowy adventurer boots. Eleadora accepts those exact boots for glowing ice leggings and independently accepts Malinar\u2019s bloody head for the tundra sword. The shaman\u2019s fire gland and shell requests are two independent outcomes; feeding the barbarian needs three different seafood kinds together.",
+        "Follow the Surface highway entrance into Bone Fort Inn, open the northern bone door and go west into reception. The stairs north of the lobby go down to the Onyx Stairs. Western bedrooms hold the old, magenta and green books on different travellers; the dark traveller near the entrance holds the black book. Other copies of those guests begin without books.",
+        "The northern door at the Onyx Stairs is visible and closed despite the secret-passage description. Open it to reach the passages behind the rooms. Bedroom back doors are generally secret through their resets. In the shady traveller\u2019s bedroom, PUSH the working mirror to open the blocked north passage; the mirrors described in other bedrooms are scenery.",
+        "Below the passage\u2019s grate is the underground river, with sharks and an actual water sector. The dragon may emerge into the fire-beaten cave after its loading branch; it is not guaranteed to appear. Red scales support the blacksmith\u2019s paid service. Open the Ice Lounge\u2019s visible closed southern door to Ixarvonl\u2019s workshop; SEARCH is not required and no research or invasion outcome is bound.",
+        "Eleadora and Malinar may emerge into the forest or tundra, or become inaccessible in loading branches. Find the actual actor when present. Return the snowy adventurer boots before giving Eleadora the head if you want both rewards in the same encounter: she leaves after the head exchange. These are independent receipts, without a forced boots-before-head requirement.",
+        "Feed the starving barbarian a small clam, a large pike and an impressive lobster together. His fishbone key unlocks the western flap to the shaman\u2019s home and breaks on ordinary successful unlocking. That reward and the shaman\u2019s later fire gland or shell receipts remain separate; public access or supplied items do not require personal feeding history.",
+        "FISH requires fishing skill, a recognised pole and a usable water room. The village\u2019s Fishing Docks are coded as land; the name alone does not make FISH work there. The inn\u2019s underground river is water but hazardous. Bom Fitherwood in Harrow trades a painting for a pike, lobster and hairy crab: you still need a clam. Foreign paid fish purchases remain unavailable while accounting is active.",
+        "The snapjaw turtle shell and fire gland come from foreign loaded creatures. Ship-yard dispersal sources and the Crimson Fulgur provide both kinds; Alatorin bladeback pyrolisks provide fire glands. Remove a worn shell or gland before offering it. Supplying either exact item is valid without your own kill, source journey or earlier feeding receipt.",
+        "The wife\u2019s small wooden key fits the separate locked northern flap to the fishmonger\u2019s hut and breaks on ordinary successful unlocking. It does not replace the fishbone key. The wife\u2019s complaint is ambient; the fishmonger has no configured shop, so do not rely on him to supply the seafood.",
+        "The general store sells rations, water, a backpack, potions and bandages. Iron rations support a different foreign Cairme exchange and do not satisfy the starving barbarian. The blacksmith\u2019s scales AND 500-platinum service remains unavailable with active accounting and earns no zone achievement or daily credit.",
+        "Some crossing signs describe routes absent from the loaded exits. The southern mountain pass has no usable southern destination, and an eastern forest exit points to an inactive legacy map room. Use verified Surface entrances; the journal does not promise those unresolved routes or send you into loading rooms.",
+        "Carry exact materials loose. Worn, nested, spent or handed-away copies remain missing; earlier receipts never replace them. Questions and source recovery explain progress without granting every keyword an achievement. Only accepted exact exchanges record outcomes. All new discovery, encounter, journal, achievement and daily credit requires active, ready accounting; frozen reward recovery remains separate."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "tundra",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:13708,I:13709,I:13710,I:13711;receive=I:13713;disappear=0",
+              "giver_vnum": 13703
+            }
+          ],
+          "id": "recover-four-books",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "One human traveller begins in the western bedroom closest to the stairs with this book. The other human traveller in a farther bedroom starts without it. Carry the exact item loose; worn, nested, spent and handed-away copies do not count. Supplied copies need no personal source kill or catch.",
+              "id": "old-book",
+              "item_vnums": [
+                13708
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the old book"
+            },
+            {
+              "count": 1,
+              "hint": "One strange-looking guest begins in the far western bedroom with this book. Another guest in a different bedroom starts without it. Carry the exact item loose; worn, nested, spent and handed-away copies do not count. Supplied copies need no personal source kill or catch.",
+              "id": "green-book",
+              "item_vnums": [
+                13709
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the dark green book"
+            },
+            {
+              "count": 1,
+              "hint": "One shady traveller begins in the western bedroom with the working mirror and carries this book. Another shady traveller farther east starts without it. Carry the exact item loose; worn, nested, spent and handed-away copies do not count. Supplied copies need no personal source kill or catch.",
+              "id": "magenta-book",
+              "item_vnums": [
+                13710
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the dark magenta book"
+            },
+            {
+              "count": 1,
+              "hint": "The dark-looking traveller near the inn entrance carries this book. The library bookrack is scenery and does not supply these four books. Carry the exact item loose; worn, nested, spent and handed-away copies do not count. Supplied copies need no personal source kill or catch.",
+              "id": "black-book",
+              "item_vnums": [
+                13711
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the dark black book"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:13708,I:13709,I:13710,I:13711;receive=I:13713;disappear=0",
+                  "giver_vnum": 13703
+                }
+              ],
+              "hint": "Only acceptance of this exact exchange records the outcome. Questions, current supplies, source recovery, gate use and later reward use are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the exact exchange"
+            }
+          ],
+          "summary": "Return the old, dark green, dark magenta and dark black books together to the hunched man for a pair of snowy adventurer boots. Four copies of one book do not substitute. His thanks mention killing the thieves, but the exchange accepts the four exact books without requiring your own kills.",
+          "title": "Bone Fort Inn: return four different books"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:13713;receive=I:13712;disappear=0",
+              "giver_vnum": 13716
+            }
+          ],
+          "id": "return-snowy-boots",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:13708,I:13709,I:13710,I:13711;receive=I:13713;disappear=0",
+                  "giver_vnum": 13703
+                }
+              ],
+              "hint": "The hunched man accepts all four different books together for these boots. His receipt explains a supply route; it does not replace boots you currently need or prove that you personally defeated the guests.",
+              "id": "optional-book-route",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: recover the four books"
+            },
+            {
+              "count": 1,
+              "hint": "Ask Eleadora about boots or boot when you find her in the ice forest. Malinar\u2019s spiked grey giant boots and the dragon\u2019s fire leggings are different items. She may be unavailable after her head exchange. Carry the exact item loose; worn, nested, spent and handed-away copies do not count. Supplied copies need no personal source kill or catch.",
+              "id": "boots",
+              "item_vnums": [
+                13713
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the snowy adventurer boots"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:13713;receive=I:13712;disappear=0",
+                  "giver_vnum": 13716
+                }
+              ],
+              "hint": "Only acceptance of this exact exchange records the outcome. Questions, current supplies, source recovery, gate use and later reward use are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the exact exchange"
+            }
+          ],
+          "summary": "Return the exact snowy adventurer boots to Eleadora for glowing ice leggings. The hunched man\u2019s book exchange can supply them; an exact supplied pair skips that history. Return them before her Malinar exchange if you want both rewards during the same encounter, because she leaves after receiving the head.",
+          "title": "Eleadora: return the snowy adventurer boots"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:13722;receive=I:13720;disappear=1",
+              "giver_vnum": 13716
+            }
+          ],
+          "id": "malinar-head",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Malinar starts with the exact head already in his inventory and may roam from the tundra\u2019s branching loading rooms. Recover that loaded item or bring an exact supplied copy. Ordinary CARVE is not this head\u2019s producer. Return Eleadora\u2019s boots first if you want her other reward during the same encounter. Carry the exact item loose; worn, nested, spent and handed-away copies do not count. Supplied copies need no personal source kill or catch.",
+              "id": "head",
+              "item_vnums": [
+                13722
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody head of Malinar"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:13722;receive=I:13720;disappear=1",
+                  "giver_vnum": 13716
+                }
+              ],
+              "hint": "Only acceptance of this exact exchange records the outcome. Questions, current supplies, source recovery, gate use and later reward use are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the exact exchange"
+            }
+          ],
+          "summary": "Bring Eleadora the exact bloody head of Malinar for the large sword of the tundra. She leaves after this exchange. Her words describe peace, but the receipt does not prove your own kill, an end to all danger or a permanent world change. Supplied exact heads remain valid.",
+          "title": "Eleadora: bring Malinar\u2019s bloody head"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:43138;receive=C:85000,E:65000;disappear=0",
+              "giver_vnum": 13722
+            }
+          ],
+          "id": "shaman-fire-gland",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Stonescale pyrolisks dispersed from the ship yards carry or wear this gland; shackled stonescale pyrolisks aboard the Crimson Fulgur and bladeback pyrolisks in Alatorin are other loaded sources. The gland must be present loose, rather than worn or consumed. Carry the exact item loose; worn, nested, spent and handed-away copies do not count. Supplied copies need no personal source kill or catch.",
+              "id": "gland",
+              "item_vnums": [
+                43138
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one fire gland"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43138;receive=C:85000,E:65000;disappear=0",
+                  "giver_vnum": 13722
+                }
+              ],
+              "hint": "Only acceptance of this exact exchange records the outcome. Questions, current supplies, source recovery, gate use and later reward use are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the exact exchange"
+            }
+          ],
+          "summary": "Bring the barbarian shaman one exact fire gland for 85,000 copper and 65,000 experience. This is independent of his turtle-shell request. It comes from foreign pyrolisk stock; a supplied exact gland is also accepted. Using or drinking it is a separate action.",
+          "title": "The shaman: deliver a fire gland"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:43137;receive=C:85000,E:55000;disappear=0",
+              "giver_vnum": 13722
+            }
+          ],
+          "id": "shaman-turtle-shell",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Snapjaw turtles dispersed from the ship yards carry the shell. Shackled snapjaw turtles aboard the Crimson Fulgur provide another loaded source. A worn shell must be removed before the offering; its earlier acquisition does not replace present custody. Carry the exact item loose; worn, nested, spent and handed-away copies do not count. Supplied copies need no personal source kill or catch.",
+              "id": "shell",
+              "item_vnums": [
+                43137
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one snapjaw turtle shell"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43137;receive=C:85000,E:55000;disappear=0",
+                  "giver_vnum": 13722
+                }
+              ],
+              "hint": "Only acceptance of this exact exchange records the outcome. Questions, current supplies, source recovery, gate use and later reward use are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the exact exchange"
+            }
+          ],
+          "summary": "Bring the barbarian shaman one snapjaw turtle shell for 85,000 copper and 55,000 experience. This is independent of his fire-gland request and does not require personally defeating a turtle.",
+          "title": "The shaman: deliver a snapjaw turtle shell"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:318,I:319,I:334;receive=I:13705;disappear=0",
+              "giver_vnum": 13723
+            }
+          ],
+          "id": "feed-starving-barbarian",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:29440;receive=I:318,I:319,I:330;disappear=0",
+                  "giver_vnum": 29444
+                }
+              ],
+              "hint": "Bom Fitherwood by Lake Tantral at Harrow gives a pike, a lobster and a large hairy crab for a near finished painting. This can supply two of the required kinds; you still need a small clam. The exchange belongs to Harrow. Supplied fish need no earlier Bom receipt.",
+              "id": "optional-bom-route",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional foreign route: trade a painting to Bom"
+            },
+            {
+              "count": 1,
+              "hint": "Fishing can produce this exact clam at a usable water room with a recognised pole and fishing skill. The village docks are coded as land and do not support FISH. Foreign paid clam purchases remain unavailable while accounting is active. Carry the exact item loose; worn, nested, spent and handed-away copies do not count. Supplied copies need no personal source kill or catch.",
+              "id": "clam",
+              "item_vnums": [
+                334
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one small clam"
+            },
+            {
+              "count": 1,
+              "hint": "Fishing or Bom\u2019s painting exchange can supply this exact pike. Foreign paid pike purchases remain unavailable while accounting is active. Earlier catch or painting history does not restore a fish you ate or handed away. Carry the exact item loose; worn, nested, spent and handed-away copies do not count. Supplied copies need no personal source kill or catch.",
+              "id": "pike",
+              "item_vnums": [
+                318
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one large pike"
+            },
+            {
+              "count": 1,
+              "hint": "Fishing or Bom\u2019s painting exchange can supply this exact lobster. A large hairy crab, iron rations, other fish or cooked substitutes do not satisfy the three-kind request. The local fishmonger has no configured shop stock. Carry the exact item loose; worn, nested, spent and handed-away copies do not count. Supplied copies need no personal source kill or catch.",
+              "id": "lobster",
+              "item_vnums": [
+                319
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one impressive lobster"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:318,I:319,I:334;receive=I:13705;disappear=0",
+                  "giver_vnum": 13723
+                }
+              ],
+              "hint": "Only acceptance of this exact exchange records the outcome. Questions, current supplies, source recovery, gate use and later reward use are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the exact exchange"
+            }
+          ],
+          "summary": "Bring the starving barbarian a small clam, a large pike and an impressive lobster together for a fishbone key. All three different kinds are required. The key opens the locked western flap to the shaman\u2019s home and breaks on ordinary successful unlocking. Feeding and opening the home are separate facts.",
+          "title": "The village: feed the starving barbarian"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:500000,I:13714;receive=I:13715;disappear=0",
+              "giver_vnum": 13710
+            }
+          ],
+          "id": "blacksmith-red-scales",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The thundering red dragon begins with these hidden scales in its branching loading route beneath Bone Fort Inn. If present, it can reach the fire-beaten cave. Its loaded scales are different from ordinary carved body parts. Scales alone do not satisfy the fee, and the paid exchange remains unavailable under active accounting. Carry the exact item loose; worn, nested, spent and handed-away copies do not count. Supplied copies need no personal source kill or catch.",
+              "id": "scales",
+              "item_vnums": [
+                13714
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact red dragon scales"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:500000,I:13714;receive=I:13715;disappear=0",
+                  "giver_vnum": 13710
+                }
+              ],
+              "hint": "Only acceptance of this exact exchange records the outcome. Questions, current supplies, source recovery, gate use and later reward use are separate facts. Rewards require settlement; daily candidacy does not guarantee a present recipient, fresh stock or renewed access.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the exact armor order"
+            }
+          ],
+          "summary": "The barbarian blacksmith asks for red dragon scales and 500 platinum together for spiked red scale armor. This mixed item-and-coin order is currently unavailable while economic accounting is active. It remains visible as a service and awards no zone achievement or daily credit.",
+          "title": "The blacksmith: order red scale armor"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "The Way near the hill. Ask about his ring, home and castle key. Separate signet help, a mismatched glowing-ring trade and the retiring key finale.",
           "keyword": "finn",
           "mob_vnum": 14015,

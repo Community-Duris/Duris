@@ -146,9 +146,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 73 | The Ruins of Turolopolis | [Comprehensive dossier](zone-stories/RUINS_OF_TUROLOPOLIS.md): all25 blocks/154 rooms/42 mobiles/56 objects/199 resets, all six type25 portals and complete shared/foreign source closure | Six stories;26 contacts/39 aliases/12 optional checks. Exact five-colour ALL memorial → lesser blade + caecilia stinger → upgrade; independent horn, letter, ooze and skull offerings | No native repair ships. Minotaur source/recipient generation, foreign Lothrell home-journal navigation, rare dispersal/sink, rescue/purification intent and accepted access/custody/XP/coin/renewal qualification remain plans |
 | 74 | Ixarkon | [Comprehensive dossier](zone-stories/IXARKON.md): all18 blocks/201 rooms/51 mobiles/44 objects/385 resets/five shops and complete shared/foreign closure | Revision2 upgrades existing three identities: two stories/one service;16 contacts/22 aliases/four optional checks. Independent spore and amulet returns; optional paid banker route and supplied amulet | Native direction clues repaired separately in7baa78c3c. Mixed fee guards, absent veil ingress/guarded binding, random arrival, open bridge controller, source custody and actual rescue/peace/renewal remain plans |
 | 75 | Du'Maathe Castle | [Comprehensive dossier](zone-stories/DU_MAATHE_CASTLE.md): all21 blocks/506 rooms/92 mobiles/49 objects/419 resets/one shop and bounded foreign/shared closure | New schema3/revision1: four lord stories/four potion services;15 contacts/15 aliases/14 optional checks. Exact two-input/three-output granular batch and distinct keys; supplied potion/tooth branches | Separate one-word parapet repair45bb3c948. Missing blue horn, foreign price mismatch/fee guards, loader/reset visibility, consumed recipe lineage and actual potion/campaign/renewal predicates remain plans |
-| 76–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 76 | Tundra | [Comprehensive dossier](zone-stories/TUNDRA.md): all20 blocks/175 rooms/26 mobiles/32 objects/246 resets/one shop and bounded foreign/shared closure | New schema3/revision1: six stories/one paid armor service;16 contacts/16 aliases/14 optional checks. Four different books → snowy boots → Eleadora; three seafood kinds → fishbone key; independent gland/shell rewards and head retirement | No native repair. Branch/trap availability, inactive/signposted routes, land-coded docks, absent fish shop, paid guards, partial foreign supply, actual switch/key/source and campaign/renewal remain plans |
+| 77–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Tundra (`tundra`).
+The next area is The Fields Between (`fields_between`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -157,6 +158,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-TUNDRA-AVAILABILITY / FISHING / ROUTES / MIRROR / ALL-INPUTS | Eleadora head retires giver; actors can wander into loading traps. Dock is land and fishmonger lacks a shop; signposted/legacy routes are unusable. Four books and three seafood kinds need ALL; Bom supplies only two seafood kinds. Mirror automatically binds PUSH with asymmetric reset state. | Six stories/one service ship as guidance/projection. Builder chooses availability/shop/route intent before isolated native fixes. Qualify actual catch/source, partial foreign supply, shared switch/keys, paid order, actor retirement and daily renewal. No native Tundra repair ships. |
 | ZSQ-MNTCASTL-SUPPLY / BATCH / LOADED-STATE / CAMPAIGN | Exact blue horn has no active producer; granular batch consumes sand and foreign recipe for three outputs. Foreign clothing prices disagree with captions and paid routes remain guarded. Raw hidden bits are discarded by loader; D resets determine actual gate visibility. | Four stories/four services ship as guidance/projection. Builder selects horn/price/visibility intent; qualify indexed input/output lineage, actual SEARCH/UNLOCK/key break and potion use/foreign campaign before new objectives. One-word parapet repair ships separately. |
 | ZSQ-IXARKON-FEE / VEIL / BRIDGE / CAMPAIGN | The red cap plus1000platinum preparation is blocked under active accounting; sealed veil chamber has no ordinary ingress and assigned room19890 is absent. Bridge starts open and its one-way unblocking switches cannot retract it. | Two stories/one supporting service ship as guidance/projection. Design atomic fee settlement, guarded intended ingress and accepted random arrival/restoration, controller semantics and explicit rescue/peace endpoints. Direction text alone is repaired separately. |
 | ZSQ-TUROLOPOLIS-ALL / GENERATION / FOREIGN / CAMPAIGN | Five different badge keys are required together; minotaur holds the emissary letter but retires after blue ooze, discarding remaining stock. Lothrell loads in Surface while the accepted memorial belongs to71. Rare recipients can disperse into public rooms or a no-exit sink. | Six independent offerings ship as guidance/projection. Add exact key/root custody, source/recipient-generation branches, truthful home-journal links and accepted movement/rescue/purification predicates before campaign or renewal credit. Native repairs remain builder-selected proposals; none ships here. |
@@ -4092,3 +4094,57 @@ remain intact. Queue: **75/220 source-comprehensive,145 pending; Tundra next**.
 Active, ready accounting remains mandatory; frozen recovery remains separate.
 The full goal remains active. No accounting activation, DB/server operation,
 migration, deployment or merge occurred.
+
+
+## Priority 76 checkpoint: Tundra
+
+The [comprehensive dossier](zone-stories/TUNDRA.md) closes all20 blocks
+(13M/sevenQ),175 rooms/64 complete prose families/19 headers/401 exit rows/
+390 numeric families/nine exit-text families/one extra-description sign,
+26 mobiles,32 objects,one shop and246 resets/197 exact/197 parent-aware
+families. All12 addressed families/16 aliases are included; qc_action80 stays
+ambient. Literal reception inn, absent teacher flags/bindings, loaded bandages
+and automatic type29 mirror are distinguished from named scenery.
+
+Bounded foreign closure includes148 intersecting Q/QA signatures/22 full caption
+families, five required material prototypes,68 parent-aware reset groups and
+full source actors/rooms. Bom's exact painting exchange produces pike, lobster
+and hairy crab, without clam. Paid clam/pike merchant routes remain guarded;
+Cairme's rations-plus-four-beer continuation stays foreign-owned. All19 boundary
+edges and full neighbours, active versus inactive legacy map110038 and all713
+portals were reviewed; no portal targets a local room. This does not claim a
+new comprehensive Harrow, ship-yard or vehicle pass.
+
+New schema3/revision1: six independent story outcomes and one paid service,
+16 local contacts and14 optional checks (12 present materials/two earlier
+receipts). Four distinct books produce snowy adventurer boots; supplied boots
+skip that history. Head acceptance retires Eleadora, so boots-first guidance
+helps preserve her other reward without forcing order. Three different seafood
+kinds produce the fishbone key; Bom supplies only two. Foreign fire gland and
+shell yield different XP amounts and remain independent. All six native stories,
+including the D-retiring head, remain potential daily candidates. Mixed scale/
+500-platinum service is unavailable with active accounting and awards no credit.
+
+Actual loaded state matters: Onyx Stairs and workshop entrances are visible/
+closed through D1 despite raw high hidden bits. Bedroom back doors use D5;
+mirror bedroom north uses OPEN/BLOCKED D8 and PUSH clears BLOCKED, retaining
+reverse SECRET/CLOSED. Both different village keys break on ordinary unlock.
+Docks sector4 fails FISH water eligibility, while inn river sector10 is water.
+The local fishmonger has selling prose but no shop. Actor loading branches can
+trap giver/source; signposted routes, -1 southern destination and inactive
+legacy forest target are unresolved. No native Tundra repair ships. Builder
+selects intent before separate fixes with concrete before/after and news proof.
+
+Focused source/Python/C++ projections, full production regression, maintained
+build, changed/staged formatting, source links, original queue, definitions,
+fingerprint/revision/registry/prior95 journals and exact PR preservation checks
+are required before publication. Synthetic receipts do not qualify played catch,
+source/transfer, paid order, accepted offer, rewards, switch/unlock/key break,
+actor retirement, campaign, persistence or daily renewal.
+
+Catalog:96 journals/1596 achievement units/1449 potential dailies/2203 rows;
+all2668 definitions/fingerprint/content revision/registry and prior95 journals
+remain intact. Queue: **76/220 source-comprehensive,144 pending; The Fields
+Between next**. Active, ready accounting remains mandatory; frozen recovery
+remains separate. The full goal remains active. No accounting activation,
+DB/server operation, migration, deployment or merge occurred.

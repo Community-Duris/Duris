@@ -2672,3 +2672,37 @@ local/foreign history and supplied-item shortcuts. Make wrong horn/rod identity,
 consumed recipe, key breakage and unavailable paid dependency visible beside
 the action. Static sidecars encode reviewed intent; they cannot dynamically
 invent missing sources, controllers, secret flags or campaign endpoints.
+
+
+## Tundra: partial foreign supplies and retirement-aware availability
+
+[Tundra's complete dossier](zone-stories/TUNDRA.md) closes priority76 with six
+stories and one supporting paid service. No native Tundra repair ships here.
+
+| Capability | Concrete requirement | Implementation/qualification plan |
+| --- | --- | --- |
+| Complete ALL set versus partial recipe output | Four distinct books; clam AND pike AND lobster. Bom produces pike/lobster/hairy crab, without clam | Show each exact present material and missing kind. Freeze consumed input roots and indexed foreign output lineage; qualify wrong duplicate kinds, partial sets, supplied materials, spent history, replay and cold recovery |
+| Giver retirement and optional ordering | Eleadora accepts boots independently of the head, then leaves after head receipt | Keep boots-first advice optional for the same actor episode; supplied boots need no earlier book receipt. Record admitted actor identity, availability, retirement cause, reset generation and replacement. Qualify both orders, concurrent offers, reward obligations and daily renewal |
+| Branch/trap source availability | Dragon, illithid, Eleadora and Malinar have loading branches and exitless traps | Observe actual reachable actors separately from prototypes/reset intent. Builder selects rarity/absence policy before changing spawns. Do not promise fresh stock, replace traps or infer modern odds from old prose |
+| Actual fishing eligibility and origin | Docks sector4 fails water check; river sector10 is water. Delayed FISH creates one of12 kinds through generic crafting grant | Expose meaningful skill/pole/water/current availability guidance. Add admitted fishing-specific catch/root/room/attempt event to distinguish caught from donated. Qualify interruption, failed catch, allocation, replay and ownership without promising the next species |
+| Missing vendor versus narrated shop | Fishmonger has selling prose without shop/Q binding; general store sells rations rather than requested seafood | Builder chooses scenery, vendor or fishing source. Make any stock/sector change a separate native fix with actual guarded purchase/catch and before/after proof. Preserve foreign and supplied alternatives |
+| Automatic shared object controller | Type29 installs item_switch; exact PUSH mirror clears forward BLOCKED but keeps reverse SECRET/CLOSED | Detect automatic bindings as well as literal assignments. Add selected object/actor/command, changed exit and reset-generation fact; qualify wrong target, repeated/public opening, reverse state and reset before personal switch credit |
+| Loader-aware route validity | Onyx/workshop entrances visible/closed through D1; signs promise missing directions; forest target110038 is inactive | Audit active destinations, reciprocal edges and exact loaded state. Builder chooses modern connections or corrected clues; isolated route repairs need actual traversal and retained source evidence. Never reactivate an old world file from a guess |
+| Distinct key custody and effects | Fishbone and wooden keys open different flaps and break on ordinary unlock | Freeze selected key/root, door and actual state transition; distinguish history/current custody and preserve supplied/public access. Qualify key break and reverse state before arrival/access credit |
+| Guarded mixed fees and independent rewards | Red scales AND500,000copper order; foreign coin fish purchases; shaman's85,000copper plus distinct65,000/55,000XP | Keep paid paths unavailable with active accounting until atomic material/wallet/output settlement and recovery are qualified. Freeze indexed coin/XP/item entitlements; services never inherit story achievement/daily credit |
+| Narrative campaign versus acceptance | Books do not check personal kills; Malinar starts carrying the exact head; Eleadora declares peace | Builder chooses caption clarification or explicit admitted source/victory/campaign predicates. Quest receipts alone cannot restore world state, prove a player kill, or credit every topic |
+
+Player cards should show four named book rows, the optional boots supply link,
+Eleadora's departure beside the head action, three different seafood rows with
+the missing clam after Bom, and the two shaman rewards separately. Put current
+availability, fee restrictions, key breakage and verified access near the next
+action. Distinguish earlier completion from materials ready now. A future actor
+availability display must use actual admitted state; a static sidecar cannot
+invent a missing vendor, destination, source or campaign ending.
+
+When implementing a native fix from these findings, use a separate named fix
+commit and prominent PR/news note: trigger, before/after, exact scope, proof,
+limitations and a short player-facing news sentence. Proposed repairs stay
+clearly pending. Active, ready accounting remains a prerequisite for new
+discovery, encounter, journal, achievement and daily credit; frozen recovery
+remains separate.

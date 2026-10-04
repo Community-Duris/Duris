@@ -1751,3 +1751,39 @@ Native repairs need their own scope and news proof: separate fix45bb3c948
 corrects one northwest-parapet direction word; source, price, visibility and
 campaign findings are still plans. All new progress requires active, ready
 accounting; frozen obligations retain their separate recovery path.
+
+
+## Tundra example: complete sets and a departing giver
+
+The [Tundra dossier](../design/zone-stories/TUNDRA.md) and
+[schema-three sidecar](../../areas/story/tundra.story.json) classify six story
+outcomes and one paid service. Keep old, green, magenta and black books as
+four distinct current rows, and clam, pike and lobster as three distinct rows.
+Four copies of one book or rations do not substitute. Bom's foreign painting
+receipt explains only pike/lobster supply; hairy crab is not the missing clam.
+Keep that receipt foreign-owned and optional for supplied seafood.
+
+Eleadora's boots exchange may use the earlier book reward or supplied exact
+boots. Her head exchange is independent and retires the actor. Explain returning
+boots first if the player wants both rewards in one encounter; do not enforce
+that order as a new prerequisite. D retirement does not by itself exclude an
+item-only contract from daily candidacy. Actual giver presence and renewal still
+need qualification, particularly with branching loading rooms and traps.
+
+Read automatic bindings and loaded state. The working mirror's type29 installs
+PUSH behavior; its forward blocked passage differs from the reverse secret/closed
+door. Onyx Stairs and workshop entrances instead start visible/closed through
+D1 despite raw high hidden bits. Neither SEARCH nor a mirror key is required
+for those visible entrances. The two village keys open different flaps and break
+on ordinary unlock. Earlier history never replaces current materials or key.
+
+Validate actual fishing conditions: the named village docks are coded as land,
+and the fishmonger has no configured shop. Do not advertise a guaranteed local
+catch/vendor. Preserve valid foreign/supplied routes and active-accounting paid
+guards. Dedicated fishing origin, personal kill, mirror use, key break, actual
+world peace and actor renewal require semantic events before completion credit.
+
+No native Tundra repair ships with this journal. Builder decisions about shops,
+routes, sectors, rarity and captions belong in the dossier; implemented native
+fixes need a separate clear commit and PR/news proof. All new tracking requires
+active, ready accounting; frozen obligations retain separate recovery.

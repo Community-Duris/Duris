@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 95 &&
-				tracker.summary_for(7, 42).total == 1597,
+		require(catalog.story_mappings.size() == 96 &&
+				tracker.summary_for(7, 42).total == 1596,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7549,6 +7549,157 @@ int main(int argc, char **argv)
 					recovered.has_discovered(7, 42, 5000) &&
 					!recovered.has_discovered(7, 42, 530),
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
+		}
+
+		{
+			const auto &books = story_for("tundra", "recover-four-books");
+			const auto &boots = story_for("tundra", "return-snowy-boots");
+			const auto &head = story_for("tundra", "malinar-head");
+			const auto &gland = story_for("tundra", "shaman-fire-gland");
+			const auto &shell = story_for("tundra", "shaman-turtle-shell");
+			const auto &food = story_for("tundra", "feed-starving-barbarian");
+			const auto &armor = story_for("tundra", "blacksmith-red-scales");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 137, 13712, 100, "arrival") ==
+					result::applied,
+				"Tundra discovery failed");
+			require(journey.render_journal(7, 42, 137, 10, 1, 101, false, false)
+						.find(boots.title) == std::string::npos,
+				"Tundra discovery exposed unmet giver");
+			for (const auto &actor :
+			     { std::pair{ 13703, 13714 }, std::pair{ 13716, 13909 },
+			       std::pair{ 13722, 13817 }, std::pair{ 13723, 13808 },
+			       std::pair{ 13710, 13813 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 102) ==
+						result::applied,
+					"Tundra actual encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Tundra section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[13708] = 4;
+			supplies.carried[13728] = 1;
+			supplies.carried[13723] = 3;
+			supplies.equipped[1] = 43137;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 137, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(books).find("[Ready now] " + books.steps[0].text) !=
+					std::string::npos,
+				"Tundra old book was not ready");
+			for (size_t index : { 1U, 2U, 3U })
+				require(section(books).find("[Missing now] " +
+							    books.steps[index].text) !=
+						std::string::npos,
+					"Tundra four copies of one book satisfied four kinds");
+			require(section(boots).find("[Missing now] " + boots.steps[1].text) !=
+						std::string::npos &&
+					section(shell).find("[Missing now] " +
+							    shell.steps[0].text) !=
+						std::string::npos,
+				"Tundra giant boots or worn shell substituted for exact loose input");
+			supplies.carried[318] = 1;
+			supplies.carried[319] = 1;
+			supplies.carried[330] = 1;
+			journal = journey.render_journal(7, 42, 137, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(food).find("[Ready now] " + food.steps[2].text) !=
+						std::string::npos &&
+					section(food).find("[Ready now] " + food.steps[3].text) !=
+						std::string::npos &&
+					section(food).find("[Missing now] " + food.steps[1].text) !=
+						std::string::npos,
+				"Tundra partial Bom fish/crab or rations satisfied missing clam");
+			for (int kind :
+			     { 13709, 13710, 13711, 13713, 13722, 43138, 43137, 334, 13714 })
+				supplies.carried[kind] = 1;
+			journal = journey.render_journal(7, 42, 137, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto *entry :
+			     { &books, &boots, &head, &gland, &shell, &food, &armor })
+				for (const auto &step : entry->steps)
+					if (step.kind == "carried_item")
+						require(section(*entry).find("[Ready now] " +
+									     step.text) !=
+								std::string::npos,
+							"Tundra exact supplied material forced personal source/history");
+			require(section(armor).find("currently unavailable") != std::string::npos,
+				"Tundra armor service hid its accounting fee restriction");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 137).completed == 0 &&
+					journey.progress_for_zone(7, 42, 137).total == 6,
+				"Tundra current materials/read credited outcomes");
+			service supplied(catalog);
+			record(supplied, boots.contracts.front(), "tundra-supplied-boots", 137,
+			       13909);
+			require(supplied.progress_for_zone(7, 42, 137).completed == 1 &&
+					supplied.evidence_for(books.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Tundra supplied boots forced earlier book receipt");
+			// Synthetic receipts exercise projection only, not native catches,
+			// paid armor, actor retirement or item/coin/XP reward settlement.
+			record(journey, food.steps[0].contracts.front(), "tundra-foreign-bom", 294,
+			       29461);
+			record(journey, armor.contracts.front(), "tundra-service-armor", 137,
+			       13813);
+			require(journey.progress_for_zone(7, 42, 137).completed == 0 &&
+					journey.evidence_for(armor.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Tundra armor service or foreign receipt awarded story credit");
+			record(journey, books.contracts.front(), "tundra-four-books", 137, 13714);
+			supplies.carried.erase(13713);
+			supplies.carried.erase(334);
+			journal = journey.render_journal(7, 42, 137, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(boots).find("[Missing now] " + boots.steps[1].text) !=
+						std::string::npos &&
+					section(food).find("[Missing now] " + food.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 137).completed == 1,
+				"Tundra book/Bom history restored spent boots/clam or completed later quest");
+			auto wrong_owner = completion(food.steps[0].contracts.front(),
+						      "tundra-wrong-bom-owner", 122);
+			wrong_owner.transaction.zone_number = 137;
+			wrong_owner.transaction.room_vnum = 13808;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Tundra optional foreign history stole canonical ownership");
+			record(journey, gland.contracts.front(), "tundra-fire-gland", 137, 13817);
+			require(journey.progress_for_zone(7, 42, 137).completed == 2 &&
+					journey.evidence_for(shell.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Tundra fire gland completed independent shell request");
+			for (const auto &entry :
+			     { std::pair{ &boots, 13909 }, std::pair{ &head, 13909 },
+			       std::pair{ &shell, 13817 }, std::pair{ &food, 13808 } })
+			{
+				const auto id = std::string("tundra-outcome-") + entry.first->id;
+				record(journey, entry.first->contracts.front(), id.c_str(), 137,
+				       entry.second);
+			}
+			const auto head_transaction = std::string("tundra-outcome-") + head.id;
+			auto replay =
+				completion(head.contracts.front(), head_transaction.c_str(), 120);
+			replay.transaction.zone_number = 137;
+			replay.transaction.room_vnum = 13909;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Tundra retiring head receipt replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 137).completed == 6 &&
+					recovered.progress_for_zone(7, 42, 137).total == 6 &&
+					recovered.evidence_for(head.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(food.steps[0].contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(armor.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Tundra cold recovery lost independent outcomes/foreign/service history");
 		}
 
 		{

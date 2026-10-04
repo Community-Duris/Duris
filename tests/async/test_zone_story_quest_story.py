@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1449
-assert report['mapped_area_count'] == 95 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 96 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -99,6 +99,19 @@ assert mntcastl['stories'][3]['steps'][0]['contracts'] == mntcastl['stories'][2]
 assert mntcastl['stories'][4]['steps'][0]['contracts'][0]['giver_vnum'] == 97901
 assert [t['item_vnums'] for t in mntcastl['stories'][4]['steps'] if t['kind'] == 'carried_item'] == [[37106], [97903]]
 assert all(t.get('optional') for s in mntcastl['stories'] for t in s['steps'][:-1])
+
+tundra = next(m for m in catalog['story_mappings'] if m['source_area'] == 'tundra')
+assert (tundra['schema_version'], tundra['revision'], tundra['coverage']) == (3, 1, 'complete')
+assert len(tundra['stories']) == 7 and len(tundra['contacts']) == 16 and not tundra['exclusions']
+assert [s['category'] for s in tundra['stories']] == ['story'] * 6 + ['service']
+assert report['eligible_by_zone']['137'] == 6
+assert sum(len(c['topics']) for c in tundra['contacts']) == 16
+assert sum(t.get('optional', False) for s in tundra['stories'] for t in s['steps']) == 14
+assert tundra['stories'][1]['steps'][0]['contracts'] == tundra['stories'][0]['contracts']
+assert tundra['stories'][5]['steps'][0]['contracts'][0]['giver_vnum'] == 29444
+assert [t['item_vnums'] for t in tundra['stories'][0]['steps'] if t['kind'] == 'carried_item'] == [[13708], [13709], [13710], [13711]]
+assert [t['item_vnums'] for t in tundra['stories'][5]['steps'] if t['kind'] == 'carried_item'] == [[334], [318], [319]]
+assert all(t.get('optional') for s in tundra['stories'] for t in s['steps'][:-1])
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'
