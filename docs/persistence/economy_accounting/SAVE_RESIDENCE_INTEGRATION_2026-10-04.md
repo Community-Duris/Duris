@@ -507,3 +507,57 @@ The existing coordinator owner initially failed to link an unused private pipeli
 ### Plan 1 qualification: controlled lifecycle release contract
 
 The runtime-owner fixture lacked the current bool release API. Its controlled guard now preserves ownership on release failure, releases once after repair, and makes repeated shutdown idempotent. The original native runtime owner passes (1.566 seconds), including the bounded failure/retry sequence; log tmp/plan1-test_economic_sql_runtime_owner-20261004-v3.local.log, SHA256 d6cce9595cf01f22c4eb3ecc3a1ae4798628f384c9bbb018b1cce60d40c0590e. This is controlled-interface evidence; actual SQL named-lock release and session-loss qualification remain separate.
+
+### Plan 1 qualification: flatfile native admission closure
+
+Both existing flatfile owners now link the real economic baseline codec and adapter required by current admission. The gate harness also discards its unused private pipeline ACK overload; no baseline validation stub or assertion was removed. Native ASan/UBSan runs pass: authority gate 176.892 seconds (log SHA256 44b1af482d7261ea6686ca3a9bea3fb7850bfba248f7d6682d7e3232c507ad9d), actual bank admission/publication restart 205.131 seconds (15099389fc38a5e3738aeee8f88ec4a0b5452559fb41a800ea68be8dd1598cb1). Logs are tmp/plan1-test_economic_accounting_flatfile_gate-20261004-v3.local.log and tmp/plan1-test_economic_flatfile_admission_native-20261004-v3.local.log. Original native cases and runtime limits remain unchanged; this does not establish all writer coverage or release readiness.
+
+### Plan 1 qualification: coin retained-publication fixture contract
+
+The controlled publisher previously counted repeated verification callbacks as repeated effects, and expected a lifetime attempt cap for the schema-2 retained owner. It now models one idempotent physical effect with fresh dependency verification per invocation; existing bounded dispatch/retry cases preserve the original ID and fences until recovery, and failed completed-stage verification prevents ACK. All original 14 scenarios pass in 110.970 seconds with strict C++20/ASan/UBSan and unchanged compile/case limits. Log tmp/plan1-test_coin_publication_ack_retention-20261004-v3.local.log SHA256 25a3b03f4ef9e3ad6a80253401f1a71f95e96d4de6f7787b0ca12860b4ba633b. This controlled callback contract is not actual native room-pile materialization, SQL session cleanup or cold-restart qualification. Legacy inactive retry behavior was not changed.
+
+### Plan 1 qualification: retained worker receipt expectations
+
+The worker fixture now expects the immutable original completion mask after craft-receipt sealing while continuing to require narrowed queued/inflight bookkeeping. Its existing consumed-lease source check matches conditional replacement or acquisition after retirement; null-before-replacement ordering remains checked. The complete existing native queue/receipt owner passes (8.246 seconds), log tmp/plan1-test_player_save_worker-20261004-v4.local.log SHA256 e8471d56a832636a8bd6f5791698ca6f35f2d030dd03b1caebd32c47e6782e3f. Separately, all 35 prepared actual worker/journal guard cases pass in SQL-header and flatfile modes under ASan/UBSan (7.247/6.618 seconds); evidence /opt/duris-plan1-qualification-20261004/guard-{sql,flat}-native-20261004/results.json. Those apply callbacks are controlled, and SQL execution/private publication/production replay remain independent open qualification.
+
+### Plan 1 qualification: existing pipeline fixture boundaries
+
+The source oracle now extracts the exact pulse/drain functions instead of including newly adjacent lifecycle functions. It retains every original no-I/O/deadline/failure/ACK check and includes the existing append-retry drain obligation. Extracted native fixtures use the real resident type and current boundary signatures while retaining their original inactive controlled capture/queue model. The complete owner passes (9.272 seconds), log tmp/plan1-test_player_save_pipeline-20261004-v5.local.log SHA256 b7f2c93f1b700acd1de60eab89f2ef2f5bc6d198ac00c137a0221996e6900228. This does not qualify selected-active startup/private ACK. All seven previously failing component owners now have a passing native rerun; the four other existing components retain their earlier source-bound passes. Actual SQL/recovery/full Plan1 acceptance remains open.
+
+### Plan 1 qualification: real pooled bank reply loss and retained ACK
+
+The existing ambiguous-COMMIT bank case now enters the real coordinator with publication_required, hides exactly one real successful COMMIT reply, and requires replacement-session reconciliation, original-ID conflict refusal, retained restart readback and one publication ACK. Its one native wallet/bank effect, root, inbox/outbox and zero-held-lease assertions remain. The strict native bank binary d9e9119a748808c9ff055d1b55968102018f89d5899d561f62aedf658018e802 passes on MariaDB 10.11.14 and MySQL 8.0.46. Results: /opt/duris-plan1-qualification-20261004/p1-mariadb-1f915da1.9zGkki/bank/result.json and p1-mysql-1fcab7d2.TNBkdp/bank/result.json; each owned fixture's schema absence, server stop, identity and port rebind passed. Other SQL families/lifecycle failed separately and remain open; no game-wide or production authority was activated.
+
+### Plan 1 qualification: item topology refusal expectation
+
+The native item owner reproduced the dedicated ITEM_TRANSFER_TOPOLOGY_CARDINALITY
+refusal for the existing incomplete root/child handoff. The fixture previously
+expected generic EMSGSIZE. It now includes the existing error contract and checks
+that exact dedicated result; terminal refusal, all custody assertions and original
+cases are preserved. The corrected ASan/UBSan real-pool owner passes on MariaDB
+10.11.14 (4 seconds) and MySQL 8.0.46 (5 seconds), within the original 120-second
+runtime budget. Binary SHA256:
+52216a16da3e72040ba855c3a7519babd6c808e7e85fe9b97d785fe47535578d.
+Both native logs hash ab54436bac763fbec2a1705cfbecc601ad8ed6b806a3a7582d23b5881e0a42c1.
+Evidence roots: /opt/duris-plan1-qualification-20261004/p1-mariadb-d99e77d6.cmzbPu
+and p1-mysql-b96aebe6.taMU9X (item/result.json). The wrapper verified schema removal,
+owned process shutdown and both ports reusable. Production bytes remain identical
+to the V4 strict-build candidate. This fixture repair does not establish active
+ordinary-drop gameplay/restart or complete Plan 1.
+
+### Plan 1 qualification: maintained SQL lifecycle link closure
+
+The second existing lifecycle-owner compiler invocation retained an unused private
+pipeline ACK overload and failed linkage. Its function/data sections and linker
+section collection now match the first isolated owner. Actual lifecycle/cutover
+implementations, strict compiler and sanitizer flags, all original cases and the
+1800-second integration supervision remain unchanged. Both maintained native owners
+pass on MariaDB 10.11.14 and MySQL 8.0.46 in the same disposable roots above;
+lifecycle-exit.log is zero on both. MariaDB lifecycle.log SHA256:
+fd1a0dbbf79e516efe72ff3bc4bf33a5aa5f6c8e2d3e66fc4baccc35fdd0e7d3.
+MySQL lifecycle.log SHA256:
+2e483abf8762581e81530964aca5dab3cc1c6a9ebcf7c98232982eb514ee4b36.
+Native evidence covers existing wallet/bank/keeper baselines, exact replay,
+rollback, serialized legacy writers, runtime gates and cutover faults. No stub
+qualifies the unused private ACK path. Prepared startup and checked-release owners
+still need corrected-expectation reruns; Plan 1 remains incomplete.

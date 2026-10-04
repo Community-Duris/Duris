@@ -17,9 +17,13 @@ It cannot activate when another plan's coverage is missing.
 
 ## Current source implementation cadence
 
-The user batches testing when each major plan is ready. Source review and
-implementation continue now; preserve original sources and prepared regression
-owners for milestone failure/fix proof. Written changes remain unqualified.
+The user batches testing when each major plan is ready. This plan's source is
+ready and its existing qualification batch is underway. Preserve original sources
+and regression owners for failure/fix proof. Production source `9fabe54bb` passes
+both strict builds; focused components and worker/journal guards pass within
+their stated scopes, and real pooled bank passes both SQL engines. Remaining
+coin/item/lifecycle reruns and actual publication/recovery still prevent Plan 1
+completion. Do not expand its independent acceptance or add optional gates.
 
 Keep implementation within the group's R1–R8 contract and this plan's independent
 acceptance. Ordinary save projections do not need an additional economic receipt

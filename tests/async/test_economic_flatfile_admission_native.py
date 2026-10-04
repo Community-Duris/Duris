@@ -25,6 +25,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-admission-") as temporary:
                "src/economy/coin_transfer_command.c",
                "src/economy/coin_transfer_accounting.c",
                "src/economy/item_transfer_accounting.c",
+               "src/economy/economic_baseline_codec.c",
+               "src/economy/economic_baseline_adapter.c",
                "src/persistence/critical_command_coordinator.c",
                "src/persistence/critical_command_journal.c", *SOURCES[1:]]
     binary = work / "native"
