@@ -837,7 +837,7 @@ flatfile production binary SHA-256
 f0c37cd6d62caef1a5481ba90b28c74592cd5a4206f10f473481fc4ff2414964.
 The separate observer binary supplies exact native readback only under a test
 macro; production does not enable it. The original frozen broad result remains
-831 passed, 11 skipped and 17 failed; a current-head broad run and full R1ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“R8
+831 passed, 11 skipped and 17 failed; a current-head broad run and full R1ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œR8
 qualification remain required. Release and activation remain blocked.
 
 
@@ -2877,9 +2877,12 @@ activation and release gates remain open.
 The worker now keeps a receipt-bearing or death snapshot's original component
 mask after journal append. A separate internal claimed mask records the narrower
 revision obligation after an older exact ACK. Initial admission, pending
-promotion, undispatched replacement, retry/failure and public completion use the
-claim for revision bookkeeping; repository application and journal ACK retain the
-sealed original body. Ordinary saves keep their existing narrowed-mask behavior.
+promotion, undispatched replacement and retry/failure use the claim for revision
+bookkeeping; repository application, journal ACK and public completion retain the
+sealed original body/mask. Source review of the production death/literal pipeline
+requires that public-mask distinction. A later capture must cover the active
+claim, rather than redundantly captured already-ACKed bits. Replacement validates
+and claims the exact current queued mask, including a full-body death capture. Ordinary saves keep their existing narrowed-mask behavior.
 No receipt, death body, revision or public completion interface is invented.
 
 The source failure is the old assignment to `snapshot.components` at admission
