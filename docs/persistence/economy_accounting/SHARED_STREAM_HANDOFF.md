@@ -261,3 +261,9 @@ separate callback/checkpoint scopes, refusing enabled missing/corrupt namespaces
 Ownership stays disabled; complete native callers/census, serial lifecycle, actual
 revisit/startup, critical ACK and major-plan qualification remain required. No
 new compiler/tests/native/SQL/gameplay/services or qualified push occurred.
+
+Primary source258f27b95 additionally guards independent SQL death-conflict and
+quarantine native boundaries. Pool admission spans lease disposal/replacement;
+quarantine admission spans replacement/proof/journal resolution. Actual caller
+residence, other native writers, serial lifecycle, census/ACK and startup/revisit
+remain open. All new source remains unqualified; ownership remains disabled.
