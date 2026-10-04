@@ -43,6 +43,11 @@ struct flatfile_accounting_lifecycle_request
 	uint64_t actor_id = 0;
 	uint64_t accepted_at_usec = 0;
 	economic_digest coverage_digest = {};
+	// Externally asserted frozen boundary, independently established by the
+	// future native cutover producer. Setting these fields is not proof and
+	// does not replace complete writer/command census and native exclusion.
+	economic_digest boundary_digest = {};
+	bool frozen_boundary_proven = false;
 	// External proof that the system is in a virgin_state / never_activated state.
 	bool virgin_state_proven = false;
 };
@@ -54,6 +59,7 @@ struct flatfile_accounting_lifecycle_receipt
 	critical_operation_id epoch = {};
 	critical_operation_id baseline_operation_id = {};
 	economic_digest coverage_digest = {};
+	economic_digest boundary_digest = {};
 	uint64_t baseline_revision = 0;
 	std::vector<flatfile_economic_mapping> mappings;
 };
@@ -63,6 +69,11 @@ struct flatfile_accounting_lifecycle_receipt
 // one-to-one mapping and lifetime reconciliation, stages the baseline witness
 // and reservations, verifies virgin_state (never_activated) proof, and commits
 // the lifecycle receipt before selecting the active epoch.
+// The common receipt bucket must already be initialized. A selected epoch still
+// returns EALREADY; constituent original-ID retry checks do not make install an
+// idempotent lifecycle-receipt lookup. Caller receipt stays unchanged on failure.
+// Frozen-boundary authority is an external prerequisite; no authenticated native
+// boundary producer or production activation wiring is supplied by this owner.
 class flatfile_accounting_lifecycle_transaction
 {
     public:

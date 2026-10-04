@@ -2,6 +2,7 @@
 #include "flatfile/flatfile_identity_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_accounting_store.h"
+#include "flatfile/flatfile_accounting_staging_view.h"
 #include "flatfile/flatfile_store.h"
 #include "economy/currency_command.h"
 #include "economy/economic_accounting_plan.h"
@@ -12,6 +13,7 @@
 #include <map>
 #include <openssl/sha.h>
 #include <set>
+#include <type_traits>
 
 namespace
 {
@@ -212,20 +214,39 @@ template <typename F> unsigned int guarded(F &&action, std::string *error) noexc
 	}
 	catch (const failure &f)
 	{
-		if (error && error->empty())
-			*error = "lifecycle transaction failure code=" + std::to_string(f.code);
+		try
+		{
+			if (error && error->empty())
+				*error = "lifecycle transaction failure code=" +
+					 std::to_string(f.code);
+		}
+		catch (const std::bad_alloc &)
+		{
+		}
 		return f.code;
 	}
 	catch (const std::bad_alloc &)
 	{
-		if (error && error->empty())
-			*error = "out of memory";
+		try
+		{
+			if (error && error->empty())
+				*error = "out of memory";
+		}
+		catch (const std::bad_alloc &)
+		{
+		}
 		return ENOMEM;
 	}
 	catch (...)
 	{
-		if (error && error->empty())
-			*error = "unexpected lifecycle exception";
+		try
+		{
+			if (error && error->empty())
+				*error = "unexpected lifecycle exception";
+		}
+		catch (const std::bad_alloc &)
+		{
+		}
 		return EIO;
 	}
 }
@@ -260,15 +281,14 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 	return guarded(
 		[&]
 		{
-			need(!root.empty(), EINVAL);
-			flatfile_accounting_lifecycle_native_sources sources;
-			const auto capture_code = capture_native_sources_locked(
-				root, identity_lock, lock, &sources, error);
-			need(!capture_code, capture_code);
+			need(!root.empty() && identity_lock.matches(root) && lock.matches(root),
+			     EINVAL);
 			need(nonzero(request.operation_id) && nonzero(request.lineage) &&
 				     nonzero(request.epoch),
 			     EINVAL);
 			need(request.accepted_at_usec != 0, EINVAL);
+			need(request.frozen_boundary_proven, EPERM);
+			need(request.boundary_digest != economic_digest{}, EINVAL);
 			need(economic_account_key_valid(opening_account), EINVAL);
 			need(opening_account.kind == economic_account_kind::opening, EINVAL);
 			need(opening_account.lineage.bytes == request.lineage.bytes, EINVAL);
@@ -280,9 +300,31 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 			unsigned int control_code =
 				flatfile_economic_control_read(root, lock, &control, error);
 			need(!control_code, control_code);
+			need(control.lineage.bytes == request.lineage.bytes, ESTALE);
 
 			// Never-activated invariant: active_epoch must not already be selected.
 			need(!nonzero(control.active_epoch), EALREADY);
+			// The shared receipt bucket must already be initialized. This owner
+			// does not manufacture that independent storage/lifecycle prerequisite.
+			critical_operation_id baseline_operation = {};
+			need(critical_operation_id_derive(request.operation_id,
+							  ECONOMIC_BASELINE_OPERATION_DOMAIN, 0,
+							  &baseline_operation),
+			     EINVAL);
+			const size_t receipt_bucket = baseline_operation.bytes[0];
+			need(control.evidence_initialized[receipt_bucket / 8] &
+				     (1u << (receipt_bucket % 8)),
+			     ENODATA);
+			const auto bucket_status = flatfile_accounting_check_bucket(
+				root, lock, request.lineage, receipt_bucket, error);
+			need(bucket_status == flatfile_accounting_status::ok,
+			     bucket_status == flatfile_accounting_status::capacity ? ENOMEM :
+			     bucket_status == flatfile_accounting_status::io_error ? EIO :
+										     EILSEQ);
+			flatfile_accounting_lifecycle_native_sources sources;
+			const auto capture_code = capture_native_sources_locked(
+				root, identity_lock, lock, &sources, error);
+			need(!capture_code, capture_code);
 
 			// Complete native capture covers wallets and shared banks.
 			std::set<uint32_t> seen_wallets;
@@ -313,6 +355,7 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 			mappings.reserve(sources.wallets.size() + sources.banks.size());
 
 			std::vector<flatfile_authority_operation> ops;
+			flatfile_accounting_staging_view view(root, lock, ops);
 
 			// Reconcile wallets.
 			for (const auto &w : sources.wallets)
@@ -335,13 +378,15 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 				{
 					flatfile_economic_mapping created;
 					unsigned int create_code =
-						flatfile_accounting_authority_storage::create_mapping(
-							root, lock, control.revision,
-							economic_account_kind::wallet, 0, loc,
-							request.operation_id, &created, &ops,
-							error);
+						flatfile_accounting_authority_storage::
+							create_mapping_staged(
+								root, lock, control.revision,
+								economic_account_kind::wallet, 0,
+								loc, request.operation_id, &created,
+								&ops, error, &view);
 					need(!create_code, create_code);
-					++control.revision;
+					const auto staged_control = view.control(&control, error);
+					need(!staged_control, staged_control);
 					mappings.push_back(created);
 				}
 				else
@@ -371,13 +416,16 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 				{
 					flatfile_economic_mapping created;
 					unsigned int create_code =
-						flatfile_accounting_authority_storage::create_mapping(
-							root, lock, control.revision,
-							economic_account_kind::bank, b.racewar, loc,
-							request.operation_id, &created, &ops,
-							error);
+						flatfile_accounting_authority_storage::
+							create_mapping_staged(
+								root, lock, control.revision,
+								economic_account_kind::bank,
+								b.racewar, loc,
+								request.operation_id, &created,
+								&ops, error, &view);
 					need(!create_code, create_code);
-					++control.revision;
+					const auto staged_control = view.control(&control, error);
+					need(!staged_control, staged_control);
 					mappings.push_back(created);
 				}
 				else
@@ -386,16 +434,53 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 				}
 			}
 
+			// Membership must precede marker initialization in the staged view.
+			flatfile_economic_epoch epoch_info;
+			const auto epoch_read_code =
+				view.epoch(request.lineage, request.epoch, &epoch_info);
+			if (epoch_read_code == ENODATA)
+			{
+				flatfile_economic_epoch next_epoch{
+					request.epoch,
+					control.last_epoch,
+					request.operation_id,
+					uint64_t(control.epoch_count) + 1,
+					1,
+					coverage
+				};
+				const auto append_code =
+					flatfile_accounting_authority_storage::append_epoch_staged(
+						root, lock, control.revision, next_epoch, &ops,
+						error, &view);
+				need(!append_code, append_code);
+				const auto staged_control = view.control(&control, error);
+				need(!staged_control, staged_control);
+			}
+			else
+			{
+				need(!epoch_read_code, epoch_read_code);
+				// This installer may resume only its own matching transition.
+				// General baseline initialization retains separate-ID semantics.
+				need(epoch_info.creating_operation.bytes ==
+						     request.operation_id.bytes &&
+					     epoch_info.transition_kind == 1 &&
+					     epoch_info.transition_digest == coverage,
+				     ESTALE);
+			}
+			// Selection targets the requested epoch, never a different catalog tail.
+			need(control.last_epoch.bytes == request.epoch.bytes, ESTALE);
 			// Initialize baseline storage namespace for this epoch.
 			flatfile_accounting_status init_status =
-				flatfile_accounting_baseline_storage::initialize(
+				flatfile_accounting_baseline_storage::initialize_staged(
 					root, lock, request.lineage, request.epoch, opening_account,
-					request.operation_id, &ops, error);
+					request.operation_id, &ops, error, &view);
 			if (init_status != flatfile_accounting_status::ok &&
 			    init_status != flatfile_accounting_status::already_exists)
 			{
 				need(false, EIO);
 			}
+			const auto initialized_control = view.control(&control, error);
+			need(!initialized_control, initialized_control);
 
 			// Prepare and stage the baseline batch.
 			economic_baseline_batch batch;
@@ -406,6 +491,7 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 			batch.batch_index = 0;
 			batch.opening_account = opening_account;
 			batch.coverage_digest = coverage;
+			batch.boundary_digest = request.boundary_digest;
 
 			for (size_t i = 0; i < mappings.size(); ++i)
 			{
@@ -442,40 +528,36 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 			need(cmd_err == economic_accounting_error::ok, EINVAL);
 
 			// Stage baseline reservations and witness.
+			uint64_t verified_baseline_revision = 0;
 			flatfile_accounting_status stage_status =
-				flatfile_accounting_baseline_storage::stage(
-					root, lock, baseline_cmd, *prepared, &ops, error);
+				flatfile_accounting_baseline_storage::stage_staged(
+					root, lock, baseline_cmd, *prepared, &ops, error, &view,
+					&verified_baseline_revision);
 			if (stage_status != flatfile_accounting_status::ok &&
 			    stage_status != flatfile_accounting_status::already_exists)
 			{
 				need(false, EIO);
 			}
-
-			// Append epoch to authority if not present.
-			flatfile_economic_epoch epoch_info;
-			unsigned int epoch_read_code = flatfile_economic_epoch_read(
-				root, lock, request.lineage, request.epoch, &epoch_info, nullptr);
-			if (epoch_read_code == ENODATA)
-			{
-				flatfile_economic_epoch next_epoch{
-					request.epoch,		 {}, request.operation_id,
-					control.epoch_count + 1, 1,  coverage
-				};
-				unsigned int append_code =
-					flatfile_accounting_authority_storage::append_epoch(
-						root, lock, control.revision, next_epoch, &ops,
-						error);
-				need(!append_code, append_code);
-				++control.revision;
-			}
+			need(verified_baseline_revision != 0, EILSEQ);
 
 			// Receipt-bearing, never-activated-gated epoch selection.
 			// Selection follows baseline receipts and external virgin-state proof.
 			unsigned int select_code =
-				flatfile_accounting_authority_storage::select_epoch(
+				flatfile_accounting_authority_storage::select_epoch_staged(
 					root, lock, control.revision, true, request.operation_id,
-					&ops, error);
+					&ops, error, &view);
 			need(!select_code, select_code);
+			flatfile_accounting_lifecycle_receipt candidate_receipt;
+			candidate_receipt.operation_id = request.operation_id;
+			candidate_receipt.lineage = request.lineage;
+			candidate_receipt.epoch = request.epoch;
+			candidate_receipt.baseline_operation_id = baseline_cmd.operation_id;
+			candidate_receipt.coverage_digest = coverage;
+			candidate_receipt.boundary_digest = request.boundary_digest;
+			candidate_receipt.baseline_revision = verified_baseline_revision;
+			candidate_receipt.mappings = std::move(mappings);
+			static_assert(std::is_nothrow_move_assignable_v<
+				      flatfile_accounting_lifecycle_receipt>);
 
 			// Commit authority and accounting operations atomically.
 			flatfile_authority_transaction_result commit_res =
@@ -484,15 +566,7 @@ unsigned int flatfile_accounting_lifecycle_transaction::install(
 
 			// Build and emit retained lifecycle receipt.
 			if (receipt)
-			{
-				receipt->operation_id = request.operation_id;
-				receipt->lineage = request.lineage;
-				receipt->epoch = request.epoch;
-				receipt->baseline_operation_id = baseline_cmd.operation_id;
-				receipt->coverage_digest = coverage;
-				receipt->baseline_revision = 1;
-				receipt->mappings = std::move(mappings);
-			}
+				*receipt = std::move(candidate_receipt);
 		},
 		error);
 }
