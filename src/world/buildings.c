@@ -5,6 +5,7 @@
 //
 
 #include "core/prototypes.h"
+#include "world/world_activity.h"
 #include "world/character_maintenance.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -529,6 +530,7 @@ int Building::unload()
 			FREE(room->dir_option[j]);
 			room->dir_option[j] = NULL;
 		}
+		world_activity_room_exits_changed(real_room(room->number));
 
 		// dump players outside
 		P_char tch, tch_next;
@@ -604,6 +606,7 @@ int outpost_generate(Building *building)
 
 	room->dir_option[DIR_DOWN]->to_room = building->location();
 	room->dir_option[DIR_DOWN]->exit_info = 0;
+	world_activity_room_exits_changed(real_room(room->number));
 
 	room->funct = outpost_inside;
 

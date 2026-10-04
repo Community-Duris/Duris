@@ -2434,6 +2434,7 @@ static void run_pulse_reset_phase(game_loop_pulse_context &ctx)
 	latency_trace_record("total_tick", loop_us, loop_tick);
 	if (!(tics % 300))
 	{
+		world_activity_log_diagnostics();
 		latency_trace_snapshot snapshot = {};
 		latency_trace_snapshot_take_and_reset(&snapshot);
 		FILE *_ltf = fopen("logs/latency_trace.log", "a");

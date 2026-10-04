@@ -11,6 +11,7 @@
 #define TROPHY
 
 #include "core/prototypes.h"
+#include "world/world_activity.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -1440,6 +1441,7 @@ int reset_lab(int type)
 	if (entrance_rnum != NOWHERE)
 	{
 		world[entrance_rnum].dir_option[DIR_DOWN] = 0;
+		world_activity_room_exits_changed(entrance_rnum);
 	}
 
 	return 0;
@@ -1521,6 +1523,7 @@ int create_lab(int type)
 		world[real_room(start_room)].dir_option[DIR_EAST] = 0;
 		world[real_room(start_room)].dir_option[DIR_SOUTH] = 0;
 		world[real_room(start_room)].dir_option[DIR_WEST] = 0;
+		world_activity_room_exits_changed(real_room(start_room));
 	}
 
 	while (rooms - i > 0)
@@ -1618,6 +1621,7 @@ int connect_lab(int room, int dir)
 		world[there].dir_option[DIR_EAST] = 0;
 		world[there].dir_option[DIR_SOUTH] = 0;
 		world[there].dir_option[DIR_WEST] = 0;
+		world_activity_room_exits_changed(there);
 	}
 
 	if (there == NOWHERE)
