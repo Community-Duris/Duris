@@ -19,6 +19,15 @@ history before that opening and absent stores are not reconstructed. An empty
 result does not prove a UID never existed. Output remains ID-only and bounded;
 `--limit 0` retains the full count and coverage while omitting row details.
 
+Every non-exception view includes the whole audited input's `coverage` object:
+`lineage`, `selected_epoch`, `complete`, `quiescent`, and `exception_count`.
+This includes unfiltered holdings, supply, prices, routes and provenance. The
+exception count is global and remains visible in JSON at limits 0/1/100 even
+when the view has no matching rows. Existing filtered holdings, provenance and
+operation scope fields remain present. The CLI exit status still reflects the
+whole audit. Coverage describes the supplied snapshot; it does not qualify the
+writer matrix or assert that an empty price/provenance view exhausts history.
+
 Use `--view operation --operation-id <32 lowercase hex digits>` to inspect an
 exact root ID in an existing export. The bounded, ID-only records include root
 metadata, account effects, postings, child IDs, item references, receipts,

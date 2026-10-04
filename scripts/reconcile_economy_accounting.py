@@ -546,7 +546,19 @@ class Reconciler:
                 claim = claims.get((lineage, source))
                 if not claim or claim.get("operation_id") != op_id:
                     self.emit("missing_source_claim", operation_id=op_id)
-            if policy and policy.get("original_operation_required") and (op.get("original_operation_id"),) not in operations:
+            original = op.get("original_operation_id")
+            original_valid = True
+            if original is not None:
+                try:
+                    require_id(original, "original operation ID")
+                except SnapshotError:
+                    original_valid = False
+                else:
+                    original_valid = original != op_id
+                if not original_valid:
+                    self.emit("invalid_original_operation", operation_id=op_id)
+            if (original_valid and policy and policy.get("original_operation_required") and
+                    (original,) not in operations):
                 self.emit("missing_original_operation", operation_id=op_id)
             child_indexes = {row.get("child_index") for row in by_op["children"][op_id]}
             for row in by_op["children"][op_id]:
@@ -851,6 +863,14 @@ class Reconciler:
                 len(set(baseline_operation_ids)) != len(baseline_operation_ids)):
             raise SnapshotError("invalid baseline operation identity coverage")
         baseline_operation_ids = set(baseline_operation_ids)
+        # Compare selected creators with their own evidence without rescanning
+        # every effect for every root. Keep references; normalize only effects
+        # actually consumed by a selected creator below.
+        effects_by_operation = defaultdict(dict)
+        if effects is not None:
+            for key, effect in effects.items():
+                if isinstance(key, tuple) and len(key) == 2:
+                    effects_by_operation[key[0]][key[1]] = effect
         roots_by_id = {}
         for root in roots:
             operation_id = require_id(root.get("operation_id"), "mapping creator operation ID")
@@ -917,11 +937,10 @@ class Reconciler:
                         effect.get("account_index"): effect for effect in root_effects
                     }
                     evidence_effects = {
-                        key[1]: {field: value.get(field) for field in (
+                        index: {field: value.get(field) for field in (
                             "account_index", "account_key", "before", "after",
                             "before_revision", "after_revision")}
-                        for key, value in effects.items()
-                        if isinstance(key, tuple) and len(key) == 2 and key[0] == operation_id
+                        for index, value in effects_by_operation.get(operation_id, {}).items()
                     }
                     if (len(root_effects_by_index) != len(root_effects) or
                             root_effects_by_index != evidence_effects):
@@ -2102,6 +2121,12 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
             raise SnapshotError("account filter requires holdings view")
     if name == "exceptions":
         return report
+    coverage = {
+        "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
+        "complete": snapshot.get("complete") is True,
+        "quiescent": snapshot.get("quiescent") is True,
+        "exception_count": report.get("exception_count"),
+    }
     if name == "holdings":
         rows = [{"account_key": row["account_key"], "kind": account_key(row["account_key"])[1],
                  "balance": vector(row["balance"]), "revision": row["revision"]}
@@ -2111,10 +2136,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
             raise SnapshotError("invalid native holding revision")
         if holding_key is not None:
             return {**bounded_rows(rows, limit), "coverage": {
-                "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
-                "complete": snapshot.get("complete") is True,
-                "quiescent": snapshot.get("quiescent") is True,
-                "exception_count": report.get("exception_count"),
+                **coverage,
                 "scope": "captured_native_holdings", "account_key": holding_key}}
     elif name == "provenance":
         if type(uid) is not int or not 0 < uid < 2**64:
@@ -2140,9 +2162,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
         rows = sorted(unique.values(),
                       key=lambda row: (row["revision"], row["operation_id"], row["event_index"]))
         return {**bounded_rows(rows, limit), "coverage": {
-            "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
-            "complete": snapshot.get("complete") is True,
-            "quiescent": snapshot.get("quiescent") is True,
+            **coverage,
             "lineage_history_available": isinstance(snapshot["native"].get("uid_history_events"), list),
             "unattributed_history_available": isinstance(
                 snapshot["native"].get("unattributed_uid_events"), list)}}
@@ -2199,10 +2219,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
             (row[field] for field in ("line_index", "event_index", "account_index", "child_index", "row_index")
              if field in row), 0), json.dumps(row, sort_keys=True)))
         return {**bounded_rows(rows, limit), "record_counts": record_counts, "coverage": {
-            "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
-            "complete": snapshot.get("complete") is True,
-            "quiescent": snapshot.get("quiescent") is True,
-            "exception_count": report.get("exception_count"), "root_scope": "selected_epoch",
+            **coverage, "root_scope": "selected_epoch",
             "operation_id": operation_id}}
     elif name == "supply":
         totals: dict[tuple, int] = defaultdict(int)
@@ -2232,7 +2249,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                 for row in matrix["routes"]]
     else:
         raise SnapshotError("unknown view")
-    return bounded_rows(rows, limit)
+    return {**bounded_rows(rows, limit), "coverage": coverage}
 
 
 def main() -> int:
