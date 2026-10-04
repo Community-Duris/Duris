@@ -55,6 +55,9 @@ DORMANT_WRITERS = {
     "player.confiscate_all_dormant": "Compiled bulk rent confiscation helper has no in-tree callsite; its direct inventory extraction requires bounded UID retirement if revived.",
 }
 NON_WRITERS = {
+    'recovery.sql_ordinary_drop_receipt_observation': 'Reads exact committed inbox, historical economic root/payload and outbox inside caller-owned native locks; no native mutation, missing-command apply or transaction/ACK ownership.',
+    'recovery.runtime_owner_revision_observation': 'Reads only an existing serialized owner-cache revision without inserting or hydrating missing metadata; no native custody or economic effect.',
+    'recovery.ordinary_drop_graph_observation': 'Observes exact original SQL-drop receipt and current epoch/season/custody/literal graph together with complete physical/runtime placement; no construction, repair, enrollment, issuance/destruction or publication ACK.',
     "recovery.inert_literal_staging": "Allocates only private discard-only literal memory with a retained UID; no UID issuance, native holdings/custody, global object-list/index-count changes or registry admission. Final proof/enrollment is a separate owner.",
     "recovery.inert_literal_cleanup": "Releases only unpublished stage memory/strings/descriptions without extraction, effect/procedure/event callbacks or native/runtime custody retirement.",
     "coin.retained_pile_rendering": "Compares denomination-dependent text and weight on a stack-local zero-add renderer; it neither admits a UID nor changes a native holding.",
