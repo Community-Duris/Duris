@@ -2065,7 +2065,95 @@ assert flutes[40778].split("~")[:3]==flutes[40779].split("~")[:3]
 assert objvalues(flutes[40778])[11:13]==[184,0] and objvalues(flutes[40779])[11:13]==[184,35]
 assert inventory_items[34464]["source"]=="areas/obj/long.obj" and all(("I",77559) not in b["receive"] for b in by_line.values())
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave"):
+# Juiblex retains exact sources, competing recipients and equivalent Marvin offers.
+# Source-comprehensive guidance does not qualify custom generation/phase transfer.
+abyss=inventory_module.area_evidence(ROOT,"juiblex")
+abyss_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="juiblex")
+abyss_stories={s["id"]:s for s in abyss_map["stories"]}
+assert (abyss_map["schema_version"],abyss_map["revision"],abyss_map["coverage"])==(3,1,"complete")
+assert len(abyss_stories)==22 and len(abyss_map["contacts"])==40 and not abyss_map["exclusions"]
+assert all(s["category"]=="story" for s in abyss_stories.values())
+assert sum(t.get("optional",False) for s in abyss_stories.values() for t in s["steps"])==39
+assert (len(abyss["requests"]),len(abyss["dialogue"]),len(abyss["mobs"]),len(abyss["items"]),len(abyss["reset_commands"]))==(23,25,117,113,378)
+assert collections.Counter(b["kind"] for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/juiblex.qst")=={"Q":22,"QA":1,"M":25}
+by_line={r["block"]["line"]:r["block"] for r in abyss["requests"]}
+for line,required,reward,retire in (
+    (62,[87526],[87529],0),(78,[87527],[87530],0),(94,[87562],[87563],0),
+    (155,[87509],[87548],0),(177,[71024],[87594],0),(248,[87512],[87571],0),
+    (284,[87572,87571],[87514],1),(365,[87532],[87533],0),(379,[87544],[87549],0),
+    (425,[87551],[87552],0),(487,[87577,87578,87579,87580],[87581],0),
+    (513,[87582],[87593],0),(593,[87553,87554,87555,87556,87558],[87561],0),
+    (623,[87606],[87607],0),(664,[87563],[87565],0),(705,[87510],[87576],0),
+    (729,[87504],[87586],0),(759,[87587,87588,87589,87590],[87591],0),
+    (787,[87599],[87600,87601],1),(822,[87609],[87610],1),
+    (848,[87609],[87610],1),(863,[87610],[87608],0)):
+    assert collections.Counter(by_line[line]["give"])==collections.Counter(("I",v) for v in required)
+    assert by_line[line]["receive"]==[("I",v) for v in reward]
+    assert by_line[line]["binding"]["completion_key"].endswith("disappear="+str(retire))
+assert by_line[314]["give"]==[("I",55364),("I",55365)] and collections.Counter(by_line[314]["receive"])==collections.Counter([("C",500000),("I",55279)])
+assert by_line[314]["binding"]["completion_key"].endswith("disappear=0")
+bindings=[b for s in abyss_stories.values() for b in s["contracts"]]
+assert len(bindings)==23 and {tuple(sorted(b.items())) for b in bindings}=={tuple(sorted(b["binding"].items())) for b in by_line.values()}
+leash=abyss_stories["marvin-old-leash"]
+assert leash["contracts"]==[by_line[822]["binding"],by_line[848]["binding"]]
+assert abyss_stories["marvin-given-leash"]["steps"][0]["contracts"]==leash["contracts"]
+for name,line in (("uz-wand-refill",248),("maxilo-placation-gloves",94)):
+    assert abyss_stories[name]["steps"][0]["contracts"]==[by_line[line]["binding"]]
+foreign={b["source"]:b for b in inventory_module.native_blocks(ROOT) if b["kind"] in ("Q","QA") and (("I",55363) in b["receive"] or ("I",71024) in b["receive"])}
+assert foreign["areas/qst/torg.qst"]["give"]==[("I",v) for v in range(28944,28952)]
+assert foreign["areas/qst/fields_between.qst"]["give"]==[("I",71005),("I",71016)]
+assert abyss_stories["uz-legend-halves"]["steps"][0]["contracts"]==[foreign["areas/qst/torg.qst"]["binding"]]
+assert abyss_stories["troll-brewer-fez"]["steps"][0]["contracts"]==[foreign["areas/qst/fields_between.qst"]["binding"]]
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==875]
+assert (len(units),sum(u["achievement"] for u in units),sum(u["daily_candidate"] for u in units))==(22,22,19)
+assert {r["block"]["line"] for r in abyss["requests"] if not r["definition"]["daily_eligible"]}=={284,787,822,848}
+contacts={c["mob_vnum"]:c for c in abyss_map["contacts"]}
+for v,c in contacts.items():
+    assert c["keyword"] in inventory_mobs[v]["keywords"] and len(c["topics"])<=32
+    assert set(c["topics"])==set(t for b in abyss["dialogue"] if b["giver_vnum"]==v for t in b["body"][0].rstrip("~").split())
+assert len(contacts[87527]["topics"])==32
+assert collections.Counter(r["command"] for r in abyss["reset_commands"])=={"M":201,"D":48,"G":40,"E":39,"F":26,"O":22,"P":2}
+parent=room=None;sources=collections.defaultdict(list);mobile_sources=collections.defaultdict(list);families=set()
+for r in abyss["reset_commands"]:
+    c,v=r["command"],r["arguments"]
+    assert v[5:]==[0,0,0]
+    if c in ("M","F"):parent,room=v[1],v[3];mobile_sources[v[1]].append((room,v[4]))
+    families.add((c,tuple(v[:3]),parent if c in ("G","E") else None))
+    if c in ("G","E"):sources[v[1]].append((parent,room,v[2]))
+assert len(families)==257
+for item,mob,where,chance in ((87553,87568,87654,25),(87554,87569,87654,100),(87555,87570,87645,33),(87556,87567,87648,33),(87558,87566,87643,33)):
+    assert sources[item]==[(mob,where,1)] and mobile_sources[mob]==[(where,chance)]
+for item,mob,where in ((87512,87529,87590),(87513,87530,87590),(87572,87509,87565),(87532,87557,87639),(87551,87579,87661),(87544,87573,87579),(87609,87581,87539),(87606,87611,87671),(87599,87608,87680),(87520,87544,87626),(87502,87561,87626)):
+    assert sources[item]==[(mob,where,1)]
+assert sources[87562]==[(87581,87539,1)] and mobile_sources[87581]==[(87539,40)]
+world=(ROOT/"areas/wld/juiblex.wld").read_text()
+room_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",world,re.M|re.S)}
+assert len(room_bodies)==183
+for local,target,mob in ((87671,71106,87600),(87672,29073,87601),(87673,9106,87602),(87674,71221,87603)):
+    assert re.search(r"D5\s+~\s*~\s*0 0 "+str(target),room_bodies[local])
+    assert not re.search(r"\bF\s+\d+",room_bodies[local]) and mobile_sources[mob]==[(local,60)]
+    raw=(ROOT/inventory_mobs[mob]["source"]).read_text().split("#"+str(mob)+"\n",1)[1].split("#",1)[0]
+    assert not int(raw.split("~")[4].split()[0])&(2|64)
+objects=(ROOT/"areas/obj/juiblex.obj").read_text()
+for key,chance in ((87513,0),(87514,100),(87515,100),(87520,100),(87570,100)):
+    raw=objects.split("#"+str(key)+"\n",1)[1].split("#",1)[0]
+    assert int(raw.split("~")[4].split()[12])==chance
+assert re.search(r"D0\s+[^~]*~[^~]*~\s*9 0 87609",room_bodies[87606],re.S)
+assert any(r["command"]=="D" and r["arguments"][:5]==[0,87606,0,9,100] for r in abyss["reset_commands"])
+assert not any(r["command"]=="D" and r["arguments"][3]&4 for r in abyss["reset_commands"])
+assert {(a["kind"],a["vnum"],a["function"]) for a in abyss["special_assignments"]}=={("obj",87612,"doombringer"),("mob",87542,"slime_lake"),("mob",87543,"juiblex_one"),("obj",87546,"mask_of_wildmagic"),("obj",87601,"flow_amulet"),("obj",87611,"juiblex_grid_mob_generator")}
+procedures=(ROOT/"src/specs/specs.juiblex.c").read_text()
+phase=procedures.split("int juiblex_one(",1)[1].split("int mask_of_wildmagic(",1)[0]
+assert "char_to_room(tch" in phase and "char_from_room" not in phase
+assert "refusing duplicate insertion" in (ROOT/"src/world/handler.c").read_text()
+generator=procedures.split("int juiblex_grid_mob_generator(",1)[1]
+assert all(str(v) in generator for v in (87507,87505,87508,87604,87599,87504,87506,87515,87552,87514))
+assert not any(str(v) in generator for v in range(87566,87571))
+assert "attack_continuation" in (ROOT/"src/specs/specs.underworld.c").read_text().split("int doombringer(",1)[1].split("int unholy_avenger_bloodlust(",1)[0]
+legend=(ROOT/"src/specs/specs.winterhaven.c").read_text().split("int lorekeeper_scroll(",1)[1].split("\nint ",1)[0]
+assert "extract_obj(obj, TRUE)" in legend and "number(55364, 55365)" in legend
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

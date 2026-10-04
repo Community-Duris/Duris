@@ -107378,6 +107378,1553 @@
     {
       "contacts": [
         {
+          "description": "Stranded warrior with two distinct companion-body deliveries and a separate glove treatment.",
+          "keyword": "warrior",
+          "mob_vnum": 87500,
+          "name": "a warrior missing both legs",
+          "topics": [
+            "help",
+            "legs",
+            "leg",
+            "medallion",
+            "warrior",
+            "assistance",
+            "sassumo",
+            "monk",
+            "arianna",
+            "sorcerer",
+            "gloves",
+            "madness",
+            "niev",
+            "mad"
+          ]
+        },
+        {
+          "description": "Depressed troll with independent caged-pet and foreign-fez requests.",
+          "keyword": "depressed",
+          "mob_vnum": 87518,
+          "name": "a depressed looking troll raider",
+          "topics": [
+            "depressed",
+            "situation",
+            "raider",
+            "grog",
+            "grox",
+            "brother",
+            "sad",
+            "pet",
+            "umber",
+            "hulk",
+            "fez",
+            "clarity",
+            "brewer",
+            "true",
+            "troll",
+            "hat",
+            "cap"
+          ]
+        },
+        {
+          "description": "Uz offers brain, refill and paired-legend requests; the refill retires this shared recipient.",
+          "keyword": "uz",
+          "mob_vnum": 87527,
+          "name": "Uz, the Goddess of Balance",
+          "topics": [
+            "thought",
+            "trapped",
+            "trap",
+            "quest",
+            "leave",
+            "globe",
+            "portal",
+            "rebel",
+            "juiblex",
+            "jubilex",
+            "abyss",
+            "layer",
+            "zu",
+            "uz",
+            "situation",
+            "slime",
+            "fortress",
+            "wand",
+            "used",
+            "summer",
+            "winter",
+            "refill",
+            "acid",
+            "worm",
+            "wriggling",
+            "first",
+            "second",
+            "half",
+            "lore",
+            "keeper",
+            "legendary",
+            "tale"
+          ]
+        },
+        {
+          "description": "Agronon observes the Blood War and accepts the map or Nonorga larvae independently.",
+          "keyword": "agronon",
+          "mob_vnum": 87555,
+          "name": "Agronon the pit fiend",
+          "topics": [
+            "concerns",
+            "blood",
+            "war",
+            "mind",
+            "something",
+            "juiblex",
+            "jubilex",
+            "abyss",
+            "observe",
+            "yugoloth",
+            "worry",
+            "worried",
+            "thoughts",
+            "devil",
+            "bloodstained",
+            "map",
+            "larvae",
+            "nonorga",
+            "battle",
+            "lost",
+            "outside",
+            "influence"
+          ]
+        },
+        {
+          "description": "Alxorno wants a medallion; the elder carries the reviewed input despite his merchant clue.",
+          "keyword": "alxorno",
+          "mob_vnum": 87565,
+          "name": "Alxorno, the tiefling guardian",
+          "topics": [
+            "revenge",
+            "anger",
+            "merchant",
+            "tiefling",
+            "capture",
+            "demon",
+            "juiblex",
+            "jubilex",
+            "guardian"
+          ]
+        },
+        {
+          "description": "Xalandro accepts four distinct demonic parts or Lokpan darkness, without actually spawning their narrated liches.",
+          "keyword": "xalandro",
+          "mob_vnum": 87574,
+          "name": "Xalandro, the drow necromancer",
+          "topics": [
+            "mission",
+            "quest",
+            "dream",
+            "parts",
+            "demon",
+            "part",
+            "undead",
+            "dracolich",
+            "draco",
+            "demonlich",
+            "demolich",
+            "godlich",
+            "god"
+          ]
+        },
+        {
+          "description": "Niev wants five distinct heads or Marvin remains; he wears Madness gloves and carries the old leash.",
+          "keyword": "niev",
+          "mob_vnum": 87581,
+          "name": "Niev the Mad",
+          "topics": [
+            "wildmagic",
+            "mumbles",
+            "power",
+            "mumble",
+            "wildmage",
+            "heads",
+            "head",
+            "necklace",
+            "brain",
+            "zooox",
+            "clone",
+            "ferret",
+            "pet",
+            "fields",
+            "marvin",
+            "between"
+          ]
+        },
+        {
+          "description": "Maxilo restores Irritation gloves; your earlier warrior delivery remains optional.",
+          "keyword": "maxilo",
+          "mob_vnum": 87585,
+          "name": "Maxilo, the infamous doppleganger",
+          "topics": [
+            "patience",
+            "symbol",
+            "somebody",
+            "waits",
+            "wait",
+            "quest",
+            "niev",
+            "arianna",
+            "sassumo",
+            "gloves",
+            "irritation"
+          ]
+        },
+        {
+          "description": "The yugoloth commander accepts the portal-machine crystal; a separate Winterhaven bundle competes for it.",
+          "keyword": "commander",
+          "mob_vnum": 87593,
+          "name": "the yugoloth commander",
+          "topics": [
+            "commander",
+            "plot",
+            "devils",
+            "devil",
+            "pit",
+            "fiend",
+            "abyss",
+            "blood",
+            "war",
+            "chrystal",
+            "crystal",
+            "pulsating",
+            "energy",
+            "pulsate",
+            "zooox",
+            "clone",
+            "wildmagic",
+            "wildmage",
+            "portals",
+            "portal"
+          ]
+        },
+        {
+          "description": "The cornered creature accepts the war demon neckclamp, without an actual dragon-capture endpoint.",
+          "keyword": "cornered",
+          "mob_vnum": 87597,
+          "name": "a cornered creature",
+          "topics": [
+            "neckclamp",
+            "neck",
+            "clamp",
+            "capture",
+            "problem",
+            "creature",
+            "help",
+            "quest"
+          ]
+        },
+        {
+          "description": "The demonic ghost wants four distinct fugitive essences from sources that can wander into other zones.",
+          "keyword": "ghost",
+          "mob_vnum": 87598,
+          "name": "the ghost of a demonic ruler",
+          "topics": [
+            "talk",
+            "person",
+            "zuggtmoy",
+            "juiblex",
+            "jubilex",
+            "plane",
+            "ruler",
+            "abyss",
+            "something",
+            "quest",
+            "wait",
+            "awaiting",
+            "await",
+            "imprisoned",
+            "imprison",
+            "prison",
+            "blaxor",
+            "kriben",
+            "dinok",
+            "galnor"
+          ]
+        },
+        {
+          "description": "Neptune receives his soul prison and retires; admission and personal defeat are separate facts.",
+          "keyword": "neptune",
+          "mob_vnum": 87609,
+          "name": "Lord Neptune, god of the seas",
+          "topics": [
+            "prison",
+            "cell",
+            "juiblex",
+            "jubilex",
+            "soul",
+            "tiny",
+            "case",
+            "succubus",
+            "invisible",
+            "freedom"
+          ]
+        },
+        {
+          "description": "First Marvin stages toward the Fields Between, carries the body, and retires after the old-leash offer.",
+          "keyword": "marvin",
+          "mob_vnum": 87611,
+          "name": "a gigantic ferret named \"Marvin\"",
+          "topics": [
+            "niev",
+            "old",
+            "master",
+            "leash"
+          ]
+        },
+        {
+          "description": "Excited Marvin stages toward the Scorched Valley and has equivalent old-leash and separate given-leash offers.",
+          "keyword": "marvin",
+          "mob_vnum": 87616,
+          "name": "a gigantic and excited ferret named \"Marvin\"",
+          "topics": [
+            "niev",
+            "old",
+            "master",
+            "walk",
+            "leash"
+          ]
+        },
+        {
+          "description": "This Zooox clone carries the brain; the other clone carries a mask instead.",
+          "keyword": "clone",
+          "mob_vnum": 87529,
+          "name": "Clone, of the almighty Zooox",
+          "topics": []
+        },
+        {
+          "description": "The straw-and-hair golem carries persistent chain keys for the cage and portal machine.",
+          "keyword": "golem",
+          "mob_vnum": 87530,
+          "name": "a golem with straw hair",
+          "topics": []
+        },
+        {
+          "description": "The gargantuan acid worm carries the tiny wriggling refill ingredient.",
+          "keyword": "worm",
+          "mob_vnum": 87509,
+          "name": "a gargantuan worm formed from acid",
+          "topics": []
+        },
+        {
+          "description": "The war demon wears the exact neckclamp.",
+          "keyword": "wardemon",
+          "mob_vnum": 87513,
+          "name": "one of Tallin's wardemons",
+          "topics": []
+        },
+        {
+          "description": "The merchant carries the bloodstained map; his shop declares no produced merchandise.",
+          "keyword": "merchant",
+          "mob_vnum": 87557,
+          "name": "the cock-eyed tiefling merchant",
+          "topics": []
+        },
+        {
+          "description": "The elder carries the medallion of protection named in Alxorno's request.",
+          "keyword": "elder",
+          "mob_vnum": 87579,
+          "name": "the tiefling elder",
+          "topics": []
+        },
+        {
+          "description": "Conditionally declared nature wildmage with one required head kind.",
+          "keyword": "nature",
+          "mob_vnum": 87566,
+          "name": "the wildmage of nature",
+          "topics": []
+        },
+        {
+          "description": "Conditionally declared creatures wildmage with another required head kind.",
+          "keyword": "creatures",
+          "mob_vnum": 87567,
+          "name": "the wildmage of creatures",
+          "topics": []
+        },
+        {
+          "description": "Conditionally declared space/time wildmage; same-named heads retain distinct identity.",
+          "keyword": "time",
+          "mob_vnum": 87568,
+          "name": "the wildmage of space and time",
+          "topics": []
+        },
+        {
+          "description": "Wildmage of elements with one distinct head kind.",
+          "keyword": "elements",
+          "mob_vnum": 87569,
+          "name": "the wildmage of the elements",
+          "topics": []
+        },
+        {
+          "description": "Conditionally declared great wildmage with one distinct head kind.",
+          "keyword": "great",
+          "mob_vnum": 87570,
+          "name": "the great wildmage",
+          "topics": []
+        },
+        {
+          "description": "Captured Nonorga carries his larvae; recovery does not prove rebirth or recruitment.",
+          "keyword": "nonorga",
+          "mob_vnum": 87573,
+          "name": "Nonorga, the pit fiend",
+          "topics": []
+        },
+        {
+          "description": "Conditionally declared Lokpan carries the mass of darkness.",
+          "keyword": "lokpan",
+          "mob_vnum": 87594,
+          "name": "Lokpan, the Plotter",
+          "topics": []
+        },
+        {
+          "description": "Fugitive essence source staging toward the Fields Between by ordinary wandering.",
+          "keyword": "blaxor",
+          "mob_vnum": 87600,
+          "name": "Blaxor, the demon on the run",
+          "topics": []
+        },
+        {
+          "description": "Fugitive essence source staging toward Torg by ordinary wandering.",
+          "keyword": "kriben",
+          "mob_vnum": 87601,
+          "name": "Kriben, the demon on the run",
+          "topics": []
+        },
+        {
+          "description": "Fugitive essence source staging toward Mount Banishment by ordinary wandering.",
+          "keyword": "dinok",
+          "mob_vnum": 87602,
+          "name": "Dinok, the demon on the run",
+          "topics": []
+        },
+        {
+          "description": "Fugitive essence source staging toward the Scorched Valley by ordinary wandering.",
+          "keyword": "galnor",
+          "mob_vnum": 87603,
+          "name": "Galnor, the demon on the run",
+          "topics": []
+        },
+        {
+          "description": "Defeating the slime lake creates a cleansed-lake passage and slime sheen; generation, arrival and personal kill receipts are separate integrations.",
+          "keyword": "lake",
+          "mob_vnum": 87542,
+          "name": "a gigantic lake of pure slime",
+          "topics": []
+        },
+        {
+          "description": "First Juiblex creates a wormhole on death; the current second-phase transfer has a room-linking blocker.",
+          "keyword": "juiblex",
+          "mob_vnum": 87543,
+          "name": "Juiblex, the demon prince",
+          "topics": []
+        },
+        {
+          "description": "Second Juiblex is already staged with the vault seal; actual relocation from that staging room needs repair and qualification.",
+          "keyword": "juiblex",
+          "mob_vnum": 87544,
+          "name": "Juiblex, the demon prince",
+          "topics": []
+        },
+        {
+          "description": "Zuggtmoy follows second Juiblex and carries the invisible-prison key; her transfer shares the current blocker.",
+          "keyword": "zuggtmoy",
+          "mob_vnum": 87561,
+          "name": "Zuggtmoy, the Lady of Fungus",
+          "topics": []
+        },
+        {
+          "description": "Captured dragon carries the breakable slime-curtain key.",
+          "keyword": "dragon",
+          "mob_vnum": 87534,
+          "name": "the captured gadolinium dragon",
+          "topics": []
+        },
+        {
+          "description": "The gargantuan balor carries the breakable special-cell key.",
+          "keyword": "balor",
+          "mob_vnum": 87590,
+          "name": "a gargantuan balor",
+          "topics": []
+        },
+        {
+          "description": "The guardian carries Neptune's exact soul prison.",
+          "keyword": "succubus",
+          "mob_vnum": 87608,
+          "name": "the succubus guardian",
+          "topics": []
+        },
+        {
+          "description": "Fields Between brewer accepts the monkey manuscript plus bananas for the exact fez.",
+          "keyword": "bored",
+          "mob_vnum": 71037,
+          "name": "a drunk, yet bored troll",
+          "topics": []
+        },
+        {
+          "description": "Torg Lore Keeper accepts eight distinct hero artifacts for a consumable legend and another reward. Reciting legend randomly gives one Uz tale half.",
+          "keyword": "lore",
+          "mob_vnum": 28964,
+          "name": "The Lore Keeper",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the Abyss's stranded companions, glove restoration, fortress preparations, five wildmages, fugitive essences, soul prison and Marvin stories. Active, ready accounting is mandatory. Exact supplied items fit without optional producer history; personal sources, dialogue, kills, travel and narrated world effects remain separate integrations.",
+      "orientation": [
+        "Meet each recipient and use addressed questions to learn their requests. Discovery alone does not reveal every unmet quest, and each dialogue keyword is a clue rather than an achievement.",
+        "The warrior accepts Arianna and Sassumo as different same-named bodies. Madness gloves become Irritation gloves, then Maxilo can restore Placation gloves. Each accepted delivery is independent; supplied exact inputs fit without earlier personal history.",
+        "Uz gives a used wand for the Zooox clone brain, then refills it for that wand plus the tiny acid worm. The refilled wand unlocks the fortress door and can break. The refill retires Uz, so consider his other requests before spending that branch.",
+        "Uz also wants both distinct legendary tale halves. The Torg Lore Keeper's eight-artifact reward gives a consumable legend; recite legend to receive a random half. One recitation does not give both, and two first halves cannot substitute for the second. Uz pays 500 platinum as a reward rather than requiring a coin offering.",
+        "The troll wants a tiny umber hulk from the locked glass cage or the exact brewer fez from the Fields Between. The golem's persistent chain keys open the cage and portal machine; recover their contents loose. The foreign brewer wants a manuscript and bananas for his fez.",
+        "Niev wants five distinct wildmage heads: space/time, elements, great, creatures and nature. Several share display names and several sources are conditional. The ambient creature generator supplies different monsters, so it does not guarantee these heads.",
+        "Niev also accepts the first Marvin's body. Both Marvin forms accept Niev's old leash for the given leash and retire; those equivalent offers share one outcome. Excited Marvin separately accepts the given leash for a blessing. Retirement competes with body recovery and the surviving walk recipient.",
+        "Agronon accepts the merchant's map or Nonorga larvae independently. The yugoloth commander wants the portal-machine crystal, which a separate Winterhaven recipe also consumes. Alxorno's medallion clue names the merchant, but the reviewed source is the elder.",
+        "Xalandro wants four distinct demonic body parts or Lokpan's darkness independently. The ghost wants one essence each from Galnor, Dinok, Kriben and Blaxor, whose staging rooms lead toward the Scorched Valley, Mount Banishment, Torg and Fields Between through ordinary wandering.",
+        "Ask the cornered creature about the neckclamp. Recover the war demon's worn input loose. Native acceptance gives glowing fuzz, but the described dragon capture and escape have no separate accepted endpoint.",
+        "Push the green switch to clear the blocked north door toward the slime lake, then open stone and cross. The switch clears blockage but leaves the door closed. Defeating the lake creates a cleansed-lake passage into Juiblex's cavern and slime sheen; the return lake is a separate passage. These controls and generated rewards do not yet record personal kill or access credit.",
+        "First Juiblex creates a wormhole intended to lead back toward his reinforcements. The present second-phase transfer attempts an already-linked insertion and needs repair. Do not assume the vault seal or Zuggtmoy's invisible-prison key has reached a public encounter.",
+        "The prison-entry and master keys, breakable fortress wand, slime-curtain key, vault seal and special-cell key are distinct. The blocked stone door, ordinary key doors, portal arrival, falling bridges and safe return remain separate access checks; a quest receipt does not unlock them.",
+        "Neptune accepts the guardian's soul prison for Ebb and Flow and retires. Worn Flow responds to flow; Ebb's custom ability is currently unbound. The three Story-only rows\u2014wand refill, soul-prison return and equivalent old-leash offers\u2014give no daily candidate.",
+        "Blood War victory, demonlich/godlich creation, Nonorga rebirth, companion revival, escorted walks and promised departure are narrated outcomes without separate committed world-effect receipts. Marvin's final text says he fades, but its native contract keeps him present. Future repairs must be reported separately from journal guidance."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "juiblex",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87526;receive=I:87529;disappear=0",
+              "giver_vnum": 87500
+            }
+          ],
+          "id": "warrior-arianna",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Recover Arianna's female body in the prisoner grid. Sassumo's same-named male body is a different item. The ground source does not require a recorded personal defeat of Juiblex. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87526",
+              "item_vnums": [
+                87526
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the slightly digested body"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87526;receive=I:87529;disappear=0",
+                  "giver_vnum": 87500
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Return Arianna's exact body for the warrior's bracelet. Sassumo is an independent delivery, despite the bodies' shared display name.",
+          "title": "Arianna for the stranded warrior"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87527;receive=I:87530;disappear=0",
+              "giver_vnum": 87500
+            }
+          ],
+          "id": "warrior-sassumo",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Recover Sassumo's male body in the prisoner grid; its declared appearance is conditional. Arianna's same-named female body does not fit. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87527",
+              "item_vnums": [
+                87527
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the slightly digested body"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87527;receive=I:87530;disappear=0",
+                  "giver_vnum": 87500
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Return Sassumo's exact body for ethereal leggings. Arianna's body and a personal Juiblex defeat are different facts.",
+          "title": "Sassumo for the stranded warrior"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87562;receive=I:87563;disappear=0",
+              "giver_vnum": 87500
+            }
+          ],
+          "id": "warrior-madness-gloves",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Niev wears the gloves of Madness. Recover this exact worn source loose; his old leash is separate proof. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87562",
+              "item_vnums": [
+                87562
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the gloves of madness"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87562;receive=I:87563;disappear=0",
+                  "giver_vnum": 87500
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Give Niev's Madness gloves to the warrior for Irritation gloves. These can support Maxilo's separate restoration without requiring personal earlier credit.",
+          "title": "Treat the gloves of Madness"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87509;receive=I:87548;disappear=0",
+              "giver_vnum": 87518
+            }
+          ],
+          "id": "troll-umber-hulk",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The tiny umber hulk is inside the glass cage beside the portal machine. Recover the golem's chain keys, unlock and open the cage, and recover its contents loose. The clone carries a different brain. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87509",
+              "item_vnums": [
+                87509
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a tiny umber hulk"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87509;receive=I:87548;disappear=0",
+                  "giver_vnum": 87518
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Recover the tiny caged umber hulk for a bracer. The large acid worm and the cage itself do not fit; acceptance does not establish an enduring pet companion.",
+          "title": "A pet for the depressed troll"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:71024;receive=I:87594;disappear=0",
+              "giver_vnum": 87518
+            }
+          ],
+          "id": "troll-brewer-fez",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:71005,I:71016;receive=I:71024;disappear=0",
+                  "giver_vnum": 71037
+                }
+              ],
+              "hint": "Optional accepted producer history explains the route. Supplied exact proof fits without it. History does not restore consumed material, record recitation or require a full-stage campaign.",
+              "id": "producer-brew",
+              "kind": "completion",
+              "optional": true,
+              "text": "Foreign brewer exchange recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The bored brewer in the Fields Between gives his exact fez for a monkey manuscript and overripe bananas. This fez differs from the troll's clarity reward. Personal brewing history is optional. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-71024",
+              "item_vnums": [
+                71024
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a troll brewer's fez of clarity"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:71024;receive=I:87594;disappear=0",
+                  "giver_vnum": 87518
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring the Fields Between brewer's exact fez for the troll fez of true clarity. The foreign brewing receipt remains optional.",
+          "title": "A clearer mind for the troll"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87512;receive=I:87571;disappear=0",
+              "giver_vnum": 87527
+            }
+          ],
+          "id": "uz-clone-brain",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The Zooox clone beside the caged umber hulk carries the exact brain. The other clone's wildmagic mask and the five wildmage heads are different proof. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87512",
+              "item_vnums": [
+                87512
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the brain of Zooox's clone"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87512;receive=I:87571;disappear=0",
+                  "giver_vnum": 87527
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring the correct Zooox clone brain for the used wand. The wand is not yet the fortress key, and this delivery does not free Uz.",
+          "title": "A clone brain for Uz"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87571,I:87572;receive=I:87514;disappear=1",
+              "giver_vnum": 87527
+            }
+          ],
+          "id": "uz-wand-refill",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87512;receive=I:87571;disappear=0",
+                  "giver_vnum": 87527
+                }
+              ],
+              "hint": "Optional accepted producer history explains the route. Supplied exact proof fits without it. History does not restore consumed material, record recitation or require a full-stage campaign.",
+              "id": "producer-248",
+              "kind": "completion",
+              "optional": true,
+              "text": "Uz brain delivery recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The gargantuan acid worm carries the tiny wriggling worm. Offer it with the exact used wand; another worm or the wand alone does not fit. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87572",
+              "item_vnums": [
+                87572
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a tiny wriggling worm of acid"
+            },
+            {
+              "count": 1,
+              "hint": "Uz gives the used wand for the brain. The used wand is different from the refilled fortress key; a supplied matching used wand also fits. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87571",
+              "item_vnums": [
+                87571
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the used wand of summer and winter"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87571,I:87572;receive=I:87514;disappear=1",
+                  "giver_vnum": 87527
+                }
+              ],
+              "hint": "Offer the exact used wand and acid worm together. Uz retires. The resulting key is used by ordinary unlock and can break during that use. This native Story-only exchange is an achievement outcome with no daily candidate; the journal does not record escape or admission.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Offer the used wand and acid worm together for the refilled fortress key. Uz retires; his other requests may compete for the surviving recipient.",
+          "title": "Refill the wand of summer and winter"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:55364,I:55365;receive=C:500000,I:55279;disappear=0",
+              "giver_vnum": 87527
+            }
+          ],
+          "id": "uz-legend-halves",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:28944,I:28945,I:28946,I:28947,I:28948,I:28949,I:28950,I:28951;receive=I:28954,I:55363;disappear=0",
+                  "giver_vnum": 28964
+                }
+              ],
+              "hint": "Optional accepted producer history explains the route. Supplied exact proof fits without it. History does not restore consumed material, record recitation or require a full-stage campaign.",
+              "id": "producer-legend",
+              "kind": "completion",
+              "optional": true,
+              "text": "Torg eight-artifact legend reward recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The first tale half comes from reciting the Lore Keeper's legend with the word legend. The legend is a Torg eight-artifact reward; recitation consumes it and randomly gives one of two halves, so one recitation does not supply both. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-55364",
+              "item_vnums": [
+                55364
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the first half of the Legendary tale of Uz"
+            },
+            {
+              "count": 1,
+              "hint": "The second tale half is a different item from the first. Reciting the consumable Lore Keeper legend randomly gives either half; repeated first halves cannot replace this one. Supplied exact halves fit. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-55365",
+              "item_vnums": [
+                55365
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the second half of the legendary tale of Uz"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55364,I:55365;receive=C:500000,I:55279;disappear=0",
+                  "giver_vnum": 87527
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Deliver one first half and one second half together for 500 platinum and the story of an unknown adventurer. Random recitation does not guarantee both halves; the coin reward is distinct from paying coins.",
+          "title": "The two halves of Uz's legend"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87532;receive=I:87533;disappear=0",
+              "giver_vnum": 87555
+            }
+          ],
+          "id": "agronon-blood-map",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The tiefling merchant carries the bloodstained map. His shop declares no produced stock; qualify recovery rather than assuming the map is offered for sale. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87532",
+              "item_vnums": [
+                87532
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a bloodstained map"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87532;receive=I:87533;disappear=0",
+                  "giver_vnum": 87555
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring the merchant's bloodstained map to Agronon for imp-skin sleeves. Accepted delivery does not record current troop positions or victory.",
+          "title": "A map of the Blood War"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87544;receive=I:87549;disappear=0",
+              "giver_vnum": 87555
+            }
+          ],
+          "id": "agronon-nonorga-larvae",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The captured pit fiend Nonorga carries his larvae. Their native delivery does not record his death, rebirth or actual joining of the Blood War. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87544",
+              "item_vnums": [
+                87544
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the larvae of Nonorga"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87544;receive=I:87549;disappear=0",
+                  "giver_vnum": 87555
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring Nonorga's larvae for a belt of fiendish anger. His narrated rebirth and recruitment need a separate actual actor endpoint.",
+          "title": "Nonorga's larvae for Agronon"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87551;receive=I:87552;disappear=0",
+              "giver_vnum": 87565
+            }
+          ],
+          "id": "alxorno-medallion",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The tiefling elder carries the medallion of protection. The request points to the merchant, but the reviewed source is the elder. No recorded punishment or merchant replacement follows this delivery. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87551",
+              "item_vnums": [
+                87551
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the medallion of demonic protection"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87551;receive=I:87552;disappear=0",
+                  "giver_vnum": 87565
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring the elder's medallion for Alxorno's battle badge. The native clue names the merchant instead; actual punishment and departure remain untracked.",
+          "title": "Peace for Alxorno"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87577,I:87578,I:87579,I:87580;receive=I:87581;disappear=0",
+              "giver_vnum": 87574
+            }
+          ],
+          "id": "xalandro-demon-parts",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Look for mostly digested demonic arms in the prisoner grid. This is one of four distinct body-part kinds; appearance is conditional. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87577",
+              "item_vnums": [
+                87577
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry some mostly digested demonic arms"
+            },
+            {
+              "count": 1,
+              "hint": "Recover the somewhat digested demonic torso from the prisoner grid. Arms, legs and head are separate required kinds. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87578",
+              "item_vnums": [
+                87578
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a somewhat digested demonic torso"
+            },
+            {
+              "count": 1,
+              "hint": "Recover undigested demonic legs from the prisoner grid. Appearance is conditional, and the other parts cannot replace them. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87579",
+              "item_vnums": [
+                87579
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry some undigested demonic legs"
+            },
+            {
+              "count": 1,
+              "hint": "Recover the grotesque demonic head from the prisoner grid. Appearance is conditional; a wildmage head does not fit. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87580",
+              "item_vnums": [
+                87580
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the grotesque demonic head"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87577,I:87578,I:87579,I:87580;receive=I:87581;disappear=0",
+                  "giver_vnum": 87574
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Offer demonic arms, torso, legs and head together for Death Incarnate boots. Four item kinds are required; delivery does not create a demonlich.",
+          "title": "Four parts for Xalandro"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87582;receive=I:87593;disappear=0",
+              "giver_vnum": 87574
+            }
+          ],
+          "id": "xalandro-lokpan",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Lokpan carries the mass of darkness; his declaration is conditional. The exchange narrates a future godlich but does not create one. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87582",
+              "item_vnums": [
+                87582
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the mass of darkness that was Lokpan"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87582;receive=I:87593;disappear=0",
+                  "giver_vnum": 87574
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Offer Lokpan's mass of darkness for Orcus's bracer. The proposed godlich is narrative rather than a spawned creature or required next stage.",
+          "title": "Lokpan's darkness for Xalandro"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87553,I:87554,I:87555,I:87556,I:87558;receive=I:87561;disappear=0",
+              "giver_vnum": 87581
+            }
+          ],
+          "id": "niev-five-heads",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The space-and-time wildmage carries this exact head. His declaration is conditional; other same-named wildmage heads are different kinds. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87553",
+              "item_vnums": [
+                87553
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the head of the lost wildmage"
+            },
+            {
+              "count": 1,
+              "hint": "The wildmage of elements carries this head. It differs from the nearby space-and-time head, despite matching display names. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87554",
+              "item_vnums": [
+                87554
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the head of the lost wildmage"
+            },
+            {
+              "count": 1,
+              "hint": "The great wildmage carries this exact head, on a conditional declaration. Five copies of another head cannot replace five distinct kinds. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87555",
+              "item_vnums": [
+                87555
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the head of the lost great wildmage"
+            },
+            {
+              "count": 1,
+              "hint": "The wildmage of creatures carries this exact head; his declaration is conditional. The ambient creature generator does not supply these wildmages. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87556",
+              "item_vnums": [
+                87556
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the head of the lost wildmage"
+            },
+            {
+              "count": 1,
+              "hint": "The wildmage of nature carries this exact head; his declaration is conditional. A demonic head or clone brain cannot substitute. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87558",
+              "item_vnums": [
+                87558
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the head of the lost wildmage"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87553,I:87554,I:87555,I:87556,I:87558;receive=I:87561;disappear=0",
+                  "giver_vnum": 87581
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring the five distinct space/time, elements, great, creatures and nature heads together for wildmage scalps. Matching names, clone brains and generated ambient monsters cannot replace the exact kinds.",
+          "title": "Five wildmages for Niev"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87606;receive=I:87607;disappear=0",
+              "giver_vnum": 87581
+            }
+          ],
+          "id": "niev-marvin-body",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The first Marvin carries the exact ferret body. His local staging room leads into the Fields Between through ordinary wandering; availability, custody and safe recovery need qualification. Accepting his old leash retires that form and can compete with body recovery. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87606",
+              "item_vnums": [
+                87606
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the body of a gigantic ferret named \"Marvin\""
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87606;receive=I:87607;disappear=0",
+                  "giver_vnum": 87581
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring the first Marvin's exact body for a tuft of MADMAN'S hair. This competes with his leash route and does not create a revived ferret or record your own kill.",
+          "title": "Marvin's remains for Niev"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87563;receive=I:87565;disappear=0",
+              "giver_vnum": 87585
+            }
+          ],
+          "id": "maxilo-placation-gloves",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87562;receive=I:87563;disappear=0",
+                  "giver_vnum": 87500
+                }
+              ],
+              "hint": "Optional accepted producer history explains the route. Supplied exact proof fits without it. History does not restore consumed material, record recitation or require a full-stage campaign.",
+              "id": "producer-94",
+              "kind": "completion",
+              "optional": true,
+              "text": "Warrior glove treatment recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The warrior replaces Madness gloves with Irritation gloves. The earlier exchange is optional history; supplied matching gloves fit Maxilo's independent restoration. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87563",
+              "item_vnums": [
+                87563
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the gloves of irritation"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87563;receive=I:87565;disappear=0",
+                  "giver_vnum": 87585
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Give Irritation gloves to Maxilo for Placation gloves. The warrior's treatment remains optional history; current exact input is required.",
+          "title": "Restore the gloves with Maxilo"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87510;receive=I:87576;disappear=0",
+              "giver_vnum": 87593
+            }
+          ],
+          "id": "commander-machine-crystal",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Recover the energy crystal loose from the locked, pickproof portal machine using the golem's chain keys. Adryv in Winterhaven consumes the same crystal in a separate bundle, so spent proof cannot serve both recipients. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87510",
+              "item_vnums": [
+                87510
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pulsating crystal"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87510;receive=I:87576;disappear=0",
+                  "giver_vnum": 87593
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Give the crystal from the portal machine for the monocle of damnation. Winterhaven's competing recipe consumes the same input; neither receipt records portal destruction or winning the Blood War.",
+          "title": "A crystal for the yugoloth commander"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87504;receive=I:87586;disappear=0",
+              "giver_vnum": 87597
+            }
+          ],
+          "id": "creature-neckclamp",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The war demon wears the metal neckclamp. Recover it loose before delivery. This acceptance does not record a captured dragon or the cornered creature's escape. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87504",
+              "item_vnums": [
+                87504
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the neck clamp of dark-mithril"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87504;receive=I:87586;disappear=0",
+                  "giver_vnum": 87597
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring the war demon's exact neckclamp for glowing fuzz. Acceptance does not capture a dragon or relocate the creature.",
+          "title": "A neckclamp for the cornered creature"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87587,I:87588,I:87589,I:87590;receive=I:87591;disappear=0",
+              "giver_vnum": 87598
+            }
+          ],
+          "id": "ghost-four-essences",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Galnor carries his essence. His Abyss staging room leads into the Scorched Valley by ordinary wandering; physical location and current supply require qualification. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87587",
+              "item_vnums": [
+                87587
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the demon Galnor's essence"
+            },
+            {
+              "count": 1,
+              "hint": "Dinok carries his distinct essence. His staging room leads to Mount Banishment; the journal retains Abyss story ownership wherever he wanders. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87588",
+              "item_vnums": [
+                87588
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the demon Dinok's essence"
+            },
+            {
+              "count": 1,
+              "hint": "Kriben carries his distinct essence. His staging room leads to Torg. Supplied exact proof fits without personal travel or killing. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87589",
+              "item_vnums": [
+                87589
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the demon Kriben's essence"
+            },
+            {
+              "count": 1,
+              "hint": "Blaxor carries his distinct essence. His staging room leads into the Fields Between. Four copies of another essence cannot replace the four named kinds. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87590",
+              "item_vnums": [
+                87590
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the demon Blaxor's essence"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87587,I:87588,I:87589,I:87590;receive=I:87591;disappear=0",
+                  "giver_vnum": 87598
+                }
+              ],
+              "hint": "Offer every exact item together to the recipient. The recipient stays. Accepted delivery records this outcome; it does not certify personal kills, learned words, source recovery, access, travel or a narrated world change.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring one essence each of Galnor, Dinok, Kriben and Blaxor for abyssal armor. Sources disperse toward four other zones; exact supplied proof remains valid without personal travel or killing.",
+          "title": "Four fugitives for the demonic ghost"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87599;receive=I:87600,I:87601;disappear=1",
+              "giver_vnum": 87609
+            }
+          ],
+          "id": "neptune-soul-prison",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The succubus guardian carries Neptune's tiny soul prison in the invisible prison. Its door needs Zuggtmoy's invisible key, whose second-phase transfer currently needs repair. Possession does not prove that you personally defeated Juiblex. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87599",
+              "item_vnums": [
+                87599
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a tiny prison for Neptune's being"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87599;receive=I:87600,I:87601;disappear=1",
+                  "giver_vnum": 87609
+                }
+              ],
+              "hint": "Offer the exact soul prison to Neptune for both rewards; he retires. The native Story-only exchange gives no daily candidate. Ebb's custom ability is unbound, while worn Flow responds to flow. Source/access and actual effect qualification remain separate from this receipt.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Offer the guardian's tiny soul prison for Ebb vambraces and Flow amulet. Neptune retires, but this does not record personal Juiblex victory or actual escape.",
+          "title": "Neptune's invisible prison"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87609;receive=I:87610;disappear=1",
+              "giver_vnum": 87611
+            },
+            {
+              "completion_key": "give=I:87609;receive=I:87610;disappear=1",
+              "giver_vnum": 87616
+            }
+          ],
+          "id": "marvin-old-leash",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Niev carries the old ferret leash. Either Marvin form accepts it for the given leash and retires; those equivalent offers share one journal outcome. Offering it to the excited form can remove that recipient before his walk request. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87609",
+              "item_vnums": [
+                87609
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a ferret leash"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87609;receive=I:87610;disappear=1",
+                  "giver_vnum": 87611
+                },
+                {
+                  "completion_key": "give=I:87609;receive=I:87610;disappear=1",
+                  "giver_vnum": 87616
+                }
+              ],
+              "hint": "Offer the old leash to either Marvin form for the given leash. That form retires; the offers share one outcome and are native Story-only, with no daily candidate. Spending it on excited Marvin can prevent his separate walk request until another recipient is available.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Either first or excited Marvin accepts the old leash for the given leash and retires. These equivalent offers share one outcome rather than two achievements.",
+          "title": "Return Marvin's old leash"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:87610;receive=I:87608;disappear=0",
+              "giver_vnum": 87616
+            }
+          ],
+          "id": "marvin-given-leash",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87609;receive=I:87610;disappear=1",
+                  "giver_vnum": 87611
+                },
+                {
+                  "completion_key": "give=I:87609;receive=I:87610;disappear=1",
+                  "giver_vnum": 87616
+                }
+              ],
+              "hint": "Optional accepted producer history explains the route. Supplied exact proof fits without it. History does not restore consumed material, record recitation or require a full-stage campaign.",
+              "id": "producer-822-848",
+              "kind": "completion",
+              "optional": true,
+              "text": "Either old-leash offer recorded"
+            },
+            {
+              "count": 1,
+              "hint": "Either old-leash offer gives the leash marked as given by Marvin. Return this exact leash to the excited Marvin for his blessing. The old leash does not fit; his narrated walk and fading do not record escort travel or actual departure. Offer proof loose in inventory. Possession does not establish your own first recovery or distinguish source recovery from a player handoff.",
+              "id": "material-87610",
+              "item_vnums": [
+                87610
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a ferret leash given by \"Marvin\""
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87610;receive=I:87608;disappear=0",
+                  "giver_vnum": 87616
+                }
+              ],
+              "hint": "Offer the exact given leash to excited Marvin for his blessing. The old leash does not fit. The contract keeps him present even though its text says he fades away; the content discrepancy is a pending repair. Prior personal leash history is optional, and no actual escorted walk is recorded.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Give the leash marked as given by Marvin to the excited form for his blessing. The prior leash receipt is optional; narrated walk and fading do not record escort travel or actual departure.",
+          "title": "A walk and Marvin's blessing"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Tribal berserker. His combat lore provides context; fighting him does not complete an additional delivery or throwing objective.",
           "keyword": "berserker",
           "mob_vnum": 87700,

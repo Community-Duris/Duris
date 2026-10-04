@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 67 authored journals, accounting-gated player surfaces, starter/town
+**Status: 68 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -615,6 +615,24 @@ passage. Refugee BOOM/new camp, follower relocation, drow tunneling, captain
 curse/ritual and telescope installation need builder-selected accepted endpoints.
 Fossil follow-up and Ender's victim-message key are pending content repairs.
 No native repair or accounting activation ships with this journal.
+
+The Abyss's [comprehensive dossier](zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md)
+covers all 23 exchanges/25 addressed families, 183 rooms, 117 mobs/113 objects,
+378 resets/257 families and six literal procedures. Revision one adds 22 outcomes,
+forty contacts and 39 optional checks. The two old-leash offers are equivalent;
+19 potential daily candidates retain native Story-only exclusions. Exact five-head,
+same-named body, four-part/four-essence and paired-tale bundles remain distinct.
+Foreign brewing/legend and local glove/refill/leash histories are optional.
+
+Expand staged actor relocation and surviving-recipient choices: Uz refill and either
+old-leash offer retire shared recipients. The current Juiblex phase transfer attempts
+already-linked insertion, rejected by the room handler; a separate targeted unlink/
+placement/identity repair and actual death-to-source journey are needed. Four essence
+staging rooms use ordinary wandering, not F/falling. Add accepted random consumable
+reading outputs, generated lake/material recovery, container custody and shared-crystal
+contention. Ebb is dormant; Flow resource/cooldown/audience qualification stays separate.
+Clue/departure/color fixes and actual lich/rebirth/escape/escort/world-effect endpoints
+are pending plans. No actual native repair ships with this journal.
 
 ## Accounting requirement and delivery sequence
 
@@ -1327,7 +1345,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 174 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 173 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1350,6 +1368,14 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
 
 
+- [x] Complete the Abyss's 23-exchange/25-addressed comprehensive source dossier:
+  22 outcomes/forty contacts/39 optional checks; six procedures, full world/resets,
+  exact competing bundles, foreign producers and staged source/access blockers.
+- [ ] Repair and qualify second-phase room unlink/placement/continuation separately;
+  select truthful medallion/Marvin text and Ebb policy. Qualify generation/recovery,
+  random legend outputs, containers/shared crystal, surviving recipients, Flow
+  cooldown/effects and actual scoped lich/rebirth/escape/escort endpoints. Future
+  repairs need separate fix commits and prominent PR/news evidence.
 - [x] Complete Dawndale's thirteen-exchange/four-addressed source dossier:
   nine outcomes/three services/one referral, twenty-seven contacts and thirty-one
   optional checks; all 175 reset families, Aravne sand and foreign Emition forge.
@@ -1615,6 +1641,7 @@ contract classification; it does not claim complete objective coverage.
 | Court of the Muse | 1 | Complete: nine independent deliveries | [Source-comprehensive dossier](zone-stories/COURT_OF_THE_MUSE.md); twenty-five contacts/all six addressed families and sixteen optional checks | Nine potential candidates still require live stock/access/payout qualification | Four exact seasonal tokens → admission; twelve scales, shared friends and exact soul/wand sources. Real book/dew keys and competing use; cave/pouch/trap fixes, safe access/reset/return and seasonal/audience endpoints remain pending; no native repair ships |
 | Valley of the Snow Ogres | 1 | Complete: seven outcomes, one armor service and one refusal exclusion | [Source-comprehensive dossier](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md); sixteen contacts/all six addressed families and fifteen optional checks | Seven potential candidates need actual source/access/payout qualification; mixed armor payment guarded | Distinct shard producers → pyramid; independent trophies; surface Leppts six-hide/two-weapon/2,500-platinum commission. Stalk/hide sources, active renewal, controls and custom lifecycle/target/cadence repairs pending; no native repair ships |
 | The Mountain Valley of Dawndale | 1 | Complete: nine outcomes, three support services and one referral exclusion | [Source-comprehensive dossier](zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md); twenty-seven contacts/all four addressed families and thirty-one optional checks | Nine potential candidates require actual source/access/retirement/payout qualification; coin-only key and mixed lens service guarded | Refugee portrait/stones/dust/device + persistent key; competing captain bundles; bow/treasure/larvae and foreign flute return. Shared caps, exact source/content, fossil/Ender repairs and actual camp/tunnel/curse/lens endpoints pending; no native repair ships |
+| The 222nd Layer of the Abyss | 1 | Complete: 22 outcomes covering all 23 exchanges | [Source-comprehensive dossier](zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md); forty contacts/all 25 addressed families and 39 optional checks | 19 potential candidates; three outcomes remain native Story-only | Warrior/gloves, Uz wand/tales, distinct heads/parts/essences, Neptune and equivalent Marvin aliases. Phase transfer/source/access/effect qualification and truthful clue/departure fixes pending; no native repair ships |
 
 ## Twin Towers evidence and decisions
 

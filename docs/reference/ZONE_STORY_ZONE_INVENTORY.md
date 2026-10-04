@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 67 authored journals.
+2668 distinct Q contracts; 68 authored journals.
 
 Regenerate with:
 
@@ -117,7 +117,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Rice Fields (`jademini`) | 4 | 0 | 0 | Fallback | [native payment/conditions → a map of jade](../../areas/qst/jademini.qst#L2) | archer |
 | Jindon the Deathwood Forest (`jin`) | 1 | 1 | 0 | Fallback | [1 × arms of a Thri-kreen → an eerie longsword named 'Illithid Bane'](../../areas/qst/jin.qst#L8) | jindo_ticket_master |
 | Jotunheim (`jotun`) | 15 | 34 | 0 | Fallback | [1 × an eerily glowing jade bracelet; 1 × a jagged lightning sword; 1 × a barbed whip; other required items → a wooden spear entwined with glowing runes](../../areas/qst/jotun.qst#L39) | deva_cloak, faith, giantbane, icicle_cloak, jotun_balor, jotun_mimer |
-| The 222nd Layer of the Abyss (`juiblex`) | 23 | 25 | 3 | Fallback | [1 × the head of the lost wildmage; 1 × the head of the lost wildmage; 1 × the head of the lost great wildmage; other required items → a necklace of wildmage scalps](../../areas/qst/juiblex.qst#L593) | doombringer, flow_amulet, juiblex_grid_mob_generator, juiblex_one, mask_of_wildmagic, slime_lake |
+| The 222nd Layer of the Abyss (`juiblex`) | 23 | 25 | 3 | Yes | [1 × the head of the lost wildmage; 1 × the head of the lost wildmage; 1 × the head of the lost great wildmage; other required items → a necklace of wildmage scalps](../../areas/qst/juiblex.qst#L593) | doombringer, flow_amulet, juiblex_grid_mob_generator, juiblex_one, mask_of_wildmagic, slime_lake |
 | Varathorn Keep (`kastle`) | 3 | 3 | 0 | Fallback | [2 × a bloody talon of a night crawler → a twisted blood dagger of the night crawler](../../areas/qst/kastle.qst#L24) | nightcrawler_dagger, zarthos_vampire_slayer |
 | The Stone Tomb of Kelek (`kelek`) | 3 | 2 | 0 | Fallback | [1 × the ears of a troll; 1 × the skull of an ogre; 1 × the shriveled hand of a duergar → a hastily scribbled note](../../areas/qst/church.qst#L62) | deliverer_hammer, world_quest |
 | Khildarak Stronghold (`khildarak`) | 2 | 8 | 0 | Yes | [1 × a steeders egg sack → native reward/response](../../areas/qst/khildarak.qst#L36) | archer, assoc_founder, devour, guild_guard, inn, khildarak_warhammer |

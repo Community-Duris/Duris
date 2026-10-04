@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 67 &&
-				tracker.summary_for(7, 42).total == 1684,
+		require(catalog.story_mappings.size() == 68 &&
+				tracker.summary_for(7, 42).total == 1683,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -4359,6 +4359,143 @@ int main(int argc, char **argv)
 				recovered_dawn.progress_for_zone(7, 42, 775).completed == 9 &&
 				recovered_dawn.progress_for_zone(7, 42, 775).total == 9,
 			"Dawndale cold recovery counted services/referral, histories or narrated world effects");
+
+		const auto &abyss_map = *std::find_if(catalog.story_mappings.begin(),
+						      catalog.story_mappings.end(),
+						      [](const auto &mapping)
+						      { return mapping.source_area == "juiblex"; });
+		const auto &abyss_heads = story_for("juiblex", "niev-five-heads");
+		const auto &abyss_arianna = story_for("juiblex", "warrior-arianna");
+		const auto &abyss_sassumo = story_for("juiblex", "warrior-sassumo");
+		const auto &abyss_refill = story_for("juiblex", "uz-wand-refill");
+		const auto &abyss_tales = story_for("juiblex", "uz-legend-halves");
+		const auto &abyss_fez = story_for("juiblex", "troll-brewer-fez");
+		const auto &abyss_leash = story_for("juiblex", "marvin-old-leash");
+		const auto &abyss_walk = story_for("juiblex", "marvin-given-leash");
+		service abyss(catalog);
+		require(abyss.discover_zone(7, 42, 875, 87539, 100, "arrival") == result::applied &&
+				abyss.render_journal(7, 42, 875, 10, 1, 101, false, false)
+						.find("] " + abyss_heads.title + "\r\n") ==
+					std::string::npos,
+			"Abyss discovery alone exposed an unmet request");
+		for (const auto &contact : abyss_map.contacts)
+			require(abyss.meet_npc(7, 42, contact.mob_vnum, 87539, 102) ==
+					result::applied,
+				"Abyss local/foreign encounter failed");
+		const auto abyss_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Abyss story section missing");
+			const auto end = journal.find("\r\n[", start + 3);
+			return journal.substr(start, end == std::string::npos ? end : end - start);
+		};
+		supplies.carried.clear();
+		supplies.equipped.clear();
+		supplies.carried[87553] = 5;
+		supplies.carried[87526] = 1;
+		supplies.carried[87571] = 1;
+		supplies.carried[87572] = 1;
+		supplies.carried[55364] = 2;
+		supplies.carried[87609] = 1;
+		const auto abyss_before = abyss.serialize_state();
+		journal = abyss.render_journal(7, 42, 875, 10, 1, 103, false, false, &supplies);
+		require(abyss_section(abyss_heads)
+						.find("[Missing now] " +
+						      abyss_heads.steps[1].text) !=
+					std::string::npos &&
+				abyss_section(abyss_arianna)
+						.find("[Ready now] " +
+						      abyss_arianna.steps[0].text) !=
+					std::string::npos &&
+				abyss_section(abyss_sassumo)
+						.find("[Missing now] " +
+						      abyss_sassumo.steps[0].text) !=
+					std::string::npos &&
+				abyss_section(abyss_tales)
+						.find("[Missing now] " +
+						      abyss_tales.steps[2].text) !=
+					std::string::npos &&
+				abyss_section(abyss_walk)
+						.find("[Missing now] " +
+						      abyss_walk.steps[1].text) !=
+					std::string::npos &&
+				abyss_section(abyss_refill)
+						.find("Next: " + abyss_refill.steps.back().text) !=
+					std::string::npos,
+			"Abyss confused same-named bodies/heads, tale halves/leashes or required history");
+		for (const int item : { 87554, 87555, 87556, 87558 })
+			supplies.carried[item] = 1;
+		supplies.carried[55365] = 1;
+		supplies.carried[87610] = 1;
+		journal = abyss.render_journal(7, 42, 875, 10, 1, 104, false, false, &supplies);
+		require(abyss_section(abyss_heads).find("[Ready now] " + abyss_heads.steps[4].text) !=
+					std::string::npos &&
+				abyss_section(abyss_tales)
+						.find("[Ready now] " + abyss_tales.steps[2].text) !=
+					std::string::npos &&
+				abyss.serialize_state() == abyss_before &&
+				abyss.progress_for_zone(7, 42, 875).completed == 0,
+			"Abyss exact readiness wrote state or failed distinct proof");
+		supplies.carried.erase(87571);
+		supplies.equipped[14] = 87571;
+		record(abyss, abyss_refill.steps[0].contracts.front(), "abyss-brain", 875, 87539);
+		journal = abyss.render_journal(7, 42, 875, 10, 1, 105, false, false, &supplies);
+		require(abyss_section(abyss_refill)
+						.find("[Recorded] " + abyss_refill.steps[0].text) !=
+					std::string::npos &&
+				abyss_section(abyss_refill)
+						.find("[Missing now] " +
+						      abyss_refill.steps[2].text) !=
+					std::string::npos,
+			"Abyss history or worn wand replaced loose refill proof");
+		auto wrong_legend = completion(abyss_tales.steps[0].contracts.front(),
+					       "abyss-wrong-legend-owner", 120);
+		wrong_legend.transaction.zone_number = 875;
+		wrong_legend.transaction.room_vnum = 28920;
+		require(abyss.record_completion(wrong_legend) == result::rejected,
+			"Abyss stole foreign legend ownership");
+		record(abyss, abyss_tales.steps[0].contracts.front(), "abyss-torg-legend", 289,
+		       28920);
+		record(abyss, abyss_fez.steps[0].contracts.front(), "abyss-foreign-fez", 710,
+		       71147);
+		require(abyss.progress_for_zone(7, 42, 875).completed == 1,
+			"Foreign producers awarded Abyss terminal credit");
+		record(abyss, abyss_leash.contracts[0], "abyss-leash-first", 875, 71106);
+		record(abyss, abyss_leash.contracts[1], "abyss-leash-excited", 875, 71221);
+		auto replay_leash = completion(abyss_leash.contracts[0], "abyss-leash-first", 120);
+		replay_leash.transaction.zone_number = 875;
+		replay_leash.transaction.room_vnum = 71106;
+		require(abyss.record_completion(replay_leash) == result::already_applied &&
+				abyss.progress_for_zone(7, 42, 875).completed == 2 &&
+				abyss.progress_for_zone(7, 42, 875).total == 22,
+			"Equivalent Marvin offers/replay created duplicate achievements");
+		supplies.carried.erase(87610);
+		journal = abyss.render_journal(7, 42, 875, 10, 1, 106, false, false, &supplies);
+		require(abyss_section(abyss_walk).find("[Recorded] " + abyss_walk.steps[0].text) !=
+					std::string::npos &&
+				abyss_section(abyss_walk)
+						.find("[Missing now] " +
+						      abyss_walk.steps[1].text) !=
+					std::string::npos,
+			"Abyss leash history restored spent given leash");
+		service supplied_abyss(catalog);
+		record(supplied_abyss, abyss_walk.contracts.front(), "abyss-supplied-walk", 875,
+		       71221);
+		service restored_abyss(catalog);
+		require(restored_abyss.deserialize_state(supplied_abyss.serialize_state(),
+							 &error) &&
+				restored_abyss.progress_for_zone(7, 42, 875).completed == 1,
+			"Abyss supplied walk recovery invented leash history/escort or other branch");
+		for (const auto &entry : abyss_map.stories)
+			if (entry.id != abyss_walk.id)
+				record(restored_abyss, entry.contracts.front(), entry.id.c_str(),
+				       875, 87539);
+		service recovered_abyss(catalog);
+		require(recovered_abyss.deserialize_state(restored_abyss.serialize_state(),
+							  &error) &&
+				recovered_abyss.progress_for_zone(7, 42, 875).completed == 22 &&
+				recovered_abyss.progress_for_zone(7, 42, 875).total == 22,
+			"Abyss cold recovery counted aliases/histories/narrated effects as additional outcomes");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

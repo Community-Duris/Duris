@@ -102,9 +102,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 44 | Court of the Muse | [Comprehensive source dossier](zone-stories/COURT_OF_THE_MUSE.md): fifteen blocks/nine deliveries/six addressed; ninety-nine rooms/thirty-six mobs/forty-three objects/one shop, 209 resets/ninety-two families; shared teachers, doors, traps, portals, fall/current | Revision one: nine outcomes, twenty-five contacts/sixteen optional checks; four distinct seasonal producers/admission, twelve scales and exact independent requests | No native repair ships. Cave/pouch/trap decisions, competing dew/source/retiring episodes, actual access/key destruction/reset return and seasonal/audience endpoints pending |
 | 45 | Valley of the Snow Ogres | [Comprehensive source dossier](zone-stories/VALLEY_OF_THE_SNOW_OGRES.md): fifteen blocks/nine exchanges/six addressed; one hundred rooms/forty-four mobs/thirty-eight objects, two hundred resets/eighty families; twelve literal assignments/shared switch and bounded surface source | Revision one: seven outcomes/one service/one refusal, sixteen contacts/fifteen optional checks; distinct shards, exact trophies and six-hide/full-fee armor | No native repair ships. Stalk/hide generation/renewal, mixed payment, control/access/foreign owner and burn/golem/toss/equipment fixes/endpoints pending |
 | 46 | The Mountain Valley of Dawndale | [Comprehensive source dossier](zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md): seventeen blocks/thirteen exchanges/four addressed; 150 rooms/sixty-nine mobs/sixty-six objects, 321 resets/175 families; automatic switches/shared teleport, bounded foreign sand/forge/book | Revision one: nine outcomes/three services/one referral, twenty-seven contacts/thirty-one optional checks; refugee preparations, rival bundles and foreign flute return | No native repair ships. Guarded coin purchase/mixed lens fee, key availability/shared caps/source content, fossil/Ender repairs and actual camp/tunnel/curse/install endpoints pending |
-| 47–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 47 | The 222nd Layer of the Abyss | [Comprehensive source dossier](zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md): all 48 blocks/23 exchanges/25 addressed; 183 rooms/117 mobs/113 objects, 378 resets/257 families, six literal procedures and bounded foreign routes/producers | Revision one: 22 outcomes/forty contacts/39 optional checks; 19 potential dailies, equivalent old-leash aliases, exact competing bundles and optional histories | No native repair ships. Phase insertion blocker, lake/generator/legend creation, dormant Ebb, Flow effects, clue/departure and actual scoped world-effect plans pending |
+| 48–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The 222nd Layer of the Abyss (`juiblex`).
+The next area is The Minizones of the Surface (`surfacemini`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -113,6 +114,8 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-JUIBLEX-PHASE / GENERATION | First Juiblex attempts already-linked room insertion, which the current handler rejects; second phase, vault seal and invisible key remain staged. Lake can retain first allocation if second fails. Generator/consumed legend creation use unchecked results; prototypes exist. | Separate identity/room-preflight/unlink/placement repair with original-failing procedure tests and public access/reset/recovery journey. Qualify staged creation cleanup and random consumable output/source recovery without changing ambient population or silently guaranteeing both tale halves. |
+| ZSQ-JUIBLEX-RECIPIENT / EFFECT / CONTENT | Uz refill and either equivalent old-leash offer retire recipients; first Marvin body competes. Medallion clue names merchant but source is elder. Final Marvin D0 contradicts fade/color text. Ebb unbound; Flow may restore nothing and still cool down; inventory vibration suppressed. Lich/rebirth/escape/escort/victory are narrative. | Builder-selected clue/departure/ability changes with separate fix/news proof; surviving-recipient/alias and exact current proof policy. Extend accepted effects/cooldowns, containers/shared crystal, source versus handoff and scoped AND/world/party endpoints. No actual native repair ships. |
 | ZSQ-DAWNDALE-SOURCE / KEY / PAYMENT | Coin-only 250-platinum city-key purchase is guarded; admission retains it. Office/alcove keys have 100-percent break declarations. Mixed sand/25-platinum lens service is guarded. Captain bundles each consume two sunlight vials and the book; three vials declared, book shares global cap one with an administrative source. Sand is a real Aravne death output. | Atomic accepted purchase/mixed settlement and key availability/office-alcove destruction; qualify normal/forced renewal and recovery before intentional cap/isolation repairs. Extend loose container recovery, liquid content/volume and personal source-versus-handoff evidence without bypassing active generation guards. |
 | ZSQ-DAWNDALE-CONTENT / WORLD EFFECTS | Fossil referral has no reviewed exact consumer. Ender declares `_vict_msg`, both packed paths expect `_victim_msg`. Refugee BOOM/camp/followers, drow tunnel, captain ritual/curse and telescope installation lack accepted terminals; great lens is not described as broken. Secret open rock switches clear each direction separately. | Builder-selected truthful fossil endpoint; separate message fix with all-audience proof. Define scoped actors/party, control/camp/tunnel/effect/reading/install endpoints, return and idempotent recovery before deeper credit. No actual native repair ships; future fixes need separate commits and news. |
 | ZSQ-SNOGRES-SUPPLY / FEES / OWNERSHIP | Stalk 87719 lacks an active producer. Four remorhaz have three hides/cap three, versus six-copy armor; inactive brass-old-1 does not supply the live world. Leppts is supplied from Surface 660001 and wanders, owning a Snow contract. Full fee is 2,500 platinum; mixed payment guarded. Mode zero alone does not settle renewal. | Choose sufficient intended stalk/hide generation and caps; qualify accepted renewal, retained/supplied proof and exact distinct weapons/full atomic payment. Keep active reset guards; improve already-discovered foreign owner referral without auto-discovering it. Preserve service/refusal non-credit classification. |
@@ -2291,3 +2294,50 @@ maps are unchanged. Catalog: 67 maps/1684 achievements/1489 potential dailies/
 2223 rows. Four fallback achievements/one daily/one row removed by classification.
 Original order: forty-six source-comprehensive, 174 pending. Continue with The
 222nd Layer of the Abyss (`juiblex`). Active accounting remains mandatory.
+
+## The 222nd Layer of the Abyss completed source map — October 3, 2026
+
+The [dossier](zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md) covers all 48 blocks,
+22 Q/one QA/25 addressed M and 23 exchanges; 183 rooms/109 prose groups/nine
+headers/thirteen metadata/all 164 exit families; 117 mobs/113 objects, one empty-
+production shop, 378 resets/all 257 families and six literal procedures. All local
+reset and input/reward references exist. The two old-leash offers share one outcome:
+revision one has 22 outcomes, forty contacts, 34 material/five optional producer
+checks. Nineteen potential dailies preserve three native Story-only story rows.
+
+Trace exact five heads, two same-named bodies, four parts/four essences and paired
+foreign tales. Histories remain optional, including Torg eight-artifact legend and
+Fields brewer recipe, warrior glove treatment, Uz brain and either leash offer.
+Legend recitation consumes its input and randomly supplies one half, not both.
+Uz's refill retires the shared recipient. Both Marvin aliases retire; excited form's
+separate given-leash request remains vulnerable to branch order. Body recovery also
+competes. Winterhaven's Adryv consumes the same machine crystal in another bundle.
+
+**Pending repairs, none shipped:** phase transfer lacks unlink before the current
+room insertion handler, so second Juiblex/Zuggtmoy cannot move through that call.
+Plan separate preflight/identity/unlink/placement/continuation repair, original-failing
+procedure proof and actual death→wormhole→vault/invisible-prison source journey.
+Lake partial allocation, generator and consumed random-legend creation need failure
+qualification; current prototypes are present. Select truthful elder/merchant and
+Marvin fade/color text. Ebb's custom assignment remains commented; Flow resource,
+cooldown/audience/event rejection/recovery needs qualification. Doombringer already
+revalidates attack continuations and must not be called an unguarded legacy volley.
+
+Four local essence/Marvin staging rooms have ordinary one-way DOWN exits into
+foreign zones and no F metadata. Non-sentinel/non-stay-zone actors may wander;
+they are not guaranteed fall dispersals. Actual falling bridges/stairs need loader
+cleanup, protection and return qualification. Green-switch/closed-door, breakable
+keys, generated lake/wormhole, public sources and surviving recipients remain
+separate from accepted deliveries. Expand accepted source/handoff, random reading,
+container custody, staged relocation and scoped lich/rebirth/escape/escort/victory
+endpoints before deeper credit.
+
+Production/native fixtures cover exact classification/sources, same-named bodies,
+five distinct heads, worn/spent proof, supplied final materials, foreign ownership,
+optional histories, equivalent leash receipt/replay, independent branches and cold
+recovery. Synthetic receipts do not qualify actual custom generation or access.
+All 2668 native definitions, revision-two fingerprint, registry and other 67 maps
+remain unchanged. Catalog: 68 maps/1683 achievements/1489 potential dailies/2222
+rows; equivalent aliases remove one fallback achievement/row. Original order:
+forty-seven source-comprehensive, 173 pending. Continue with The Minizones of the
+Surface (`surfacemini`). Active accounting remains mandatory.

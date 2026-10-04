@@ -262,6 +262,20 @@ The great lens is not a demonstrated broken apparatus. Builder-selected fossil
 follow-up and Ender audience-key repair remain pending; actual future repairs
 need separate clear commits and prominent PR/news text, with proof and limits.
 
+The Abyss [dossier](../design/zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md) shows
+equivalent giver aliases without duplicate achievements, exact same-named bodies
+and heads, optional foreign producer histories and shared recipient retirement.
+Multiple completion bindings mean alternatives; they do not enforce a full-stage
+AND campaign. Source versus handoff, random consumable reading and current loose
+container proof remain separate from a receipt. Four staging-room DOWN links use
+ordinary wandering, not F/falling; qualify actual source arrival before promising it.
+
+Trace room lifecycle in custom phase changes: already-linked insertion is refused
+by the current handler, so missing unlink can block later key/reward sources even
+when all prototypes exist. Journal authoring must not silently activate dormant Ebb,
+create lich/rebirth/escort endpoints or fix clue/departure text. These are separately
+owned repairs with actual procedure/journey tests and prominent fix/news reporting.
+
 ## Schema version 1
 
 Version 1 remains supported. Use version 2 or 3 for new starter and hometown
