@@ -546,7 +546,19 @@ class Reconciler:
                 claim = claims.get((lineage, source))
                 if not claim or claim.get("operation_id") != op_id:
                     self.emit("missing_source_claim", operation_id=op_id)
-            if policy and policy.get("original_operation_required") and (op.get("original_operation_id"),) not in operations:
+            original = op.get("original_operation_id")
+            original_valid = True
+            if original is not None:
+                try:
+                    require_id(original, "original operation ID")
+                except SnapshotError:
+                    original_valid = False
+                else:
+                    original_valid = original != op_id
+                if not original_valid:
+                    self.emit("invalid_original_operation", operation_id=op_id)
+            if (original_valid and policy and policy.get("original_operation_required") and
+                    (original,) not in operations):
                 self.emit("missing_original_operation", operation_id=op_id)
             child_indexes = {row.get("child_index") for row in by_op["children"][op_id]}
             for row in by_op["children"][op_id]:

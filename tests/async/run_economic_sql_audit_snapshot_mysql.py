@@ -608,6 +608,16 @@ try:
                 assert capture(audit, LINEAGE, EPOCH) == snapshot
             assert policy_captures == 66
             print("SQL source policy: 66 mismatched-kind cuts, selected money/UID and prior epoch; all tables unchanged, rollback/close passed", flush=True)
+            for original_root in (root, creation_root):
+                with setup.cursor() as writer:
+                    writer.execute("UPDATE economic_accounting_operation SET original_operation_id=operation_id WHERE operation_id=%s",
+                                   (original_root,))
+                source_fault_capture({"invalid_original_operation": 1})
+                with setup.cursor() as writer:
+                    writer.execute("UPDATE economic_accounting_operation SET original_operation_id=NULL WHERE operation_id=%s",
+                                   (original_root,))
+                assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("SQL original links: 2 self-linked selected money/UID cuts; all tables unchanged, rollback/close passed", flush=True)
             # Root-scoped joins used to hide these real native-SQL corruptions.
             # A SELECT-only audit must expose every family without modifying it.
             orphan = bytes.fromhex("01" * 16)
