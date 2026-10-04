@@ -21,6 +21,8 @@
 #include "core/utils.h"
 #include "magic/spell_item_lifecycle.h"
 #include "item/item_movement_transaction.h"
+#include "item/ordinary_drop_recovery.h"
+#include "persistence/critical_command_coordinator.h"
 #include "economy/item_transfer_accounting.h"
 #include "persistence/sql_room_item_payload.h"
 #include "world/quest_reward_recovery.h"
@@ -104,6 +106,7 @@ bool accepting = false;
 bool execution_started = false;
 bool shutdown_incomplete = false;
 bool append_inflight = false;
+std::atomic<bool> replay_revisit_requested{ false };
 int append_inflight_pid = 0;
 player_revision_t append_inflight_revision = 0;
 /* One failed graph may be recaptured once.  Keep the PID armed until a later
@@ -382,6 +385,38 @@ void dispatcher_main()
 #endif
 	if (mysql_ready)
 		replay = player_save_journal_replay(selected_snapshot_apply(), nullptr);
+	std::vector<int> deferred_replay_pids;
+	const auto remember_deferred = [&]()
+	{
+		deferred_replay_pids.clear();
+		if (replay != player_save_journal_result::replay_deferred ||
+		    !player_save_execution_guard::current_ownership_epoch())
+			return;
+		try
+		{
+			std::vector<player_save_journal_retained_frame> frames;
+			const auto collected = player_save_journal_collect_retained(&frames);
+			if (collected != player_save_journal_result::ok)
+			{
+				replay = collected;
+				return;
+			}
+			deferred_replay_pids.reserve(frames.size());
+			for (const auto &frame : frames)
+				if (!frame.quarantined && !frame.policy_fenced)
+					deferred_replay_pids.push_back(frame.snapshot.pid);
+			std::sort(deferred_replay_pids.begin(), deferred_replay_pids.end());
+			deferred_replay_pids.erase(std::unique(deferred_replay_pids.begin(),
+							       deferred_replay_pids.end()),
+						   deferred_replay_pids.end());
+		}
+		catch (...)
+		{
+			deferred_replay_pids.clear();
+			replay = player_save_journal_result::replay_blocked;
+		}
+	};
+	remember_deferred();
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		health.replay_complete = replay == player_save_journal_result::ok;
@@ -393,9 +428,51 @@ void dispatcher_main()
 	for (;;)
 	{
 		const auto epoch = player_save_execution_guard::current_ownership_epoch();
-		// Capture the sequence before queue/waiter inspection. New work and stop
-		// use this same event, so releases between observation and wait survive.
+		// Observe before selecting any release/revisit work: a notification
+		// arriving after this observation must also prevent the final wait.
 		const auto observed = player_save_execution_guard::observe_ownership(epoch, 1);
+		if (epoch)
+		{
+			std::lock_guard<std::mutex> lock(pipeline_mutex);
+			if (stop_requested || !observed.available)
+			{
+				if (!observed.available)
+				{
+					accepting = false;
+					health.replay_complete = false;
+					health.replay_blocked = true;
+					replay_gate.begin_replay();
+					update_depth_locked();
+				}
+				break;
+			}
+		}
+		if (epoch && replay == player_save_journal_result::replay_deferred)
+			for (const int pid : deferred_replay_pids)
+			{
+				const auto state =
+					player_save_execution_guard::observe_ownership(epoch, pid);
+				if (state.available && !state.publication_held &&
+				    !state.resident_count && !state.executing &&
+				    !state.replay_pending && !state.replay_reserved)
+				{
+					replay_revisit_requested.store(true);
+					break;
+				}
+			}
+		if (epoch && mysql_ready && replay == player_save_journal_result::replay_deferred &&
+		    replay_revisit_requested.exchange(false))
+		{
+			// Replay owns per-PID reservations and rereads after acquisition. This
+			// is a retained release notice, never an unguarded second replay pass.
+			replay = player_save_journal_replay(selected_snapshot_apply(), nullptr);
+			remember_deferred();
+			std::lock_guard<std::mutex> lock(pipeline_mutex);
+			health.replay_complete = replay == player_save_journal_result::ok;
+			health.replay_blocked = replay != player_save_journal_result::ok;
+			replay_gate.finish_replay(health.replay_complete && health.initialized &&
+						  !stop_requested);
+		}
 		if (epoch && observed.available)
 		{
 			std::array<player_save_ownership_waiter, PLAYER_SAVE_WORKER_MAX_PIDS>
@@ -990,6 +1067,7 @@ bool player_save_pipeline_prepare(const char *journal_directory, void (*verify_r
 		append_inflight = false;
 		append_inflight_pid = 0;
 		append_inflight_revision = 0;
+		replay_revisit_requested.store(false);
 	}
 	return true;
 }
@@ -1589,44 +1667,112 @@ bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &co
 void player_save_pipeline_sql_drop_publication_acknowledged(
 	const critical_operation_id &operation_id) noexcept
 {
-	std::array<player_save_deferred_identity, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS> wakes{};
-	size_t wake_count = 0;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	for (auto &checkpoint : literal_inventory_checkpoints)
+		if (checkpoint.token.pid && checkpoint.held && !checkpoint.restored_sql_drop &&
+		    checkpoint.operation_id.bytes == operation_id.bytes)
+			checkpoint = {};
+	// Restored holds are consumed only by the private guarded-ACK owner. An
+	// ID-only assertion cannot release them, including before epoch enable.
+}
+
+bool player_save_restored_publication_owner::publish(const critical_completion &completion) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)completion;
+	return false;
+#else
+	if (!nevent_is_game_thread())
+		return false;
+	try
+	{
+		critical_command command = {};
+		std::vector<uint8_t> frozen;
+		int pid = 0;
+		uint64_t generation = 0;
+		std::unique_lock<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || stop_requested)
+			return false;
+		for (const auto &checkpoint : literal_inventory_checkpoints)
+			if (checkpoint.restored_sql_drop && checkpoint.held &&
+			    checkpoint.operation_id.bytes == completion.operation_id.bytes)
+			{
+				pid = checkpoint.token.pid;
+				generation = checkpoint.execution_hold_generation;
+				frozen = checkpoint.payload;
+				break;
+			}
+		if (pid <= 0 || find_terminal_fence_locked(pid) ||
+		    find_target_save_login_fence_locked(pid) || append_inflight_pid == pid ||
+		    any_snapshot_is_retained_locked(pid) ||
+		    critical_command_decode(frozen.data(), frozen.size(), &command) !=
+			    critical_command_codec_result::ok)
+			return false;
+		player_save_restored_publication_owner owner(
+			std::move(command), std::move(frozen), completion,
+			player_save_execution_guard::current_ownership_epoch(), pid, generation);
+		lock.unlock();
+		if (!owner.reservation_.valid() || player_save_worker_pid_pending(pid))
+			return false;
+		player_revision_snapshot revision = {};
+		if (player_revision_snapshot_copy(pid, &revision) &&
+		    (revision.overflowed || revision.dirty_components ||
+		     revision.unacknowledged_components || revision.queued_components ||
+		     revision.inflight_components ||
+		     revision.current_revision != revision.acknowledged_revision))
+			return false;
+		if (player_save_journal_publication_census(pid, owner.reservation_) !=
+		    player_save_journal_result::ok)
+			return false;
+		const auto published = ordinary_drop_recovery_publish(owner.command_, completion);
+		if ((published.status != ordinary_drop_observation_status::verified_existing &&
+		     published.status != ordinary_drop_observation_status::published) ||
+		    player_save_journal_publication_census(pid, owner.reservation_) !=
+			    player_save_journal_result::ok)
+			return false;
+		owner.publication_proven_ = true;
+		// The original hold/reservation survives fresh proof, confirmed native
+		// cleanup and critical checkpoint. Failure retries the whole observation.
+		return critical_command_coordinator_acknowledge_publication(owner);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool player_save_restored_publication_owner::consume_acknowledged_hold() noexcept
+{
+	if (!acknowledged_)
+		return false;
+	player_save_deferred_identity wake = {};
+	bool active = false;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
-		for (auto &checkpoint : literal_inventory_checkpoints)
-			if (checkpoint.token.pid && checkpoint.held &&
-			    checkpoint.operation_id.bytes == operation_id.bytes)
-			{
-				if (!checkpoint.restored_sql_drop)
-				{
-					checkpoint = {};
-					continue;
-				}
-				// Capture only the active request protected by this original hold.
-				// No callback is invoked under either owner's mutex. A later PID
-				// replacement must never inherit this release notification.
-				player_save_deferred_identity wake{};
-				const bool active = player_save_worker_deferred_identity(
-					checkpoint.token.pid, &wake);
-				auto original = std::move(checkpoint);
-				checkpoint = {};
-				if (!player_save_execution_guard::release_hold(
-					    original.token.pid, operation_id,
-					    original.execution_hold_generation))
-				{
-					checkpoint = std::move(original);
-					continue;
-				}
-				if (active)
-					wakes[wake_count++] = wake;
-			}
+		auto *checkpoint = find_literal_inventory_locked(pid_);
+		if (!checkpoint || !checkpoint->restored_sql_drop || !checkpoint->held ||
+		    checkpoint->execution_hold_generation != generation_ ||
+		    checkpoint->operation_id.bytes != completion_.operation_id.bytes ||
+		    checkpoint->payload != frozen_)
+		{
+			player_save_execution_guard::poison_integrity();
+			return false;
+		}
+		active = player_save_worker_deferred_identity(pid_, &wake);
+		if (!reservation_.consume_acknowledged_hold())
+		{
+			player_save_execution_guard::poison_integrity();
+			return false;
+		}
+		*checkpoint = {};
 	}
-	// Accepted notices live on the exact retained worker request, including
-	// a dispatch that has observed the hold but has not parked yet. Dispatch
-	// still acquires the execution guard; a notice supplies no SQL authority.
-	// A missing/stopped/replaced request cannot consume another job's notice.
-	for (size_t index = 0; index < wake_count; ++index)
-		(void)player_save_worker_resume_deferred_exact(wakes[index]);
+	if (active)
+		(void)player_save_worker_resume_deferred_exact(wake);
+	replay_revisit_requested.store(true);
+	player_save_execution_guard::signal_ownership_change(
+		player_save_execution_guard::current_ownership_epoch());
+	return true;
 }
 
 player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int save_intent,
