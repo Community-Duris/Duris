@@ -122,3 +122,29 @@ Maintainer implementation and independent architect source review accepted C pin
 The preserved BEFORE C pin is
 `273e7364edce38876c6109844decc3cbc1a5a6f73e0cafb2f89b199550a7fbbc`.
 Formatting/diff hygiene only; no compiler, tests, native SQL or qualified push.
+
+## Outer SQL mutation boundaries
+
+Death-conflict retain, borrowed apply and pooled apply now require an enabled
+caller scope before native work. The pooled permit outlives writer release,
+lease retirement, replacement/readback and lease destruction. Quarantine SQL
+prepare/resume similarly borrow before transaction/capture or cleanup-output
+reset, retaining admission through replacement, verification, journal resolution
+and phase cleanup. The public recovery receipt write is also guarded; reads
+remain unchanged. None of these functions self-acquires a new resident owner.
+
+Source-established gap: these independently callable owners could begin native
+work before a lower participant refused. Pre-entry refusal now leaves cleanup
+evidence intact. Existing typed held/unavailable results are preserved; bool
+refusal can still allocate its error string. Borrowed callers must retain their
+existing scope through subsequent lease disposal. Disabled paths stay unchanged.
+
+Maintainer owned death-conflict C; primary owned quarantine C/H. Independent
+architect accepted all three final source pins with no bounded blocker:
+death C `f21e4530741caa532381ffa39f45bbc58eb4dde6befc7182f32ad6217d38aadd`,
+quarantine C `545b74212bd9fb65d43d28922fcc482854ea7e8885ad5301a8e60216f4620e7e`,
+quarantine H `8d3ce971f9cf6054a686f2adea57cab4a0260472e6d15c5b4edc4619daf8cf4e`.
+Private BEFORE source copies are preserved at source base `c30a97622`.
+Formatting/diff hygiene only; no compiler/tests/native SQL or qualified push.
+Actual caller residence, serial lifecycle, other native writers, complete clean
+census, critical ACK, production startup/revisit and major-plan gates remain open.
