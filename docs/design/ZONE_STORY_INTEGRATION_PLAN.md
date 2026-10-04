@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 60 authored journals, accounting-gated player surfaces, starter/town
+**Status: 61 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -15,7 +15,7 @@ Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
 the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
 Ship Yards, Ultarium, the Surface Realm, Tharnadia, Mini Zones and the City
 of Torrhan, Golden Hall of the Crown, Ashrumite Village and The Hall of the
-Ancients and Sarmiz'Duul now have complete source story maps; their active-world journeys remain unqualified. Savannah projects seventeen
+Ancients, Sarmiz'Duul and Duke Delwyn now have complete source story maps; their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
 checks. The [Savannah dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md)
@@ -457,6 +457,24 @@ prose/type mismatches have bounded repair proposals. No native repair ships
 with this journal; report each later repair separately with tested before/after
 and explicit news wording. A foreign Winterhaven consumer competes for the
 finished moonstone; assembly history cannot replace current stone custody.
+
+Duke Delwyn's [comprehensive dossier](zone-stories/DUKE_DELWYN.md) covers all
+eleven exchanges, nine addressed/33 ambient families, 207 rooms, 96 mobiles,
+41 objects and 278 resets/170 families. Revision one has six independent
+outcomes, five paid services, nineteen contacts and seventeen optional checks.
+The four textile fees total 60000 copper from fleece to banner and remain
+guarded with accounting active; the exact supplied-banner delivery is separate.
+Bell → cog, missing chess piece, trapped study assessment → note, and note +
+worn braid → signet routes preserve supplied proof without personal kills,
+exclusive allegiance, scheduled invasion or world repair-state assumptions.
+
+Shared trap and pre-command falling execution add survival, container ancestry,
+successful access and safe-return evidence to qualification. The magician's
+teacher role is separate from the banner exchange. The surface highway/gate
+boundary is reciprocal and valid. The note's wedding versus the Duke's birthday
+reply, unbound advertised trade/lodging, and optional peaceful source handovers
+have bounded builder repair proposals. No native/content repair ships here;
+use separate fix commits and prominent tested PR/news handoff for later repairs.
 
 ## Accounting requirement and delivery sequence
 
@@ -1169,7 +1187,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 181 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 180 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1191,6 +1209,16 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   actor/NPC semantic settlement before healing/lesson/pet milestones. Resolve
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
 
+
+- [x] Complete Duke Delwyn's eleven-exchange/nine-addressed source dossier:
+  207 rooms/96 mobiles/41 objects, 278 resets/170 families, automatic teacher,
+  shared trap/falling and reciprocal surface boundary. Six outcomes, five paid
+  services, nineteen contacts/seventeen optional checks; no native repair ships.
+- [ ] Qualify Delwyn's four atomic textile payments and coin-only service,
+  source/container/follower lineage, safe flagpole/desk journeys and independent
+  supplied evidence. Select occasion-prose, advertised services and optional
+  peaceful source/campaign policies with builders; retain accounting guards
+  and give actual repairs distinct tested fix/news entries.
 - [x] Complete Sarmiz'Duul's eight-exchange/thirteen-raw-addressed source
   dossier: 583 rooms/57 mobiles/61 objects/four shops, 535 resets/199 families,
   five literal procedures and full custom moonstone source/assembly/ship route.
@@ -1380,6 +1408,7 @@ contract classification; it does not claim complete objective coverage.
 | Ashrumite Village | 2 | Complete: twelve support services across every native exchange | [Source-comprehensive dossier](zone-stories/ASHRUMITE_VILLAGE.md); sixteen contacts/all thirteen addressed families, 21 optional checks and explicit intended/current crafting matrix | Zero authored achievements/dailies; all payments guarded, three quest prototypes missing; source, paid lore and actual craft lineage unqualified | Native exact same-name/five-copy, service-only recovery and missing-reference fixtures; select native repairs and qualify fees/source/output/access/pet events before a fresh journey |
 | The Hall of the Ancients | 1 | Complete: five outcomes/four services/two elder exclusions across eleven contracts | [Source-comprehensive dossier](zone-stories/THE_HALL_OF_THE_ANCIENTS.md); 27 contacts/all fourteen addressed families and 23 optional checks | Five achievements/two potential dailies; three mixed fees and sixteen-root device guarded; elder/supply/source/GET/access qualification open | Exact quantities/foreign proof/optional history and excluded receipt recovery; separate Sin null/wrong-target fix, other repairs pending with explicit news handoff |
 | Sarmiz'Duul | 1 | Complete: eight independent native deliveries; custom moonstone guidance without invented terminal | [Source-comprehensive dossier](zone-stories/SARMIZ_DUUL.md); 24 contacts/all thirteen raw addressed families and nineteen optional checks | Eight achievements/potential dailies; source and retiring episodes open; pirate core unavailable with accounting active | Exact three/four-item and supplied-proof routes, independent receipt recovery; custom targeting/seed/assembly/ring/crew, missing stock and potion/campaign repairs pending with news handoff |
+| Duke Delwyn | 1 | Complete: six independent deliveries/five paid services | [Source-comprehensive dossier](zone-stories/DUKE_DELWYN.md); nineteen contacts/all nine addressed families and seventeen optional checks | Six achievements/potential dailies; four paid textile stages and coin service guarded; live access/source/episodes open | Exact bell/cog, banner, knight and two-item warning; trap/falling/container lineage, atomic fees, occasion/service/peaceful handover decisions pending; no native repair ships |
 
 ## Twin Towers evidence and decisions
 

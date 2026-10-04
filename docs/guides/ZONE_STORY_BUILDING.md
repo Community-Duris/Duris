@@ -119,6 +119,23 @@ mount stock are pending builder repair decisions, not changes shipped by the
 journal. Use separate fix commits and prominent tested PR/news wording for
 actual native/world-data changes.
 
+Duke Delwyn's [dossier](../design/zone-stories/DUKE_DELWYN.md) demonstrates
+four paid textile services feeding one independent banner delivery. Show exact
+fees and current materials, preserve supplied-banner acceptance, and keep all
+five paid services outside achievement/daily credit. Optional producer receipts
+explain a route without paying fees or replacing consumed inputs. Atomic mixed
+settlement must precede enabling the guarded local producer route.
+
+Access hints should account for actual shared mechanics: a trapped closed desk
+and midair fall chances can injure or remove an actor before quest acceptance.
+Container contents, successful opening, survival, personal acquisition and safe
+return each need their own accepted evidence when builders make them objectives.
+An exact supplied document or banner remains a valid independent native input.
+Cross-check absent-route scans with raw active exits; Delwyn's surface boundary
+is reciprocal. Occasion-text, advertised trade/lodging and optional peaceful
+material handovers remain builder decisions, with no native repair in this
+journal checkpoint. Actual later repairs need separate tested fix/news entries.
+
 ## Schema version 1
 
 Version 1 remains supported. Use version 2 or 3 for new starter and hometown

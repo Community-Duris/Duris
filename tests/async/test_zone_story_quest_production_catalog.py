@@ -1524,7 +1524,69 @@ for name in ("load_cyrics_revenge()","load_cyrics_revenge_crew(P_ship ship)"):
     start=ship_source.index("bool "+name)
     assert "if (economic_gameplay_authority::active())\n\t\treturn false;" in ship_source[start:start+220]
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz"):
+# Delwyn's paid producer route stays separate from supplied item-only
+# outcomes. Source declarations, ambient chatter and dangerous access do not
+# create personal-recovery, payment or campaign credit.
+delwyn=inventory_module.area_evidence(ROOT,"delwyn")
+delwyn_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="delwyn")
+delwyn_stories={s["id"]:s for s in delwyn_map["stories"]}
+assert (delwyn_map["schema_version"],delwyn_map["revision"],delwyn_map["coverage"])==(3,1,"complete")
+assert len(delwyn_stories)==11 and len(delwyn_map["contacts"])==19 and not delwyn_map["exclusions"]
+assert sum(t.get("optional",False) for s in delwyn_stories.values() for t in s["steps"])==17
+assert len(delwyn["requests"])==11 and len(delwyn["dialogue"])==9
+assert (len(delwyn["mobs"]),len(delwyn["items"]),len(delwyn["reset_commands"]),len(delwyn["special_assignments"]))==(96,41,278,0)
+assert not (ROOT/"areas/shp/delwyn.shp").exists()
+assert all(s["steps"][-1]["contracts"]==s["contracts"] for s in delwyn_stories.values())
+bindings=[b for s in delwyn_stories.values() for b in s["contracts"]]
+assert len(bindings)==11 and {tuple(sorted(b.items())) for b in bindings}=={
+    tuple(sorted(r["block"]["binding"].items())) for r in delwyn["requests"]}
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==828]
+assert (len(units),sum(u["achievement"] for u in units),sum(u["daily_candidate"] for u in units))==(11,6,6)
+services={s["id"] for s in delwyn_stories.values() if s["category"]=="service"}
+assert services=={"spinner-fleece-yarn","dyer-white-crimson-yarn","weaver-crimson-fabric","seamstress-crimson-banner","alley-paid-service"}
+fees={r["block"]["giver_vnum"]:sum(n for kind,n in r["block"]["give"] if kind=="C") for r in delwyn["requests"]}
+assert {v:fees[v] for v in (82825,82821,82824,82823,82807)}=={82825:5000,82821:10000,82824:10000,82823:35000,82807:1000}
+banner=delwyn_stories["magician-crimson-banner"]
+warning=delwyn_stories["duke-note-and-braid"]
+assert banner["steps"][0]["contracts"]==delwyn_stories["seamstress-crimson-banner"]["contracts"]
+assert [(t["item_vnums"],t["count"]) for t in warning["steps"] if t["kind"]=="carried_item"]==[([82824],1),([82823],1)]
+assert warning["steps"][0]["contracts"]==delwyn_stories["halfling-military-assessment"]["contracts"]
+for producer,consumer in (("spinner-fleece-yarn","dyer-white-crimson-yarn"),("dyer-white-crimson-yarn","weaver-crimson-fabric"),("weaver-crimson-fabric","seamstress-crimson-banner"),("clockmaker-iron-bell","miller-iron-cog")):
+    assert delwyn_stories[consumer]["steps"][0]["contracts"]==delwyn_stories[producer]["contracts"]
+contacts={c["mob_vnum"]:c for c in delwyn_map["contacts"]}
+for v,c in contacts.items(): assert c["keyword"] in delwyn["mobs"][v]["keywords"]
+raw_m=[b for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/delwyn.qst" and b["kind"]=="M"]
+assert len(raw_m)==42 and sum(b["body"][0].startswith("qc_action ") for b in raw_m)==33
+for b in delwyn["dialogue"]:
+    assert set(b["body"][0].rstrip("~").split())<=set(contacts[b["giver_vnum"]]["topics"])
+assert all("qc_action" not in c["topics"] for c in contacts.values())
+assert not contacts[82878]["topics"] and contacts[82895]["topics"]==["flagpole","frown","flag"]
+assert "60000 copper" in " ".join(delwyn_map["orientation"])
+assert "guarded with accounting active" in banner["summary"] and "birthday" in warning["summary"]
+parent=room=None;sources=collections.defaultdict(list)
+for r in delwyn["reset_commands"]:
+    c,v=r["command"],r["arguments"]
+    assert v[4]==100 and v[5:]==[0,0,0]
+    if c in ("M","F"): parent,room=v[1],v[3]
+    if c in ("G","E") and v[1] in (82816,82823,82826,82828): sources[v[1]].append((parent,room,v[2]))
+assert sources=={82816:[(82853,82821,1)],82823:[(82890,82965,1)],82826:[(82872,82980,1)],82828:[(82833,82879,1)]}
+assert any(r["command"]=="P" and r["arguments"][:5]==[1,82822,1,82814,100] for r in delwyn["reset_commands"])
+assert all(r["arguments"][3]==1 for r in delwyn["reset_commands"] if r["command"]=="D")
+room_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/wld/delwyn.wld").read_text(encoding="utf8"),re.M|re.S)}
+assert set(room_bodies)==set(range(82800,83007))
+assert "0 0 549230" in room_bodies[82805]
+surface=(ROOT/"areas/wld/surface.wld").read_text(encoding="utf8")
+surface_gate=re.search(r"^#549230\s*\n(.*?)(?=^#|^\$)",surface,re.M|re.S)[1]
+assert re.search(r"D0\s+[^~]*~[^~]*~\s*0 0 82805",surface_gate,re.S)
+for v,chance in ((83003,5),(83005,80),(83006,90)):
+    assert re.search(r"^F\s+"+str(chance)+r"\s*$",room_bodies[v],re.M)
+for v in (83005,83006): assert int(room_bodies[v].split("~")[2].split()[2])==8
+obj_bodies={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/obj/delwyn.obj").read_text(encoding="utf8"),re.M|re.S)}
+assert re.search(r"\bT\s+512\s+4\s+1\s+30\b", obj_bodies[82814])
+assert "wedding" in obj_bodies[82824]
+assert "birthday" in " ".join(next(r["block"] for r in delwyn["requests"] if r["block"]["giver_vnum"]==82878)["body"])
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

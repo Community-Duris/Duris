@@ -93,9 +93,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 37 | Ashrumite Village | [Comprehensive source dossier](zone-stories/ASHRUMITE_VILLAGE.md): all 25 blocks/twelve exchanges/thirteen addressed families, 153 rooms/53 mobs/65 objects/twelve shops, 275 resets/181 families and fifteen literal/shared bindings | Revision two: twelve support services, sixteen contacts/21 optional checks; actual five-copy and same-name material guidance, complete intended/current repair matrix; no authored quest/daily units | All payments guarded; missing disc/two rewards/teacher equipment, stale eastern boundary and builder-selected crafting/price/guard/merchant/pet/prose work; source, paid-lore and full crafting lineage unqualified |
 | 38 | The Hall of the Ancients | [Comprehensive source dossier](zone-stories/THE_HALL_OF_THE_ANCIENTS.md): all 25 blocks/eleven exchanges/fourteen addressed families, 247 rooms/55 mobs/53 objects/one shop, 395 resets/153 families, twelve literal procedures and shared dispatch | Revision one: five outcomes/four services/two elder exclusions, 27 contacts/23 optional checks; actual sixteen-piece and ten-piece recipes, supplied foreign proof and source/access guidance | Separate Sin actual-opponent/null-actor combat fix ships; three mixed fees and oversized belt guarded; elder ordering, source budgets/chance, collector transaction, early death arming, GET settlement and campaign/access qualification pending |
 | 39 | Sarmiz'Duul | [Comprehensive source dossier](zone-stories/SARMIZ_DUUL.md): 21 blocks/eight exchanges/thirteen raw addressed families, 583 rooms/57 mobs/61 objects/four shops, 535 resets/199 families, five literal procedures plus foreign custom moonstone execution | Revision one: eight outcomes, 24 contacts/nineteen optional checks; exact courtship/relic/royal/conspiracy recipes, supplied foreign proof and custom guidance | No native repair ships; active-accounting pirate core guard retained; recipient targeting, partial seed/assembly/payment ordering, unfinished multi-core behavior, missing mount stock, potion prose/type and campaign/access/episode qualification pending |
-| 40–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 40 | Duke Delwyn | [Comprehensive source dossier](zone-stories/DUKE_DELWYN.md): 53 blocks/eleven exchanges/nine addressed + 33 ambient families, 207 rooms/96 mobs/41 objects, 278 resets/170 families; automatic teacher/shared trap/falling and reciprocal surface boundary | Revision one: six outcomes/five paid services, nineteen contacts/seventeen optional checks; exact bell/cog, four-stage banner, knight and two-item warning guidance | No native repair ships; mixed/coin payments guarded, live source/container lineage, trap/fall/safe return, occasion/advertised service/peaceful handover and campaign decisions pending |
+| 41–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Motte and Bailey of Duke Delwyn (`delwyn`).
+The next area is Home of the Divine (`divhome`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -1873,3 +1874,47 @@ custom source. These checks are not live acquisition, assembly, ship, combat,
 reset or travel certification. All 2,668 native definitions, revision-two
 fingerprint, registry and other 59 maps remain unchanged. Priority order remains
 220 areas: first 39 comprehensive, 181 pending. Continue with Duke Delwyn.
+
+## Duke Delwyn completed source map — October 3, 2026
+
+The [dossier](zone-stories/DUKE_DELWYN.md) explains all 53 native blocks:
+eleven Q, nine addressed M and 33 ambient M families. Complete world review
+covers 207 rooms/170 exact prose groups/seven headers/nine metadata groups/
+145 exit families, 96 mobiles, 41 objects and 278 resets/170 source families.
+There is no local shop file or literal special assignment; automatic teacher,
+shared trap/falling, native dispatch and source/reset execution are reviewed.
+The surface highway 549230 and outer gate 82805 are reciprocal and resolve.
+
+Revision one has six independent outcomes, five paid services, nineteen
+contacts and seventeen optional material/history checks. Exact bell → cog →
+blade, four-stage paid textiles → banner → slippers, ivory knight → boots,
+assessment → note and note + braid → signet recipes preserve supplied proof.
+The local textile fees total 60000 copper and remain guarded with accounting
+active. A supplied exact banner fits the separate item-only outcome without
+personal producer receipts. First recovery, source kills, chess lessons,
+spy allegiance, scheduled invasion, clock/mill state and flag hanging need
+separate accepted evidence; no such endpoint is invented.
+
+The military assessment is inside a closed ebony desk with a one-charge
+level-thirty opening acid trap. The banner recipient is atop a midair flagpole:
+the ladder and two midair rooms have real fall chances/downward routes. These
+expand qualification for container ancestry, post-interaction actor survival,
+successful access and safe return. Rendering custody cannot certify those
+journeys, pay fees or distinguish first recovery from gifts.
+
+**Actual native repairs in this checkpoint: none.** The note's wedding versus
+the Duke's birthday reply, unbound advertised shop/lodging services and optional
+peaceful source handovers have bounded builder repair proposals. Some trades
+may be intentional scenery; recipes and balance stay intact until decisions
+and focused journeys support actual changes. Later repairs require distinct
+fix commits where practical and prominent PR/news trigger, before/after,
+validation and limitations. Pending findings are not shipped news claims.
+
+Focused existing source/native fixtures cover exact bindings/topics/materials,
+encounter visibility, supplied evidence without earlier history, wrong/worn
+proof, read-only views, paid-service credit exclusions and independent recovery.
+They do not certify live payment, desk/fall survival, acquisition, resets or
+travel. All 2668 native definitions, revision-two fingerprint, registry and
+other sixty maps remain unchanged. Catalog: 61 maps, 1702 achievements,
+1496 potential dailies and 2225 rows. Original 220-area order remains intact:
+first forty source-comprehensive, 180 pending. Continue with Home of the Divine.

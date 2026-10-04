@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 60 &&
-				tracker.summary_for(7, 42).total == 1707,
+		require(catalog.story_mappings.size() == 61 &&
+				tracker.summary_for(7, 42).total == 1702,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -3467,6 +3467,111 @@ int main(int argc, char **argv)
 				restored_sarmiz.progress_for_zone(7, 42, 94).completed == 8 &&
 				restored_sarmiz.progress_for_zone(7, 42, 94).total == 8,
 			"Sarmiz recovery merged independent deliveries or invented a custom finale");
+
+		const auto &delwyn_map = *std::find_if(catalog.story_mappings.begin(),
+						       catalog.story_mappings.end(),
+						       [](const auto &mapping)
+						       { return mapping.source_area == "delwyn"; });
+		const auto &delwyn_banner = story_for("delwyn", "magician-crimson-banner");
+		const auto &delwyn_warning = story_for("delwyn", "duke-note-and-braid");
+		service supplied_delwyn(catalog);
+		require(supplied_delwyn.discover_zone(7, 42, 828, 82805, 100, "arrival") ==
+					result::applied &&
+				supplied_delwyn.render_journal(7, 42, 828, 10, 1, 101, false, false)
+						.find("] " + delwyn_banner.title + "\r\n") ==
+					std::string::npos,
+			"Delwyn discovery revealed an unmet magician delivery");
+		for (const auto &contact : delwyn_map.contacts)
+			require(supplied_delwyn.meet_npc(7, 42, contact.mob_vnum, 82805, 101) ==
+					result::applied,
+				"Delwyn fixture encounter failed");
+		const auto delwyn_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Delwyn journal section missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		for (int item : { 82820, 82824, 82823, 82829, 82818 })
+			supplies.carried[item] = 1;
+		const auto delwyn_before = supplied_delwyn.serialize_state();
+		journal = supplied_delwyn.render_journal(7, 42, 828, 10, 1, 102, false, false,
+							 &supplies);
+		for (const auto *recipe : { &delwyn_banner, &delwyn_warning })
+			require(delwyn_section(*recipe).find("Next: " +
+							     recipe->steps.back().text) !=
+						std::string::npos &&
+					delwyn_section(*recipe).find("[Pending] " +
+								     recipe->steps.front().text) !=
+						std::string::npos,
+				"supplied Delwyn proof required earlier personal producer receipts");
+		require(supplied_delwyn.serialize_state() == delwyn_before &&
+				supplied_delwyn.progress_for_zone(7, 42, 828).completed == 0 &&
+				supplied_delwyn.progress_for_zone(7, 42, 828).total == 6 &&
+				delwyn_section(story_for("delwyn", "weaver-crimson-fabric"))
+						.find("10000 copper") != std::string::npos,
+			"Delwyn material rendering wrote credit, counted fees or lost a paid-service hint");
+		for (const auto *recipe : { &delwyn_banner, &delwyn_warning })
+			for (const auto &step : recipe->steps)
+			{
+				if (step.kind != "carried_item")
+					continue;
+				const auto item = step.item_vnums.front();
+				supplies.carried.erase(item);
+				supplies.equipped[14] = item;
+				supplies.carried[82822] = 5;
+				journal = supplied_delwyn.render_journal(7, 42, 828, 10, 1, 103,
+									 false, false, &supplies);
+				require(delwyn_section(*recipe).find(
+						"[Missing now] " + step.text) != std::string::npos,
+					"worn or wrong Delwyn evidence replaced an exact root-carried material");
+				supplies.equipped.clear();
+				supplies.carried[item] = 1;
+			}
+		const auto &delwyn_weaving = story_for("delwyn", "weaver-crimson-fabric");
+		record(supplied_delwyn, delwyn_weaving.contracts.front(), delwyn_weaving.id.c_str(),
+		       828, 82872);
+		supplies.carried.erase(82819);
+		journal = supplied_delwyn.render_journal(7, 42, 828, 10, 1, 104, false, false,
+							 &supplies);
+		const auto &delwyn_sewing = story_for("delwyn", "seamstress-crimson-banner");
+		require(delwyn_section(delwyn_sewing)
+						.find("[Recorded] " +
+						      delwyn_sewing.steps[0].text) !=
+					std::string::npos &&
+				delwyn_section(delwyn_sewing)
+						.find("[Missing now] " +
+						      delwyn_sewing.steps[1].text) !=
+					std::string::npos,
+			"Delwyn service history replaced spent fabric");
+		for (const auto &entry : delwyn_map.stories)
+			if (entry.category == "service" && entry.id != delwyn_weaving.id)
+				record(supplied_delwyn, entry.contracts.front(), entry.id.c_str(),
+				       828, 82872);
+		require(supplied_delwyn.progress_for_zone(7, 42, 828).completed == 0,
+			"Delwyn paid service history awarded achievement credit");
+		record(supplied_delwyn, delwyn_warning.contracts.front(), "delwyn-supplied-warning",
+		       828, 82975);
+		record(supplied_delwyn, delwyn_banner.contracts.front(), "delwyn-supplied-banner",
+		       828, 83006);
+		require(supplied_delwyn.progress_for_zone(7, 42, 828).completed == 2,
+			"Delwyn warning or banner completed earlier producers or a campaign");
+		service recovered_delwyn(catalog);
+		require(recovered_delwyn.deserialize_state(supplied_delwyn.serialize_state(),
+							   &error) &&
+				recovered_delwyn.progress_for_zone(7, 42, 828).completed == 2,
+			"Delwyn cold recovery lost separate supplied deliveries");
+		for (const auto &entry : delwyn_map.stories)
+			if (entry.category != "service" && entry.id != delwyn_warning.id &&
+			    entry.id != delwyn_banner.id)
+				record(recovered_delwyn, entry.contracts.front(), entry.id.c_str(),
+				       828, 82805);
+		service restored_delwyn(catalog);
+		require(restored_delwyn.deserialize_state(recovered_delwyn.serialize_state(),
+							  &error) &&
+				restored_delwyn.progress_for_zone(7, 42, 828).completed == 6 &&
+				restored_delwyn.progress_for_zone(7, 42, 828).total == 6,
+			"Delwyn recovery counted services or invented an all-stage finale");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;
