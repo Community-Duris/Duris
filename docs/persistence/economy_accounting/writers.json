@@ -63631,8 +63631,8 @@
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
   },
   "pending_source_integration": {
-    "candidate_commit": "6ef8abb88e3f3a36ce212f23e4c0f87f81491f21",
-    "status": "Source integration through6ef8abb88 carries exact save residence through capture, queues, workers and final receipts, with release-event dispatch and retained stop. Ownership remains disabled; native journal/direct writer ownership, fresh reserved replay, clean critical ACK and major-plan qualification remain pending. Historical census/source anchors and prior rows are preserved; no current coverage or qualification claim.",
+    "candidate_commit": "95d03d02ff09c1b8a45ec88475a53791c5e1a963",
+    "status": "Source integration through95d03d02f connects save residence and reserved fresh journal replay with separate apply/checkpoint scopes and namespace-loss refusal. Ownership remains disabled; complete native callers/census, serialized lifecycle, actual revisit/startup, clean critical ACK and major-plan qualification remain pending. Historical census/source anchors and prior rows are preserved; no current coverage or qualification claim.",
     "qualified": false,
     "prepared_nonwriter_routes": [
       "recovery.inert_literal_staging",
@@ -63648,7 +63648,9 @@
       "src/world/db.c:prepare_recovery_object_templates",
       "src/player/player_save_pipeline.c",
       "src/player/player_save_worker.c",
-      "src/player/player_save_worker.h"
+      "src/player/player_save_worker.h",
+      "src/player/player_save_journal.c",
+      "src/player/player_save_journal.h"
     ]
   }
 }
