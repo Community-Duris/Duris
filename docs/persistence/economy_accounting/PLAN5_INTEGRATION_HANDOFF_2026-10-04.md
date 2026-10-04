@@ -125,3 +125,24 @@ separate callback/checkpoint scopes, refusing enabled missing/corrupt namespaces
 Ownership stays disabled; complete native callers/census, serial lifecycle, actual
 revisit/startup, critical ACK and major-plan qualification remain required. No
 new compiler/tests/native/SQL/gameplay/services or qualified push occurred.
+
+## Native SQL baseline claim integration
+
+Peer `17b824618cb1ba6c20f8a2feebde8d65d0e559eb` is integrated in `ad504f5c0`.
+[Its report](PLAN5_NATIVE_SQL_BASELINE_CLAIMS_SLICE_2026-10-04.md) records the
+actual native owner fixture, exact-ID replay, both-engine independent claim
+reconciliation and retained damage diagnostics at its consumed inputs. Fixture
+holdings/items remain absent and the exported authority is explicitly partial;
+this does not qualify native world capture, initialization/cutover or the combined
+source. Command preimage binding, marker-v2/`.elr` consumers and full release
+qualification remain Plan5 handoffs.
+
+Primary registered `native_sql_baseline_claim_audit` and
+`native_sql_baseline_origin_audit` in `tests/integration_manifest.json`, with the
+peer's explicit opt-in environment and required native cases. Both component
+owners run their MySQL/MariaDB pair internally, so each is registered once rather
+than duplicated for every outer engine. Required-case/skip rejection remains in
+the existing harness. Each new row uses 900 seconds; no existing budget changes.
+The release host must provide the peer report's native compiler/client/daemon
+prerequisites. This is registration only: no case, build, compiler, SQL service or
+qualification was executed by primary; the major-plan test batch remains deferred.
