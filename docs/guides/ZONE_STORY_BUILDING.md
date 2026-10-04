@@ -824,3 +824,51 @@ block absent from the reset. Existing key access does not prove that switch
 worked. Builder-approved fixes for badges, aliases, control/key intent or world
 connections need separate clear fix commits and prominent PR/news proof. A source
 finding, journal hint or proposed finale does not count as a shipped native repair.
+
+### Rogue Plains: alternative recipes, foreign owners and actual effects
+
+The [source dossier](../design/zone-stories/ROGUE_PLAINS.md) and
+[sidecar](../../areas/story/roguerai.story.json) show seven outcomes covering nine
+native exchanges, twenty-four contacts and sixteen optional checks. Each giant's
+two potion recipes belong to one outcome. Separate cloud/storm producer histories
+express optional earlier stages; one completion list would mean OR, not both.
+The mediator still needs two different promise kinds. Four buffalo-flesh kinds
+also look identical and need independent source labels/readiness; duplicates do
+not substitute. Supplied promises or soul fit without personal producer receipts.
+
+Optional key guidance is not a hard native prerequisite. Both obelisk and altar
+are locked but pickable; hardpick bit two is not pickproof bit sixteen. Supplied
+medal and successful lockpicking remain valid branches. Secret-door discovery,
+unlock/pick/open, same-name portal identity, air-plane/mount rules and actual
+arrival require successful targeted events, not inference from possession or prose.
+
+Sijona's tokens resolve through Balance in Myrabolus. Keep that contract's owner
+and guide the referral without copying its local credit or requiring personal
+kills when supplied proof fits. Dynamic scans can find token supply/consumer
+links, but full-zone restoration needs builder-defined effects and a scoped AND
+campaign. No keyword, climb, actual silence or dracolich ritual terminal exists
+merely because the current dialogue or reward mentions it.
+
+R-aware sources must retain rider/mount/actual post-R E/G ownership. Keva and
+other staging mobiles are loaded in connected rooms and can wander; their load
+origins are not guaranteed current locations. Source-versus-handoff requires
+committed operation/item UID and actual custody. Orc retirement/reset stock needs
+an accepted episode rather than an unconditional daily promise.
+
+Master sigil has a direct legacy seven-member worn-slot procedure, while a
+separate adapter table lists eight and deduplicates. Document the actual assigned
+path. One equipped sigil does not prove a full set or durable effect. Builder
+membership/threshold intent and equip/actual-effect/cleanup/restart qualification
+must precede effect objectives or lifecycle bug claims. Wording/item-type/alias/
+set/route findings remain proposed decisions. Future native repairs need separate
+clear fix commits and prominent PR/news before/after evidence; this journal ships
+no actual native repair.
+
+For the reaper reward, name and item type are separate: its wand type supports
+a room-corpse target, whereas channeling staff targeting does not. The spell
+requires a same-room level-46-or-higher corpse, a valid caster/form and available
+control capacity; its dragon-scale requirement is commented out. Device activation
+and accepted durable corpse transformation/control are separate stages. Follow
+the committed corpse/pet outcome, including hostile awakening and recovery, if
+a future builder defines a raising objective. Never award it from a charge use,
+the reward receipt or an unrelated newborn-dracolich reset.

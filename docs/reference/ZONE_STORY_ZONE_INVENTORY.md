@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 71 authored journals.
+2668 distinct Q contracts; 72 authored journals.
 
 Regenerate with:
 
@@ -188,7 +188,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Drustl's Yerdonia Enslaved (`raxthan`) | 10 | 14 | 0 | Fallback | [3 × a cave shroom → an azure potion](../../areas/qst/raxthan.qst#L398) | — |
 | Faerie Realm (`realm`) | 7 | 10 | 1 | Yes | [1 × the blazing heat of a forge; 1 × the billowing wind of a forge; 1 × the earthen hammer of forging; other required items → a tightly wrapped vellum scroll named 'Fix'](../../areas/qst/realm.qst#L125) | bridge_troll, cricket, faerie, finn, tree_spirit |
 | Rift Valley Jungle (`rftjngle`) | 28 | 37 | 2 | Fallback | [5 × a quetzel feather; 5 × a quetzel feather; 5 × a quetzel feather → a quetzel feather cloak](../../areas/qst/rftjngle.qst#L615) | world_quest |
-| Rogue Plains (`roguerai`) | 9 | 3 | 3 | Fallback | [1 × a strip of buffalo flesh; 1 × a strip of buffalo flesh; 1 × a strip of buffalo flesh; other required items → some enormous buffalo hides](../../areas/qst/roguerai.qst#L29) | master_set |
+| Rogue Plains (`roguerai`) | 9 | 3 | 3 | Yes | [1 × a strip of buffalo flesh; 1 × a strip of buffalo flesh; 1 × a strip of buffalo flesh; other required items → some enormous buffalo hides](../../areas/qst/roguerai.qst#L29) | master_set |
 | Village of Refugees (`ruins`) | 2 | 11 | 0 | Fallback | [1 × a pitch-black raven's feather; 1 × a bright white feather; 1 × a red-tailed hawk's feather; other required items → a soft feathered ring](../../areas/qst/ruins.qst#L16) | — |
 | Sarmiz'Duul (`sarmiz`) | 8 | 12 | 6 | Yes | [1 × a scroll covered with magical formulas; 1 × a demon's heart; 1 × a bag of magical dust; other required items → a staff of power](../../areas/qst/sarmiz.qst#L328) | crew_shop_proc, erzul_proc, inn, money_changer, ship_shop_proc |
 | The Savannah of Broken Trusts (`savannah`) | 17 | 17 | 6 | Yes | [3 × an elephant's tusk → an ivory curio](../../areas/qst/savannah.qst#L406) | — |

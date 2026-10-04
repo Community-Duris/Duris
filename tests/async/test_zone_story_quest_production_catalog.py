@@ -2313,7 +2313,7 @@ assert sum(d["daily_eligible"] for d in definitions.values())==9
 assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
 assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
-assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1658
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1656
 sources=collections.defaultdict(list);parent=None;room=None
 for reset in crakkaro["reset_commands"]:
     c,v=reset["command"],reset["arguments"]
@@ -2342,7 +2342,87 @@ assert all(not any(r["command"] in "OGEP" and r["arguments"][1]==v for r in crak
 assert re.search(r"D2\s*[^~]*~\s*[^~]*~\s*0 0 259959",world[87008])
 assert "same-prototype" in (ROOT/"docs/design/zone-stories/CRAKKAROS_LIAR.md").read_text(encoding="utf8").lower()
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro"):
+# Rogue Plains groups alternatives without losing distinct proof or foreign ownership.
+rogue=inventory_module.area_evidence(ROOT,"roguerai")
+rogue_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="roguerai")
+rogue_stories={s["id"]:s for s in rogue_map["stories"]}
+assert (rogue_map["schema_version"],rogue_map["revision"],rogue_map["coverage"])==(3,1,"complete")
+assert len(rogue_stories)==7 and len(rogue_map["contacts"])==24 and not rogue_map["exclusions"]
+assert all(s["category"]=="story" for s in rogue_stories.values())
+assert collections.Counter(t["kind"] for entry in rogue_stories.values() for t in entry["steps"] if t.get("optional"))=={"carried_item":13,"completion":3}
+assert (len(rogue["requests"]),len(rogue["dialogue"]),len(rogue["mobs"]),len(rogue["items"]),len(rogue["reset_commands"]))==(9,3,58,57,223)
+assert collections.Counter(b["kind"] for b in inventory_module.native_blocks(ROOT) if b["source"]=="areas/qst/roguerai.qst")=={"Q":9,"M":3}
+by_line={r["block"]["line"]:r["block"] for r in rogue["requests"]}
+for line,required,reward,disappear in ((16,[75847],[75846],0),(20,[75852,75853],[75854],0),
+    (29,[75837,75845,75843,75844],[75855,75855],1),(42,[75832],[75833],0),
+    (50,[75850],[75852],0),(54,[75851],[75852],0),(60,[75850],[75853],0),
+    (64,[75851],[75853],0),(80,[75833,75836],[75838],0)):
+    assert by_line[line]["give"]==[("I",v) for v in required] and by_line[line]["receive"]==[("I",v) for v in reward]
+    assert by_line[line]["binding"]["completion_key"].endswith("disappear="+str(disappear))
+bindings=[b for entry in rogue_stories.values() for b in entry["contracts"]]
+assert len(bindings)==9 and {tuple(sorted(b.items())) for b in bindings}=={tuple(sorted(b["binding"].items())) for b in by_line.values()}
+cloud=rogue_stories["cloud-giant-promise"];storm=rogue_stories["storm-giant-promise"]
+for entry,lines in ((cloud,(50,54)),(storm,(60,64))):
+    assert entry["contracts"]==[by_line[n]["binding"] for n in lines]
+    assert entry["steps"][0]["item_vnums"]==[75850,75851] and entry["steps"][0]["count"]==1
+promises=rogue_stories["mediator-two-promises"]
+assert promises["steps"][0]["contracts"]==cloud["contracts"] and promises["steps"][1]["contracts"]==storm["contracts"]
+assert [t["item_vnums"] for t in promises["steps"][2:-1]]==[[75852],[75853]]
+flesh=rogue_stories["orc-four-flesh-kinds"]
+assert [t["item_vnums"] for t in flesh["steps"][:-1]]==[[75837],[75843],[75844],[75845]]
+assert len({t["text"] for t in flesh["steps"][:-1]})==4
+medal=rogue_stories["mediator-lost-medal"]
+assert medal["steps"][0]["optional"] and medal["steps"][0]["item_vnums"]==[75829]
+assert "lockpicking" in medal["summary"] and by_line[16]["give"]==[("I",75847)]
+assert rogue_stories["reaper-bones-and-soul"]["steps"][0]["contracts"]==rogue_stories["sage-hiking-boots"]["contracts"]
+assert all(t["optional"] for entry in rogue_stories.values() for t in entry["steps"][:-1])
+assert all(entry["steps"][-1]["contracts"]==entry["contracts"] for entry in rogue_stories.values())
+contacts={c["mob_vnum"]:c for c in rogue_map["contacts"]}
+for dialogue in rogue["dialogue"]:
+    assert set(dialogue["body"][0].rstrip("~").split())<=set(contacts[dialogue["giver_vnum"]]["topics"])
+assert contacts[82569]["topics"]==["hi","hello","howdy","hey"]
+foreign=[b for b in inventory_module.native_blocks(ROOT) if b["giver_vnum"]==82569 and sorted(b["give"])==[("I",75825),("I",75826),("I",75834)]]
+assert len(foreign)==1 and foreign[0]["source"]=="areas/qst/mira.qst" and sorted(foreign[0]["receive"])==[("I",22631),("I",82553),("I",82554),("I",82555)]
+assert all(b["giver_vnum"]!=82569 for b in bindings)
+assert rogue["zone"]["reset_mode"]==1 and all(r["definition"]["daily_eligible"] for r in rogue["requests"])
+assert rogue["special_assignments"]==[{"kind":"obj","vnum":75857,"function":"master_set","source":"src/specs/specs.assign.c","line":1345}]
+units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==758]
+assert len(units)==7 and all(u["achievement"] and u["daily_candidate"] for u in units)
+assert collections.Counter(r["command"] for r in rogue["reset_commands"])=={"M":127,"E":28,"O":24,"G":19,"D":12,"F":7,"P":4,"R":2}
+sources=collections.defaultdict(list);parent=None;room=None
+for reset in rogue["reset_commands"]:
+    c,v=reset["command"],reset["arguments"]
+    if c in "MFR":parent,room=v[1],v[3]
+    elif c in "GE":sources[v[1]].append((c,parent,room,v[2],v[3]))
+    elif c=="P":sources[v[1]].append((c,v[3],None,v[2],None))
+assert sources[75831]==[("E",75802,75909,1,8)] and sources[75828]==[("G",75802,75948,1,0)]
+assert sources[75832]==[("E",75819,75873,1,8)] and sources[75836]==[("G",75831,75893,1,0)]
+assert sources[75847]==[("P",75816,None,1,None)]
+assert len(sources[75837])==5 and all(v[1]==75812 and v[3]==5 for v in sources[75837])
+assert sources[75843]==[("G",75812,75803,1,0)]
+assert sources[75844]==[("G",75812,75823,1,0)] and sources[75845]==[("G",75812,75823,1,0)]
+assert sources[75850]==[("G",75836,75879,1,0)] and sources[75851]==[("G",75841,75909,1,0)]
+assert sources[75857]==[("E",75858,75949,1,24)]
+assert all(any(r["command"]=="M" and r["arguments"][1]==mob and r["arguments"][3]==load_room for r in rogue["reset_commands"]) for mob,load_room in ((75858,75949),(75857,75951),(75844,75949),(75851,75950)))
+objects=dawndale_bodies("roguerai","obj");world=dawndale_bodies("roguerai","wld")
+assert len(world)==158 and len(objects)==57
+assert len({tuple(objects[v].split("~")[:3]) for v in (75837,75843,75844,75845)})==1
+assert len({tuple(objects[v].split("~")[:3]) for v in (75852,75853)})==1
+assert all(objvalues(objects[v])[0]==10 and objvalues(objects[v])[11:15]==[20,16,0,0] for v in (75837,75843,75844,75845))
+assert all(objvalues(objects[v])[0]==10 and objvalues(objects[v])[11:15]==[10,127,0,0] for v in (75850,75851))
+assert objvalues(objects[75838])[0]==3 and objvalues(objects[75838])[11:15]==[50,3,3,143]
+assert objvalues(objects[75816])[11:15]==[1000,15,75829,1000] and objvalues(objects[75802])[11:15]==[1000,13,75830,1000]
+assert all(not (objvalues(objects[v])[12]&16) for v in (75816,75802))
+assert all(objvalues(objects[v])[0]==18 and objvalues(objects[v])[12]==0 for v in (75829,75830))
+assert all(any(r["command"]=="D" and r["arguments"][1:4]==[load_room,direction,5] for r in rogue["reset_commands"]) for load_room,direction in ((75836,2),(75897,0),(75849,0),(75888,2),(75905,4),(75910,5)))
+assert re.search(r"D0\s*[^~]*~\s*[^~]*~\s*0 0 170047",world[75895])
+legacy=(ROOT/"src/specs/specs.set.c").read_text(encoding="utf8")
+assert re.search(r"set_master_vnum\[\]\s*=\s*\{\s*22063,\s*22237,\s*22621,\s*45530,\s*45531,\s*82545,\s*75857,\s*0",legacy)
+adapter=(ROOT/"src/specs/specs.set_equipment.c").read_text(encoding="utf8")
+assert "22063, 22237, 22621, 45530, 45531, 75857, 82545, 82559" in adapter
+assert "no actual native" in (ROOT/"docs/design/zone-stories/ROGUE_PLAINS.md").read_text(encoding="utf8")
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

@@ -84137,6 +84137,604 @@
     {
       "contacts": [
         {
+          "description": "Sijona behind the secret cliff trail refers restored Balance to her mentor in Myrabolus. Three local tokens feed that foreign-owned exchange; her greeting itself is not an award.",
+          "keyword": "sijona",
+          "mob_vnum": 75826,
+          "name": "Sijona, assistant of Balance",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Titan mediator at the giant summit accepts the lost medal independently, or one promise from each giant. The actual second reward is a hammer despite sword dialogue.",
+          "keyword": "mediator",
+          "mob_vnum": 75832,
+          "name": "a titan mediator",
+          "topics": []
+        },
+        {
+          "description": "Wandering orc starts beyond the demon camp and can cross zone boundaries. Four distinct buffalo-flesh kinds give two hides, then he leaves.",
+          "keyword": "orc",
+          "mob_vnum": 75835,
+          "name": "a wandering orc",
+          "topics": []
+        },
+        {
+          "description": "Old tribal sage by the giant-mountain approach exchanges hiking boots for a partial soul. His climb has no separate accepted endpoint.",
+          "keyword": "sage",
+          "mob_vnum": 75837,
+          "name": "an old tribal sage",
+          "topics": []
+        },
+        {
+          "description": "Cloud giant at the summit accepts either potion kind for the cloud promise. The two recipes are alternatives, not two achievements.",
+          "keyword": "cloud",
+          "mob_vnum": 75842,
+          "name": "a bickering cloud giant",
+          "topics": []
+        },
+        {
+          "description": "Storm giant at the summit accepts either potion kind for the distinct storm promise. The mediator needs one of each promise.",
+          "keyword": "storm",
+          "mob_vnum": 75843,
+          "name": "a bickering storm giant",
+          "topics": []
+        },
+        {
+          "description": "Soul reaper in the bone yard answers hi/hello and staff. Partial soul plus finger bones gives a staff-named wand; no raising ritual is recorded.",
+          "keyword": "reaper",
+          "mob_vnum": 75845,
+          "name": "a soul reaper",
+          "topics": [
+            "hi",
+            "hello",
+            "staff"
+          ]
+        },
+        {
+          "description": "Two stronghold sentinels start together; one wears the exact hiking boots. Matching appearance does not guarantee both instances carry them.",
+          "keyword": "sentinel",
+          "mob_vnum": 75819,
+          "name": "an ebriham sentinel",
+          "topics": []
+        },
+        {
+          "description": "Three hands of death start in the undead camp; only one declared instance carries the required finger bones.",
+          "keyword": "hand",
+          "mob_vnum": 75831,
+          "name": "a hand of death",
+          "topics": []
+        },
+        {
+          "description": "Ten huge buffalo placements supply five common strips and three distinct rarer kinds. Four matching names do not make the kinds interchangeable.",
+          "keyword": "buffalo",
+          "mob_vnum": 75812,
+          "name": "a huge buffalo",
+          "topics": []
+        },
+        {
+          "description": "Stronghold witchdoctor supplies one silence-potion kind inside the entered yurt.",
+          "keyword": "witchdoctor",
+          "mob_vnum": 75836,
+          "name": "a tribal witchdoctor",
+          "topics": []
+        },
+        {
+          "description": "Other witchdoctor starts as a follower in the mounted patrol and supplies the alternative potion kind. Follow actual patrol location rather than assuming the load room is permanent.",
+          "keyword": "witchdoctor",
+          "mob_vnum": 75841,
+          "name": "a tribal witchdoctor",
+          "topics": []
+        },
+        {
+          "description": "Ebriham chieftain carries the token of light for Balance in Myrabolus; it is not a local quest offering.",
+          "keyword": "chieftain",
+          "mob_vnum": 75823,
+          "name": "the ebriham chieftain",
+          "topics": []
+        },
+        {
+          "description": "Archnecromancer carries the undeath token and persistent bone key for the locked altar. The altar rod is not a local quest delivery.",
+          "keyword": "archnecromancer",
+          "mob_vnum": 75824,
+          "name": "the archnecromancer",
+          "topics": []
+        },
+        {
+          "description": "Mabus carries the evil token and obsidian key. The nearby obelisk holds the mediator's medal and foreign loot.",
+          "keyword": "mabus",
+          "mob_vnum": 75834,
+          "name": "Mabus",
+          "topics": []
+        },
+        {
+          "description": "Keva is loaded in a connected staging room and can wander. She wears the Master sigil; acquisition alone does not grant a set-effect achievement.",
+          "keyword": "keva",
+          "mob_vnum": 75858,
+          "name": "Keva",
+          "topics": []
+        },
+        {
+          "description": "Windtalker is loaded in a connected cloud-side staging room and can wander. Ordinary equipment and aerial access have no native quest finale.",
+          "keyword": "windtalker",
+          "mob_vnum": 75857,
+          "name": "the windtalker",
+          "topics": []
+        },
+        {
+          "description": "Two Ebriham horselords start with R-loaded steeds and followers. Subsequent equipment/inventory belongs to the actual most recently loaded mobile.",
+          "keyword": "horselord",
+          "mob_vnum": 75801,
+          "name": "an ebriham horselord",
+          "topics": []
+        },
+        {
+          "description": "R-loaded Ebriham steeds are actual mounts: horseshoes after the first R and saddle after the second R target the mount, not its rider.",
+          "keyword": "steed",
+          "mob_vnum": 75802,
+          "name": "an ebriham steed",
+          "topics": []
+        },
+        {
+          "description": "Horsemen start as patrol followers. Mount/follower movement and source custody need actual runtime qualification.",
+          "keyword": "horseman",
+          "mob_vnum": 75803,
+          "name": "an ebriham horseman",
+          "topics": []
+        },
+        {
+          "description": "Newborn dracolich has an ordinary bone-yard reset. Lore about raising it does not create a staff-use or ritual completion.",
+          "keyword": "dracolich",
+          "mob_vnum": 75839,
+          "name": "a newborn dracolich",
+          "topics": []
+        },
+        {
+          "description": "Lifebane starts in a connected staging room with Keva. An ordinary wandering source is not automatically missing or quest-controlled.",
+          "keyword": "lifebane",
+          "mob_vnum": 75844,
+          "name": "a lifebane",
+          "topics": []
+        },
+        {
+          "description": "Lich starts with phantom followers in a connected staging room. Their ordinary placement does not define a resolution contract.",
+          "keyword": "lich",
+          "mob_vnum": 75851,
+          "name": "a lich warlock",
+          "topics": []
+        },
+        {
+          "description": "Balance, the bounty hunter on the Myrabolus pier, accepts the three exact Rogue tokens. His contract belongs to Myrabolus; a local referral does not duplicate its achievement or certify all personal kills.",
+          "keyword": "balance",
+          "mob_vnum": 82569,
+          "name": "Balance",
+          "topics": [
+            "hi",
+            "hello",
+            "howdy",
+            "hey"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore Rogue Plains, its tribal stronghold, undead camp, giant summit and demon realm. Seven story outcomes cover all nine local exchanges. Active, ready accounting is required. Supplied exact proof remains valid; words, source recovery, access and actual effects need separately qualified events.",
+      "orientation": [
+        "Meet actual recipients before asking addressed words. Sijona answers hi/hello; the reaper answers hi/hello and staff. The other recipes are explained by native descriptions and journal guidance; do not invent a keyword achievement or an unimplemented NPC reply.",
+        "The mediator has two independent requests. Recover the lost medal from the obelisk for bracers, or gather one cloud promise and one storm promise for the hammer. Obelisk access uses the persistent obsidian key from Mabus or successful lockpicking. A supplied medal fits without carrying the key or recording an unlock.",
+        "The two tribal witchdoctors supply different silence-potion kinds with identical names. Either kind fits either giant. Give one potion to the cloud giant and a separate potion to the storm giant for two different promises. Both recipes for each giant share one outcome; consuming one potion cannot supply both giants.",
+        "Cloud and storm promises have identical visible names but distinct identities. The mediator requires one of each; a supplied matching pair fits without personally collecting either promise. His dialogue promises a sword, while the native reward is the hammer of titankind. This mismatch is pending builder review.",
+        "The wandering orc needs four different buffalo-flesh kinds, then gives two hides and leaves. A common kind has several sources; three rarer kinds come from different buffalo instances in the southern and eastern plains. All look identical, and not every buffalo carries every kind. The journal labels source kinds separately. The flesh is currently typed as a cure-light potion despite meat prose; changing that is a pending native decision.",
+        "The hiking boots are worn by one stronghold sentinel. The sage trades them for only part of his soul. Bring that exact soul plus finger bones from one hand of death to the reaper. Supplied souls fit without the boots history. The staff-named reward is a create-dracolich wand; its spell needs a sufficiently powerful corpse in the same room, valid form and available control capacity. Receipt or device activation alone does not prove raising a controlled dracolich or fulfilling the sage's climb.",
+        "Sijona points to Balance in Myrabolus. The chieftain, archnecromancer and Mabus carry light, undeath and evil tokens. Balance on the Myrabolus pier accepts one of each for four rewards under a foreign-owned contract. This local journal provides referral guidance without duplicating credit or treating possession as personal defeat of all forces.",
+        "Find and open the secret cliff, corpse-mound and summit routes. Their resets are secret and closed rather than locked or blocked. The corpse-mound wording does not add a magical block. The locked obelisk and altar are separate containers; the altar's persistent bone key comes from the archnecromancer. Key possession is not successful passage.",
+        "The pit enters the Styx, and two yurts enter interiors with ordinary exits. Three identically named flaming portals in the demon chamber lead to different plains locations. Actual portal identity and return route matter; a name match alone cannot identify the intended destination. No portal or arrival achievement is implemented here.",
+        "Cloudscape entry permits flight or levitation, but horizontal movement out of an air-plane room requires flight; levitation alone only supports vertical exits. Mounted travel checks the mount. Set effects, aerial arrival and a safe return need actual accepted effects and movement events.",
+        "Two R resets create the horselords' mounts. Equipment and inventory following R targets the mount; the patrol witchdoctor is a follower. Keva, the windtalker, Lifebane and the lich have ordinary resets in connected staging rooms and can wander. Source descriptions refer to load origins, not guaranteed current rooms.",
+        "The Master sigil has a real worn periodic procedure and an alternative foreign source with a shared stock cap. Its direct legacy procedure counts matching worn slots, caps at six, and adds benefits starting at two pieces. A separate adapter table lists an eighth member, but the sigil is directly assigned to the legacy path. Equipping one sigil is not proof of a full set or actual durable effect.",
+        "Two surface approaches are reciprocal. A separate northern exit names a room absent from the active static world inventory and present only in historical data; qualify the deployed assembly before selecting any repair. This optional boundary does not make the two existing approaches absent.",
+        "All nine native contracts retain potential daily shape, while grouping each giant's alternative recipes leaves seven authored candidates. Orc retirement, reset conditions, shared stock, recipient survival, access and ready accounting still govern actual repeats. Hides have trapper prose but no observed continuation; no full-zone Balance or Master campaign terminal is invented."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "roguerai",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:75847;receive=I:75846;disappear=0",
+              "giver_vnum": 75832
+            }
+          ],
+          "id": "mediator-lost-medal",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Mabus carries the persistent obsidian key for the obelisk. The current container is locked but not pickproof; supplied medals and successful lockpicking are valid alternatives. Carrying this optional key does not prove opening the obelisk. Current possession does not distinguish source recovery from a player handoff.",
+              "id": "material-75829",
+              "item_vnums": [
+                75829
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional obelisk access: carry the obsidian key"
+            },
+            {
+              "count": 1,
+              "hint": "The medal is declared inside the obelisk beyond Mabus. Retrieve it loose after gaining access; its container also holds coins and a foreign Jade relic. Only the medal fits this delivery. Current possession does not distinguish source recovery from a player handoff.",
+              "id": "material-75847",
+              "item_vnums": [
+                75847
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the medal of giantkind"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:75847;receive=I:75846;disappear=0",
+                  "giver_vnum": 75832
+                }
+              ],
+              "hint": "Offer the exact required proof together. Only this accepted exchange is recorded; words, first recovery, personal kills, access, climbing, actual silence and full-zone restoration need separate accepted endpoints. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Recover the medal of giantkind from the obelisk for bracers. The obsidian key is optional access guidance, not a required native offering; lockpicking or a supplied medal also fit.",
+          "title": "The mediator's lost medal"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:75852,I:75853;receive=I:75854;disappear=0",
+              "giver_vnum": 75832
+            }
+          ],
+          "id": "mediator-two-promises",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:75850;receive=I:75852;disappear=0",
+                  "giver_vnum": 75842
+                },
+                {
+                  "completion_key": "give=I:75851;receive=I:75852;disappear=0",
+                  "giver_vnum": 75842
+                }
+              ],
+              "hint": "Optional accepted producer history explains the preceding exchange. Supplied exact proof fits without that personal history. This receipt does not restore consumed materials or certify earlier hunting or effects.",
+              "id": "producer-50",
+              "kind": "completion",
+              "optional": true,
+              "text": "Earlier cloud giant's promise recorded"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:75850;receive=I:75853;disappear=0",
+                  "giver_vnum": 75843
+                },
+                {
+                  "completion_key": "give=I:75851;receive=I:75853;disappear=0",
+                  "giver_vnum": 75843
+                }
+              ],
+              "hint": "Optional accepted producer history explains the preceding exchange. Supplied exact proof fits without that personal history. This receipt does not restore consumed materials or certify earlier hunting or effects.",
+              "id": "producer-60",
+              "kind": "completion",
+              "optional": true,
+              "text": "Earlier storm giant's promise recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The cloud giant gives this exact promise for either silence-potion kind. The storm promise has the same visible name but is a different required kind. Current possession does not distinguish source recovery from a player handoff.",
+              "id": "material-75852",
+              "item_vnums": [
+                75852
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the cloud giant's promise"
+            },
+            {
+              "count": 1,
+              "hint": "The storm giant gives this exact promise for either silence-potion kind. Two cloud promises do not substitute for one promise from each giant. Current possession does not distinguish source recovery from a player handoff.",
+              "id": "material-75853",
+              "item_vnums": [
+                75853
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the storm giant's promise"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:75852,I:75853;receive=I:75854;disappear=0",
+                  "giver_vnum": 75832
+                }
+              ],
+              "hint": "Offer the exact required proof together. Only this accepted exchange is recorded; words, first recovery, personal kills, access, climbing, actual silence and full-zone restoration need separate accepted endpoints. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring one exact promise from each giant for the hammer of titankind. The dialogue calls it a sword, but the actual reward is a hammer. Two identical-looking cloud promises cannot replace the storm promise.",
+          "title": "Peace between the giants"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:75837,I:75843,I:75844,I:75845;receive=I:75855,I:75855;disappear=1",
+              "giver_vnum": 75835
+            }
+          ],
+          "id": "orc-four-flesh-kinds",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "This common buffalo-flesh kind has five declared sources sharing cap five. The three rarer kinds are separate, despite identical visible names. Current possession does not distinguish source recovery from a player handoff.",
+              "id": "material-75837",
+              "item_vnums": [
+                75837
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the common buffalo-flesh kind"
+            },
+            {
+              "count": 1,
+              "hint": "This rare kind is declared on a buffalo starting in the southern plains, alongside a common kind. Buffalo can wander; the load origin is guidance rather than a fixed current source. Current possession does not distinguish source recovery from a player handoff.",
+              "id": "material-75843",
+              "item_vnums": [
+                75843
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the southern-plains rare buffalo-flesh kind"
+            },
+            {
+              "count": 1,
+              "hint": "One buffalo starting in the eastern plains carries this rare kind. A second buffalo there has a different rare kind; the names are identical. Current possession does not distinguish source recovery from a player handoff.",
+              "id": "material-75844",
+              "item_vnums": [
+                75844
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the first eastern-plains rare buffalo-flesh kind"
+            },
+            {
+              "count": 1,
+              "hint": "The other buffalo starting in the eastern plains carries this fourth kind. Recover all four exact kinds rather than four copies of one kind. Current possession does not distinguish source recovery from a player handoff.",
+              "id": "material-75845",
+              "item_vnums": [
+                75845
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the second eastern-plains rare buffalo-flesh kind"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:75837,I:75843,I:75844,I:75845;receive=I:75855,I:75855;disappear=1",
+                  "giver_vnum": 75835
+                }
+              ],
+              "hint": "Offer the exact required proof together. Only this accepted exchange is recorded; words, first recovery, personal kills, access, climbing, actual silence and full-zone restoration need separate accepted endpoints. The orc gives two hides, then leaves. Reset mode one permits potential renewal when reset conditions and stock allow; no surviving-recipient or safe repeat is promised.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring four different buffalo-flesh kinds together for two enormous hides. The orc then leaves. Identical item names conceal distinct requirements; four common strips do not fit.",
+          "title": "The wandering orc's meal"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:75832;receive=I:75833;disappear=0",
+              "giver_vnum": 75837
+            }
+          ],
+          "id": "sage-hiking-boots",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "An Ebriham sentinel in the stronghold wears these boots. Recover them loose; worn or container-held equipment does not satisfy current carried proof. Current possession does not distinguish source recovery from a player handoff.",
+              "id": "material-75832",
+              "item_vnums": [
+                75832
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry some soft leather hiking boots"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:75832;receive=I:75833;disappear=0",
+                  "giver_vnum": 75837
+                }
+              ],
+              "hint": "Offer the exact required proof together. Only this accepted exchange is recorded; words, first recovery, personal kills, access, climbing, actual silence and full-zone restoration need separate accepted endpoints. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring the exact sentinel hiking boots for part of the old sage's soul. His promised climb is narrative; this exchange does not record escort, arrival or trading his whole soul.",
+          "title": "The sage's partial soul"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:75850;receive=I:75852;disappear=0",
+              "giver_vnum": 75842
+            },
+            {
+              "completion_key": "give=I:75851;receive=I:75852;disappear=0",
+              "giver_vnum": 75842
+            }
+          ],
+          "id": "cloud-giant-promise",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The stronghold witchdoctor and the mounted patrol witchdoctor supply alternative kinds. One potion fits either giant; each accepted request consumes its own potion. Two initial kinds do not prove renewed stock, and a player-supplied exact potion fits.",
+              "id": "silence-potion",
+              "item_vnums": [
+                75850,
+                75851
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry either exact silence-potion kind"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:75850;receive=I:75852;disappear=0",
+                  "giver_vnum": 75842
+                },
+                {
+                  "completion_key": "give=I:75851;receive=I:75852;disappear=0",
+                  "giver_vnum": 75842
+                }
+              ],
+              "hint": "Offer the exact required proof together. Only this accepted exchange is recorded; words, first recovery, personal kills, access, climbing, actual silence and full-zone restoration need separate accepted endpoints. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Give the cloud giant either silence-potion kind for his promise. The two recipes are alternatives for this one outcome; acceptance does not certify a spell or permanent quiet.",
+          "title": "The cloud giant's promise"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:75850;receive=I:75853;disappear=0",
+              "giver_vnum": 75843
+            },
+            {
+              "completion_key": "give=I:75851;receive=I:75853;disappear=0",
+              "giver_vnum": 75843
+            }
+          ],
+          "id": "storm-giant-promise",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The stronghold witchdoctor and the mounted patrol witchdoctor supply alternative kinds. One potion fits either giant; each accepted request consumes its own potion. Two initial kinds do not prove renewed stock, and a player-supplied exact potion fits.",
+              "id": "silence-potion",
+              "item_vnums": [
+                75850,
+                75851
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry either exact silence-potion kind"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:75850;receive=I:75853;disappear=0",
+                  "giver_vnum": 75843
+                },
+                {
+                  "completion_key": "give=I:75851;receive=I:75853;disappear=0",
+                  "giver_vnum": 75843
+                }
+              ],
+              "hint": "Offer the exact required proof together. Only this accepted exchange is recorded; words, first recovery, personal kills, access, climbing, actual silence and full-zone restoration need separate accepted endpoints. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Give the storm giant either silence-potion kind for his distinct promise. This consumes a separate potion from the cloud request; the two promises look identical.",
+          "title": "The storm giant's promise"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:75833,I:75836;receive=I:75838;disappear=0",
+              "giver_vnum": 75845
+            }
+          ],
+          "id": "reaper-bones-and-soul",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:75832;receive=I:75833;disappear=0",
+                  "giver_vnum": 75837
+                }
+              ],
+              "hint": "Optional accepted producer history explains the preceding exchange. Supplied exact proof fits without that personal history. This receipt does not restore consumed materials or certify earlier hunting or effects.",
+              "id": "producer-42",
+              "kind": "completion",
+              "optional": true,
+              "text": "Earlier hiking-boots exchange recorded"
+            },
+            {
+              "count": 1,
+              "hint": "The old sage exchanges the exact hiking boots for only part of his soul. A supplied matching soul also fits the reaper's request without personal boot history. Current possession does not distinguish source recovery from a player handoff.",
+              "id": "material-75833",
+              "item_vnums": [
+                75833
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry almost an old man's soul"
+            },
+            {
+              "count": 1,
+              "hint": "One hand of death in the undead camp has the declared finger-bone source. The other two hand placements do not have a matching G reset; possession does not certify personal hunting. Current possession does not distinguish source recovery from a player handoff.",
+              "id": "material-75836",
+              "item_vnums": [
+                75836
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry some fleshless finger bones"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:75833,I:75836;receive=I:75838;disappear=0",
+                  "giver_vnum": 75845
+                }
+              ],
+              "hint": "Offer the exact required proof together. Only this accepted exchange is recorded; words, first recovery, personal kills, access, climbing, actual silence and full-zone restoration need separate accepted endpoints. The recipient stays after acceptance. Fresh supply, actual encounter, access and ready accounting still govern repeats.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete the accepted delivery"
+            }
+          ],
+          "summary": "Bring the exact partial soul and fleshless finger bones together for the staff of bones and souls. Supplied soul fits without the boot exchange. The reward is named a staff but uses the native wand item type.",
+          "title": "The reaper's ancient magic"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Starts on the road below the observatory and can roam. Ask hello about specialization; his actual teacher properties support class development. The table-driven Infuse Magical Device purchase remains unavailable while accounting is active.",
           "keyword": "deathium",
           "mob_vnum": 76008,

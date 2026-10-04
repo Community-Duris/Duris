@@ -106,9 +106,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 48 | The Minizones of the Surface | [Comprehensive source dossier](zone-stories/THE_MINIZONES_OF_THE_SURFACE.md): all 59 blocks/25 exchanges/32 addressed, 119 rooms/25 mobs/42 objects, 145 resets/66 families, three literal procedures and bounded foreign producers/hosts/routes | Revision one: five stories/sixteen services, 38 contacts/73 optional checks; five potential dailies, exact copies/kinds and any-one cleansing | No native repair ships. Guarded fees, source/recipient choices, wand/pet creation and custody, clue/flame cleanup fixes, missing ordinary entries and dormant igloo/foreign laboratory plans pending |
 | 49 | The Mountain of Peril Peaks | [Comprehensive source dossier](zone-stories/THE_MOUNTAIN_OF_PERIL_PEAKS.md): all 21 blocks/ten deliveries/eleven addressed; 196 rooms/162 mobs/85 objects/two shops, 297 resets/236 families, automatic switches/shared travel and reciprocal Mountain Tracks boundaries | Revision one: ten outcomes, 28 contacts/16 optional checks; ten potential dailies, exact parts and three optional intermediate histories | No native repair ships. Companion-fate finale, causal source/custody, accepted controls/key/arrival and scoped campaigns pending; ring/book, aliases and dormant content need builder decisions |
 | 50 | Crakkaros' Liar | [Comprehensive source dossier](zone-stories/CRAKKAROS_LIAR.md): all twenty blocks/eleven QA/nine MA; 372 rooms/37 mobs/68 objects, 501 resets/199 families, mounted centaur, shared P/switch/key execution and inactive ocean boundary | Revision one: six stories/five services, 29 contacts/27 optional checks; five authored story daily candidates, nine native candidates unchanged | No native repair ships. Fourteen-root guard versus seventeen furs, R owner extraction, actual shelf custody, secret/key/retiring episodes and finale adapters planned; sculpture/aliases/reverse key/exterior intent pending |
-| 51–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 51 | Rogue Plains | [Comprehensive source dossier](zone-stories/ROGUE_PLAINS.md): all twelve blocks/nine Q/three addressed M; 158 rooms/58 mobs/57 objects, 223 resets/127 families, direct Master procedure, mount/container/portal/aerial execution and foreign Balance owner | Revision one: seven outcomes, 24 contacts/16 optional checks; seven grouped story daily candidates, nine native candidates unchanged | No native repair ships. Accepted source/effect/access/reset episodes and R/owner extraction planned; identical proof, sword/hammer wording, meat/wand/set intent and historical northern connection need builder qualification |
+| 52–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Rogue Plains (`roguerai`).
+The next area is Desolate (`desolate`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -117,6 +118,7 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-ROGUE-ALTERNATIVES / FOREIGN / EFFECT | Two giant recipes each give one outcome; distinct promises/flesh share visible names. Sijona resolves through foreign Balance; sigil uses direct seven-member slot counting, unlike eight-member adapter. Containers are pickable; mounts change actual E/G ownership. | OR outcomes plus separately optional producer histories ship; native owner preserved. Expand causal UID/source/custody, R/rider/owner, successful key/pick/portal/aerial/actual set effects and resetting/retiring episodes. Wording, aliases, item/set intent and historical route are proposed decisions, not shipped repairs. |
 | ZSQ-CRAKKARO-BATCH / MOUNT / CONTENT | Seventeen-fur reward is beyond fourteen-root durable support; mounted centaur is omitted by M/F-only sources and post-R E/G belongs to the mount. Four required badges plus unrelated badge look identical; P selects actual same-prototype container. Sculpture expects absent block; exterior room only exists in inactive ocean maps. | Versioned bounded batch/recovery, committed UID/source/custody and R/rider/owner extraction; qualified key/control/arrival/retiring/reset episodes and builder-selected AND finale. Separate future native badge/key/control/route decisions and news proof; none ships here. |
 | ZSQ-NEXUS-COMPANION / ACCESS / CONTENT | Traveler requests companion fate after medallion, but no later Q exists. Five companions are placed in a connected load room and can wander. Medallion, NPC-carried same-named emeralds and portals are distinct prerequisites; ring promise contradicts actual prayer book. | Builder designs investigation/report/rescue; add causal source/custody, accepted control/key/arrival and scoped AND episodes with supplied-proof branches. Qualify exposed controls, stock/reset and surviving instances. Separate builder-reviewed clue/alias/dormant-content fixes and news proof; none ships here. |
 | ZSQ-SURFACEMINI-CREATION / CONTENT | Flame collar lacks extraction on narrow-room failure; both collars continue after unchecked placement. Wand consumes before unchecked random replacement. Frost clue says Fire rather than Ice; flame room text says ice. | Separate focused original-failing cleanup/text fixes preserving balance/cooldowns/random output; qualify placement/identity/custody and accepted pet/equipment effects. All replacement prototypes exist; normal lesser/greater predicates are identical, so high-roll split remains conditional. No native repair ships. |
@@ -2508,3 +2510,67 @@ source hunting/stock, recipient retirement, traps, larger payment and finale sta
 unqualified. The queue is 50/220 source-comprehensive, 170 pending; Rogue Plains
 (`roguerai`) is next. No database/account/server operation, generated world edit,
 activation or merge occurred; this checkpoint is not full-roadmap completion.
+
+## Rogue Plains completed source map — October 4, 2026
+
+The [dossier](zone-stories/ROGUE_PLAINS.md) covers every twelve native blocks:
+nine Q/three addressed M, all 158 rooms/fifty prose/nineteen headers/nineteen
+metadata/109 exit families, 58 mobiles/57 objects and 223 resets/127 families.
+The one literal local Master sigil procedure and separate adapter were reviewed,
+with shared submission/reward, source/reset ownership, container/door/picking,
+portal/aerial movement and active versus historical boundary assembly.
+
+Revision one has seven outcomes, twenty-four contacts and sixteen optional checks
+(thirteen current materials, three producer histories). Each giant accepts either
+silence-potion kind for one promise; the mediator needs one of each promise.
+Four identical flesh kinds cannot substitute; two hides are the orc's reward.
+Boots produce a partial soul for the reaper's two-input exchange. A supplied soul
+or promise pair remains valid without personal producer history. Optional key
+guidance does not prevent a supplied medal or successful lockpick branch. Native
+nine daily shapes remain; OR grouping leaves seven authored candidates.
+
+**Precise expansions:** Sijona's three tokens lead to Balance on Myrabolus' pier,
+an actual foreign-owned contract rather than an invented local all-kills terminal.
+R creates steeds and changes post-R E/G ownership; followers versus ordinary
+connected staging sources need actual custody/location qualification. Two locked
+containers are not pickproof: the obelisk's hardpick bit is not pickproof sixteen.
+Secret/closed routes are neither locked nor blocked; same-name portals have
+different destinations. Air-plane entry allows levitation, horizontal departure
+requires flight, and mounted movement checks the mount. Record actual success
+rather than deriving access from a key, prose or a receipt.
+
+Master sigil's direct legacy procedure counts matching worn slots against seven
+members, caps at six and grants effects beginning at two pieces. The separate
+adapter table lists an eighth member/deduplicates, but direct assignment governs
+the sigil. Add stable set identity/membership and committed equip/actual effect/
+cleanup/restart events only after builder intent and executable lifecycle proof.
+No full-set achievement is inferred from owning or equipping one sigil.
+
+The staff-named reward's wand type supports a room-corpse spell; the channeling
+staff path rejects that object-only target, so do not blindly convert its type.
+The spell requires a same-room corpse of level at least 46, valid caster/form
+and control capacity; dragon-scale consumption is commented out. Device activation,
+accepted durable NPC-room/player-corpse transformation, hostile versus controlled
+follower and pet recovery are separate causal stages. Future effect objectives
+must subscribe to accepted outcomes rather than a charge or existing reset mob.
+
+**Pending native findings, no native repair ships:** sword/blade prose versus hammer,
+identical flesh/promises, flesh typed as cure-light potion, staff-named create-
+dracolich wand, absent trapper/climb/quiet/ritual terminals and Master membership
+intent. The northern target appears only in historical data; deployed assembly
+needs qualification. Two existing reciprocal surface approaches remain valid
+static routes. Ordinary staging mobs are loaded and can wander, not missing bosses.
+Future actual repairs require separate fix commits and prominent PR/news proof.
+
+Verification covers exact contracts/alternatives/sources, foreign owner, container
+flags, mount ownership and procedure/table distinction; actual C++ wrong duplicate
+kinds, either potion, supplied histories, spent/worn proof, optional key, encounter
+visibility, no read-side credit/mutation, replay and cold recovery. Catalog/daily
+report, accounting gates/tracking, maintained build, formatting, whitespace and
+local/source-line links are checked. All 2668 native definitions, revision two,
+fingerprint, registry and seventy-one prior journals stay unchanged. Catalog:
+72 maps/1656 achievements/1472 potential dailies/2216 rows. Live acquisition,
+wandering patrol, access/return, orc renewal, foreign delivery, spell and set
+lifecycle remain unqualified. Queue: 51/220 source-comprehensive, 169 pending;
+Desolate (`desolate`) is next. No database/account/server operation, native repair,
+generated-world edit, activation or merge occurred; the full roadmap remains active.

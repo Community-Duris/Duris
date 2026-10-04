@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 71 &&
-				tracker.summary_for(7, 42).total == 1658,
+		require(catalog.story_mappings.size() == 72 &&
+				tracker.summary_for(7, 42).total == 1656,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -4932,6 +4932,148 @@ int main(int argc, char **argv)
 					recovered.progress_for_zone(7, 42, 870).completed == 6 &&
 					recovered.progress_for_zone(7, 42, 870).total == 6,
 				"Crakkaro cold recovery changed story/service totals");
+		}
+
+		{
+			const auto &map = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &mapping)
+				{ return mapping.source_area == "roguerai"; });
+			const auto &cloud = story_for("roguerai", "cloud-giant-promise");
+			const auto &storm = story_for("roguerai", "storm-giant-promise");
+			const auto &promises = story_for("roguerai", "mediator-two-promises");
+			const auto &flesh = story_for("roguerai", "orc-four-flesh-kinds");
+			const auto &medal = story_for("roguerai", "mediator-lost-medal");
+			const auto &reaper = story_for("roguerai", "reaper-bones-and-soul");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 758, 75801, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 758, 10, 1, 101, false, false)
+							.find("] " + flesh.title + "\r\n") ==
+						std::string::npos,
+				"Rogue discovery exposed an unmet request");
+			for (const auto &contact : map.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 75801, 102) ==
+						result::applied,
+					"Rogue source or foreign referral contact failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Rogue journal section missing");
+				const auto end = journal.find("\r\n[", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[75837] = 4;
+			supplies.carried[75852] = 2;
+			supplies.carried[75850] = 1;
+			supplies.equipped[24] = 75857;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 758, 10, 1, 103, false, false,
+							 &supplies);
+			for (std::size_t i = 1; i < flesh.steps.size() - 1; ++i)
+				require(section(flesh).find("[Missing now] " +
+							    flesh.steps[i].text) !=
+						std::string::npos,
+					"Rogue repeated common flesh replaced other required kinds");
+			require(section(promises).find("[Missing now] " + promises.steps[3].text) !=
+						std::string::npos &&
+					section(cloud).find("[Ready now] " +
+							    cloud.steps.front().text) !=
+						std::string::npos &&
+					section(storm).find("[Ready now] " +
+							    storm.steps.front().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 758).completed == 0,
+				"Rogue duplicate promises or potion/set possession invented history or credit");
+			supplies.carried.erase(75850);
+			supplies.carried[75851] = 1;
+			journal = journey.render_journal(7, 42, 758, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(cloud).find("[Ready now] " + cloud.steps.front().text) !=
+						std::string::npos &&
+					section(storm).find("[Ready now] " +
+							    storm.steps.front().text) !=
+						std::string::npos,
+				"Rogue alternative potion required both kinds");
+			record(journey, cloud.contracts.back(), "rogue-cloud-alternative", 758,
+			       75911);
+			supplies.carried.erase(75851);
+			journal = journey.render_journal(7, 42, 758, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(cloud).find("[Recorded] " + cloud.steps.back().text) !=
+						std::string::npos &&
+					section(storm).find("[Missing now] " +
+							    storm.steps.front().text) !=
+						std::string::npos &&
+					section(promises).find("[Recorded] " +
+							       promises.steps[0].text) !=
+						std::string::npos &&
+					section(promises).find("[Pending] " +
+							       promises.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 758).completed == 1,
+				"Rogue one giant receipt supplied another potion, promise or outcome");
+			record(journey, cloud.contracts.front(), "rogue-cloud-other-recipe", 758,
+			       75911);
+			require(journey.progress_for_zone(7, 42, 758).completed == 1,
+				"Rogue alternative cloud recipe created duplicate story credit");
+			for (int item : { 75843, 75844, 75845, 75853, 75847, 75833, 75836 })
+				supplies.carried[item] = 1;
+			journal = journey.render_journal(7, 42, 758, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto *entry : { &flesh, &promises, &medal, &reaper })
+				require(section(*entry).find("Next: " + entry->steps.back().text) !=
+						std::string::npos,
+					"Rogue exact supplied proof required personal producer history or obelisk key");
+			require(section(medal).find("[Missing now] " + medal.steps.front().text) !=
+					std::string::npos,
+				"Rogue supplied medal invented a carried key");
+			record(journey, reaper.steps.front().contracts.front(),
+			       "rogue-boot-history", 758, 75901);
+			supplies.carried.erase(75833);
+			supplies.equipped[1] = 75833;
+			journal = journey.render_journal(7, 42, 758, 10, 1, 107, false, false,
+							 &supplies);
+			require(section(reaper).find("[Recorded] " + reaper.steps.front().text) !=
+						std::string::npos &&
+					section(reaper).find("[Missing now] " +
+							     reaper.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 758).completed == 2,
+				"Rogue boot history restored consumed/worn soul or completed the reaper");
+			service supplied(catalog);
+			record(supplied, promises.contracts.front(), "rogue-supplied-promises", 758,
+			       75911);
+			record(supplied, reaper.contracts.front(), "rogue-supplied-soul", 758,
+			       75847);
+			require(supplied.evidence_for(cloud.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.evidence_for(storm.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.evidence_for(
+							reaper.steps.front().contracts.front(), 2)
+							.successful_attempts == 0 &&
+					supplied.progress_for_zone(7, 42, 758).completed == 2 &&
+					supplied.progress_for_zone(7, 42, 758).total == 7,
+				"Rogue supplied proofs completed earlier personal stories or a foreign/set finale");
+			for (const auto &entry : map.stories)
+				if (entry.id != promises.id && entry.id != reaper.id)
+					record(supplied, entry.contracts.front(), entry.id.c_str(),
+					       758, 75911);
+			auto replay = completion(flesh.contracts.front(), flesh.id.c_str(), 120);
+			replay.transaction.zone_number = 758;
+			replay.transaction.room_vnum = 75911;
+			require(supplied.record_completion(replay) == result::already_applied,
+				"Rogue retiring-orc receipt replay was not idempotent");
+			service recovered(catalog);
+			require(recovered.deserialize_state(supplied.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 758).completed == 7 &&
+					recovered.progress_for_zone(7, 42, 758).total == 7,
+				"Rogue cold recovery changed grouped outcome totals");
 		}
 
 		std::cout
