@@ -1429,3 +1429,27 @@ parchment learning, rod, inn and wording remain pending plans. Active, ready
 accounting is mandatory; frozen recovery stays separate. Preserve the
 [PR checkpoint archive](../design/ZONE_STORY_PR_CHECKPOINT_HISTORY.md) and prior
 repair/news records when shortening the current PR description.
+
+## Troll Caves: same names, dynamic handlers and prerequisite mismatches
+
+The [complete example](../design/zone-stories/TROLL_CAVES.md) maps all five
+native exchanges to one story and four paid supporting services. Both emerald
+kinds share an alias, and base/enhanced mace kinds share the same displayed
+name. Bind exact kinds; an enhanced mace does not satisfy the base-mace input.
+Use optional producer receipts and current-material checks so legitimately
+supplied items skip personal crafting, mining or student-kill history.
+
+Dialogue demanding Farghan's wand does not add that item to Q148. Document
+the actual recipe and intended-lore gap, then let the builder select terms
+before changing the recipe or awarding wand credit. Likewise, a static egg,
+slave followers, periodic forge narration and class/level guidance are not
+accepted hatch, rescue, crafting or learning endpoints.
+
+Zero literal assignments can coexist with type/flag/table or generic dispatch.
+Here both PUSH switches dynamically bind, and the sign uses PUNCH while the
+orb uses TOUCH. For secret exits, shared switches leave reverse blocking and
+closed/secret bits. State changes, attempts, successful arrival and surviving
+return need distinct accepted evidence; water-flow text does not declare a
+current. Keep mixed-fee commissions/forge guarded with accounting active.
+All actual content repairs need separate fix commits and clear PR/news
+behavior/proof/limits; this example only records pending builder decisions.

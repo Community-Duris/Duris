@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 86 &&
-				tracker.summary_for(7, 42).total == 1622,
+		require(catalog.story_mappings.size() == 87 &&
+				tracker.summary_for(7, 42).total == 1618,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -6645,6 +6645,115 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 313) &&
 					!recovered.has_discovered(7, 42, 352),
 				"Wharf cold recovery lost independent receipts or invented foreign discovery");
+		}
+
+		{
+			const auto &cutting = story_for("troll_caves", "emerald-cutting");
+			const auto &mace = story_for("troll_caves", "emerald-mace");
+			const auto &ruby = story_for("troll_caves", "ruby-longsword");
+			const auto &obsidian = story_for("troll_caves", "obsidian-dagger");
+			const auto &blessing = story_for("troll_caves", "chalice-mace-blessing");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 969, 96900, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 969, 10, 1, 101, false, false)
+							.find(blessing.title) == std::string::npos,
+				"Troll Caves discovery exposed an unseen giver's quest");
+			require(journey.meet_npc(7, 42, 96916, 96925, 102) == result::applied &&
+					journey.meet_npc(7, 42, 96925, 96959, 102) ==
+						result::applied &&
+					journey.meet_npc(7, 42, 96926, 96960, 102) ==
+						result::applied,
+				"Troll Caves giver encounters failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Troll Caves journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[96932] = 1;
+			supplies.carried[96930] = 1;
+			supplies.carried[96910] = 1;
+			supplies.carried[96907] = 1;
+			supplies.carried[96906] = 1;
+			supplies.equipped[18] = 96931;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 969, 10, 1, 103, false, false,
+							 &supplies);
+			require(section(blessing).find("[Missing now] " + blessing.steps[1].text) !=
+						std::string::npos &&
+					section(blessing).find("[Missing now] " +
+							       blessing.steps[2].text) !=
+						std::string::npos &&
+					section(mace).find("[Missing now] " + mace.steps[1].text) !=
+						std::string::npos &&
+					section(cutting).find("[Ready now] " +
+							      cutting.steps[0].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 969).completed == 0 &&
+					journey.progress_for_zone(7, 42, 969).total == 1 &&
+					journey.serialize_state() == before,
+				"Troll Caves wrong-kind mace, worn chalice, uncut gems, wand or visits fabricated completion");
+			supplies.carried[96915] = 1;
+			supplies.carried[96931] = 1;
+			supplies.carried[96933] = 1;
+			journal = journey.render_journal(7, 42, 969, 10, 1, 104, false, false,
+							 &supplies);
+			require(section(blessing).find("Next: " + blessing.steps.back().text) !=
+						std::string::npos &&
+					section(mace).find("Next: " + mace.steps.back().text) !=
+						std::string::npos &&
+					section(mace).find("unavailable with accounting active") !=
+						std::string::npos &&
+					section(ruby).find("unavailable with accounting active") !=
+						std::string::npos &&
+					section(obsidian).find(
+						"unavailable with accounting active") !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Troll Caves exact supplied materials required crafting history, hid fee guards or recorded acceptance");
+			// Retain already accepted historical paid receipts, without qualifying fresh coin acceptance.
+			record(journey, cutting.contracts.front(), "troll-historical-cutting", 969,
+			       96960);
+			record(journey, mace.contracts.front(), "troll-historical-mace", 969,
+			       96925);
+			record(journey, ruby.contracts.front(), "troll-historical-ruby", 969,
+			       96925);
+			record(journey, obsidian.contracts.front(), "troll-historical-obsidian",
+			       969, 96925);
+			supplies.carried.erase(96915);
+			supplies.carried.erase(96933);
+			journal = journey.render_journal(7, 42, 969, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(blessing).find("[Missing now] " + blessing.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 969).completed == 0,
+				"Troll Caves support receipts restored spent mace or counted four services as achievements");
+			auto wrong_owner =
+				completion(blessing.contracts.front(), "troll-wrong-owner", 122);
+			wrong_owner.transaction.zone_number = 14;
+			wrong_owner.transaction.room_vnum = 96959;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Troll Caves blessing accepted foreign ownership");
+			record(journey, blessing.contracts.front(), "troll-blessing", 969, 96959);
+			auto replay = completion(blessing.contracts.front(), "troll-blessing", 120);
+			replay.transaction.zone_number = 969;
+			replay.transaction.room_vnum = 96959;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Troll Caves blessing replay duplicated achievement credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 969).completed == 1 &&
+					recovered.progress_for_zone(7, 42, 969).total == 1 &&
+					recovered.evidence_for(cutting.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					!recovered.has_discovered(7, 42, 1200),
+				"Troll Caves cold recovery lost receipts, inflated services or invented Alatorin discovery");
 		}
 
 		{

@@ -118560,6 +118560,324 @@
     {
       "contacts": [
         {
+          "description": "Hraaf starts in lava-side cave 96925 behind the rock door from 96924. Ask about weapons. Three independent paid native commissions use cut emeralds, rubies or obsidian; all are guarded with accounting active. Her separate dynamic forge menu is also disabled. Periodic forging narration creates no item or quest receipt.",
+          "keyword": "hraaf",
+          "mob_vnum": 96916,
+          "name": "Hraaf, the troll blacksmith",
+          "topics": [
+            "weapons",
+            "weapon"
+          ]
+        },
+        {
+          "description": "Guremgh starts at swampy clearing 96959 behind the trees east of 96955. Ask about mace, Hraaf, weapons, dagger or longsword. His exact pre-blessing mace and chalice exchange is the one local story candidate. His computed teacher role provides separate class/level guidance; it does not make every question a quest achievement.",
+          "keyword": "guremgh",
+          "mob_vnum": 96925,
+          "name": "Guremgh, the troll shaman master",
+          "topics": [
+            "mace",
+            "hraaf",
+            "weapon",
+            "weapons",
+            "dagger",
+            "longsword"
+          ]
+        },
+        {
+          "description": "Farghan starts at secret cave 96960 behind the trees west of 96958. Ask about emeralds. His dialogue demands a lost wand and a 100-platinum fee; the actual guarded recipe takes uncut emeralds and coins, without the wand. Keep that discrepancy visible until the builder chooses the intended terms.",
+          "keyword": "farghan",
+          "mob_vnum": 96926,
+          "name": "Farghan, the troll jeweler",
+          "topics": [
+            "emeralds"
+          ]
+        },
+        {
+          "description": "The young troll shaman starts at 96920, behind the curtain south of 96918, holding Guremgh\u2019s gold chalice. The native offering requires that exact chalice, without recording who killed or took it. Recovery, first-source acquisition, a handoff and a personal kill need separate accepted evidence.",
+          "keyword": "shaman",
+          "mob_vnum": 96915,
+          "name": "a young troll shaman",
+          "topics": []
+        },
+        {
+          "description": "The small gnome starts behind the waterfall at 96940 with a pouch, jasper, staff and shield, and two following troll slaves. The thin black wand resets loose in the same room rather than on the gnome. Finding it does not prove the gnome stole it, nor does visiting or killing the gnome complete Farghan\u2019s current recipe or rescue the slaves.",
+          "keyword": "gnome",
+          "mob_vnum": 96905,
+          "name": "a small gnome",
+          "topics": []
+        },
+        {
+          "description": "The gigantic water lizard starts underwater at 96944 near uncut emeralds and a magical lizard egg. The egg is a static armor item; its extra description calls it a fish. No reviewed native hatch, fish transformation or accepted rescue endpoint exists for it.",
+          "keyword": "lizard",
+          "mob_vnum": 96908,
+          "name": "a GIGANTIC water lizard",
+          "topics": []
+        },
+        {
+          "description": "The mining foreman starts in niche 96914 with two miner followers and ordinary food/equipment. Miners and mining prose do not issue gemstone quest events. Local rubies and obsidian are loose resets at 96942; emeralds reset at 96944.",
+          "keyword": "foreman",
+          "mob_vnum": 96919,
+          "name": "a troll mining foreman",
+          "topics": []
+        },
+        {
+          "description": "The scrag bandit starts at slimy lair 96980 behind the secret northern pool passage from 96974. Relics, bones and a hoop support exploration, without a reviewed native campaign completion. The deep route connects to the foreign tunnels near 23741.",
+          "keyword": "scrag",
+          "mob_vnum": 96927,
+          "name": "a scrag bandit",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Trace the emerald-cutting and mace commissions, recover Guremgh\u2019s chalice, and recognize the exact pre-blessing and enhanced mace kinds. The journal explains guarded payments, independent gem-weapon services, dangerous access and the wand discrepancy without inventing personal mining, kills, rescue or successful travel.",
+      "orientation": [
+        "Active, ready accounting is required for discovery, visible encounters, journals and new achievement/daily credit. Discovering Troll Caves has its own achievement. All five native exchanges are explained: four supporting paid services and one chalice-and-mace story. Only the latter is a potential daily candidate; actual sourcing, offering, reward publication and renewal remain unqualified.",
+        "The main progression is uncut emeralds \u2192 Farghan\u2019s cut emeralds \u2192 Hraaf\u2019s pre-blessing mace \u2192 Guremgh\u2019s enhanced mace with his chalice. Cutting and weapon commissions are optional sources, not mandatory personal history. Ruby and obsidian commissions are independent equipment services. Exact supplied items skip the producer route; current custody does not prove first original acquisition, mining, kills or safe access.",
+        "Farghan asks 100 platinum for cutting, Hraaf 890 platinum for an emerald mace, 400 for a ruby sword or 200 for an obsidian dagger. All four mixed coin-and-item offerings are unavailable with accounting active. Raw emeralds through the mace use 990 platinum across two commissions. Carrying the materials does not make a fee accepted or enable the separate guarded forge command.",
+        "Farghan says he will not cut emeralds without the thin black wand. The actual recipe checks uncut emeralds and 100000 copper, without the wand. The wand is a loose reset behind the waterfall at 96940, not equipment on the gnome. This is a terms-versus-dialogue gap for a builder; no wand turn-in, theft, gnome kill or learned clue is recorded by the current recipe.",
+        "The young shaman at 96920 holds the exact gold chalice. Guremgh at 96959 requires it together with pre-blessing mace 96915. His enhanced reward 96932 has the same displayed name and keywords as the input, but a different kind and fixed properties. A ruby sword, dagger or already enhanced mace does not satisfy the native input. Dialogue about killing the student or tenfold power does not establish those outcomes.",
+        "From Surface 622564, descend to hole 96900, then head east and north through 96901\u201396903. The hot-hole descent and lava shaft have real fall properties. One route toward Hraaf passes 96913 east to 96915, east to shaft 96923, down to 96924 and through its secret eastern rock door to 96925. The rope is scene prose; possession of a rope or a room visit does not prove protected passage.",
+        "The chalice route follows the slimy hole upward from 96913 through 96916 and 96917 to 96918, then through its southern curtain to student room 96920. The separate western rocks lead to healing room 96919, with the actual healing flag. There is no local inn flag or literal rent assignment. Faster recovery does not complete a healing quest or guarantee safe travel.",
+        "From 96932, travel north to 96938 and west to waterfall 96939. The northern waterfall passage to 96940 resets open even though its world definition starts secret/closed. Inspect the current passage state. The warning sign says to prepare an escape spell; its configured teleport command is PUNCH sign, which sends to opening 96937, rather than READ. Do not infer an accepted reading or safe chasm escape from that text.",
+        "Waterfall 96939 west enters no-ground chasm 96941, with fall chance 100 and a downward route to 96942. Rubies and obsidian reset at the bottom. PUSH the rock pile 96908 to clear the blocked southern side toward reservoir 96943. The target remains secret, and the reverse northern side can remain blocked because the shared switch does not clear reverse blocks for secret exits. Passage, return and reset state need actual qualification.",
+        "Reservoir 96943 leads down to underwater 96944, with the uncut emeralds, static egg and gigantic lizard. TOUCH the lizard skin orb at 96943 to use its declared unlimited teleport to waterfall cave 96940, subject to runtime selection/admission. Orb custody or glowing narration does not prove an accepted arrival. No current property is declared for these rooms, despite water-flow prose.",
+        "PUSH the huge boulder at 96935 to clear its blocked southern side toward 96936; secret and closed state remain, and its reverse northern side can stay blocked. The opening at 96937 leads east to 96953, with forest routes to Guremgh east of 96955 and Farghan west of 96958 through secret trees. These switches are dynamically bound by their object type despite zero literal local assignments.",
+        "Alatorin gem dealer 120003 at trade room 123215 declares exact uncut emeralds, rubies and obsidian as stock, with separate reset caps and shop authority. This is a real supplied-material alternative whose actual shopping, availability and ownership publication need qualification; visiting a foreign merchant does not discover Troll Caves or complete a local offering.",
+        "The deep route from 96903 north through 96961\u201396969 and the circular caves reaches pool 96974, secret northern scrag lair 96980, bat cave 96981 and western foreign tunnel 23741 from 96976. Surface and foreign tunnel have reciprocal ordinary entrances. A warning-sign prototype in Graves also declares PUNCH teleport to 96937, but no reviewed Graves reset supplies it. That is an unplaced foreign-data lead, not a promised entrance.",
+        "Hraaf\u2019s separate armor and accessory forge command, including its menu, is unavailable with accounting active. It is not an alternative way to obtain the native gem weapons. A forging hum does not produce a reward. Guremgh\u2019s level guidance, miners, the gnome\u2019s slave followers and the static egg do not add accepted local quest outcomes."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "troll_caves",
+      "stories": [
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:100000,I:96910;receive=I:96933;disappear=0",
+              "giver_vnum": 96926
+            }
+          ],
+          "id": "emerald-cutting",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Uncut emeralds 96910 reset underwater at 96944. The Alatorin gem dealer 120003 at 123215 also declares this exact kind in shop stock; purchase and ordinary gathering need actual qualification. Cut emeralds 96933 share the emeralds alias but do not replace this input. Current loose custody explains preparation. Exact supplied items skip personal source, kill and producer history. Readiness does not enable guarded payment or create accepted evidence.",
+              "id": "material-96910",
+              "item_vnums": [
+                96910
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the uncut emeralds"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:100000,I:96910;receive=I:96933;disappear=0",
+                  "giver_vnum": 96926
+                }
+              ],
+              "hint": "Only accepted exchange evidence completes this stage. Questions, current items, narration and travel do not create a receipt. Supporting services grant no quest achievements. Mixed item-and-coin commissions are unavailable with accounting active.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Farghan: cut the emeralds (guarded)"
+            }
+          ],
+          "summary": "The actual native recipe takes uncut emeralds plus 100000 copper (100 platinum) for carefully cut emeralds. Its mixed fee is unavailable with accounting active. Dialogue also demands the lost thin black wand, but the recipe does not consume or check it; the wand at waterfall cave 96940 is a real lore/source lead awaiting a builder decision. Do not hand over the wand expecting this current recipe to accept it. This preparation service grants no quest or daily achievement.",
+          "title": "Farghan: cut the emeralds (guarded)"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:890000,I:96933;receive=I:96915;disappear=0",
+              "giver_vnum": 96916
+            }
+          ],
+          "id": "emerald-mace",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:100000,I:96910;receive=I:96933;disappear=0",
+                  "giver_vnum": 96926
+                }
+              ],
+              "hint": "This optional commission explains a declared source. Supplied exact items skip it; an earlier receipt does not refill spent materials or establish current fee support.",
+              "id": "earlier-service-148",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: have Farghan cut the emeralds"
+            },
+            {
+              "count": 1,
+              "hint": "Hraaf rejects the uncut kind even though both kinds share the emeralds keyword. Farghan\u2019s declared recipe is the reviewed producer of cut emeralds. Current loose custody explains preparation. Exact supplied items skip personal source, kill and producer history. Readiness does not enable guarded payment or create accepted evidence.",
+              "id": "material-96933",
+              "item_vnums": [
+                96933
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the carefully cut emeralds"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:890000,I:96933;receive=I:96915;disappear=0",
+                  "giver_vnum": 96916
+                }
+              ],
+              "hint": "Only accepted exchange evidence completes this stage. Questions, current items, narration and travel do not create a receipt. Supporting services grant no quest achievements. Mixed item-and-coin commissions are unavailable with accounting active.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Hraaf: commission an emerald mace (guarded)"
+            }
+          ],
+          "summary": "The declared recipe takes carefully cut emeralds plus 890000 copper (890 platinum) for the pre-blessing emerald mace 96915. Farghan\u2019s cutting is an optional source; supplied exact cut emeralds skip it. Producing a mace from raw emeralds uses two separate fees totaling 990000 copper (990 platinum). Both paid commissions are unavailable with accounting active. This equipment service grants no quest or daily achievement.",
+          "title": "Hraaf: commission an emerald mace (guarded)"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:400000,I:96907;receive=I:96916;disappear=0",
+              "giver_vnum": 96916
+            }
+          ],
+          "id": "ruby-longsword",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The exact rubies reset at chasm bottom 96942 and are also declared in Alatorin gem-dealer stock. Reset and shop authority differ; possession does not prove mining or first original acquisition. Current loose custody explains preparation. Exact supplied items skip personal source, kill and producer history. Readiness does not enable guarded payment or create accepted evidence.",
+              "id": "material-96907",
+              "item_vnums": [
+                96907
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small rubies"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:400000,I:96907;receive=I:96916;disappear=0",
+                  "giver_vnum": 96916
+                }
+              ],
+              "hint": "Only accepted exchange evidence completes this stage. Questions, current items, narration and travel do not create a receipt. Supporting services grant no quest achievements. Mixed item-and-coin commissions are unavailable with accounting active.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Hraaf: commission a ruby longsword (guarded)"
+            }
+          ],
+          "summary": "The declared recipe takes small rubies plus 400000 copper (400 platinum) for a ruby longsword. Its mixed fee is unavailable with accounting active. This is an independent equipment service, without a required emerald or obsidian commission. Guremgh\u2019s response rejects a longsword as a substitute for his mace offering. No quest or daily achievement is awarded by this service.",
+          "title": "Hraaf: commission a ruby longsword (guarded)"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:200000,I:96906;receive=I:96917;disappear=0",
+              "giver_vnum": 96916
+            }
+          ],
+          "id": "obsidian-dagger",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The exact stones reset at chasm bottom 96942 and appear in Alatorin gem-dealer stock. Supplied stones skip a personal descent, mining or merchant history. Current loose custody explains preparation. Exact supplied items skip personal source, kill and producer history. Readiness does not enable guarded payment or create accepted evidence.",
+              "id": "material-96906",
+              "item_vnums": [
+                96906
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small obsidian stones"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:200000,I:96906;receive=I:96917;disappear=0",
+                  "giver_vnum": 96916
+                }
+              ],
+              "hint": "Only accepted exchange evidence completes this stage. Questions, current items, narration and travel do not create a receipt. Supporting services grant no quest achievements. Mixed item-and-coin commissions are unavailable with accounting active.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Hraaf: commission an obsidian dagger (guarded)"
+            }
+          ],
+          "summary": "The declared recipe takes small obsidian stones plus 200000 copper (200 platinum) for an obsidian dagger. Its mixed fee is unavailable with accounting active. This independent equipment service does not unlock the mace blessing, and Guremgh\u2019s dialogue rejects daggers as the required weapon. No quest or daily achievement is awarded by this service.",
+          "title": "Hraaf: commission an obsidian dagger (guarded)"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:96915,I:96931;receive=I:96932;disappear=0",
+              "giver_vnum": 96925
+            }
+          ],
+          "id": "chalice-mace-blessing",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:890000,I:96933;receive=I:96915;disappear=0",
+                  "giver_vnum": 96916
+                }
+              ],
+              "hint": "This optional commission explains a declared source. Supplied exact items skip it; an earlier receipt does not refill spent materials or establish current fee support.",
+              "id": "earlier-service-23",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: commission Hraaf\u2019s emerald mace"
+            },
+            {
+              "count": 1,
+              "hint": "The input is Hraaf\u2019s declared mace kind 96915. Enhanced mace 96932, ruby sword 96916 and obsidian dagger 96917 do not qualify even when a name or description sounds similar. Current loose custody explains preparation. Exact supplied items skip personal source, kill and producer history. Readiness does not enable guarded payment or create accepted evidence.",
+              "id": "material-96915",
+              "item_vnums": [
+                96915
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the pre-blessing emerald mace"
+            },
+            {
+              "count": 1,
+              "hint": "The young shaman 96915 at 96920 holds exact chalice 96931. A valid recovery or supplied item satisfies the native input; the recipe does not prove a student kill, theft or rescue. Current loose custody explains preparation. Exact supplied items skip personal source, kill and producer history. Readiness does not enable guarded payment or create accepted evidence.",
+              "id": "material-96931",
+              "item_vnums": [
+                96931
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Guremgh\u2019s gold chalice"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:96915,I:96931;receive=I:96932;disappear=0",
+                  "giver_vnum": 96925
+                }
+              ],
+              "hint": "Only the accepted exact mace-and-chalice offering records this story. The pre-blessing mace is required; the identically named enhanced mace is a different kind. Personal crafting, student kills, asked aliases and supplied-route history are not required by the native offering. This is a potential daily candidate whose actual supply, offering and renewal remain unqualified.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Guremgh: return the chalice and bless the mace"
+            }
+          ],
+          "summary": "Bring Guremgh the exact pre-blessing emerald mace 96915 and gold chalice 96931 to receive the distinct enhanced emerald mace 96932. The student shaman at room 96920 wears the chalice in the held slot. Guremgh hopes you killed the student, but the recipe checks the two items, without a personal-kill condition. Hraaf\u2019s paid mace commission is an optional source and remains guarded; a legitimately supplied exact mace skips it. Both maces display the same name, so use exact item identity rather than the name or a promised tenfold power increase.",
+          "title": "Guremgh: return the chalice and bless the mace"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Start with these conversation topics, then follow the requests below.",
           "keyword": "high",
           "mob_vnum": 97510,

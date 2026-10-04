@@ -2402,3 +2402,25 @@ custom semantics are actually integrated. The only native fix here is
 [02788c573](https://github.com/Community-Duris/Duris/commit/02788c5738a11963647ceb9b4b344463f4f57704),
 with executable actual-function evidence and a news entry. Cap, fees, forge,
 rod, inn and wording proposals remain pending.
+
+## Troll Caves: exact blessing kinds and access-qualified preparation
+
+The [dossier](zone-stories/TROLL_CAVES.md) and
+[journal](../../areas/story/troll_caves.story.json) use existing schema-three
+support services, optional materials/history and one exact item-only blessing.
+Active, ready accounting remains mandatory for new discovery, encounters,
+journals and achievement/daily credit; frozen recovery remains separate.
+
+| Capability | Concrete need | Acceptance and next implementation |
+| --- | --- | --- |
+| Paid preparation and exact continuation | Four mixed-fee commissions feed a two-item blessing; base/enhanced mace have the same displayed name | Atomic wallet/material/output/actor settlement and recovery; preserve immutable kinds. Qualify full/partial/busy/rejected/replayed fees and exact selected inputs. Keep all payment/forge guards until supported; historical service receipts never restore spent items |
+| Source alternatives and dynamic dispatch | Local gemstone caps one; Alatorin declares exact stock; type-29 switches, generic sign/orb, table smith and flag teacher lack literal assignments | Audit admitted source/stock/UID/generation/custody and type/flag/table registration. Distinguish original source from player handoff; literal-only absence cannot imply inert controls. Shopping/teacher guidance does not create zone completion |
+| Control state, fall and underwater return | Secret switches clear only the forward block; sign PUNCH and orb TOUCH move to fixed rooms; nineteen chance-fall fields | Capture selected control/item/actor, pre/post forward/reverse bits, exact command, admitted movement and arrival. Qualify falling/protection, injury/death/removal, interruption/reset and surviving escape. Narration, visits and a handler's true return are not sufficient |
+| Builder-selected prerequisites and repairs | Dialogue requires a wand omitted from cutting recipe; cut emerald extra says uncut, egg says fish; foreign Graves sign lacks a reviewed source | Confirm terms/wording/endpoint/placement intent, then qualify any actual recipe/text/access repair separately. Keep pending proposals apart from shipped fixes with prominent PR/news before/after/proof/limits |
+| Full-stage parent and source/kill/effect objectives | Emerald cutting→mace→chalice blessing, with supplied shortcuts; narrated student kill/tenfold power and slave followers | Present explicit current and historical stages without forcing support receipts or unrelated sword/dagger branches. Dedicated accepted source/kill/rescue/effect/party events need actual semantic adapters before they become credit. Current mapping adds none |
+| Guarded legacy forging | Table index12 versus eleven entries; NPC ore scan; native gem recipes differ from armor rows | Separately qualify menu bounds, player-root allocation, fee/generated output/ownership/recovery and cancellation before repair/enablement. Preserve guard; a forge hum is ambient, not a produced item |
+| Foreign custom entrance and post-travel effects | Ixarkon veil96402 at96524 randomly includes96909 but compares ENTER with leading-space argument removed by normal dispatch | Qualify actual placement/selection/argument, random destination, arrival, subsequent restore/CharWait and interruption. Repair the command comparison in a separate fix commit with foreign-zone news and proof/limits; a fixed type-25 inventory alone does not cover custom entrances |
+
+Source map66 is comprehensive; actual gameplay qualification and all154 later
+roadmap entries remain. No new runtime API, event/schema, payment adapter,
+native recipe, placement, switch, command verb or effect ships in this checkpoint.

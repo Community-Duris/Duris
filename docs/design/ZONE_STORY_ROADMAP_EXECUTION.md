@@ -131,9 +131,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 63 | Fishermans Wharf | [Comprehensive dossier](zone-stories/FISHERMANS_WHARF.md): all thirteen blocks/70 rooms/23 mobiles/20 objects/119 resets, shop, ordinary Surface boundary, imported skull and shared fishing/breathing/key/fall execution | Five independent outcomes, thirteen contacts/44 aliases/10 optional checks; exact 8-root/four-copy bundles and optional bait/line history | No native repair. Fishing narration/XP precedes ownership grant; effect alternatives, source provenance, admitted supply, command-time fall/access and restricted foreign custody require qualification |
 | 64 | Northern Lakes and Settlements | [Comprehensive dossier](zone-stories/NORTHERN_LAKES.md): all fourteen blocks/219 rooms/63 mobiles/82 objects/414 resets, both shops, five foreign boundaries, imported visage/consumer and shared quest/reset/current/fall/boat execution | Six independent stories, thirteen contacts/20 aliases/9 optional checks; courier stage receipts stay optional with supplied exact materials | Separate fix 5a2b93d6d corrects two exit clues. Distinct-source scales, overlapping recipient/supplier, typed actor/current/fall episodes, campaign all-stage display and actual daily renewal need qualification |
 | 65 | Kobold Settlement | [Comprehensive dossier](zone-stories/KOBOLD_SETTLEMENT.md): all seventeen blocks/147 rooms/58 mobiles/66 objects/303 resets/three shops; ten forge rows, guardian/death/switch/epic/inn/shared paths and foreign closure | One guarded story/three services; sixteen contacts/16 aliases/7 optional checks; supplied materials and historical support receipts remain independent | Separate guardian fix 02788c573 restores actual rooms and ledge targeting. Atomic fees/overlapping recipe order, admitted supply, custom death/access/forced travel and legacy forge/rod/inn intent remain pending |
-| 66–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 66 | Troll Caves | [Comprehensive dossier](zone-stories/TROLL_CAVES.md): all ten blocks/82 rooms/28 mobiles/37 objects/193 resets, 142 exact/152 parent families, computed smith/teacher/switch/teleport and foreign stock | One story/four services; eight contacts/9 aliases/8 optional checks; exact same-name kinds, supplied materials and producer history independent | No native repair. Atomic fees, wand mismatch, secret control returns, PUNCH sign/foreign copy, guarded forge and accepted source/travel/fall/survival/renewal qualification remain plans |
+| 67–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Troll Caves (`troll_caves`).
+The next area is Centaur Villages (`centaur_zone`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -3431,3 +3432,77 @@ DB/account/server operation, migration, deployment or merge. Earlier full PR
 checkpoint text is preserved in the [publication archive](ZONE_STORY_PR_CHECKPOINT_HISTORY.md)
 so the current PR can stay within its description size limit while retaining
 every earlier repair/news and pending-plan record.
+
+## Troll Caves completed source map — October 4, 2026
+
+The [dossier](zone-stories/TROLL_CAVES.md) reviews all ten blocks (five M/five Q;
+five addressed families/nine aliases), 82 rooms/76 prose groups/19 headers/
+26 metadata groups/69 numeric exit families/119 text-keyword pairs, 28 mobiles,
+37 objects and 193 resets/142 exact/152 parent-aware families. Full properties,
+memberships, caps/equipment/container/followers, two foreign boundary rooms,
+imported bat/guano, bounded global producers/consumers/713 teleport prototypes,
+Alatorin gem dealer/full stock and computed local/shared handlers are reviewed.
+
+The [journal](../../areas/story/troll_caves.story.json) maps one chalice-and-mace
+story and four supporting paid services, eight contacts and eight optional
+checks. Raw emeralds→cutting→base mace→enhanced mace is explained; ruby and
+obsidian commissions stay independent. Exact supplied items skip earlier
+personal production, mining or kills. Uncut/cut emeralds share an alias; both
+maces display the same name but have different kinds/properties. Only the
+base kind and actual chalice satisfy the blessing. Student-kill wishes and
+tenfold-power prose do not become required or recorded objectives.
+
+All four mixed fees remain unavailable with accounting active. Hraaf's
+separate eleven-row forge menu is also guarded; periodic hum creates no
+crafted reward. The item-only blessing retains one potential daily candidate,
+without a proven fresh supply or renewal journey. Local gemstone O caps are
+one; Alatorin stocks the exact raw kinds under different reset/shop authority.
+Source stock and supplied custody do not prove first acquisition or payment.
+
+Farghan demands the lost wand in dialogue, but Q148 only takes uncut emeralds
+and100000 copper. Wand96930 resets loose behind the waterfall, not on the
+gnome. Builder intent must choose the request versus dialogue; no recipe fix
+ships. Cut-emerald/egg/Farghan wording, an unplaced foreign Graves sign and
+secret switch reverse-state policy remain separate pending decisions. **No
+native repair ships in this checkpoint.** Prior actual repairs and news remain
+intact and clearly separated from these proposals.
+
+Two PUSH switches dynamically bind despite zero literal assignments. For
+secret targets they clear only the forward block, preserving secret/closed
+and reverse blocked state. Waterfall door resets open. The sign uses PUNCH
+to96937; the orb uses TOUCH to96940, both unlimited. Nineteen fall fields,
+no-ground chasm and underwater sources require accepted movement/control,
+arrival, protection, injury/removal and surviving-return episodes. No current
+is declared despite water-flow prose. Guremgh's dynamic teacher guidance,
+gnome followers, egg armor, miners and recovery flags are not extra quests.
+
+The full custom-code scan additionally found bound/placed Ixarkon veil96402
+at96524 with Troll room96909 among twenty-five random destinations. Its
+ENTER check expects a leading space removed by ordinary command dispatch.
+The full veil/prototype/room/reset/assignment and invocation are reviewed;
+qualify and repair that comparison separately with actual selected command,
+arrival, post-arrival restore/CharWait and interruption evidence. No usable
+random entrance or foreign veil fix is promised. Fixed type-25 inventories
+must be supplemented with custom entrance and post-travel effect review.
+
+Plans add exact payment/material/output/source-UID/custody settlement; actual
+type/flag/table dispatch census; all-stage parent views with optional supplied
+routes; control state and confirmed travel/fall/escape outcomes. Guarded forge
+choice12 reaches sentinel−1 for eleven rows, and inventory scan uses the NPC;
+qualify bounds/player allocation and paid generation before enabling it.
+
+Full production/source fixture, actual C++ all-map/schema/file-loader journeys,
+accounting gates/daily projection, maintained build, changed/staged formatting,
+whitespace and native/prior-map/link preservation are checked at publication.
+Journey cases cover exact/worn/wrong kinds, optional producer history, service
+exclusion, read-only readiness, spent materials, immutable owner, replay and
+cold recovery. Historical paid receipts do not qualify live fees. Actual reset/
+shopping/handoff, offerings/rewards, switches/doors/falls/travel/death/survival,
+effects, persistence and renewal remain unqualified.
+
+Catalog:87 maps/1618 achievements/1459 potential dailies/2207 rows. Four support
+units deliberately leave the achievement denominator. All2668 native definitions,
+fingerprint/revision two/registry and prior86 maps stay unchanged. Original
+queue:66/220 complete,154 pending; Centaur Villages next. Active, ready accounting
+is mandatory; frozen recovery stays separate. No DB/account/server operation,
+migration, deployment or merge.

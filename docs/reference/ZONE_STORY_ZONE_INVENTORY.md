@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 86 authored journals.
+2668 distinct Q contracts; 87 authored journals.
 
 Regenerate with:
 
@@ -224,7 +224,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Trakkia Mountains (`trakkia`) | 4 | 2 | 0 | Fallback | [4 × a grangle root → a strange, circular gem](../../areas/qst/trakkia.qst#L52) | pet_shops |
 | Tribal Forest (`tribal`) | 10 | 15 | 2 | Yes | [1 × a severed left leg; 1 × a severed left hand; 1 × a severed right hand; other required items → a redwood longbow, an elegant deerskin quiver](../../areas/qst/tribal.qst#L266) | amethyst_orb |
 | The Transparent Tower (`trnsptow`) | 4 | 26 | 2 | Yes | [3 × a pale purple token; 1 × the scepter of illusion → a key made of mist](../../areas/qst/trnsptow.qst#L195) | artifact_stone, trans_tower_shadow_globe, transp_tow_acerlade, zion_light_dark |
-| Troll Caves (`troll_caves`) | 5 | 5 | 2 | Fallback | [1 × small obsidian stones → an obsidian dagger](../../areas/qst/troll_caves.qst#L61) | — |
+| Troll Caves (`troll_caves`) | 5 | 5 | 2 | Yes | [1 × small obsidian stones → an obsidian dagger](../../areas/qst/troll_caves.qst#L61) | — |
 | The Troll Hills (`troll_hills`) | 1 | 3 | 0 | Fallback | [1 × a small stone ogre idol → a vial of boiling goo](../../areas/qst/troll_hills.qst#L23) | bridge_troll |
 | The Twin Towers (`ttowers`) | 7 | 9 | 0 | Fallback | [1 × the bloody heart of Mixt; 1 × the bloody heart of Blaevyna; 1 × the bloody heart of Lyena → Lord Talfyn's Armor of Darkness](../../areas/qst/ttowers.qst#L112) | — |
 | Tundra (`tundra`) | 7 | 12 | 1 | Fallback | [1 × an old book; 1 × a dark green book; 1 × a dark magenta book; other required items → a pair of snowy adventurer boots](../../areas/qst/tundra.qst#L40) | inn |

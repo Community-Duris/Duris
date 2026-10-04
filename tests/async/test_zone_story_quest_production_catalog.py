@@ -2313,7 +2313,7 @@ assert sum(d["daily_eligible"] for d in definitions.values())==9
 assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
 assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
-assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1622
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1618
 sources=collections.defaultdict(list);parent=None;room=None
 for reset in crakkaro["reset_commands"]:
     c,v=reset["command"],reset["arguments"]
@@ -3575,7 +3575,66 @@ wh=next(m for m in catalog['story_mappings'] if m['source_area']=='wh')
 assert any(foreign[0]['binding'] in s['contracts'] for s in wh['stories'])
 
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold"):
+# Troll Caves: exact kinds, guarded preparation, dynamic controls and source alternatives.
+troll=inventory_module.area_evidence(ROOT,'troll_caves')
+mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='troll_caves')
+assert (mapping['schema_version'],mapping['revision'],mapping['coverage'])==(3,1,'complete')
+assert len(mapping['stories'])==5 and len(mapping['contacts'])==8 and not mapping['exclusions']
+assert collections.Counter(s['category'] for s in mapping['stories'])=={'service':4,'story':1}
+assert collections.Counter(t['kind'] for s in mapping['stories'] for t in s['steps'] if t.get('optional'))=={'carried_item':6,'completion':2}
+raw=[b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/troll_caves.qst']
+assert collections.Counter(b['kind'] for b in raw)=={'M':5,'Q':5} and len(troll['dialogue'])==5
+by_line={b['line']:b for b in raw if 'binding' in b}
+for line,giver,inputs,outputs in ((23,96916,[('I',96933),('C',890000)],[('I',96915)]),(42,96916,[('I',96907),('C',400000)],[('I',96916)]),(61,96916,[('I',96906),('C',200000)],[('I',96917)]),(106,96925,[('I',96915),('I',96931)],[('I',96932)]),(148,96926,[('C',100000),('I',96910)],[('I',96933)])):
+    b=by_line[line]
+    assert (b['giver_vnum'],b['give'],b['receive'],b['disappear'])==(giver,inputs,outputs,False)
+    d=next(r['definition'] for r in troll['requests'] if r['block']['line']==line)
+    assert d['source_area']=='troll_caves' and d['zone_number']==969 and d['daily_eligible']==(line==106)
+    assert d['daily_exclusion']==('' if line==106 else 'Unsupported durable offering')
+assert ('I',96930) not in by_line[148]['give'] # The dialogue's wand is not a native prerequisite.
+stories={s['id']:s for s in mapping['stories']}
+assert {tuple(c.items()) for s in stories.values() for c in s['contracts']}=={tuple(b['binding'].items()) for b in by_line.values()}
+assert all(s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional') for s in stories.values())
+assert stories['emerald-mace']['steps'][0]['contracts']==[by_line[148]['binding']]
+assert stories['chalice-mace-blessing']['steps'][0]['contracts']==[by_line[23]['binding']]
+assert [(t['item_vnums'],t['count']) for t in stories['chalice-mace-blessing']['steps'] if t['kind']=='carried_item']==[([96915],1),([96931],1)]
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==969]
+assert len(units)==5 and sum(u['achievement'] for u in units)==sum(u['daily_candidate'] for u in units)==1
+contacts={c['mob_vnum']:c for c in mapping['contacts']}
+assert contacts[96916]['topics']==['weapons','weapon'] and contacts[96925]['topics']==['mace','hraaf','weapon','weapons','dagger','longsword'] and contacts[96926]['topics']==['emeralds']
+assert sum(len(c['topics']) for c in contacts.values())==9 and not troll['special_assignments']
+rooms=dawndale_bodies('troll_caves','wld');objects=dawndale_bodies('troll_caves','obj');mobiles=dawndale_bodies('troll_caves','mob')
+assert (len(rooms),len(mobiles),len(objects),len(troll['reset_commands']))==(82,28,37,193)
+assert (troll['zone']['first_vnum'],troll['zone']['last_vnum'],troll['zone']['reset_mode'])==(96886,96981,2)
+assert collections.Counter(r['command'] for r in troll['reset_commands'])=={'M':111,'D':28,'E':20,'G':18,'O':11,'F':4,'P':1}
+assert len({(r['command'],tuple(r['arguments'])) for r in troll['reset_commands']})==142
+families=set();parent=leader=None
+for r in troll['reset_commands']:
+    c,a=r['command'],r['arguments'];target=leader if c=='F' else parent if c in 'GE' else a[3] if c=='P' else None
+    families.add((c,tuple(a),target))
+    if c=='M':parent=leader=(a[1],a[3])
+    elif c=='F':parent=(a[1],a[3])
+assert len(families)==152
+assert objects[96915].split('~')[0]==objects[96932].split('~')[0] and objects[96915].split('~')[1]==objects[96932].split('~')[1]
+assert objects[96910].split('~')[0]==objects[96933].split('~')[0]
+assert objvalues(objects[96900])[11:15]==[270,96935,2,1] and objvalues(objects[96908])[11:15]==[270,96942,2,1]
+assert objvalues(objects[96911])[11:14]==[96937,189,-1] and objvalues(objects[96912])[11:14]==[96940,320,-1]
+resets={r['line']:r for r in troll['reset_commands']}
+for line,c,args in ((121,'O',[0,96900,1,96935,100,0,0,0]),(123,'O',[0,96911,1,96939,100,0,0,0]),(124,'O',[0,96930,1,96940,100,0,0,0]),(125,'O',[0,96906,1,96942,100,0,0,0]),(126,'O',[0,96907,1,96942,100,0,0,0]),(128,'O',[0,96912,1,96943,100,0,0,0]),(130,'O',[0,96910,1,96944,100,0,0,0]),(166,'M',[0,96915,1,96920,100,0,0,0]),(169,'E',[1,96931,1,18,100,0,0,0]),(173,'M',[0,96916,1,96925,100,0,0,0]),(255,'M',[0,96925,1,96959,100,0,0,0]),(257,'M',[0,96926,1,96960,100,0,0,0])):
+    assert (resets[line]['command'],resets[line]['arguments'])==(c,args)
+falls={v:int(m[1]) for v,b in rooms.items() if (m:=re.search(r'^F\s*\n(\d+)',b,re.M))}
+assert falls=={96904:10,96905:10,96906:10,96907:6,96908:20,96913:5,96916:10,96917:10,96918:10,96923:5,96926:3,96927:2,96928:2,96929:1,96941:100,96965:10,96966:10,96967:10,96968:10}
+assert all(not re.search(r'^C\s*\n',b,re.M) for b in rooms.values())
+stock=(ROOT/'areas/shp/surfacekeeps.shp').read_text().split('X')[0]
+assert stock.startswith('#120003~\nN\n96910\n96907\n96906\n0\n') and '\n123215\n' in stock
+for v,d,kind,key,target in ((96935,2,13,0,96936),(96936,0,13,0,96935),(96942,2,13,0,96943),(96943,0,13,0,96942),(96939,0,5,0,96940),(96940,2,5,0,96939),(96900,4,0,0,622564),(96976,3,0,0,23741)):
+    assert re.search(r'\bD'+str(d)+r'\s+[^~]*~[^~]*~\s+'+f'{kind} {key} {target}'+r'\b',rooms[v],re.S)
+assert all(resets[line]['arguments'][3]==0 for line in (88,92)) # Actual waterfall reset opens both sides.
+guidance=' '.join(mapping['orientation']+[s['summary'] for s in mapping['stories']])
+for phrase in ('accounting','wand','PUNCH','TOUCH','reverse','990','pre-blessing','enhanced','Alatorin','fall','forge'):
+    assert phrase in guidance,phrase
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
