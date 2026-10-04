@@ -278,14 +278,14 @@ def require_integrity(executor):
         need(isinstance(value, str) and len(value) == 2 * size)
         return bytes.fromhex(value)
 
-    def capsule(operation, field, size, limit, code):
-        if type(size) is not int or not 256 <= size <= limit:
+    def capsule(operation, field, size, limit, code, table="economic_accounting_operation", minimum=256):
+        if type(size) is not int or not minimum <= size <= limit:
             mismatch(code)
         result = bytearray()
         for offset in range(0, size, 65536):
             count = min(65536, size - offset)
             output = executor.sql("SELECT HEX(SUBSTRING(" + field + "," + str(offset + 1) + "," +
-                                  str(count) + ")) FROM economic_accounting_operation WHERE " + operation + ";")
+                                  str(count) + ")) FROM " + table + " WHERE " + operation + ";")
             try:
                 part = bytes.fromhex(output)
             except ValueError:
@@ -294,6 +294,105 @@ def require_integrity(executor):
                 mismatch(code)
             result.extend(part)
         return bytes(result)
+
+    # Restore must retain the opening witness namespace as well as the generic
+    # canonical roots. These checks span all books, including inactive epochs
+    # and unknown imported scopes; no selected-book filter may hide lost rows.
+    if executor.sql("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+                    "AND ENGINE='InnoDB' AND table_name IN ('economic_baseline_control',"
+                    "'economic_baseline_witness','economic_baseline_reservation');") != "3":
+        mismatch("baseline_source")
+    checks = (
+        ("SELECT COUNT(*) FROM economic_baseline_witness w "
+         "LEFT JOIN economic_accounting_operation o ON o.operation_id=w.operation_id "
+         "LEFT JOIN economic_baseline_control c ON c.lineage=w.lineage AND c.epoch=w.epoch "
+         "WHERE o.operation_id IS NULL OR c.lineage IS NULL OR o.lineage<>w.lineage OR o.epoch<>w.epoch "
+         "OR o.reason<>38 OR o.outcome<>1 OR o.result_code<>0;", "baseline_witness"),
+        ("SELECT COUNT(*) FROM economic_accounting_operation o "
+         "LEFT JOIN economic_baseline_witness w ON w.operation_id=o.operation_id "
+         "WHERE o.reason=38 AND o.outcome=1 AND o.result_code=0 AND w.operation_id IS NULL;", "baseline_witness"),
+        ("SELECT COUNT(*) FROM economic_baseline_reservation p LEFT JOIN economic_baseline_witness w "
+         "ON w.operation_id=p.operation_id AND w.lineage=p.lineage AND w.epoch=p.epoch "
+         "WHERE w.operation_id IS NULL;", "baseline_reservation"),
+        ("SELECT COUNT(*) FROM (SELECT lineage,epoch,identity_kind,identity_id "
+         "FROM economic_baseline_reservation GROUP BY lineage,epoch,identity_kind,identity_id "
+         "HAVING COUNT(*)<>1) duplicate_identity;", "baseline_reservation"),
+        ("SELECT COUNT(*) FROM economic_baseline_control c "
+         "LEFT JOIN economic_epoch e ON e.lineage=c.lineage AND e.epoch=c.epoch "
+         "LEFT JOIN economic_lineage_state l ON l.lineage=c.lineage "
+         "LEFT JOIN critical_operation_inbox i ON i.operation_id=c.creating_operation_id "
+         "LEFT JOIN (SELECT lineage,epoch,COUNT(*) n,COUNT(DISTINCT book_revision) revisions,"
+         "MIN(book_revision) first_revision,MAX(book_revision) last_revision "
+         "FROM economic_baseline_witness GROUP BY lineage,epoch) w ON w.lineage=c.lineage AND w.epoch=c.epoch "
+         "LEFT JOIN economic_baseline_witness terminal ON terminal.lineage=c.lineage AND terminal.epoch=c.epoch "
+         "AND terminal.book_revision=c.revision WHERE e.lineage IS NULL OR l.lineage IS NULL "
+         "OR c.lineage=REPEAT(CHAR(0),16) OR c.epoch=REPEAT(CHAR(0),16) "
+         "OR c.creating_operation_id=REPEAT(CHAR(0),16) OR i.operation_id IS NULL "
+         "OR i.status NOT IN (0,1) OR OCTET_LENGTH(c.opening_account)<>40 "
+         "OR SUBSTRING(c.opening_account,1,16)<>c.lineage OR SUBSTRING(c.opening_account,17,4)<>X'01000900' "
+         "OR SUBSTRING(c.opening_account,21,8)=REPEAT(CHAR(0),8) "
+         "OR SUBSTRING(c.opening_account,37,4)<>REPEAT(CHAR(0),4) "
+         "OR c.revision<>COALESCE(w.n,0) OR COALESCE(w.revisions,0)<>COALESCE(w.n,0) "
+         "OR (c.revision>0 AND (w.first_revision<>1 OR w.last_revision<>c.revision)) "
+         "OR NOT (c.last_operation_id <=> terminal.operation_id);", "baseline_book"),
+    )
+    for query, code in checks:
+        if executor.sql(query) != "0":
+            mismatch(code)
+    # A baseline owns no mutation children, native ledger effects or outbox.
+    effects = [("economic_accounting_child", "operation_id"),
+               ("economic_accounting_child", "child_operation_id"),
+               ("economic_accounting_item_reference", "operation_id"),
+               ("currency_ledger", "operation_id"), ("item_ownership_ledger", "operation_id"),
+               ("critical_outbox", "operation_id")]
+    zero_effects = " OR ".join("EXISTS(SELECT 1 FROM " + table + " e JOIN economic_baseline_witness w "
+                              "ON w.operation_id=e." + column + ")" for table, column in effects)
+    if executor.sql("SELECT " + zero_effects + ";") != "0":
+        mismatch("baseline_zero_effect")
+
+    def baseline_witness(where, meta, original, row, frozen, encoded):
+        # The second consumer reuses pure independent EAB1 interpretation. The
+        # import is local because the origin reader also consumes this decoder.
+        from economic_sql_audit_origins import decode_witness, verify_baseline_root
+        columns = [hexadecimal("w.lineage"), hexadecimal("w.epoch"), "w.book_revision", "w.witness_version",
+                   "w.holding_count", "w.item_count", hexadecimal("w.witness_digest"),
+                   "OCTET_LENGTH(w.canonical_witness)", hexadecimal("c.opening_account"),
+                   "i.durable_revision", "i.command_type", "i.schema_version", "i.payload_version",
+                   hexadecimal("i.result_payload")]
+        table = ("economic_baseline_witness w JOIN economic_baseline_control c "
+                 "ON c.lineage=w.lineage AND c.epoch=w.epoch "
+                 "JOIN critical_operation_inbox i ON i.operation_id=w.operation_id")
+        values = arrays(table, columns, "w." + where, "w.operation_id")
+        if len(values) != 1 or len(values[0]) != len(columns):
+            mismatch("baseline_witness")
+        value = values[0]
+        try:
+            lineage, epoch = binary(value[0], 16), binary(value[1], 16)
+            need((lineage, epoch) == meta[:2])
+            names = ("root_lineage", "root_epoch", "operation_id", "original_operation_id", "accounting_version",
+                     "writer_id", "policy_version", "compiler_version", "actor_kind", "actor_id", "reason", "source_event")
+            witness = dict(zip(names, (*meta[:3], original, *meta[4:])))
+            witness.update(book_revision=value[2], witness_version=value[3], holding_count=value[4], item_count=value[5],
+                witness_digest=binary(value[6], 32), canonical_witness=capsule(where, "canonical_witness", value[7],
+                    872144, "baseline_witness", table="economic_baseline_witness", minimum=192),
+                inbox_revision=value[9], inbox_type=value[10], inbox_schema=value[11], inbox_payload=value[12],
+                inbox_result_payload=binary(value[13], 0), canonical_intent=frozen, canonical_plan=encoded,
+                intent_digest=binary(row[12], 32), domain_digest=binary(row[13], 32), plan_digest=binary(row[14], 32))
+            witness.update(zip(("account_count", "posting_count", "child_count", "before_witness_count",
+                                "after_witness_count", "item_event_count"), row[19:25]))
+            holdings, items = decode_witness(witness, lineage, epoch, binary(value[8], 40))
+            verify_baseline_root(witness, lineage, epoch)
+        except (ValueError, struct.error, TypeError):
+            mismatch("baseline_witness")
+        expected = [[lineage.hex(), epoch.hex(), 1, account_key(holding["account_key"])[2], meta[2].hex()]
+                    for holding in holdings]
+        expected += [[lineage.hex(), epoch.hex(), 2, item["uid"], meta[2].hex()] for item in items]
+        expected.sort(key=lambda value: (value[2], value[3]))
+        columns = [hexadecimal("lineage"), hexadecimal("epoch"), "identity_kind", "identity_id",
+                   hexadecimal("operation_id")]
+        if arrays("economic_baseline_reservation", columns, where,
+                  "identity_kind,identity_id,lineage,epoch LIMIT " + str(len(expected) + 1)) != expected:
+            mismatch("baseline_reservation")
 
     root_count = int(executor.sql("SELECT COUNT(*) FROM economic_accounting_operation;"))
     processed, cursor = 0, ""
@@ -326,7 +425,8 @@ def require_integrity(executor):
                 meta = (*[binary(value, 16) for value in row[:3]], original or bytes(16),
                         *row[4:11], binary(row[11], 48, True))
                 need(meta[2].hex() == operation)
-                intent = decode_intent(capsule(where, "canonical_intent", row[15], MAX_INTENT, "intent"))
+                frozen = capsule(where, "canonical_intent", row[15], MAX_INTENT, "intent")
+                intent = decode_intent(frozen)
                 if (intent["intent_digest"] != binary(row[12], 32) or
                         intent["domain_digest"] != binary(row[13], 32)):
                     mismatch("intent")
@@ -340,7 +440,8 @@ def require_integrity(executor):
                     mismatch("plan")
             elif row[17] == 1 and row[18] == 0:
                 try:
-                    plan = decode_plan(capsule(where, "canonical_plan", row[16], MAX_PLAN, "plan"))
+                    encoded = capsule(where, "canonical_plan", row[16], MAX_PLAN, "plan")
+                    plan = decode_plan(encoded)
                     if (plan["metadata"] != meta or plan["intent_digest"] != intent["intent_digest"] or
                             plan["domain_digest"] != intent["domain_digest"] or
                             plan["plan_digest"] != binary(row[14], 32)):
@@ -385,6 +486,8 @@ def require_integrity(executor):
                             for i, (event, child, uid, old, new) in enumerate(plan["events"])]
                 if arrays(table, fields, "r." + where, "r.line_index") != expected:
                     mismatch("canonical_custody")
+                if meta[10] == 38:
+                    baseline_witness(where, meta, original, row, frozen, encoded)
             else:
                 mismatch("plan")
             processed += 1
