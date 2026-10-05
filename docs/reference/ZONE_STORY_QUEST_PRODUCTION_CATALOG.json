@@ -51823,86 +51823,107 @@
     {
       "contacts": [
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
-          "keyword": "elf",
+          "description": "Return the broken mandolin for 1,000 copper.",
+          "keyword": "bard",
           "mob_vnum": 16530,
           "name": "a half-elf bard",
           "topics": [
             "instrument",
-            "park"
+            "play",
+            "park",
+            "mandolin"
           ]
         },
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
-          "keyword": "farmer",
+          "description": "Bring the honey for the birthday meal and receive 500 copper.",
+          "keyword": "woman",
           "mob_vnum": 16599,
           "name": "a halfling woman",
           "topics": [
             "searching",
+            "cupboard",
+            "recipe",
             "honey"
           ]
         },
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
+          "description": "Return the green pigment for 500 copper.",
           "keyword": "artist",
           "mob_vnum": 16614,
           "name": "the raving artist",
           "topics": [
             "pigment",
+            "pigments",
             "green"
           ]
         },
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
+          "description": "Return the beeswax for a wooden ring.",
           "keyword": "woodworker",
           "mob_vnum": 16625,
           "name": "a woodworker",
           "topics": [
-            "beeswax"
+            "beeswax",
+            "wax",
+            "polish"
           ]
         },
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
-          "keyword": "frowning",
+          "description": "Return the bee egg for a potion.",
+          "keyword": "mage",
           "mob_vnum": 16632,
           "name": "a frowning mage",
           "topics": [
-            "potion"
+            "potion",
+            "potions"
           ]
         },
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
+          "description": "Return the hummingbird feather for 500 copper.",
           "keyword": "wizard",
           "mob_vnum": 16637,
           "name": "an unkempt wizard",
           "topics": [
             "search",
+            "searching",
+            "components",
             "feather"
           ]
         },
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
+          "description": "Return the raw turtle meat for turtle soup and 500 copper.",
           "keyword": "maitre",
           "mob_vnum": 16688,
           "name": "the maitre d'",
           "topics": [
-            "turtle"
+            "turtle",
+            "soup"
           ]
         }
       ],
       "coverage": "complete",
       "exclusions": [],
-      "introduction": "Explore Woodseer and meet its people to uncover local requests.",
+      "introduction": "Help Woodseer's musicians, makers, mages and cooks with seven independent item returns. Explore the park, hive and rivers for supplies, or bring a matching item supplied by another player. Discovery is separate. New progress requires active, ready accounting.",
       "orientation": [
-        "Start with look and exits to learn your surroundings.",
-        "Use help home to learn about hometowns and help quest for quest commands."
+        "Woodseer has a walled halfling town, park and pond, shops and mage homes, a bee nest, river and farms, mine, mountain trails and outer jungle. Discovery starts your journal; safe access, available supplies and a present giver still matter.",
+        "ASK the wandering bard about instrument, play, park or mandolin. Look for his broken mandolin in the badger burrow below the park. Search for and open the boulder passage. Return the broken mandolin for 1,000 copper; Lomar's playable shop mandolin is a different item. The bard plans to repair it after the return.",
+        "ASK the woman in the farmer's cottage about searching, cupboard, recipe or honey. Look for honey on warrior bees in the hive, then return it for 500 copper. She suggests taking beeswax to a woodworker. You can complete either return first.",
+        "ASK the woodworker about beeswax, wax or polish. Look for wax on the queen bee. Return it for a wooden ring. You can bring matching wax supplied by another player; completing the honey return first is optional.",
+        "ASK the teaching mage about potion or potions. Look for a loose bee egg in the egg room above the queen's chamber, then return it for a potion. A matching supplied egg also fits. Using the potion is a separate action.",
+        "ASK the wizard about search, searching, components or feather. Look for the exact hummingbird feather on tiny hummingbirds around the park and town. The outer jungle's glowing feather is different. Return the correct feather for 500 copper, or bring a matching feather supplied by another player.",
+        "ASK the artist about pigment, pigments or green. Look for green pigment on giant dragonflies along the river. Bring the correct pigment for 500 copper. You can use matching supplied pigment without personally hunting a dragonfly.",
+        "ASK the maitre d' at The Quivering Leaf Restaurant about turtle or soup. Search snapping turtles in the large park and beneath the waterfall for raw turtle meat; other turtles may have none. Return the raw meat for turtle soup and 500 copper. The waiter's soup is a different item from the required meat.",
+        "Keep honey and raw meat uneaten, and keep each required item loose in your inventory. Worn, held, nested, consumed or handed-away items are unavailable for the return. Carrying the item prepares a request. Your journal records completion when the giver accepts it; owning a reward or learning a clue does not complete the request.",
+        "The bartender in Mathorn's bar also offers world-quest assignments. Those assignments are separate from these seven item returns. The pet shop and inn are optional services. Pet buying and rental are currently unavailable while active accounting is enabled.",
+        "Woodseer's fish merchant sells a salmon steak sought by a hermit in the Surface minizones. The hermit asks for both the steak and a firebreather. That return belongs to the hermit's zone; buying or carrying a steak alone does not complete it.",
+        "All seven returns can contribute achievements and potential dailies. The bard and woodworker leave after acceptance, so another visit needs a present giver and fresh supplies. River currents, falls, guards and shared doors still affect access. A new daily does not guarantee stocked supplies."
       ],
-      "revision": 1,
-      "schema_version": 2,
+      "revision": 2,
+      "schema_version": 3,
       "source_area": "woodseer",
       "stories": [
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:16526;receive=C:1000;disappear=1",
@@ -51913,13 +51934,14 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Look in the badger burrow for the broken mandolin. Search for and open the boulder passage down from the park. Lomar's playable shop mandolin is a different item. A matching supplied broken mandolin also fits.",
               "id": "item-1",
               "item_vnums": [
                 16526
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a broken mandolin"
+              "optional": true,
+              "text": "Carry 1 \u00d7 a broken mandolin loose"
             },
             {
               "contracts": [
@@ -51928,17 +51950,17 @@
                   "giver_vnum": 16530
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Return the broken mandolin for 1,000 copper. Give the requested item to this giver. Completion is recorded when the giver accepts it. New credit requires active, ready accounting.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete Bard: the broken mandolin"
             }
           ],
-          "summary": "Bring 1 x a broken mandolin. Reward: 1,000 copper.",
-          "title": "Deliver 1 x a broken mandolin"
+          "summary": "Return the broken mandolin for 1,000 copper.",
+          "title": "Bard: the broken mandolin"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:16545;receive=C:500;disappear=0",
@@ -51949,13 +51971,14 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Look for this honey on warrior bees in the hive. Keep it uneaten and loose in your inventory. The wax suggestion is an independent request.",
               "id": "item-1",
               "item_vnums": [
                 16545
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x some honey"
+              "optional": true,
+              "text": "Carry 1 \u00d7 some honey loose"
             },
             {
               "contracts": [
@@ -51964,17 +51987,17 @@
                   "giver_vnum": 16599
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Bring the honey for the birthday meal and receive 500 copper. Give the requested item to this giver. Completion is recorded when the giver accepts it. New credit requires active, ready accounting.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete Farmer: birthday dinner honey"
             }
           ],
-          "summary": "Bring 1 x some honey. Reward: 500 copper.",
-          "title": "Deliver 1 x some honey"
+          "summary": "Bring the honey for the birthday meal and receive 500 copper.",
+          "title": "Farmer: birthday dinner honey"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:16561;receive=C:500;disappear=0",
@@ -51985,13 +52008,14 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Look for this green pigment on giant dragonflies along the river. A matching pigment supplied by another player also fits.",
               "id": "item-1",
               "item_vnums": [
                 16561
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a tube of green pigment"
+              "optional": true,
+              "text": "Carry 1 \u00d7 a tube of green pigment loose"
             },
             {
               "contracts": [
@@ -52000,17 +52024,17 @@
                   "giver_vnum": 16614
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Return the green pigment for 500 copper. Give the requested item to this giver. Completion is recorded when the giver accepts it. New credit requires active, ready accounting.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete Artist: green pigment"
             }
           ],
-          "summary": "Bring 1 x a tube of green pigment. Reward: 500 copper.",
-          "title": "Deliver 1 x a tube of green pigment"
+          "summary": "Return the green pigment for 500 copper.",
+          "title": "Artist: green pigment"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:16546;receive=I:16576;disappear=1",
@@ -52021,13 +52045,14 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Look for this wax on the queen bee. A matching supplied wax also fits. This return awards a wooden ring, and you can complete it before the honey return.",
               "id": "item-1",
               "item_vnums": [
                 16546
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x some beeswax"
+              "optional": true,
+              "text": "Carry 1 \u00d7 some beeswax loose"
             },
             {
               "contracts": [
@@ -52036,17 +52061,17 @@
                   "giver_vnum": 16625
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Return the beeswax for a wooden ring. Give the requested item to this giver. Completion is recorded when the giver accepts it. New credit requires active, ready accounting.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete Woodworker: beeswax polish"
             }
           ],
-          "summary": "Bring 1 x some beeswax. Reward: 1 x a wooden ring.",
-          "title": "Deliver 1 x some beeswax"
+          "summary": "Return the beeswax for a wooden ring.",
+          "title": "Woodworker: beeswax polish"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:16547;receive=I:16579;disappear=0",
@@ -52057,13 +52082,14 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Look for a loose egg in the room above the queen's chamber. A matching egg supplied by another player also fits. Using the reward potion is a separate action.",
               "id": "item-1",
               "item_vnums": [
                 16547
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x an oblong egg"
+              "optional": true,
+              "text": "Carry 1 \u00d7 an oblong egg loose"
             },
             {
               "contracts": [
@@ -52072,17 +52098,17 @@
                   "giver_vnum": 16632
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Return the bee egg for a potion. Give the requested item to this giver. Completion is recorded when the giver accepts it. New credit requires active, ready accounting.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete Mage: the bee egg"
             }
           ],
-          "summary": "Bring 1 x an oblong egg. Reward: 1 x a plain flask.",
-          "title": "Deliver 1 x an oblong egg"
+          "summary": "Return the bee egg for a potion.",
+          "title": "Mage: the bee egg"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:16544;receive=C:500;disappear=0",
@@ -52093,13 +52119,14 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Look for this feather on tiny hummingbirds around the park and town. The outer jungle's glowing feather is different. A matching supplied hummingbird feather also fits.",
               "id": "item-1",
               "item_vnums": [
                 16544
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a hummingbird feather"
+              "optional": true,
+              "text": "Carry 1 \u00d7 a hummingbird feather loose"
             },
             {
               "contracts": [
@@ -52108,17 +52135,17 @@
                   "giver_vnum": 16637
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Return the hummingbird feather for 500 copper. Give the requested item to this giver. Completion is recorded when the giver accepts it. New credit requires active, ready accounting.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete Wizard: the hummingbird feather"
             }
           ],
-          "summary": "Bring 1 x a hummingbird feather. Reward: 500 copper.",
-          "title": "Deliver 1 x a hummingbird feather"
+          "summary": "Return the hummingbird feather for 500 copper.",
+          "title": "Wizard: the hummingbird feather"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:16543;receive=C:500,I:16610;disappear=0",
@@ -52129,13 +52156,14 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Look for this raw meat on snapping turtles in the large park and beneath the waterfall. Other turtles may have none. Keep it uneaten; bought soup is a different item. Matching supplied meat also fits.",
               "id": "item-1",
               "item_vnums": [
                 16543
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x some raw turtle meat"
+              "optional": true,
+              "text": "Carry 1 \u00d7 some raw turtle meat loose"
             },
             {
               "contracts": [
@@ -52144,14 +52172,14 @@
                   "giver_vnum": 16688
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Return the raw turtle meat for turtle soup and 500 copper. Give the requested item to this giver. Completion is recorded when the giver accepts it. New credit requires active, ready accounting.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete Maitre d\u2019: turtle soup"
             }
           ],
-          "summary": "Bring 1 x some raw turtle meat. Reward: 500 copper, 1 x a bowl of turtle soup.",
-          "title": "Deliver 1 x some raw turtle meat"
+          "summary": "Return the raw turtle meat for turtle soup and 500 copper.",
+          "title": "Maitre d\u2019: turtle soup"
         }
       ]
     },

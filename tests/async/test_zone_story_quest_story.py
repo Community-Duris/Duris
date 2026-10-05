@@ -434,6 +434,13 @@ u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
 
+woodseer=next(m for m in catalog['story_mappings'] if m['source_area']=='woodseer')
+assert (woodseer['schema_version'],woodseer['revision'],woodseer['coverage'])==(3,2,'complete')
+assert len(woodseer['stories'])==len(woodseer['contacts'])==7 and not woodseer['exclusions']
+assert report['eligible_by_zone']['165']==7 and sum(len(c['topics']) for c in woodseer['contacts'])==22
+assert all(s['category']=='story' and len(s['steps'])==2 and s['steps'][0]['optional'] and s['contracts']==s['steps'][-1]['contracts'] for s in woodseer['stories'])
+units=[u for u in module.story_units(catalog) if u['zone_number']==165];assert len(units)==7 and sum(u['achievement'] for u in units)==sum(u['daily_candidate'] for u in units)==7
+
 forgotten=next(m for m in catalog['story_mappings'] if m['source_area']=='mansion')
 assert (forgotten['schema_version'],forgotten['revision'],forgotten['coverage'])==(3,1,'complete')
 assert len(forgotten['stories'])==3 and len(forgotten['contacts'])==4 and not forgotten['exclusions']

@@ -6759,6 +6759,78 @@ assert all(r['definition']['daily_exclusion']=='Unsupported durable offering' fo
 assert sum(len(s['steps'])-1 for s in mapping['stories'])==8
 
 
+# Woodseer: independent exact returns, declared sources, services and foreign receipt ownership.
+woodseer=inventory_module.area_evidence(ROOT,'woodseer')
+mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='woodseer')
+assert (mapping['schema_version'],mapping['revision'],mapping['coverage'])==(3,2,'complete')
+assert len(mapping['stories'])==len(mapping['contacts'])==7 and not mapping['exclusions']
+raw=sorted((b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/woodseer.qst' and b['kind']=='Q'),key=lambda b:b['line'])
+assert [(b['line'],b['giver_vnum'],b['give'],b['receive'],b['disappear']) for b in raw]==[
+ (20,16530,[('I',16526)],[('C',1000)],True),
+ (45,16599,[('I',16545)],[('C',500)],False),
+ (68,16614,[('I',16561)],[('C',500)],False),
+ (81,16625,[('I',16546)],[('I',16576)],True),
+ (100,16632,[('I',16547)],[('I',16579)],False),
+ (122,16637,[('I',16544)],[('C',500)],False),
+ (140,16688,[('I',16543)],[('I',16610),('C',500)],False)]
+assert [s['id'] for s in mapping['stories']]==['request-16530-319885a24a7b','request-16599-5ebb15ae5a54','request-16614-89a5ffaadffe','request-16625-06a52409e119','request-16632-f03bbd8043ee','request-16637-cf5f291bd407','request-16688-dcf40d71c0ed']
+for story,b in zip(mapping['stories'],raw):
+ assert story['category']=='story' and story['contracts']==story['steps'][-1]['contracts']==[b['binding']]
+ assert len(story['steps'])==2 and story['steps'][0]['kind']=='carried_item' and story['steps'][0]['optional']
+ assert story['steps'][0]['item_vnums']==[b['give'][0][1]] and story['steps'][0]['count']==1
+ assert [s['id'] for s in story['steps']]==['item-1','turn-in']
+assert len(woodseer['dialogue'])==11 and sum(len(c['topics']) for c in mapping['contacts'])==22
+for contact in mapping['contacts']:
+ assert contact['topics']==[w for b in woodseer['dialogue'] if b['giver_vnum']==contact['mob_vnum'] for w in b['body'][0].rstrip('~').split()]
+assert woodseer['zone']['reset_mode']==2 and all(d['repeatable'] and not d['prerequisites'] for d in catalog['definitions'] if d['zone_number']==165)
+rs=woodseer['reset_commands'];assert len(rs)==1186 and collections.Counter(r['command'] for r in rs)=={'D':46,'O':90,'P':6,'M':608,'E':272,'G':164}
+parent=None;stock=[]
+for r in rs:
+ c,a=r['command'],r['arguments']
+ if c in ('M','F'):parent=(c,a[1],a[3])
+ if c in ('G','E'):stock.append((c,a[1],parent,a[2],a[4]))
+for mob,room in [(16530,16658),(16599,16799),(16614,16734),(16625,16686),(16632,16680),(16637,16665),(16688,16556),(16553,16633)]:
+ assert any(r['command']=='M' and r['arguments'][1:5]==[mob,1,room,100] for r in rs)
+assert any(r['command']=='O' and r['arguments'][1:5]==[16526,1,16587,100] for r in rs)
+assert any(r['command']=='O' and r['arguments'][1:5]==[16547,4,16586,100] for r in rs)
+for item,mob,cap,rooms in [(16545,16581,4,[16584,16584,16585,16585]),(16546,16582,1,[16585]),(16544,16572,8,[16562,16563,16570,16574,16627,16631,16643,16656]),(16561,16615,6,[16539,16850,16854,16857,16859,16861]),(16543,16571,3,[16563,16847])]:
+ actual=[p[2] for cmd,v,p,n,chance in stock if cmd=='G' and v==item and p[1]==mob and n==cap and chance==100]
+ assert sorted(actual)==sorted(rooms),(item,actual)
+assert not any(v==16545 and p[1]==16580 or v==16543 and p[1]==16570 for cmd,v,p,n,chance in stock)
+objects=dawndale_bodies('woodseer','obj');rooms=dawndale_bodies('woodseer','wld');mobs=dawndale_bodies('woodseer','mob')
+assert (len(objects),len(rooms),len(mobs))==(215,453,249)
+assert objvalues(objects[16526])[0]==13 and objvalues(objects[16649])[0]==32
+assert all(objvalues(objects[v])[0]==19 for v in (16543,16545,16610,16635))
+assert objvalues(objects[16547])[0]==13 and objvalues(objects[16904])[0]==15 and objvalues(objects[16904])[7]==0
+assert 'coins' in '\n'.join(raw[3]['body']) and raw[3]['receive']==[('I',16576)]
+assert 'DeLoran' in objects[16600] and not any(('I',16600) in b['give'] for b in raw)
+assert ('E',16600,('M',16663,16618),1,100) in stock
+edges=[(v,int(m[1]),int(m[4]),int(m[5]),int(m[6])) for v,b in rooms.items() for m in re.finditer(r'\bD(\d+)\s+([^~]*)~([^~]*)~\s*(-?\d+)\s+(-?\d+)\s+(-?\d+)',b,re.S)]
+assert len(edges)==1041 and (16570,5,5,-1,16587) in edges and (16500,4,0,-1,154581) in edges
+assert (16915,4,0,0,16501) in edges
+guard_births=[r['arguments'][3] for r in rs if r['command']=='M' and r['arguments'][1]==16501]
+assert len(guard_births)==17 and 16501 not in guard_births
+assert objvalues(dawndale_bodies('tower','obj')[9316])[0]==5
+assert not any(objvalues(b)[0]==25 for b in objects.values())
+registered_objects={v for z in catalog['zones'] for v in dawndale_bodies(z['source_area'],'obj')}
+registered_rooms={v for z in catalog['zones'] for v in dawndale_bodies(z['source_area'],'wld')}
+assert not {6070,6109,6110}&registered_objects and 154581 not in registered_rooms
+assert 154581 in dawndale_bodies('Duris3','wld')
+shops=(ROOT/'areas/shp/woodseer.shp').read_text(encoding='utf8')
+assert len(re.findall(r'^#\d+~',shops,re.M))==20 and all(str(v) in shops for v in (6070,6109,6110,16649,16610,16635))
+foreign=next(b for b in inventory_module.native_blocks(ROOT) if b['source']=='areas/qst/surfacemini.qst' and b['giver_vnum']==97909 and b['kind']=='QA')
+assert foreign['line']==302 and foreign['give']==[('I',16635),('I',3003)] and foreign['receive']==[('E',15000),('C',16000)] and foreign['disappear']
+assert all(b['binding']!=foreign['binding'] for b in raw)
+assert any(foreign['binding'] in s['contracts'] for m in catalog['story_mappings'] if m['source_area']=='surfacemini' for s in m['stories'])
+assign=(ROOT/'src/specs/specs.assign.c').read_text(encoding='utf8');assert assign.count('mob_index[real_mobile0(16553)].func.mob = world_quest;')==5
+artifact=(ROOT/'src/specs/specs.artifacts.c').read_text(encoding='utf8').split('int artifact_invisible(',1)[1].split('\nint ',1)[0];assert 'OBJ_WORN(obj)' in artifact
+guards=(ROOT/'src/specs/specs.guards.c').read_text(encoding='utf8').split('int guild_guard(',1)[1].split('int guardian(',1)[0];assert 'case 16501:' in guards and '9316' in guards and 'GET_BIRTHPLACE(ch)' in guards
+loader=(ROOT/'src/world/db.c').read_text(encoding='utf8');assert "zone_table[zone].cmd[comm].command = '!'" in loader and 'world[room].dir_option[door] = NULL;' in loader
+events=(ROOT/'src/world/events.c').read_text(encoding='utf8');assert 'zone_table[zone].reset_mode == 2 || ::is_empty(zone)' in events
+shop=(ROOT/'src/economy/shop.c').read_text(encoding='utf8');assert 'SHOP_FUNC(shop) = mob_index[keeper].func.mob;' in shop and 'real_object(temp)' in shop
+service=(ROOT/'src/specs/specs.room.c').read_text(encoding='utf8');assert 'Pet purchases are unavailable while active accounting is enabled.' in service and 'Pet rentals are unavailable while active accounting is enabled.' in service
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==165];assert len(units)==7 and sum(u['achievement'] for u in units)==sum(u['daily_candidate'] for u in units)==7
+
 # The Forgotten Mansion: exact independent requests, shared spoken access and foreign ownership.
 mansion=inventory_module.area_evidence(ROOT,'mansion')
 mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='mansion')
@@ -7308,7 +7380,7 @@ units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==429]
 assert len(units)==10 and all(u['achievement'] and u['daily_candidate'] for u in units)
 assert 'retires' in mapping['stories'][1]['summary'] and 'together' in mapping['stories'][7]['summary']
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone", "opalphoenix", "mira", "surfacekeeps", "icecrag", "cloister", "willem", "ixarkon", "mntcastl", "tundra", "fields_between", "goblinht", "ceothia", "brad", "desert", "ceopast", "basin_wa", "crypt", "val", "harrow", "mountaintracks", "shortc", "lavcav", "nomads", "undermountain", "desolateinv", "spshold", "harpyht", "herders", "jotun", "temple", "pods", "citadel", "element", "earth", "githzer", "worms", "ravenloft", "barovia2", "werrun", "newhope", "raxthan", "library", "mistywood", "pharrvly", "oasis", "connectorzones", "battlefi", "mansion"):
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone", "opalphoenix", "mira", "surfacekeeps", "icecrag", "cloister", "willem", "ixarkon", "mntcastl", "tundra", "fields_between", "goblinht", "ceothia", "brad", "desert", "ceopast", "basin_wa", "crypt", "val", "harrow", "mountaintracks", "shortc", "lavcav", "nomads", "undermountain", "desolateinv", "spshold", "harpyht", "herders", "jotun", "temple", "pods", "citadel", "element", "earth", "githzer", "worms", "ravenloft", "barovia2", "werrun", "newhope", "raxthan", "library", "mistywood", "pharrvly", "oasis", "connectorzones", "battlefi", "mansion", "woodseer"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

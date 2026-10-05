@@ -7690,6 +7690,175 @@ int main(int argc, char **argv)
 		}
 
 		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "woodseer"; });
+			const int materials[] = { 16526, 16545, 16561, 16546, 16547, 16544, 16543 };
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 165, 16915, 100, "arrival") ==
+					result::applied,
+				"Woodseer discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 165, 10, 1, 101, false, false);
+			for (const auto &entry : mapping.stories)
+				require(journal.find(entry.title) == std::string::npos,
+					"Woodseer exposed unseen requests");
+			for (const auto &contact : mapping.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 16556, 102) ==
+						result::applied,
+					"Woodseer contact encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Woodseer journal card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry) {
+				return section(entry).find("[Ready now] " + entry.steps[0].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[0].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			for (const auto v :
+			     { 16649, 16925, 16576, 16579, 16610, 16635, 3003, 9316, 16904, 16600 })
+				supplies.carried[v] = 1;
+			supplies.equipped[0] = 16526;
+			supplies.equipped[1] = 16545;
+			supplies.equipped[2] = 16543;
+			journal = journey.render_journal(7, 42, 165, 10, 1, 103, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				require(missing(entry),
+					"Woodseer equipped/similar/reward-only/foreign stock prepared a request");
+			require(journey.progress_for_zone(7, 42, 165).completed == 0,
+				"Woodseer custody fabricated accepted history");
+			supplies = {};
+			for (size_t i = 0; i < mapping.stories.size(); ++i)
+			{
+				supplies.carried.clear();
+				supplies.carried[materials[i]] = 1;
+				journal = journey.render_journal(7, 42, 165, 10, 1, 104, false,
+								 false, &supplies);
+				for (size_t j = 0; j < mapping.stories.size(); ++j)
+					require(ready(mapping.stories[j]) == (i == j),
+						"Woodseer one material prepared another request or required a personal source/hive step");
+				require(journey.progress_for_zone(7, 42, 165).completed == 0,
+					"Woodseer preparation recorded a receipt");
+			}
+			for (const auto v : materials)
+				supplies.carried[v] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 165, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				require(ready(entry),
+					"Woodseer supplied exact materials required personal hunts or another return");
+			require(before == journey.serialize_state(),
+				"Woodseer rendering mutated progress");
+			for (const auto &entry : mapping.stories)
+			{
+				service independent(catalog);
+				require(independent.discover_zone(7, 42, 165, 16960, 100,
+								  "arrival") == result::applied,
+					"Woodseer alternate arrival failed");
+				record(independent, entry.contracts.front(),
+				       ("woodseer-one-" + entry.id).c_str(), 165, 16556);
+				require(independent.progress_for_zone(7, 42, 165).completed == 1 &&
+						independent.progress_for_zone(7, 42, 165).total ==
+							7,
+					"Woodseer endpoint required prior honey/queen/history or multiple source receipts");
+				for (const auto &other : mapping.stories)
+					require(independent.evidence_for(other.contracts.front(), 2)
+								.successful_attempts ==
+							(entry.id == other.id ? 1 : 0),
+						"Woodseer endpoint fabricated another receipt");
+				service restored(catalog);
+				require(restored.deserialize_state(independent.serialize_state(),
+								   &error) &&
+						restored.progress_for_zone(7, 42, 165).completed ==
+							1,
+					"Woodseer independent cold recovery failed");
+			}
+			const auto &foreign_mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "surfacemini"; });
+			const auto &foreign = *std::find_if(
+				foreign_mapping.stories.begin(), foreign_mapping.stories.end(),
+				[](const auto &s)
+				{
+					return std::any_of(
+						s.contracts.begin(), s.contracts.end(),
+						[](const auto &b)
+						{ return b.starts_with("zone-story:qst:97909:"); });
+				});
+			require(journey.discover_zone(7, 42, 979, 97974, 106, "arrival") ==
+					result::applied,
+				"Woodseer foreign hermit discovery failed");
+			record(journey, foreign.contracts.front(), "woodseer-foreign-hermit", 979,
+			       97974);
+			require(journey.progress_for_zone(7, 42, 165).completed == 0,
+				"Woodseer duplicated a foreign salmon bundle receipt");
+			// Synthetic receipts qualify projection; actual issuance/access/effects remain pending.
+			for (const auto &entry : mapping.stories)
+				record(journey, entry.contracts.front(),
+				       ("woodseer-all-" + entry.id).c_str(), 165, 16556);
+			for (const auto v : materials)
+				supplies.carried.erase(v);
+			journal = journey.render_journal(7, 42, 165, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				require(missing(entry),
+					"Woodseer spent or nested materials reappeared");
+			require(journey.progress_for_zone(7, 42, 165).completed == 7 &&
+					journey.progress_for_zone(7, 42, 165).total == 7,
+				"Woodseer seven accepted stories changed");
+			const auto &entry = mapping.stories.front();
+			auto replay = completion(entry.contracts.front(),
+						 ("woodseer-all-" + entry.id).c_str(), 120);
+			replay.transaction.zone_number = 165;
+			replay.transaction.room_vnum = 16556;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Woodseer replay duplicated accepted history");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 165) &&
+					recovered.progress_for_zone(7, 42, 165).completed == 7,
+				"Woodseer cold recovery lost discovery or receipts");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 165, 16500, 100, "arrival") ==
+					result::applied,
+				"Historical Woodseer discovery failed");
+			for (const auto &old : mapping.stories)
+				record(historical, old.contracts.front(),
+				       ("woodseer-old-" + old.id).c_str(), 165, 16556);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 165).completed == 7 &&
+					authored.progress_for_zone(7, 42, 165).total == 7,
+				"Woodseer raw-to-authored history changed");
+			for (const auto &old : mapping.stories)
+				require(authored.evidence_for(old.contracts.front(), 2)
+								.successful_attempts == 1 &&
+						recovered.evidence_for(old.contracts.front(), 2)
+								.successful_attempts == 1,
+					"Woodseer native receipt identity changed");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 165 &&
+							     u.achievement && u.daily_candidate;
+					      }) == 7,
+				"Woodseer repeatability changed");
+		}
+
+		{
 			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
 							    catalog.story_mappings.end(),
 							    [](const auto &m)
