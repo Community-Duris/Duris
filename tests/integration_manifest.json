@@ -2472,6 +2472,61 @@
         "test_economic_sql_canonical_audit.py"
       ],
       "required_markers": []
+    },
+    {
+      "id": "plan5_baseline_versions_pure",
+      "path": "tests/async/test_economic_sql_audit_origins.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "BaselineVersionTests.test_version_two_retains_player_and_native_mobile_equipment",
+        "BaselineVersionTests.test_version_two_reservations_use_all_exact_item_strides",
+        "BaselineVersionTests.test_historical_version_one_keeps_bytes_zero_slot_and_equipped_root_refusal",
+        "BaselineVersionTests.test_magic_version_exact_lengths_and_metadata_agreement",
+        "BaselineVersionTests.test_reserved_bytes_and_source_digest_fail_even_after_rehash",
+        "BaselineVersionTests.test_equipment_only_change_without_original_plan_refuses",
+        "BaselineVersionTests.test_native_mobile_invalid_slot_state_owner_and_forest_refuse",
+        "BaselineVersionTests.test_exact_versioned_maxima_and_count_bounds"
+      ],
+      "arguments": [
+        "BaselineVersionTests",
+        "-v"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_sql_audit_origins.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "plan5_baseline_versions_cpp_reference",
+      "path": "tests/async/test_economic_restore_mobile_grammar.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "IndependentBaselineVersionTests.test_baseline_exact_versions_equipment_forest_and_reservation_books",
+        "IndependentBaselineVersionTests.test_lifecycle_empty_book_accepts_exact_versions_without_item_scope"
+      ],
+      "arguments": [
+        "IndependentBaselineVersionTests",
+        "-v"
+      ],
+      "environment": {
+        "DURIS_PLAN5_BASELINE_VERSION_NATIVE": "1",
+        "DURIS_PLAN5_BASELINE_VERSION_ARTIFACTS": "bin/bv-{token}/n"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_restore_mobile_grammar.py"
+      ],
+      "required_markers": []
     }
   ]
 }

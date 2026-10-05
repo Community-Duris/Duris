@@ -1,5 +1,26 @@
 # Plan 5: independent audit, lifecycle, and release qualification
 
+## Independent EAB1/EAB2 readers integrated — 2026-10-05
+
+[The exact reader integration](../PLAN5_DUAL_VERSION_READER_INTEGRATION_2026-10-05.md) preserves historicalEAB1 and validates
+versioned equipment/original-plan evidence. Central inventory917owners/103rows
+adds eight pure and two mandatory C++ reference checks; all101 prior policies
+remain. Peer native evidence stays7cd9/schema56/EAB1, with its exact GCC13.3
+erratum. Local pins/AST/inventory only. Actual native selector is documented;
+native/schema61 installation, measured sealing and original Plan1 qualification
+remain. R1–R8 and release stay BLOCKED; inactive behavior and safety gates stay.
+
+## Baseline equipment/schema61 source closure reviewed — 2026-10-05
+
+[The primary/Plan5 interface](../BASELINE_EQUIPMENT_SCHEMA61_SOURCE_HANDOFF_2026-10-05.md) fixes the versioned equipment contract and
+current61-head consumer handoff while preserving historicalEAB1/0056 cuts.
+Private native/schema compositions pass independent source review;28 schema
+inputs have exact inverses/checksums/heads and matching bounded metadata readers.
+Unmeasured engine fingerprints remain failclosed; candidates are not installed.
+Actual both-engine sealing, independent EAB2 readers and original Plan1 native
+qualification remain required. This is source closure, not completed acceptance;
+inactive behavior and all original R1–R8/release gates stay.
+
 ## Original-plan audit repair and central integration — 2026-10-05
 
 [The exact Plan5 closure](../PLAN5_ORIGINAL_PLAN_AUDIT_INTEGRATION_2026-10-05.md) resolves the saved integer-representation import
