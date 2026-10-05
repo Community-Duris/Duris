@@ -1,5 +1,25 @@
 # Finish accounting implementation plan
 
+## Exact baseline projection representations integrated — 2026-10-05
+
+[The exact Plan5 repair](PLAN5_BASELINE_REPRESENTATION_INTEGRATION_2026-10-05.md) refuses numerically equal noncanonical types in
+original roots, projections, inbox controls and source bounds. Four new mandatory
+pure cases make104 central rows; all103 prior policies remain. Peer native and
+maintained-build evidence stays f23/schema56/EAB1, including preserved link
+failures and successful output-only retries. Local AST/pins/inventory only;
+nativeEAB2/schema61 sealing and original Plan1 acceptance remain open.
+Inactive behavior and all R1–R8/release/activation gates stay.
+
+## Original cold SHOP procedure bindings integrated — 2026-10-05
+
+[The reviewed binding repair](SHOP_COLD_PROCEDURE_BINDING_INTEGRATION_2026-10-05.md) stages original switch/proclib chains
+before fresh SQL/world proof and nonfailing retained enrollment. Exact incumbent,
+catalog and literal identity stay; normal construction policy stays. Callbacks
+remain individually once-only with fresh exact lookup. Source checks/pins/census
+only; actual component link, cold recovery/ACK and flat parity remain in the
+original major-plan batch. Fresh SHOP and activation stay closed; R1–R8 and release
+remain BLOCKED.
+
 ## Independent EAB1/EAB2 readers integrated — 2026-10-05
 
 [The exact reader integration](PLAN5_DUAL_VERSION_READER_INTEGRATION_2026-10-05.md) preserves historicalEAB1 and validates

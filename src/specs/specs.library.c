@@ -29,6 +29,10 @@
 #include "mob/studioproclib.h"
 #include "player/player_snapshot.h"
 #include "world/weather.h"
+#include "world/object_template.h"
+#include <charconv>
+#include <string_view>
+#include <climits>
 
 /*
    external variables
@@ -306,6 +310,96 @@ struct ObjProcLib
 	  "'enter <keyword>' teleports the actor to a room.", PROCLIB_TRANSPORTER_HELP },
 };
 
+bool proclib_saved_binding_eligible(P_obj object, bool *eligible) noexcept
+{
+	if (!object || !eligible)
+		return false;
+	bool found = false;
+	size_t description_count = 0;
+	if (IS_SET(object->extra_flags, ITEM_PROCLIB))
+		for (const extra_descr_data *description = object->ex_description; description;
+		     description = description->next)
+		{
+			if (++description_count > PLAYER_SNAPSHOT_MAX_ROWS)
+				return false;
+			if (!description->keyword || strn_cmp(description->keyword, "_proclib_", 9))
+				continue;
+			if (!description->description)
+				return false;
+			const size_t length = strnlen(description->description,
+						      PLAYER_SNAPSHOT_MAX_STRING_BYTES + 1);
+			if (!length || length > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
+				return false;
+			const ObjProcLib *library = nullptr;
+			for (size_t i = ARRAY_SIZE(object_proc_libs); i-- > 0;)
+				if (object_proc_libs[i].func &&
+				    !strn_cmp(description->keyword + 9,
+					      object_proc_libs[i].procName,
+					      strlen(object_proc_libs[i].procName)))
+				{
+					library = &object_proc_libs[i];
+					break;
+				}
+			if (!library || !library->parse_params)
+				return false;
+			// A saved flag is constructor-success evidence only under the
+			// owner's original locked literal/UID proof. Validate its existing
+			// post-parse storage shape; never parse user arguments again.
+			const std::string_view value(description->description, length);
+			const size_t split = value.find(static_cast<char>(0xff));
+			const auto integer = [](std::string_view text, int &result)
+			{
+				const auto parsed = std::from_chars(
+					text.data(), text.data() + text.size(), result);
+				return !text.empty() && parsed.ec == std::errc{} &&
+				       parsed.ptr == text.data() + text.size();
+			};
+			if (library->func == proclibobj_hummer)
+			{
+				if (value != " ")
+					return false;
+			}
+			else if (library->func == proclibobj_sayresponse)
+			{
+				if (split == std::string_view::npos || !split ||
+				    split + 1 >= value.size())
+					return false;
+			}
+			else if (library->func == proclibobj_transporter)
+			{
+				int destination = 0;
+				if (split == std::string_view::npos || !split ||
+				    !integer(value.substr(split + 1), destination) ||
+				    destination <= 0)
+					return false;
+			}
+			else if (library->func == proclibobj_actroom ||
+				 library->func == proclibobj_actworn)
+			{
+				int chance = 0;
+				if (split == std::string_view::npos ||
+				    !integer(value.substr(0, split), chance) || !chance ||
+				    split + 1 >= value.size())
+					return false;
+				if (library->func == proclibobj_actworn)
+				{
+					const size_t second =
+						value.find(static_cast<char>(0xff), split + 1);
+					if (second == std::string_view::npos ||
+					    second == split + 1 || second + 1 >= value.size())
+						return false;
+				}
+			}
+			else
+				return false;
+			found = true;
+		}
+	if (IS_SET(object->extra_flags, ITEM_PROCLIB) && !found)
+		return false;
+	*eligible = found;
+	return true;
+}
+
 bool proclib_saved_periodic_probe(P_obj object, size_t description_index, bool *periodic) noexcept
 {
 	if (!object || !periodic || description_index >= PLAYER_SNAPSHOT_MAX_ROWS)
@@ -484,9 +578,12 @@ int proclibObj_add(P_obj obj, char *procName, char *args)
 	   added at runtime is still reachable. */
 	if ((obj->R_num >= 0) && obj_index[obj->R_num].func.obj != proclib_obj_cmd_bridge)
 	{
+		const auto recovery_before = obj_index[obj->R_num].func.obj;
 		if (obj_index[obj->R_num].func.obj)
 			proclib_chain_install(obj->R_num, obj_index[obj->R_num].func.obj);
 		obj_index[obj->R_num].func.obj = proclib_obj_cmd_bridge;
+		shop_trade_original_procedure_binding_stage::observe_normal_binding(
+			obj->R_num, recovery_before, proclib_obj_cmd_bridge);
 	}
 
 	return 0;
