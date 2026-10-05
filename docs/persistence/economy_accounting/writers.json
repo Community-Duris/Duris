@@ -23749,7 +23749,7 @@
         ],
         [
           "src/economy/shop_trade_transaction.h",
-          32,
+          39,
           "economic_submit"
         ],
         [
@@ -34086,6 +34086,185 @@
       "evidence": []
     },
     {
+      "id": "shop.accounted_preparation_start",
+      "path": "src/economy/shop_trade_transaction.c",
+      "symbol": "shop_trade_preparation_owner::start",
+      "reason": "shop_buy",
+      "integration_issue": 483,
+      "owner": "primary / #483",
+      "coverage": "legacy",
+      "classification": "Original retained SHOP preparation owns one frozen selection through player/native checkpoint and exact admission. Its production entry remains unreachable while the central SHOP route is unregistered; source integration is not native qualification.",
+      "authority_boundary": "Original retained player/native checkpoint and selected literal owner. Closed central admission; IDs, callback return values and scanner hits grant no economic or publication authority.",
+      "current_support": "Source integrated and independently reviewed only; native, gameplay, persistence and recovery checks deferred to the original major-plan batch.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [
+        [
+          "src/economy/shop_trade_transaction.c",
+          2334,
+          "economic_submit"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Regular game-thread retained owner and four-action producer source are integrated, but the maintained central SHOP availability query remains false. Original native qualification and cold recovery are unfinished."
+    },
+    {
+      "id": "shop.accounted_produced_continuation",
+      "path": "src/economy/shop.c",
+      "symbol": "shop_trade_submit_accounted_produced_continuation",
+      "reason": "shop_buy",
+      "integration_issue": 483,
+      "owner": "primary / #483",
+      "coverage": "legacy",
+      "classification": "Only post-publication/ACK completion selects the next produced copy with the same keeper, stock, destination and price. Original-copy retry never rerolls; central SHOP admission remains closed.",
+      "authority_boundary": "Original retained player/native checkpoint and selected literal owner. Closed central admission; IDs, callback return values and scanner hits grant no economic or publication authority.",
+      "current_support": "Source integrated and independently reviewed only; native, gameplay, persistence and recovery checks deferred to the original major-plan batch.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [
+        [
+          "src/economy/shop.c",
+          864,
+          "economic_submit"
+        ],
+        [
+          "src/economy/shop.c",
+          846,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          851,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          860,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          874,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Regular game-thread retained owner and four-action producer source are integrated, but the maintained central SHOP availability query remains false. Original native qualification and cold recovery are unfinished."
+    },
+    {
+      "id": "shop.accounted_producer_entry",
+      "path": "src/economy/shop.c",
+      "symbol": "shop_trade_start_accounted",
+      "reason": "shop_buy",
+      "integration_issue": 483,
+      "owner": "primary / #483",
+      "coverage": "legacy",
+      "classification": "Four buy/sell front doors hand their original selection to the retained owner before any legacy split payment/grant path. Central availability is closed; source integration is not route qualification.",
+      "authority_boundary": "Original retained player/native checkpoint and selected literal owner. Closed central admission; IDs, callback return values and scanner hits grant no economic or publication authority.",
+      "current_support": "Source integrated and independently reviewed only; native, gameplay, persistence and recovery checks deferred to the original major-plan batch.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [
+        [
+          "src/economy/shop.c",
+          878,
+          "economic_submit"
+        ],
+        [
+          "src/economy/shop.c",
+          916,
+          "economic_submit"
+        ],
+        [
+          "src/economy/shop.c",
+          1991,
+          "economic_submit"
+        ],
+        [
+          "src/economy/shop.c",
+          2348,
+          "economic_submit"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Regular game-thread retained owner and four-action producer source are integrated, but the maintained central SHOP availability query remains false. Original native qualification and cold recovery are unfinished."
+    },
+    {
+      "id": "shop.accounted_refusal_cleanup",
+      "path": "src/economy/shop.c",
+      "symbol": "shop_trade_accounted_refusal",
+      "reason": "item_create",
+      "integration_issue": 483,
+      "owner": "primary / #483",
+      "coverage": "legacy",
+      "classification": "Exact local refusal cleanup of an unadmitted original produced stage after proved prejournal release; no receipt, economic retirement or native keeper mutation.",
+      "authority_boundary": "Original retained player/native checkpoint and selected literal owner. Closed central admission; IDs, callback return values and scanner hits grant no economic or publication authority.",
+      "current_support": "Source integrated and independently reviewed only; native, gameplay, persistence and recovery checks deferred to the original major-plan batch.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [
+        [
+          "src/economy/shop.c",
+          1220,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Regular game-thread retained owner and four-action producer source are integrated, but the maintained central SHOP availability query remains false. Original native qualification and cold recovery are unfinished."
+    },
+    {
       "id": "shop.buy_existing",
       "path": "src/economy/shop.c",
       "symbol": "shopping_buy",
@@ -34116,37 +34295,37 @@
       "sites": [
         [
           "src/economy/shop.c",
-          1573,
+          1844,
           "item_lifecycle"
-        ],
-        [
-          "src/economy/shop.c",
-          1603,
-          "item_lifecycle"
-        ],
-        [
-          "src/economy/shop.c",
-          1762,
-          "item_lifecycle"
-        ],
-        [
-          "src/economy/shop.c",
-          1787,
-          "economic_submit"
         ],
         [
           "src/economy/shop.c",
           1874,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          2066,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          2091,
+          "economic_submit"
+        ],
+        [
+          "src/economy/shop.c",
+          2178,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          1897,
+          2201,
           "item_publication"
         ],
         [
           "src/economy/shop.c",
-          1904,
+          2208,
           "item_lifecycle"
         ]
       ],
@@ -34184,118 +34363,128 @@
       "sites": [
         [
           "src/economy/shop.c",
-          686,
+          705,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          695,
+          714,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          713,
+          732,
           "economic_submit"
         ],
         [
           "src/economy/shop.c",
-          735,
+          754,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          741,
+          760,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          753,
+          772,
           "economic_submit"
         ],
         [
           "src/economy/shop.c",
-          762,
+          781,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          780,
+          799,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          785,
+          804,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          793,
+          812,
           "economic_submit"
         ],
         [
           "src/economy/shop.c",
-          796,
+          815,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          877,
+          1008,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          339,
+          348,
           "item_publication"
         ],
         [
           "src/economy/shop.c",
-          356,
+          365,
           "item_publication"
         ],
         [
           "src/economy/shop.c",
-          367,
+          376,
           "item_publication"
         ],
         [
           "src/economy/shop.c",
-          383,
+          392,
           "item_publication"
         ],
         [
           "src/economy/shop.c",
-          298,
+          307,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          1091,
+          1356,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          1105,
+          1370,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          1116,
+          1381,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          1775,
+          2079,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          1791,
+          2095,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          1901,
+          2205,
           "economic_submit"
+        ],
+        [
+          "src/economy/shop.c",
+          1982,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/shop.c",
+          1999,
+          "item_lifecycle"
         ]
       ],
       "evidence": []
@@ -34362,7 +34551,7 @@
       "sites": [
         [
           "src/economy/shop.c",
-          1426,
+          1691,
           "item_lifecycle"
         ]
       ],
@@ -34399,32 +34588,32 @@
       "sites": [
         [
           "src/economy/shop.c",
-          432,
+          441,
           "coin_assignment"
         ],
         [
           "src/economy/shop.c",
-          434,
+          443,
           "coin_assignment"
         ],
         [
           "src/economy/shop.c",
-          436,
+          445,
           "coin_assignment"
         ],
         [
           "src/economy/shop.c",
-          437,
+          446,
           "coin_assignment"
         ],
         [
           "src/economy/shop.c",
-          440,
+          449,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          442,
+          451,
           "money_helper"
         ]
       ],
@@ -34459,37 +34648,37 @@
       "sites": [
         [
           "src/economy/shop.c",
-          3245,
+          3575,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          3263,
+          3593,
           "item_publication"
         ],
         [
           "src/economy/shop.c",
-          3273,
+          3603,
           "item_publication"
         ],
         [
           "src/economy/shop.c",
-          3274,
+          3604,
           "item_publication"
         ],
         [
           "src/economy/shop.c",
-          3278,
+          3608,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          3294,
+          3624,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          3295,
+          3625,
           "money_helper"
         ]
       ],
@@ -34533,22 +34722,22 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          1315,
+          1321,
           "coin_assignment"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          1317,
+          1323,
           "coin_assignment"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          1319,
+          1325,
           "coin_assignment"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          1320,
+          1326,
           "coin_assignment"
         ]
       ],
@@ -34614,12 +34803,12 @@
       "sites": [
         [
           "src/economy/shop.c",
-          2245,
+          2572,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          2256,
+          2583,
           "money_helper"
         ]
       ],
@@ -34663,17 +34852,17 @@
       "sites": [
         [
           "src/economy/shop.c",
-          2490,
+          2817,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          2503,
+          2830,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          2523,
+          2850,
           "money_helper"
         ]
       ],
@@ -34741,32 +34930,32 @@
       "sites": [
         [
           "src/economy/shop.c",
-          2041,
+          2368,
           "economic_submit"
         ],
         [
           "src/economy/shop.c",
-          2075,
+          2402,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          2077,
+          2404,
           "money_helper"
         ],
         [
           "src/economy/shop.c",
-          2086,
+          2413,
           "item_lifecycle"
         ],
         [
           "src/economy/shop.c",
-          2091,
+          2418,
           "item_publication"
         ],
         [
           "src/economy/shop.c",
-          2092,
+          2419,
           "item_publication"
         ]
       ],
@@ -34803,17 +34992,17 @@
       "sites": [
         [
           "src/economy/shop.c",
-          2592,
+          2919,
           "item_publication"
         ],
         [
           "src/economy/shop.c",
-          2595,
+          2922,
           "item_publication"
         ],
         [
           "src/economy/shop.c",
-          2599,
+          2926,
           "item_lifecycle"
         ]
       ],
@@ -34850,7 +35039,7 @@
       "sites": [
         [
           "src/economy/shop.c",
-          2361,
+          2688,
           "item_lifecycle"
         ]
       ],
@@ -34991,7 +35180,7 @@
       "sites": [
         [
           "src/economy/shop.c",
-          811,
+          937,
           "economic_submit"
         ]
       ],
@@ -35026,17 +35215,17 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          1439,
+          1445,
           "economic_submit"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          1391,
+          1397,
           "economic_submit"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          1442,
+          1448,
           "economic_submit"
         ]
       ],
@@ -53476,361 +53665,433 @@
     },
     {
       "path": "src/economy/shop.c",
-      "line": 440,
+      "line": 449,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(keeper, payload.price);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 442,
+      "line": 451,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(keeper, payload.price, 0);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 686,
+      "line": 705,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, sequence.price);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 695,
+      "line": 714,
       "family": "money_helper",
       "excerpt": "if (SUB_MONEY(keeper, sequence.price, 0) != 0)"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1105,
+      "line": 1370,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(keeper, static_cast<int>(sequence.price));"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1874,
+      "line": 2178,
       "family": "money_helper",
       "excerpt": "if (!transact(ch, gem, keeper, sale))"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2075,
+      "line": 2402,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch, sale);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2077,
+      "line": 2404,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(keeper, sale, 0);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2256,
+      "line": 2583,
       "family": "money_helper",
       "excerpt": "if (!transact(ch, gem, keeper, sale))"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2523,
+      "line": 2850,
       "family": "money_helper",
       "excerpt": "if (!transact(ch, gem, keeper, cost))"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 3245,
+      "line": 3575,
       "family": "money_helper",
       "excerpt": "bool transact(P_char from, P_obj merchandise, P_char to, int value)"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 3278,
+      "line": 3608,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(from, change);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 3294,
+      "line": 3624,
       "family": "money_helper",
       "excerpt": "if (SUB_MONEY(from, value, 0) > -1)"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 3295,
+      "line": 3625,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(to, value);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 713,
+      "line": 732,
       "family": "economic_submit",
       "excerpt": "item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/economy/shop.c",
-      "line": 753,
+      "line": 772,
       "family": "economic_submit",
       "excerpt": "if (currency_transaction_submit_wallet_value("
     },
     {
       "path": "src/economy/shop.c",
-      "line": 793,
+      "line": 812,
       "family": "economic_submit",
       "excerpt": "!shop_trade_transaction_submit_with_publication("
     },
     {
       "path": "src/economy/shop.c",
-      "line": 811,
+      "line": 864,
+      "family": "economic_submit",
+      "excerpt": "if (shop_trade_preparation_owner::start("
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 878,
+      "family": "economic_submit",
+      "excerpt": "static bool shop_trade_start_accounted(P_char ch, P_char keeper, P_obj selected, P_obj stock,"
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 916,
+      "family": "economic_submit",
+      "excerpt": "if (shop_trade_preparation_owner::start("
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 937,
       "family": "economic_submit",
       "excerpt": "shop_trade_transaction_submit_with_publication("
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1787,
+      "line": 1991,
+      "family": "economic_submit",
+      "excerpt": "!shop_trade_start_accounted("
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 2091,
       "family": "economic_submit",
       "excerpt": "!shop_trade_transaction_submit_with_publication("
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1901,
+      "line": 2205,
       "family": "economic_submit",
       "excerpt": "if (!item_creation_grant_submit_to_player(ch, temp1, ch, container,"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2041,
+      "line": 2348,
+      "family": "economic_submit",
+      "excerpt": "if (!shop_trade_start_accounted(ch, keeper, temp1, nullptr, nullptr,"
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 2368,
       "family": "economic_submit",
       "excerpt": "!shop_trade_transaction_submit_with_publication("
     },
     {
       "path": "src/economy/shop.c",
-      "line": 432,
+      "line": 441,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(keeper) = remaining / 1000;"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 434,
+      "line": 443,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(keeper) = remaining / 100;"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 436,
+      "line": 445,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(keeper) = remaining / 10;"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 437,
+      "line": 446,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(keeper) = remaining % 10;"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 298,
+      "line": 307,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, TRUE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 735,
+      "line": 754,
       "family": "item_lifecycle",
       "excerpt": "P_obj selected = read_object(stock->R_num, REAL);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 741,
+      "line": 760,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 762,
+      "line": 781,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 780,
+      "line": 799,
       "family": "item_lifecycle",
       "excerpt": "P_obj selected = read_object(stock->R_num, REAL);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 785,
+      "line": 804,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 796,
+      "line": 815,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 877,
+      "line": 846,
+      "family": "item_lifecycle",
+      "excerpt": "P_obj selected = read_object(stock->R_num, REAL);"
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 851,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(selected, FALSE);"
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 860,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(selected, FALSE);"
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 874,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(selected, FALSE);"
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 1008,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1091,
+      "line": 1220,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1116,
+      "line": 1356,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1426,
+      "line": 1381,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(selected, FALSE);"
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 1691,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Shopkeeper with cost 0 arti?"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1573,
+      "line": 1844,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp1, TRUE); // Bye arti."
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1603,
+      "line": 1874,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp1, TRUE); // Arti with no cost?"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1762,
+      "line": 1982,
+      "family": "item_lifecycle",
+      "excerpt": "if (produced_purchase && !(selected = read_object(temp1->R_num, REAL)))"
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 1999,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(selected, FALSE);"
+    },
+    {
+      "path": "src/economy/shop.c",
+      "line": 2066,
       "family": "item_lifecycle",
       "excerpt": "if (produced && !(selected = read_object(temp1->R_num, REAL)))"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1775,
+      "line": 2079,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1791,
+      "line": 2095,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(selected, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1904,
+      "line": 2208,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp1, FALSE);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2086,
+      "line": 2413,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp1, TRUE); // Prolly not an arti if type trash."
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2245,
+      "line": 2572,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp1, TRUE); // Arti with no cost?"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2361,
+      "line": 2688,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj1, TRUE); // Bye arti."
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2490,
+      "line": 2817,
       "family": "item_lifecycle",
       "excerpt": "wpn = read_object(obj_index[obj->R_num].virtual_number, VIRTUAL);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2503,
+      "line": 2830,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(wpn);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2599,
+      "line": 2926,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item, TRUE); // Shopkeep dies with arti? :("
     },
     {
       "path": "src/economy/shop.c",
-      "line": 339,
+      "line": 348,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 356,
+      "line": 365,
       "family": "item_publication",
       "excerpt": "obj_to_char_checked(object, buying ? ch : keeper);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 367,
+      "line": 376,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 383,
+      "line": 392,
       "family": "item_publication",
       "excerpt": "(obj_to_obj(object, destination), true);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 1897,
+      "line": 2201,
       "family": "item_publication",
       "excerpt": "obj_from_char(temp1);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2091,
+      "line": 2418,
       "family": "item_publication",
       "excerpt": "obj_from_char(temp1);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2092,
+      "line": 2419,
       "family": "item_publication",
       "excerpt": "obj_to_char(temp1, keeper);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2592,
+      "line": 2919,
       "family": "item_publication",
       "excerpt": "obj_from_char(item);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 2595,
+      "line": 2922,
       "family": "item_publication",
       "excerpt": "obj_to_room(item, room);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 3263,
+      "line": 3593,
       "family": "item_publication",
       "excerpt": "unequip_char(from, i);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 3273,
+      "line": 3603,
       "family": "item_publication",
       "excerpt": "obj_from_char(merchandise);"
     },
     {
       "path": "src/economy/shop.c",
-      "line": 3274,
+      "line": 3604,
       "family": "item_publication",
       "excerpt": "obj_to_char(merchandise, to);"
     },
@@ -53842,49 +54103,55 @@
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1391,
+      "line": 1397,
       "family": "economic_submit",
       "excerpt": "bool shop_trade_transaction_submit_with_publication(P_char character,"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1439,
+      "line": 1445,
       "family": "economic_submit",
       "excerpt": "bool shop_trade_transaction_submit(P_char character, const shop_trade_payload &payload,"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1442,
+      "line": 1448,
       "family": "economic_submit",
       "excerpt": "return shop_trade_transaction_submit_with_publication(character, payload, nullptr,"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1315,
+      "line": 2334,
+      "family": "economic_submit",
+      "excerpt": "bool shop_trade_preparation_owner::start(P_char actor, P_char keeper, P_obj selected, P_obj stock,"
+    },
+    {
+      "path": "src/economy/shop_trade_transaction.c",
+      "line": 1321,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(observed.keeper) = static_cast<int>(cash / 1000);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1317,
+      "line": 1323,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(observed.keeper) = static_cast<int>(cash / 100);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1319,
+      "line": 1325,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(observed.keeper) = static_cast<int>(cash / 10);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1320,
+      "line": 1326,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(observed.keeper) = static_cast<int>(cash % 10);"
     },
     {
       "path": "src/economy/shop_trade_transaction.h",
-      "line": 32,
+      "line": 39,
       "family": "economic_submit",
       "excerpt": "bool shop_trade_transaction_submit(P_char character, const shop_trade_payload &payload,"
     },
@@ -64238,9 +64505,9 @@
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
   },
   "candidate_worktree_evidence": {
-    "base_commit": "cfd9c8ab2405920691b9ec0613e0c6217fc93ae7",
+    "base_commit": "43a2a0e3afd5759d22ce931efbbf6e8c905db5be",
     "status": "source_integrated_unqualified",
-    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified. Source-reviewed pure active-root custody census shares old root observation and preserves retained historical states; private shop consumer remains unintegrated and unqualified. Source-reviewed bounded canonical shop recovery forest binding codecs are integrated as pure value helpers; the explicit v8 command, producer, original SQL validation, cold replay/publication and final qualification remain private/unfinished. Existing journal limits, inactive shop versions and admission/ACK gates are unchanged. Maintained native reference/source-event codecs are extracted without changing original encoded bytes or image/capture policy; complete production and focused link recipes are updated. Native char_data now has zeroable runtime-only reference storage and a read-only accessor requiring the originally observed runtime generation before pointer access. No birth writer, durable restore record, UID issuance or ACK authority is installed by this slice; major-plan execution remains deferred. Reviewed SHOP v8 producer/checkpoint, literal runtime payload, complete destination weight, original SQL images, exact retained receipt verification and held live publication source are composed with all companion headers and production objects. Current cold image observation grants no startup/rebind/native publication or ACK authority. Central accounted SHOP admission remains closed and canonical schema0056 is unchanged; schema0057, real producer invocation, cold continuation, flat parity and major-plan native/gameplay/recovery qualification remain unfinished. Previously reviewed detached native-mobile loader is source integrated with both legacy overloads/probe kept on their original path. Preparation has no live list/count/runtime/event publication; consumption precedes room/special hooks. Private dormant stage grants no original source, durable UID or ACK, and adds no durable recovery format or NPC state ledger. Original issuer/birth/restore/retirement and major-plan qualification remain open. SHOP owned submission now accepts the original native v7 or recovery v8 command; the v8 builder was previously rejected by a v7-only guard. Decode, exact operation/checkpoint/held-player proof, all other version restrictions and admission/activation gates remain unchanged. Source-only correction; major-plan execution remains deferred.",
+    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified. Source-reviewed pure active-root custody census shares old root observation and preserves retained historical states; private shop consumer remains unintegrated and unqualified. Source-reviewed bounded canonical shop recovery forest binding codecs are integrated as pure value helpers; the explicit v8 command, producer, original SQL validation, cold replay/publication and final qualification remain private/unfinished. Existing journal limits, inactive shop versions and admission/ACK gates are unchanged. Maintained native reference/source-event codecs are extracted without changing original encoded bytes or image/capture policy; complete production and focused link recipes are updated. Native char_data now has zeroable runtime-only reference storage and a read-only accessor requiring the originally observed runtime generation before pointer access. No birth writer, durable restore record, UID issuance or ACK authority is installed by this slice; major-plan execution remains deferred. Reviewed SHOP v8 producer/checkpoint, literal runtime payload, complete destination weight, original SQL images, exact retained receipt verification and held live publication source are composed with all companion headers and production objects. Current cold image observation grants no startup/rebind/native publication or ACK authority. Central accounted SHOP admission remains closed and canonical schema0056 is unchanged; schema0057, real producer invocation, cold continuation, flat parity and major-plan native/gameplay/recovery qualification remain unfinished. Previously reviewed detached native-mobile loader is source integrated with both legacy overloads/probe kept on their original path. Preparation has no live list/count/runtime/event publication; consumption precedes room/special hooks. Private dormant stage grants no original source, durable UID or ACK, and adds no durable recovery format or NPC state ledger. Original issuer/birth/restore/retirement and major-plan qualification remain open. SHOP owned submission now accepts the original native v7 or recovery v8 command; the v8 builder was previously rejected by a v7-only guard. Decode, exact operation/checkpoint/held-player proof, all other version restrictions and admission/activation gates remain unchanged. Source-only correction; major-plan execution remains deferred. Four SHOP producers and the original retained driver are source integrated; central SHOP availability remains closed. Source review corrected actor-independent uncertain readback ordering and removed an unnecessary live-keeper gate after proven local cancellation. No native/SQL/services or major-plan tests ran; cold recovery, coherent schemas, flat parity and R1-R8 qualification remain open.",
     "source_pins": {
       "src/Makefile": "2ae8f1f3e8cba75233c75a5680e1ca423abf5e4cf5b4e1f1cf56b1b7f5a1d00e",
       "src/economy/coin_physical_recovery.c": "0670e71865ebe3543ec18c4142653ed0ea6499cd93cc3bb36f06407f951e8397",
@@ -64254,14 +64521,14 @@
       "src/economy/collector_transaction.h": "e079d6188874f2cc05b73a7aaf919fef077d8445070074cbad8ea5f1ce2b44b9",
       "src/economy/currency_transaction.c": "4e505f698b8c266bac8b16f31e31a75e059e93a43fe1b40dbf9d23884f6152c7",
       "src/economy/currency_transaction.h": "fa8fa610b7af6b485575cebb22d3fab61f7adc8abdd480585ce1549795516035",
-      "src/economy/economic_command_admission.c": "4d19e7292b9da2286ef7149b78e301fd8f7e4678a6f4540e79fa7d32364f79d7",
-      "src/economy/economic_command_admission.h": "5ed371f12a0f6fa6764039c788c416ccacbc96a1435edad46ca5ec446e43e68d",
+      "src/economy/economic_command_admission.c": "1cdb4fe567f3aa4271360b36757733720848a65f9ce0beaa011d123d63bb3d9b",
+      "src/economy/economic_command_admission.h": "dc19a944f07fde080afd742b58f0cafeab6eca74fa850c980019391ca912c2ba",
       "src/economy/economic_gameplay_authority.c": "3ecf407a223f960291ea3e142b23128e2eefade0344f1264e4d5c2a5e57729be",
       "src/economy/economic_gameplay_authority.h": "9163499b28c38fa61099b8b66bbd09a42d533bf139c5c2256d51ce0a2cca080d",
       "src/flatfile/flatfile_accounting_coin_transaction.c": "bb059c451b0d5cae84e30078393d6749c8137ce578ed86115c15bed45e03f894",
       "src/flatfile/flatfile_accounting_coin_transaction.h": "92949cacbe51eaa9b6a65536b7f94b32d4a7b80ac264ae0a259085126feaf1f4",
       "src/flatfile/flatfile_player_repository.c": "efc58eb49106a20d0a533d5a71592b8c257fcbf7b17ced077a4421c409f9c93a",
-      "src/net/comm.c": "0a74166be1f5e32248a672fa6029a7b4c51982aafbf203e1748b749c487aa103",
+      "src/net/comm.c": "e7962b3478908d055aa3947ddfa9628099904186331ac57b1e88b04e7b0f889c",
       "src/persistence/critical_command.c": "e3191d6c16d3121ef0870ab2345542068f86bf538aa49894dded7ea44c4f7f78",
       "src/persistence/critical_command_coordinator.c": "9f4ccc43c8b89d155c30227c1fa7cb8815edfa1f61f65e94d4de30b305123697",
       "src/persistence/critical_command_coordinator.h": "41e40357a553ed010658354098e5064c8915e5a671bc837edb54616c4366a05e",
@@ -64288,8 +64555,8 @@
       "src/economy/shop_trade_item_payload.h": "7a1f26b1008ade82a954194fe11c10393643bdd843f34fe0aa9b22fae7b233d2",
       "src/economy/shop_trade_accounting.c": "e9e428cdb65a30679a04e8ae044410c9fde042d82278045d441d0d66a2dabd5c",
       "src/economy/shop_trade_accounting.h": "60dbe36c5216ba4e72ad9d12e708ddac1ebb8b80c5d424a5748b502b8cfc9946",
-      "scripts/validate_economy_accounting.py": "984d3170c3b4b17cb96dbcb6568a288b63a9db5278861d59cc860bf996f237be",
-      "scripts/generate_economy_writer_coverage.py": "ca34dfdc7eebd0c9045f95f315e4f77f74c13d053a7aec6bc10f6c07639d861a",
+      "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
+      "scripts/generate_economy_writer_coverage.py": "0e9170f5e6f8d83d9f6916137bdd47e7a3c766ad1dee510a46cd68f9172aa428",
       "src/world/quest_mobile_native.c": "39dff207aa4f9b244fd3af1fb57afd5c51608d7264fdd8e2698df6c95445f909",
       "src/world/quest_mobile_native.h": "798b5bba1db8285d4445db0be054f5e2fa27e5c2b664d25df8babdbc45fb7205",
       "src/economy/shop_trade_world_witness.c": "7a7a95dcdc1c1cc747710fbc0fa587828e2be413c38fad0818815ff5caeb0240",
@@ -64311,14 +64578,14 @@
       "src/core/structs.h": "e1a9776be892d6a6ec1abccd3487cd5f86d0574f80c072164766a752cb976db9",
       "src/world/quest_mobile_native_binding.c": "0be18cca59ecb29345ac67d48b8503973c27bb1e182456e8a46582b2560d2306",
       "src/world/quest_mobile_native_binding.h": "a8826e1127bfaca3d3afb0a4557b2a0698d59a606f6166762f4e48ef362b58c9",
-      "src/economy/shop.c": "fe8b8951d0dba5a20100e37a1103c5084cfcbb1669443ff55dd5938e15b4666d",
+      "src/economy/shop.c": "59463fb56efe15a05b47b6ddea25b3c0bad8fbbe9e4cbeb9f32663db08e07175",
       "src/economy/shop_trade_destination_weight.h": "95d1ff686a8bb7a3c9ef370cc20bfe5da5bafca97c7c234651b3609b032b5d22",
       "src/economy/shop_trade_recovery_image.c": "37b257cd6f653a2b2a9b59f85a8f51bd59e846acacc489469e7919b0b35e0747",
       "src/economy/shop_trade_recovery_image.h": "39cbea3872d4ec82eb893eace5db67542359a7d88a88e47a10cbf613d86eed4a",
       "src/economy/shop_trade_runtime.c": "2a1362e7a2c9e73665e28335a80c1e2a1f901e0eeb92b0c117e90d3c90973a3d",
       "src/economy/shop_trade_runtime.h": "f15bcf72444ee351573feae8142260d2f9b0bc3f1700a1a4587143d4ff3c816d",
-      "src/economy/shop_trade_transaction.c": "562ff23329f5c84348e0dd55e7c7884d35053a843bc9d9d26a0dfa314f7b8b74",
-      "src/economy/shop_trade_transaction.h": "e34c47b6c3402a961be80e83d49a1428833957517bb11bf360625459fb26449f",
+      "src/economy/shop_trade_transaction.c": "b1ecbb96474886815585557c464973af85b101c44d95006de6b594edd9da3b1f",
+      "src/economy/shop_trade_transaction.h": "3aebdf9bcd9f394e003221204f27f9e58c5494a09e726a01d4ae00012764a8f3",
       "src/persistence/economic_sql_shop_trade_transaction.c": "b6d74d32f57b5f3114990da49143f3337bfb054603f76e6aac30047294f53d49",
       "src/persistence/economic_sql_shop_trade_transaction.h": "875d2aa1a4d113969123686ee43d7d412a1e202bf5ae4db660134b773424acf1",
       "src/persistence/shop_item_runtime_payload.c": "de7b7ee2712b1130059d8bcee801a2c245d1d847834056d1de33e61a6ff6b863",
@@ -64328,7 +64595,8 @@
       "src/world/handler.h": "3650f740dc709fc11b746cb78b59ac5d105498881adbb7239d3184edef6bb9af",
       "src/world/db.c": "86551201b1c094c2764d21ecf65b5c6d7d917c1c046ef69bfda35cfb5e0d0fa9",
       "src/world/db.h": "5897c9aa58084208b407643913b24490322e77975461a69c9fb306274afc51ff"
-    }
+    },
+    "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred."
   },
   "pending_source_integration": {
     "candidate_commit": "9fabe54bb0146d174a47690902fe00cb06eb5f62",

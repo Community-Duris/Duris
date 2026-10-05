@@ -15,6 +15,13 @@
 
 class shop_trade_native_checkpoint_owner;
 
+// Local preparation cancellation only, after the exact player hold/slot has
+// been released before admission. Literal bytes belong to the original selected
+// tree; no fabricated receipt, save revision or SQL authority is supplied.
+// False/throw retains the original owner and is never automatically repeated.
+using shop_trade_preparation_refusal_fn = bool (*)(P_char, const shop_trade_payload &,
+						   std::span<const uint8_t>, unsigned int);
+
 constexpr size_t SHOP_TRADE_PENDING_MAX = 128;
 
 using shop_trade_completion_fn = void (*)(P_char character, bool committed,
@@ -95,6 +102,18 @@ enum class shop_trade_native_checkpoint_disposition : uint8_t
 class shop_trade_preparation_owner final
 {
     public:
+	// Read-only route availability before producer callbacks/RNG/allocation.
+	// It grants no source, checkpoint, admission or publication authority.
+	static bool production_available() noexcept;
+	// True transfers this one original selection to the bounded pending map.
+	// Neither notification is invoked synchronously by this function.
+	static bool start(P_char actor, P_char keeper, P_obj selected, P_obj stock,
+			  P_obj destination, uint32_t shop_id, shop_trade_action action,
+			  int64_t price, shop_trade_accounted_publication_fn publication,
+			  shop_trade_completion_fn completion,
+			  shop_trade_preparation_refusal_fn refusal) noexcept;
+	// One bounded attempt per original entry on the existing gameplay pulse.
+	static void pulse() noexcept;
 	static shop_trade_preparation_state begin(P_char actor, P_char keeper, P_obj selected,
 						  P_obj stock, P_obj destination, uint32_t shop_id,
 						  shop_trade_action action, int64_t price,
@@ -123,6 +142,8 @@ class shop_trade_preparation_owner final
 				       shop_trade_checkpoint_context *output) noexcept;
 
     private:
+	static void drive(const shop_trade_preparation_token &) noexcept;
+	static void notify_refusal(const shop_trade_preparation_token &) noexcept;
 	friend class shop_trade_native_checkpoint_owner;
 #ifndef __NO_MYSQL__
 	// Original recapture and ownership precede SQL. All output copies complete

@@ -39,6 +39,9 @@ OFFLINE_WRITERS = {
     "restore.qualification": "Restores into an isolated qualification target; it is not permission to promote that target to live authority.",
 }
 DORMANT_WRITERS = {
+    "shop.accounted_preparation_start": "Original retained SHOP preparation owns one frozen selection through player/native checkpoint and exact admission. Its production entry remains unreachable while the central SHOP route is unregistered; source integration is not native qualification.",
+    "shop.accounted_producer_entry": "Four buy/sell front doors hand their original selection to the retained owner before any legacy split payment/grant path. Central availability is closed; source integration is not route qualification.",
+    "shop.accounted_produced_continuation": "Only post-publication/ACK completion selects the next produced copy with the same keeper, stock, destination and price. Original-copy retry never rerolls; central SHOP admission remains closed.",
     "quest.native_mobile_stage_publication": "Private detached native mobile publication is defined but has no in-tree birth owner/caller. Keep it unavailable until the original admitted source, native economic values/stock, retained candidate and final publication outcome are proved; stage consumption grants no ACK.",
     "quest.native_sql_image_participant": "Borrowed-transaction native NPC image/stock writer is defined but has no in-tree caller. Parent must authenticate admitted birth/transition, revisions and source/epoch/inbox, lock mobile IDs before custody, commit the unified root and own cleanup; never call as standalone authority.",
     "currency.bank_single_projection": "The single-denomination bank publisher has no in-tree caller. If revived, it would change a live PC projection without a revision fence; require a committed bank identity/revision or refuse.",
@@ -57,6 +60,7 @@ DORMANT_WRITERS = {
     "player.confiscate_all_dormant": "Compiled bulk rent confiscation helper has no in-tree callsite; its direct inventory extraction requires bounded UID retirement if revived.",
 }
 NON_WRITERS = {
+    "shop.accounted_refusal_cleanup": "After exact prejournal cancellation, disposes only the original unique NOWHERE produced candidate whose complete literal tree is unchanged; no admitted custody or holding is retired.",
     "item.shop_container_shell_probe": "Reads and extracts a temporary unowned template to observe container shell weight; no admitted UID, custody root, durable holding or ACK authority.",
     "coin.restored_pile_rendering": "Compares retained opening/result literals on detached stack-local objects; no UID admission or native holding change.",
     "recovery.ordinary_drop_graph_reconstruction": "Reconstructs only an entirely absent graph from exact original receipt/current SQL authority using retained UIDs and literals. Projection enrollment changes global/index/room/runtime caches without economic issuance, destruction or ACK.",
@@ -496,7 +500,7 @@ def source_definition_lines(path: Path, function: str | None) -> list[int]:
             previous_end = line_start - 1
             previous_start = code.rfind("\n", 0, previous_end) + 1
             previous = code[previous_start:previous_end].strip()
-            if not re.fullmatch(r"[A-Za-z_]\w*(?:::\w+)*", previous):
+            if not re.fullmatch(r"(?:static\s+)?[A-Za-z_]\w*(?:::\w+)*", previous):
                 continue
         if any(word in prefix for word in ("return", "if ", "while ", "for ", "case ", "=")):
             continue
@@ -505,6 +509,11 @@ def source_definition_lines(path: Path, function: str | None) -> list[int]:
 
 
 def source_targets(route_id: str, disposition: str) -> dict:
+    if route_id in {"shop.accounted_preparation_start", "shop.accounted_producer_entry",
+                    "shop.accounted_produced_continuation"}:
+        return {"holding_effect": "Central SHOP availability is closed; the connected producer/driver cannot initiate active money mutation until the complete route is qualified.",
+                "custody_effect": DORMANT_WRITERS[route_id],
+                "native_state_targets": ["original player/keeper checkpoint and held selection", "future admitted SHOP money/item root and guarded publication"]}
     if route_id == "repair.player_item_payload":
         return {"holding_effect": "No wallet or bank mutation, issuance, retirement or accounting root.", "custody_effect": OFFLINE_WRITERS[route_id], "native_state_targets": ["player_items and player_item_runtime_state for the retained UID", "player_item_affects and player_item_extra_descr", "player_death_restitution_receipt and player_death_restitution_item payload_repair audit rows"]}
     if disposition == "non_writer_candidate":
