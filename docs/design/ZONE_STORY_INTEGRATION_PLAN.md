@@ -3065,3 +3065,29 @@ repair. One fallback achievement/row is removed from projection while all native
 definitions and historical evidence remain. All new credit requires active,
 ready accounting; frozen recovery remains separate. Preserve Fields intentional
 escape hotfix and required replacement design with the live portal stationary.
+
+
+## Lava Caves: blocked coin producer, wandering seller and honest access evidence
+
+The [complete dossier](zone-stories/THE_UNDERGROUND_LAVA_CAVES.md) distinguishes
+one supported exact horns return from its sole native producer, a money-only
+purchase refused under active accounting. Supplied legitimate horns fit without
+personal purchase history, but potential repeatability cannot promise source
+availability or renewal. The native adventurer trap and unusual key need intent
+review before repairs.
+
+| Requirement | Evidence | Plan and qualification |
+| --- | --- | --- |
+| Sources and actual renewal | No horns reset/loot producer; coin purchase and all reset item issuance refused while accounting active; mode1 aged/empty | **ZSQ-LAVCAV-SOURCE-RENEWAL:** qualify authoritative source/root/UID/custody/actor, gifts versus source/reward, worn/nested materials, real stock/caps and repeated accepted returns. Daily selection/availability must depend on qualified producer or legitimate current material and actual renewal. Preserve scarcity and retained history. |
+| Universal money-only purchase | Configured100000 base=100 platinum versus dialogue1500; legacy NPC pooled money cannot identify actual payer | **ZSQ-LAVCAV-COIN-PURCHASE:** keep excluded until atomic actual payer wallet debit/exact amount, horns issuance, receipt/selected target retirement, refund/rollback/retry/concurrency/replay/frozen recovery are qualified. Version/reclassify deliberately; do not introduce free stock/item fee/changed price or fall back to pooled NPC money. |
+| Moving and retiring recipients | Isolated35635 seller can wander WEST to lake or EAST to exitless trap; current template/room reselection lacks captured NPC epoch | **ZSQ-LAVCAV-WANDERING-RECIPIENT:** preserve trap/mobility while presenting real availability/location. Qualify moved/removed target, east-trapped versus west-roaming, cap1/occupied reset, replacement identity, delayed commit/disconnect/replay and original-target retirement. Shared confirmed repair separate named fix/news with broader cases. |
+| Controls, doors and fire prerequisites | Fixed PUSH clears BLOCKED, not CLOSED; prison PICKABLE/asymmetric lock; training resets open; secret doors and elemental-fire effects | **ZSQ-LAVCAV-ACCESS-EVIDENCE:** capture actual admitted control actor/selected UID/reset generation, reveal/unlock/OPEN/arrival and current survival/protection separately. Qualify already-cleared/other-player route, picking, key destruction accepted/refused, reblock/relock/reset and fire effect cadence. No automatic travel, flight or protection grant. |
+| Unusual key intent | Rare24-percent WORN11 onyx key still matches VNUM-based has_key; value1=500 break threshold; gates reset open | **ZSQ-LAVCAV-ONYX-KEY-INTENT:** builder confirms values/type/source intent before repair. Test reset-open and relocked gates, direct/held key eligibility, destruction acceptance/rejection, current ownership/custody and receipt compatibility. Do not impose it as a prerequisite or silently convert it to KEY18. Actual fix needs separate commit/proof/news. |
+| Service and lore endpoints | No local teacher/merchant/quest binding for instructor/manufacturer/miners/prisoners; inactive Dark Knight highdrop selector | **ZSQ-LAVCAV-SERVICE-ENDPOINTS:** builder chooses lore versus explicit lessons/crafting/mining/liberation/escort contracts. Confirm actual dispatch first; define actor, prerequisites, accepted outcome and rewards before adding credit. Names alone do not establish services or special horns loot. |
+| Honest clues | Lake-search/waving-horn prose lacks physical source; price mismatch/fainting/secret-wall text/spelling | **ZSQ-LAVCAV-CLUE-CONSISTENCY:** review intended source/price and prefer minimal truthful captions. Preserve aliases/scarcity/trap/locks/PvP; do not manufacture producers or entrances. Actual repairs separate named fixes with original-fails/repaired-passes proof and prominent news. |
+
+One existing-schema card ships with explicit purchase exclusion and no native or
+runtime repair. The unsupported fallback achievement/row is removed while its
+definition/history remain. Every new credit requires active, ready accounting;
+frozen recovery remains separate. Preserve Fields intentional escape hotfix and
+required replacement design.

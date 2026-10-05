@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1441
-assert report['mapped_area_count'] == 106 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 107 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -229,6 +229,16 @@ assert all(s['category']=='story' for s in shortc['stories'])
 assert shortc['stories'][1]['steps'][0]['contracts']==shortc['stories'][0]['contracts']
 assert [t['item_vnums'][0] for t in shortc['stories'][1]['steps'][1:-1]]==[53200,53201]
 assert shortc['exclusions'][0]['contracts']==[{'giver_vnum':53201,'completion_key':'give=T:19;receive=;disappear=0'}]
+
+lavcav=next(m for m in catalog['story_mappings'] if m['source_area']=='lavcav')
+assert (lavcav['schema_version'],lavcav['revision'],lavcav['coverage'])==(3,1,'complete')
+assert len(lavcav['stories'])==1 and len(lavcav['contacts'])==7 and len(lavcav['exclusions'])==1
+assert report['eligible_by_zone']['355']==1 and sum(len(c['topics']) for c in lavcav['contacts'])==6
+assert sum(t.get('optional',False) for s in lavcav['stories'] for t in s['steps'])==3
+assert lavcav['stories'][0]['category']=='story'
+assert lavcav['stories'][0]['steps'][0]['contracts']==lavcav['exclusions'][0]['contracts']
+assert [t['item_vnums'][0] for t in lavcav['stories'][0]['steps'][1:-1]]==[35505,35515]
+assert lavcav['exclusions'][0]['contracts']==[{'giver_vnum':35535,'completion_key':'give=C:100000;receive=I:35515;disappear=1'}]
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

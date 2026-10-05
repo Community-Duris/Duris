@@ -181,8 +181,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 106 &&
-				tracker.summary_for(7, 42).total == 1584,
+		require(catalog.story_mappings.size() == 107 &&
+				tracker.summary_for(7, 42).total == 1583,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7549,6 +7549,123 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &lieutenant = story_for("lavcav", "lieutenant-platinum-horns");
+			const auto &map = *std::find_if(catalog.story_mappings.begin(),
+							catalog.story_mappings.end(),
+							[](const auto &entry)
+							{ return entry.source_area == "lavcav"; });
+			require(map.exclusions.size() == 1,
+				"Lava Caves lost blocked coin-purchase exclusion");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 355, 35501, 100, "arrival") ==
+					result::applied,
+				"Lava Caves discovery failed");
+			require(journey.render_journal(7, 42, 355, 10, 1, 101, false, false)
+						.find(lieutenant.title) == std::string::npos,
+				"Lava Caves exposed unmet lieutenant");
+			for (const auto &[vnum, room] :
+			     { std::pair{ 35515, 35630 }, std::pair{ 35535, 35544 } })
+				require(journey.meet_npc(7, 42, vnum, room, 102) == result::applied,
+					"Lava Caves clue encounter failed");
+			require(journey.progress_for_zone(7, 42, 355).completed == 0,
+				"Lava Caves clue or moving seller encounter fabricated horn return");
+			require(journey.meet_npc(7, 42, 35517, 35628, 103) == result::applied,
+				"Lava Caves lieutenant encounter failed");
+			std::string journal;
+			const auto section = [&]()
+			{
+				const auto start = journal.find("] " + lieutenant.title + "\r\n");
+				require(start != std::string::npos, "Lava Caves section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.equipped[40] = 35515;
+			supplies.carried[35525] = 1;
+			supplies.carried[35524] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 355, 10, 1, 105, false, false,
+							 &supplies);
+			require(section().find("[Missing now] " + lieutenant.steps[2].text) !=
+					std::string::npos,
+				"Lava Caves worn horns became loose hand-in material");
+			require(section().find("[Missing now] " + lieutenant.steps[1].text) !=
+					std::string::npos,
+				"Lava Caves onyx key became prison iron key");
+			require(section().find("[Pending] " + lieutenant.steps.back().text) !=
+					std::string::npos,
+				"Lava Caves wrist-chain ownership fabricated return");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 355).total == 1,
+				"Lava Caves readiness mutated credit or included blocked purchase");
+			supplies.equipped.clear();
+			supplies.carried[35515] = 1;
+			journal = journey.render_journal(7, 42, 355, 10, 1, 107, false, false,
+							 &supplies);
+			require(section().find("[Ready now] " + lieutenant.steps[2].text) !=
+						std::string::npos &&
+					section().find("[Pending] " + lieutenant.steps[0].text) !=
+						std::string::npos,
+				"Lava Caves supplied horns required personal purchase history");
+			supplies.carried[35505] = 1;
+			journal = journey.render_journal(7, 42, 355, 10, 1, 109, false, false,
+							 &supplies);
+			require(section().find("[Ready now] " + lieutenant.steps[1].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 355).completed == 0,
+				"Lava Caves access-key readiness fabricated door use or return");
+			// Synthetic receipts test projection only; native coin debit, source,
+			// wandering, fire, door use and selected NPC retirement need qualification.
+			for (const auto &[id, reason] : map.exclusions)
+				record(journey, id, "lavcav-historical-purchase", 355, 35544);
+			supplies.carried.erase(35515);
+			journal = journey.render_journal(7, 42, 355, 10, 1, 112, false, false,
+							 &supplies);
+			require(section().find("[Recorded] " + lieutenant.steps[0].text) !=
+						std::string::npos &&
+					section().find("[Missing now] " +
+						       lieutenant.steps[2].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 355).completed == 0,
+				"Lava Caves excluded purchase restored horns or added achievement");
+			service supplied(catalog);
+			require(supplied.discover_zone(7, 42, 355, 35501, 100, "arrival") ==
+					result::applied,
+				"Lava Caves supplied-material discovery failed");
+			record(supplied, lieutenant.contracts.front(), "lavcav-supplied-horns", 355,
+			       35628);
+			require(supplied.progress_for_zone(7, 42, 355).completed == 1 &&
+					supplied.progress_for_zone(7, 42, 355).total == 1,
+				"Lava Caves exact return failed without personal purchase");
+			for (const auto &[id, reason] : map.exclusions)
+				require(supplied.evidence_for(id, 2).successful_attempts == 0,
+					"Lava Caves supplied return invented purchase");
+			record(journey, lieutenant.contracts.front(), "lavcav-accepted-return", 355,
+			       35628);
+			require(journey.progress_for_zone(7, 42, 355).completed == 1 &&
+					journey.progress_for_zone(7, 42, 355).total == 1,
+				"Lava Caves accepted return duplicated excluded purchase credit");
+			auto replay = completion(lieutenant.contracts.front(),
+						 "lavcav-accepted-return", 120);
+			replay.transaction.zone_number = 355;
+			replay.transaction.room_vnum = 35628;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Lava Caves replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 355).completed == 1 &&
+					recovered.progress_for_zone(7, 42, 355).total == 1 &&
+					!recovered.has_discovered(7, 42, 209),
+				"Lava Caves recovery lost return or fabricated Mountain Tracts discovery");
+			require(recovered.evidence_for(lieutenant.contracts.front(), 2)
+						.successful_attempts == 1,
+				"Lava Caves return receipt lost in recovery");
+			for (const auto &[id, reason] : map.exclusions)
+				require(recovered.evidence_for(id, 2).successful_attempts == 1,
+					"Lava Caves exclusion erased historical purchase evidence");
+		}
 		{
 			const auto &master = story_for("shortc", "master-lost-key");
 			const auto &hero = story_for("shortc", "hero-final-steak");

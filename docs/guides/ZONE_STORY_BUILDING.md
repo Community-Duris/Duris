@@ -2163,3 +2163,35 @@ assuming it preserves the original target. Confirm prop/clue intent before
 native repairs, and give actual fixes separate commits/tests/news. Preserve
 key chance, locks, stock/PvP and Fields escape hotfix. All new credit requires
 active, ready accounting; frozen recovery remains separate.
+
+
+## Lava Caves example: distinguish a return quest from its blocked producer
+
+The [dossier](../design/zone-stories/THE_UNDERGROUND_LAVA_CAVES.md) and
+[sidecar](../../areas/story/lavcav.story.json) classify the exact horns→wrist
+chain/XP exchange separately from the coin-only purchase that produces horns.
+Active accounting refuses that purchase; no floor/reset/ordinary loot source
+places the pair. Supplied matching horns fit the lieutenant without personal
+purchase history. An excluded historical purchase can be displayed without
+adding an achievement or restoring spent horns. Wearing the horns or owning
+the reward differs from a current loose material and accepted return receipt.
+
+Do not infer personal rescue, thief kill, mining or fainting from dialogue.
+Six keywords select four responses, not six completed steps. The seller starts
+in an isolated room and can wander onto the lake or into an exitless trap.
+Preserve that design; expose only actual availability and qualify selected NPC
+instance/epoch before retirement. Coin support must debit the actual payer,
+issue the exact root and settle atomically with retry/rollback/recovery; legacy
+NPC pooled money is not accepted payer evidence. The configured100-platinum
+fee and quoted1500-platinum price need intent review before any correction.
+
+Native key eligibility uses VNUM, so the rare WORN onyx key is not automatically
+broken by its type. Training gates reset open; value1=500 means a break-roll
+threshold, not500 uses. Prison key/picking, reveal/unlock/OPEN/arrival and another
+player's opening need separate facts. Fixed PUSH wall clears blocking, not the
+closed door, and stays stationary. Fireplane heat can strip protection spells;
+prose does not grant safety. Teaching/crafting/rescue lore needs explicit
+endpoints before credit. Actual stock/empty-mode1 renewal and source-qualified
+daily availability require qualification with active, ready accounting. Keep
+builder intent questions distinct from proven repairs; actual fixes get separate
+commits/tests/news, preserving Fields hotfix and PvP.

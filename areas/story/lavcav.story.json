@@ -1,0 +1,154 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "lavcav",
+  "coverage": "complete",
+  "introduction": "Follow the missing platinum horns from a prisoner’s clue to the lieutenant’s reward. The adventurer’s purchase route is currently unavailable with active accounting; supplied matching horns still fit the supported return exchange.",
+  "orientation": [
+    "Enter from the Narrow Lava Tube in Mountain Tracts (21148), heading SOUTH to the cave entrance (35501). NORTH returns to the tube. The crawlway leads to the Lake of Fire, then dark tunnels, a wooden bridge, the training grounds and the keep. Doors, darkness, confined rooms, fire terrain and hostile inhabitants affect the route.",
+    "Ask the gnome prisoner tresure or secret; ask the lieutenant person or horns; ask the adventurer horns or horn. These six existing keywords select four responses, not six achievements. Keep the actual spelling tresure when asking for that clue.",
+    "The prisoner points toward horns hidden on the lake, but no matching horns are placed on the floor or carried by a reset mobile. The adventurer’s coin exchange is their only identified native producer. His description of waving a horn does not guarantee that he carries one you can loot.",
+    "The adventurer starts in a room with no ordinary incoming route. He can wander WEST onto the lake or EAST into a room with no exits. Look for the actual wandering NPC; this journal does not promise he will always appear or add a route into his spawn rooms.",
+    "Buying the horns is currently unavailable with active accounting and is excluded from achievements and dailies. The configured exchange charges 100 platinum in equivalent coin value, although his dialogue says 1,500 platinum. Do not rely on that old quoted price or send payment expecting this blocked route to work.",
+    "The lieutenant in office 35628 accepts the exact pair of platinum horns for a golden wrist chain and 50,000 configured experience, subject to the game’s reward rules. Matching horns supplied by another player fit without your own purchase record or a personal thief-kill record. The exchange consumes the horns; an old purchase record cannot replace them.",
+    "The prison gate EAST from 35620 starts closed and locked. The gatekeeper carries the heavy iron key in the native reset data; actual live stock can differ. Picking remains another option if your skills and tools permit it. Unlocking, opening the door and reaching the office are separate from returning the horns.",
+    "The training gate between 35580 and 35582 resets open. The rare black onyx key associated with the instructor is not a mandatory first step for that route. The instructor’s barracks and the keep entrance have hidden doors; reveal and open them under the game’s existing rules.",
+    "If the cracked wall is present on the lake at 35537, PUSH wall clears the blocked WEST route toward the dwarven mine. You still need to OPEN the closed passage. The wall stays stationary. Clearing it is not a horn acquisition, a recorded quest completion or proof that you entered the mine.",
+    "The lake is elemental-fire terrain even where prose calls it not altogether dangerous. Ordinary protect-fire spells can be stripped by that heat. Do not infer safety, flight or immunity from a room title. The journal does not record a personal survival or fire-protection objective.",
+    "The alchemist’s potions, library sentries, training instructor, prisoners and miners have no additional local accepted quest endpoint or identified shop/lesson binding. The prisoners’ suffering does not implement rescue, escort or release steps. A potion or worn reward is not evidence of completing the horns exchange."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 35517,
+      "name": "a minotaur lieutenant",
+      "keyword": "lieutenant",
+      "description": "In office 35628. Accepts the exact platinum horns for the golden wrist chain and experience.",
+      "topics": [
+        "person",
+        "horns"
+      ]
+    },
+    {
+      "mob_vnum": 35515,
+      "name": "a gnome prisoner",
+      "keyword": "gnome",
+      "description": "In cell 35630. Talks about treasure and the lake; his clue is not a recorded search, recovery or rescue.",
+      "topics": [
+        "tresure",
+        "secret"
+      ]
+    },
+    {
+      "mob_vnum": 35535,
+      "name": "a seasoned adventurer",
+      "keyword": "adventurer",
+      "description": "Starts in the isolated spawn room and may wander onto the lake or into its trap room. His purchase route is currently unavailable with active accounting.",
+      "topics": [
+        "horns",
+        "horn"
+      ]
+    },
+    {
+      "mob_vnum": 35519,
+      "name": "a minotaur gatekeeper",
+      "keyword": "gatekeeper",
+      "description": "At the prison entrance, 35620. The native reset gives him the heavy iron key; a matching key does not require your personal gatekeeper-kill record.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 35526,
+      "name": "Mharag the battle instructor",
+      "keyword": "instructor",
+      "description": "In the hidden barracks, 35636, with two authored followers. Teaching lore has no identified local lesson binding; his rare onyx key is not needed for the training gate’s usual open state.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 35540,
+      "name": "the alchemist manufacturer",
+      "keyword": "alchemist",
+      "description": "In room 35616 with authored potion stock. His merchant and crafting descriptions do not provide an implemented local shop or quest recipe.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 35523,
+      "name": "the Dark Knight",
+      "keyword": "knight",
+      "description": "At the great gate of the keep, 35605. Existing combat and hidden-door rules apply; the horns exchange does not require a personal Dark Knight kill.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "lieutenant-platinum-horns",
+      "title": "Lieutenant: return the platinum horns",
+      "category": "story",
+      "summary": "Return the exact pair of platinum horns for the golden wrist chain and an experience reward. Supplied horns fit without your own adventurer purchase record. The exchange records their return; it does not record catching a thief, rescuing a prisoner or entering the mines.",
+      "contracts": [
+        {
+          "giver_vnum": 35517,
+          "completion_key": "give=I:35515;receive=E:50000,I:35525;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-purchase",
+          "text": "Optional earlier route: purchase the horns",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 35535,
+              "completion_key": "give=C:100000;receive=I:35515;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "The native adventurer purchase is currently unavailable with active accounting. This step can display retained accepted history, but is not required for the lieutenant. A prior purchase record does not supply horns that were spent, lost or given away."
+        },
+        {
+          "id": "access-key",
+          "text": "Optional access tool: carry the heavy iron key",
+          "kind": "carried_item",
+          "item_vnums": [
+            35505
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The prison gatekeeper at 35620 is the authored key holder. The key can unlock the prison entrance, while picking or an already opened door may allow another route. This check does not record an unlock, OPEN or arrival. Carry it loose for this inventory check; worn or nested copies do not count. Possession does not show whether you acquired it yourself or received it from another player."
+        },
+        {
+          "id": "horns",
+          "text": "Carry the exact platinum horns",
+          "kind": "carried_item",
+          "item_vnums": [
+            35515
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The adventurer’s blocked purchase is the only identified native producer. No lake floor reset or ordinary loot source places this pair. A matching supplied pair fits; other horned helmets, teeth or the onyx key do not. If you are wearing the pair, remove it before giving it to the lieutenant. Carry it loose for this inventory check; worn or nested copies do not count. Possession does not show whether you acquired it yourself or received it from another player."
+        },
+        {
+          "id": "accepted-return",
+          "text": "Record the accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 35517,
+              "completion_key": "give=I:35515;receive=E:50000,I:35525;disappear=0"
+            }
+          ],
+          "hint": "Recorded after the game accepts this exact hand-in. Carrying the wrist chain, asking for a clue or opening a passage does not record completion."
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "reason": "The coin-only adventurer purchase is refused while active accounting is enabled; its horns issuance and D retirement need atomic wallet debit, selected NPC identity and reward/recovery qualification. Keep it excluded until supported. It is the sole identified native horns producer, not an ordinary floor or loot source.",
+      "contracts": [
+        {
+          "giver_vnum": 35535,
+          "completion_key": "give=C:100000;receive=I:35515;disappear=1"
+        }
+      ]
+    }
+  ]
+}
