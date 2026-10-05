@@ -1,5 +1,25 @@
 # Accounting implementation and qualification handoff
 
+## Private shop weight/retry and parallel NPC checkpoint — 2026-10-05
+
+[Original destination weight and complete prospective inventory](SHOP_DESTINATION_WEIGHT_SOURCE_CHECKPOINT_2026-10-05.md)
+freezes18 private source-reviewed files: explicitv7, atomic target weight,
+complete literal before/after, returned-nesting retry and pre-admission native/
+wire bounds. Parallel Plan3 pure codecs and six compile recipes are prepared.
+These are source-only private implementations. Cold recovery, producer wiring,
+coherent migrations, major-plan qualification and R1–R8 release remain open.
+
+
+## Cross-platform exact source-pin repair — 2026-10-05
+
+[Canonical checkout policy and exact metadata repair](SOURCE_PIN_CHECKOUT_POLICY_REPAIR_2026-10-05.md)
+resolves the five peer-established provenance mismatches: Windows CRLF versus
+Git/Linux LF. All58 pinned paths now require LF; strict raw-byte assertions,
+ownership, evidence and incomplete release status remain unchanged. Exact peer
+combined-build/recovery evidence is imported with its frozen55a314496 scope.
+Source/hash/attribute/generator checks passed; no local major-plan tests ran.
+
+
 ## Active custody observation and private publication checkpoint — 2026-10-05
 
 [Bounded active-root census and shared handoff](ACTIVE_CUSTODY_CENSUS_SOURCE_2026-10-05.md)
