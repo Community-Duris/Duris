@@ -165,6 +165,7 @@ class Reconciler:
         self.limit = limit
         self.exceptions: list[dict] = []
         self.counts: Counter = Counter()
+        self.original_plans_verified = 0
         registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
         self.reasons = {row["number"]: row for row in registry["reasons"]}
         self.realized_price_reasons = {
@@ -715,10 +716,128 @@ class Reconciler:
         self.audit_items(ownership, references, item_origins, native_items,
                          {row.get("uid") for row in (native.get("uid_history_events") or [])
                           if isinstance(row, dict)})
+        self.audit_original_plans(tables, by_op, ownership)
         return {"exception_count": sum(self.counts.values()), "exception_counts": dict(sorted(self.counts.items())),
                 "exceptions": self.exceptions, "truncated": sum(self.counts.values()) > len(self.exceptions),
                 "checked": {name: len(tables[name]) for name in TABLES} |
-                           {"native_holdings": len(holdings), "native_items": len(items)}}
+                           {"native_holdings": len(holdings), "native_items": len(items),
+                            "original_plans_verified": self.original_plans_verified}}
+
+    def audit_original_plans(self, tables: dict, by_op: dict, ownership: dict) -> None:
+        """Bind projections to retained EAP1 bytes, independently of mutation code.
+
+        Every committed root needs its original plan, including model fixtures.
+        Missing proof is never inferred from a backend tag or a balanced cut.
+        EAI1 facts and command/receipt payload authentication remain separate.
+        """
+        import struct
+        from economic_restore_evidence import MAX_PLAN, decode_plan
+
+        total = 0
+        for operation in tables["operations"]:
+            encoded = operation.get("canonical_plan")
+            op_id = operation.get("operation_id")
+            if operation.get("outcome") != "committed":
+                if encoded is not None or operation.get("plan_digest") is not None:
+                    self.emit("rejected_original_plan", operation_id=op_id)
+                continue
+            if encoded is None:
+                self.emit("missing_original_plan", operation_id=op_id)
+                continue
+            if (not isinstance(encoded, str) or len(encoded) < 512 or len(encoded) > MAX_PLAN * 2 or
+                    len(encoded) % 2 or re.fullmatch(r"[0-9a-f]+", encoded) is None):
+                self.emit("invalid_original_plan", operation_id=op_id)
+                continue
+            total += len(encoded) // 2
+            if total > MAX_INPUT_BYTES:
+                raise SnapshotError("original plans exceed audit input limit")
+            try:
+                plan = decode_plan(bytes.fromhex(encoded))
+            except (ValueError, struct.error):
+                self.emit("invalid_original_plan", operation_id=op_id)
+                continue
+            meta = plan["metadata"]
+            expected_metadata = tuple(value.hex() if isinstance(value, bytes) else value for value in meta)
+            original = operation.get("original_operation_id")
+            if original is None:
+                original = "0" * 32
+            metadata = (operation.get("lineage"), operation.get("epoch"), op_id, original,
+                        *(operation.get(field) for field in ("accounting_version", "writer_id", "policy_version",
+                                                            "compiler_version", "actor_kind", "actor_id", "reason")),
+                        operation.get("source_event"))
+            counts = tuple(operation.get(field) for field in
+                           ("account_count", "posting_count", "child_count", "before_witness_count",
+                            "after_witness_count", "item_event_count"))
+            valid = True
+
+            def check(condition: bool, code: str) -> None:
+                nonlocal valid
+                if not condition:
+                    valid = False
+                    self.emit(code, operation_id=op_id)
+
+            original_valid = operation.get("original_operation_id") is None or (
+                isinstance(original, str) and HEX_ID.fullmatch(original) is not None and
+                original != "0" * 32 and original != op_id)
+            check(metadata == expected_metadata and original_valid and all(type(value) is int for value in metadata[4:11]),
+                  "original_plan_metadata_mismatch")
+            check(counts == plan["counts"] and all(type(value) is int for value in counts),
+                  "original_plan_count_mismatch")
+            check(all(operation.get(field) == plan[field].hex()
+                      for field in ("plan_digest", "intent_digest", "domain_digest")),
+                  "original_plan_digest_mismatch")
+            if not valid:
+                # A foreign or unbound capsule cannot authenticate this root's
+                # details. Preserve the root findings without cascading them.
+                continue
+
+            def projected(name: str, index: str, fields: tuple) -> list:
+                return [[row.get(field) for field in fields]
+                        for row in sorted(by_op[name].get(op_id, []), key=lambda row: row[index])]
+
+            expected = [[i, key.hex(), list(before), list(after), old, new]
+                        for i, (key, before, after, old, new) in enumerate(plan["effects"])]
+            check(projected("effects", "account_index", ("account_index", "account_key", "before", "after",
+                                                        "before_revision", "after_revision")) == expected,
+                  "original_plan_account_mismatch")
+            expected = [[i, event, account, child, list(delta), amount]
+                        for i, (event, account, child, delta, amount) in enumerate(plan["postings"])]
+            check(projected("postings", "line_index", ("line_index", "event_index", "account_index", "child_index",
+                                                      "delta", "copper_value")) == expected and
+                  all(type(row.get("event_index")) is int for row in by_op["postings"].get(op_id, [])),
+                  "original_plan_posting_mismatch")
+            expected = [[i + 1, child.hex(), domain, discriminator, parent, relationship]
+                        for i, (child, domain, discriminator, parent, relationship) in enumerate(plan["children"])]
+            check(projected("children", "child_index", ("child_index", "child_operation_id", "domain_id",
+                                                        "discriminator", "parent_index", "relationship")) == expected and
+                  all(type(row.get(field)) is int for row in by_op["children"].get(op_id, [])
+                      for field in ("domain_id", "discriminator", "relationship")),
+                  "original_plan_child_mismatch")
+            expected = [[i, event, child, uid, old[6], new[6]]
+                        for i, (event, child, uid, old, new) in enumerate(plan["events"])]
+            references = sorted(by_op["item_references"].get(op_id, []), key=lambda row: row["event_index"])
+            check([[row.get(field) for field in ("line_index", "event_index", "child_index", "uid",
+                                                "before_revision", "after_revision")]
+                   for row in references] == expected and all(type(row.get("line_index")) is int for row in references),
+                  "original_plan_item_mismatch")
+            custody = []
+            for row in references:
+                event = ownership.get((row.get("legacy_operation_id"), row.get("legacy_event_index")), {})
+                custody.append([event.get(field) for field in ("uid", "root", "parent", "from_owner", "owner",
+                                                               "revision", "from_equipment_slot", "to_equipment_slot")])
+            expected = [[uid, new[4], new[5] or None,
+                         [7, 0, 0] if old[1] == 0 else [old[0], old[2], old[3]],
+                         [new[0], new[2], new[3]], new[6], old[7], new[7]]
+                        for _, _, uid, old, new in plan["events"]]
+            events = [ownership.get((ref.get("legacy_operation_id"), ref.get("legacy_event_index")), {})
+                      for ref in references]
+            check(custody == expected and all(type(row.get(field)) is int for row in events
+                                              for field in ("from_equipment_slot", "to_equipment_slot")) and
+                  all(isinstance(row.get("from_owner"), list) and len(row["from_owner"]) == 3 and
+                      all(type(value) is int for value in row["from_owner"]) for row in events),
+                  "original_plan_custody_mismatch")
+            if valid:
+                self.original_plans_verified += 1
 
     def audit_child_identities(self, rows: list[dict]) -> None:
         """Reconstruct original child identities without a mutation codec.
