@@ -19,6 +19,10 @@ import sys
 MAX_INPUT_BYTES = 32 * 1024 * 1024
 MAX_ROWS = 100_000
 MAX_OUTPUT_ROWS = 100
+OPERATION_COUNT_LIMITS = {
+    "account_count": 3072, "posting_count": 6144,
+    "child_count": 64, "item_event_count": 3000,
+}
 MAPPED_KINDS = {1, 2, 3, 4, 5, 6}
 ORDINARY_KINDS = MAPPED_KINDS | {11}
 UNITS = (1, 10, 100, 1000)
@@ -440,6 +444,11 @@ class Reconciler:
             self.emit_count("lineage_missing_required_source_event",
                             source_policy_coverage["missing_required_source_events"])
 
+        for operation in tables["operations"]:
+            for field, maximum in OPERATION_COUNT_LIMITS.items():
+                value = operation.get(field)
+                if type(value) is not int or not 0 <= value <= maximum:
+                    raise SnapshotError("invalid operation " + field)
         operations = self.index(tables["operations"], ("operation_id",), "duplicate_operation")
         effects = self.index(tables["effects"], ("operation_id", "account_index"), "duplicate_effect")
         postings = self.index(tables["postings"], ("operation_id", "line_index"), "duplicate_posting")
