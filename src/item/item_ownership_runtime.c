@@ -62,8 +62,8 @@ bool item_ownership_runtime_snapshot_owner(const item_owner_identity &owner, siz
 	}
 }
 
-bool item_ownership_runtime_snapshot_root(uint64_t root_item_uid, size_t limit,
-					  std::vector<item_ownership_runtime_entry> *snapshot)
+static bool snapshot_root(uint64_t root_item_uid, size_t limit, bool active_only,
+			  std::vector<item_ownership_runtime_entry> *snapshot)
 {
 	if (!snapshot)
 		return false;
@@ -78,7 +78,8 @@ bool item_ownership_runtime_snapshot_root(uint64_t root_item_uid, size_t limit,
 		for (const auto &[uid, entry] : entries)
 		{
 			(void)uid;
-			if (entry.root_item_uid != root_item_uid)
+			if (entry.root_item_uid != root_item_uid ||
+			    (active_only && entry.state != item_custody_state::active))
 				continue;
 			if (count >= limit)
 				return false;
@@ -89,7 +90,8 @@ bool item_ownership_runtime_snapshot_root(uint64_t root_item_uid, size_t limit,
 		for (const auto &[uid, entry] : entries)
 		{
 			(void)uid;
-			if (entry.root_item_uid == root_item_uid)
+			if (entry.root_item_uid == root_item_uid &&
+			    (!active_only || entry.state == item_custody_state::active))
 				captured.push_back(entry);
 		}
 		std::sort(captured.begin(), captured.end(), [](const auto &left, const auto &right)
@@ -101,6 +103,18 @@ bool item_ownership_runtime_snapshot_root(uint64_t root_item_uid, size_t limit,
 	{
 		return false;
 	}
+}
+
+bool item_ownership_runtime_snapshot_root(uint64_t root_item_uid, size_t limit,
+					  std::vector<item_ownership_runtime_entry> *snapshot)
+{
+	return snapshot_root(root_item_uid, limit, false, snapshot);
+}
+
+bool item_ownership_runtime_snapshot_active_root(
+	uint64_t root_item_uid, size_t limit, std::vector<item_ownership_runtime_entry> *snapshot)
+{
+	return snapshot_root(root_item_uid, limit, true, snapshot);
 }
 
 bool item_ownership_runtime_hydrate(const item_ownership_runtime_entry &entry)
