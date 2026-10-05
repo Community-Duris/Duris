@@ -1,5 +1,13 @@
 # Double-entry economy: remaining requirements
 
+## Native shop source checkpoint — 2026-10-04
+
+The [shared native admission handoff](SHOP_NATIVE_ADMISSION_HANDOFF_2026-10-04.md)
+records the source-reviewed private keeper/player/producer and guarded refusal
+ownership slices. Successful publication, replay, writer/lifecycle integration,
+coherent schema measurement and original major-plan qualification remain open.
+This private source progress does not complete R1–R8 or change activation gates.
+
 ## Integrated independent baseline fence-digest repair — 2026-10-04
 
 Peer slice `3c8ba021a7dd8b3ac9048651672c9a456774c5d7` is imported with all
@@ -121,3 +129,25 @@ every unsupported route, independent reconciliation of every admitted holding
 and UID, and player-visible recovery after restart. A green pure codec, source
 contract, or synthetic fixture suite is useful component evidence but does not
 meet this release test.
+
+
+### October 4 maintained SQL collector publication compiler repair
+
+The [peer build handoff](PLAN5_SQL_COLLECTOR_ROW_BUILD_HANDOFF_2026-10-04.md)
+establishes a maintained SQL `-Werror=sign-compare` failure in the original
+collector publication translation unit. Its signed native row ID is now
+checked nonnegative before exact unsigned equality against the bounded result
+row. Native row bounds, full literal/custody proof, publication reservations,
+guarded ACK, inactive dispatch and refusal behavior retain their existing owners.
+No representation, schema, warning flags or gameplay rules change.
+
+The maintained raw file now exactly matches peer diagnostic candidate
+`51478b2dfadb97c5aa910735a0337238e8aee964a3150b97fe80b0f9912ba9d1`.
+That copied candidate passed the peer's strict SQL syntax check, while its
+unchanged control reproduced the error. Primary changed-line clang-format18,
+raw pin, JSON/source inventory and whitespace checks cover this actual repair;
+no new local build, tests, database or gameplay execution is claimed. The peer's
+543 unreached syntax passes remain syntax-only, input-specific evidence.
+Maintained SQL linking/service and actual collector publication/replay checks
+remain in the original major-plan qualification. This repair lets Plan5 resume
+its fresh managed SQL restore batch; it does not qualify full accounting.

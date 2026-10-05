@@ -1,5 +1,15 @@
 # Accounting implementation and qualification handoff
 
+## Current native shop interface handoff — 2026-10-04
+
+See [the reviewed private native admission interfaces](SHOP_NATIVE_ADMISSION_HANDOFF_2026-10-04.md)
+for the original checkpoint/producer/guarded refusal ownership and pending
+0057/0058 schema fields. Exact source pins and source-review limits are retained.
+Native successful publication/replay, actorless refusal, writer/lifecycle/gameplay
+integration and original major-plan qualification remain unfinished. Plan5 can
+continue unaffected published-0056 work after collector SQL build repair
+`103fd07c3`; no private schema or code is represented as integrated here.
+
 ## Current source handoff: writer census repair
 
 Published native parent:a265a5053. See
@@ -462,3 +472,25 @@ directory. The central tools image definition adds its missing PyMySQL package;
 existing native origin rows remain registered. Source/JSON/AST checks only;
 container/native execution and combined qualification remain at major-plan
 readiness. Structural fixture audit evidence is not real writer completion.
+
+
+### October 4 maintained SQL collector publication compiler repair
+
+The [peer build handoff](PLAN5_SQL_COLLECTOR_ROW_BUILD_HANDOFF_2026-10-04.md)
+establishes a maintained SQL `-Werror=sign-compare` failure in the original
+collector publication translation unit. Its signed native row ID is now
+checked nonnegative before exact unsigned equality against the bounded result
+row. Native row bounds, full literal/custody proof, publication reservations,
+guarded ACK, inactive dispatch and refusal behavior retain their existing owners.
+No representation, schema, warning flags or gameplay rules change.
+
+The maintained raw file now exactly matches peer diagnostic candidate
+`51478b2dfadb97c5aa910735a0337238e8aee964a3150b97fe80b0f9912ba9d1`.
+That copied candidate passed the peer's strict SQL syntax check, while its
+unchanged control reproduced the error. Primary changed-line clang-format18,
+raw pin, JSON/source inventory and whitespace checks cover this actual repair;
+no new local build, tests, database or gameplay execution is claimed. The peer's
+543 unreached syntax passes remain syntax-only, input-specific evidence.
+Maintained SQL linking/service and actual collector publication/replay checks
+remain in the original major-plan qualification. This repair lets Plan5 resume
+its fresh managed SQL restore batch; it does not qualify full accounting.
