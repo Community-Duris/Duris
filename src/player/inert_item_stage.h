@@ -32,6 +32,8 @@ class inert_item_stage
     private:
 	friend class ordinary_drop_enrollment_owner;
 	friend class coin_physical_recovery_owner;
+	friend class shop_trade_native_publication_owner;
+	friend class shop_trade_original_item_stage;
 	void reset() noexcept;
 	P_obj object_ = nullptr;
 	mm_ds *pool_ = nullptr;
@@ -45,6 +47,40 @@ class inert_item_stage
 								 uint64_t,
 								 const std::array<int32_t, 4> &,
 								 inert_item_stage &) noexcept;
+};
+
+// Value state only. These flags cannot grant SQL/native publication authority.
+struct shop_trade_original_reload_effect
+{
+	bool started = false, returned = false, succeeded = false, periodic = false;
+};
+
+// Separate private original SHOP staging capability. Existing generic inert
+// eligibility and legacy loaders retain their own behavior. This holder owns
+// only unpublished complete persisted literals; consuming it requires the exact
+// original SHOP SQL/receipt/global-absence cut in the native publication owner.
+class shop_trade_original_item_stage
+{
+    public:
+	shop_trade_original_item_stage() noexcept = default;
+	~shop_trade_original_item_stage() noexcept;
+	shop_trade_original_item_stage(shop_trade_original_item_stage &&) noexcept;
+	shop_trade_original_item_stage &operator=(shop_trade_original_item_stage &&) noexcept;
+	shop_trade_original_item_stage(const shop_trade_original_item_stage &) = delete;
+	shop_trade_original_item_stage &operator=(const shop_trade_original_item_stage &) = delete;
+
+    private:
+	friend class shop_trade_native_publication_owner;
+	static bool prepare(const object_template &, const player_item_snapshot &,
+			    shop_trade_original_item_stage &) noexcept;
+	static bool reload_step(P_obj, const object_template &, unsigned int,
+				shop_trade_original_reload_effect &) noexcept;
+	static bool proclib_probe(P_obj, const object_template &, size_t,
+				  shop_trade_original_reload_effect &) noexcept;
+	void reset() noexcept;
+	P_obj object_ = nullptr;
+	mm_ds *pool_ = nullptr;
+	mm_ds *affect_pool_ = nullptr;
 };
 
 // Pure bounded eligibility, with no allocation, pool access or output mutation.

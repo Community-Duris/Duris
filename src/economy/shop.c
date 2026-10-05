@@ -471,6 +471,104 @@ shop_trade_publish_accounted_physical(P_char ch, P_char keeper, const shop_trade
 	return shop_trade_publish_physical_impl(ch, result, payload, stages, original_keeper_id);
 }
 
+// The cold owner deliberately does not invoke a live completion, ancillary
+// sale audit, notification or produced-purchase continuation. The original
+// accounting receipt already owns the economic effect. Every native handler is
+// issued once with started/returned state retained by that exact original.
+bool shop_trade_cold_native_step_execute(P_char actor, P_char keeper, P_obj selected, P_obj target,
+					 const shop_trade_payload &payload,
+					 shop_trade_cold_native_effect &effect) noexcept
+{
+	if (!nevent_is_game_thread() || effect.started || !selected ||
+	    selected->obj_uid != payload.selected_item_uid || !payload.recovery_manifest_recorded)
+		return false;
+	const bool buying = payload.action == shop_trade_action::buy_existing ||
+			    payload.action == shop_trade_action::buy_produced;
+	const bool storing = payload.action == shop_trade_action::sell_store;
+	const bool destroying = payload.action == shop_trade_action::sell_destroy ||
+				payload.action == shop_trade_action::discard_invalid;
+	if ((actor && (!IS_PC(actor) || !actor->only.pc || GET_PID(actor) <= 0 ||
+		       static_cast<uint32_t>(GET_PID(actor)) != payload.player_pid)) ||
+	    (keeper && (!IS_NPC(keeper) || !keeper->only.npc ||
+			keeper->only.npc->shopkeeper_shop_id != static_cast<int>(payload.shop_id) ||
+			GET_VNUM(keeper) != payload.keeper_vnum)))
+		return false;
+	try
+	{
+		switch (effect.step)
+		{
+		case shop_trade_cold_native_step::detach:
+			if (!OBJ_CARRIED(selected) ||
+			    (!OBJ_CARRIED_BY(selected, actor) && !OBJ_CARRIED_BY(selected, keeper)))
+				return false;
+			effect.started = true;
+			obj_from_char(selected);
+			effect.returned = effect.succeeded = true;
+			break;
+		case shop_trade_cold_native_step::place_player:
+		case shop_trade_cold_native_step::place_keeper:
+		{
+			P_char destination =
+				effect.step == shop_trade_cold_native_step::place_player ? actor :
+											   keeper;
+			if (!destination || !OBJ_NOWHERE(selected) || selected->next_content ||
+			    (effect.step == shop_trade_cold_native_step::place_player ? !buying :
+											!storing))
+				return false;
+			effect.started = true;
+			if (buying)
+				SET_BIT(selected->extra2_flags, ITEM2_STOREITEM);
+			const auto placed = obj_to_char_checked(selected, destination);
+			effect.returned = true;
+			effect.succeeded = placed == obj_to_char_result::placed;
+			break;
+		}
+		case shop_trade_cold_native_step::nest:
+			if (!buying || !actor || !target || !OBJ_NOWHERE(selected) ||
+			    !OBJ_CARRIED_BY(target, actor) ||
+			    target->obj_uid != payload.target_parent_item_uid ||
+			    !payload.native_destination_weight_recorded ||
+			    !obj_can_nest(selected, target))
+				return false;
+			effect.started = true;
+			effect.succeeded = obj_to_obj_shop_frozen_weight(
+				selected, target, payload.destination_weight);
+			effect.returned = true;
+			break;
+		case shop_trade_cold_native_step::reject_produced:
+			if (payload.action != shop_trade_action::buy_produced ||
+			    !OBJ_NOWHERE(selected) || selected->next_content)
+				return false;
+			effect.started = true;
+			// Authenticated execution rejection proves no economic holding ever
+			// acquired this produced original. Remove only its exact detached copy.
+			extract_obj(selected, FALSE);
+			effect.returned = effect.succeeded = true;
+			break;
+		case shop_trade_cold_native_step::destroy:
+		case shop_trade_cold_native_step::retire_copy:
+			if (effect.step == shop_trade_cold_native_step::destroy && !destroying)
+				return false;
+			if (effect.step == shop_trade_cold_native_step::retire_copy &&
+			    (destroying || (buying ? actor != nullptr : keeper != nullptr)))
+				return false;
+			effect.started = true;
+			// A missing destination body retains its SQL holding. Retire only the
+			// proved stale physical copy, preserving artifact ownership (FALSE).
+			extract_obj(selected, effect.step == shop_trade_cold_native_step::destroy);
+			effect.returned = effect.succeeded = true;
+			break;
+		}
+		return effect.returned && effect.succeeded;
+	}
+	catch (...)
+	{
+		// No caller may repeat an uncertain native handler or infer its tails
+		// from the next physical graph. The original effect remains started.
+		return false;
+	}
+}
+
 static void shop_trade_completion(P_char ch, bool committed, const shop_trade_result &result,
 				  unsigned int error_code, const shop_trade_payload &payload);
 static void shop_trade_accounted_completion(P_char ch, bool committed,

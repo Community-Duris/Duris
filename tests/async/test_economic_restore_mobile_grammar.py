@@ -8,6 +8,7 @@ from pathlib import Path
 import struct
 import subprocess
 import sys
+import tempfile
 import time
 import unittest
 
@@ -258,3 +259,201 @@ class NativeMobileGrammarTests(unittest.TestCase):
         print('MOBILE_GRAMMAR '+json.dumps({'cases_per_backend':len(rows),'backends':2,
                                            'native_accepts':sum(row['accepted'] for row in rows),
                                            'independent_agreement':True}),flush=True)
+
+
+@unittest.skipUnless(os.environ.get('DURIS_PLAN5_BASELINE_VERSION_NATIVE') == '1',
+                     'requires explicitly selected independent C++ baseline reference checks')
+class IndependentBaselineVersionTests(unittest.TestCase):
+    """Reference capsules exercise read-only C++ consumers, not native v2 writers."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.work = Path(os.environ['DURIS_PLAN5_BASELINE_VERSION_ARTIFACTS']).resolve()
+        assert cls.work.is_relative_to((ROOT/'bin').resolve()) and not cls.work.exists()
+        cls.work.mkdir(parents=True)
+        source = cls.work/'independent-baseline.cpp'
+        source.write_text(r'''#include "qualify_flatfile_economic_lifecycle.h"
+#include <iostream>
+using namespace restore_economic_authority;
+identity id(uint8_t value) { identity result; result.fill(value); return result; }
+int main(int argc, char **argv) {
+    if (argc != 3) return 2;
+    try {
+        const std::filesystem::path root=argv[1], directory=root/"economic-evidence";
+        const auto lineage=id(0x11), epoch=id(0x22), creator=id(0x44);
+        auto intent=file_bytes(directory,"model.eai",8192), plan=file_bytes(directory,"model.eap",4*1024*1024);
+        auto payload=file_bytes(directory,"model.ebc",48), command=file_bytes(directory,"model.ccm",8192);
+        identity operation; std::copy_n(plan.begin()+40,16,operation.begin());
+        epoch_marker marker; marker.epoch=epoch; marker.initialization=baseline_initialization::initialized;
+        marker.opening.fill(0); std::copy(lineage.begin(),lineage.end(),marker.opening.begin());
+        marker.opening[16]=1; marker.opening[18]=9; marker.opening[20]=99;
+        if (std::string(argv[2]) == "baseline") {
+            restore_economic_baseline::checker reader(root);
+            reader.observe(lineage,epoch,operation,intent,payload,plan,1);
+            reader.finish(lineage,{marker});
+        } else {
+            marker.origin=initialization_origin::lifecycle_owner;
+            marker.initializing_operation=marker.creating_operation=creator;
+            marker.ordinal=marker.transition_kind=1;
+            bytes coverage={'D','U','R','I','S','-','F','L','A','T','F','I','L','E','-','C','O','V','E','R','A','G','E','-','V','1'};
+            put(coverage,0,8); put(coverage,0,8); marker.transition_digest=hash(coverage);
+            epoch_catalog catalog; catalog.entries={marker};
+            bytes control(88); std::copy(epoch.begin(),epoch.end(),control.begin()+16); control[80]=1;
+            restore_economic_lifecycle::checker reader(root);
+            reader.load(lineage,catalog,control,[](auto){return false;});
+            reader.record(operation,command,plan,1,0,0,0); need(reader.finish()==1);
+        }
+        return 0;
+    } catch (...) { std::cerr<<"native_restore_qualification_failed\n"; return 1; }
+}
+''')
+        cls.binary = cls.work/'independent-baseline'
+        command = ['g++', '-std=c++20', '-Wall', '-Wextra', '-Wpedantic', '-Werror', '-O1', '-g',
+                   '-fsanitize=address,undefined', '-fno-omit-frame-pointer', '-fno-pie', '-no-pie',
+                   '-I'+str(ROOT/'scripts'), str(source), '-lcrypto', '-o', str(cls.binary)]
+        started = time.monotonic()
+        result = subprocess.run(command, capture_output=True, text=True)
+        (cls.work/'compile.log').write_text(result.stdout+result.stderr)
+        (cls.work/'compile.json').write_text(json.dumps(dict(command=command, exit=result.returncode,
+            seconds=time.monotonic()-started), indent=2)+'\n')
+        assert result.returncode == 0, result.stdout+result.stderr
+
+    @staticmethod
+    def frame(magic, body):
+        return magic + struct.pack('<II', 1, len(body)) + hashlib.sha256(body).digest() + body
+
+    def files(self, row):
+        from test_economic_sql_audit_origins import baseline_projections
+        blob, operation = row['canonical_witness'], row['operation_id']
+        payload = b'EBC1'+struct.pack('<HHII', 1, 48, len(blob), 0)+hashlib.sha256(blob).digest()
+        command = (b'CCM1'+struct.pack('<I', 2)+operation+
+                   struct.pack('<HHHBBQIII', 20, 1, 6, 4, 0, 1, 1, 0, 48)+
+                   struct.pack('<B7xQ', 9, 0x45434f4e42415345)+payload+
+                   struct.pack('<I', 256)+row['canonical_intent'])
+        base = 'baseline-'+blob[16:32].hex()+'-'+blob[32:48].hex()+'-'
+        files = {'model.eai':row['canonical_intent'], 'model.eap':row['canonical_plan'],
+                 'model.ebc':payload, 'model.ccm':command, base+operation.hex()+'.eab':blob}
+        indexes = []
+        for slot in range(16):
+            rows = sorted((item['identity_kind'], item['identity_id'])
+                          for item in baseline_projections(row)[2] if item['identity_id'] % 16 == slot)
+            body = blob[16:48]+struct.pack('<II', slot, len(rows))
+            body += b''.join(struct.pack('<QQ', kind, identity)+operation for kind, identity in rows)
+            encoded = self.frame(b'DUREBI1\0', body)
+            files[base+format(slot, 'x')+'.ebi'] = encoded
+            indexes.append(hashlib.sha256(encoded).digest())
+        body = blob[16:48]+blob[80:120]+struct.pack('<Q', 1)+operation+b''.join(indexes)
+        files[base+'head.ebc'] = self.frame(b'DUREBC1\0', body)
+        return files
+
+    def check(self, label, files, valid, mode='baseline'):
+        os.umask(0o077)
+        with tempfile.TemporaryDirectory(prefix='duris-baseline-version-') as temporary:
+            root = Path(temporary)
+            directory = root/'economic-evidence'
+            directory.mkdir(mode=0o700)
+            for name, data in files.items():
+                (directory/name).write_bytes(data)
+            def retained():
+                return {path.name:(path.read_bytes(), path.stat().st_mode, path.stat().st_nlink)
+                        for path in directory.iterdir()}
+            before = retained()
+            result = subprocess.run([str(self.binary), str(root), mode], capture_output=True, text=True,
+                timeout=30, env=dict(os.environ, ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',
+                                    UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1'))
+            self.assertEqual(retained(), before, label+': independent reader changed evidence')
+            evidence_path = self.work/label
+            evidence_path.mkdir()
+            for name, data in files.items():
+                (evidence_path/name).write_bytes(data)
+            (evidence_path/'result.json').write_text(json.dumps(dict(exit=result.returncode,
+                expected_valid=valid, mode=mode, stdout=result.stdout, stderr=result.stderr,
+                bytes_metadata_unchanged=True), indent=2)+'\n')
+            self.assertEqual(result.returncode == 0, valid, label+': '+result.stderr)
+            self.assertEqual(result.stdout, '')
+            self.assertEqual(result.stderr, '' if valid else 'native_restore_qualification_failed\n')
+
+    def test_baseline_exact_versions_equipment_forest_and_reservation_books(self):
+        from test_economic_sql_audit_origins import BaselineVersionTests
+        for version in (1, 2):
+            positions = [(81, (12, 1, 42, 0, 81, 0, 2, 43 if version == 2 else 0)),
+                         (82, (1, 1, 7, 0, 82, 0, 3, 65535 if version == 2 else 0))]
+            row = BaselineVersionTests.row(version, positions)
+            clean = self.files(row)
+            self.check('baseline-v'+str(version), clean, True)
+            name = next(name for name in clean if name.endswith('.eab'))
+            mutations = [(0, b'EAB2' if version == 1 else b'EAB1'), (4, struct.pack('<H', 3)),
+                         (202, b'\x01'), (216, struct.pack('<Q', 1)), (208, struct.pack('<Q', 2**64-1)),
+                         (184, struct.pack('<I', 3072)), (188, struct.pack('<I', 6001))]
+            if version == 2:
+                mutations += [(248, struct.pack('<H', 44)), (250, b'\x01'), (256, bytes(32)),
+                              (248, struct.pack('<H', 1))]
+            for index, (offset, value) in enumerate(mutations):
+                files = dict(clean)
+                changed = BaselineVersionTests.changed(row, offset, value)
+                files[name] = changed['canonical_witness']
+                files['model.ebc'] = b'EBC1'+struct.pack('<HHII', 1, 48, len(files[name]), 0)+hashlib.sha256(files[name]).digest()
+                self.check('baseline-v'+str(version)+'-invalid-'+str(index), files, False)
+            files = dict(clean)
+            index_name = next(name for name in clean if name.endswith('-1.ebi'))
+            body = bytearray(files[index_name][48:])
+            body[56] ^= 1
+            files[index_name] = self.frame(b'DUREBI1\0', body)
+            head_name = next(name for name in clean if name.endswith('head.ebc'))
+            head = bytearray(files[head_name][48:])
+            head[128:160] = hashlib.sha256(files[index_name]).digest()
+            files[head_name] = self.frame(b'DUREBC1\0', head)
+            self.check('baseline-v'+str(version)+'-reservation-resealed', files, False)
+        row = BaselineVersionTests.row(2, [(81, (1, 1, 7, 0, 81, 0, 2, 0))])
+        clean = self.files(row)
+        witness_name = next(name for name in clean if name.endswith('.eab'))
+        for case in CASES:
+            candidate = BaselineVersionTests.row(2, [(81, position(case))])
+            files = dict(clean)
+            blob = candidate['canonical_witness']
+            files[witness_name] = blob
+            files['model.eai'], files['model.eap'] = candidate['canonical_intent'], candidate['canonical_plan']
+            files['model.ebc'] = b'EBC1'+struct.pack('<HHII', 1, 48, len(blob), 0)+hashlib.sha256(blob).digest()
+            try:
+                evidence.forest({81:position(case)})
+            except ValueError:
+                valid = False
+            else:
+                valid = case[2] in (1, 2, 3)
+            self.check('baseline-v2-grammar-'+case[0], files, valid)
+        for version in (1, 2):
+            from test_economic_sql_audit_origins import key
+            maximum = BaselineVersionTests.row(version,
+                [(index+1, (1, 1, 7, 0, index+1, 0, 2, 0)) for index in range(6000)],
+                [key(1, index+1) for index in range(3071)])
+            self.check('baseline-v'+str(version)+'-maximum', self.files(maximum), True)
+
+    def test_lifecycle_empty_book_accepts_exact_versions_without_item_scope(self):
+        from test_economic_sql_audit_origins import BaselineVersionTests, baseline_root
+        coverage = hashlib.sha256(b'DURIS-FLATFILE-COVERAGE-V1'+bytes(16)).digest()
+        for version in (1, 2):
+            row = BaselineVersionTests.row(version, [])
+            blob = bytearray(row['canonical_witness'])
+            blob[72:80], blob[152:184] = bytes(8), coverage
+            row = baseline_root(bytes(blob))
+            files = self.files(row)
+            creator, epoch = blob[48:64], blob[32:48]
+            receipt = (creator+blob[16:48]+struct.pack('<QQ', 7, 1)+bytes(32)+coverage+blob[120:152]+b'\x03'+
+                       blob[80:120]+row['operation_id']+struct.pack('<Q', 1)+epoch+struct.pack('<Q', 1)+
+                       epoch+bytes(16)+creator+struct.pack('<QH', 1, 1)+coverage+b'\x02'+creator+blob[80:120]+
+                       bytes(12))
+            for value in (files['model.ccm'], bytes(blob), files['model.eap']):
+                receipt += struct.pack('<I', len(value))+value
+            name = 'lifecycle-'+creator.hex()+'.elr'
+            files[name] = self.frame(b'DURELR\0\0', receipt)
+            self.check('lifecycle-v'+str(version), files, True, 'lifecycle')
+            # Find the exact retained capsule rather than duplicating variable receipt widths.
+            witness_offset = files[name].index(bytes(blob))
+            for label, offset, data in (('mixed', 0, b'EAB2' if version == 1 else b'EAB1'),
+                                        ('unknown', 4, struct.pack('<H', 3)),
+                                        ('items', 188, struct.pack('<I', 1))):
+                changed = dict(files)
+                encoded = bytearray(files[name])
+                encoded[witness_offset+offset:witness_offset+offset+len(data)] = data
+                changed[name] = self.frame(b'DURELR\0\0', encoded[48:])
+                self.check('lifecycle-v'+str(version)+'-'+label, changed, False, 'lifecycle')

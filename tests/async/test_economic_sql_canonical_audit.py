@@ -17,9 +17,170 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 sys.path.insert(0, str(ROOT/'tests/async'))
 import economic_sql_canonical_audit as audit
+import economic_restore_evidence as evidence
 from test_plan5_child_identity import NATIVE_PROBE, child
 from test_reconcile_economy_accounting import clean_snapshot, Reconciler
 from reconcile_economy_accounting import view
+
+
+class RestoreProjectionFixture:
+    """Synthetic SQL JSON projections; native proof uses original C++ bytes."""
+
+    def __init__(self, baseline=False, rejected=False):
+        from test_plan5_child_identity import ChildIdentityTests
+        from test_economic_sql_audit_origins import witness, baseline_projections
+        self.baseline = witness() if baseline else None
+        if baseline:
+            self.encoded = self.baseline['canonical_plan']
+            self.frozen = self.baseline['canonical_intent']
+        else:
+            snapshot = ChildIdentityTests().integer_snapshot(nested=True)
+            plan = bytearray.fromhex(snapshot['operations'][0]['canonical_plan'])
+            intent = bytearray(witness()['canonical_intent'])
+            # Reuse the existing empty EAI1 model, binding its metadata and
+            # digest to the existing child/custody EAP1 model before damage.
+            for target, start, size in ((4, 4, 2), (12, 84, 12), (24, 96, 2), (32, 8, 48),
+                                       (80, 56, 16), (96, 76, 8), (112, 104, 48), (192, 184, 32)):
+                intent[target:target+size] = plan[start:start+size]
+            intent[26], intent[27] = plan[72], plan[100]
+            self.frozen = bytes(intent)
+            plan[152:184] = evidence.decode_intent(self.frozen)['intent_digest']
+            self.encoded = bytes(plan)
+        plan = evidence.decode_plan(self.encoded)
+        meta = plan['metadata']
+        self.operation = meta[2].hex()
+        self.rows = dict(metadata=[[*(value.hex() for value in meta[:3]),
+            meta[3].hex() if any(meta[3]) else None, *meta[4:11], meta[11].hex() if meta[11] else None,
+            plan['intent_digest'].hex(), plan['domain_digest'].hex(), plan['plan_digest'].hex(),
+            len(self.frozen), len(self.encoded), 1, 0, *plan['counts']]],
+            accounts=[[i, key.hex(), *before, *after, old, new]
+                      for i, (key, before, after, old, new) in enumerate(plan['effects'])],
+            postings=[[i, event, account, child, *delta, value]
+                      for i, (event, account, child, delta, value) in enumerate(plan['postings'])],
+            children=[[i+1, child.hex(), domain, discriminator, parent, relationship]
+                      for i, (child, domain, discriminator, parent, relationship) in enumerate(plan['children'])],
+            items=[[i, event, child, uid, old[6], new[6]]
+                   for i, (event, child, uid, old, new) in enumerate(plan['events'])],
+            custody=[[i, uid, new[4], new[5], *((7, 0, 0) if old[1] == 0 else (old[0], old[2], old[3])),
+                      new[0], new[2], new[3], new[6], old[7], new[7]]
+                     for i, (event, child, uid, old, new) in enumerate(plan['events'])])
+        if baseline:
+            self.rows['reservations'] = [[row['lineage'].hex(), row['epoch'].hex(), row['identity_kind'],
+                row['identity_id'], row['operation_id'].hex()] for row in baseline_projections(self.baseline)[2]]
+            value = self.baseline
+            self.rows['witness'] = [[meta[0].hex(), meta[1].hex(), value['book_revision'], value['witness_version'],
+                value['holding_count'], value['item_count'], value['witness_digest'].hex(), len(value['canonical_witness']),
+                value['canonical_witness'][80:120].hex(), value['inbox_revision'], value['inbox_type'], value['inbox_schema'],
+                value['inbox_payload'], value['inbox_result_payload'].hex(), value['inbox_keys_hash'].hex()]]
+        if rejected:
+            self.rows['metadata'][0][14] = self.rows['metadata'][0][16] = None
+            self.rows['metadata'][0][17:25] = [2, 5, 0, 0, 0, 0, 0, 0]
+        self.queries = []
+
+    def sql(self, query):
+        if not query.startswith('SELECT '):
+            raise AssertionError(query)
+        self.queries.append(query)
+        if 'SELECT JSON_ARRAY(' in query:
+            table = query.split(' FROM ', 1)[1].split(' ', 1)[0]
+            name = {'economic_accounting_operation': 'metadata', 'economic_accounting_account_effect': 'accounts',
+                'economic_accounting_coin_posting': 'postings', 'economic_accounting_child': 'children',
+                'economic_accounting_item_reference': 'items', 'economic_baseline_reservation': 'reservations',
+                'economic_baseline_witness': 'witness'}[table]
+            if 'LEFT JOIN item_ownership_ledger' in query:
+                name = 'custody'
+            return '\n'.join(json.dumps(row) for row in self.rows[name])
+        if query.startswith('SELECT LOWER(HEX(operation_id))'):
+            return self.operation
+        if query == 'SELECT COUNT(*) FROM economic_accounting_operation;':
+            return '1'
+        if query.startswith('SELECT HEX(SUBSTRING('):
+            if 'canonical_intent' in query:
+                return self.frozen.hex()
+            if 'canonical_plan' in query:
+                return self.encoded.hex()
+            return self.baseline['canonical_witness'].hex()
+        if 'information_schema.tables' in query:
+            return '3'
+        return '0'
+
+
+class RestoreProjectionTests(unittest.TestCase):
+    @staticmethod
+    def aliases(value):
+        return [float(value)] + ([bool(value)] if value in (0, 1) else [])
+
+    def refuse(self, fixture, code):
+        before = copy.deepcopy(fixture.rows)
+        capsules = fixture.frozen, fixture.encoded
+        with self.assertRaisesRegex(RuntimeError, 'restore_economic_' + code + '_mismatch'):
+            evidence.require_integrity(fixture)
+        self.assertEqual(fixture.rows, before)
+        self.assertEqual((fixture.frozen, fixture.encoded), capsules)
+        self.assertTrue(all(query.startswith('SELECT ') for query in fixture.queries))
+
+    def test_intact_ordinary_baseline_and_rejected_controls(self):
+        for baseline, rejected in ((False, False), (True, False), (False, True)):
+            with self.subTest(baseline=baseline, rejected=rejected):
+                fixture = RestoreProjectionFixture(baseline, rejected)
+                before = copy.deepcopy(fixture.rows)
+                evidence.require_integrity(fixture)
+                self.assertEqual(fixture.rows, before)
+                self.assertTrue(all(query.startswith('SELECT ') for query in fixture.queries))
+
+    def test_all_normalized_projection_families_require_exact_integers(self):
+        for name, code in (('accounts', 'canonical_account'), ('postings', 'canonical_posting'),
+                           ('children', 'canonical_child'), ('items', 'canonical_item'), ('custody', 'canonical_custody')):
+            for index, value in enumerate(RestoreProjectionFixture().rows[name][0]):
+                if type(value) is not int:
+                    continue
+                for alias in self.aliases(value):
+                    with self.subTest(family=name, index=index, representation=type(alias).__name__):
+                        fixture = RestoreProjectionFixture()
+                        fixture.rows[name][0][index] = alias
+                        self.refuse(fixture, code)
+
+    def test_root_metadata_requires_exact_integers(self):
+        for index in range(4, 11):
+            for alias in self.aliases(RestoreProjectionFixture().rows['metadata'][0][index]):
+                with self.subTest(index=index, representation=type(alias).__name__):
+                    fixture = RestoreProjectionFixture()
+                    fixture.rows['metadata'][0][index] = alias
+                    self.refuse(fixture, 'metadata')
+
+    def test_committed_counts_and_status_require_exact_integers(self):
+        for index in range(17, 25):
+            for alias in self.aliases(RestoreProjectionFixture().rows['metadata'][0][index]):
+                with self.subTest(index=index, representation=type(alias).__name__):
+                    fixture = RestoreProjectionFixture()
+                    fixture.rows['metadata'][0][index] = alias
+                    self.refuse(fixture, 'plan' if index < 19 else 'canonical_count')
+
+    def test_rejected_controls_require_unsigned_integer_status_and_zero_counts(self):
+        for index in range(17, 25):
+            value = RestoreProjectionFixture(rejected=True).rows['metadata'][0][index]
+            for alias in (*self.aliases(value), None):
+                with self.subTest(index=index, representation=type(alias).__name__):
+                    fixture = RestoreProjectionFixture(rejected=True)
+                    fixture.rows['metadata'][0][index] = alias
+                    self.refuse(fixture, 'plan')
+        for code in (-1, 2**32, True, '5'):
+            with self.subTest(result_code=code):
+                fixture = RestoreProjectionFixture(rejected=True)
+                fixture.rows['metadata'][0][18] = code
+                self.refuse(fixture, 'plan')
+        for code in (1, 2**32-1):
+            fixture = RestoreProjectionFixture(rejected=True)
+            fixture.rows['metadata'][0][18] = code
+            evidence.require_integrity(fixture)
+
+    def test_baseline_reservations_require_exact_integers(self):
+        for index in (2, 3):
+            for alias in self.aliases(RestoreProjectionFixture(baseline=True).rows['reservations'][0][index]):
+                with self.subTest(index=index, representation=type(alias).__name__):
+                    fixture = RestoreProjectionFixture(baseline=True)
+                    fixture.rows['reservations'][0][index] = alias
+                    self.refuse(fixture, 'baseline_reservation')
 
 
 class CanonicalAuditTests(unittest.TestCase):
@@ -369,6 +530,52 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                                 'read_only': True,'rollback_calls': 1,'unchanged': True})
                             (work/'results.json').write_text(json.dumps(results,indent=2)+'\n')
                         check('intact')
+                        # Private storage aliases retain exact original values.
+                        # Record whether each engine's SQL JSON preserves an
+                        # integer or exposes a float. Canonical columns and rows
+                        # are restored after every cut; these are not releases.
+                        for table, field, code in (
+                            ('economic_accounting_account_effect', 'after_silver', 'canonical_account'),
+                            ('economic_accounting_coin_posting', 'delta_silver', 'canonical_posting'),
+                            ('economic_accounting_child', 'domain_id', 'canonical_child'),
+                            ('economic_accounting_item_reference', 'before_revision', 'canonical_item'),
+                            ('item_ownership_ledger', 'to_owner_context_id', 'canonical_custody')):
+                            with owner.cursor() as cursor:
+                                cursor.execute('SELECT COLUMN_TYPE,IS_NULLABLE FROM information_schema.columns '
+                                    'WHERE table_schema=DATABASE() AND table_name=%s AND column_name=%s', (table,field))
+                                original_column = cursor.fetchone()
+                                cursor.execute('SHOW CREATE TABLE '+table)
+                                original_schema = cursor.fetchone()['Create Table']
+                            original_definition = next(line.strip().rstrip(',')
+                                for line in original_schema.splitlines()
+                                if line.lstrip().startswith('`'+field+'` '))
+                            self.assertEqual(original_column['IS_NULLABLE'], 'NO')
+                            for storage in ('DOUBLE', 'DECIMAL(20,1)'):
+                                label = 'numeric_'+code+'_'+('float' if storage == 'DOUBLE' else 'decimal')
+                                before = inventory()
+                                with owner.cursor() as cursor:
+                                    cursor.execute('ALTER TABLE '+table+' MODIFY '+field+' '+storage+' NOT NULL')
+                                try:
+                                    with owner.cursor() as cursor:
+                                        cursor.execute('SELECT JSON_ARRAY('+field+') AS value FROM '+table)
+                                        projected = [json.loads(row['value'])[0] for row in cursor.fetchall()]
+                                    self.assertTrue(projected)
+                                    self.assertTrue(all(type(value) in (int, float) for value in projected))
+                                    floating = any(type(value) is float for value in projected)
+                                    (work/(engine+'-'+label+'-projection.json')).write_text(json.dumps(
+                                        {'table':table,'field':field,'storage':storage,'values':projected,
+                                         'types':[type(value).__name__ for value in projected],
+                                         'original_schema':original_schema,
+                                         'original_definition':original_definition,
+                                         'expected_refusal':floating},indent=2)+'\n')
+                                    check(label, 'restore_economic_'+code+'_mismatch' if floating else None)
+                                finally:
+                                    with owner.cursor() as cursor:
+                                        cursor.execute('ALTER TABLE '+table+' MODIFY '+original_definition)
+                                        cursor.execute('SHOW CREATE TABLE '+table)
+                                        self.assertEqual(cursor.fetchone()['Create Table'], original_schema)
+                                self.assertEqual(before, inventory())
+                                check(label+'_restored')
                         # Damage only the saved JSON projection, after reading
                         # the original native capsules with the SELECT-only role.
                         # Typed SQL integers themselves cannot retain these aliases.
@@ -567,7 +774,7 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                 finally:
                     owner.close()
         (work/'results.json').write_text(json.dumps(results,indent=2)+'\n')
-        self.assertEqual(len(results),48 if plan['metadata'][-1] is not None else 38)
+        self.assertEqual(len(results),88 if plan['metadata'][-1] is not None else 78)
 
 
 if __name__ == '__main__':

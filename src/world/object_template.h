@@ -2,6 +2,8 @@
 #define DURIS_OBJECT_TEMPLATE_H
 
 #include "core/structs.h"
+#include "mob/studioproclib.h"
+#include <span>
 #include <string>
 #include <vector>
 
@@ -61,5 +63,40 @@ bool recovery_object_templates_ready() noexcept;
 // Later lazy instance binding/staleness remains a separate prerequisite.
 bool finalize_recovery_object_template_bindings() noexcept;
 const object_template *find_recovery_object_template(int vnum) noexcept;
+struct player_item_snapshot;
+class shop_trade_native_publication_owner;
+class shop_trade_original_procedure_binding_stage
+{
+    public:
+	shop_trade_original_procedure_binding_stage() noexcept = default;
+	shop_trade_original_procedure_binding_stage(
+		shop_trade_original_procedure_binding_stage &&) noexcept = default;
+	shop_trade_original_procedure_binding_stage &
+	operator=(shop_trade_original_procedure_binding_stage &&) noexcept = default;
+	shop_trade_original_procedure_binding_stage(
+		const shop_trade_original_procedure_binding_stage &) = delete;
+	shop_trade_original_procedure_binding_stage &
+	operator=(const shop_trade_original_procedure_binding_stage &) = delete;
+
+    private:
+	friend class shop_trade_native_publication_owner;
+	friend int proclibObj_add(P_obj, char *, char *);
+	friend P_obj instantiate_object_template(const object_template &);
+	struct binding
+	{
+		size_t catalog_index;
+		obj_proc_type before, after, predecessor;
+		bool chain_needed = false;
+	};
+	static bool prepare(std::span<const P_obj>, std::span<const player_item_snapshot>,
+			    shop_trade_original_procedure_binding_stage &) noexcept;
+	bool valid() const noexcept;
+	void commit_unchecked() noexcept;
+	static void observe_normal_binding(int, obj_proc_type, obj_proc_type) noexcept;
+	std::vector<binding> bindings_;
+	proclib_recovery_chain_stage chain_;
+	bool prepared_ = false;
+};
+
 P_obj instantiate_object_template(const object_template &prototype);
 #endif

@@ -1,5 +1,55 @@
 # Plan 1: authority, admission, and cutover
 
+## Baseline component collector linkage verified — 2026-10-05
+
+[The real-provider recipe repair](../BASELINE_COMPONENT_COLLECTOR_LINKAGE_2026-10-05.md) passes original SQL and client-free
+native modes with ASan/UBSan in 518.455 seconds. The exact original 25-source
+prefix, cases, flags, wrappers and limits remain. Evidence belongs to the frozen
+EAB2/schema61 candidate; those native/schema changes remain pending. The broader
+batch failed the next flatfile mutation-count assertion. Independent audit padding
+exception and genuine historical C05/schema35 compatibility remain open. No full
+Plan 1/R1–R8/coverage/release completion or activation; inactive gates stay.
+
+## Exact restore projection representations integrated — 2026-10-05
+
+[The exact Plan5 repair](../PLAN5_RESTORE_REPRESENTATION_INTEGRATION_2026-10-05.md) refuses noninteger aliases throughout independent
+restore evidence. Six mandatory pure cases make105 central rows; all104 prior
+policies remain exact. Peer zero-skip native/clone evidence stays its canonical56
+and original EAB1 scope. Primary AST/pins/static inventory only; current combined
+and nativeEAB2/schema61 qualification remain open. R1–R8, coverage, release and
+activation stay incomplete; inactive behavior and safety gates stay.
+
+## Exact baseline projection representations integrated — 2026-10-05
+
+[The exact Plan5 repair](../PLAN5_BASELINE_REPRESENTATION_INTEGRATION_2026-10-05.md) refuses numerically equal noncanonical types in
+original roots, projections, inbox controls and source bounds. Four new mandatory
+pure cases make104 central rows; all103 prior policies remain. Peer native and
+maintained-build evidence stays f23/schema56/EAB1, including preserved link
+failures and successful output-only retries. Local AST/pins/inventory only;
+nativeEAB2/schema61 sealing and original Plan1 acceptance remain open.
+Inactive behavior and all R1–R8/release/activation gates stay.
+
+## Independent EAB1/EAB2 readers integrated — 2026-10-05
+
+[The exact reader integration](../PLAN5_DUAL_VERSION_READER_INTEGRATION_2026-10-05.md) preserves historicalEAB1 and validates
+versioned equipment/original-plan evidence. Central inventory917owners/103rows
+adds eight pure and two mandatory C++ reference checks; all101 prior policies
+remain. Peer native evidence stays7cd9/schema56/EAB1, with its exact GCC13.3
+erratum. Local pins/AST/inventory only. Actual native selector is documented;
+native/schema61 installation, measured sealing and original Plan1 qualification
+remain. R1–R8 and release stay BLOCKED; inactive behavior and safety gates stay.
+
+## Baseline equipment/schema61 source closure reviewed — 2026-10-05
+
+[The primary/Plan5 interface](../BASELINE_EQUIPMENT_SCHEMA61_SOURCE_HANDOFF_2026-10-05.md) fixes the versioned equipment contract and
+current61-head consumer handoff while preserving historicalEAB1/0056 cuts.
+Private native/schema compositions pass independent source review;28 schema
+inputs have exact inverses/checksums/heads and matching bounded metadata readers.
+Unmeasured engine fingerprints remain failclosed; candidates are not installed.
+Actual both-engine sealing, independent EAB2 readers and original Plan1 native
+qualification remain required. This is source closure, not completed acceptance;
+inactive behavior and all original R1–R8/release gates stay.
+
 ## Baseline equipment defect and versioned repair handoff — 2026-10-05
 
 [The exact peer evidence and reviewed native interface](../BASELINE_EQUIPMENT_V2_SOURCE_HANDOFF_2026-10-05.md) establish that

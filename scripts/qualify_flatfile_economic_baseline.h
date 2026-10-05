@@ -9,7 +9,7 @@
 namespace restore_economic_baseline
 {
 using namespace restore_economic_authority;
-constexpr size_t witness_limit = 192 + 3071 * 112 + 6000 * 88;
+constexpr size_t witness_limit = 192 + 3071 * 112 + 6000 * 96;
 constexpr size_t reservation_capacity = 65536, reservation_limit = 88 + reservation_capacity * 32;
 constexpr char hex_digits[] = "0123456789abcdef";
 inline std::string hex(std::span<const uint8_t> value)
@@ -52,12 +52,29 @@ inline void append(bytes &out, std::span<const uint8_t> value)
 {
 	out.insert(out.end(), value.begin(), value.end());
 }
+inline size_t item_bytes(std::span<const uint8_t> witness)
+{
+	need(witness.size() >= 192 && witness.size() <= witness_limit);
+	auto version = number(witness, 4, 2);
+	need((version == 1 &&
+	      same(witness.first(4), { reinterpret_cast<const uint8_t *>("EAB1"), 4 })) ||
+	     (version == 2 &&
+	      same(witness.first(4), { reinterpret_cast<const uint8_t *>("EAB2"), 4 })));
+	need(number(witness, 6, 2) == 192 && number(witness, 8, 4) == witness.size() &&
+	     !number(witness, 12, 4));
+	auto holdings = number(witness, 184, 4), items = number(witness, 188, 4);
+	const size_t stride = version == 1 ? 88 : 96;
+	need(holdings <= 3071 && items <= 6000 &&
+	     witness.size() == 192 + holdings * 112 + items * stride);
+	return stride;
+}
 // Baseline item positions are unchanged, but their complete live forest must
 // still be canonical. Destroyed rows retain former edges without following them.
-inline void forest(std::span<const uint8_t> items)
+inline void forest(std::span<const uint8_t> items, size_t stride)
 {
-	const size_t count = items.size() / 88;
-	auto row = [&](size_t index) { return items.subspan(index * 88, 88); };
+	need((stride == 88 || stride == 96) && items.size() % stride == 0);
+	const size_t count = items.size() / stride;
+	auto row = [&](size_t index) { return items.subspan(index * stride, stride); };
 	std::vector<uint64_t> uids;
 	for (size_t i = 0; i < count; ++i)
 	{
@@ -67,14 +84,20 @@ inline void forest(std::span<const uint8_t> items)
 		auto owner = number(value, 16, 8), context = number(value, 24, 8),
 		     root = number(value, 32, 8), parent = number(value, 40, 8),
 		     revision = number(value, 48, 8);
-		need(uid && (uids.empty() || uids.back() < uid) && type >= 1 && type <= 11 &&
+		auto slot = stride == 96 ? number(value, 56, 2) : 0;
+		need(uid && (uids.empty() || uids.back() < uid) && type >= 1 && type <= 12 &&
 		     state >= 1 && state <= 3 && !nonzero(value.subspan(10, 6)) &&
-		     nonzero(value.subspan(56, 32)) && root && parent != uid);
+		     (stride == 88 || !nonzero(value.subspan(58, 6))) &&
+		     nonzero(value.subspan(stride - 32, 32)) && root && parent != uid);
 		if (type == 7 || type == 8)
 			need(!owner && !context);
 		else
 			need(owner && (type != 10 || !context) &&
-			     (type != 11 || (context && context <= INT32_MAX)));
+			     (type != 11 || (context && context <= INT32_MAX)) &&
+			     (type != 12 || (owner < UINT64_MAX && !context)));
+		need(type != 12 || slot <= 43);
+		need(!slot || ((type == 1 || type == 12) && !parent && state == 1 &&
+			       (type != 12 || root == uid)));
 		need(state == 2 ? type == 8 && revision : type != 8 && (parent || root == uid));
 		uids.push_back(uid);
 	}
@@ -140,18 +163,16 @@ class checker
 		     std::span<const uint8_t> intent, std::span<const uint8_t> payload,
 		     std::span<const uint8_t> plan, uint64_t revision)
 	{
-		need(revision && intent.size() == 256 && number(intent, 16, 4) == 1 &&
-		     number(intent, 20, 4) == 1);
+		need(revision && payload.size() == 48 && intent.size() == 256 &&
+		     number(intent, 16, 4) == 1 && number(intent, 20, 4) == 1);
 		digest checksum;
 		std::copy_n(payload.begin() + 16, 32, checksum.begin());
 		auto encoded = file_bytes(directory,
 					  prefix(lineage, epoch) + hex(operation) + ".eab",
 					  witness_limit, checksum);
 		std::span<const uint8_t> witness = encoded;
-		need(witness.size() >= 192 && witness.size() == number(payload, 8, 4) &&
-		     same(witness.first(4), { reinterpret_cast<const uint8_t *>("EAB1"), 4 }) &&
-		     number(witness, 4, 2) == 1 && number(witness, 6, 2) == 192 &&
-		     number(witness, 8, 4) == witness.size() && !number(witness, 12, 4) &&
+		const auto stride = item_bytes(witness);
+		need(witness.size() == number(payload, 8, 4) &&
 		     same(witness.subspan(16, 16), lineage) &&
 		     same(witness.subspan(32, 16), epoch) && nonzero(witness.subspan(48, 16)) &&
 		     number(witness, 64, 8) == number(intent, 96, 8) &&
@@ -164,8 +185,6 @@ class checker
 		append(derived, witness.subspan(72, 8));
 		need(same(std::span<const uint8_t>(hash(derived)).first(16), operation));
 		auto holdings = number(witness, 184, 4), items = number(witness, 188, 4);
-		need(holdings <= 3071 && items <= 6000 &&
-		     witness.size() == 192 + holdings * 112 + items * 88);
 		bytes body, postings;
 		struct equity
 		{
@@ -225,12 +244,13 @@ class checker
 		}
 		append(body, postings);
 		auto positions = witness.subspan(192 + holdings * 112);
-		forest(positions);
+		forest(positions, stride);
 		bytes snapshots;
 		for (size_t i = 0; i < items; ++i)
 		{
-			append(snapshots, positions.subspan(i * 88, 56));
-			snapshots.insert(snapshots.end(), 8, 0);
+			append(snapshots, positions.subspan(i * stride, stride == 96 ? 64 : 56));
+			if (stride == 88)
+				snapshots.insert(snapshots.end(), 8, 0);
 		}
 		append(body, snapshots);
 		append(body, snapshots);
@@ -300,6 +320,7 @@ class checker
 				auto witness = file_bytes(directory,
 							  base + hex(entry.operation) + ".eab",
 							  witness_limit, entry.witness);
+				const auto stride = item_bytes(witness);
 				need(same(std::span<const uint8_t>(witness).subspan(80, 40),
 					  opening));
 				auto holdings = number(witness, 184, 4),
@@ -313,8 +334,8 @@ class checker
 				for (size_t n = 0; n < holdings; ++n)
 					reserve(1, number(witness, 192 + n * 112 + 20, 8));
 				for (size_t n = 0; n < items; ++n)
-					reserve(2,
-						number(witness, 192 + holdings * 112 + n * 88, 8));
+					reserve(2, number(witness,
+							  192 + holdings * 112 + n * stride, 8));
 			}
 			for (size_t slot = 0; slot < 16; ++slot)
 			{

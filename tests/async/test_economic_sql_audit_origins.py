@@ -2,6 +2,7 @@
 """Exact EAB1 origin decoding and SQL read-only snapshot boundary checks."""
 
 import copy
+from decimal import Decimal
 import hashlib
 import json
 import os
@@ -35,6 +36,13 @@ def key(kind, authority, context=0):
 OPENING = key(9, 99)
 
 
+def integer_aliases(value):
+    aliases = [float(value), Decimal(value), str(value), None]
+    if value in (0, 1):
+        aliases.append(bool(value))
+    return aliases
+
+
 def baseline_root(blob, revision=1):
     """Synthetic canonical root for unit/sibling fixtures; native tests use C++."""
     lineage, epoch = blob[16:32], blob[32:48]
@@ -42,6 +50,8 @@ def baseline_root(blob, revision=1):
     source = struct.pack("<HH", 10, 1) + blob[48:64] + epoch + blob[72:80] + bytes(4)
     actor = struct.unpack_from("<Q", blob, 64)[0]
     holdings, items = struct.unpack_from("<II", blob, 184)
+    version = struct.unpack_from("<H", blob, 4)[0]
+    stride = 96 if version == 2 else 88
     payload = b"EBC1" + struct.pack("<HHII", 1, 48, len(blob), 0) + hashlib.sha256(blob).digest()
     domain = hashlib.sha256(b"DURIS-ECONOMIC-DOMAIN-V1\0" + struct.pack("<HHI", 20, 1, 48) + payload).digest()
     command = (b"CCM1" + struct.pack("<I", 1) + operation +
@@ -70,8 +80,9 @@ def baseline_root(blob, revision=1):
         for values, total in equity:
             postings.append(struct.pack("<IHH4qq", len(postings), holdings, 0,
                                         *(-value for value in values), -total))
-    snapshots = [blob[192 + holdings * 112 + index * 88:192 + holdings * 112 + index * 88 + 56] + bytes(8)
-                 for index in range(items)]
+    snapshots = [blob[192 + holdings * 112 + index * stride:
+                      192 + holdings * 112 + index * stride + (64 if version == 2 else 56)] +
+                 (b"" if version == 2 else bytes(8)) for index in range(items)]
     counts = (len(accounts), len(postings), 0, items, items, 0)
     plan = bytearray(256)
     plan[:4] = b"EAP1"
@@ -82,7 +93,7 @@ def baseline_root(blob, revision=1):
     struct.pack_into("<6I", plan, 216, *counts)
     plan = bytes(plan) + b"".join(accounts + postings + snapshots + snapshots)
     return dict(operation_id=operation, book_revision=revision, holding_count=holdings, item_count=items,
-                witness_digest=hashlib.sha256(blob).digest(), canonical_witness=blob, witness_version=1,
+                witness_digest=hashlib.sha256(blob).digest(), canonical_witness=blob, witness_version=version,
                 reason=38, outcome=1, result_code=0, inbox_status=1, inbox_result=0,
                 inbox_failure_stage=0, inbox_committed_at_present=1, inbox_revision=revision,
                 inbox_type=20, inbox_schema=2, inbox_payload=1, inbox_result_payload=b"",
@@ -127,8 +138,9 @@ def baseline_projections(row):
                      copper_value=amount)
                 for index, (event, account, child, delta, amount) in enumerate(plan["postings"])]
     holdings, items = struct.unpack_from("<II", blob, 184)
+    stride = 96 if struct.unpack_from("<H", blob, 4)[0] == 2 else 88
     identities = [(1, struct.unpack_from("<Q", blob, 212 + index * 112)[0]) for index in range(holdings)]
-    identities += [(2, struct.unpack_from("<Q", blob, 192 + holdings * 112 + index * 88)[0]) for index in range(items)]
+    identities += [(2, struct.unpack_from("<Q", blob, 192 + holdings * 112 + index * stride)[0]) for index in range(items)]
     reservations = [dict(lineage=blob[16:32], epoch=blob[32:48], identity_kind=kind,
                          identity_id=identity, operation_id=operation) for kind, identity in identities]
     return effects, postings, reservations
@@ -163,7 +175,7 @@ class Connection:
             # Invalid capsule tests still exercise the root reader first.
             try:
                 details = baseline_projections(row)
-            except ValueError:
+            except (ValueError, struct.error):
                 details = ([], [], [])
             for family, values in zip(projections, details):
                 family.extend(values)
@@ -253,6 +265,83 @@ class ItemRevisionTests(unittest.TestCase):
 
 
 class OriginTests(unittest.TestCase):
+    def test_baseline_projection_integer_representations_refuse_read_only(self):
+        for index in (7, 8, 9):
+            for field, value in Connection().scan.rows[index][0].items():
+                if type(value) is not int:
+                    continue
+                for alias in integer_aliases(value):
+                    with self.subTest(family=index, field=field, representation=type(alias).__name__):
+                        connection = Connection()
+                        connection.scan.rows[index][0][field] = alias
+                        with self.assertRaisesRegex(OriginError, "EAB1 SQL projection mismatch"):
+                            capture(connection, LINEAGE, EPOCH)
+                        self.assertIs(connection.scan.rows[index][0][field], alias)
+                        self.assertEqual(connection.rollbacks, 1)
+                        self.assertTrue(connection.scan.closed)
+                        self.assertTrue(all(sql.startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
+                                            for sql, _ in connection.scan.statements))
+
+    def test_baseline_root_integer_representations_refuse_read_only(self):
+        fields = ("accounting_version", "writer_id", "policy_version", "compiler_version", "actor_kind",
+                  "actor_id", "reason", "account_count", "posting_count", "child_count", "before_witness_count",
+                  "after_witness_count", "item_event_count", "book_revision", "inbox_revision", "inbox_type",
+                  "inbox_schema", "inbox_payload", "outcome", "result_code", "inbox_status", "inbox_result",
+                  "inbox_failure_stage", "inbox_committed_at_present")
+        for field in fields:
+            for alias in integer_aliases(witness()[field]):
+                with self.subTest(field=field, representation=type(alias).__name__):
+                    row = witness()
+                    row[field] = alias
+                    connection = Connection(rows=[row])
+                    with self.assertRaises(OriginError):
+                        capture(connection, LINEAGE, EPOCH)
+                    self.assertIs(row[field], alias)
+                    self.assertEqual(connection.rollbacks, 1)
+                    self.assertTrue(connection.scan.closed)
+        # The restore reader calls the root verifier without the SQL read loop.
+        for field in ("book_revision", "inbox_revision"):
+            for value in (*integer_aliases(1), 0, -1, 2**64):
+                with self.subTest(direct=field, value=value):
+                    row = witness()
+                    row[field] = value
+                    with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                        origin_exporter.verify_baseline_root(row, LINEAGE, EPOCH)
+
+    def test_baseline_binary_projection_representations_refuse(self):
+        for field in ("root_lineage", "root_epoch", "operation_id", "source_event", "domain_digest",
+                      "intent_digest", "plan_digest", "inbox_result_payload"):
+            with self.subTest(root=field):
+                row = witness()
+                row[field] = bytearray(row[field])
+                connection = Connection(rows=[row])
+                with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+        for index in (7, 8, 9):
+            for field, value in Connection().scan.rows[index][0].items():
+                if type(value) is not bytes:
+                    continue
+                with self.subTest(family=index, field=field):
+                    connection = Connection()
+                    connection.scan.rows[index][0][field] = bytearray(value)
+                    with self.assertRaisesRegex(OriginError, "EAB1 SQL projection mismatch"):
+                        capture(connection, LINEAGE, EPOCH)
+                    self.assertEqual(connection.rollbacks, 1)
+                    self.assertTrue(connection.scan.closed)
+
+    def test_baseline_source_bounds_require_nonnegative_exact_integers(self):
+        for index, field in ((4, "row_count"), (4, "blob_bytes"), (6, "projection_rows")):
+            for alias in (*integer_aliases(Connection().scan.rows[index][field]), -1):
+                with self.subTest(field=field, representation=type(alias).__name__, value=alias):
+                    connection = Connection()
+                    connection.scan.rows[index][field] = alias
+                    with self.assertRaisesRegex(OriginError, "source exceeds audit input limit"):
+                        capture(connection, LINEAGE, EPOCH)
+                    self.assertEqual(connection.rollbacks, 1)
+                    self.assertTrue(connection.scan.closed)
+
     def test_resealed_command_binding_substitution_refuses_read_only(self):
         for offset in range(160, 192):
             with self.subTest(offset=offset):
@@ -670,6 +759,158 @@ class OriginTests(unittest.TestCase):
         self.assertEqual(connection.rollbacks, 1)
 
 
+class BaselineVersionTests(unittest.TestCase):
+    """Explicit reference models; no v2 native producer or migration claim."""
+
+    @staticmethod
+    def row(version=2, positions=None, holdings=None):
+        positions = [(81, (1, 1, 7, 0, 81, 0, 2, 43)),
+                     (82, (12, 1, 42, 0, 82, 0, 3, 1))] if positions is None else positions
+        original = witness([] if holdings is None else holdings)["canonical_witness"]
+        count = struct.unpack_from("<I", original, 184)[0]
+        blob = bytearray(original[:192 + count * 112])
+        blob[:4] = b"EAB2" if version == 2 else b"EAB1"
+        struct.pack_into("<H", blob, 4, version)
+        struct.pack_into("<I", blob, 188, len(positions))
+        for uid, (owner, state, identity, context, root, parent, revision, slot) in positions:
+            blob += struct.pack("<QBB6x5Q", uid, owner, state, identity, context, root, parent, revision)
+            if version == 2:
+                blob += struct.pack("<H6x", slot)
+            else:
+                assert slot == 0
+            blob += bytes.fromhex("88" * 32)
+        struct.pack_into("<I", blob, 8, len(blob))
+        return baseline_root(bytes(blob))
+
+    def read(self, row, valid=True):
+        before = copy.deepcopy(row)
+        connection = Connection(rows=[row])
+        if valid:
+            result = capture(connection, LINEAGE, EPOCH)
+        else:
+            with self.assertRaises(ValueError):
+                capture(connection, LINEAGE, EPOCH)
+            result = None
+        self.assertEqual(row, before)
+        self.assertEqual(connection.rollbacks, 1)
+        self.assertTrue(connection.scan.closed)
+        self.assertTrue(all(sql.startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
+                            for sql, _ in connection.scan.statements))
+        return result
+
+    @staticmethod
+    def changed(row, offset, value):
+        result = copy.deepcopy(row)
+        blob = bytearray(row["canonical_witness"])
+        blob[offset:offset + len(value)] = value
+        result["canonical_witness"] = bytes(blob)
+        result["witness_digest"] = hashlib.sha256(blob).digest()
+        return result
+
+    def test_version_two_retains_player_and_native_mobile_equipment(self):
+        for owner, identity, slots in ((1, 7, (0, 1, 43, 65535)),
+                                       (12, 2**64 - 2, (0, 1, 43))):
+            for slot in slots:
+                with self.subTest(owner=owner, slot=slot):
+                    row = self.row(positions=[(81, (owner, 1, identity, 0, 81, 0, 2, slot))])
+                    result = self.read(row)
+                    self.assertEqual(result["item_origins"][0]["equipment_slot"], slot)
+                    self.assertEqual(decode_plan(row["canonical_plan"])["after"][81][-1], slot)
+
+    def test_version_two_reservations_use_all_exact_item_strides(self):
+        row = self.row()
+        result = self.read(row)
+        self.assertEqual([item["uid"] for item in result["item_origins"]], [81, 82])
+        for uid in (81, 82):
+            connection = Connection(rows=[row])
+            reservation = next(item for item in connection.scan.rows[9] if item["identity_id"] == uid)
+            reservation["identity_id"] += 100
+            with self.assertRaisesRegex(ValueError, "projection mismatch"):
+                capture(connection, LINEAGE, EPOCH)
+            self.assertEqual(connection.rollbacks, 1)
+            self.assertTrue(connection.scan.closed)
+
+    def test_historical_version_one_keeps_bytes_zero_slot_and_equipped_root_refusal(self):
+        row = witness([])
+        result = self.read(row)
+        self.assertNotIn("equipment_slot", result["item_origins"][0])
+        self.assertEqual(decode_plan(row["canonical_plan"])["after"][81][-1], 0)
+        self.assertEqual(baseline_root(row["canonical_witness"]), row)
+        plan = bytearray(row["canonical_plan"])
+        for offset in (256 + 56, 320 + 56):
+            struct.pack_into("<H", plan, offset, 1)
+        row["canonical_plan"] = bytes(plan)
+        row["plan_digest"] = hashlib.sha256(plan).digest()
+        self.read(row, False)
+
+    def test_magic_version_exact_lengths_and_metadata_agreement(self):
+        for version in (1, 2):
+            row = self.row(version, [(81, (1, 1, 7, 0, 81, 0, 2, 0))])
+            for offset, value in ((0, b"EAB0"), (0, b"EAB2" if version == 1 else b"EAB1"),
+                                  (4, struct.pack("<H", 3)), (6, struct.pack("<H", 191)),
+                                  (8, struct.pack("<I", len(row["canonical_witness"]) - 1)),
+                                  (12, b"\x01"), (188, struct.pack("<I", 2))):
+                with self.subTest(version=version, offset=offset, value=value):
+                    self.read(self.changed(row, offset, value), False)
+            for value in (0, 3 - version, None, True, float(version)):
+                changed = copy.deepcopy(row)
+                changed["witness_version"] = value
+                with self.subTest(version=version, metadata=value):
+                    self.read(changed, False)
+            for blob in (row["canonical_witness"][:-1], row["canonical_witness"] + b"\0"):
+                changed = copy.deepcopy(row)
+                changed["canonical_witness"] = blob
+                changed["witness_digest"] = hashlib.sha256(blob).digest()
+                self.read(changed, False)
+
+    def test_reserved_bytes_and_source_digest_fail_even_after_rehash(self):
+        row = self.row()
+        for offset in (*range(202, 208), *range(250, 256), *range(298, 304), *range(346, 352)):
+            with self.subTest(offset=offset):
+                self.read(self.changed(row, offset, b"\x01"), False)
+        for offset in (256, 352):
+            self.read(self.changed(row, offset, bytes(32)), False)
+
+    def test_equipment_only_change_without_original_plan_refuses(self):
+        row = self.row()
+        for offset, value in ((248, struct.pack("<H", 1)), (344, struct.pack("<H", 43))):
+            with self.subTest(offset=offset):
+                self.read(self.changed(row, offset, value), False)
+
+    def test_native_mobile_invalid_slot_state_owner_and_forest_refuse(self):
+        invalid = [(12, 1, 42, 0, 81, 0, 2, 44), (12, 1, 42, 0, 81, 0, 2, 65535),
+                   (12, 3, 42, 0, 81, 0, 2, 1), (12, 1, 42, 1, 81, 0, 2, 0),
+                   (12, 1, 2**64 - 1, 0, 81, 0, 2, 0), (9, 1, 42, 0, 81, 0, 2, 1),
+                   (1, 1, 7, 0, 82, 82, 2, 1), (1, 1, 7, 0, 82, 0, 2, 0),
+                   (1, 1, 7, 0, 81, 81, 2, 0), (8, 2, 0, 0, 81, 0, 0, 0)]
+        for value in invalid:
+            with self.subTest(position=value):
+                self.read(self.row(positions=[(81, value)]), False)
+        positions = [(81, (12, 1, 42, 0, 81, 0, 2, 0)),
+                     (82, (12, 3, 42, 0, 81, 81, 3, 0))]
+        self.read(self.row(positions=positions))
+        for changed in ([(81, (12, 1, 42, 0, 81, 82, 2, 0)), positions[1]],
+                        [positions[0], (82, (12, 1, 43, 0, 81, 81, 3, 0))],
+                        [positions[0], (82, (12, 1, 42, 0, 81, 83, 3, 0))],
+                        list(reversed(positions)), [positions[0], positions[0]]):
+            with self.subTest(positions=changed):
+                self.read(self.row(positions=changed), False)
+
+    def test_exact_versioned_maxima_and_count_bounds(self):
+        holdings = [key(1, index + 1) for index in range(3071)]
+        positions = [(index + 1, (1, 1, 7, 0, index + 1, 0, 2, 0)) for index in range(6000)]
+        for version, maximum in ((1, 872144), (2, 920144)):
+            with self.subTest(version=version):
+                row = self.row(version, positions, holdings)
+                self.assertEqual(len(row["canonical_witness"]), maximum)
+                decoded = decode_witness(row, LINEAGE, EPOCH, OPENING)
+                self.assertEqual(tuple(map(len, decoded)), (3071, 6000))
+                for offset, value in ((184, 3072), (188, 6001)):
+                    with self.assertRaises(ValueError):
+                        decode_witness(self.changed(row, offset, struct.pack("<I", value)),
+                                       LINEAGE, EPOCH, OPENING)
+
+
 @unittest.skipUnless(os.environ.get("DURIS_RUN_ECONOMIC_ORIGIN_INTEGRATION") == "1",
                      "requires explicit disposable Linux native/SQL integration invocation")
 class NativeSQLOriginTests(unittest.TestCase):
@@ -852,14 +1093,16 @@ class NativeSQLOriginTests(unittest.TestCase):
                                 rows.append(cursor.fetchall())
                             return rows
 
-                    def read(epoch, refuses=False):
+                    reads = {"captures": 0, "refusals": 0, "rollbacks": 0}
+
+                    def read(epoch, refusal=None):
                         before = database_rows()
                         cursor = mock.Mock(wraps=reader.cursor())
                         connection = mock.Mock(wraps=reader)
                         connection.cursor.return_value = cursor
                         try:
-                            if refuses:
-                                with self.assertRaisesRegex(OriginError, "invalid or duplicate EAB1 holding"):
+                            if refusal:
+                                with self.assertRaisesRegex(OriginError, refusal):
                                     capture(connection, self.batches[0][0][16:32], epoch)
                                 result = None
                             else:
@@ -870,6 +1113,8 @@ class NativeSQLOriginTests(unittest.TestCase):
                         self.assertTrue(all(call.args[0].upper().startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
                                             for call in cursor.execute.call_args_list))
                         self.assertEqual(database_rows(), before)
+                        reads["refusals" if refusal else "captures"] += 1
+                        reads["rollbacks"] += 1
                         return result
 
                     for epoch in sorted({row[0][32:48] for row in self.batches}):
@@ -891,16 +1136,38 @@ class NativeSQLOriginTests(unittest.TestCase):
                         with owner.cursor() as cursor:
                             cursor.execute("UPDATE economic_baseline_witness SET canonical_witness=%s,witness_digest=%s "
                                            "WHERE operation_id=%s", (bad, hashlib.sha256(bad).digest(), op))
-                        read(blob[32:48], refuses=True)
+                        read(blob[32:48], "invalid or duplicate EAB1 holding")
                     with owner.cursor() as cursor:
                         cursor.execute("UPDATE economic_baseline_witness SET canonical_witness=%s,witness_digest=%s "
                                        "WHERE operation_id=%s", (blob, hashlib.sha256(blob).digest(), op))
                         cursor.execute("SELECT active_epoch FROM economic_lineage_state")
                         self.assertEqual(cursor.fetchall(), [{"active_epoch": None}])
                     read(blob[32:48])
+                    # Negative disposable-schema cases: retain native bytes and
+                    # exact numeric values while the driver returns float or
+                    # Decimal projections. Restore the canonical column after
+                    # each case; altered schemas never qualify for release.
+                    for table, field in (("economic_accounting_account_effect", "after_silver"),
+                                         ("economic_accounting_coin_posting", "delta_silver")):
+                        for storage, representation in (("DOUBLE", float), ("DECIMAL(20,0)", Decimal)):
+                            with self.subTest(engine=engine, table=table, storage=storage):
+                                canonical = database_rows()
+                                with owner.cursor() as cursor:
+                                    cursor.execute("ALTER TABLE " + table + " MODIFY " + field + " " + storage + " NOT NULL")
+                                    cursor.execute("SELECT " + field + " FROM " + table)
+                                    self.assertTrue(all(type(row[field]) is representation for row in cursor.fetchall()))
+                                try:
+                                    read(blob[32:48], "EAB1 SQL projection mismatch")
+                                finally:
+                                    with owner.cursor() as cursor:
+                                        cursor.execute("ALTER TABLE " + table + " MODIFY " + field + " BIGINT NOT NULL")
+                                self.assertEqual(database_rows(), canonical)
+                                read(blob[32:48])
                     self.assertEqual({p.name: (p.read_bytes(), p.stat().st_mode, p.stat().st_nlink)
                                       for p in self.evidence.iterdir()}, self.retained)
-                    print("PASS native-origin " + engine + " captures=3 refusals=3 rollback=6 SELECT-only bytes-unchanged inactive", flush=True)
+                    self.assertEqual(reads, {"captures": 7, "refusals": 7, "rollbacks": 14})
+                    print("PASS native-origin " + engine + " " + json.dumps(reads, sort_keys=True) +
+                          " SELECT-only bytes-unchanged inactive", flush=True)
                 finally:
                     reader.close()
             finally:

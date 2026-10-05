@@ -1,5 +1,36 @@
 # Plan 4: priced and compound gameplay domains
 
+## Retained SHOP fixture source linkage — 2026-10-05
+
+[The bounded component recipe repair](../SHOP_RETENTION_FIXTURE_LINKAGE_2026-10-05.md) restores actual pure providers and
+complete abort boundaries for outside-scope cold authority. Original21/16 cases,
+four jobs, flags and limits stay exact; physical character_list is an unavailable
+null root. Independent source review/format/pins only, no LINK_PASS. Original74
+executions and positive cold SQL/world/ACK/restart remain in Plan4 qualification.
+Coverage, R1–R8/release and activation remain incomplete; inactive gates stay.
+
+## Original cold SHOP procedure bindings integrated — 2026-10-05
+
+[The reviewed binding repair](../SHOP_COLD_PROCEDURE_BINDING_INTEGRATION_2026-10-05.md) stages original switch/proclib chains
+before fresh SQL/world proof and nonfailing retained enrollment. Exact incumbent,
+catalog and literal identity stay; normal construction policy stays. Callbacks
+remain individually once-only with fresh exact lookup. Source checks/pins/census
+only; actual component link, cold recovery/ACK and flat parity remain in the
+original major-plan batch. Fresh SHOP and activation stay closed; R1–R8 and release
+remain BLOCKED.
+
+## Original cold SHOP publication owner integrated — 2026-10-05
+
+[The reviewed SQL recovery owner](../SHOP_ORIGINAL_COLD_PUBLICATION_INTEGRATION_2026-10-05.md) retains the actual original command,
+receipt/refusal, literal forest and uncertainty stages across actor-independent
+pulses. It uses complete locked SQL/world/cache proof, original UID staging and
+confirmed original-session rollback before guarded ACK or cancellation. Existing
+live behavior and final boot binding seal stay. Eight new sites/two unqualified
+projection rows are conservatively mapped; no executable checks ran. Flat cold
+parity, missing lazy bindings, component fixture closure and original major-plan
+qualification remain open. Fresh SHOP availability and activation stay closed;
+full R1–R8/release remain BLOCKED.
+
 ## Maintained SQL checkpoint shadowing repaired — 2026-10-05
 
 [The five-identifier source repair](../SHOP_CHECKPOINT_LITERAL_SHADOW_REPAIR_2026-10-05.md) closes the exact inner-vector

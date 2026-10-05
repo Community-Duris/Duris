@@ -8,7 +8,7 @@ import json
 import struct
 
 from reconcile_economy_accounting import (ORDINARY_KINDS, account_key, copper,
-                                          decode_source_event, source_kind_allowed)
+                                          decode_source_event, same_projection, source_kind_allowed)
 
 MAX_INTENT = 8192
 MAX_PLAN = 4 * 1024 * 1024
@@ -356,9 +356,9 @@ def require_integrity(executor):
         mismatch("baseline_zero_effect")
 
     def baseline_witness(where, meta, original, row, frozen, encoded):
-        # The second consumer reuses pure independent EAB1 interpretation. The
+        # The second consumer reuses pure independent EAB1/EAB2 interpretation. The
         # import is local because the origin reader also consumes this decoder.
-        from economic_sql_audit_origins import decode_witness, verify_baseline_root
+        from economic_sql_audit_origins import MAX_WITNESS_BYTES, decode_witness, verify_baseline_root
         columns = [hexadecimal("w.lineage"), hexadecimal("w.epoch"), "w.book_revision", "w.witness_version",
                    "w.holding_count", "w.item_count", hexadecimal("w.witness_digest"),
                    "OCTET_LENGTH(w.canonical_witness)", hexadecimal("c.opening_account"),
@@ -379,7 +379,7 @@ def require_integrity(executor):
             witness = dict(zip(names, (*meta[:3], original, *meta[4:])))
             witness.update(book_revision=value[2], witness_version=value[3], holding_count=value[4], item_count=value[5],
                 witness_digest=binary(value[6], 32), canonical_witness=capsule(where, "canonical_witness", value[7],
-                    872144, "baseline_witness", table="economic_baseline_witness", minimum=192),
+                    MAX_WITNESS_BYTES, "baseline_witness", table="economic_baseline_witness", minimum=192),
                 inbox_revision=value[9], inbox_type=value[10], inbox_schema=value[11], inbox_payload=value[12],
                 inbox_result_payload=binary(value[13], 0), canonical_intent=frozen, canonical_plan=encoded,
                 inbox_keys_hash=binary(value[14], 32),
@@ -396,8 +396,8 @@ def require_integrity(executor):
         expected.sort(key=lambda value: (value[2], value[3]))
         columns = [hexadecimal("lineage"), hexadecimal("epoch"), "identity_kind", "identity_id",
                    hexadecimal("operation_id")]
-        if arrays("economic_baseline_reservation", columns, where,
-                  "identity_kind,identity_id,lineage,epoch LIMIT " + str(len(expected) + 1)) != expected:
+        if not same_projection(arrays("economic_baseline_reservation", columns, where,
+                  "identity_kind,identity_id,lineage,epoch LIMIT " + str(len(expected) + 1)), expected):
             mismatch("baseline_reservation")
 
     # Ordinary histories may have no baseline book. Their canonical capsules
@@ -448,23 +448,26 @@ def require_integrity(executor):
                     mismatch("intent")
             except (ValueError, struct.error):
                 mismatch("intent")
-            if meta != intent["metadata"]:
+            if not same_projection(meta, intent["metadata"]):
                 mismatch("metadata")
             counts = tuple(row[19:25])
+            if type(row[17]) is not int or type(row[18]) is not int or not 0 <= row[18] < 2**32:
+                mismatch("plan")
             if row[17] == 2:
-                if row[18] == 0 or row[14] is not None or row[16] is not None or any(counts):
+                if (row[18] == 0 or row[14] is not None or row[16] is not None or
+                        not same_projection(counts, (0,) * 6)):
                     mismatch("plan")
             elif row[17] == 1 and row[18] == 0:
                 try:
                     encoded = capsule(where, "canonical_plan", row[16], MAX_PLAN, "plan")
                     plan = decode_plan(encoded)
-                    if (plan["metadata"] != meta or plan["intent_digest"] != intent["intent_digest"] or
+                    if (not same_projection(plan["metadata"], meta) or plan["intent_digest"] != intent["intent_digest"] or
                             plan["domain_digest"] != intent["domain_digest"] or
                             plan["plan_digest"] != binary(row[14], 32)):
                         mismatch("plan")
                 except (ValueError, struct.error):
                     mismatch("plan")
-                if plan["counts"] != counts:
+                if not same_projection(counts, plan["counts"]):
                     mismatch("canonical_count")
                 coins = ("copper", "silver", "gold", "platinum")
                 fields = ["account_index", hexadecimal("account_key")]
@@ -472,24 +475,24 @@ def require_integrity(executor):
                 fields += ["before_revision", "after_revision"]
                 expected = [[i, key.hex(), *before, *after, before_revision, after_revision]
                             for i, (key, before, after, before_revision, after_revision) in enumerate(plan["effects"])]
-                if arrays("economic_accounting_account_effect", fields, where, "account_index") != expected:
+                if not same_projection(arrays("economic_accounting_account_effect", fields, where, "account_index"), expected):
                     mismatch("canonical_account")
                 fields = ["line_index", "event_index", "account_index", "child_index"]
                 fields += ["delta_" + coin for coin in coins] + ["copper_value"]
                 expected = [[i, event, account, child, *delta, amount]
                             for i, (event, account, child, delta, amount) in enumerate(plan["postings"])]
-                if arrays("economic_accounting_coin_posting", fields, where, "line_index") != expected:
+                if not same_projection(arrays("economic_accounting_coin_posting", fields, where, "line_index"), expected):
                     mismatch("canonical_posting")
                 fields = ["child_index", hexadecimal("child_operation_id"), "domain_id", "discriminator",
                           "parent_index", "relationship"]
                 expected = [[i + 1, child.hex(), domain, discriminator, parent, relationship]
                             for i, (child, domain, discriminator, parent, relationship) in enumerate(plan["children"])]
-                if arrays("economic_accounting_child", fields, where, "child_index") != expected:
+                if not same_projection(arrays("economic_accounting_child", fields, where, "child_index"), expected):
                     mismatch("canonical_child")
                 fields = ["line_index", "event_index", "child_index", "item_uid", "before_revision", "after_revision"]
                 expected = [[i, event, child, uid, old[6], new[6]]
                             for i, (event, child, uid, old, new) in enumerate(plan["events"])]
-                if arrays("economic_accounting_item_reference", fields, where, "line_index") != expected:
+                if not same_projection(arrays("economic_accounting_item_reference", fields, where, "line_index"), expected):
                     mismatch("canonical_item")
                 fields = ["r.line_index", "l.item_uid", "l.root_item_uid", "COALESCE(l.parent_item_uid,0)",
                           "l.from_owner_type", "l.from_owner_id", "l.from_owner_context_id", "l.to_owner_type",
@@ -500,7 +503,7 @@ def require_integrity(executor):
                 expected = [[i, uid, new[4], new[5], *( (7, 0, 0) if old[1] == 0 else (old[0], old[2], old[3]) ),
                              new[0], new[2], new[3], new[6], old[7], new[7]]
                             for i, (event, child, uid, old, new) in enumerate(plan["events"])]
-                if arrays(table, fields, "r." + where, "r.line_index") != expected:
+                if not same_projection(arrays(table, fields, "r." + where, "r.line_index"), expected):
                     mismatch("canonical_custody")
                 if meta[10] == 38:
                     baseline_witness(where, meta, original, row, frozen, encoded)

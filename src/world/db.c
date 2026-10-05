@@ -54,6 +54,9 @@
 #include <algorithm>
 #include <new>
 #include "world/object_template.h"
+#include "player/player_snapshot.h"
+#include <map>
+#include <utility>
 #include "classes/npc_alchemist.h"
 #include "account/newbie_kit_plan.h"
 #include "economy/economic_gameplay_authority.h"
@@ -3573,6 +3576,133 @@ const object_template *find_recovery_object_template(int vnum) noexcept
 	return &found->prototype;
 }
 
+bool shop_trade_original_procedure_binding_stage::prepare(
+	std::span<const P_obj> objects, std::span<const player_item_snapshot> literals,
+	shop_trade_original_procedure_binding_stage &output) noexcept
+{
+	if (!nevent_is_game_thread() || !persistence_mode_requires_mysql() ||
+	    objects.size() != literals.size() || objects.size() > PLAYER_SNAPSHOT_MAX_ROWS ||
+	    !recovery_object_templates_ready())
+		return false;
+	try
+	{
+		shop_trade_original_procedure_binding_stage candidate;
+		std::map<int, size_t> by_number;
+		for (size_t i = 0; i < objects.size(); ++i)
+		{
+			const P_obj object = objects[i];
+			const auto &literal = literals[i];
+			const auto *prototype = find_recovery_object_template(literal.vnum);
+			if (!object || !prototype || object->R_num != prototype->R_num ||
+			    object->obj_uid != literal.object_uid || object->type != literal.type ||
+			    object->extra_flags != literal.extra_flags)
+				return false;
+			const int number = prototype->R_num;
+			const auto found = std::lower_bound(recovery_object_templates.begin(),
+							    recovery_object_templates.end(),
+							    literal.vnum,
+							    [](const auto &entry, int value)
+							    { return entry.vnum < value; });
+			if (found == recovery_object_templates.end() ||
+			    found->vnum != literal.vnum || &found->prototype != prototype)
+				return false;
+			const auto position =
+				static_cast<size_t>(found - recovery_object_templates.begin());
+			auto [located, added] =
+				by_number.emplace(number, candidate.bindings_.size());
+			if (added)
+				candidate.bindings_.push_back({ position, found->special,
+								found->special, nullptr, false });
+			auto &binding = candidate.bindings_[located->second];
+			// Simulate normal per-instance order in the original forest: parsed
+			// proclib first, then ITEM_SWITCH only while no proc is installed.
+			if (IS_SET(object->extra_flags, ITEM_PROCLIB))
+			{
+				bool eligible = false;
+				if (!proclib_saved_binding_eligible(object, &eligible) || !eligible)
+					return false;
+				if (binding.after != proclib_obj_cmd_bridge)
+				{
+					binding.predecessor = binding.after;
+					binding.chain_needed = true;
+					binding.after = proclib_obj_cmd_bridge;
+				}
+			}
+			if (object->type == ITEM_SWITCH && !binding.after)
+				binding.after = item_switch;
+		}
+		std::vector<proclib_recovery_chain_stage::request> requests;
+		for (const auto &binding : candidate.bindings_)
+			if (binding.chain_needed)
+				requests.push_back(
+					{ recovery_object_templates[binding.catalog_index]
+						  .prototype.R_num,
+					  binding.predecessor });
+		if (!proclib_recovery_chain_stage::prepare(requests, candidate.chain_))
+			return false;
+		candidate.prepared_ = true;
+		output = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+bool shop_trade_original_procedure_binding_stage::valid() const noexcept
+{
+	if (!prepared_ || !nevent_is_game_thread() || !persistence_mode_requires_mysql() ||
+	    !recovery_object_templates_ready() || !chain_.valid())
+		return false;
+	for (const auto &binding : bindings_)
+	{
+		if (binding.catalog_index >= recovery_object_templates.size())
+			return false;
+		const auto &entry = recovery_object_templates[binding.catalog_index];
+		const int number = entry.prototype.R_num;
+		if (number < 0 || number > top_of_objt ||
+		    obj_index[number].virtual_number != entry.vnum ||
+		    obj_index[number].pos != entry.position || entry.special != binding.before ||
+		    obj_index[number].func.obj != binding.before)
+			return false;
+	}
+	return true;
+}
+void shop_trade_original_procedure_binding_stage::commit_unchecked() noexcept
+{
+	chain_.commit_unchecked();
+	for (const auto &binding : bindings_)
+	{
+		auto &entry = recovery_object_templates[binding.catalog_index];
+		obj_index[entry.prototype.R_num].func.obj = binding.after;
+		entry.special = binding.after;
+	}
+	prepared_ = false;
+}
+void shop_trade_original_procedure_binding_stage::observe_normal_binding(
+	int number, obj_proc_type before, obj_proc_type after) noexcept
+{
+	// Private ordinary-constructor notification only. Never repair an arbitrary
+	// drift or reseal a runtime catalog; native behavior already ran unchanged.
+	if (!nevent_is_game_thread() || !persistence_mode_requires_mysql() ||
+	    !recovery_object_templates_ready() || number < 0 || number > top_of_objt ||
+	    before == after || obj_index[number].func.obj != after ||
+	    (after != proclib_obj_cmd_bridge && !(after == item_switch && !before)) ||
+	    (after == proclib_obj_cmd_bridge &&
+	     !proclib_recovery_chain_stage::predecessor_matches(number, before)))
+		return;
+	const int vnum = obj_index[number].virtual_number;
+	auto found = std::lower_bound(recovery_object_templates.begin(),
+				      recovery_object_templates.end(), vnum,
+				      [](const auto &entry, int value)
+				      { return entry.vnum < value; });
+	if (found == recovery_object_templates.end() || found->vnum != vnum ||
+	    found->prototype.R_num != number || found->position != obj_index[number].pos ||
+	    found->special != before)
+		return;
+	found->special = after;
+}
+
 bool cache_object_template(int vnum)
 {
 	if (starter_object_templates.count(vnum))
@@ -3673,7 +3803,11 @@ P_obj instantiate_object_template(const object_template &prototype)
 		obj->ex_description = new_descr;
 	}
 	if (obj->type == ITEM_SWITCH && !obj_index[nr].func.obj)
+	{
 		obj_index[nr].func.obj = item_switch;
+		shop_trade_original_procedure_binding_stage::observe_normal_binding(nr, nullptr,
+										    item_switch);
+	}
 	obj->nevents = NULL;
 	obj->nevents_tail = NULL;
 
