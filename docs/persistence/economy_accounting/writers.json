@@ -28890,6 +28890,36 @@
       }
     },
     {
+      "id": "quest.native_mobile_stage_publication",
+      "path": "src/world/db.c",
+      "symbol": "quest_mobile_native_stage::publish",
+      "reason": "npc_reward",
+      "integration_issue": 486,
+      "owner": "primary / #486",
+      "coverage": "legacy",
+      "classification": "Private detached mobile stage can publish its original candidate into runtime index/list/room and arm legacy hooks; it has no current caller. Stage consumption alone grants no native commit, issuance, source, custody or ACK authority.",
+      "authority_boundary": "Only future original quest_mobile_native_birth_owner friendship can prepare/consume this stage; admitted original source, native economic values/stock and publication outcome must be independently proved.",
+      "current_support": "Source reviewed and integrated only; original issuer/birth/restore/retirement owner and native qualification remain unfinished.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Definition only; no in-tree birth owner/caller. Legacy overloads remain on the original path."
+    },
+    {
       "id": "quest.native_sql_image_participant",
       "path": "src/persistence/quest_mobile_native_sql.c",
       "symbol": "quest_mobile_native_sql_apply_locked",
@@ -44831,7 +44861,7 @@
     {
       "id": "world.mobile_template",
       "path": "src/world/db.c",
-      "symbol": "read_mobile",
+      "symbol": "read_mobile_body",
       "reason": "npc_reward",
       "integration_issue": 486,
       "owner": "primary / #486",
@@ -44857,62 +44887,62 @@
       "sites": [
         [
           "src/world/db.c",
-          2323,
+          2389,
           "coin_assignment"
         ],
         [
           "src/world/db.c",
-          2324,
+          2390,
           "coin_assignment"
         ],
         [
           "src/world/db.c",
-          2325,
+          2391,
           "coin_assignment"
         ],
         [
           "src/world/db.c",
-          2326,
+          2392,
           "coin_assignment"
         ],
         [
           "src/world/db.c",
-          2337,
+          2403,
           "money_helper"
         ],
         [
           "src/world/db.c",
-          2346,
+          2412,
           "money_helper"
         ],
         [
           "src/world/db.c",
-          2714,
+          2780,
           "coin_assignment"
         ],
         [
           "src/world/db.c",
-          2715,
+          2781,
           "coin_assignment"
         ],
         [
           "src/world/db.c",
-          2716,
+          2782,
           "coin_assignment"
         ],
         [
           "src/world/db.c",
-          2717,
+          2783,
           "coin_assignment"
         ],
         [
           "src/world/db.c",
-          2726,
+          2792,
           "money_helper"
         ]
       ],
       "evidence": [],
-      "reachability_evidence": "read_mobile is called by zone resets and copyover recovery. The two mob-file denomination branches execute before convertMob and before caller publication."
+      "reachability_evidence": "Both legacy read_mobile overloads and read_mobile_probe reach the unchanged legacy mode of the shared read_mobile_body. The private detached stage selects its separate mode; original birth/source ownership and native qualification remain unfinished."
     },
     {
       "id": "world.npc_item_hydration",
@@ -45055,12 +45085,12 @@
       "sites": [
         [
           "src/world/db.c",
-          3429,
+          3558,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3553,
+          3682,
           "item_lifecycle"
         ],
         [
@@ -46000,7 +46030,7 @@
       "sites": [
         [
           "src/world/db.c",
-          3547,
+          3676,
           "item_lifecycle"
         ]
       ],
@@ -46415,22 +46445,22 @@
       "sites": [
         [
           "src/world/db.c",
-          3749,
+          3878,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3787,
+          3916,
           "item_publication"
         ],
         [
           "src/world/db.c",
-          4069,
+          4198,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4110,
+          4239,
           "item_publication"
         ]
       ],
@@ -46475,7 +46505,7 @@
       "sites": [
         [
           "src/world/db.c",
-          4261,
+          4390,
           "item_publication"
         ]
       ],
@@ -46520,12 +46550,12 @@
       "sites": [
         [
           "src/world/db.c",
-          4220,
+          4349,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4264,
+          4393,
           "item_publication"
         ]
       ],
@@ -46570,22 +46600,22 @@
       "sites": [
         [
           "src/world/db.c",
-          3871,
+          4000,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3905,
+          4034,
           "item_publication"
         ],
         [
           "src/world/db.c",
-          4137,
+          4266,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4178,
+          4307,
           "item_publication"
         ]
       ],
@@ -46630,22 +46660,22 @@
       "sites": [
         [
           "src/world/db.c",
-          3817,
+          3946,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3848,
+          3977,
           "item_publication"
         ],
         [
           "src/world/db.c",
-          4003,
+          4132,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4041,
+          4170,
           "item_publication"
         ]
       ],
@@ -46690,122 +46720,122 @@
       "sites": [
         [
           "src/world/db.c",
-          3759,
+          3888,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3769,
+          3898,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3776,
+          3905,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3784,
+          3913,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3827,
+          3956,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3836,
+          3965,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3843,
+          3972,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3881,
+          4010,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3891,
+          4020,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3899,
+          4028,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          3915,
+          4044,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4022,
+          4151,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4031,
+          4160,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4037,
+          4166,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4087,
+          4216,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4100,
+          4229,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4106,
+          4235,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4155,
+          4284,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4163,
+          4292,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4172,
+          4301,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4189,
+          4318,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4238,
+          4367,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4246,
+          4375,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          4253,
+          4382,
           "item_lifecycle"
         ]
       ],
@@ -62146,325 +62176,325 @@
     },
     {
       "path": "src/world/db.c",
-      "line": 2337,
+      "line": 2403,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(mob, tmp);"
     },
     {
       "path": "src/world/db.c",
-      "line": 2346,
+      "line": 2412,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(mob, tmp1);"
     },
     {
       "path": "src/world/db.c",
-      "line": 2726,
+      "line": 2792,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(mob, tmp1);"
     },
     {
       "path": "src/world/db.c",
-      "line": 2323,
+      "line": 2389,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(mob) = tmp4; /* * (number(50, 200) / 100); */"
     },
     {
       "path": "src/world/db.c",
-      "line": 2324,
+      "line": 2390,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(mob) = tmp3; /* * (number(50, 200) / 100); */"
     },
     {
       "path": "src/world/db.c",
-      "line": 2325,
+      "line": 2391,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(mob) = tmp2; /* * (number(50, 200) / 100); */"
     },
     {
       "path": "src/world/db.c",
-      "line": 2326,
+      "line": 2392,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(mob) = tmp1; /* * (number(50, 200) / 100); */"
     },
     {
       "path": "src/world/db.c",
-      "line": 2714,
+      "line": 2780,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(mob) = tmp1;"
     },
     {
       "path": "src/world/db.c",
-      "line": 2715,
+      "line": 2781,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(mob) = tmp2;"
     },
     {
       "path": "src/world/db.c",
-      "line": 2716,
+      "line": 2782,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(mob) = tmp3;"
     },
     {
       "path": "src/world/db.c",
-      "line": 2717,
+      "line": 2783,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(mob) = tmp4;"
     },
     {
       "path": "src/world/db.c",
-      "line": 3429,
+      "line": 3558,
       "family": "item_lifecycle",
       "excerpt": "P_obj instantiate_object_template(const object_template &prototype)"
     },
     {
       "path": "src/world/db.c",
-      "line": 3547,
+      "line": 3676,
       "family": "item_lifecycle",
       "excerpt": "P_obj read_object(int nr, int type)"
     },
     {
       "path": "src/world/db.c",
-      "line": 3553,
+      "line": 3682,
       "family": "item_lifecycle",
       "excerpt": "return instantiate_object_template(parse_object_template(nr));"
     },
     {
       "path": "src/world/db.c",
-      "line": 3749,
+      "line": 3878,
       "family": "item_lifecycle",
       "excerpt": "if (!(obj = read_object(temp, REAL)))"
     },
     {
       "path": "src/world/db.c",
-      "line": 3759,
+      "line": 3888,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 3769,
+      "line": 3898,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 3776,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 3784,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 3817,
-      "family": "item_lifecycle",
-      "excerpt": "if (!(obj = read_object(temp, REAL)))"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 3827,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 3836,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 3843,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 3871,
-      "family": "item_lifecycle",
-      "excerpt": "if (!(obj = read_object(temp, REAL)))"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 3881,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 3891,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 3899,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 3915,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4003,
-      "family": "item_lifecycle",
-      "excerpt": "if (!(obj = read_object(ZCMD.arg1, REAL)))"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4022,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4031,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4037,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4069,
-      "family": "item_lifecycle",
-      "excerpt": "if (!(obj = read_object(ZCMD.arg1, REAL)))"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4087,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4100,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4106,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4137,
-      "family": "item_lifecycle",
-      "excerpt": "if (!(obj = read_object(ZCMD.arg1, REAL)))"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4155,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4163,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4172,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4189,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4220,
-      "family": "item_lifecycle",
-      "excerpt": "if (!(obj = read_object(ZCMD.arg1, REAL)))"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4238,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4246,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 4253,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 3787,
-      "family": "item_publication",
-      "excerpt": "obj_to_obj(obj, obj_to);"
-    },
-    {
-      "path": "src/world/db.c",
-      "line": 3848,
-      "family": "item_publication",
-      "excerpt": "obj_to_room(obj, ZCMD.arg3);"
     },
     {
       "path": "src/world/db.c",
       "line": 3905,
-      "family": "item_publication",
-      "excerpt": "obj_to_char(obj, mob);"
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 4041,
-      "family": "item_publication",
-      "excerpt": "obj_to_room(obj, ZCMD.arg3);"
+      "line": 3913,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/world/db.c",
-      "line": 4110,
+      "line": 3946,
+      "family": "item_lifecycle",
+      "excerpt": "if (!(obj = read_object(temp, REAL)))"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 3956,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 3965,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 3972,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4000,
+      "family": "item_lifecycle",
+      "excerpt": "if (!(obj = read_object(temp, REAL)))"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4010,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4020,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4028,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4044,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4132,
+      "family": "item_lifecycle",
+      "excerpt": "if (!(obj = read_object(ZCMD.arg1, REAL)))"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4151,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4160,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4166,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4198,
+      "family": "item_lifecycle",
+      "excerpt": "if (!(obj = read_object(ZCMD.arg1, REAL)))"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4216,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4229,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4235,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4266,
+      "family": "item_lifecycle",
+      "excerpt": "if (!(obj = read_object(ZCMD.arg1, REAL)))"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4284,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4292,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4301,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4318,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4349,
+      "family": "item_lifecycle",
+      "excerpt": "if (!(obj = read_object(ZCMD.arg1, REAL)))"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4367,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4375,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4382,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 3916,
       "family": "item_publication",
       "excerpt": "obj_to_obj(obj, obj_to);"
     },
     {
       "path": "src/world/db.c",
-      "line": 4178,
+      "line": 3977,
+      "family": "item_publication",
+      "excerpt": "obj_to_room(obj, ZCMD.arg3);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4034,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, mob);"
     },
     {
       "path": "src/world/db.c",
-      "line": 4261,
+      "line": 4170,
+      "family": "item_publication",
+      "excerpt": "obj_to_room(obj, ZCMD.arg3);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4239,
+      "family": "item_publication",
+      "excerpt": "obj_to_obj(obj, obj_to);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4307,
+      "family": "item_publication",
+      "excerpt": "obj_to_char(obj, mob);"
+    },
+    {
+      "path": "src/world/db.c",
+      "line": 4390,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(mob,"
     },
     {
       "path": "src/world/db.c",
-      "line": 4261,
+      "line": 4390,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(mob,"
     },
     {
       "path": "src/world/db.c",
-      "line": 4264,
+      "line": 4393,
       "family": "item_publication",
       "excerpt": "equip_char(mob, obj, ZCMD.arg3, 1);"
     },
@@ -64208,9 +64238,9 @@
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
   },
   "candidate_worktree_evidence": {
-    "base_commit": "92784e323186f62cf1067b6f8a27f3fc70b702d5",
+    "base_commit": "30c9a30a6e0449dcdc58499d152f8e1061b9d8ad",
     "status": "source_integrated_unqualified",
-    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified. Source-reviewed pure active-root custody census shares old root observation and preserves retained historical states; private shop consumer remains unintegrated and unqualified. Source-reviewed bounded canonical shop recovery forest binding codecs are integrated as pure value helpers; the explicit v8 command, producer, original SQL validation, cold replay/publication and final qualification remain private/unfinished. Existing journal limits, inactive shop versions and admission/ACK gates are unchanged. Maintained native reference/source-event codecs are extracted without changing original encoded bytes or image/capture policy; complete production and focused link recipes are updated. Native char_data now has zeroable runtime-only reference storage and a read-only accessor requiring the originally observed runtime generation before pointer access. No birth writer, durable restore record, UID issuance or ACK authority is installed by this slice; major-plan execution remains deferred. Reviewed SHOP v8 producer/checkpoint, literal runtime payload, complete destination weight, original SQL images, exact retained receipt verification and held live publication source are composed with all companion headers and production objects. Current cold image observation grants no startup/rebind/native publication or ACK authority. Central accounted SHOP admission remains closed and canonical schema0056 is unchanged; schema0057, real producer invocation, cold continuation, flat parity and major-plan native/gameplay/recovery qualification remain unfinished.",
+    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified. Source-reviewed pure active-root custody census shares old root observation and preserves retained historical states; private shop consumer remains unintegrated and unqualified. Source-reviewed bounded canonical shop recovery forest binding codecs are integrated as pure value helpers; the explicit v8 command, producer, original SQL validation, cold replay/publication and final qualification remain private/unfinished. Existing journal limits, inactive shop versions and admission/ACK gates are unchanged. Maintained native reference/source-event codecs are extracted without changing original encoded bytes or image/capture policy; complete production and focused link recipes are updated. Native char_data now has zeroable runtime-only reference storage and a read-only accessor requiring the originally observed runtime generation before pointer access. No birth writer, durable restore record, UID issuance or ACK authority is installed by this slice; major-plan execution remains deferred. Reviewed SHOP v8 producer/checkpoint, literal runtime payload, complete destination weight, original SQL images, exact retained receipt verification and held live publication source are composed with all companion headers and production objects. Current cold image observation grants no startup/rebind/native publication or ACK authority. Central accounted SHOP admission remains closed and canonical schema0056 is unchanged; schema0057, real producer invocation, cold continuation, flat parity and major-plan native/gameplay/recovery qualification remain unfinished. Previously reviewed detached native-mobile loader is source integrated with both legacy overloads/probe kept on their original path. Preparation has no live list/count/runtime/event publication; consumption precedes room/special hooks. Private dormant stage grants no original source, durable UID or ACK, and adds no durable recovery format or NPC state ledger. Original issuer/birth/restore/retirement and major-plan qualification remain open.",
     "source_pins": {
       "src/Makefile": "2ae8f1f3e8cba75233c75a5680e1ca423abf5e4cf5b4e1f1cf56b1b7f5a1d00e",
       "src/economy/coin_physical_recovery.c": "0670e71865ebe3543ec18c4142653ed0ea6499cd93cc3bb36f06407f951e8397",
@@ -64259,7 +64289,7 @@
       "src/economy/shop_trade_accounting.c": "e9e428cdb65a30679a04e8ae044410c9fde042d82278045d441d0d66a2dabd5c",
       "src/economy/shop_trade_accounting.h": "60dbe36c5216ba4e72ad9d12e708ddac1ebb8b80c5d424a5748b502b8cfc9946",
       "scripts/validate_economy_accounting.py": "984d3170c3b4b17cb96dbcb6568a288b63a9db5278861d59cc860bf996f237be",
-      "scripts/generate_economy_writer_coverage.py": "c18913dd0c27aaa46f95e13de11a13b794c7634fb45c7b48215cd08f5b22153c",
+      "scripts/generate_economy_writer_coverage.py": "ca34dfdc7eebd0c9045f95f315e4f77f74c13d053a7aec6bc10f6c07639d861a",
       "src/world/quest_mobile_native.c": "39dff207aa4f9b244fd3af1fb57afd5c51608d7264fdd8e2698df6c95445f909",
       "src/world/quest_mobile_native.h": "798b5bba1db8285d4445db0be054f5e2fa27e5c2b664d25df8babdbc45fb7205",
       "src/economy/shop_trade_world_witness.c": "7a7a95dcdc1c1cc747710fbc0fa587828e2be413c38fad0818815ff5caeb0240",
@@ -64295,7 +64325,9 @@
       "src/persistence/shop_item_runtime_payload.h": "51eba38c026d8f090aab047e040de7e773958bf6f58beb166f55add60e48d376",
       "src/sql/sql_player.c": "6b54581d8b92acc5430f9413e42cc1d27b8d6137ec9044e273396abe9d2bc756",
       "src/world/handler.c": "be9a24aee571aeafabebdb747ee3e9e6b2fdb47874a529ec9b19c34459ebe71b",
-      "src/world/handler.h": "3650f740dc709fc11b746cb78b59ac5d105498881adbb7239d3184edef6bb9af"
+      "src/world/handler.h": "3650f740dc709fc11b746cb78b59ac5d105498881adbb7239d3184edef6bb9af",
+      "src/world/db.c": "86551201b1c094c2764d21ecf65b5c6d7d917c1c046ef69bfda35cfb5e0d0fa9",
+      "src/world/db.h": "5897c9aa58084208b407643913b24490322e77975461a69c9fb306274afc51ff"
     }
   },
   "pending_source_integration": {

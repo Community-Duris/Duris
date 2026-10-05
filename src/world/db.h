@@ -183,6 +183,34 @@ extern const char *BACKGR_STORY;
 // #define ARTIFACT_TIMER_SEC 1209600
 #define ARTIFACT_BLOOD_DAYS 10
 
+// Detached native preparation is available only to the original birth owner.
+// This handle has explicit disposal: uncertain admitted work must retain it.
+// It never issues a durable ID, validates admission or grants publication ACK.
+struct char_data;
+class quest_mobile_native_birth_owner;
+class quest_mobile_native_stage
+{
+    public:
+	quest_mobile_native_stage() = default;
+	quest_mobile_native_stage(const quest_mobile_native_stage &) = delete;
+	quest_mobile_native_stage &operator=(const quest_mobile_native_stage &) = delete;
+	quest_mobile_native_stage(quest_mobile_native_stage &&) = delete;
+	quest_mobile_native_stage &operator=(quest_mobile_native_stage &&) = delete;
+
+    private:
+	struct char_data *character_ = nullptr;
+	bool prepare(int nr, int type, bool apply_mob_gold);
+	struct char_data *character() const noexcept { return character_; }
+	// Only an empty, unlinked, unscheduled preparation can be discarded.
+	// The owner must first resolve/remove its own unadmitted staged stock.
+	bool discard_empty() noexcept;
+	// False retains the stage. True means consumed before room/special hooks,
+	// even if a hook extracts the NPC or room insertion fails. Not an ACK.
+	// An exception after consumption must not be treated as a fresh refusal.
+	bool publish(int room_rnum, struct char_data **live_after_hooks);
+	friend class quest_mobile_native_birth_owner;
+};
+
 void free_world();
 
 #endif /* #ifndef _SOJ_DB_H_ */

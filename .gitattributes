@@ -97,3 +97,5 @@ src/persistence/shop_item_runtime_payload.h text eol=lf
 src/sql/sql_player.c text eol=lf
 src/world/handler.c text eol=lf
 src/world/handler.h text eol=lf
+src/world/db.c text eol=lf
+src/world/db.h text eol=lf
