@@ -1,0 +1,894 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "desolateinv",
+  "coverage": "complete",
+  "introduction": "Follow eight independent captive rescues, gather eight cut bindings for Beregan, and deliver three exact invader hands to Jandar. Side quests include the monkey, neckchain, badge and dog. All seventeen exchanges are explained; availability gaps are explicit. Active, ready accounting is mandatory for new journal, achievement and daily credit.",
+  "orientation": [
+    "This is the invaded Desolate zone 773, distinct from normal Desolate zone 222. Discovery and receipts remain independently owned. The initially closed zone is opened by normal Desolate’s random-exit object 22291 at exterior 22200, which can redirect the north route to 77302 and its south return. Source reset chance 20 percent and callback chance 100 percent are different; the live phase and current route need qualification.",
+    "Loud orc, goblin and Shady Grove orc start at campground 77358; old and Pinehollow loggers at cabin 77381; monkey hunter at command post 77342; monk and cleric at temple 77435. Each consumes one actual shard and returns bindings, then departs. Beregan in bar backroom 77421 accepts eight current bindings together. His claim that citizens are free is narration, not a check of eight distinct personal rescues.",
+    "Shard sources include hidden container stock in garbage 77360 and trapped weapon pile 77457, and nomadic merchant 77408 at 77432. Repeated reset lines retain shared caps and do not guarantee fresh stock. No-exit room 77465 is explicitly a shard-load check room; it is not a player recovery destination. Normal Desolate items do not substitute.",
+    "The hunter’s monkey-return exchange and shard rescue are independent. Return the monkey before retiring the hunter if you want both. The monkey is a closed item container in bear den 77394; its hidden neckchain is minotaur proof. Remove the chain before consuming the monkey so the nested item is not lost with the container.",
+    "Minotaur 77327 starts at garbage pile 77360 and rewards bronze key 77311. It unlocks the fixed chest there, which holds money, trophy and brass bracelet. Jandar 77319 at master chamber 77370 needs severed hands 77373, 77385 and 77392 from Gromlog 77342, Alboa 77382 and Mackama 77375. These are authored inventory/equipment items, not a CARVE controller. The rewarded black-gate key 77384 fits the paired locked gate at 77343/77361.",
+    "Myrabolus delegate and Beregan start at 77421. The scout badge is equipped at 77352; the dog starts at 77428 and wants hidden stinky bones from garbage 77360. NORENT on bones and both reward keys remains intact. Cut bindings require two hands if used as equipment, but are not transient items.",
+    "Halfling 77325, wagon driver 77348 and travelling merchant 77380 have no identified local reset. The halfling asks for blade 77331 despite drink narration. Driver wheel 77352 has no identified producer; placed Scotson has no repair recipe here. Keep these builder gaps visible without promising stock or reusing normal Desolate contracts.",
+    "The nomadic shop at 77432 lists shard 77326, deep blue potion 77356 and scroll 77388. A stock declaration is not a settled purchase or proof of renewal. The separate travelling merchant’s coin-only quest purchase is guarded under active accounting and earns no story/daily credit. Bank counter 3097 binds storage-locker ENTER service; paid lockers are guarded. Actual inn assignment is tunnel 77442, while 77422’s inn prose says closed; do not assume a functioning tavern service or move the binding.",
+    "The hidden Master trial’s PUSH route is chamber 77410 east to Sacrifice 77411, east to Endurance 77412, south to Art 77413, west to Courage 77414, west to Affinity 77415, then north to 77410. Knighthood 77416 branches above Sacrifice. Buttons clear existing blocked exits; current combat guardians and dragon loot are not a completed-trial receipt. Endurance and Courage’s direction captions now match their existing south/west buttons.",
+    "Branches at 77386 PULL west; torch at 77364 PULL down and black soil at 77365 PUSH up; barricades at 77453/77454 PUSH down/up. Secret and closed state is separate from clearing BLOCKED. Unplaced rock controls target missing west/east exits and require builder intent. Seven fixed portals retain their existing enter restrictions and return routes; fall fields are risks, not guaranteed quest arrival.",
+    "No captured universal first-source, source-versus-gift, control, personal kill, phase episode or full-zone victory fact is invented. Historical accepted exchange rows remain optional, while current exact material and settled terminal outcomes stay separate. Mode2 renewal, actor retirement, hidden sources, shop stock and active accounting’s item-reset refusal still need played qualification before these sixteen potential dailies can be promised."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 77311,
+      "name": "a loud orc",
+      "keyword": "loud",
+      "description": "Native starting placement: 77358.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77312,
+      "name": "an annoying goblin",
+      "keyword": "goblin",
+      "description": "Native starting placement: 77358.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77313,
+      "name": "a drunk orc",
+      "keyword": "shady",
+      "description": "Native starting placement: 77358.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77319,
+      "name": "Jandar",
+      "keyword": "jandar",
+      "description": "Native starting placement: 77370.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77324,
+      "name": "a logger",
+      "keyword": "old",
+      "description": "Native starting placement: 77381.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77325,
+      "name": "a tired halfling",
+      "keyword": "halfling",
+      "description": "No identified local reset placement; builder qualification required before ordinary availability can be promised.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77327,
+      "name": "a minotaur",
+      "keyword": "minotaur",
+      "description": "Native starting placement: 77360.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77338,
+      "name": "a monkey hunter",
+      "keyword": "monkey",
+      "description": "Native starting placement: 77342.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77348,
+      "name": "the wagon driver",
+      "keyword": "driver",
+      "description": "No identified local reset placement; builder qualification required before ordinary availability can be promised.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77350,
+      "name": "Beregan",
+      "keyword": "beregan",
+      "description": "Native starting placement: 77421.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77365,
+      "name": "a delegate from myrabolus",
+      "keyword": "delegate",
+      "description": "Native starting placement: 77421.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77370,
+      "name": "a logger from pinehollow",
+      "keyword": "pinehollow",
+      "description": "Native starting placement: 77381.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77380,
+      "name": "a travelling merchant",
+      "keyword": "travelling",
+      "description": "No identified local reset placement; builder qualification required before ordinary availability can be promised.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77383,
+      "name": "a shaggy dog",
+      "keyword": "shaggy",
+      "description": "Native starting placement: 77428.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77385,
+      "name": "a monk",
+      "keyword": "monk",
+      "description": "Native starting placement: 77435.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77386,
+      "name": "a cleric",
+      "keyword": "cleric",
+      "description": "Native starting placement: 77435.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "storm-port-orc",
+      "title": "Free the loud Storm Port orc",
+      "category": "story",
+      "summary": "Offer one sharpened metal shard to this captive, initially placed at 77358, for cut bindings and that NPC’s narrated departure. Each captive is an independent accepted exchange; one shard or one receipt does not complete the other rescues.",
+      "contracts": [
+        {
+          "giver_vnum": 77311,
+          "completion_key": "give=I:77326;receive=E:30000,I:77345;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77326",
+          "text": "Carry a shard of sharpened metal",
+          "kind": "carried_item",
+          "item_vnums": [
+            77326
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Legitimate sharpened shard stock is hidden inside garbage at 77360 and the trapped weapon pile at 77457, with a nomadic merchant source at 77432. The inaccessible 77465 stock-check room is not a player supply route. Each rescue consumes one actual shard. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77311,
+              "completion_key": "give=I:77326;receive=E:30000,I:77345;disappear=1"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The selected NPC departs after acceptance; actual retirement and renewed access need qualification."
+        }
+      ]
+    },
+    {
+      "id": "goblin",
+      "title": "Free the captive goblin",
+      "category": "story",
+      "summary": "Offer one sharpened metal shard to this captive, initially placed at 77358, for cut bindings and that NPC’s narrated departure. Each captive is an independent accepted exchange; one shard or one receipt does not complete the other rescues.",
+      "contracts": [
+        {
+          "giver_vnum": 77312,
+          "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77326",
+          "text": "Carry a shard of sharpened metal",
+          "kind": "carried_item",
+          "item_vnums": [
+            77326
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Legitimate sharpened shard stock is hidden inside garbage at 77360 and the trapped weapon pile at 77457, with a nomadic merchant source at 77432. The inaccessible 77465 stock-check room is not a player supply route. Each rescue consumes one actual shard. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77312,
+              "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The selected NPC departs after acceptance; actual retirement and renewed access need qualification."
+        }
+      ]
+    },
+    {
+      "id": "shady-grove-orc",
+      "title": "Free the Shady Grove orc",
+      "category": "story",
+      "summary": "Offer one sharpened metal shard to this captive, initially placed at 77358, for cut bindings and that NPC’s narrated departure. Each captive is an independent accepted exchange; one shard or one receipt does not complete the other rescues.",
+      "contracts": [
+        {
+          "giver_vnum": 77313,
+          "completion_key": "give=I:77326;receive=E:10000,I:77345;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77326",
+          "text": "Carry a shard of sharpened metal",
+          "kind": "carried_item",
+          "item_vnums": [
+            77326
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Legitimate sharpened shard stock is hidden inside garbage at 77360 and the trapped weapon pile at 77457, with a nomadic merchant source at 77432. The inaccessible 77465 stock-check room is not a player supply route. Each rescue consumes one actual shard. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77313,
+              "completion_key": "give=I:77326;receive=E:10000,I:77345;disappear=1"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The selected NPC departs after acceptance; actual retirement and renewed access need qualification."
+        }
+      ]
+    },
+    {
+      "id": "jandar-three-hands",
+      "title": "Jandar: deliver the three invaders’ hands",
+      "category": "story",
+      "summary": "Offer Gromlog’s, Alboa’s and Mackama’s three exact severed hands together for the black-gate key, war skirt and medal. The native bundle has no personal kill requirement. Jandar’s departure does not close the invasion phase or restore the village.",
+      "contracts": [
+        {
+          "giver_vnum": 77319,
+          "completion_key": "give=I:77373,I:77385,I:77392;receive=I:77329,I:77340,I:77384;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77373",
+          "text": "Carry the severed hand of gromlog",
+          "kind": "carried_item",
+          "item_vnums": [
+            77373
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Gromlog at command post 77342 carries his severed hand as native G stock. This is not a CARVE or personal kill predicate. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "material-77385",
+          "text": "Carry the severed hand of alboa",
+          "kind": "carried_item",
+          "item_vnums": [
+            77385
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Alboa at woodland cabin 77382 wears his severed hand in hold slot 18. The exact item is required; another hand cannot substitute. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "material-77392",
+          "text": "Carry the severed hand of mackama",
+          "kind": "carried_item",
+          "item_vnums": [
+            77392
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Mackama at forest 77375 carries his severed hand. Native Jandar requires all three different hands together, not three copies of one kind. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77319,
+              "completion_key": "give=I:77373,I:77385,I:77392;receive=I:77329,I:77340,I:77384;disappear=1"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The selected NPC departs after acceptance; actual retirement and renewed access need qualification."
+        }
+      ]
+    },
+    {
+      "id": "old-logger",
+      "title": "Free the old logger",
+      "category": "story",
+      "summary": "Offer one sharpened metal shard to this captive, initially placed at 77381, for cut bindings and that NPC’s narrated departure. Each captive is an independent accepted exchange; one shard or one receipt does not complete the other rescues.",
+      "contracts": [
+        {
+          "giver_vnum": 77324,
+          "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77326",
+          "text": "Carry a shard of sharpened metal",
+          "kind": "carried_item",
+          "item_vnums": [
+            77326
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Legitimate sharpened shard stock is hidden inside garbage at 77360 and the trapped weapon pile at 77457, with a nomadic merchant source at 77432. The inaccessible 77465 stock-check room is not a player supply route. Each rescue consumes one actual shard. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77324,
+              "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The selected NPC departs after acceptance; actual retirement and renewed access need qualification."
+        }
+      ]
+    },
+    {
+      "id": "halfling-blade",
+      "title": "Halfling: unresolved blade versus drink request",
+      "category": "story",
+      "summary": "The current exact recipe consumes the dark blade of Armageddon for fifty platinum. The acceptance caption thanks you for a drink, and the halfling is unplaced. This records the existing contract honestly while the intended request awaits builder review.",
+      "contracts": [
+        {
+          "giver_vnum": 77325,
+          "completion_key": "give=I:77331;receive=C:50000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77331",
+          "text": "Carry a dark blade of armageddon",
+          "kind": "carried_item",
+          "item_vnums": [
+            77331
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact required prototype is the dark blade of Armageddon, equipped by Alboa at 77382. The drink caption conflicts with this recipe and the halfling has no local reset. Intended drink/source needs builder review; normal Desolate ale does not substitute. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77325,
+              "completion_key": "give=I:77331;receive=C:50000;disappear=0"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The native exchange does not retire the recipient."
+        }
+      ]
+    },
+    {
+      "id": "minotaur-chain",
+      "title": "Minotaur: exchange the monkey’s neckchain",
+      "category": "story",
+      "summary": "Offer the monkey’s exact bronze neckchain for a bronze chest key and the minotaur’s departure. Take the chain out before handing the whole monkey to the hunter. Chest access is guidance, not an additional accepted quest.",
+      "contracts": [
+        {
+          "giver_vnum": 77327,
+          "completion_key": "give=I:77316;receive=I:77311;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77316",
+          "text": "Carry a silver neck chain",
+          "kind": "carried_item",
+          "item_vnums": [
+            77316
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The neckchain is inside the lost-monkey container at bear den 77394. Remove it before offering the whole monkey to the hunter, since consuming that container can consume its contents. The chain is hidden and must be obtainable under existing visibility rules. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77327,
+              "completion_key": "give=I:77316;receive=I:77311;disappear=1"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The selected NPC departs after acceptance; actual retirement and renewed access need qualification."
+        }
+      ]
+    },
+    {
+      "id": "hunter-monkey",
+      "title": "Hunter: return the lost monkey",
+      "category": "story",
+      "summary": "Return the exact lost-monkey container for a mandolin and fifteen platinum. The hunter remains after this exchange, but his separate shard rescue retires him. Return the monkey first if you want both exchanges with that instance.",
+      "contracts": [
+        {
+          "giver_vnum": 77338,
+          "completion_key": "give=I:77315;receive=C:15000,I:77370;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77315",
+          "text": "Carry a sad little monkey",
+          "kind": "carried_item",
+          "item_vnums": [
+            77315
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The lost monkey is a closed, takeable container placed at bear den 77394, not an NPC escort or animal corpse. Remove its hidden neckchain first if you want to retain the minotaur proof. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77338,
+              "completion_key": "give=I:77315;receive=C:15000,I:77370;disappear=0"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The native exchange does not retire the recipient."
+        }
+      ]
+    },
+    {
+      "id": "monkey-hunter",
+      "title": "Free the monkey hunter",
+      "category": "story",
+      "summary": "Offer one sharpened metal shard to this captive, initially placed at 77342, for cut bindings and that NPC’s narrated departure. Each captive is an independent accepted exchange; one shard or one receipt does not complete the other rescues.",
+      "contracts": [
+        {
+          "giver_vnum": 77338,
+          "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-85",
+          "text": "Optional earlier route: return the hunter’s monkey",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77338,
+              "completion_key": "give=I:77315;receive=C:15000,I:77370;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal earlier exchange history. Supplied exact material also fits without this record. History does not restore consumed or lost items and does not create a required personal rescue gate."
+        },
+        {
+          "id": "material-77326",
+          "text": "Carry a shard of sharpened metal",
+          "kind": "carried_item",
+          "item_vnums": [
+            77326
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Legitimate sharpened shard stock is hidden inside garbage at 77360 and the trapped weapon pile at 77457, with a nomadic merchant source at 77432. The inaccessible 77465 stock-check room is not a player supply route. Each rescue consumes one actual shard. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77338,
+              "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The selected NPC departs after acceptance; actual retirement and renewed access need qualification."
+        }
+      ]
+    },
+    {
+      "id": "driver-wheel",
+      "title": "Driver: unresolved repaired wheel delivery",
+      "category": "story",
+      "summary": "Offer repaired wheel 77352 for a brass token and the driver’s departure. No producer of that exact wheel or local driver placement is identified; normal Desolate repair code and another wheel prototype do not make this route available.",
+      "contracts": [
+        {
+          "giver_vnum": 77348,
+          "completion_key": "give=I:77352;receive=I:77353;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77352",
+          "text": "Carry a repaired wheel",
+          "kind": "carried_item",
+          "item_vnums": [
+            77352
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "No repaired-wheel producer or local placement is identified. Scotson is placed but has no local repair recipe. Broken wheel 77332 and normal Desolate repaired wheel 22251 do not substitute. The driver is also unplaced; builder qualification is required. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77348,
+              "completion_key": "give=I:77352;receive=I:77353;disappear=1"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The selected NPC departs after acceptance; actual retirement and renewed access need qualification."
+        }
+      ]
+    },
+    {
+      "id": "beregan-eight-bindings",
+      "title": "Beregan: collect eight cut bindings",
+      "category": "story",
+      "summary": "Offer eight actual bindings together for the forest-goddess cloak and Beregan’s departure. Optional personal rescue history explains one route; supplied bindings fit without having personally freed each citizen. This item exchange does not implement army defeat or zone restoration.",
+      "contracts": [
+        {
+          "giver_vnum": 77350,
+          "completion_key": "give=I:77345,I:77345,I:77345,I:77345,I:77345,I:77345,I:77345,I:77345;receive=I:77389;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-2",
+          "text": "Free the loud Storm Port orc",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77311,
+              "completion_key": "give=I:77326;receive=E:30000,I:77345;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal earlier exchange history. Supplied exact material also fits without this record. History does not restore consumed or lost items and does not create a required personal rescue gate."
+        },
+        {
+          "id": "earlier-13",
+          "text": "Free the captive goblin",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77312,
+              "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal earlier exchange history. Supplied exact material also fits without this record. History does not restore consumed or lost items and does not create a required personal rescue gate."
+        },
+        {
+          "id": "earlier-23",
+          "text": "Free the Shady Grove orc",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77313,
+              "completion_key": "give=I:77326;receive=E:10000,I:77345;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal earlier exchange history. Supplied exact material also fits without this record. History does not restore consumed or lost items and does not create a required personal rescue gate."
+        },
+        {
+          "id": "earlier-53",
+          "text": "Free the old logger",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77324,
+              "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal earlier exchange history. Supplied exact material also fits without this record. History does not restore consumed or lost items and does not create a required personal rescue gate."
+        },
+        {
+          "id": "earlier-93",
+          "text": "Free the monkey hunter",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77338,
+              "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal earlier exchange history. Supplied exact material also fits without this record. History does not restore consumed or lost items and does not create a required personal rescue gate."
+        },
+        {
+          "id": "earlier-148",
+          "text": "Free the Pinehollow logger",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77370,
+              "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal earlier exchange history. Supplied exact material also fits without this record. History does not restore consumed or lost items and does not create a required personal rescue gate."
+        },
+        {
+          "id": "earlier-174",
+          "text": "Free the monk",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77385,
+              "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal earlier exchange history. Supplied exact material also fits without this record. History does not restore consumed or lost items and does not create a required personal rescue gate."
+        },
+        {
+          "id": "earlier-185",
+          "text": "Free the cleric",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77386,
+              "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Optional personal earlier exchange history. Supplied exact material also fits without this record. History does not restore consumed or lost items and does not create a required personal rescue gate."
+        },
+        {
+          "id": "material-77345",
+          "text": "Carry eight cut leather bindings",
+          "kind": "carried_item",
+          "item_vnums": [
+            77345
+          ],
+          "count": 8,
+          "optional": true,
+          "hint": "Eight actual loose cut-bindings item roots are needed together. The eight captive exchanges can produce them; supplied matching bindings also fit. Own rescue history cannot replace missing, spent or gifted bindings. The TWOHANDS flag is not TRANSIENT. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77350,
+              "completion_key": "give=I:77345,I:77345,I:77345,I:77345,I:77345,I:77345,I:77345,I:77345;receive=I:77389;disappear=1"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The selected NPC departs after acceptance; actual retirement and renewed access need qualification."
+        }
+      ]
+    },
+    {
+      "id": "delegate-badge",
+      "title": "Delegate: deliver the Armageddon badge",
+      "category": "story",
+      "summary": "Offer the scout’s exact Armageddon badge for a purple ring. The delegate stays. A matching supplied badge fits without personal scout kill or a normal Desolate receipt.",
+      "contracts": [
+        {
+          "giver_vnum": 77365,
+          "completion_key": "give=I:77317;receive=I:77387;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77317",
+          "text": "Carry the badge of armageddon",
+          "kind": "carried_item",
+          "item_vnums": [
+            77317
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact badge is equipped by an Armageddon scout at 77352 in slot 24. It does not require a personal kill or normal Desolate exchange record. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77365,
+              "completion_key": "give=I:77317;receive=I:77387;disappear=0"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The native exchange does not retire the recipient."
+        }
+      ]
+    },
+    {
+      "id": "pinehollow-logger",
+      "title": "Free the Pinehollow logger",
+      "category": "story",
+      "summary": "Offer one sharpened metal shard to this captive, initially placed at 77381, for cut bindings and that NPC’s narrated departure. Each captive is an independent accepted exchange; one shard or one receipt does not complete the other rescues.",
+      "contracts": [
+        {
+          "giver_vnum": 77370,
+          "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77326",
+          "text": "Carry a shard of sharpened metal",
+          "kind": "carried_item",
+          "item_vnums": [
+            77326
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Legitimate sharpened shard stock is hidden inside garbage at 77360 and the trapped weapon pile at 77457, with a nomadic merchant source at 77432. The inaccessible 77465 stock-check room is not a player supply route. Each rescue consumes one actual shard. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77370,
+              "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The selected NPC departs after acceptance; actual retirement and renewed access need qualification."
+        }
+      ]
+    },
+    {
+      "id": "merchant-potion",
+      "title": "Merchant: guarded potion purchase",
+      "category": "service",
+      "summary": "A travelling merchant asks ten platinum for a deep blue potion and stays. He is unplaced, and coin-only offering is refused under active accounting. This purchase is a service with no story achievement or daily credit; nomadic shop stock is a separate supply route.",
+      "contracts": [
+        {
+          "giver_vnum": 77380,
+          "completion_key": "give=C:10000;receive=I:77356;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "accepted-exchange",
+          "text": "Record the guarded purchase",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77380,
+              "completion_key": "give=C:10000;receive=I:77356;disappear=0"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Coin-only offering is unavailable under active accounting; purchase earns no story or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "dog-bones",
+      "title": "Dog: trade stinky bones for the collar",
+      "category": "story",
+      "summary": "Offer the exact stinky bones for the platinum collar. The dog stays. No personal animal kill, corpse recovery or carving requirement exists in this native exchange.",
+      "contracts": [
+        {
+          "giver_vnum": 77383,
+          "completion_key": "give=I:77312;receive=I:77351;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77312",
+          "text": "Carry some stinky meat bones",
+          "kind": "carried_item",
+          "item_vnums": [
+            77312
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The stinky bones are hidden inside the garbage container at 77360. They have NORENT, with existing durability/recovery qualification still required. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77383,
+              "completion_key": "give=I:77312;receive=I:77351;disappear=0"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The native exchange does not retire the recipient."
+        }
+      ]
+    },
+    {
+      "id": "monk",
+      "title": "Free the monk",
+      "category": "story",
+      "summary": "Offer one sharpened metal shard to this captive, initially placed at 77435, for cut bindings and that NPC’s narrated departure. Each captive is an independent accepted exchange; one shard or one receipt does not complete the other rescues.",
+      "contracts": [
+        {
+          "giver_vnum": 77385,
+          "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77326",
+          "text": "Carry a shard of sharpened metal",
+          "kind": "carried_item",
+          "item_vnums": [
+            77326
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Legitimate sharpened shard stock is hidden inside garbage at 77360 and the trapped weapon pile at 77457, with a nomadic merchant source at 77432. The inaccessible 77465 stock-check room is not a player supply route. Each rescue consumes one actual shard. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77385,
+              "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The selected NPC departs after acceptance; actual retirement and renewed access need qualification."
+        }
+      ]
+    },
+    {
+      "id": "cleric",
+      "title": "Free the cleric",
+      "category": "story",
+      "summary": "Offer one sharpened metal shard to this captive, initially placed at 77435, for cut bindings and that NPC’s narrated departure. Each captive is an independent accepted exchange; one shard or one receipt does not complete the other rescues.",
+      "contracts": [
+        {
+          "giver_vnum": 77386,
+          "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-77326",
+          "text": "Carry a shard of sharpened metal",
+          "kind": "carried_item",
+          "item_vnums": [
+            77326
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Legitimate sharpened shard stock is hidden inside garbage at 77360 and the trapped weapon pile at 77457, with a nomadic merchant source at 77432. The inaccessible 77465 stock-check room is not a player supply route. Each rescue consumes one actual shard. Carry actual loose material; held, worn or nested copies do not satisfy this check. Present possession does not establish source acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 77386,
+              "completion_key": "give=I:77326;receive=I:77345;disappear=1"
+            }
+          ],
+          "hint": "Only the settled exact native exchange records this outcome. Present materials, narration, current rewards or another player’s history do not complete it. Supplied matching material fits without personal source or kill history. The selected NPC departs after acceptance; actual retirement and renewed access need qualification."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

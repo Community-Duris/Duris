@@ -181,8 +181,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 109 &&
-				tracker.summary_for(7, 42).total == 1583,
+		require(catalog.story_mappings.size() == 110 &&
+				tracker.summary_for(7, 42).total == 1582,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7549,6 +7549,136 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &beregan = story_for("desolateinv", "beregan-eight-bindings");
+			const auto &jandar = story_for("desolateinv", "jandar-three-hands");
+			const auto &monkey = story_for("desolateinv", "hunter-monkey");
+			const auto &hunter = story_for("desolateinv", "monkey-hunter");
+			const auto &chain = story_for("desolateinv", "minotaur-chain");
+			const auto &merchant = story_for("desolateinv", "merchant-potion");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 773, 77302, 100, "arrival") ==
+					result::applied,
+				"Invaded Desolate discovery failed");
+			for (const auto &entry : catalog.story_mappings)
+				if (entry.source_area == "desolateinv")
+					for (const auto &contact : entry.contacts)
+						require(journey.meet_npc(7, 42, contact.mob_vnum,
+									 77302,
+									 102) == result::applied,
+							"Invaded Desolate projected contact failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Invaded Desolate section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[77345] = 7;
+			supplies.carried[77315] = 1;
+			supplies.carried[77326] = 1;
+			supplies.carried[77373] = 3;
+			supplies.carried[77392] = 1;
+			supplies.equipped[18] = 77385;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 773, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(beregan).find("[Missing now] " + beregan.steps[8].text) !=
+					std::string::npos,
+				"Seven bindings satisfied eight-root bundle");
+			require(section(chain).find("[Missing now] " + chain.steps[0].text) !=
+					std::string::npos,
+				"Monkey implied loose nested chain");
+			require(section(jandar).find("[Missing now] " + jandar.steps[1].text) !=
+					std::string::npos,
+				"Duplicate hands or worn Alboa hand replaced exact loose bundle");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 773).completed == 0 &&
+					journey.progress_for_zone(7, 42, 773).total == 16,
+				"Current supplies fabricated rescues or counted purchase achievement");
+			supplies.carried[77345] = 8;
+			supplies.carried[77316] = 1;
+			supplies.carried[77385] = 1;
+			supplies.equipped.clear();
+			journal = journey.render_journal(7, 42, 773, 10, 1, 108, false, false,
+							 &supplies);
+			require(section(beregan).find("[Ready now] " + beregan.steps[8].text) !=
+						std::string::npos &&
+					section(beregan).find("[Pending] " +
+							      beregan.steps[0].text) !=
+						std::string::npos,
+				"Supplied bindings needed or fabricated own rescues");
+			require(section(chain).find("[Ready now] " + chain.steps[0].text) !=
+					std::string::npos,
+				"Loose supplied chain did not fit");
+			for (size_t i = 0; i < 3; ++i)
+				require(section(jandar).find("[Ready now] " +
+							     jandar.steps[i].text) !=
+						std::string::npos,
+					"Three different loose hands did not fit");
+			service supplied(catalog);
+			require(supplied.discover_zone(7, 42, 773, 77302, 100, "arrival") ==
+					result::applied,
+				"Supplied-binding discovery failed");
+			record(supplied, beregan.contracts.front(), "desolateinv-supplied-bindings",
+			       773, 77421);
+			require(supplied.progress_for_zone(7, 42, 773).completed == 1 &&
+					supplied.evidence_for(hunter.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Supplied binding acceptance required or fabricated own rescue");
+			// Synthetic receipts test projection, not native offer/retirement/source/phase admission.
+			for (size_t i = 0; i < 8; ++i)
+			{
+				const auto tx = "desolateinv-rescue-" + std::to_string(i);
+				record(journey, beregan.steps[i].contracts.front(), tx.c_str(), 773,
+				       77302);
+			}
+			supplies.carried.erase(77345);
+			journal = journey.render_journal(7, 42, 773, 10, 1, 115, false, false,
+							 &supplies);
+			require(section(beregan).find("[Missing now] " + beregan.steps[8].text) !=
+					std::string::npos,
+				"Historical rescues restored missing bindings");
+			for (size_t i = 0; i < 8; ++i)
+				require(section(beregan).find("[Recorded] " +
+							      beregan.steps[i].text) !=
+						std::string::npos,
+					"Independent rescue history lost");
+			require(journey.evidence_for(monkey.contracts.front(), 2)
+						.successful_attempts == 0,
+				"Hunter rescue fabricated monkey-return outcome");
+			for (const auto &mapping : catalog.story_mappings)
+				if (mapping.source_area == "desolateinv")
+					for (const auto &entry : mapping.stories)
+					{
+						if (journey.evidence_for(entry.contracts.front(), 2)
+							    .successful_attempts)
+							continue;
+						const auto tx = "desolateinv-" + entry.id;
+						record(journey, entry.contracts.front(), tx.c_str(),
+						       773, 77302);
+					}
+			require(journey.progress_for_zone(7, 42, 773).completed == 16 &&
+					journey.evidence_for(merchant.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Service earned achievement or independent outcomes lost");
+			const auto replay_tx = "desolateinv-" + beregan.id;
+			auto replay = completion(beregan.contracts.front(), replay_tx.c_str(), 120);
+			replay.transaction.zone_number = 773;
+			replay.transaction.room_vnum = 77302;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Invaded Desolate replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 773).completed == 16 &&
+					!recovered.has_discovered(7, 42, 222) &&
+					!recovered.has_discovered(7, 42, 200000),
+				"Invaded Desolate recovery lost outcomes or fabricated normal/Surface discovery");
+		}
 		{
 			const auto &tamsil = story_for("undermountain", "tamsil-grate-key");
 			const auto &durnan = story_for("undermountain", "durnan-tamsil-note");

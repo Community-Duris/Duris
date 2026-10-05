@@ -3141,3 +3141,22 @@ visibility, reading, provenance or rescue facts require admitted semantic
 evidence before credit. No controller reactivation, schema/runtime extension or
 native repair ships. Every new credit requires active, ready accounting; frozen
 recovery separate. Preserve Fields deliberate escape hotfix and replacement plan.
+
+
+## Desolate Under Fire: current bundles and invasion episodes
+
+The [dossier](zone-stories/DESOLATE_UNDER_FIRE.md) uses existing schema3 current material and optional accepted history. Eight rescues differ from Beregan’s eight current roots: supplied bindings fit without eight own records. Three hands imply no own kill. Monkey container possession implies no escort/recovery; remove nested chain before consumption. Coin-only purchase is a guarded service. No runtime/schema expansion is needed for these journal rows.
+
+| ID | Finding and fair plan before implementation |
+| --- | --- |
+| **ZSQ-DESOLATEINV-SOURCE-RENEWAL** | Qualify source UID/root/custody, hidden stock, gifts, caps/conditions, mode2 renewal and active item-reset refusal. Repeat lines are not free stock. Keep no-exit shard-check room inaccessible. Sixteen potential dailies need legitimate supply/renewed actors. |
+| **ZSQ-DESOLATEINV-CAPTIVE-BINDING-ALLOCATION** | Eight independent rescues consume one shard each; Beregan consumes eight distinct current roots, not eight types or eight own rescue records. Qualify exact count/duplicate rejection, seven-versus-eight, gifts/lost/spent bindings, concurrency/retry/rollback/output. A personal rescue campaign needs separate admitted objectives and actor/group policy. |
+| **ZSQ-DESOLATEINV-CONTAINER-CONSUMPTION** | Closed lost-monkey container holds hidden neckchain. Remove chain before consuming monkey if keeping minotaur route. Qualify OPEN/SEARCH, nested destruction/custody/gift/rollback/key chest access. Container/reward does not prove escort/first recovery. No flag/type/pickup change. |
+| **ZSQ-DESOLATEINV-INVASION-PHASE** | Normal Desolate random_exit22291 redirects22200 north/77302 south, closes former zone and opens773. Initial CLOSED, source20% and callback100% differ. Legacy surf217609 has two differing sources outside current registry. Verify production source choice/current entrance/status/accepted episode/route generation/return before topology repair. Discovery and hand-in narration do not settle restoration. |
+| **ZSQ-DESOLATEINV-RECIPIENT-RETIREMENT** | D retires eight captives/minotaur/driver/Jandar/Beregan. Monkey return before hunter rescue preserves both. Qualify selected NPC instance/epoch, delayed settlement/reset/removal, reconnect/replay, actor/listener credit and restock. Native target reselection repair needs separate proof/fix/news. |
+| **ZSQ-DESOLATEINV-UNPLACED-REPAIR-AND-DRINK** | Halfling/driver/quest merchant unplaced. Halfling consumes blade despite drink caption; repaired wheel has no producer; placed Scotson has no repair recipe. Builder chooses exact availability/drink/wheel/fee/reward semantics or retirement. Do not copy normal recipe, substitute IDs, spawn givers or enable unplaced switches. Changes need contract/receipt versioning and separate fixes. |
+| **ZSQ-DESOLATEINV-TRIAL-ACCESS** | PUSH ring/secret controls/fixed portals/falls/guardians/epic Rune differ. New optional control/access/trial facts need actor/UID/door/room/direction/prior-accepted state/phase/output and accounting/recovery. No victory from loot or pre-open route. Unplaced rock targets lack exits. Preserve pending intent; only two proven direction words repaired. |
+| **ZSQ-DESOLATEINV-SERVICE-AND-CLUE-INTENT** | Coin-only purchase/paid lockers guarded; shop needs live stock/payment/refund proof. Inn assignment targets tunnel77442, closed inn prose77422: builder intent before relocation/reopening. Hands/heads, medal/tankard and cloak/earring are stale captions, not authority to change item kinds. Separate exact prose repairs after intent; transaction extension only deliberately designed. |
+
+
+New first-source/source-versus-gift/access/rescue/phase/victory facts need admitted actor/UID/instance/state/output, accounting/recovery/version evidence. Producer/placement/drink/inn/control changes need intentional design and separate fixes/news. Every new credit requires active, ready accounting; frozen recovery separate.

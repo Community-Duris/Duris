@@ -2256,3 +2256,10 @@ Universal access/source/learned facts need selected UID/door/actor/state/output,
 accounting admission and recovery proof; clues and pre-open routes stay guidance.
 Actual repairs need separate named fix commits and prominent before/after news.
 All new credit requires active, ready accounting; frozen recovery separate.
+
+
+## Desolate Under Fire: eight roots do not imply eight own rescues
+
+The [sidecar](../../areas/story/desolateinv.story.json) and [dossier](../design/zone-stories/DESOLATE_UNDER_FIRE.md) explain eight independent captive outcomes and Beregan’s eight-current-bindings requirement. Optional own rescue history never supplies spent items or forces personal history onto an exact hand-in. Gifted matching bindings fit; seven roots do not. Monkey is a container with nested chain: remove chain before consuming monkey, and return monkey before hunter rescue retires that instance. Do not invent escort/CARVE/first-source/own-kill prerequisites from narrative.
+
+Classify guarded coin-only purchases as services and cover every contract. Missing givers/producers and drink/blade mismatch stay explicit builder work. A live invasion needs an accepted phase episode/route generation, not normal-zone discovery or triumphant hand-in text. Verify source choice when legacy worlds disagree. Clearing BLOCKED differs from SECRET/CLOSED/traversal/trial victory. Existing schema3 guidance is enough; new facts need admitted actor/UID/instance/state/output and accounting/recovery proof. Two direction words ship in a separate fix with original-fails/repaired-passes evidence; other mechanics remain builder decisions. Active, ready accounting is mandatory.
