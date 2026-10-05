@@ -34,7 +34,7 @@ SOURCES = (
     "src/player/player_save_worker.c", "src/player/player_revision_state.c",
     "src/player/player_save_pipeline.c", "src/account/character_identity.c",
     "src/economy/item_transfer_accounting.c", "src/economy/economic_accounting_intent.c",
-    "src/economy/economic_accounting_plan.c", "src/economy/economic_accounting_types.c",
+    "src/economy/economic_accounting_plan.c", "src/economy/economic_source_event.c", "src/economy/economic_accounting_types.c",
     "src/persistence/sql_room_item_payload.c",
 )
 

@@ -2,6 +2,7 @@
 #define DURIS_ECONOMIC_ACCOUNTING_PLAN_H
 
 #include "economy/economic_accounting_types.h"
+#include "economy/economic_source_event.h"
 
 #include <optional>
 #include <vector>
@@ -62,45 +63,8 @@ enum class economic_actor_kind : uint8_t
 	domain = 1,
 	operator_action = 2
 };
-enum class economic_source_kind : uint16_t
-{
-	quest_completion = 1,
-	npc_generation = 2,
-	starter_grant = 3,
-	boon = 4,
-	achievement = 5,
-	gambling_round = 6,
-	world_generation = 7,
-	crafting = 8,
-	administrator = 9,
-	baseline = 10,
-	legacy_import = 11,
-	shop_stock = 12,
-	auction = 13,
-	corpse = 14,
-	correction = 15,
-	lifecycle = 16,
-	service = 17,
-	item_action = 18,
-	quest_action = 19,
-	spell_creation = 20,
-	spell_consumption = 21,
-	intentional_destruction = 22,
-	loot = 23,
-};
-
-constexpr size_t ECONOMIC_SOURCE_EVENT_BYTES = 48;
 constexpr size_t ECONOMIC_PLAN_HEADER_BYTES = 256;
 using economic_digest = std::array<uint8_t, 32>;
-
-struct economic_source_event
-{
-	economic_source_kind kind = {};
-	critical_operation_id source = {};
-	critical_operation_id generation = {};
-	uint64_t sequence = 0;
-	uint32_t slot = 0;
-};
 
 struct economic_operation_metadata
 {
@@ -138,13 +102,6 @@ struct economic_accounting_plan
 // Shared structural metadata check; this does not grant a writer capability.
 economic_accounting_error
 economic_operation_metadata_validate(const economic_operation_metadata &metadata);
-
-bool economic_source_event_valid(const economic_source_event &event);
-economic_accounting_error
-economic_source_event_encode(const economic_source_event &event,
-			     std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> *encoded);
-economic_accounting_error economic_source_event_decode(std::span<const uint8_t> encoded,
-						       economic_source_event *event);
 
 // Canonicalize references without netting audit legs or discarding item events.
 // Failure leaves the caller's plan/output unchanged. Structural validation does

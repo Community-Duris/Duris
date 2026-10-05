@@ -41,7 +41,7 @@ compiler="${CXX:-g++-12}"
     src/economy/item_transfer_accounting.c \
     src/economy/coin_transfer_accounting.c \
     src/economy/economic_accounting_types.c \
-    src/economy/economic_accounting_plan.c \
+    src/economy/economic_accounting_plan.c src/economy/economic_source_event.c \
     src/economy/economic_accounting_intent.c src/economy/economic_command_admission.c \
     src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
     src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \

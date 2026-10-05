@@ -508,7 +508,7 @@ with tempfile.TemporaryDirectory(prefix="duris-publication-retention-") as tempo
             "-fno-pie", "-no-pie",
             rel("item/item_movement_transaction.c"), rel("item/item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"), rel("chaos_pouch_publication.c"), rel("player_snapshot_codec.c"),
             rel("item_transfer_accounting.c"), rel("economic_accounting_types.c"),
-            rel("economic_accounting_plan.c"), rel("economic_accounting_intent.c"),
+            rel("economic_accounting_plan.c"), rel("economic_source_event.c"), rel("economic_accounting_intent.c"),
             rel("critical_command.c"), rel("persistence/critical_command_journal.c"),
             rel("persistence/critical_command_coordinator.c"),
             "-Wl,--gc-sections", "-lz", "-lcrypto", "-o", str(binary),

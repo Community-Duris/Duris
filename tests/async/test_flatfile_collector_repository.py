@@ -33,7 +33,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-collector-") as temporary:
         rel("flatfile_accounting_store.c"),
         rel("flatfile_store.c"),
         rel("economic_accounting_types.c"),
-        rel("economic_accounting_plan.c"),
+        rel("economic_accounting_plan.c"), rel("economic_source_event.c"),
         rel("economic_accounting_intent.c"),
         rel("collector_accounting.c"),
         rel("auction_listing_accounting.c"),

@@ -18,7 +18,7 @@ with tempfile.TemporaryDirectory(prefix='run-',dir=work) as temporary:
     command+=shlex.split(subprocess.check_output(['mysql_config','--cflags'],text=True))
     command += [str(ROOT/name) for name in (
         'tests/async/economic_accounting_sql_gate_test.cpp',
-        'src/persistence/critical_command.c','src/persistence/economic_accounting_repository.c','src/persistence/economic_sql_bank_transaction.c','src/persistence/economic_sql_collector_transaction.c','src/economy/economic_currency_adapter.c','src/economy/economic_accounting_types.c','src/economy/economic_accounting_plan.c','src/economy/economic_accounting_intent.c','src/persistence/economic_sql_lifecycle_guard.c','src/persistence/critical_command_repository.c',
+        'src/persistence/critical_command.c','src/persistence/economic_accounting_repository.c','src/persistence/economic_sql_bank_transaction.c','src/persistence/economic_sql_collector_transaction.c','src/economy/economic_currency_adapter.c','src/economy/economic_accounting_types.c','src/economy/economic_accounting_plan.c', 'src/economy/economic_source_event.c','src/economy/economic_accounting_intent.c','src/persistence/economic_sql_lifecycle_guard.c','src/persistence/critical_command_repository.c',
         'src/economy/currency_command.c','src/item/item_transfer_command.c', "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",'src/world/epic_command.c',
         'src/economy/shop_trade_accounting.c','src/economy/shop_trade_command.c',
         'src/item/item_transfer_repository.c','src/persistence/sql_room_item_payload.c','src/player/player_snapshot_codec.c',

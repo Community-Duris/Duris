@@ -157,7 +157,7 @@ read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
     src/economy/economic_baseline_adapter.c \
     src/economy/economic_baseline_codec.c \
     src/economy/economic_accounting_intent.c \
-    src/economy/economic_accounting_plan.c \
+    src/economy/economic_accounting_plan.c src/economy/economic_source_event.c \
     src/economy/economic_accounting_types.c \
     src/economy/economic_gameplay_authority.c \
     src/persistence/critical_command.c \
