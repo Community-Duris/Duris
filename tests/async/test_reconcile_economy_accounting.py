@@ -135,6 +135,36 @@ def linked_child_snapshot():
     return snapshot
 
 
+def two_child_snapshot():
+    snapshot = linked_child_snapshot()
+    snapshot["operations"][0]["child_count"] = 2
+    snapshot["children"].append({"operation_id": OP, "child_index": 2, "parent_index": 1,
+                                 "child_operation_id": "55" * 16})
+    snapshot["postings"][1]["child_index"] = 2
+    return snapshot
+
+
+def renumbered_snapshot(table, kind):
+    snapshot = two_child_snapshot()
+    field = {"effects": "account_index", "postings": "line_index",
+             "children": "child_index", "item_references": "event_index"}[table]
+    selected = snapshot[table] if kind == "offset" else snapshot[table][-1:]
+    shift = 2 if kind == "offset" else 1
+    mapping = {row[field]: row[field] + shift for row in selected}
+    for row in selected:
+        row[field] = mapping[row[field]]
+    if table == "effects":
+        for row in snapshot["postings"]:
+            row["account_index"] = mapping.get(row["account_index"], row["account_index"])
+    if table == "children":
+        for row in snapshot[table]:
+            row["parent_index"] = mapping.get(row["parent_index"], row["parent_index"])
+        for name in ("postings", "item_references"):
+            for row in snapshot[name]:
+                row["child_index"] = mapping.get(row["child_index"], row["child_index"])
+    return snapshot
+
+
 def set_operation_source(snapshot, kind):
     source = source_identity(kind=kind)
     snapshot["operations"][0]["source_event"] = source
@@ -531,6 +561,69 @@ class ReconciliationTests(unittest.TestCase):
                                     self.assertNotIn("private-index-alias", result.stderr)
                                     self.assertNotIn("Traceback", result.stderr)
                                     self.assertEqual(path.read_bytes(), payload)
+
+    def test_evidence_index_sequences_detect_balanced_renumbering(self):
+        for table in ("effects", "postings", "children", "item_references"):
+            for kind in ("gap", "offset"):
+                for limit in (0, 1, 100):
+                    snapshot = renumbered_snapshot(table, kind)
+                    before = copy.deepcopy(snapshot)
+                    with self.subTest(table=table, kind=kind, limit=limit):
+                        report = Reconciler(limit).audit(snapshot)
+                        self.assertEqual(report["exception_counts"], {"evidence_index_mismatch": 1})
+                        self.assertEqual(report["exception_count"], 1)
+                        if limit:
+                            self.assertEqual(report["exceptions"], [{"code": "evidence_index_mismatch",
+                                              "operation_id": OP, "table": table}])
+                        self.assertEqual(snapshot, before)
+
+    def test_dense_sequences_ignore_export_order_and_preserve_legacy_positions(self):
+        for limit in (0, 1, 100):
+            snapshot = two_child_snapshot()
+            for name in ("operations", "effects", "postings", "children", "item_references"):
+                snapshot[name].reverse()
+            snapshot["ownership_events"][0]["event_index"] = 7
+            snapshot["item_references"][0]["legacy_event_index"] = 7
+            before = copy.deepcopy(snapshot)
+            with self.subTest(limit=limit):
+                self.assertEqual(Reconciler(limit).audit(snapshot)["exception_count"], 0)
+                self.assertEqual(snapshot, before)
+
+    def test_sequence_check_retains_existing_cardinality_and_duplicate_findings(self):
+        for limit in (0, 1, 100):
+            snapshot = two_child_snapshot()
+            snapshot["postings"].pop()
+            report = Reconciler(limit).audit(snapshot)
+            self.assertIn("evidence_count_mismatch", report["exception_counts"])
+            self.assertNotIn("evidence_index_mismatch", report["exception_counts"])
+            snapshot = two_child_snapshot()
+            snapshot["postings"].append(dict(snapshot["postings"][0]))
+            report = Reconciler(limit).audit(snapshot)
+            self.assertEqual(report["exception_counts"], {"duplicate_posting": 1})
+
+    def test_index_sequence_cli_failure_is_global_bounded_private_and_read_only(self):
+        with tempfile.TemporaryDirectory(prefix="duris-index-sequence-") as directory:
+            path = Path(directory) / "snapshot.json"
+            for table in ("effects", "postings", "children", "item_references"):
+                for kind in ("gap", "offset"):
+                    snapshot = renumbered_snapshot(table, kind)
+                    snapshot["operations"][0]["personal_alias"] = "private-sequence-alias"
+                    payload = json.dumps(snapshot, sort_keys=True).encode()
+                    path.write_bytes(payload)
+                    for limit in (0, 1, 100):
+                        for name in ("exceptions", "operation"):
+                            command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                       str(path), "--view", name, "--limit", str(limit)]
+                            if name == "operation": command.extend(("--operation-id", "77" * 16))
+                            with self.subTest(table=table, kind=kind, limit=limit, view=name):
+                                result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                                self.assertEqual(result.returncode, 1, result)
+                                self.assertEqual(result.stderr, "")
+                                output = json.loads(result.stdout)
+                                self.assertEqual(output.get("coverage", output)["exception_count"], 1)
+                                self.assertNotIn("private-sequence-alias", result.stdout)
+                                self.assertNotIn("Traceback", result.stdout)
+                                self.assertEqual(path.read_bytes(), payload)
 
     def test_mapping_creation_effect_comparison_scans_evidence_once(self):
         class MeasuredEffects(dict):
@@ -2749,6 +2842,14 @@ def native_stake_sql():
             assert(economic_plan_encode(p,&encoded)==economic_accounting_error::ok);
             economic_accounting_plan decoded;
             assert(economic_plan_decode(encoded,&decoded)==economic_accounting_error::ok);
+            if (step==0) {
+                auto sparse=decoded; sparse.postings[1].event_index=2;
+                assert(economic_plan_validate_structure(sparse)==economic_accounting_error::duplicate_event);
+                auto foreign_account=decoded; foreign_account.postings[1].account_index=2;
+                assert(economic_plan_validate_structure(foreign_account)==economic_accounting_error::invalid_identity);
+                auto foreign_child=decoded; foreign_child.postings[0].child_index=1;
+                assert(economic_plan_validate_structure(foreign_child)==economic_accounting_error::invalid_identity);
+            }
             output(frozen); output(encoded);
             m.original_operation_id=m.operation_id; m.operation_id=id(0x66);
             m.reason=economic_reason::gambling_payout; m.source_event->slot=1;
@@ -2844,6 +2945,7 @@ def native_stake_sql():
         print('NATIVE_STAKE '+mode+' '+json.dumps({'binary':hashlib.sha256(binary.read_bytes()).hexdigest(),
               'encoded':hashlib.sha256(result).hexdigest()},sort_keys=True),flush=True)
     assert outputs[0]==outputs[1]
+    print('NATIVE_INDEX_SEQUENCES modes=2 sparse_postings=2 out_of_range_accounts=2 out_of_range_children=2',flush=True)
     blocks=[]
     payload=outputs[0]
     offset=0
@@ -2916,10 +3018,14 @@ def native_stake_sql():
     index_types_red=os.environ.get('DURIS_PLAN5_INDEX_TYPES_RED')=='1'
     index_types_only=os.environ.get('DURIS_PLAN5_INDEX_TYPES_ONLY')=='1'
     assert not index_types_red or index_types_only
-    assert sum((count_types_only,result_types_only,index_types_only))<=1
+    density_red=os.environ.get('DURIS_PLAN5_INDEX_DENSITY_RED')=='1'
+    density_only=os.environ.get('DURIS_PLAN5_INDEX_DENSITY_ONLY')=='1'
+    assert not density_red or density_only
+    assert sum((count_types_only,result_types_only,index_types_only,density_only))<=1
     count_type_results=[]
     result_type_results=[]
     index_type_results=[]
+    density_results=[]
     projection_results=[]
     with tempfile.TemporaryDirectory(prefix='duris-stake-audit-sql-') as directory:
         base=Path(directory)
@@ -2965,12 +3071,8 @@ def native_stake_sql():
                                               'economic_accounting_coin_posting','economic_accounting_source_claim'):
                                     cursor.execute('SELECT * FROM '+table+' ORDER BY 1,2'); result.append(cursor.fetchall())
                                 return result
-                        captures=0
-                        def audit(terminal,expected=(),prices=False):
-                            nonlocal captures
-                            captures+=1
-                            before=rows(); oracle=stake_snapshot(terminal)
-                            original=copy.deepcopy(oracle)
+                        def read_cut(prices=False):
+                            before=rows()
                             cursor=mock.Mock(wraps=reader.cursor()); connection=mock.Mock(wraps=reader)
                             connection.cursor.return_value=cursor
                             try:
@@ -2985,6 +3087,16 @@ def native_stake_sql():
                             connection.rollback.assert_called_once_with(); cursor.close.assert_called_once_with()
                             assert all(call.args[0].upper().startswith(('SELECT','SET TRANSACTION','START TRANSACTION'))
                                        for call in cursor.execute.call_args_list)
+                            assert rows()==before
+                            return (cut,price_rows,price_coverage) if prices else cut
+                        captures=0
+                        def audit(terminal,expected=(),prices=False):
+                            nonlocal captures
+                            captures+=1
+                            before=rows(); oracle=stake_snapshot(terminal)
+                            original=copy.deepcopy(oracle)
+                            if prices: cut,price_rows,price_coverage=read_cut(True)
+                            else: cut=read_cut()
                             assert rows()==before and oracle==original
                             snapshot=oracle|{k:v for k,v in cut.items() if k not in ('account_origins','item_origins')}
                             if prices:
@@ -2995,6 +3107,66 @@ def native_stake_sql():
                             assert set(report['exception_counts'])==set(expected),report
                             assert snapshot==snapshot_before
                             if captures==1:
+                                if not (count_types_only or result_types_only or index_types_only):
+                                    for table in ('effects','postings'):
+                                        for kind in ('gap','offset'):
+                                            baseline=rows()
+                                            operation=bytes.fromhex(snapshot['operations'][0]['operation_id'])
+                                            source_rows=baseline[4 if table=='effects' else 5]
+                                            field='account_index' if table=='effects' else 'line_index'
+                                            selected=source_rows if kind=='offset' else source_rows[-1:]
+                                            shift=2 if kind=='offset' else 1
+                                            mapping={row[field]:row[field]+shift for row in selected}
+                                            original_postings=baseline[5]
+                                            try:
+                                                with owner.cursor() as fixture:
+                                                    if table=='effects':
+                                                        fixture.execute('DELETE FROM economic_accounting_coin_posting WHERE operation_id=%s',(operation,))
+                                                        for prior,current in mapping.items():
+                                                            fixture.execute('UPDATE economic_accounting_account_effect SET account_index=%s WHERE operation_id=%s AND account_index=%s',
+                                                                            (current,operation,prior))
+                                                    else:
+                                                        for prior,current in mapping.items():
+                                                            fixture.execute('UPDATE economic_accounting_coin_posting SET line_index=%s,event_index=%s WHERE operation_id=%s AND line_index=%s',
+                                                                            (current,current,operation,prior))
+                                                if table=='effects':
+                                                    for row in original_postings:
+                                                        changed=dict(row)
+                                                        changed['account_index']=mapping.get(row['account_index'],row['account_index'])
+                                                        insert('economic_accounting_coin_posting',changed)
+                                                changed_rows=rows()
+                                                density_cut=read_cut()
+                                                altered=oracle|{k:v for k,v in density_cut.items() if k not in ('account_origins','item_origins')}
+                                                payload=json.dumps(altered,sort_keys=True,separators=(',',':')).encode()
+                                                path=work/('density-'+engine+'-'+table+'-'+kind+'.json')
+                                                path.write_bytes(payload)
+                                                altered=json.loads(payload); unchanged=copy.deepcopy(altered)
+                                                wanted={} if density_red else {'evidence_index_mismatch':1}
+                                                for limit in (0,1,100):
+                                                    density_report=Reconciler(limit).audit(altered)
+                                                    assert density_report['exception_counts']==wanted,density_report
+                                                    assert altered==unchanged and rows()==changed_rows
+                                                    for name in ('exceptions','operation'):
+                                                        command=[sys.executable,str(root/'scripts/reconcile_economy_accounting.py'),
+                                                                 str(path),'--view',name,'--limit',str(limit)]
+                                                        if name=='operation': command.extend(('--operation-id','77'*16))
+                                                        result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+                                                        assert result.returncode==(0 if density_red else 1) and not result.stderr,result
+                                                        output=json.loads(result.stdout)
+                                                        assert output.get('coverage',output)['exception_count']==(0 if density_red else 1)
+                                                        assert path.read_bytes()==payload and altered==unchanged and rows()==changed_rows
+                                            finally:
+                                                with owner.cursor() as fixture:
+                                                    fixture.execute('DELETE FROM economic_accounting_coin_posting WHERE operation_id=%s',(operation,))
+                                                    if table=='effects':
+                                                        for prior,current in mapping.items():
+                                                            fixture.execute('UPDATE economic_accounting_account_effect SET account_index=%s WHERE operation_id=%s AND account_index=%s',
+                                                                            (prior,operation,current))
+                                                for row in original_postings: insert('economic_accounting_coin_posting',dict(row))
+                                                assert rows()==baseline and snapshot==snapshot_before
+                                            density_results.append(dict(engine=engine,table=table,kind=kind,
+                                                input_sha256=hashlib.sha256(payload).hexdigest(),api_checks=3,cli_checks=6,
+                                                source_tables_unchanged_during_audit=7,fixture_restored=True,RED=density_red))
                                 def verify_type_cut(table,row_index,field,kind,corrupt,red,label,records):
                                     altered=copy.deepcopy(snapshot)
                                     altered[table][row_index][field]=corrupt
@@ -3159,8 +3331,8 @@ def native_stake_sql():
                                 insert('economic_accounting_coin_posting',fields)
                             insert('economic_accounting_source_claim',dict(lineage=plan[8:24],source_event=plan[104:152],operation_id=op,outcome=1))
                             audit(bool(index))
-                            if count_types_only or result_types_only or index_types_only: break
-                        if count_types_only or result_types_only or index_types_only:
+                            if count_types_only or result_types_only or index_types_only or density_only: break
+                        if count_types_only or result_types_only or index_types_only or density_only:
                             with owner.cursor() as cursor:
                                 cursor.execute('SELECT active_epoch FROM economic_lineage_state')
                                 assert cursor.fetchall()==[{'active_epoch':None}]
@@ -3295,12 +3467,20 @@ def native_stake_sql():
         print(('NATIVE_INDEX_TYPES_RED_ADMITTED ' if index_types_red else 'NATIVE_INDEX_TYPES_REFUSED ')+
               json.dumps({'cuts':len(index_type_results),'api_checks':96,'cli_checks':192,
                           'source_tables_unchanged':7,'engines':2,'inactive':True},sort_keys=True),flush=True)
-    if count_types_only or result_types_only or index_types_only: return
+    if not (count_types_only or result_types_only or index_types_only):
+        (work/'density-results.json').write_text(json.dumps(density_results,indent=2,sort_keys=True)+'\n')
+        assert len(density_results)==8
+        print(('NATIVE_INDEX_DENSITY_RED_ADMITTED ' if density_red else 'NATIVE_INDEX_DENSITY_DETECTED ')+
+              json.dumps({'cuts':8,'api_checks':24,'cli_checks':48,'SQL_read_only_captures':8,
+                          'source_tables_unchanged_during_audit':7,'fixture_restored':True,
+                          'engines':2,'inactive':True},sort_keys=True),flush=True)
+    if count_types_only or result_types_only or index_types_only or density_only: return
     (work/'price-scope-results.json').write_text(json.dumps(projection_results,indent=2,sort_keys=True)+'\n')
     print('NATIVE_PRICE_SCOPE '+json.dumps(projection_results,sort_keys=True),flush=True)
     assert len(projection_results)==16 and all(row['expected']==row['observed'] for row in projection_results)
     print('STAKE_SQL_QUALIFIED '+json.dumps({'engines':2,'native_modes':2,'plans':2,'intents':2,
           'read_only_captures':90,'fault_captures':72,'source_fault_captures':62,'source_kind_fault_captures':44,
+          'index_density_SQL_captures':8,'index_density_fault_captures':8,
           'price_roots':4,'price_epochs':2,'price_captures':8,'price_CLI_cases':24,
           'price_projection_scope_cases':16,
           'original_link_fault_captures':4,'native_original_link_cases':6,
