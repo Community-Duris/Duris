@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 108 &&
+		require(catalog.story_mappings.size() == 109 &&
 				tracker.summary_for(7, 42).total == 1583,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7549,6 +7549,119 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &tamsil = story_for("undermountain", "tamsil-grate-key");
+			const auto &durnan = story_for("undermountain", "durnan-tamsil-note");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 920, 92501, 100, "arrival") ==
+					result::applied,
+				"Undermountain discovery failed");
+			require(journey.render_journal(7, 42, 920, 10, 1, 101, false, false)
+						.find(durnan.title) == std::string::npos,
+				"Undermountain exposed unmet Durnan");
+			for (const auto &[vnum, room] :
+			     { std::pair{ 92043, 92289 }, std::pair{ 92082, 92519 },
+			       std::pair{ 92002, 92042 } })
+				require(journey.meet_npc(7, 42, vnum, room, 102) == result::applied,
+					"Undermountain encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Undermountain section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[92005] = 1;
+			supplies.carried[92018] = 1;
+			supplies.carried[92120] = 1;
+			supplies.equipped[1] = 92133;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 920, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(tamsil).find("[Missing now] " + tamsil.steps[0].text) !=
+					std::string::npos,
+				"Undermountain wrong/held key became loose offering");
+			require(section(durnan).find("[Missing now] " + durnan.steps[1].text) !=
+					std::string::npos,
+				"Undermountain blood note became exact crude note");
+			for (const auto *entry : { &tamsil, &durnan })
+				require(section(*entry).find("[Pending] " +
+							     entry->steps.back().text) !=
+						std::string::npos,
+					"Undermountain clues or reward fabricated exchange");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 920).completed == 0 &&
+					journey.progress_for_zone(7, 42, 920).total == 2,
+				"Undermountain readiness fabricated completion");
+			supplies.equipped.clear();
+			supplies.carried[92133] = 1;
+			supplies.carried[92134] = 1;
+			journal = journey.render_journal(7, 42, 920, 10, 1, 107, false, false,
+							 &supplies);
+			require(section(tamsil).find("[Ready now] " + tamsil.steps[0].text) !=
+						std::string::npos &&
+					section(durnan).find("[Ready now] " +
+							     durnan.steps[1].text) !=
+						std::string::npos,
+				"Undermountain supplied exact materials did not fit");
+			require(section(durnan).find("[Pending] " + durnan.steps[0].text) !=
+					std::string::npos,
+				"Undermountain supplied note fabricated own rescue");
+			service supplied(catalog);
+			require(supplied.discover_zone(7, 42, 920, 92501, 100, "arrival") ==
+					result::applied,
+				"Undermountain supplied-note discovery failed");
+			record(supplied, durnan.contracts.front(), "undermountain-supplied-note",
+			       920, 92042);
+			require(supplied.progress_for_zone(7, 42, 920).completed == 1 &&
+					supplied.evidence_for(tamsil.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Undermountain supplied note required or fabricated own Tamsil exchange");
+			// Synthetic receipts exercise projection, not native access/key break,
+			// hidden source/GET, note reading/writing or NPC retirement.
+			record(journey, tamsil.contracts.front(), "undermountain-tamsil-key", 920,
+			       92519);
+			supplies.carried.erase(92133);
+			supplies.carried.erase(92134);
+			journal = journey.render_journal(7, 42, 920, 10, 1, 115, false, false,
+							 &supplies);
+			require(section(durnan).find("[Recorded] " + durnan.steps[0].text) !=
+						std::string::npos &&
+					section(durnan).find("[Missing now] " +
+							     durnan.steps[1].text) !=
+						std::string::npos,
+				"Undermountain rescue receipt restored missing note");
+			record(journey, durnan.contracts.front(), "undermountain-durnan-note", 920,
+			       92042);
+			journal = journey.render_journal(7, 42, 920, 10, 1, 122, false, false,
+							 &supplies);
+			for (const auto *entry : { &tamsil, &durnan })
+				require(section(*entry).find("[Recorded] " +
+							     entry->steps.back().text) !=
+						std::string::npos,
+					"Undermountain independent accepted outcome lost");
+			auto replay = completion(durnan.contracts.front(),
+						 "undermountain-durnan-note", 120);
+			replay.transaction.zone_number = 920;
+			replay.transaction.room_vnum = 92042;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Undermountain replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 920).completed == 2 &&
+					recovered.progress_for_zone(7, 42, 920).total == 2 &&
+					!recovered.has_discovered(7, 42, 740) &&
+					!recovered.has_discovered(7, 42, 44),
+				"Undermountain recovery lost exchanges or invented neighbouring discovery");
+			for (const auto *entry : { &tamsil, &durnan })
+				require(recovered.evidence_for(entry->contracts.front(), 2)
+							.successful_attempts == 1,
+					"Undermountain exact receipt lost in recovery");
+		}
 		{
 			const auto &evidence = story_for("nomads", "septimus-planar-evidence");
 			const auto &trophies = story_for("nomads", "septimus-heads-and-collateral");

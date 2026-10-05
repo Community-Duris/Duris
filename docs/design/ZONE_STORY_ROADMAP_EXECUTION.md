@@ -164,9 +164,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 88 | The Orcish Slave Camp | [Comprehensive dossier](zone-stories/THE_ORCISH_SLAVE_CAMP.md): all 7 blocks/14 rooms/31 mobiles/18 objects/64 resets and shared key/quest/retirement/food/boundary closure | Two cards/three classified recipes/one typed-food exclusion/five contacts/13 aliases/four optional checks; key→coins+steak, exact steak→mace+XP+tragic departure | No native repair. Source/renewal, fragile-key access/allocation, type admission, selected recipient retirement, steak-type intent and clues remain builder work; preserve Fields hotfix |
 | 89 | The Underground Lava Caves | [Comprehensive dossier](zone-stories/THE_UNDERGROUND_LAVA_CAVES.md): all6 blocks/142 rooms/48 mobiles/33 objects/163 resets and shared coin/reset/key/control/fire/wandering/boundary closure | One card/two classified recipes/one coin-purchase exclusion/seven contacts/six aliases/three optional checks; supplied horns→wrist chain+XP | No native repair. Sole producer/renewal, coin debit, moving recipient, access/fire evidence, unusual onyx-key intent, services and clues need builder work; preserve Fields hotfix |
 | 90 | The Cimmerian Nomad Encampment | [Comprehensive dossier](zone-stories/THE_CIMMERIAN_NOMAD_ENCAMPMENT.md): all5 blocks/49 rooms/21 mobiles/23 objects/102 resets and shared ALL roots/echo/wake/page/decay/custody/kit/arrival closure | Two cards/two QA/seven contacts/five aliases/six optional checks; shards→collateral ring; distinct heads+ring→crown+Septimus departure | No native repair. Sources/renewal, hidden transient proof, collateral allocation, investigation evidence, recipient retirement, prop/services and geography/clues need builder work; preserve Fields hotfix |
-| 91–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 91 | The Ruins of Undermountain | [Comprehensive dossier](zone-stories/THE_RUINS_OF_UNDERMOUNTAIN.md):all5 blocks/441 rooms/95 mobiles/135 objects/731 resets; full dormant versus active controller and global source closure | Two cards/two hand-ins/three contacts/eight aliases/three optional checks; intact key→Tamsil note→Durnan scimitar; receipts independent | No native repair. Key allocation/break, visibility, note provenance, rescue retirement, access, source renewal and dormant intent need builder work; preserve Fields hotfix |
+| 92–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Ruins of Undermountain (`undermountain`).
+The next area is Desolate Under Fire (`desolateinv`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -177,6 +178,7 @@ matches, or a candidate item graph was extracted.
 | --- | --- | --- |
 | ZSQ-BRAD-PHYSICAL-AFFILIATION / DISCOVERY / RENEWAL / EXPLORATION | Five Tower contracts retain Braddistock credit ownership; Tower encounters do not discover this journal, and owner reset mode differs from physical retiring recipients. Local exploration has no native terminal. | Keep canonical receipt identities. Add explicit physical affiliation/referrals and real source/actor renewal; admitted clue/access/custody and builder-designed lab/smuggler/campaign endpoints. Entry speech repair ships separately; missing key/weapon supply and copied prose remain proposals. |
 | ZSQ-CEOTHIA-CHOICE / TIMELINE / TARGETED-EFFECT / LEGACY-TRAINING | Four retiring guild alternatives, three independent Lenbrea rewards, breaking keys, two nested crates, foreign timeline proofs, imported agility pool and legacy tablet/scroll differ from modern epic purchases. | Six source-guided cards ship. Qualify source/recipient reset episodes, actual access/travel/targeted effects and shared-material ownership; define all-stage campaign and restore/retire legacy training only with builder intent. Pool target ambiguity is a pending shared repair, not shipped news. |
+| ZSQ-UNDERMOUNTAIN-SOURCE-RENEWAL / GRATE-KEY-ALLOCATION / PROOF-VISIBILITY / NOTE-PROVENANCE / RESCUE-RETIREMENT / ACCESS-EVIDENCE / DORMANT-STORY-INTENT | Key competes between unlock breakage and offering; blank writable note links two independent exchanges; source/reward hidden; NPC specials compiled out. | Qualify source/renewal, key allocation, visibility, provenance, retirement and admitted access facts. Builder decides dormant mechanics; no stock/flag/lock/portal/controller repair. |
 | ZSQ-NOMADS-SOURCE-RENEWAL / HIDDEN-TRANSIENT-PROOF / COLLATERAL-ALLOCATION / INVESTIGATION-EVIDENCE / RECIPIENT-RETIREMENT / SERVICE-PROP-INTENT / BOUNDARY-CLUE-CONSISTENCY | Hidden/transient heads are carried while NPCs live; collateral ring is consumed; page/wake clues and room narration are separate from accepted bundles; crown has CHAOS source. | Two existing-schema cards ship. Qualify source/decay/custody, exact current ALL roots, optional actor/page/status facts and NPC instance/epoch. Builder decides material-only trophies versus true kill prerequisite; no pickup/type/flag/stock/mobility repair. |
 | ZSQ-LAVCAV-SOURCE-RENEWAL / COIN-PURCHASE / WANDERING-RECIPIENT / ACCESS-EVIDENCE / ONYX-KEY-INTENT / SERVICE-ENDPOINTS / CLUE-CONSISTENCY | Sole horns producer is refused active coin purchase; seller can wander from isolated spawn into lake or trap; native gates/control/fire and unusual key need precise evidence. | One supplied-horns return card and explicit purchase exclusion ship. Qualify actual payer wallet/item issuance, selected NPC instance/epoch, legitimate current material/renewal and admitted prerequisites. Preserve spawn trap, rarity, types, locks and PvP. No native repair. |
 | ZSQ-SHORTC-SOURCE-RENEWAL / KEY-ACCESS-ALLOCATION / TYPED-FOOD-ADMISSION / RECIPIENT-RETIREMENT / STEAK-TYPE-INTENT / CLUE-CONSISTENCY | Hidden cap1 key;20-percent break versus exact hand-in; TRASH steak tragic departure versus refused T19 food; template/room recipient reselection and stale clues. | Two existing-schema cards and one explicit unsupported exclusion ship. Define qualified type roots and recipient instance/epoch; review prop/clue intent before mechanics. No native repair, edible-prop conversion or access bypass. |
@@ -4949,3 +4951,64 @@ SEARCH/GET/source/gifts/steal/death/looting/CARVE/decay/save/plane shift/OPEN/
 exact native batch/reward settlement/selected retirement/renewal or database
 persistence. Active, ready accounting mandatory; frozen recovery separate.
 No accounting activation, DB/server operation, migration, deployment or merge.
+
+
+## Priority 91 checkpoint: The Ruins of Undermountain
+
+Priority 91 closes source review for zone920, registry91168–92519, area
+`undermountain`, reset mode1. The [schema3/revision1 sidecar](../../areas/story/undermountain.story.json)
+classifies both native hand-ins as two linked cards, three contacts, eight
+addressed aliases and three optional checks: intact key, earlier Tamsil receipt,
+and current note. The [generated audit](../reference/zone-story-audits/undermountain.md)
+preserves exact contracts. **No native zone or quest repair ships.**
+
+Every new discovery, encounter, journal, achievement and daily credit requires
+active, ready accounting. Frozen reward recovery remains separate. Preserve
+scarcity, hidden/invisible flags, key breakage, deliberate disabled controllers,
+rare-monster distribution, locks, fixed portals and PvP. Source-comprehensive
+mapping is not played source, transaction, retirement or renewal qualification.
+
+
+## Full source and dispatch closure
+
+| Source | Complete review and implications |
+| --- | --- |
+| [Quests](../../areas/qst/undermountain.qst) | All five blocks: three M responses/eight aliases, one Q and one QA. Full daughter/prison/bravery/departure messages reviewed. Both inputs are exact items; no qc_action, personal death, reading or unlock prerequisite. QA A means room echo, not listener credit. |
+| [Rooms](../../areas/wld/undermountain.wld) | All441 physical records,92001–92519 with gaps;332 full prose families,16 headers,23 complete non-exit metadata families,1059 exact exits,354 relative patterns and201 full exit-text families. All destinations resolve. Lower registry bound does not invent additional physical rooms. Full pillars/messages, library, coffins, traps, blood, prison, snowy forest, dungeon occupants and concealed controls reviewed. |
+| [Mobiles](../../areas/mob/undermountain.mob) | All95 prototypes92000–92094,94 full prose families and every numeric tail. Nine have no local reset:92003–06 inn family/patrons,92020–22 adventurers,92054 and92092. No imported mobile reset. Unplaced or dormant NPCs are not promised contacts. |
+| [Objects](../../areas/obj/undermountain.obj) | All135 complete prototypes92000–92134, flags/values/effects/traps/descriptions. Eighteen have no local placement:92032,92035,92036,92054,92063,92064,92071,92075,92085,92089–91,92112,92114,92120,92121,92131,92134. Reward-only note/scimitar and foreign Flame placement are distinct from unreachable stock. Full imported283 sword/359 rune node/364 rations/998 wine barrel reviewed. |
+| [Resets](../../areas/zon/undermountain.zon) | All731 commands:256 M/226 D/131 E/55 O/44 P/11 G/8 F;509 exact,548 M-parent-aware and274 expanded families. Chances100 retain caps/conditional chains. Essra carries cap1 grate key; note/scimitar have no reset producer. Mode1 renewal requires an empty zone; retirement and global stock matter. |
+| Boundaries/global sources | Reciprocal92501 south/74045 north links Svalich.92518 down→Underworld4557 is one-way;4557 up leads54841, not back. Both complete foreign records reviewed. Across713 active type25 objects, only two local portals target local rooms. All22 touching foreign reset groups and the foreign quest consumer reviewed: Icecrag consumes two wines92048 plus two venisons90017; Brass Fingers can carry mithril picks92046; FirePlane places Flame92121; Caertannad uses20 extra92051 mobiles. These remain their owning zones' outcomes. |
+| Custom dispatch | [Assignment source](../../src/specs/specs.assign.c) has the entire Undermountain NPC block inside `#if 0`. Six literal mobile assignment leads are inactive; empty-VNUM companions are inactive too. [Full dormant routines](../../src/specs/specs.undermountain.c) include nine-weapon/inn lore, following adventurers, hiring, Essra narration, dagger/corpse/death transformations and Malodine/black-pudding code. No reactivation. Eight active object bindings:92090 undead trident;92080/81/82/86 sunlight-sensitive drow gear;92065 NPC flindbar disarm;92020 shared parry;92121 Flame's combat event. These are equipment mechanics, not hand-in contracts. Generic type29 switch is assigned by the loader. |
+| Shared execution | [Quest consumption/echo/retirement](../../src/world/quest.c), [key identity/unlock/break](../../src/cmd/actmove.c), [SEARCH visibility](../../src/cmd/actobj.c), [NOTE/READ](../../src/cmd/actinf.c), [WRITE](../../src/cmd/actcomm.c), [door/reset/item loader](../../src/world/db.c), [generic switches](../../src/specs/specs.object.c), [renewal](../../src/world/events.c) and [shared parry](../../src/combat/defense_resolution.c) reviewed. Avernus staff can summon prototype92076 elsewhere; [staff controller](../../src/specs/specs.avernus.c) and staff test-command lead do not establish local arrival or another quest. |
+
+
+Two native independent outcomes link current material: intact key→Tamsil note,
+then exact note→Convalescence scimitar. Supplied note fits without own earlier
+rescue. Earlier receipt cannot supply a consumed note. Normal keyed unlock has
+a100% break roll, separate accounting destruction settlement and a competing
+need for intact offering. Pickable/previously accessible route is guidance, not
+a fabricated unlock prerequisite. Note has no authored letter text and remains
+writable; hidden reward/source need qualification. D removes Tamsil, not a
+physical escort/reunion. NPC specials are compiled out; combat item bindings
+remain active. Preserve unplaced lever, deliberate rare holding, fixed portals
+and PvP. Seven required follow-ups:
+
+| ID | Finding and fair plan before implementation |
+| --- | --- |
+| **ZSQ-UNDERMOUNTAIN-SOURCE-RENEWAL** | Qualify source/root/UID/custody, cap1 stock, gifts/loot/rewards, active item-reset refusal and actual empty-mode1 renewal. Preserve scarcity. Daily availability needs real current materials or qualified producer/restock; no free stock or accounting bypass. |
+| **ZSQ-UNDERMOUNTAIN-GRATE-KEY-ALLOCATION** | One key is competing unlock/offering material, with100% break roll. Qualify exact held/loose/nested selection, break destruction admission/settlement, reciprocal door state, alternate legitimate access, fresh key, concurrency/retry/rollback and repeated exchanges. Builder decides whether current deliberate break/stock design is intended; any change separate fix/proof/news. |
+| **ZSQ-UNDERMOUNTAIN-PROOF-VISIBILITY** | Hidden/invisible source and hidden directly delivered reward can be inaccessible to ordinary selectors. Qualify SEARCH/container/corpse, invisibility, source GET/gift, loose reward inspection/equip/save/recovery. Confirm builder intent before minimal flag/source/presentation repair; do not strip protection merely to satisfy a journal. |
+| **ZSQ-UNDERMOUNTAIN-NOTE-PROVENANCE** | Exact note has no authored letter and is writable. Builder chooses informational text versus real signed rescue proof. Optional learned/source facts need admitted actor, itemUID, writer/content revision, selected output, source versus gift and explicit prerequisites. Changing accepted proof semantics needs contract/version/historical receipt compatibility; no fabricated read or personal rescue requirement. |
+| **ZSQ-UNDERMOUNTAIN-RESCUE-RETIREMENT** | D retires Tamsil, with no escort/reunion controller; target reselection lacks captured NPC instance/epoch. Qualify original target versus reset/removal/delayed settlement/disconnect/replay, eligible actor/group versus listeners and any real rescue transition. Keep narration truthful; shared repair separate named fix/tests/news. |
+| **ZSQ-UNDERMOUNTAIN-ACCESS-EVIDENCE** | PICK/KNOCK/UNLOCK/switch/portal/SEARCH and accepted arrival differ. Universal optional facts need selected door/objectUID, actor, room/dir, prior/accepted state and settlement. Qualify blocked/secret/locked modes, pre-open or other-player access, denied attempts/replay/cold recovery. Unplaced lever and deliberately rare holding rooms remain builder intent questions; preserve current controls/topology/PvP. |
+| **ZSQ-UNDERMOUNTAIN-DORMANT-STORY-INTENT** | NPC bindings are compiled out; object combat procedures remain active. Builder chooses retirement/truthful lore or a newly designed controller. Before any reactivation, resolve absent IDs, allocation/event guards, per-instance state, paid hiring/pet lifecycle, source stock/rewards/accounting and balance. No blanket enablement or unqualified monster-drop/inn/weapon-collection credit. |
+
+
+**91/220 source-comprehensive,129 pending; Desolate Under Fire (`desolateinv`) next.**
+109 journals/1583 achievements/1441 potential dailies/2193 rows. Native
+definitions/fingerprint/content revision2/registry and earlier108 journals stay
+unchanged. Exact53861-byte prior Nomad Encampment PR description archived with
+SHA-256; ten repair/news/accounting sections retained verbatim. No native repair,
+accounting activation, DB/server operation, migration, deployment or merge.
+Source/projection checks do not qualify played quests or renewal; goal active.

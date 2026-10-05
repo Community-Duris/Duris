@@ -2230,3 +2230,29 @@ replacement before claiming reliable dailies. Keep builder intent questions
 separate from verified failures; actual repairs get named fix commits/proof/news.
 Preserve sources, flags, doors, travel/PvP and Fields escape hotfix. Active,
 ready accounting is mandatory for every new credit; frozen recovery separate.
+
+
+## Undermountain example: an access key can also be consumed quest proof
+
+The [dossier](../design/zone-stories/THE_RUINS_OF_UNDERMOUNTAIN.md) and
+[sidecar](../../areas/story/undermountain.story.json) link two independent
+outcomes with current material. Explain key92133's competing uses: keyed UNLOCK
+invokes100% break roll, while Tamsil consumes an intact key for note92134.
+Opening, destruction settlement, earlier rescue and current note are separate.
+A supplied exact note fits Durnan without own earlier rescue; its receipt never
+restores consumed material. Do not make own unlocking/kill/reading mandatory
+when the native hand-in has no such predicate.
+
+Check actual dispatch: all local NPC special bindings sit inside #if0, although
+literal inventories find six named leads. Eight equipment bindings are active.
+Do not promise the dormant inn, nine-weapon collection, hired escort or death
+transformations; activating them needs a separate design and balance review.
+Key is hidden/invisible; SEARCH does not remove invisibility or search loose
+inventory. Reward scimitar is hidden. Note is blank/writable and matched by
+prototype, not message content. These are explicit builder qualification gaps.
+
+Preserve unplaced lever, rare holding rooms, fixed portals, breakage and PvP.
+Universal access/source/learned facts need selected UID/door/actor/state/output,
+accounting admission and recovery proof; clues and pre-open routes stay guidance.
+Actual repairs need separate named fix commits and prominent before/after news.
+All new credit requires active, ready accounting; frozen recovery separate.

@@ -3115,3 +3115,29 @@ impose those histories.
 Two existing-schema cards ship without runtime/native repair or new schema.
 Every new credit requires active, ready accounting; frozen recovery separate.
 Preserve Fields intentional escape hotfix and required replacement design.
+
+
+## Undermountain: competing access material and dormant story controllers
+
+The [complete dossier](zone-stories/THE_RUINS_OF_UNDERMOUNTAIN.md) maps two
+independent accepted exchanges. Current exact note links them, while supplied
+note fits without own rescue history. Key unlock/break and hand-in are separate
+consumers. Blank writable note content, hidden reward and compiled-out NPC
+controllers require explicit builder intent before new predicates or repairs.
+
+| ID | Finding and fair plan before implementation |
+| --- | --- |
+| **ZSQ-UNDERMOUNTAIN-SOURCE-RENEWAL** | Qualify source/root/UID/custody, cap1 stock, gifts/loot/rewards, active item-reset refusal and actual empty-mode1 renewal. Preserve scarcity. Daily availability needs real current materials or qualified producer/restock; no free stock or accounting bypass. |
+| **ZSQ-UNDERMOUNTAIN-GRATE-KEY-ALLOCATION** | One key is competing unlock/offering material, with100% break roll. Qualify exact held/loose/nested selection, break destruction admission/settlement, reciprocal door state, alternate legitimate access, fresh key, concurrency/retry/rollback and repeated exchanges. Builder decides whether current deliberate break/stock design is intended; any change separate fix/proof/news. |
+| **ZSQ-UNDERMOUNTAIN-PROOF-VISIBILITY** | Hidden/invisible source and hidden directly delivered reward can be inaccessible to ordinary selectors. Qualify SEARCH/container/corpse, invisibility, source GET/gift, loose reward inspection/equip/save/recovery. Confirm builder intent before minimal flag/source/presentation repair; do not strip protection merely to satisfy a journal. |
+| **ZSQ-UNDERMOUNTAIN-NOTE-PROVENANCE** | Exact note has no authored letter and is writable. Builder chooses informational text versus real signed rescue proof. Optional learned/source facts need admitted actor, itemUID, writer/content revision, selected output, source versus gift and explicit prerequisites. Changing accepted proof semantics needs contract/version/historical receipt compatibility; no fabricated read or personal rescue requirement. |
+| **ZSQ-UNDERMOUNTAIN-RESCUE-RETIREMENT** | D retires Tamsil, with no escort/reunion controller; target reselection lacks captured NPC instance/epoch. Qualify original target versus reset/removal/delayed settlement/disconnect/replay, eligible actor/group versus listeners and any real rescue transition. Keep narration truthful; shared repair separate named fix/tests/news. |
+| **ZSQ-UNDERMOUNTAIN-ACCESS-EVIDENCE** | PICK/KNOCK/UNLOCK/switch/portal/SEARCH and accepted arrival differ. Universal optional facts need selected door/objectUID, actor, room/dir, prior/accepted state and settlement. Qualify blocked/secret/locked modes, pre-open or other-player access, denied attempts/replay/cold recovery. Unplaced lever and deliberately rare holding rooms remain builder intent questions; preserve current controls/topology/PvP. |
+| **ZSQ-UNDERMOUNTAIN-DORMANT-STORY-INTENT** | NPC bindings are compiled out; object combat procedures remain active. Builder chooses retirement/truthful lore or a newly designed controller. Before any reactivation, resolve absent IDs, allocation/event guards, per-instance state, paid hiring/pet lifecycle, source stock/rewards/accounting and balance. No blanket enablement or unqualified monster-drop/inn/weapon-collection credit. |
+
+
+Use existing schema3 material and optional historical receipt rows. New door,
+visibility, reading, provenance or rescue facts require admitted semantic
+evidence before credit. No controller reactivation, schema/runtime extension or
+native repair ships. Every new credit requires active, ready accounting; frozen
+recovery separate. Preserve Fields deliberate escape hotfix and replacement plan.

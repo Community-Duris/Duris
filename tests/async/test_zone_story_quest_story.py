@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1441
-assert report['mapped_area_count'] == 108 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 109 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -249,6 +249,14 @@ assert all(s['category']=='story' for s in nomads['stories'])
 assert nomads['stories'][1]['steps'][0]['contracts']==nomads['stories'][0]['contracts']
 assert [t['item_vnums'][0] for t in nomads['stories'][0]['steps'][:-1]]==[6217,6218]
 assert [t['item_vnums'][0] for t in nomads['stories'][1]['steps'][1:-1]]==[6219,6220,6221]
+
+undermountain=next(m for m in catalog['story_mappings'] if m['source_area']=='undermountain')
+assert (undermountain['schema_version'],undermountain['revision'],undermountain['coverage'])==(3,1,'complete')
+assert len(undermountain['stories'])==2 and len(undermountain['contacts'])==3 and not undermountain['exclusions']
+assert report['eligible_by_zone']['920']==2 and sum(len(c['topics']) for c in undermountain['contacts'])==8
+assert sum(t.get('optional',False) for s in undermountain['stories'] for t in s['steps'])==3
+assert undermountain['stories'][1]['steps'][0]['contracts']==undermountain['stories'][0]['contracts']
+assert undermountain['stories'][0]['steps'][0]['item_vnums']==[92133] and undermountain['stories'][1]['steps'][1]['item_vnums']==[92134]
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

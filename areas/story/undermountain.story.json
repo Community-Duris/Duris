@@ -1,0 +1,143 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "undermountain",
+  "coverage": "complete",
+  "introduction": "Find Tamsil in the Prison of the Damned, offer the exact grate key for her crude note, then bring that note to Durnan. The journal shows two independent accepted exchanges; access, present supplies and earlier history are separate.",
+  "orientation": [
+    "The well entrance connects to Svalich: go NORTH from trail room 74045 to 92501, then follow the well downward to dungeon entrance 92001. The reciprocal southern exit returns to the trail. The busy Yawning Portal inn is described in lore, but the active Durnan is in passage room 92042, not a functioning local inn shop.",
+    "Ask Durnan hello or hi, then daughter or tamsil. Ask Tamsil hello, hi, help or prison. These eight keywords select three existing responses. Hearing a response or meeting Essra does not complete either exchange.",
+    "Tamsil is declared in Prison of the Damned 92519. From the Shrine of the Spider God 92289, the downward grate leads into her cell. Both grate sides reset locked; the upper side names key 92133 and the lower side has no key. The grate is pickable under the game’s existing rules. Access is guidance, not a recorded personal unlock prerequisite.",
+    "Essra in shrine 92289 is the native holder of the small grate key 92133. It is both hidden and invisible. Obtain and reveal actual legitimate stock with the game’s visibility and search rules. SEARCH does not remove invisibility and cannot reveal a hidden item in your ordinary loose inventory.",
+    "The grate key has a 100 percent break roll on ordinary successful keyed unlocking, rather than 100 uses. Destruction must still settle through accounting. Tamsil needs an intact exact key as her offering, so using one to open the grate may require another legitimate copy. An already accessible grate or permitted PICK/KNOCK route may avoid spending the offering key; this journal grants no new access or free stock.",
+    "Offer the intact exact grate key to Tamsil for crude note 92134. The accepted exchange consumes the key and removes that NPC instance, with a message that she disappears through the grate. It does not implement an escort, physical reunion with Durnan or a personal Essra kill objective.",
+    "Bring the exact crude note 92134 loose to Durnan in 92042 and offer it for the Convalescence scimitar 92120. A matching supplied note fits without your own Tamsil exchange record. An earlier rescue receipt cannot replace a note spent, lost or given away.",
+    "The crude note is an ITEM_NOTE with no authored letter text. Reading or writing it does not record rescue proof or change the native exact-prototype requirement. The small blood-written note 92018 is a different object and cannot substitute. Durnan’s hidden reward also needs visibility qualification; possession of a scimitar alone is not quest evidence.",
+    "The painting in 92278 enters snow forest 92508, whose southern exit returns to 92278. The pool in 92450 enters 92281. These are fixed portals with their existing restrictions. The sand mound in 92068 is a PUSH control for the blocked downward route; it does not record opening or arrival. The wooden lever prototype for 92005’s blocked ceiling route has no identified placement, so do not rely on it being available.",
+    "Nine-weapon collection lore, inn services, hired escorts, autonomous adventurers and special monster death transformations appear in dormant NPC code. Their assignment block is compiled out. Existing combat equipment procedures remain active; none creates another accepted local quest. Deliberately rare monster holding rooms and travel restrictions remain intact.",
+    "Native resets describe possible stock, not live availability. Active accounting refuses zone item reset issuance. Both accepted exchanges are potential daily candidates, but legitimate materials, selected NPC retirement and empty-zone renewal still need qualification before reliable daily availability can be promised."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 92002,
+      "name": "Durnan the Wanderer",
+      "keyword": "durnan",
+      "description": "Declared at passage 92042. Asks about his daughter and accepts her exact crude note.",
+      "topics": [
+        "hello",
+        "hi",
+        "daughter",
+        "tamsil"
+      ]
+    },
+    {
+      "mob_vnum": 92082,
+      "name": "the young Tamsil",
+      "keyword": "tamsil",
+      "description": "In prison 92519 below shrine 92289. Accepts intact grate key and departs after settlement.",
+      "topics": [
+        "hello",
+        "hi",
+        "help",
+        "prison"
+      ]
+    },
+    {
+      "mob_vnum": 92043,
+      "name": "Essra the drow priestess",
+      "keyword": "essra",
+      "description": "Drow priestess at shrine 92289. Native holder of the hidden, invisible grate key; not a dialogue or kill objective.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "tamsil-grate-key",
+      "title": "Tamsil: exchange the grate key for her note",
+      "category": "story",
+      "summary": "Offer the exact intact grate key for Tamsil’s crude note and her narrated departure. Opening the grate can consume that same key; access and the hand-in are separate. Matching supplied key fits without personal source or unlocking history.",
+      "contracts": [
+        {
+          "giver_vnum": 92082,
+          "completion_key": "give=I:92133;receive=I:92134;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "grate-key",
+          "text": "Carry the intact small grate key",
+          "kind": "carried_item",
+          "item_vnums": [
+            92133
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Essra in 92289 is its native holder. Hidden and invisible flags still apply. Ordinary keyed unlocking invokes a 100 percent break roll, so an intact offering may need a fresh legitimate key. Carry the actual item loose; held, worn or nested copies do not count for this check. Possession does not prove personal acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record Tamsil’s accepted key exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 92082,
+              "completion_key": "give=I:92133;receive=I:92134;disappear=1"
+            }
+          ],
+          "hint": "Recorded after the game accepts the exact offering. Clues, unlocking, another player’s rescue or owning the reward do not record this exchange."
+        }
+      ]
+    },
+    {
+      "id": "durnan-tamsil-note",
+      "title": "Durnan: deliver Tamsil’s crude note",
+      "category": "story",
+      "summary": "Bring the exact crude note to Durnan for the Convalescence scimitar. A supplied matching note fits without your own earlier rescue receipt; reading the blank note or owning the reward does not prove completion.",
+      "contracts": [
+        {
+          "giver_vnum": 92002,
+          "completion_key": "give=I:92134;receive=I:92120;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-tamsil",
+          "text": "Optional earlier route: obtain Tamsil’s note",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 92082,
+              "completion_key": "give=I:92133;receive=I:92134;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Your earlier accepted key exchange can be shown here. A matching supplied note also fits. History cannot restore a note consumed in Durnan’s exchange or lost from your inventory."
+        },
+        {
+          "id": "crude-note",
+          "text": "Carry Tamsil’s exact crude note",
+          "kind": "carried_item",
+          "item_vnums": [
+            92134
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Tamsil’s accepted key exchange is the only identified native producer. The small blood-written note 92018 does not substitute. No authored letter text or personal reading history is required by the native offer. Carry the actual item loose; held, worn or nested copies do not count for this check. Possession does not prove personal acquisition rather than a gift."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record Durnan’s accepted note exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 92002,
+              "completion_key": "give=I:92134;receive=I:92120;disappear=0"
+            }
+          ],
+          "hint": "Recorded after the game accepts the exact offering. Clues, unlocking, another player’s rescue or owning the reward do not record this exchange."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
