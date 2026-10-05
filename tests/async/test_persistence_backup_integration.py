@@ -12,6 +12,7 @@ game processes boot in their own network namespaces and are terminated afterward
 All filesystem deletion is limited to this test's TemporaryDirectory. Startup
 timeouts (60s) may need investigation on heavily contended machines.
 """
+import contextlib
 import json
 import hashlib
 import struct
@@ -32,6 +33,8 @@ import persistence_restore as restore
 import build_restore_qualifier as native
 from _restore_fixture import build as build_fixture
 from test_flatfile_restore_economic_authority import build_fixture as build_economic_fixture
+from test_flatfile_restore_lifecycle_receipts import build_fixture as build_lifecycle_fixture, retained
+from test_flatfile_restore_baseline_markers import fingerprint
 import migration_runner as migrations
 from test_persistence_backup import policy
 
@@ -643,6 +646,248 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                      "UPDATE mud_schema_history SET apply_checksum=UNHEX(REPEAT('00',32)) WHERE sequence_number=1;")
             with self.assertRaises(backup.BackupError):
                 restore.database_qualify(env)
+
+
+@unittest.skipUnless(os.environ.get("DURIS_RUN_BACKUP_INTEGRATION") == "1",
+                     "requires explicit disposable Linux integration invocation")
+class FlatfileLifecycleRecoveryIntegration(unittest.TestCase):
+    """Managed persistence of modeled, inactive native-codec lifecycle history.
+
+    Reuses the production backup/restore managers and their isolated service
+    boot. This does not call lifecycle install or authenticate native cutover.
+    """
+    setUp = PersistenceRecoveryIntegration.setUp
+    ledger = PersistenceRecoveryIntegration.ledger
+
+    @classmethod
+    def setUpClass(cls):
+        cls.old_umask = os.umask(0o077)
+        cls.server = Path(os.environ.get("DURIS_PLAN5_LIFECYCLE_BACKUP_SERVER",
+                                        str(ROOT / "bin/server/dms_restore_flatfile"))).resolve()
+        cls.artifacts = Path(os.environ.get("DURIS_PLAN5_LIFECYCLE_BACKUP_ARTIFACTS",
+                                           str(ROOT / "bin/tests/plan5-lifecycle-backup/native"))).resolve()
+        if not cls.server.is_file() or not cls.server.is_relative_to((ROOT / "bin").resolve()):
+            raise RuntimeError("select an existing workspace/bin flat-file server")
+        if cls.artifacts.exists() or not cls.artifacts.is_relative_to((ROOT / "bin").resolve()):
+            raise RuntimeError("select a fresh workspace/bin artifact directory")
+        cls.artifacts.mkdir(mode=0o700, parents=True)
+        cls.native_inputs = fingerprint(ROOT / "src")
+        cls.runtime_inputs = {name: fingerprint(ROOT / name) for name in ("areas_mini", "lib")}
+        names = ["scripts/persistence_backup.py", "scripts/persistence_restore.py",
+                 "scripts/qualify_service_restore.py", "scripts/build_restore_qualifier.py",
+                 "scripts/qualify_flatfile_restore.cpp", "scripts/qualify_flatfile_economic_authority.h",
+                 "scripts/qualify_flatfile_economic_baseline.h", "scripts/qualify_flatfile_economic_records.h",
+                 "scripts/qualify_flatfile_economic_lifecycle.h", "tests/async/_restore_fixture.py",
+                 "tests/async/_paths.py", "tests/async/flatfile_player_repository_harness.cpp",
+                 "tests/async/persistence_restore_fixture.cpp", "tests/async/native_build_artifacts.py",
+                 "tests/async/flatfile_restore_lifecycle_receipt_fixture.cpp",
+                 "tests/async/test_flatfile_restore_lifecycle_receipts.py",
+                 "tests/async/test_flatfile_restore_baseline_markers.py",
+                 "tests/async/test_flatfile_restore_economic_authority.py",
+                 "tests/async/test_flatfile_accounting_store.py", "tests/async/test_persistence_backup.py",
+                 "tests/async/test_persistence_backup_integration.py",
+                 "migrations/runtime_compatibility_manifest.json", "migrations/data_lifecycle_manifest.json"]
+        cls.owned_inputs = {name: hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in names}
+        cls.qualifier = native.build(cls.artifacts / "qualify")
+        cls.fixture = build_fixture(cls.artifacts / "state-fixture")
+        cls.lifecycle = build_lifecycle_fixture(cls.artifacts / "lifecycle-fixture")
+        cls.outcomes = []
+
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            assert fingerprint(ROOT / "src") == cls.native_inputs, "native source changed during test"
+            for name, checksum in cls.owned_inputs.items():
+                assert hashlib.sha256((ROOT/name).read_bytes()).hexdigest() == checksum, name
+            for name, values in cls.runtime_inputs.items():
+                assert fingerprint(ROOT/name) == values, name + " changed during test"
+            report = {"format": 1, "outcomes": cls.outcomes, "native_raw_inputs": cls.native_inputs,
+                      "runtime_inputs": cls.runtime_inputs, "owned_inputs": cls.owned_inputs,
+                      "source_capture_executed": False, "lifecycle_install_executed": False,
+                      "accounting_activated": False, "full_R8_qualified": False,
+                      "required_file_discovery_qualified": False,
+                      "completed": len(cls.outcomes) == 1,
+                      "binary_sha256": {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
+                                        for path in (cls.qualifier, cls.fixture, cls.lifecycle, cls.server)}}
+            (cls.artifacts/"evidence.json").write_text(json.dumps(report, sort_keys=True, indent=2)+"\n")
+        finally:
+            os.umask(cls.old_umask)
+
+    def test_retained_receipt_capture_restore_restart_and_generation_retention(self):
+        live = self.base / "live"
+        backup.run([str(self.fixture), "seed", str(live)])
+        self.p["journal_roots"] = {name: self.base/"journals"/name for name in ("players", "critical")}
+        self.p["live_roots"] = [live, *self.p["journal_roots"].values()]
+        environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
+                           UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
+        backup.run([str(self.lifecycle), str(live), "retained"], env=environment)
+        backup.run([str(self.fixture), "seed-wal", str(live)])
+        backup.run([str(self.fixture), "seed-pending-transaction", str(live)])
+        evidence = live / "economic-evidence"
+        receipt = next(evidence.glob("lifecycle-*.elr")).name
+        economic_before = retained(evidence)
+        source_before = backup.inventory(live, exclude_locks=True)
+        journals_before = {name: backup.inventory(path) for name, path in self.p["journal_roots"].items()}
+        self.assertTrue((live/"domains/.critical-authority-transaction").is_file())
+        self.assertTrue(all(values for values in journals_before.values()))
+
+        # Use fresh explicit tool outputs without overwriting any existing
+        # workspace binary. The managers already support a copied checkout.
+        tools = self.base / "tools"
+        for name in ("areas_mini", "lib"):
+            shutil.copytree(ROOT/name, tools/name)
+        for source, relative in ((self.server, "bin/server/dms_restore_flatfile"),
+                                 (self.qualifier, "bin/tools/qualify_flatfile_restore"),
+                                 (ROOT/"scripts/qualify_service_restore.py", "scripts/qualify_service_restore.py"),
+                                 (ROOT/"migrations/runtime_compatibility_manifest.json", "migrations/runtime_compatibility_manifest.json"),
+                                 (ROOT/"migrations/data_lifecycle_manifest.json", "migrations/data_lifecycle_manifest.json")):
+            destination = tools/relative
+            destination.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+            shutil.copyfile(source, destination)
+            destination.chmod(0o700 if relative.startswith("bin/") else 0o600)
+
+        def audit(root):
+            before = retained(root/"economic-evidence")
+            result = json.loads(backup.run([str(self.qualifier), "--economic-evidence-audit", str(root)]))
+            self.assertEqual(result, {"legacy_unknown_epochs": 0, "never_initialized_epochs": 1,
+                                     "initialized_epochs": 1, "lifecycle_receipts": 1,
+                                     "baseline_provenance_complete": True})
+            self.assertEqual(retained(root/"economic-evidence"), before)
+            control = (root/"economic-evidence/authority.eal").read_bytes()
+            self.assertEqual(control[112:128], bytes(16), "accounting became active")
+
+        audit(live)
+        with mock.patch.object(backup, "ROOT", tools), mock.patch.dict(os.environ, {
+                "FLATFILE_STATE_DIR": str(live), "PLAYER_SAVE_JOURNAL_DIR": str(self.p["journal_roots"]["players"]),
+                "CRITICAL_COMMAND_JOURNAL_DIR": str(self.p["journal_roots"]["critical"])}):
+            def capture(created=None):
+                with contextlib.ExitStack() as stack:
+                    if created is not None:
+                        stack.enter_context(mock.patch.object(backup.time, "time", return_value=created))
+                    result = backup.backup(self.p, "flatfile-primary")
+                generation = self.p["root"]/result["generation"]
+                meta = backup.verify(generation)
+                self.assertTrue(meta["pending_transaction"])
+                self.assertIn("state/economic-evidence/"+receipt, meta["files"])
+                self.assertEqual(backup.inventory(generation/"state/economic-evidence"), backup.inventory(evidence))
+                self.assertEqual(backup.inventory(live, exclude_locks=True), source_before)
+                self.assertEqual(retained(evidence), economic_before)
+                return generation, meta
+
+            old = int(time.time()) - 90*86400
+            generation, meta = capture(old)
+            captured = backup.inventory(generation)
+            restored = restore.restore(self.p, generation.name, self.ledger())
+            self.assertEqual(restored["result"], "qualified")
+            self.assertEqual(restored["checks"], {"accounts": 1, "identities": 1, "players_loaded": 1, "snapshots": 1})
+            candidate = self.p["restore_root"]/restored["candidate"]
+            audit(candidate/"state")
+            self.assertEqual(backup.inventory(candidate/"state/economic-evidence"), backup.inventory(evidence))
+            backup.run([str(self.fixture), "verify-wal", str(candidate/"state")])
+            shutil.copyfile(candidate/"service.log", self.artifacts/"first-service.log")
+            # Actual second cold boot of the same recovered candidate, using
+            # the manager's already copied namespace qualifier and runtime.
+            runtime = candidate/"runtime"
+            env = dict(restore.clean_environment(candidate), PERSISTENCE_MODE="flatfile-primary",
+                       FLATFILE_STATE_DIR=str(candidate/"state"))
+            state_before_restart = backup.inventory(candidate/"state", exclude_locks=True)
+            def uid_high_water():
+                directory = candidate/"state/metadata"
+                value = (directory/"item_uid_allocator").read_bytes()
+                witness = (directory/"item_uid_allocator.initialized").read_bytes()
+                self.assertEqual(len(value), 64)
+                self.assertEqual(value[:8], b"DURUID\0\0")
+                self.assertEqual(struct.unpack_from("<II", value, 8), (1, 8))
+                self.assertEqual(value[24:56], hashlib.sha256(value[56:]).digest())
+                revision = struct.unpack_from("<Q", value, 16)[0]
+                next_uid = struct.unpack_from("<Q", value, 56)[0]
+                self.assertEqual(len(witness), 56)
+                self.assertEqual(witness[:8], b"DURUID\2\0")
+                self.assertEqual(witness[24:], hashlib.sha256(witness[:24]).digest())
+                self.assertEqual(struct.unpack_from("<QQ", witness, 8), (next_uid, revision))
+                return next_uid, revision
+            before_uid = uid_high_water()
+            backup.run(["unshare", "--user", "--map-root-user", "--net", "--pid", "--fork", "--kill-child=KILL",
+                        "python3", str(runtime/"qualify_service_restore.py"), str(candidate), str(runtime/"server")],
+                       env=env, timeout=120)
+            shutil.copyfile(candidate/"service.log", self.artifacts/"second-service.log")
+            state_after_restart = backup.inventory(candidate/"state", exclude_locks=True)
+            delta = {name: {"before": state_before_restart.get(name), "after": state_after_restart.get(name)}
+                     for name in state_before_restart.keys() | state_after_restart.keys()
+                     if state_before_restart.get(name) != state_after_restart.get(name)}
+            after_uid = uid_high_water()
+            (self.artifacts/"cold-restart-state-delta.json").write_text(json.dumps({
+                "delta": delta, "before_uid": before_uid, "after_uid": after_uid}, sort_keys=True, indent=2)+"\n")
+            # The maintained boot reserves ITEM_UID_BOOT_RESERVATION=1000000;
+            # both allocator and sealed witness must advance exactly once.
+            self.assertEqual(set(delta), {"metadata/item_uid_allocator", "metadata/item_uid_allocator.initialized"})
+            self.assertEqual(before_uid, (1000203, 2))
+            self.assertEqual(after_uid, (2000203, 3))
+            backup.run([str(self.fixture), "verify-wal", str(candidate/"state")])
+            audit(candidate/"state")
+            for relative in ("players/player-save.journal", "critical/critical-command.journal"):
+                self.assertEqual((candidate/"journals"/relative).stat().st_size, 0)
+            self.assertEqual(backup.inventory(generation), captured)
+            self.assertEqual(backup.inventory(live, exclude_locks=True), source_before)
+            for name, path in self.p["journal_roots"].items():
+                self.assertEqual(backup.inventory(path), journals_before[name])
+
+            # Manifest-anchored loss/corruption must refuse without booting or
+            # editing either the captured generation or its intact source.
+            for label in ("missing", "corrupt"):
+                root = self.base/label/"backups"
+                damaged = root/generation.name
+                shutil.copytree(generation, damaged)
+                path = damaged/"state/economic-evidence"/receipt
+                if label == "missing":
+                    path.unlink()
+                else:
+                    path.write_bytes(b"damaged retained receipt")
+                damaged_before = backup.inventory(damaged)
+                with mock.patch.object(restore, "service_load") as service:
+                    with self.assertRaisesRegex(backup.BackupError, "generation_checksum_mismatch"):
+                        restore.restore(dict(self.p, root=root), damaged.name, self.ledger())
+                    service.assert_not_called()
+                self.assertEqual(backup.inventory(damaged), damaged_before)
+                self.assertEqual(backup.inventory(generation), captured)
+
+            second, _ = capture(old+1)
+            second_before = backup.inventory(second)
+            newest, _ = capture()
+            self.assertFalse(generation.exists(), "unretained old generation was not pruned")
+            self.assertEqual(backup.inventory(second), second_before)
+            for kept in (second, newest):
+                self.assertEqual(backup.inventory(kept/"state/economic-evidence"), backup.inventory(evidence))
+                backup.verify(kept)
+            # An already-corrupt present receipt can have valid transport
+            # checksums. Native independent preflight still refuses before boot.
+            path = evidence/receipt
+            value = bytearray(path.read_bytes())
+            value[208] = 0
+            value[16:48] = hashlib.sha256(value[48:]).digest()
+            path.write_bytes(value)
+            corrupt_source_before = backup.inventory(live, exclude_locks=True)
+            result = backup.backup(self.p, "flatfile-primary")
+            corrupt = self.p["root"]/result["generation"]
+            backup.verify(corrupt)
+            corrupt_before = backup.inventory(corrupt)
+            with mock.patch.object(restore, "service_load") as service:
+                with self.assertRaises(backup.BackupError):
+                    restore.restore(self.p, corrupt.name, self.ledger())
+                service.assert_not_called()
+            self.assertEqual(backup.inventory(corrupt), corrupt_before)
+            self.assertEqual(backup.inventory(live, exclude_locks=True), corrupt_source_before)
+            self.assertEqual(backup.inventory(newest/"state/economic-evidence")[receipt], meta["files"]["state/economic-evidence/"+receipt])
+
+        self.outcomes.append({"native_pending_transaction_replayed": True, "native_journals_drained": True,
+                              "actual_service_boots": 2, "old_inactive_receipt_preserved": True,
+                              "cold_boot_uid_high_water": {"before": before_uid, "after": after_uid},
+                              "retained_generations": 2, "unretained_generation_pruned": True,
+                              "manifest_loss_and_corruption_refused_before_boot": 2,
+                              "checksum_valid_corrupt_receipt_refused_before_boot": True,
+                              "capture_restore_and_fault_audits_preserve_sources_and_generations": True,
+                              "modeled_native_sources": True, "inactive": True})
+        print("PLAN5_LIFECYCLE_BACKUP_RESTORE " + json.dumps(self.outcomes[-1], sort_keys=True), flush=True)
 
 
 if __name__ == "__main__":
