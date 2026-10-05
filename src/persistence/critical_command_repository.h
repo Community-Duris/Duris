@@ -47,6 +47,12 @@ critical_apply_result critical_command_repository_verify_ordinary_drop_in_transa
 // Only a fully verified stored rejection returns terminal_failure.
 critical_apply_result critical_command_repository_verify_collector_purchase_in_transaction(
 	MYSQL *connection, const critical_command &command) noexcept;
+// Historical v6 shop proof only. Caller owns an original reconnect-disabled
+// transaction and acquires current authority/domain/custody locks first.
+// No current projection, transaction lifecycle, application or ACK authority.
+// Proof failures retain retry; only an authentic retained rejection is terminal.
+critical_apply_result critical_command_repository_verify_shop_trade_in_transaction(
+	MYSQL *connection, const critical_command &command) noexcept;
 critical_apply_result critical_command_repository_apply_from_pool(const critical_command &command,
 								  void *context);
 

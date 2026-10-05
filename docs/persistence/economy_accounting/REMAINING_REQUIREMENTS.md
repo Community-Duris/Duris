@@ -1,5 +1,104 @@
 # Double-entry economy: remaining requirements
 
+## Retained SHOP producers and game-thread driver integrated — 2026-10-05
+
+[The source integration](SHOP_RETAINED_PRODUCER_DRIVER_INTEGRATION_2026-10-05.md) connects the four original buy/sell selections
+to one retained checkpoint/admission/publication driver and sequential post-ACK
+produced continuation. Separate proved prejournal cancellation preserves literal
+cleanup and owner fences. Independent source review/pins/format only; no native
+execution. Regular-phase invocation excludes shutdown drain. Central availability
+remains closed; coherent schemas, cold recovery/ACK, flat parity, original
+major-plan qualification and full R1–R8 remain open/BLOCKED.
+
+## Retained SHOP v8 submission corrected — 2026-10-05
+
+[The source-proven version fix](SHOP_V8_SUBMISSION_VERSION_FIX_2026-10-05.md)
+removes the v7-only guard that rejected every command produced by the v8
+recovery builder. Owned submission accepts exactly v7/v8 with all original
+decode, identity, native checkpoint and held-player checks retained. Source
+review/changed-line formatting only; no native qualification. Central admission,
+activation, producer driving and original major-plan gates remain open/closed
+as recorded in the owning report.
+
+## Detached native mobile stage installed — 2026-10-05
+
+[The reviewed loader integration](NATIVE_MOBILE_STAGE_INTEGRATION_2026-10-05.md)
+prepares an actual NPC outside live list/count/index/event publication and
+consumes its private retained stage before room/special callbacks. Both legacy
+overloads and probes keep their original path. Source/raw-preimage review only;
+no native execution or original birth/UID/source/restore/retirement owner is
+claimed. The actual reset/spawn issuer and explicit durable native reference
+restore remain unfinished. No full NPC state ledger or new gate is added;
+major-plan qualification, R1–R8, release and activation remain open/BLOCKED.
+
+## Coherent SHOP source installed — 2026-10-05
+
+[The composed source milestone](SHOP_COHERENT_SOURCE_INTEGRATION_2026-10-05.md)
+installs 32 reviewed production inputs and 22 current-based recipe/Makefile
+inputs, including native checkpoint, literal payload, v8 recovery manifests,
+original current SQL images and exact retained receipt verification. Independent
+source review and raw-preimage/inverse/AST/include checks passed; no native
+execution occurred. Current accounted SHOP admission stays closed and canonical
+schema0056 is unchanged. Actual gameplay producer invocation, coherent0057,
+cold continuation/publication/ACK, flat parity and original major-plan
+qualification remain open. Source census/projection rows are unqualified;
+release and activation remain BLOCKED.
+
+## Native reference and original-generation observation — 2026-10-05
+
+[The coherent source integration](NATIVE_REFERENCE_RUNTIME_INTEGRATION_2026-10-05.md)
+extracts the existing native/source-event codecs, updates all 63 focused link
+recipes and adds zeroable runtime reference storage. The read-only accessor
+checks the originally retained runtime generation before pointer access.
+Independent review corrected eleven invalid source-helper calls before import.
+Source/format/pins/inventory only; native birth/restore ownership, explicit
+durable reference records, major-plan execution and full R1–R8 remain open.
+Private cold shop value/receipt proof is reviewed but not installed or qualified.
+
+## Independent child identity audit integrated — 2026-10-05
+
+[The exact peer fix and class-specific registration](PLAN5_CHILD_IDENTITY_INTEGRATION_2026-10-05.md)
+detect malformed, wrong-derived or reused child IDs from original stored facts.
+The frozen peer report records 220 selected passing methods with component-only
+scope. Central inventory now has 915 owners and 95 matrix rows; all 92 earlier
+rows and engine policy are preserved. Local AST/inventory/source checks only;
+major-plan execution, complete original-plan/receipt authentication, actual
+writers/gameplay/recovery and R1–R8 remain open. No activation or safety change.
+
+## Reviewed cold SHOP original SQL images — 2026-10-05
+
+[The frozen four-file source slice](SHOP_COLD_SQL_SOURCE_CHECKPOINT_2026-10-05.md)
+reads actual canonical player values and authenticates complete BEFORE/AFTER
+player/keeper images inside the original SQL transaction. Review corrected
+keeper foreign-copy and extra-context/reference closure gaps; AFTER readback
+uses only original locked identities. Private source/format/pins only, without
+actual executable installation or qualification. Coherent dependencies, cold
+startup/publication/ACK, both backends and original R1–R8 acceptance stay open.
+
+## Plan 5 evidence and complete central inventory — 2026-10-05
+
+[Exact peer evidence and runner registration](PLAN5_CENSUS_AND_INVENTORY_INTEGRATION_2026-10-05.md)
+imports frozen 71-contract pin-repair and 58-case pure custody evidence without
+promoting it to current native qualification. Eight existing test classifications
+and two existing SQL matrix omissions are repaired: 914 owners, 92 rows, all
+87 original rows unchanged. The [publication recipe path fix](PUBLICATION_RECIPE_PATH_REPAIR_2026-10-05.md)
+is separately published as `7a5f9e97d`. Source/JSON/AST/inventory checks only;
+major-plan testing, full writer/player/recovery acceptance and R1–R8 stay open.
+The private staged NPC loader is frozen for review; the cold shop player reader
+continues in parallel. Existing inactive behavior and safety gates remain.
+
+## Shop recovery binding foundation and parallel NPC schema — 2026-10-05
+
+[Canonical recovery bindings and producer preparation](SHOP_RECOVERY_BINDING_SOURCE_2026-10-05.md)
+integrates the independently reviewed pure forest-binding codecs and maintained
+object registration. The private next shop command retains ordered BEFORE/AFTER
+player/keeper bindings within existing journal limits; its producer also checks
+the keeper's native budget and all physical player items, including omitted
+NORENT. Private NPC migration 0060 extends the three existing owner-type ranges
+for native-mobile custody. Source/format/pins/inventory checks only; command,
+producer, coherent schema chain, cold SQL/replay/publication, major-plan tests
+and R1–R8 acceptance remain unfinished. Existing inactive behavior and gates stay.
+
 ## Private shop weight/retry and parallel NPC checkpoint — 2026-10-05
 
 [Original destination weight and complete prospective inventory](SHOP_DESTINATION_WEIGHT_SOURCE_CHECKPOINT_2026-10-05.md)

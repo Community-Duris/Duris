@@ -1992,11 +1992,68 @@ int get_obj_table(int tnum)
 	return 0;
 }
 
-// read a mobile from MOB_FILE. `apply_mob_gold` is false for callers that will
-// link the new NPC as a player's pet after loading it.
-P_char read_mobile(int nr, int type, bool apply_mob_gold)
+// Raw disposal is restricted to the detached loader's empty preparation.
+// extract_char/free_char assume world membership and schedule release events.
+static bool discard_unpublished_mobile(P_char mob) noexcept
+{
+	if (!mob || mob->in_room != NOWHERE || mob->next || mob->next_in_room || mob->desc ||
+	    mob->carrying || mob->affected || mob->nevents || mob->nevents_tail || mob->followers ||
+	    mob->following || mob->group || mob->lobj || mob->linked || mob->linking ||
+	    mob->obj_linked || GET_OPPONENT(mob) || mob->character_maintenance_in_world ||
+	    mob->player.title)
+		return false;
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+		if (mob->equipment[slot])
+			return false;
+	if (mob->only.npc && (mob->only.npc->str_mask || mob->only.npc->memory))
+		return false;
+	if (find_character_by_runtime_id(mob->runtime_id))
+		return false;
+	for (P_char live = character_list; live; live = live->next)
+		if (live == mob)
+			return false;
+	if (mob->only.npc)
+		FREE(mob->only.npc);
+	mm_release(dead_mob_pool, mob);
+	return true;
+}
+
+struct unpublished_mobile_cleanup
+{
+	P_char character = nullptr;
+	~unpublished_mobile_cleanup()
+	{
+		if (character && !discard_unpublished_mobile(character))
+			panic_corruption("native-mobile",
+					 "detached loader escaped empty preparation");
+	}
+};
+
+// Legacy callers retain their original hook-before-conversion ordering.
+// Detached preparation defers this entire callback/event boundary to publication.
+static bool schedule_mobile_periodic(P_char mob, bool guard_runtime)
+{
+	const uint64_t runtime_id = mob->runtime_id;
+	world_activity_schedule_mundane(mob, false, true);
+	if (IS_SET(mob->specials.act, ACT_SPEC))
+	{
+		const bool wants_periodic = (mob_index[mob->only.npc->R_num].func.mob)(
+			mob, NULL, CMD_SET_PERIODIC, NULL);
+		if (guard_runtime && find_character_by_runtime_id(runtime_id) != mob)
+			return false;
+		if (wants_periodic)
+			add_event(event_mob_proc, PULSE_MOBILE + number(-4, 4), mob, 0, 0, 0, 0, 0);
+	}
+	if (IS_ACT(mob, ACT_PATROL))
+		add_event(event_patrol_move, WAIT_SEC, mob, 0, 0, 0, 0, 0);
+	return true;
+}
+
+// One real loader body preserves file parsing, stats, randomization and conversion.
+static P_char read_mobile_body(int nr, int type, bool apply_mob_gold, bool detached)
 {
 	P_char mob = NULL;
+	unpublished_mobile_cleanup cleanup;
 	char Gbuf1[MAX_STRING_LENGTH], buf[MAX_INPUT_LENGTH], letter = 0;
 	int foo, bar, i, j;
 	long tmp, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
@@ -2024,25 +2081,32 @@ P_char read_mobile(int nr, int type, bool apply_mob_gold)
 	mob = (P_char)mm_get(dead_mob_pool);
 
 	clear_char(mob);
+	if (detached)
+		cleanup.character = mob;
 	CREATE(mob->only.npc, npc_only_data, 1, MEM_TAG_NPCONLY);
 
 	if (!mob->only.npc)
 	{
 		wizlog(56, "mob has no only.npc struct!");
 		logit(LOG_DEBUG, "mob %s has no only.npc struct!", GET_NAME(mob));
-		mm_release(dead_mob_pool, mob);
+		if (!detached)
+			mm_release(dead_mob_pool, mob);
 		return NULL;
 	}
 
 	bzero(mob->only.npc, sizeof(npc_only_data));
 	mob->only.npc->shopkeeper_shop_id = -1;
 
-	/* insert in list */
-	mob->next = character_list;
-	character_list = mob;
+	if (!detached)
+	{
+		/* insert in list */
+		mob->next = character_list;
+		character_list = mob;
+	}
 	mob->only.npc->R_num = nr;
 	mob->desc = NULL;
-	mob_index[nr].number++;
+	if (!detached)
+		mob_index[nr].number++;
 	idnum++;
 	mob->only.npc->idnum = idnum;
 	mob->only.npc->default_pos = POS_STANDING + STAT_NORMAL;
@@ -2069,7 +2133,8 @@ P_char read_mobile(int nr, int type, bool apply_mob_gold)
 			static char partial_mobile_name[] = "partial_mobile";
 			mob->player.name = partial_mobile_name;
 			SET_BIT(mob->specials.act, ACT_ISNPC);
-			extract_char(mob);
+			if (!detached)
+				extract_char(mob);
 			return NULL;
 		}
 		for (j = 0; *(mob->player.name + j); j++) /* make sure all keywords
@@ -2166,7 +2231,8 @@ P_char read_mobile(int nr, int type, bool apply_mob_gold)
 			logit(LOG_DEBUG, "Mob %d has messed up format.",
 			      mob_index[nr].virtual_number);
 			SET_BIT(mob->specials.act, ACT_ISNPC);
-			extract_char(mob);
+			if (!detached)
+				extract_char(mob);
 			return NULL;
 		}
 		mob->specials.act = tmp1;
@@ -2767,7 +2833,7 @@ P_char read_mobile(int nr, int type, bool apply_mob_gold)
 	    (mob_index[nr].func.mob == 0))
 	{
 		REMOVE_BIT(mob->specials.act, ACT_SPEC);
-		if (mob_index[nr].number == 1) /*
+		if (mob_index[nr].number == (detached ? 0 : 1)) /*
 		                                * only first, not every
 		                                */
 			logit(LOG_MOB, "ACT_SPEC, but no function: %d %s",
@@ -2794,32 +2860,95 @@ P_char read_mobile(int nr, int type, bool apply_mob_gold)
 	}
 
 	/* init a periodic event for each mob */
-	if (!mobile_probe_mode)
-	{
-		// All mobs do mundane things.
-		world_activity_schedule_mundane(mob, false, true);
-		// ACT_SPEC mobs with specials proc check CMD_SET_PERIODIC.
-		if (IS_SET(mob->specials.act, ACT_SPEC))
-		{
-			if ((mob_index[mob->only.npc->R_num].func.mob)(mob, NULL, CMD_SET_PERIODIC,
-								       NULL))
-				add_event(event_mob_proc, PULSE_MOBILE + number(-4, 4), mob, 0, 0,
-					  0, 0, 0);
-		}
-		if (IS_ACT(mob, ACT_PATROL))
-			add_event(event_patrol_move, WAIT_SEC, mob, 0, 0, 0, 0, 0);
-	}
+	if (!detached && !mobile_probe_mode)
+		schedule_mobile_periodic(mob, false);
 
 	convertMob(mob, apply_mob_gold);
 
-	if (!mobile_probe_mode && IS_AFFECTED(mob, AFF_STONE_SKIN | AFF_BIOFEEDBACK))
+	if (!detached && !mobile_probe_mode && IS_AFFECTED(mob, AFF_STONE_SKIN | AFF_BIOFEEDBACK))
 		add_event(event_mob_skin_spell, number(1, 5), mob, 0, 0, 0, 0, 0);
 
 	// The legacy list is linked early; publish identity only after initialization.
-	register_character_runtime_id(mob);
-	if (!mobile_probe_mode)
-		character_maintenance_enter(mob);
+	if (!detached)
+	{
+		register_character_runtime_id(mob);
+		if (!mobile_probe_mode)
+			character_maintenance_enter(mob);
+	}
+	cleanup.character = nullptr;
 	return (mob);
+}
+
+// read a mobile from MOB_FILE. `apply_mob_gold` is false for callers that will
+// link the new NPC as a player's pet after loading it.
+P_char read_mobile(int nr, int type, bool apply_mob_gold)
+{
+	return read_mobile_body(nr, type, apply_mob_gold, false);
+}
+
+bool quest_mobile_native_stage::prepare(int nr, int type, bool apply_mob_gold)
+{
+	if (!nevent_require_game_thread("native_mobile_prepare") || character_ ||
+	    mobile_probe_mode || (type != REAL && type != VIRTUAL) || !mob_f || !mob_index)
+		return false;
+	const int rnum = type == VIRTUAL ? real_mobile(nr) : nr;
+	if (rnum < 0 || rnum > top_of_mobt)
+		return false;
+	P_char prepared = read_mobile_body(rnum, REAL, apply_mob_gold, true);
+	if (!prepared)
+		return false;
+	character_ = prepared;
+	return true;
+}
+
+bool quest_mobile_native_stage::discard_empty() noexcept
+{
+	if (!nevent_require_game_thread("native_mobile_discard") || !character_ ||
+	    !discard_unpublished_mobile(character_))
+		return false;
+	character_ = nullptr;
+	return true;
+}
+
+bool quest_mobile_native_stage::publish(int room_rnum, P_char *live_after_hooks)
+{
+	if (!nevent_require_game_thread("native_mobile_publish") || !character_ ||
+	    !live_after_hooks || mobile_probe_mode || !world || room_rnum < 0 ||
+	    room_rnum > top_of_world)
+		return false;
+	P_char mob = character_;
+	if (!IS_NPC(mob) || !mob->only.npc || mob->in_room != NOWHERE || mob->next ||
+	    mob->next_in_room || mob->desc || mob->nevents || mob->nevents_tail ||
+	    mob->character_maintenance_in_world || !mob->runtime_id || !IS_ALIVE(mob) ||
+	    find_character_by_runtime_id(mob->runtime_id))
+		return false;
+	for (P_char live = character_list; live; live = live->next)
+		if (live == mob)
+			return false;
+	const int nr = mob->only.npc->R_num;
+	if (nr < 0 || nr > top_of_mobt || mob_index[nr].number == INT_MAX)
+		return false;
+	const uint64_t runtime_id = mob->runtime_id;
+	// Registration allocation failure leaves the stage unlinked and retained.
+	register_character_runtime_id(mob);
+	mob->next = character_list;
+	character_list = mob;
+	++mob_index[nr].number;
+	character_ = nullptr;
+	*live_after_hooks = nullptr;
+	// Consumption precedes all room/special callbacks. No native commit is inferred.
+	if (!char_to_room(mob, room_rnum, -2) || find_character_by_runtime_id(runtime_id) != mob)
+	{
+		*live_after_hooks = find_character_by_runtime_id(runtime_id);
+		return true;
+	}
+	if (!schedule_mobile_periodic(mob, true))
+		return true;
+	if (IS_AFFECTED(mob, AFF_STONE_SKIN | AFF_BIOFEEDBACK))
+		add_event(event_mob_skin_spell, number(1, 5), mob, 0, 0, 0, 0, 0);
+	character_maintenance_enter(mob);
+	*live_after_hooks = find_character_by_runtime_id(runtime_id);
+	return true;
 }
 
 P_char read_mobile(int nr, int type)

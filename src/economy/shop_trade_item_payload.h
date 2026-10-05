@@ -23,7 +23,11 @@ inline bool shop_trade_accounted_after_items(const shop_trade_payload &payload,
 	try
 	{
 		std::vector<uint8_t> encoded;
-		if (!shop_trade_command_encode_accounted_payload(payload, &encoded))
+		if (!(payload.recovery_manifest_recorded ?
+			      shop_trade_command_encode_recovery_payload(payload, &encoded) :
+		      payload.native_destination_weight_recorded ?
+			      shop_trade_command_encode_native_payload(payload, &encoded) :
+			      shop_trade_command_encode_accounted_payload(payload, &encoded)))
 			return false;
 		std::vector<player_item_snapshot> candidate;
 		if (player_item_snapshot_list_decode(payload.item_blob.data(),

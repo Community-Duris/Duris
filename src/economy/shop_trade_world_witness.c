@@ -228,7 +228,7 @@ struct census
 				return false;
 		return true;
 	}
-	bool forest(P_char ch)
+	bool forest(P_char ch, size_t *count = nullptr)
 	{
 		std::unordered_set<P_obj> seen;
 		auto root = [&](P_obj object, link_kind kind, int slot)
@@ -245,6 +245,8 @@ struct census
 		for (P_obj object = ch->carrying; object; object = object->next_content)
 			if (!root(object, link_kind::carried, 0))
 				return false;
+		if (count)
+			*count = seen.size();
 		return true;
 	}
 };
@@ -541,7 +543,7 @@ bool shop_trade_world_witness_observe(const shop_trade_world_expectation &expect
 		    !same_items(candidate.keeper_items, expected.keeper_items))
 			return false;
 		if (candidate.actor &&
-		    (!world_census.forest(candidate.actor) ||
+		    (!world_census.forest(candidate.actor, &candidate.player_physical_item_count) ||
 		     !capture_body(candidate.actor, false, expected.literal_player_root_uids,
 				   candidate.player_items)))
 			return false;
@@ -781,6 +783,56 @@ bool expected_native_order(const shop_trade_payload &payload, P_char recipient, 
 	}
 }
 } // namespace
+
+bool shop_trade_world_player_values_supported(std::span<const player_item_snapshot> values) noexcept
+{
+	try
+	{
+		std::unordered_set<uint64_t> identities;
+		if (!validate_forest(values, false, false, identities))
+			return false;
+		// Match capture_item_tree's memory budget, separately from the existing
+		// observer's wire/value bounds. Charge its envelope and copied NULs.
+		size_t bytes = sizeof(player_snapshot);
+		const auto add = [&](size_t amount)
+		{
+			if (bytes > PLAYER_SNAPSHOT_MAX_BYTES ||
+			    amount > PLAYER_SNAPSHOT_MAX_BYTES - bytes)
+				return false;
+			bytes += amount;
+			return true;
+		};
+		const auto text = [&](const std::string &value) {
+			return value.size() <= PLAYER_SNAPSHOT_MAX_STRING_BYTES &&
+			       add(value.size() + 1);
+		};
+		for (const auto &item : values)
+		{
+			if (!add(sizeof(player_item_snapshot)) ||
+			    ((item.string_mask & STRUNG_KEYS) && !text(item.name)) ||
+			    ((item.string_mask & STRUNG_DESC2) && !text(item.short_description)) ||
+			    ((item.string_mask & STRUNG_DESC1) && !text(item.description)) ||
+			    ((item.string_mask & STRUNG_DESC3) && !text(item.action_description)) ||
+			    !add(item.dynamic_affects.size() *
+				 sizeof(player_item_dynamic_affect_snapshot)))
+				return false;
+			for (const auto &extra : item.extra_descriptions)
+			{
+				if (!add(sizeof(player_item_extra_description_snapshot)) ||
+				    !text(extra.keyword) ||
+				    (extra.spellbook ?
+					     !add(extra.spell_ids.size() * sizeof(int32_t)) :
+					     !text(extra.description)))
+					return false;
+			}
+		}
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
 
 bool shop_trade_world_expected_player_order(const shop_trade_payload &payload, P_char actor,
 					    P_obj selected, P_obj destination,

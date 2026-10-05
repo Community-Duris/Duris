@@ -92,6 +92,48 @@ and `receipts`. Every collection is required and limited to 100,000 rows. A
 source snapshot larger than either limit needs a reviewed partitioning method;
 truncating and setting `complete: true` is prohibited.
 
+Every committed root also requires `canonical_plan`, the lowercase hex of its
+original retained EAP1 bytes, and `plan_digest`, `intent_digest`, and
+`domain_digest` as lowercase SHA-256 hex. Its metadata includes
+`original_operation_id` (null when absent), `accounting_version`, `writer_id`,
+`policy_version`, `compiler_version`, `actor_kind`, and `actor_id`, together with
+the existing lineage, epoch, operation ID, reason, and source event. Counts
+include `before_witness_count` and `after_witness_count`. Missing original plans
+produce `missing_original_plan` for every backend, including synthetic inputs;
+an internally balanced projection does not supply this proof. Old exports must
+be recaptured from retained authority rather than resealed from their projected
+rows. Rejected roots must have no canonical plan or plan digest.
+
+The independent reader decodes EAP1 without invoking a mutation codec. It checks
+root metadata, counts and digests, then compares original account effects,
+posting event/account/child links, child IDs and derivation facts, and item
+event/child/UID/revision links. Posting rows preserve `event_index`; item
+references preserve `line_index`. Linked ownership events preserve `from_owner`,
+`from_equipment_slot`, and `to_equipment_slot` as exact numeric facts. Original
+plan custody is compared with the linked ledger's source/destination owners,
+root, parent, UID revision, and equipment slots. Coherent rewrites of projected
+child derivations or reassignment of posting/item children produce specific
+`original_plan_*_mismatch` findings. These checks retain all earlier semantic
+findings and never change the supplied snapshot.
+
+Each EAP1 is at most 4 MiB; their decoded input total is at most 32 MiB. The
+whole JSON file remains limited to 32 MiB, including hex expansion. Before
+fetching plans, the SQL exporter checks selected nonbaseline root count, total
+hex-expanded plan size, and maximum individual plan size within the same
+read-only consistent transaction. Exported EAP1 contains fixed-width numeric
+facts and non-personal IDs. Opaque EAI1 facts are not exported. Operator views
+omit canonical bytes and personal aliases; limits 0/1/100 preserve the global
+audit result. `checked.original_plans_verified` counts roots whose plan and
+captured projections passed these checks, including when no exception details
+are requested.
+
+This authenticates the captured projections against the supplied original plan
+and persisted digests. It does not authenticate opaque original intent facts,
+the complete command binding or receipt payload, attested native completeness,
+or uncollected historical roots. A model-authored plan remains synthetic
+evidence. SQL cuts remain `complete: false`; these checks do not qualify a
+writer, authorize correction/activation, or satisfy the release matrix.
+
 Native money and item revisions are exact JSON integers in 0..UINT64_MAX,
 matching their unsigned native schema and wire fields. Boolean, negative or
 larger values are malformed evidence. This differs from signed denomination

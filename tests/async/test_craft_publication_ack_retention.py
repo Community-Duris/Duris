@@ -24,7 +24,7 @@ SOURCES = (
     "account/character_identity.c", "item/item_movement_transaction.c", "item/item_transfer_command.c",
     "item/craft_pouch_mutation.c", "combat/chaos_pouch_ledger.c", "combat/chaos_pouch_publication.c",
     "player/player_snapshot_codec.c", "economy/item_transfer_accounting.c",
-    "economy/economic_accounting_types.c", "economy/economic_accounting_plan.c",
+    "economy/economic_accounting_types.c", "economy/economic_accounting_plan.c", "economy/economic_source_event.c",
     "economy/economic_accounting_intent.c", "economy/economic_gameplay_authority.c",
     "economy/economic_command_admission.c", "economy/economic_currency_adapter.c",
     "economy/currency_command.c", "economy/coin_transfer_accounting.c",

@@ -73,6 +73,8 @@ def workload(document, specs):
                 or row["provider"] not in {"sql", "self-sql", "offline", "non-root", "privileged-recovery"}
                 or not row["required_cases"] or len(set(row["required_cases"])) != len(row["required_cases"])
                 or row["mode"] not in {"script", "unittest"} or row["timeout_seconds"] <= 0
+                or type(row.get("schema_identity_bytes", 6)) is not int
+                or row.get("schema_identity_bytes", 6) not in {4, 6}
                 or any(engine not in {*document["engines"], "once"} for engine in row["engines"])):
             raise ValueError("invalid integration row: " + row["id"])
     return rows
@@ -317,7 +319,8 @@ def main(argv=None):
                         row_environment.update(sql.environment)
                         if row.get("schema_prefix"):
                             schema = sql.schema(row["schema_prefix"], migrated=row["migrated"],
-                                                suffix=row["environment"].get("schema_suffix", ""))
+                                                suffix=row["environment"].get("schema_suffix", ""),
+                                                identity_bytes=row.get("schema_identity_bytes", 6))
                         else:
                             schema = nullcontext(sql.environment)
                     else:

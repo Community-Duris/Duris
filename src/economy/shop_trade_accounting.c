@@ -155,7 +155,7 @@ item_owner_identity after_owner(const shop_trade_payload &payload)
 bool shop_payload_valid(const critical_command &command, shop_trade_payload *payload)
 {
 	return (command.payload_version == SHOP_TRADE_PAYLOAD_VERSION ||
-		command.payload_version == SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION) &&
+		shop_trade_payload_version_is_accounted(command.payload_version)) &&
 	       shop_trade_command_decode_payload(command, payload) && payload->keeper_vnum > 0;
 }
 } // namespace
@@ -200,7 +200,7 @@ economic_accounting_error shop_trade_shared_accounting_intent(const critical_com
 							      const economic_account_key &bank,
 							      std::vector<uint8_t> *encoded)
 {
-	if (!encoded || command.payload_version != SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION ||
+	if (!encoded || !shop_trade_payload_version_is_accounted(command.payload_version) ||
 	    command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
 	    critical_operation_id_is_zero(epoch))
 		return error::invalid_version;
@@ -253,7 +253,7 @@ shop_trade_accounting_decode(const critical_command &command, economic_frozen_in
 		const auto facts = std::span<const uint8_t>(parsed_intent.admission.facts);
 		const bool shared = facts.size() == 16;
 		if ((!shared && facts.size() != 24) ||
-		    shared != (command.payload_version == SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION))
+		    shared != (shop_trade_payload_version_is_accounted(command.payload_version)))
 			return error::invalid_identity;
 		const auto &lineage = parsed_intent.admission.metadata.lineage;
 		const economic_account_key parsed_wallet = { lineage, economic_account_kind::wallet,
