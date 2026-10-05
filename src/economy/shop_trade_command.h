@@ -8,6 +8,9 @@
 #include <cstdint>
 
 constexpr uint16_t SHOP_TRADE_PAYLOAD_VERSION = 5;
+// Explicit accounted-only capability; legacy builders continue to emit v5.
+constexpr uint16_t SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION = 6;
+constexpr size_t SHOP_TRADE_ACCOUNTED_TAIL_BYTES = 16;
 constexpr uint16_t SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION = 4;
 constexpr uint16_t SHOP_TRADE_CONTAINER_PAYLOAD_VERSION = 3;
 constexpr uint16_t SHOP_TRADE_STOCK_PAYLOAD_VERSION = 2;
@@ -63,6 +66,10 @@ struct shop_trade_payload
 	std::array<shop_trade_item_entry, SHOP_TRADE_MAX_ITEMS> items;
 	uint32_t item_blob_size;
 	std::array<uint8_t, SHOP_TRADE_ITEM_BLOB_MAX_BYTES> item_blob;
+	// v6 only: exact original player status preimage, independently verified under
+	// the native player row lock. Frozen placement transforms never read today's level.
+	uint64_t expected_player_save_revision = 0;
+	uint32_t expected_player_level = 0;
 };
 
 struct shop_trade_result
@@ -84,6 +91,8 @@ struct shop_trade_result
 
 bool shop_trade_command_encode_payload(const shop_trade_payload &payload,
 				       std::vector<uint8_t> *encoded);
+bool shop_trade_command_encode_accounted_payload(const shop_trade_payload &payload,
+						 std::vector<uint8_t> *encoded);
 bool shop_trade_command_decode_payload(const critical_command &command,
 				       shop_trade_payload *payload);
 bool shop_trade_command_encode_result(const shop_trade_result &result,
@@ -93,5 +102,13 @@ bool shop_trade_command_decode_result(const uint8_t *encoded, size_t size,
 bool shop_trade_command_build(critical_command *command, critical_operation_id operation_id,
 			      const shop_trade_payload &payload, critical_source_site source_site,
 			      critical_deadline_class deadline_class);
+
+// Source status checkpoint/hold is a native producer prerequisite, not a caller
+// assertion granted by this pure codec. This does not freeze an accounting intent.
+bool shop_trade_command_build_accounted(critical_command *command,
+					critical_operation_id operation_id,
+					const shop_trade_payload &payload,
+					critical_source_site source_site,
+					critical_deadline_class deadline_class);
 
 #endif
