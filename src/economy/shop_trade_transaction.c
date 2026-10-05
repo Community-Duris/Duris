@@ -65,6 +65,19 @@ class shop_trade_native_publication_owner final
 		return false;
 	}
 
+	// The original live preparation keeps its separate produced/notification
+	// continuation after cancellation. This private callback grants no native
+	// execution/publication proof; the coordinator authenticates the exact
+	// never-admitted command and refusal before invoking it.
+	static bool original_refusal_no_native_effect(const critical_command &command,
+						      const critical_completion &completion,
+						      void *context) noexcept
+	{
+		return !context && critical_completion_disposition_valid(completion) &&
+		       completion.disposition == critical_completion_disposition::never_admitted &&
+		       command.operation_id.bytes == completion.operation_id.bytes;
+	}
+
     public:
 	static bool publish_retained(const critical_command &command,
 				     const critical_completion &sealed, void *entry) noexcept
@@ -97,7 +110,7 @@ class shop_trade_native_publication_owner final
 	{
 		return completion.disposition == critical_completion_disposition::never_admitted &&
 		       player_save_restored_publication_owner::publish_shop(
-			       command, completion, no_native_effect, nullptr);
+			       command, completion, original_refusal_no_native_effect, nullptr);
 	}
 };
 

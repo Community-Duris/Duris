@@ -2601,7 +2601,8 @@ bool player_save_restored_publication_owner::publish_shop(
 		if (!owner.reservation_.valid() || player_save_worker_pid_pending(pid))
 			return false;
 		if (completion.disposition == critical_completion_disposition::never_admitted)
-			return critical_command_coordinator_cancel_shop_publication(owner);
+			return critical_command_coordinator_cancel_shop_publication(
+				owner, native_publish, context);
 		// Held native publication proves the frozen inventory/level itself. Dirty
 		// volatile STATUS marks remain eligible for a later ordinary capture.
 		player_revision_snapshot revision = {};
