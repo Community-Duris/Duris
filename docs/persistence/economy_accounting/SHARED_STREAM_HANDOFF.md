@@ -1,5 +1,19 @@
 # Accounting implementation and qualification handoff
 
+## Maintained SQL build and managed cold restore — 2026-10-04
+
+The [fresh Plan5 qualification](PLAN5_SQL_MANAGED_RESTORE_QUALIFICATION_2026-10-04.md)
+reports716 strict maintained C++20 objects and a complete SQL server link, then
+both canonical0056 databases pass the original managed dump/cold-import/service
+boot checks with zero skips. This closes the earlier collector compiler blocker
+for native treee0185879. Current published native/migration trees and the six
+named backup/restore harness inputs match its frozen31751b706 inputs exactly;
+the peer report is imported byte-for-byte froma592aa177 after source review.
+No local rerun or qualification of incoming private source is claimed.
+Synthetic history fixtures, inactive boots and these two restore cases do not
+prove real producer/gameplay journeys, full-world accounting, retention policy
+or R1–R8 release acceptance. Major-plan qualification remains required.
+
 ## Integrated selected operation count validation — 2026-10-04
 
 The [independent Plan5 repair](PLAN5_SELECTED_ROOT_COUNT_TYPES_SLICE_2026-10-04.md)
