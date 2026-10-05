@@ -15,8 +15,8 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1440
-assert report['mapped_area_count'] == 111 and report['eligible_by_zone']['162'] == 4
+assert report["daily_unit_count"] == 1438
+assert report['mapped_area_count'] == 112 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -273,6 +273,20 @@ assert (harpyht['schema_version'],harpyht['revision'])==(3,2)
 assert len(harpyht['stories'])==2 and len(harpyht['contacts'])==5 and len(harpyht['exclusions'])==1 and report['eligible_by_zone']['311']==2
 assert sum(t.get('optional',False) for s in harpyht['stories'] for t in s['steps'])==3
 assert [(c['mob_vnum'],c['topics']) for c in harpyht['contacts'] if c['topics']]==[(31108,['undead'])]
+
+herders=next(m for m in catalog['story_mappings'] if m['source_area']=='herders')
+assert (herders['schema_version'],herders['revision'],herders['coverage'])==(3,1,'complete')
+assert len(herders['stories'])==12 and len(herders['contacts'])==15 and not herders['exclusions'] and report['eligible_by_zone']['943']==6
+assert sum(s['category']=='service' for s in herders['stories'])==6
+assert sum(len(c['topics']) for c in herders['contacts'])==52
+assert sum(t.get('optional',False) for s in herders['stories'] for t in s['steps'])==19
+hstories={s['id']:s for s in herders['stories']}
+assert [t['item_vnums'] for t in hstories['two-farseer-mind-halves']['steps'][:-1]]==[[94344],[94345]]
+assert hstories['five-beholder-eyes']['steps'][0]['count']==5
+assert [t['count'] for t in hstories['diorite-boots']['steps'][:-1]]==[1,2,3]
+assert hstories['diorite-boots']['steps'][0]['item_vnums']==hstories['diorite-warlord-statue']['steps'][0]['item_vnums']==[94378]
+assert all(t.get('optional') for s in herders['stories'] for t in s['steps'][:-1])
+assert all(s['steps'][-1]['contracts']==s['contracts'] for s in herders['stories'])
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

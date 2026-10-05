@@ -181,8 +181,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 111 &&
-				tracker.summary_for(7, 42).total == 1581,
+		require(catalog.story_mappings.size() == 112 &&
+				tracker.summary_for(7, 42).total == 1575,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7549,6 +7549,154 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &halves = story_for("herders", "two-farseer-mind-halves");
+			const auto &revenge = story_for("herders", "drakasyth-revenge");
+			const auto &eyes = story_for("herders", "five-beholder-eyes");
+			const auto &boots = story_for("herders", "diorite-boots");
+			const auto &statue = story_for("herders", "diorite-warlord-statue");
+			const auto &eyepatch = story_for("herders", "dragonkin-eyepatch");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 943, 94300, 100, "arrival") ==
+					result::applied,
+				"Herders discovery failed");
+			const auto mapping = std::find_if(catalog.story_mappings.begin(),
+							  catalog.story_mappings.end(),
+							  [](const auto &m)
+							  { return m.source_area == "herders"; });
+			require(mapping != catalog.story_mappings.end(), "Herders mapping missing");
+			for (const auto &contact : mapping->contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 94300, 101) ==
+						result::applied,
+					"Herders contact projection failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Herders journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[94344] = 2;
+			supplies.equipped[18] = 94345;
+			supplies.carried[94392] = 4;
+			supplies.carried[94351] = 1;
+			supplies.carried[94334] = 1;
+			supplies.carried[94378] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 943, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(halves).find("[Ready now] " + halves.steps[0].text) !=
+						std::string::npos &&
+					section(halves).find("[Missing now] " +
+							     halves.steps[1].text) !=
+						std::string::npos,
+				"Duplicate left halves or held right half satisfied both proofs");
+			require(section(eyes).find("[Missing now] " + eyes.steps[0].text) !=
+						std::string::npos &&
+					section(revenge).find("[Missing now] " +
+							      revenge.steps[0].text) !=
+						std::string::npos &&
+					section(eyepatch).find("[Missing now] " +
+							       eyepatch.steps[0].text) !=
+						std::string::npos,
+				"Four eyes/reward sword/container proxy satisfied exact bundle");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 943).completed == 0 &&
+					journey.progress_for_zone(7, 42, 943).total == 6,
+				"Material preparation fabricated Herders outcomes");
+			supplies.equipped.clear();
+			supplies.carried[94345] = 1;
+			supplies.carried[94343] = 1;
+			supplies.carried[94340] = 1;
+			supplies.carried[94392] = 5;
+			journal = journey.render_journal(7, 42, 943, 10, 1, 108, false, false,
+							 &supplies);
+			require(section(halves).find("[Ready now] " + halves.steps[1].text) !=
+						std::string::npos &&
+					section(eyes).find("[Ready now] " + eyes.steps[0].text) !=
+						std::string::npos &&
+					section(revenge).find("[Ready now] " +
+							      revenge.steps[0].text) !=
+						std::string::npos,
+				"Matching supplied proof required own source/kill/key history");
+			require(section(boots).find("[Ready now] " + boots.steps[0].text) !=
+						std::string::npos &&
+					section(statue).find("[Ready now] " +
+							     statue.steps[0].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 943).completed == 0,
+				"Competing diorite preparation fabricated either craft");
+			// Synthetic settled receipts test journal projection, not native item/coin/XP/source admission.
+			record(journey, halves.contracts.front(), "herders-supplied-halves", 943,
+			       94607);
+			require(journey.progress_for_zone(7, 42, 943).completed == 1 &&
+					journey.evidence_for(revenge.contracts.front(), 2)
+							.successful_attempts == 0,
+				"One proof finale fabricated earlier campaign/kill outcomes");
+			record(journey, statue.contracts.front(), "herders-statue-service", 943,
+			       94615);
+			supplies.carried.erase(94378);
+			journal = journey.render_journal(7, 42, 943, 10, 1, 112, false, false,
+							 &supplies);
+			require(section(statue).find("[Recorded] " + statue.steps.back().text) !=
+						std::string::npos &&
+					section(boots).find("[Missing now] " +
+							    boots.steps[0].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 943).completed == 1,
+				"Recorded service recreated spent scales or earned achievement");
+			for (const auto &entry : mapping->stories)
+			{
+				if (entry.id == halves.id || entry.id == statue.id)
+					continue;
+				const std::string tx = "herders-" + entry.id;
+				record(journey, entry.contracts.front(), tx.c_str(), 943, 94300);
+			}
+			require(journey.progress_for_zone(7, 42, 943).completed == 6,
+				"Herders service counted or independent story lost");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &unit) {
+						      return unit.zone_number == 943 &&
+							     unit.daily_candidate;
+					      }) == 6,
+				"Herders XP daily candidate or service classification changed");
+			auto replay = completion(halves.contracts.front(),
+						 "herders-supplied-halves", 120);
+			replay.transaction.zone_number = 943;
+			replay.transaction.room_vnum = 94607;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Herders replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 943).completed == 6 &&
+					!recovered.has_discovered(7, 42, 431),
+				"Herders recovery lost stories or invented Fenaline discovery");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 943, 94300, 100, "arrival") ==
+					result::applied,
+				"Herders historical discovery failed");
+			for (const auto &entry : mapping->stories)
+			{
+				const std::string tx = "herders-historical-" + entry.id;
+				record(historical, entry.contracts.front(), tx.c_str(), 943, 94300);
+			}
+			require(historical.progress_for_zone(7, 42, 943).completed == 12,
+				"Historical raw Herders fixture failed");
+			service reclassified(catalog);
+			require(reclassified.deserialize_state(historical.serialize_state(),
+							       &error) &&
+					reclassified.progress_for_zone(7, 42, 943).completed == 6,
+				"Historical Herders receipts lost or services still count");
+			for (const auto &entry : mapping->stories)
+				require(reclassified.evidence_for(entry.contracts.front(), 2)
+							.successful_attempts == 1,
+					"Historical native service/story receipt erased");
+		}
 		{
 			const auto &dwarf = story_for("harpyht", "free-the-chained-dwarf");
 			const auto &queen = story_for("harpyht", "queen-rescue-proof");

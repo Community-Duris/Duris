@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 111 authored journals.
+2668 distinct Q contracts; 112 authored journals.
 
 Regenerate with:
 
@@ -106,7 +106,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Harrow -The Gnome Village (`harrow`) | 8 | 4 | 1 | Yes | [1 × a token; 1 × leather alchemist sack; 1 × faerie dust → lucky alchemist sack](../../areas/qst/harrow.qst#L73) | inn |
 | Zalkapfaan, City of the Headless Horde (`headless`) | 8 | 2 | 0 | Fallback | [1 × a purchase requisition; 1 × the scales of a sea serpent → platemail of the sea serpent](../../areas/qst/headless.qst#L42) | — |
 | Heaven (`heavens`) | 9 | 3 | 0 | Fallback | [6 × a pile of brittle alloy; 1 × a gauze bandage → Token of the Gods](../../areas/qst/heavens.qst#L173) | annoying_mob, archer, artifact_biofeedback, artifact_hide, artifact_monolith, artifact_stone |
-| The Behemoth Herders (`herders`) | 12 | 29 | 0 | Fallback | [1 × some scales of diorite; 2 × a large piece of bone; 3 × a piece of a bone fragment → some bone-reinforced boots of diorite](../../areas/qst/herders.qst#L157) | — |
+| The Behemoth Herders (`herders`) | 12 | 29 | 0 | Yes | [1 × some scales of diorite; 2 × a large piece of bone; 3 × a piece of a bone fragment → some bone-reinforced boots of diorite](../../areas/qst/herders.qst#L157) | — |
 | Southern Coastal Highway (`highway`) | 3 | 8 | 0 | Fallback | [1 × a harpy tooth; 1 × the hair from a harpy → an ear clasp of petrified dragon claws](../../areas/qst/highway.qst#L90) | hewards_mystical_organ, kearonor_hide, wand_of_wonder |
 | The Caverns of Armageddon (`hunt`) | 18 | 15 | 2 | Yes | [1 × a pair archangel wings; 1 × a beholder eyestalk; 1 × a wispy tendril of flame; other required items → the amulet of kilospanatis, a hazy, blue amulet](../../areas/qst/hunt.qst#L310) | — |
 | IceCrag Castle (`icecrag`) | 11 | 55 | 1 | Yes | [1 × a red fox pelt; 1 × an ogres brain; 1 × a plate of clams in a spicy black bean sauce; other required items → a map of Icecrag Castle, a juicy onion](../../areas/qst/icecrag.qst#L141) | artifact_hide, ice_artist, ice_bodyguards, ice_cleaning_crew, ice_commander, ice_garden_attendant |

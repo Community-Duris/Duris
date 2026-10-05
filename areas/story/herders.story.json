@@ -1,0 +1,722 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "herders",
+  "coverage": "complete",
+  "introduction": "Explore the undead herders’ tunnels, return stolen lives and proofs, and choose which bonesmith services to pursue. Six independent story requests and six services use exact materials. New discovery and progress require active, ready accounting.",
+  "orientation": [
+    "Enter from the Burnt Plains of a Fallen Realm or the Rocky Foothills of the Black Mountains. The deep tunnel also connects to the upper Underdark. Water currents, the Demon Well and hostile inhabitants make travel dangerous; the journal does not remove those risks.",
+    "PULL either fixed crank to open its blocked tunnel route. PUSH the boulder to reach the dragon’s approach, and PUSH the unfinished statue to reveal the later passage. These controls change shared access: seeing an open route does not prove you operated it.",
+    "The lich dark wizard beside Zugle holds the wand with a black gem. Bring that exact wand to the brutalized gnome. He leaves after the accepted rescue and awards experience. Using a wand, owning a similar wand or defeating the lich does not itself record the rescue.",
+    "The bone abomination carries the small bone key for Argle’s office. UNLOCK and OPEN the office door when needed. Argle offers five bonesmith recipes; the imprisoned gnome offers the sixth service. Those crafts remain outside story achievement and daily credit.",
+    "Blood-smeared sleeves and leggings come from the undead shopkeeper. Search bone piles or the corpse pile for small fragments and large bones. The fomorian giant also carries a large bone. Tiny scales belong to the tiny dragonkin following the short necromancer, rather than the necromancer’s own inventory. Remove hidden ingredients from containers before offering them.",
+    "The small leather eyepatch is hidden inside the halfling corpse in the secluded alcove. Argle asks for the eyepatch and three tiny dragonkin scales. His finished eyepatch describes ten scales, but the accepted recipe requires three.",
+    "Argle’s four recipes with copper fees are currently unavailable while accounting is active. Keep their advertised materials and fees visible as service guidance; supplying materials or coins does not create a completed craft. Do not spend a different recipe’s material expecting it to count twice.",
+    "To aid the nereid shade, PUSH the boulder and seek the ancient two-headed black dragon for the foreign lifeforce. This material does not survive ordinary rent/save handling; do not assume it will still be available after reconnecting. Return the actual lifeforce for a magical crystal and the shade’s departure. Her response describes restoration, without recording a separate escort or healing action.",
+    "Drakasyth’s revenge request needs both Archazel’s huge bone broadsword and Viscerith’s tainted soul. Viscerith does not always carry the soul. Desecration, the reward, is a different sword and cannot replace the requested broadsword. Supplied matching proofs work without your own kills.",
+    "Drakasyth’s second request needs five undead beholder central eyes together. The five beholders in the royal stronghold carry the eyes; they are not CARVE rewards. Zugle’s plain diorite key opens the serpent chamber, and the serpent’s enchanted key opens the royal route. Stronghold golems carry a further key. One locked stronghold door has a mismatched reverse key: qualify your return route before relying on it.",
+    "The guardian hellbeast wears the collar that serves as the key to the last cell. Remove it before using it as a loose key. Persevesk holds the beaten grey elf infant there, beside the bound grey elf prisoner Pearls. Give the exact infant to the prisoner for the rescue and experience award. The response’s cutting, healing and departure are not additional required player actions.",
+    "For the tall vampire warlock, ENTER the fixed dark rift to reach the keymaster; DOWN returns. His held key unlocks the two spires. The northern entrance leads to the right mind half and the southern entrance to the left. Bring one of each: two copies of either half will not satisfy the request. The warlock leaves after the accepted exchange for fangs.",
+    "The imprisoned gnome carver exchanges the same diorite scales used for Argle’s boots for a diorite warlord statue. He remains after the craft. His prisoner description does not make this recipe a rescue; PUSH the unfinished statue is a separate shared access control.",
+    "Shaenae the Mystic in Fenaline owns the request for the aged silver ring found in the Bone Yard’s stock. That foreign hand-in awards experience and copper, and remains in Fenaline’s journal. The silver stud is a different item. Finding a ring here does not complete Shaenae’s request.",
+    "ENTER the fixed pool of blood to reach its hidden tunnel; UP returns. Shops, the inn, buried-looking props, unbound prisoner and monster lore, and Archazel’s epic training are separate from these six story requests. Training has its own class, race, level and payment restrictions and is unavailable under active accounting.",
+    "All six story requests are potential dailies under current rules. Availability depends on current materials, legitimate item supply and the return of givers who leave. The quests can be completed independently; a matching gift does not require earlier personal kills, travel, or another story receipt."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 94319,
+      "name": "a flaming skeleton highlord",
+      "keyword": "highlord",
+      "description": "In the first warlord group: greeting yields a refusal, without a quest reward.",
+      "topics": [
+        "hello",
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 94320,
+      "name": "Zugle, wight warlord",
+      "keyword": "zugle",
+      "description": "Carries the plain diorite key. Ask about Viscerith for the former mount’s history.",
+      "topics": [
+        "hi",
+        "hello",
+        "viscerith"
+      ]
+    },
+    {
+      "mob_vnum": 94321,
+      "name": "a lich dark wizard",
+      "keyword": "wizard",
+      "description": "Beside Zugle: holds the black-gem wand; ask about riders, the flaming horde or the pyrobeast.",
+      "topics": [
+        "hi",
+        "hello",
+        "zugle",
+        "behemoth",
+        "riders",
+        "flaming",
+        "horde",
+        "pyrobeast"
+      ]
+    },
+    {
+      "mob_vnum": 94322,
+      "name": "a brutalized gnome",
+      "keyword": "gnome",
+      "description": "Beside Zugle: accepts the black-gem wand and leaves after the rescue.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 94323,
+      "name": "an ancient vampiric behemoth",
+      "keyword": "steed",
+      "description": "The ancient behemoth beside Zugle responds to greetings with a public growl.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 94340,
+      "name": "Argle, the Bonesmith",
+      "keyword": "argle",
+      "description": "In his locked office: five bonesmith services. Ask about sleeves, leggings, eyepatch, armor, diorite or boots.",
+      "topics": [
+        "sleeves",
+        "arm",
+        "armplates",
+        "leggings",
+        "legplates",
+        "legs",
+        "eyepatch",
+        "armor",
+        "breastplate",
+        "breast",
+        "plate",
+        "chest",
+        "diorite",
+        "boots"
+      ]
+    },
+    {
+      "mob_vnum": 94360,
+      "name": "a lich warlock",
+      "keyword": "warlock",
+      "description": "The lich warlock explains Zugle’s mount. Topic replies are lore, without a separate completion.",
+      "topics": [
+        "mount",
+        "viscerith",
+        "zugle"
+      ]
+    },
+    {
+      "mob_vnum": 94364,
+      "name": "Archazel",
+      "keyword": "archazel",
+      "description": "Wields the huge bone broadsword requested by Drakasyth. His choke response is public; epic training is a separate guarded service.",
+      "topics": [
+        "choke"
+      ]
+    },
+    {
+      "mob_vnum": 94375,
+      "name": "the shade of a nereid",
+      "keyword": "nereid",
+      "description": "The nereid shade accepts the foreign lifeforce for a crystal and leaves.",
+      "topics": [
+        "hi",
+        "hello",
+        "lifeforce"
+      ]
+    },
+    {
+      "mob_vnum": 94376,
+      "name": "Drakasyth",
+      "keyword": "drakasyth",
+      "description": "In the mist caves: offers revenge and five-eye requests. The Archazel topic has a public response.",
+      "topics": [
+        "zugle",
+        "viscerith",
+        "archazel",
+        "beholder",
+        "beholders"
+      ]
+    },
+    {
+      "mob_vnum": 94403,
+      "name": "a flaming skeleton highlord",
+      "keyword": "highlord",
+      "description": "The later flaming highlord refuses greetings; no additional story outcome.",
+      "topics": [
+        "hello",
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 94404,
+      "name": "a flaming skeleton warrior",
+      "keyword": "warrior",
+      "description": "The flaming warrior refuses greetings; no additional story outcome.",
+      "topics": [
+        "hello",
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 94413,
+      "name": "a bound and gagged grey elf prisoner",
+      "keyword": "prisoner",
+      "description": "Pearls, in the last cell with Persevesk: accepts the beaten grey elf infant and leaves after the rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 94429,
+      "name": "a tall vampire warlock",
+      "keyword": "warlock",
+      "description": "The tall vampire warlock asks for the two distinct farseer mind halves and leaves after accepting them.",
+      "topics": [
+        "hi",
+        "hello",
+        "adversaries",
+        "farseers"
+      ]
+    },
+    {
+      "mob_vnum": 94441,
+      "name": "an imprisoned gnome stone carver",
+      "keyword": "carver",
+      "description": "The imprisoned carver exchanges diorite scales for a statue and remains; his craft is a service.",
+      "topics": [
+        "diorite"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "rescue-the-brutalized-gnome",
+      "title": "Return the black-gem wand to the gnome",
+      "category": "story",
+      "summary": "Return the exact wand to free the brutalized gnome and earn experience. He leaves after the accepted exchange.",
+      "contracts": [
+        {
+          "giver_vnum": 94322,
+          "completion_key": "give=I:94311;receive=E:90000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-94311",
+          "text": "Carry the wand with a black gem",
+          "kind": "carried_item",
+          "item_vnums": [
+            94311
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The lich dark wizard beside Zugle holds the wand. Remove or recover it as a loose item before the hand-in. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the wand to the brutalized gnome",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94322,
+              "completion_key": "give=I:94311;receive=E:90000;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted full hand-in records this outcome. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "bone-reinforced-sleeves",
+      "title": "Argle: bone-reinforced sleeves",
+      "category": "service",
+      "summary": "The recipe needs blood-smeared sleeves, four small bone fragments and 20,000 copper. This paid craft is currently unavailable while accounting is active.",
+      "contracts": [
+        {
+          "giver_vnum": 94340,
+          "completion_key": "give=C:20000,I:94305,I:94305,I:94305,I:94305,I:94318;receive=I:94328;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-94318",
+          "text": "Carry blood-smeared sleeves",
+          "kind": "carried_item",
+          "item_vnums": [
+            94318
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The undead shopkeeper stocks the exact sleeves. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "material-94305",
+          "text": "Carry four small bone fragments",
+          "kind": "carried_item",
+          "item_vnums": [
+            94305
+          ],
+          "count": 4,
+          "optional": true,
+          "hint": "Search the bone piles in the Bone Yard or Royal Graveyard, and the pile of corpses in the hidden alcove. Their shared contents can vary; inspect the actual pile rather than assuming a particular copy holds them. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Record the accepted sleeves craft",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94340,
+              "completion_key": "give=C:20000,I:94305,I:94305,I:94305,I:94305,I:94318;receive=I:94328;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted full hand-in records this outcome. Preparation and dialogue do not complete it. New progress requires active, ready accounting. This is a service, outside zone achievement and daily credit."
+        }
+      ]
+    },
+    {
+      "id": "bone-reinforced-leggings",
+      "title": "Argle: bone-reinforced leggings",
+      "category": "service",
+      "summary": "The recipe needs blood-smeared leggings, four small bone fragments and 20,000 copper. This paid craft is currently unavailable while accounting is active.",
+      "contracts": [
+        {
+          "giver_vnum": 94340,
+          "completion_key": "give=C:20000,I:94305,I:94305,I:94305,I:94305,I:94319;receive=I:94329;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-94319",
+          "text": "Carry blood-smeared leggings",
+          "kind": "carried_item",
+          "item_vnums": [
+            94319
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The undead shopkeeper stocks the exact leggings. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "material-94305",
+          "text": "Carry four small bone fragments",
+          "kind": "carried_item",
+          "item_vnums": [
+            94305
+          ],
+          "count": 4,
+          "optional": true,
+          "hint": "Search the bone piles in the Bone Yard or Royal Graveyard, and the pile of corpses in the hidden alcove. Their shared contents can vary; inspect the actual pile rather than assuming a particular copy holds them. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Record the accepted leggings craft",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94340,
+              "completion_key": "give=C:20000,I:94305,I:94305,I:94305,I:94305,I:94319;receive=I:94329;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted full hand-in records this outcome. Preparation and dialogue do not complete it. New progress requires active, ready accounting. This is a service, outside zone achievement and daily credit."
+        }
+      ]
+    },
+    {
+      "id": "dragonkin-eyepatch",
+      "title": "Argle: a dragonkin-scale eyepatch",
+      "category": "service",
+      "summary": "Exchange the small leather eyepatch and three tiny dragonkin scales for the finished eyepatch. This item-only craft is a service.",
+      "contracts": [
+        {
+          "giver_vnum": 94340,
+          "completion_key": "give=I:94309,I:94309,I:94309,I:94335;receive=I:94341;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-94335",
+          "text": "Carry the small leather eyepatch",
+          "kind": "carried_item",
+          "item_vnums": [
+            94335
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Search the halfling corpse in the secluded alcove and remove the eyepatch. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "material-94309",
+          "text": "Carry three tiny dragonkin scales",
+          "kind": "carried_item",
+          "item_vnums": [
+            94309
+          ],
+          "count": 3,
+          "optional": true,
+          "hint": "The tiny dragonkin familiar following the short necromancer carries these scales. Their availability depends on its stock; the finished eyepatch’s ten-scale description does not change the three-scale recipe. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give Argle the eyepatch and all three scales",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94340,
+              "completion_key": "give=I:94309,I:94309,I:94309,I:94335;receive=I:94341;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted full hand-in records this outcome. Preparation and dialogue do not complete it. New progress requires active, ready accounting. This is a service, outside zone achievement and daily credit."
+        }
+      ]
+    },
+    {
+      "id": "bone-breastplate",
+      "title": "Argle: a bone breastplate",
+      "category": "service",
+      "summary": "The recipe needs four large pieces of bone and 20,000 copper. This paid craft is currently unavailable while accounting is active.",
+      "contracts": [
+        {
+          "giver_vnum": 94340,
+          "completion_key": "give=C:20000,I:94306,I:94306,I:94306,I:94306;receive=I:94342;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-94306",
+          "text": "Carry four large pieces of bone",
+          "kind": "carried_item",
+          "item_vnums": [
+            94306
+          ],
+          "count": 4,
+          "optional": true,
+          "hint": "Search the same bone and corpse piles, or seek the fomorian giant. Large pieces of bone are distinct from small bone fragments, even though their current inspection text is misleading. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Record the accepted breastplate craft",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94340,
+              "completion_key": "give=C:20000,I:94306,I:94306,I:94306,I:94306;receive=I:94342;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted full hand-in records this outcome. Preparation and dialogue do not complete it. New progress requires active, ready accounting. This is a service, outside zone achievement and daily credit."
+        }
+      ]
+    },
+    {
+      "id": "diorite-boots",
+      "title": "Argle: bone-reinforced diorite boots",
+      "category": "service",
+      "summary": "The recipe needs diorite scales, two large bones, three small fragments and 35,000 copper. This paid craft is currently unavailable while accounting is active.",
+      "contracts": [
+        {
+          "giver_vnum": 94340,
+          "completion_key": "give=C:35000,I:94305,I:94305,I:94305,I:94306,I:94306,I:94378;receive=I:94379;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-94378",
+          "text": "Carry diorite scales",
+          "kind": "carried_item",
+          "item_vnums": [
+            94378
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The black diorite serpent carries these scales. Zugle carries the plain diorite key for the serpent chamber; the serpent carries the enchanted key for the royal corridors. The scales can be spent on boots or the sculptor’s statue: completing one never replaces material for the other. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "material-94306",
+          "text": "Carry two large pieces of bone",
+          "kind": "carried_item",
+          "item_vnums": [
+            94306
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Search the same bone and corpse piles, or seek the fomorian giant. Large pieces of bone are distinct from small bone fragments, even though their current inspection text is misleading. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "material-94305",
+          "text": "Carry three small bone fragments",
+          "kind": "carried_item",
+          "item_vnums": [
+            94305
+          ],
+          "count": 3,
+          "optional": true,
+          "hint": "Search the bone piles in the Bone Yard or Royal Graveyard, and the pile of corpses in the hidden alcove. Their shared contents can vary; inspect the actual pile rather than assuming a particular copy holds them. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Record the accepted diorite boots craft",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94340,
+              "completion_key": "give=C:35000,I:94305,I:94305,I:94305,I:94306,I:94306,I:94378;receive=I:94379;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted full hand-in records this outcome. Preparation and dialogue do not complete it. New progress requires active, ready accounting. This is a service, outside zone achievement and daily credit."
+        }
+      ]
+    },
+    {
+      "id": "restore-the-nereid",
+      "title": "Return the nereid’s lifeforce",
+      "category": "story",
+      "summary": "Return the exact foreign lifeforce to the nereid shade for a magical crystal and her departure. This records the hand-in, without a separate healing or escort requirement.",
+      "contracts": [
+        {
+          "giver_vnum": 94375,
+          "completion_key": "give=I:94385;receive=I:94386;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-94385",
+          "text": "Carry the foreign lifeforce",
+          "kind": "carried_item",
+          "item_vnums": [
+            94385
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "PUSH the boulder and follow the dragon approach to the ancient two-headed black dragon. It carries the lifeforce. Ordinary rent/save handling omits this material; keep the actual current supply in view. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the lifeforce to the nereid shade",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94375,
+              "completion_key": "give=I:94385;receive=I:94386;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted full hand-in records this outcome. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "drakasyth-revenge",
+      "title": "Drakasyth: forge Desecration",
+      "category": "story",
+      "summary": "Bring Archazel’s huge bone broadsword and Viscerith’s tainted soul together for Drakasyth’s revenge reward. The request accepts supplied matching proofs.",
+      "contracts": [
+        {
+          "giver_vnum": 94376,
+          "completion_key": "give=I:94340,I:94343;receive=I:94351;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-94343",
+          "text": "Carry the huge bone broadsword",
+          "kind": "carried_item",
+          "item_vnums": [
+            94343
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Archazel wields this exact sword. The reward Desecration is a different sword and cannot substitute. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "material-94340",
+          "text": "Carry Viscerith’s tainted soul",
+          "kind": "carried_item",
+          "item_vnums": [
+            94340
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Viscerith sometimes carries the hidden soul. It is inventory stock, rather than a CARVE reward or proof of your own kill. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give Drakasyth the sword and soul together",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94376,
+              "completion_key": "give=I:94340,I:94343;receive=I:94351;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted full hand-in records this outcome. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "five-beholder-eyes",
+      "title": "Drakasyth: five beholder eyes",
+      "category": "story",
+      "summary": "Offer five undead beholder central eyes together for the necklace. The accepted bundle does not prove five personal kills or a permanently cleared stronghold.",
+      "contracts": [
+        {
+          "giver_vnum": 94376,
+          "completion_key": "give=I:94392,I:94392,I:94392,I:94392,I:94392;receive=I:94393;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-94392",
+          "text": "Carry five undead beholder central eyes",
+          "kind": "carried_item",
+          "item_vnums": [
+            94392
+          ],
+          "count": 5,
+          "optional": true,
+          "hint": "The five undead beholders in the royal stronghold carry these eyes, with shared limited stock. Use the plain and enchanted diorite keys for access when needed. These eyes are distinct from other beholder parts and are not CARVE output. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give Drakasyth all five central eyes",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94376,
+              "completion_key": "give=I:94392,I:94392,I:94392,I:94392,I:94392;receive=I:94393;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted full hand-in records this outcome. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "pearls-infant-rescue",
+      "title": "Reunite Pearls with the infant",
+      "category": "story",
+      "summary": "Give the beaten grey elf infant to Pearls, the bound grey elf prisoner, for experience and her departure. Matching supplied material fits without a personal slaver kill.",
+      "contracts": [
+        {
+          "giver_vnum": 94413,
+          "completion_key": "give=I:94366;receive=E:100000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-94366",
+          "text": "Carry the beaten grey elf infant",
+          "kind": "carried_item",
+          "item_vnums": [
+            94366
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The guardian hellbeast’s collar is the cell key. Persevesk holds the infant in the same cell as Pearls. Carry it loose before offering it to the prisoner; cell access or a slaver kill alone does not record the rescue. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the infant to the bound grey elf prisoner",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94413,
+              "completion_key": "give=I:94366;receive=E:100000;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted full hand-in records this outcome. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "two-farseer-mind-halves",
+      "title": "The warlock’s two farseer proofs",
+      "category": "story",
+      "summary": "Offer the distinct left and right halves of an evil mind together for fangs and the warlock’s departure. Each half matters; the request accepts matching gifts.",
+      "contracts": [
+        {
+          "giver_vnum": 94429,
+          "completion_key": "give=I:94344,I:94345;receive=I:94374;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-94344",
+          "text": "Carry the left half of an evil mind",
+          "kind": "carried_item",
+          "item_vnums": [
+            94344
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "ENTER the fixed dark rift for the keymaster’s key; DOWN returns. The southern spire leads to the phantom who carries the left half. Shared door state and personal key history are not hand-in requirements. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "material-94345",
+          "text": "Carry the right half of an evil mind",
+          "kind": "carried_item",
+          "item_vnums": [
+            94345
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The northern spire leads to the phantom who carries the right half. A second left half cannot substitute; remove the requested half from any container before giving both together. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the warlock one left and one right mind half",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94429,
+              "completion_key": "give=I:94344,I:94345;receive=I:94374;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted full hand-in records this outcome. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "diorite-warlord-statue",
+      "title": "The carver: a diorite warlord statue",
+      "category": "service",
+      "summary": "Exchange diorite scales for a finished warlord statue. This consumes the same material as the boots service, and the imprisoned carver remains.",
+      "contracts": [
+        {
+          "giver_vnum": 94441,
+          "completion_key": "give=I:94378;receive=I:94395;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-94378",
+          "text": "Carry diorite scales",
+          "kind": "carried_item",
+          "item_vnums": [
+            94378
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The black diorite serpent carries these scales. Zugle carries the plain diorite key for the serpent chamber; the serpent carries the enchanted key for the royal corridors. The scales can be spent on boots or the sculptor’s statue: completing one never replaces material for the other. Carry the exact materials loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit the hand-in too. Possession alone does not prove personal recovery or a kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the diorite scales to the gnome carver",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94441,
+              "completion_key": "give=I:94378;receive=I:94395;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted full hand-in records this outcome. Preparation and dialogue do not complete it. New progress requires active, ready accounting. This is a service, outside zone achievement and daily credit."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
