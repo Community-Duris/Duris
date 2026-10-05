@@ -15,8 +15,8 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1437
-assert report['mapped_area_count'] == 119 and report['eligible_by_zone']['162'] == 4
+assert report["daily_unit_count"] == 1421
+assert report['mapped_area_count'] == 120 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -364,6 +364,21 @@ assert all(t.get('optional') for s in githzer['stories'] for t in s['steps'][:-1
 assert all(s['steps'][-1]['contracts']==s['contracts'] for s in githzer['stories'])
 
 assert sum(s["category"]=="service" for s in githzer["stories"])==2
+
+worms = next(m for m in catalog['story_mappings'] if m['source_area'] == 'worms')
+assert (worms['schema_version'], worms['revision'], worms['coverage']) == (3, 1, 'complete')
+assert len(worms['stories']) == 16 and len(worms['contacts']) == 1 and not worms['exclusions']
+assert sum(len(c['topics']) for c in worms['contacts']) == 20 and report['eligible_by_zone'].get('69', 0) == 0
+assert all(s['category'] == 'service' and len(s['contracts']) == 1 and s['steps'][-1]['contracts'] == s['contracts'] for s in worms['stories'])
+assert sum(len(s['steps']) - 1 for s in worms['stories']) == 34
+assert sum(t['count'] for s in worms['stories'] for t in s['steps'][:-1]) == 40
+ws = {s['id']: s for s in worms['stories']}
+assert {t['item_vnums'][0]: t['count'] for t in ws['wilms-shield']['steps'][:-1]} == {6914: 1, 6905: 1, 6907: 2, 6913: 1}
+assert ws['wilms-cloak']['steps'][0]['count'] == ws['wilms-gloves']['steps'][0]['count'] == ws['wilms-mask']['steps'][0]['count'] == 2
+assert ws['wilms-armor']['steps'][2]['count'] == 3
+assert ws['wilms-helmet']['steps'][0]['item_vnums'] == [6900] and ws['wilms-eyepatch']['steps'][0]['item_vnums'] == [6901]
+assert all(t['optional'] and t['kind'] == 'carried_item' for s in worms['stories'] for t in s['steps'][:-1])
+
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

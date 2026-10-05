@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 119 &&
-				tracker.summary_for(7, 42).total == 1565,
+		require(catalog.story_mappings.size() == 120 &&
+				tracker.summary_for(7, 42).total == 1549,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7551,6 +7551,152 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &shield = story_for("worms", "wilms-shield");
+			const auto &armor = story_for("worms", "wilms-armor");
+			const auto &helmet = story_for("worms", "wilms-helmet");
+			const auto &eyepatch = story_for("worms", "wilms-eyepatch");
+			const auto &cloak = story_for("worms", "wilms-cloak");
+			const auto &gloves = story_for("worms", "wilms-gloves");
+			const auto &belt = story_for("worms", "wilms-belt");
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "worms"; });
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 69, 6900, 100, "arrival") ==
+						result::applied &&
+					journey.meet_npc(7, 42, 6915, 6907, 101) == result::applied,
+				"Worms discovery/contact failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Worms service card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry, size_t step) {
+				return section(entry).find("[Ready now] " +
+							   entry.steps[step].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry, size_t step) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[step].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[6902] = 2;
+			supplies.carried[6930] = 1;
+			supplies.carried[6924] = 1;
+			supplies.equipped[1] = 6900;
+			journal = journey.render_journal(7, 42, 69, 10, 1, 102, false, false,
+							 &supplies);
+			require(missing(helmet, 0) && missing(eyepatch, 0) && missing(shield, 2) &&
+					missing(gloves, 0),
+				"Wrong-sized, worn or finished Worms stock counted as materials");
+			supplies.equipped.clear();
+			supplies.carried[6914] = 1;
+			supplies.carried[6905] = 1;
+			supplies.carried[6907] = 1;
+			supplies.carried[6913] = 1;
+			supplies.carried[6908] = 1;
+			supplies.carried[6904] = 1;
+			supplies.carried[6906] = 2;
+			supplies.carried[6911] = 1;
+			journal = journey.render_journal(7, 42, 69, 10, 1, 103, false, false,
+							 &supplies);
+			require(ready(shield, 0) && ready(shield, 1) && missing(shield, 2) &&
+					ready(shield, 3) &&
+					section(shield).find(" (1/2)") != std::string::npos,
+				"Worms incomplete five-root shield lost partial quantities");
+			require(missing(cloak, 0) && missing(gloves, 0) && missing(armor, 2) &&
+					section(armor).find(" (2/3)") != std::string::npos,
+				"Worms repeated hide/piece/strip bundles appeared complete");
+			supplies.carried[6907] = 2;
+			supplies.carried[6908] = 2;
+			supplies.carried[6904] = 2;
+			supplies.carried[6906] = 3;
+			journal = journey.render_journal(7, 42, 69, 10, 1, 104, false, false,
+							 &supplies);
+			require(ready(shield, 2) && ready(cloak, 0) && ready(gloves, 0) &&
+					ready(armor, 2),
+				"Worms complete supplied bundles required personal source/control history");
+			require(journey.progress_for_zone(7, 42, 69).completed == 0 &&
+					journey.evidence_for(shield.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Worms readiness manufactured accepted service history");
+			// Synthetic settled receipts qualify projection, not native selection, source issuance or accounting settlement.
+			record(journey, shield.contracts.front(), "worms-shield", 69, 6907);
+			supplies.carried.erase(6907);
+			journal = journey.render_journal(7, 42, 69, 10, 1, 106, false, false,
+							 &supplies);
+			require(missing(shield, 2) &&
+					journal.find("[Service used] " + shield.title) !=
+						std::string::npos &&
+					journey.evidence_for(belt.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Worms spent service stock remained ready or merged independent requests");
+			for (const auto &entry : mapping.stories)
+			{
+				if (entry.id != shield.id)
+					record(journey, entry.contracts.front(),
+					       ("worms-" + entry.id).c_str(), 69, 6907);
+			}
+			for (const auto &entry : mapping.stories)
+				require(journey.evidence_for(entry.contracts.front(), 2)
+							.successful_attempts == 1,
+					"Worms independent accepted receipt missing");
+			require(journey.progress_for_zone(7, 42, 69).completed == 0 &&
+					journey.progress_for_zone(7, 42, 69).total == 0,
+				"Worms support services awarded zone achievements");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u)
+					      { return u.zone_number == 69; }) == 16 &&
+					std::none_of(units.begin(), units.end(),
+						     [](const auto &u) {
+							     return u.zone_number == 69 &&
+								    (u.achievement ||
+								     u.daily_candidate);
+						     }),
+				"Worms service classification created quest achievements/dailies");
+			auto replay = completion(shield.contracts.front(), "worms-shield", 120);
+			replay.transaction.zone_number = 69;
+			replay.transaction.room_vnum = 6907;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Worms service replay duplicated acceptance");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 69).completed == 0 &&
+					recovered.has_discovered(7, 42, 69) &&
+					!recovered.has_discovered(7, 42, 964),
+				"Worms cold recovery changed service/discovery ownership");
+			for (const auto &entry : mapping.stories)
+				require(recovered.evidence_for(entry.contracts.front(), 2)
+							.successful_attempts == 1,
+					"Worms cold recovery lost service history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 69, 6900, 100, "arrival") ==
+					result::applied,
+				"Historical Worms discovery failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("worms-old-" + entry.id).c_str(), 69, 6907);
+			require(historical.progress_for_zone(7, 42, 69).completed == 16,
+				"Historical raw Worms outcomes changed");
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 69).completed == 0 &&
+					authored.has_discovered(7, 42, 69),
+				"Worms authored service reclassification changed discovery/projection");
+			for (const auto &entry : mapping.stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+							.successful_attempts == 1,
+					"Worms raw16-to-authored0 reclassification lost an accepted receipt");
+		}
 		{
 			const auto &signets = story_for("githzer", "prophet-five-signet-rings");
 			const auto &red = story_for("githzer", "prazyz-red-hide");
