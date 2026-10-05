@@ -75731,6 +75731,494 @@
     {
       "contacts": [
         {
+          "description": "The storm druid accepts exact burnt-tree evidence and then leaves.",
+          "keyword": "druid",
+          "mob_vnum": 53637,
+          "name": "a half-elven storm druid",
+          "topics": [
+            "hello",
+            "hi",
+            "dark",
+            "moor",
+            "moors"
+          ]
+        },
+        {
+          "description": "The craftsman offers a four-feather mask service with a separate coin fee.",
+          "keyword": "barbarian",
+          "mob_vnum": 53640,
+          "name": "a travelling barbarian craftsman",
+          "topics": [
+            "hi",
+            "hello",
+            "feathers",
+            "craft",
+            "feather",
+            "feathered"
+          ]
+        },
+        {
+          "description": "Chauseis accepts the remote scroll bundle. Her prayers are ambient; training is a separate guarded service.",
+          "keyword": "chauseis",
+          "mob_vnum": 53658,
+          "name": "Chauseis, the high elf priestess",
+          "topics": []
+        },
+        {
+          "description": "Feliusius dispatches generated missions separately from these static offerings.",
+          "keyword": "feliusius",
+          "mob_vnum": 53670,
+          "name": "Feliusius, the bartender",
+          "topics": [
+            "quest",
+            "map",
+            "abandon",
+            "resign"
+          ]
+        },
+        {
+          "description": "Ahanz accepts both exact royal heads for an unfinished wand and then leaves.",
+          "keyword": "ahanz",
+          "mob_vnum": 53700,
+          "name": "Ahanz",
+          "topics": [
+            "kraken"
+          ]
+        },
+        {
+          "description": "The fallen shadow gives optional tomb and remote mystical-key guidance.",
+          "keyword": "fallen",
+          "mob_vnum": 53702,
+          "name": "a fallen shadow",
+          "topics": [
+            "tomb",
+            "powerful",
+            "mystic"
+          ]
+        },
+        {
+          "description": "The adventurer accepts one of three exact five-item alternatives and then leaves.",
+          "keyword": "adventurer",
+          "mob_vnum": 53704,
+          "name": "a once great adventurer",
+          "topics": [
+            "hi",
+            "greetings",
+            "priest",
+            "mage",
+            "warrior"
+          ]
+        },
+        {
+          "description": "Asus offers a crab-and-shrimp cooking service yielding two declared bisques.",
+          "keyword": "asus",
+          "mob_vnum": 53720,
+          "name": "Asus the gnome brewer",
+          "topics": [
+            "hi",
+            "hello",
+            "soup",
+            "fishing"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the storm druid's burnt-tree evidence, Chauseis's remote exchange, Ahanz's hunt and the adventurer's one reward choice. The barbarian's mask and Asus's soup are services. Exact current materials prepare an offering; acceptance records its outcome. New progress requires active, ready accounting.",
+      "orientation": [
+        "This area spans several separate roads, forests, settlements, tomb approaches and travel pockets. Discovery does not mean every path or giver is accessible. Follow each contact's actual route and native shared doors; these independent requests are not one mandatory journey across every room.",
+        "ASK druid about hello, hi, dark, moor or moors for burnt-tree leads. He accepts the exact ember from a burnt tree and declares a 20 platinum reward before leaving. An ember can also come from remote fireplace or hearth stock. Supplied exact evidence fits; this is not proof that you identified the burner, saved a forest or learned every keyword.",
+        "ASK barbarian about feathers or craft. His mask needs four separate exact eagle feathers together and 10 platinum. The four local eagle placements each declare feather stock with a shared cap of four. Carry all four loose; one feather, another bird's feather, worn feathers or the mask reward do not complete the service. Its mixed item-and-coin payment still needs accounting qualification before active use.",
+        "Chauseis exchanges the exact heart of Bel, orb of unmaking and mystic runed stone tablet together for the declared Wisdom scroll. Heart and orb have remote limited sources; no active declared tablet supply was found. The scroll's native type does not establish a Wisdom gain from reading. Her ambient prayers are not ASK objectives. Her separate epic Wisdom training has a normal boot binding but refuses purchases while accounting is active.",
+        "ASK ahanz about kraken. He accepts the exact heads of Princess Aventi and Prince Itneva together, rewards an unfinished wand and leaves. Matching supplied heads fit without your own kills. Ahanz's own head is not an offering. The unfinished wand is a component, distinct from the finished combat wand.",
+        "ASK fallen about tomb or mystic for the foreign mystical-key lead. The actual exact key comes from a separate Surface mystic exchange of four different lockets and a book. Matching supplied keys or an already-open route can provide access where native rules allow. Hearing the lead, recovering a local locket, holding the key and opening the tomb are different facts; no personal mystic receipt is required by the adventurer's item recipes.",
+        "ASK adventurer about priest, mage or warrior and choose ONE five-item bundle. Mage: skin of the shadow eel + tight green cloak + foggy visor + shadowy chest plate + purple robe of stars. Warrior: skin + cloak + earring of congealed blood + chest plate + misty blue dragon scale armor. Priest: skin + cloak + helm of light + mask of hatred + foggy visor. Materials shown below describe alternatives, not a requirement to gather all nine kinds.",
+        "The adventurer gives the matching unfinished handle, chest piece or crown shell plus a glowing ring, then leaves. These three alternatives count as one story outcome; asking three class keywords is not three completions. His rescue and Aceralde-defeat remarks do not establish personal rescue, kill or class requirements in the actual recipes. Equipped tower gear must be carried loose for an offering.",
+        "The wise gnomish cosmomancer near Torrhan owns four separate finishing services in Mini Zones: unfinished handle, crown shell, chest piece or wand + one exact pulsating sphere + three exact large mithril ores makes the corresponding staff, crown, platemail or wand. The strange being's sphere exchange needs six distinct plane essences. Those remote services retain their own journal ownership. Local component acceptance does not prove finished gear, sphere gathering, ore mining or matching branch lineage.",
+        "ASK asus about soup or fishing. One exact large hairy crab and one exact large shrimp together make TWO copies of the declared shrimp-and-hairy-crab bisque. Fishing can produce these species, and supplied exact fish also fit. Eating soup, holding same-name bisque or personally catching fish is not the accepted cooking receipt. The Fiord tent is reached through its actual Surface tent portal.",
+        "Six native PUSH switches alter shared blocked routes around the narrow path, overturned wagon, rubble and crypt. Exact keys and fixed sunwell, crack, tent and moonwell portals also affect access. Another player's prior opening can help. No switch press, key possession or travel description is an additional story completion.",
+        "ASK feliusius about quest, map, abandon or resign for his separate generated mission service. Its ASK/kill assignments and fees use the native mission log, not these static turn-ins. This area is excluded as a generated mission target. Mission refund settlement and an explicit journal bridge still need qualification. Crew hiring at the tent also needs a payment continuation fix before any new credit is attached.",
+        "Current exact loose custody is preparation; worn, held, nested, spent or handed-away materials do not satisfy those rows. Gifts fit without personal first-recovery history, and reward possession is not acceptance. Four stories contribute achievements and potential dailies under this area's reset mode; a giver who leaves after acceptance still needs a qualified later return and fresh materials. The mask and soup remain services. New discovery and progress require active, ready accounting; limited stock and shared access govern actual availability."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "connectorzones",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:53625;receive=C:20000;disappear=1",
+              "giver_vnum": 53637
+            }
+          ],
+          "id": "druid-burnt-tree-evidence",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Cap-one ember stock is inside the shared campfire near the barbarian; Ravenloft fireplace and Alatorin hearth also declare exact stock. It is evidence rather than a learned perpetrator identity. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-53625",
+              "item_vnums": [
+                53625
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry an ember of a dark moor"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:53625;receive=C:20000;disappear=1",
+                  "giver_vnum": 53637
+                }
+              ],
+              "hint": "Carry the full exact offering loose together and GIVE one requested item to the available giver. Dialogue, shared access and reward possession do not prove acceptance. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Storm druid: burnt-tree evidence"
+            }
+          ],
+          "summary": "Bring the exact ember for the declared 20 platinum reward. The druid leaves after acceptance; this does not prove the perpetrator was found.",
+          "title": "Storm druid: burnt-tree evidence"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:10000,I:53622,I:53622,I:53622,I:53622;receive=I:53623;disappear=0",
+              "giver_vnum": 53640
+            }
+          ],
+          "id": "barbarian-four-feather-mask",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "Four local eagles carry exact feather stock at a shared cap of four. This preparation row needs four distinct loose copies; the full service also charges 10000 copper units, matching 10 platinum. Active mixed payment currently refuses. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-53622",
+              "item_vnums": [
+                53622
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 4 copies of a bright eagle feather"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000,I:53622,I:53622,I:53622,I:53622;receive=I:53623;disappear=0",
+                  "giver_vnum": 53640
+                }
+              ],
+              "hint": "Carry the full exact offering loose together and GIVE one requested item to the available giver. Dialogue, shared access and reward possession do not prove acceptance. Four distinct feather roots and the exact 10000 copper fee are required. Active mixed item/coin acceptance is refused pending an accounted settlement adapter. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Barbarian: four-feather mask"
+            }
+          ],
+          "summary": "Four exact eagle feathers plus 10 platinum make one mask. Mixed payment qualification remains pending.",
+          "title": "Barbarian: four-feather mask"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:402,I:26614,I:32490;receive=I:410;disappear=0",
+              "giver_vnum": 53658
+            }
+          ],
+          "id": "chauseis-wisdom-scroll",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bel in the Bronze Citadel carries cap-one exact heart stock; competing remote recipes spend the same heart. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-32490",
+              "item_vnums": [
+                32490
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the still-beating heart of Bel"
+            },
+            {
+              "count": 1,
+              "hint": "The Dark in the Negative Material Plane has cap-one equipped orb stock. Remove held or worn gear to loose carrying before offering it. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-26614",
+              "item_vnums": [
+                26614
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the orb of unmaking"
+            },
+            {
+              "count": 1,
+              "hint": "No active declared reset supply or compiled producer was found for this exact tablet. Builder source intent and played availability remain pending. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-402",
+              "item_vnums": [
+                402
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a mystic runed stone tablet"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:402,I:26614,I:32490;receive=I:410;disappear=0",
+                  "giver_vnum": 53658
+                }
+              ],
+              "hint": "Carry the full exact offering loose together and GIVE one requested item to the available giver. Dialogue, shared access and reward possession do not prove acceptance. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Chauseis: remote Wisdom scroll"
+            }
+          ],
+          "summary": "Offer the exact heart, orb and tablet together for the declared scroll. Tablet supply and claimed Wisdom effect require builder review.",
+          "title": "Chauseis: remote Wisdom scroll"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:53643,I:53644;receive=I:53646;disappear=1",
+              "giver_vnum": 53700
+            }
+          ],
+          "id": "ahanz-royal-heads",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Princess Aventi carries cap-one exact head stock. Matching supplied custody fits without a personal kill. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-53643",
+              "item_vnums": [
+                53643
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody head of Aventi"
+            },
+            {
+              "count": 1,
+              "hint": "Prince Itneva carries cap-one exact head stock. Both distinct royal heads must be offered together. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-53644",
+              "item_vnums": [
+                53644
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody head of Itneva"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:53643,I:53644;receive=I:53646;disappear=1",
+                  "giver_vnum": 53700
+                }
+              ],
+              "hint": "Carry the full exact offering loose together and GIVE one requested item to the available giver. Dialogue, shared access and reward possession do not prove acceptance. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Ahanz: both royal heads"
+            }
+          ],
+          "summary": "Offer both exact Kraken royal heads for an unfinished wand. Ahanz leaves; the later foreign finishing service is separate.",
+          "title": "Ahanz: both royal heads"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:16210,I:16224,I:16232,I:16249,I:16269;receive=I:53650,I:53660;disappear=1",
+              "giver_vnum": 53704
+            },
+            {
+              "completion_key": "give=I:16210,I:16234,I:16248,I:16249,I:16269;receive=I:53652,I:53660;disappear=1",
+              "giver_vnum": 53704
+            },
+            {
+              "completion_key": "give=I:16210,I:16224,I:16235,I:16244,I:16269;receive=I:53651,I:53660;disappear=1",
+              "giver_vnum": 53704
+            }
+          ],
+          "id": "adventurer-one-reward-choice",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Used by the mage, warrior, priest alternative(s). Native tower sources and, for some gear, separate foreign stock provide exact items. This optional material is not required by every branch; choose one five-item bundle. No personal kill, class, rescue or prior key receipt is required by its acceptance. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-16210",
+              "item_vnums": [
+                16210
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the skin of the shadow eel"
+            },
+            {
+              "count": 1,
+              "hint": "Used by the mage, warrior, priest alternative(s). Native tower sources and, for some gear, separate foreign stock provide exact items. This optional material is not required by every branch; choose one five-item bundle. No personal kill, class, rescue or prior key receipt is required by its acceptance. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-16269",
+              "item_vnums": [
+                16269
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a tight green cloak"
+            },
+            {
+              "count": 1,
+              "hint": "Used by the mage, priest alternative(s). Native tower sources and, for some gear, separate foreign stock provide exact items. This optional material is not required by every branch; choose one five-item bundle. No personal kill, class, rescue or prior key receipt is required by its acceptance. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-16224",
+              "item_vnums": [
+                16224
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a foggy visor"
+            },
+            {
+              "count": 1,
+              "hint": "Used by the mage, warrior alternative(s). Native tower sources and, for some gear, separate foreign stock provide exact items. This optional material is not required by every branch; choose one five-item bundle. No personal kill, class, rescue or prior key receipt is required by its acceptance. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-16249",
+              "item_vnums": [
+                16249
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a shadowy chest plate"
+            },
+            {
+              "count": 1,
+              "hint": "Used by the mage alternative(s). Native tower sources and, for some gear, separate foreign stock provide exact items. This optional material is not required by every branch; choose one five-item bundle. No personal kill, class, rescue or prior key receipt is required by its acceptance. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-16232",
+              "item_vnums": [
+                16232
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a purple robe of stars"
+            },
+            {
+              "count": 1,
+              "hint": "Used by the warrior alternative(s). Native tower sources and, for some gear, separate foreign stock provide exact items. This optional material is not required by every branch; choose one five-item bundle. No personal kill, class, rescue or prior key receipt is required by its acceptance. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-16248",
+              "item_vnums": [
+                16248
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry an earring of congealed blood"
+            },
+            {
+              "count": 1,
+              "hint": "Used by the warrior alternative(s). Native tower sources and, for some gear, separate foreign stock provide exact items. This optional material is not required by every branch; choose one five-item bundle. No personal kill, class, rescue or prior key receipt is required by its acceptance. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-16234",
+              "item_vnums": [
+                16234
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a misty blue dragon scale armor"
+            },
+            {
+              "count": 1,
+              "hint": "Used by the priest alternative(s). Native tower sources and, for some gear, separate foreign stock provide exact items. This optional material is not required by every branch; choose one five-item bundle. No personal kill, class, rescue or prior key receipt is required by its acceptance. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-16244",
+              "item_vnums": [
+                16244
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the helm of light"
+            },
+            {
+              "count": 1,
+              "hint": "Used by the priest alternative(s). Native tower sources and, for some gear, separate foreign stock provide exact items. This optional material is not required by every branch; choose one five-item bundle. No personal kill, class, rescue or prior key receipt is required by its acceptance. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-16235",
+              "item_vnums": [
+                16235
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the mask of hatred"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16210,I:16224,I:16232,I:16249,I:16269;receive=I:53650,I:53660;disappear=1",
+                  "giver_vnum": 53704
+                },
+                {
+                  "completion_key": "give=I:16210,I:16234,I:16248,I:16249,I:16269;receive=I:53652,I:53660;disappear=1",
+                  "giver_vnum": 53704
+                },
+                {
+                  "completion_key": "give=I:16210,I:16224,I:16235,I:16244,I:16269;receive=I:53651,I:53660;disappear=1",
+                  "giver_vnum": 53704
+                }
+              ],
+              "hint": "Choose ONE of the three exact five-item bundles described above. One accepted branch, yielding its unfinished component plus ring, completes this story; the giver leaves. You do not need all nine material kinds or all three acceptances. Finished artifact and foreign service lineage remain separate. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Adventurer: choose one reward path"
+            }
+          ],
+          "summary": "Choose one exact mage, warrior or priest five-item bundle for its unfinished component plus a ring. Any one acceptance completes this story; the giver leaves.",
+          "title": "Adventurer: choose one reward path"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:330,I:332;receive=I:53667,I:53667;disappear=0",
+              "giver_vnum": 53720
+            }
+          ],
+          "id": "asus-crab-shrimp-bisque",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Native fishing can produce this exact large hairy crab; supplied custody also fits. The recipe needs crab AND shrimp together. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-330",
+              "item_vnums": [
+                330
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a large hairy crab"
+            },
+            {
+              "count": 1,
+              "hint": "Native fishing can produce this exact large shrimp; supplied custody also fits. Object53667 is the declared output, twice; same-name53668 is not its receipt. Current loose custody is preparation; gifts fit without personal first-recovery history.",
+              "id": "material-332",
+              "item_vnums": [
+                332
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a large shrimp"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:330,I:332;receive=I:53667,I:53667;disappear=0",
+                  "giver_vnum": 53720
+                }
+              ],
+              "hint": "Carry the full exact offering loose together and GIVE one requested item to the available giver. Dialogue, shared access and reward possession do not prove acceptance. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Asus: crab-and-shrimp bisque"
+            }
+          ],
+          "summary": "Offer one exact large hairy crab and one exact large shrimp together for two declared bisques. Catching or eating them is separate.",
+          "title": "Asus: crab-and-shrimp bisque"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Ask about these topics for clues, then follow the exact requests. Conversation alone does not complete a delivery.",
           "keyword": "layla",
           "mob_vnum": 55001,

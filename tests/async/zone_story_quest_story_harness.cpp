@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 129 &&
-				tracker.summary_for(7, 42).total == 1537,
+		require(catalog.story_mappings.size() == 130 &&
+				tracker.summary_for(7, 42).total == 1533,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7687,6 +7687,189 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "connectorzones"; });
+			const auto &choice =
+				story_for("connectorzones", "adventurer-one-reward-choice");
+			const auto &heads = story_for("connectorzones", "ahanz-royal-heads");
+			const auto &mask =
+				story_for("connectorzones", "barbarian-four-feather-mask");
+			const auto &soup = story_for("connectorzones", "asus-crab-shrimp-bisque");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 536, 53600, 100, "arrival") ==
+					result::applied,
+				"Realm discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 536, 10, 1, 101, false, false);
+			require(journal.find(choice.title) == std::string::npos &&
+					journal.find(heads.title) == std::string::npos,
+				"Realm exposed unseen turn-ins");
+			require(journey.meet_npc(7, 42, 53702, 54164, 102) == result::applied,
+				"Realm shadow contact failed");
+			journal = journey.render_journal(7, 42, 536, 10, 1, 103, false, false);
+			require(journal.find(choice.title) == std::string::npos,
+				"Realm tomb lead exposed adventurer receipt");
+			for (const auto &contact : mapping.contacts)
+				if (contact.mob_vnum != 53702)
+					require(journey.meet_npc(7, 42, contact.mob_vnum, 54174,
+								 104) == result::applied,
+						"Realm contact encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Realm journal card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry, size_t index) {
+				return section(entry).find("[Ready now] " +
+							   entry.steps[index].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry, size_t index) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[index].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[53622] = 3;
+			supplies.carried[53645] = 1;
+			for (const auto v : { 53623, 53646, 53650, 53651, 53652, 53660, 53661,
+					      53662, 53663, 53664, 53667, 53668, 500034 })
+				supplies.carried[v] = 1;
+			supplies.equipped[0] = 53643;
+			supplies.equipped[1] = 53644;
+			supplies.equipped[2] = 16210;
+			journal = journey.render_journal(7, 42, 536, 10, 1, 105, false, false,
+							 &supplies);
+			require(missing(mask, 0) && missing(heads, 0) && missing(heads, 1) &&
+					missing(choice, 0) &&
+					journey.progress_for_zone(7, 42, 536).completed == 0,
+				"Realm partial/worn/wrong head/rewards inferred turn-in");
+			supplies.carried[53622] = 4;
+			supplies.equipped.clear();
+			supplies.carried[53643] = 1;
+			journal = journey.render_journal(7, 42, 536, 10, 1, 106, false, false,
+							 &supplies);
+			require(ready(mask, 0) && ready(heads, 0) && missing(heads, 1) &&
+					journey.progress_for_zone(7, 42, 536).completed == 0,
+				"Realm four feathers inferred payment or one royal head completed both");
+			supplies.carried[53644] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 536, 10, 1, 107, false, false,
+							 &supplies);
+			require(ready(heads, 0) && ready(heads, 1) &&
+					before == journey.serialize_state(),
+				"Realm supplied heads required kill history or rendering mutated state");
+			// Synthetic receipts qualify projection, not played source/payment/branch lineage.
+			record(journey, mask.contracts.front(), "realm-mask", 536, 53934);
+			supplies.carried.erase(53622);
+			supplies.carried[330] = 1;
+			journal = journey.render_journal(7, 42, 536, 10, 1, 108, false, false,
+							 &supplies);
+			require(missing(mask, 0) && ready(soup, 0) && missing(soup, 1) &&
+					journey.progress_for_zone(7, 42, 536).completed == 0,
+				"Realm spent feathers reappeared/service credited story/one fish completed soup");
+			supplies.carried[332] = 1;
+			journal = journey.render_journal(7, 42, 536, 10, 1, 109, false, false,
+							 &supplies);
+			require(ready(soup, 0) && ready(soup, 1),
+				"Realm supplied exact fish required personal fishing history");
+			record(journey, soup.contracts.front(), "realm-soup", 536, 54240);
+			supplies.carried.erase(330);
+			supplies.carried.erase(332);
+			journal = journey.render_journal(7, 42, 536, 10, 1, 110, false, false,
+							 &supplies);
+			require(missing(soup, 0) && missing(soup, 1) &&
+					journey.progress_for_zone(7, 42, 536).completed == 0 &&
+					journey.evidence_for(soup.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Realm two soup outputs duplicated credit or replenished fish");
+			for (size_t branch = 0; branch < choice.contracts.size(); ++branch)
+			{
+				service selected(catalog);
+				require(selected.discover_zone(7, 42, 536, 53600, 100, "arrival") ==
+						result::applied,
+					"Realm branch discovery failed");
+				require(selected.meet_npc(7, 42, 53704, 54174, 101) ==
+						result::applied,
+					"Realm branch contact failed");
+				record(selected, choice.contracts[branch],
+				       ("realm-choice-" + std::to_string(branch)).c_str(), 536,
+				       54174);
+				require(selected.progress_for_zone(7, 42, 536).completed == 1 &&
+						selected.progress_for_zone(7, 42, 536).total == 4,
+					"Realm one accepted branch required all alternatives or counted outputs twice");
+				service recovered(catalog);
+				require(recovered.deserialize_state(selected.serialize_state(),
+								    &error) &&
+						recovered.progress_for_zone(7, 42, 536).completed ==
+							1,
+					"Realm branch cold recovery lost choice");
+				for (size_t other = 0; other < choice.contracts.size(); ++other)
+					require(recovered.evidence_for(choice.contracts[other], 2)
+								.successful_attempts ==
+							(other == branch ? 1 : 0),
+						"Realm accepted choice fabricated other branch receipt");
+			}
+			for (const auto &entry : mapping.stories)
+				if (entry.category == "story")
+					for (const auto &id : entry.contracts)
+						record(journey, id, ("realm-all-" + id).c_str(),
+						       536, 54174);
+			require(journey.progress_for_zone(7, 42, 536).completed == 4 &&
+					journey.progress_for_zone(7, 42, 536).total == 4,
+				"Realm alternatives/services changed four story units");
+			auto replay = completion(choice.contracts.front(),
+						 ("realm-all-" + choice.contracts.front()).c_str(),
+						 120);
+			replay.transaction.zone_number = 536;
+			replay.transaction.room_vnum = 54174;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Realm replay duplicated branch receipt");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 536) &&
+					recovered.progress_for_zone(7, 42, 536).completed == 4,
+				"Realm cold recovery lost discovery/receipt history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 536, 53600, 100, "arrival") ==
+					result::applied,
+				"Historical Realm discovery failed");
+			for (const auto &entry : mapping.stories)
+				for (const auto &id : entry.contracts)
+					record(historical, id, ("realm-old-" + id).c_str(), 536,
+					       54174);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 536).completed == 4 &&
+					authored.progress_for_zone(7, 42, 536).total == 4,
+				"Realm raw-to-authored lost merged choice/classification");
+			for (const auto &entry : mapping.stories)
+				for (const auto &id : entry.contracts)
+					require(authored.evidence_for(id, 2).successful_attempts ==
+								1 &&
+							recovered.evidence_for(id, 2)
+									.successful_attempts == 1,
+						"Realm raw branch/service identity lost");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 536 &&
+							     u.achievement && u.daily_candidate;
+					      }) == 4 &&
+					std::count_if(units.begin(), units.end(),
+						      [](const auto &u) {
+							      return u.zone_number == 536 &&
+								     !u.achievement &&
+								     !u.daily_candidate;
+						      }) == 2,
+				"Realm reset-mode repeatability/services changed");
 		}
 
 		{

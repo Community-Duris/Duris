@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 129 authored journals.
+2668 distinct Q contracts; 130 authored journals.
 
 Regenerate with:
 
@@ -67,7 +67,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Forest City of Aravne (`clfhaven`) | 3 | 7 | 0 | Fallback | [1 × the heart of Enzekail; 1 × the heart of the female weretor; 1 × the heart of the male weretor; other required items → an ornate gold key](../../areas/qst/clfhaven.qst#L32) | inn, llyren, wh_corpse_to_object |
 | Father Tel's Holy Cloister (`cloister`) | 8 | 19 | 1 | Yes | [1 × the ring of a duergar elder; 1 × a vial of poison → a rib bone](../../areas/qst/cloister.qst#L256) | — |
 | The Clawed Caverns (`clwcvrn`) | 20 | 8 | 4 | Yes | [1 × a large, flat, blue crystal → a large, flat, blue crystal](../../areas/qst/clwcvrn.qst#L11) | burn_touch_obj, claw_cavern_drow_mage, clwcvrn_golem_shatter, clwcvrn_protect |
-| The Great Realm of Duris (`connectorzones`) | 8 | 12 | 0 | Fallback | [1 × the skin of a shadow eel; 1 × a tight green cloak; 1 × a foggy visor; other required items → the handle of the shadowy staff of damnation, the ring of the Netherworld](../../areas/qst/connectorzones.qst#L171) | crew_shop_proc, damnation_staff, nuke_damnation, world_quest |
+| The Great Realm of Duris (`connectorzones`) | 8 | 12 | 0 | Yes | [1 × the skin of a shadow eel; 1 × a tight green cloak; 1 × a foggy visor; other required items → the handle of the shadowy staff of damnation, the ring of the Netherworld](../../areas/qst/connectorzones.qst#L171) | crew_shop_proc, damnation_staff, nuke_damnation, world_quest |
 | The Sky City of Ultarium (`cosmic`) | 17 | 5 | 0 | Yes | [1 × the soul of Zeenium; 1 × the soul of Ignor; 1 × the soul of Strata; other required items → the bracer of the whirlwinds, the robes of the maelstrom](../../areas/qst/cosmic.qst#L59) | mob_do_rename_hook, pet_shops, proc_whirlwinds |
 | Court of the Muse (`court`) | 9 | 6 | 4 | Yes | [12 × a scale of a koi fish → a druidic necklace of fish scales](../../areas/qst/court.qst#L87) | — |
 | Crakkaros' Liar (`crakkaro`) | 11 | 9 | 3 | Yes | [17 × a piece of animal fur → native reward/response](../../areas/qst/crakkaro.qst#L166) | — |
