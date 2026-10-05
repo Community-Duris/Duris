@@ -130832,6 +130832,269 @@
       ]
     },
     {
+      "contacts": [
+        {
+          "description": "Vitrius works upstairs at the weaponsmith. Ask about his four weapon recipes; mixed item-and-coin crafting is currently unavailable with active accounting.",
+          "keyword": "vitrius",
+          "mob_vnum": 89102,
+          "name": "Vitrius",
+          "topics": [
+            "weapon",
+            "sword",
+            "dagger",
+            "shortsword",
+            "longsword",
+            "two-handed"
+          ]
+        },
+        {
+          "description": "The troll janitor offers lore about Hammerhead, the keep and the vault. No individual keyword, key use or village rescue is an accepted quest endpoint.",
+          "keyword": "janitor",
+          "mob_vnum": 89165,
+          "name": "a troll janitor",
+          "topics": [
+            "lord",
+            "master",
+            "lich",
+            "vault",
+            "key",
+            "dead",
+            "death",
+            "keep",
+            "hammerhead",
+            "mercenary"
+          ]
+        },
+        {
+          "description": "The centaur visitor is a scout with information about Hammerhead. His conversation does not create a recorded report-back or liberation request.",
+          "keyword": "visitor",
+          "mob_vnum": 89166,
+          "name": "a centaur visitor",
+          "topics": [
+            "lord",
+            "master",
+            "hammerhead",
+            "scout",
+            "information"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore New Hope, learn the keep's lore and compare Vitrius's four independent mithral weapon services. Paid crafting is currently unavailable while accounting is active. New discovery and progress require active, ready accounting.",
+      "orientation": [
+        "Vitrius works upstairs at the weaponsmith. ASK vitrius about weapon, shortsword, longsword, two-handed or dagger for his native replies. The troll janitor and centaur visitor discuss Hammerhead and his keep. Listed topics reveal conversation; each keyword is not a separate achievement.",
+        "Each weapon service needs one fresh piece of raw mithral, one exact ordinary mithral weapon and its fee: 45 platinum for a shining short sword, 100 for a shining long sword, 250 for a shining two-handed sword, or 10 for a shining dagger. The native recipes are independent. The shining short and long swords are not ingredients for the later recipes.",
+        "Raw mithral is placed in a dank prison cell occupied by Zarix and in a maljer hut. Ordinary mithral daggers, short swords and long swords are wielded by the guards of the royal court. Recover the exact chosen ordinary weapon; the shop's black-handled weapons, shining rewards and cracked vault weapons do not substitute. Exact supplied material also fits without a personal kill or source history.",
+        "Some of Vitrius's native instructions name a different weapon or omit the dagger. The service cards list the actual accepted ordinary weapon and fee. Carry both materials loose to see current preparation. Held, worn, nested, consumed or handed-away items are not current preparation; ready material does not prove payment or acceptance.",
+        "Accounting currently blocks these mixed item-and-coin offerings. The materials can be prepared, but there is no safe payment or crafting completion through this path yet. These are supporting services and award no zone-story achievement or daily credit. Earlier accepted service receipts remain history; owning a shining reward proves no acceptance.",
+        "New Hope's village, stables, inn, shops, prison, fields, maljer huts and keep offer exploration and training. The lecherous inn has hidden observation passages and a staircase to its wine cellar. The observer's mirror is descriptive scenery, not a declared travel control. Ordinary shopping, training and exploration do not complete a fifth accepted quest.",
+        "ASK janitor about lord, lich, vault, key, dead, keep or hammerhead, and ASK visitor about lord, hammerhead, scout or information. Their account describes Hammerhead's rule and hopes for the village. No accepted request records reporting back to the scout, freeing the prisoners or liberating the village.",
+        "Hammerhead carries a petrified heart that fits the locked trapdoor beneath the rug in his bedchamber. SEARCH can reveal hidden exits; UNLOCK and OPEN follow native key and door rules. That route leads down toward the vault. The return trapdoor is hidden and initially closed but unlocked. Exact supplied keys and passages already opened by others remain usable without personal opener history.",
+        "The narrow tunnel slopes into water before the tentacler's submerged lair. Follow native movement, breathing, combat and access rules. The solidified eye carried by the tentacler fits the vault entrance, whose lock resists picking. A cracked dagger lying inside fits the return-side lock. The two sides use different keys; opening or unlocking affects a matching reverse door too.",
+        "When the tentacler dies, its custom procedure attempts to place one randomly chosen equipment item inside the vault. Its carried eye and wielded lash are separate stock released in the lair by normal removal. Five possible equipment items also have independent reset chances inside the vault; an item already there does not prove the current tentacler death or your own recovery.",
+        "The vault's eye can break after use, and the cracked dagger has its own smaller break chance. A successful unlock remains an unlock even if the key breaks. Source caps, chance-based stock, shared doors and recipient resets do not promise a reward or a fresh daily route. Keep access and PvP restrictions in force.",
+        "The prisoners, silent observer, illusionist and necromancer add lore and training without accepted rescue or transformation endpoints. The imported mindstone ring has its own guarded travel and protection behavior; it is not a smith ingredient or a local quest receipt. Imported supplies, foreign reuse of village tables and the neighboring hills retain their own ownership and discovery rules."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "newhope",
+      "stories": [
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:45000,I:89117,I:89141;receive=I:89118;disappear=0",
+              "giver_vnum": 89102
+            }
+          ],
+          "id": "vitrius-short-sword",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Raw mithral is placed in Zarix's dank prison cell and a maljer hut. Exact supplied stock also fits; custody does not prove first recovery.",
+              "id": "material-89117",
+              "item_vnums": [
+                89117
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a piece of mithral"
+            },
+            {
+              "count": 1,
+              "hint": "The royal court guards wield this exact ordinary mithral weapon. It is different from shining rewards, cracked vault weapons and the shop's black-handled stock. Loose supplied material fits without personal kill history.",
+              "id": "material-89141",
+              "item_vnums": [
+                89141
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a mithral shortsword"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:45000,I:89117,I:89141;receive=I:89118;disappear=0",
+                  "giver_vnum": 89102
+                }
+              ],
+              "hint": "Accounting currently blocks this mixed item-and-coin offering. The native recipe requires one piece of raw mithral, a mithral shortsword and 45 platinum (45000 copper-value coins). Material readiness does not prove payment. A separately qualified mixed-payment adapter must settle the exact offering and accepted reward before new completion; earlier accepted receipts remain history. New credit requires active, ready accounting.",
+              "id": "accepted-crafting",
+              "kind": "completion",
+              "text": "Complete Vitrius: shining short sword"
+            }
+          ],
+          "summary": "Prepare raw mithral, a mithral shortsword and 45 platinum for this independent weapon service. Accounting currently blocks the mixed offering. Supporting crafting gives no zone-story achievement or daily credit.",
+          "title": "Vitrius: shining short sword"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:100000,I:89117,I:89142;receive=I:89119;disappear=0",
+              "giver_vnum": 89102
+            }
+          ],
+          "id": "vitrius-long-sword",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Raw mithral is placed in Zarix's dank prison cell and a maljer hut. Exact supplied stock also fits; custody does not prove first recovery.",
+              "id": "material-89117",
+              "item_vnums": [
+                89117
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a piece of mithral"
+            },
+            {
+              "count": 1,
+              "hint": "The royal court guards wield this exact ordinary mithral weapon. It is different from shining rewards, cracked vault weapons and the shop's black-handled stock. Loose supplied material fits without personal kill history.",
+              "id": "material-89142",
+              "item_vnums": [
+                89142
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a mithral longsword"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:100000,I:89117,I:89142;receive=I:89119;disappear=0",
+                  "giver_vnum": 89102
+                }
+              ],
+              "hint": "Accounting currently blocks this mixed item-and-coin offering. The native recipe requires one piece of raw mithral, a mithral longsword and 100 platinum (100000 copper-value coins). Material readiness does not prove payment. A separately qualified mixed-payment adapter must settle the exact offering and accepted reward before new completion; earlier accepted receipts remain history. New credit requires active, ready accounting.",
+              "id": "accepted-crafting",
+              "kind": "completion",
+              "text": "Complete Vitrius: shining long sword"
+            }
+          ],
+          "summary": "Prepare raw mithral, a mithral longsword and 100 platinum for this independent weapon service. Accounting currently blocks the mixed offering. Supporting crafting gives no zone-story achievement or daily credit.",
+          "title": "Vitrius: shining long sword"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:250000,I:89117,I:89142;receive=I:89120;disappear=0",
+              "giver_vnum": 89102
+            }
+          ],
+          "id": "vitrius-two-handed-sword",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Raw mithral is placed in Zarix's dank prison cell and a maljer hut. Exact supplied stock also fits; custody does not prove first recovery.",
+              "id": "material-89117",
+              "item_vnums": [
+                89117
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a piece of mithral"
+            },
+            {
+              "count": 1,
+              "hint": "The royal court guards wield this exact ordinary mithral weapon. It is different from shining rewards, cracked vault weapons and the shop's black-handled stock. Loose supplied material fits without personal kill history.",
+              "id": "material-89142",
+              "item_vnums": [
+                89142
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a mithral longsword"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:250000,I:89117,I:89142;receive=I:89120;disappear=0",
+                  "giver_vnum": 89102
+                }
+              ],
+              "hint": "Accounting currently blocks this mixed item-and-coin offering. The native recipe requires one piece of raw mithral, a mithral longsword and 250 platinum (250000 copper-value coins). Material readiness does not prove payment. A separately qualified mixed-payment adapter must settle the exact offering and accepted reward before new completion; earlier accepted receipts remain history. New credit requires active, ready accounting.",
+              "id": "accepted-crafting",
+              "kind": "completion",
+              "text": "Complete Vitrius: shining two-handed sword"
+            }
+          ],
+          "summary": "Prepare raw mithral, a mithral longsword and 250 platinum for this independent weapon service. Accounting currently blocks the mixed offering. Supporting crafting gives no zone-story achievement or daily credit.",
+          "title": "Vitrius: shining two-handed sword"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:10000,I:89117,I:89140;receive=I:89143;disappear=0",
+              "giver_vnum": 89102
+            }
+          ],
+          "id": "vitrius-dagger",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Raw mithral is placed in Zarix's dank prison cell and a maljer hut. Exact supplied stock also fits; custody does not prove first recovery.",
+              "id": "material-89117",
+              "item_vnums": [
+                89117
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a piece of mithral"
+            },
+            {
+              "count": 1,
+              "hint": "The royal court guards wield this exact ordinary mithral weapon. It is different from shining rewards, cracked vault weapons and the shop's black-handled stock. Loose supplied material fits without personal kill history.",
+              "id": "material-89140",
+              "item_vnums": [
+                89140
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a mithral dagger"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000,I:89117,I:89140;receive=I:89143;disappear=0",
+                  "giver_vnum": 89102
+                }
+              ],
+              "hint": "Accounting currently blocks this mixed item-and-coin offering. The native recipe requires one piece of raw mithral, a mithral dagger and 10 platinum (10000 copper-value coins). Material readiness does not prove payment. A separately qualified mixed-payment adapter must settle the exact offering and accepted reward before new completion; earlier accepted receipts remain history. New credit requires active, ready accounting.",
+              "id": "accepted-crafting",
+              "kind": "completion",
+              "text": "Complete Vitrius: shining dagger"
+            }
+          ],
+          "summary": "Prepare raw mithral, a mithral dagger and 10 platinum for this independent weapon service. Accounting currently blocks the mixed offering. Supporting crafting gives no zone-story achievement or daily credit.",
+          "title": "Vitrius: shining dagger"
+        }
+      ]
+    },
+    {
       "contacts": [],
       "coverage": "complete",
       "exclusions": [],

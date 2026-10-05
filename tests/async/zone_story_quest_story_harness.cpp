@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 123 &&
-				tracker.summary_for(7, 42).total == 1548,
+		require(catalog.story_mappings.size() == 124 &&
+				tracker.summary_for(7, 42).total == 1544,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7687,6 +7687,162 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &short_sword = story_for("newhope", "vitrius-short-sword");
+			const auto &long_sword = story_for("newhope", "vitrius-long-sword");
+			const auto &two_handed = story_for("newhope", "vitrius-two-handed-sword");
+			const auto &dagger = story_for("newhope", "vitrius-dagger");
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "newhope"; });
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 890, 89000, 100, "arrival") ==
+					result::applied,
+				"New Hope discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 890, 10, 1, 101, false, false);
+			require(journal.find(short_sword.title) == std::string::npos,
+				"New Hope exposed unseen smith services");
+			require(journey.meet_npc(7, 42, 89102, 89083, 102) == result::applied &&
+					journey.meet_npc(7, 42, 89165, 89179, 102) ==
+						result::applied &&
+					journey.meet_npc(7, 42, 89166, 89195, 102) ==
+						result::applied,
+				"New Hope contact encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"New Hope service card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry, size_t i) {
+				return section(entry).find("[Ready now] " + entry.steps[i].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry, size_t i) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[i].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[89118] = supplies.carried[89119] =
+				supplies.carried[89120] = supplies.carried[89143] =
+					supplies.carried[89019] = supplies.carried[89188] =
+						supplies.carried[89152] = 1;
+			supplies.equipped[1] = 89117;
+			supplies.equipped[2] = 89140;
+			supplies.equipped[3] = 89141;
+			supplies.equipped[4] = 89142;
+			journal = journey.render_journal(7, 42, 890, 10, 1, 103, false, false,
+							 &supplies);
+			for (const auto *entry :
+			     { &short_sword, &long_sword, &two_handed, &dagger })
+				require(missing(*entry, 0) && missing(*entry, 1) &&
+						section(*entry).find(
+							"Accounting currently blocks") !=
+							std::string::npos,
+					"New Hope wrong/worn/reward/key stock substituted for loose exact inputs or hid mixed-payment refusal");
+			supplies.equipped.clear();
+			supplies.carried[89117] = 1;
+			supplies.carried[89141] = 1;
+			journal = journey.render_journal(7, 42, 890, 10, 1, 104, false, false,
+							 &supplies);
+			require(ready(short_sword, 0) && ready(short_sword, 1) &&
+					ready(long_sword, 0) && missing(long_sword, 1) &&
+					missing(two_handed, 1) && missing(dagger, 1),
+				"New Hope shining/short sword manufactured later inputs or required prior kill/source history");
+			supplies.carried[89142] = 1;
+			supplies.carried[89140] = 1;
+			const auto before_read = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 890, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto *entry :
+			     { &short_sword, &long_sword, &two_handed, &dagger })
+				require(ready(*entry, 0) && ready(*entry, 1) &&
+						section(*entry).find("[Pending]") !=
+							std::string::npos &&
+						journey.evidence_for(entry->contracts.front(), 2)
+								.successful_attempts == 0,
+					"New Hope prepared alternatives manufactured payment/acceptance");
+			require(journey.serialize_state() == before_read &&
+					journey.progress_for_zone(7, 42, 890).total == 0 &&
+					journey.progress_for_zone(7, 42, 890).completed == 0,
+				"New Hope reading or support services created achievement state");
+			// Synthetic settled receipts test historical projection, not today's refused mixed payment.
+			record(journey, short_sword.contracts.front(), "newhope-short", 890, 89083);
+			require(journey.evidence_for(long_sword.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(two_handed.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(dagger.contracts.front(), 2)
+							.successful_attempts == 0,
+				"New Hope smith service receipts merged");
+			supplies.carried.erase(89117);
+			supplies.carried.erase(89141);
+			journal = journey.render_journal(7, 42, 890, 10, 1, 107, false, false,
+							 &supplies);
+			require(missing(short_sword, 0) && missing(short_sword, 1) &&
+					missing(long_sword, 0) && ready(long_sword, 1),
+				"New Hope historical receipt recreated spent materials");
+			for (const auto *entry : { &long_sword, &two_handed, &dagger })
+				record(journey, entry->contracts.front(), entry->id.c_str(), 890,
+				       89083);
+			require(journey.progress_for_zone(7, 42, 890).completed == 0 &&
+					journey.progress_for_zone(7, 42, 890).total == 0,
+				"New Hope paid service history awarded achievements");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u)
+					      { return u.zone_number == 890; }) == 4 &&
+					std::none_of(units.begin(), units.end(),
+						     [](const auto &u) {
+							     return u.zone_number == 890 &&
+								    (u.achievement ||
+								     u.daily_candidate);
+						     }),
+				"New Hope services lost rows or became achievement or daily units");
+			auto replay =
+				completion(short_sword.contracts.front(), "newhope-short", 120);
+			replay.transaction.zone_number = 890;
+			replay.transaction.room_vnum = 89083;
+			require(journey.record_completion(replay) == result::already_applied,
+				"New Hope replay duplicated service acceptance");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 890) &&
+					recovered.progress_for_zone(7, 42, 890).completed == 0 &&
+					recovered.progress_for_zone(7, 42, 890).total == 0,
+				"New Hope cold recovery lost discovery or invented service achievements");
+			for (const auto &entry : mapping.stories)
+				require(recovered.evidence_for(entry.contracts.front(), 2)
+							.successful_attempts == 1,
+					"New Hope cold recovery lost independent service history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 890, 89000, 100, "arrival") ==
+					result::applied,
+				"Historical New Hope discovery failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("newhope-old-" + entry.id).c_str(), 890, 89083);
+			require(historical.progress_for_zone(7, 42, 890).completed == 4 &&
+					historical.progress_for_zone(7, 42, 890).total == 4,
+				"Historical New Hope raw service fixture failed");
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 890).completed == 0 &&
+					authored.progress_for_zone(7, 42, 890).total == 0 &&
+					authored.has_discovered(7, 42, 890),
+				"New Hope raw4-to-service4 reclassification lost discovery or retained achievements");
+			for (const auto &entry : mapping.stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+							.successful_attempts == 1,
+					"New Hope reclassification lost accepted independent service history");
 		}
 		{
 			const auto &relics = story_for("barovia2", "eva-witch-relics");
