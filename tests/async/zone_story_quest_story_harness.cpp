@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 128 &&
-				tracker.summary_for(7, 42).total == 1543,
+		require(catalog.story_mappings.size() == 129 &&
+				tracker.summary_for(7, 42).total == 1537,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7687,6 +7687,159 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "oasis"; });
+			const auto &mayor = story_for("oasis", "mayor-two-proofs");
+			const auto &mother = story_for("oasis", "mother-kara-return");
+			const auto &swirl = story_for("oasis", "gnome-swirling");
+			const auto &sweet = story_for("oasis", "gnome-sweet");
+			const auto &paid = story_for("oasis", "overseer-tower-access");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 780, 78000, 100, "arrival") ==
+					result::applied,
+				"Oasis discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 780, 10, 1, 101, false, false);
+			require(journal.find(mayor.title) == std::string::npos &&
+					journal.find(mother.title) == std::string::npos,
+				"Oasis exposed unseen requests");
+			require(journey.meet_npc(7, 42, 78011, 78067, 102) == result::applied,
+				"Oasis captain encounter failed");
+			journal = journey.render_journal(7, 42, 780, 10, 1, 103, false, false);
+			require(journal.find(mayor.title) == std::string::npos,
+				"Oasis captain referral exposed mayor receipt");
+			for (const auto &contact : mapping.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 78066, 104) ==
+							result::applied ||
+						contact.mob_vnum == 78011,
+					"Oasis contact encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Oasis card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry, size_t index) {
+				return section(entry).find("[Ready now] " +
+							   entry.steps[index].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry, size_t index) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[index].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			for (const auto v : { 78007, 78026, 78066, 78067, 78068 })
+				supplies.carried[v] = 10;
+			supplies.equipped[0] = 78030;
+			supplies.equipped[1] = 78063;
+			supplies.equipped[2] = 78057;
+			journal = journey.render_journal(7, 42, 780, 10, 1, 105, false, false,
+							 &supplies);
+			require(missing(mayor, 0) && missing(mayor, 1) && missing(mother, 0) &&
+					section(paid).find("[Pending]") != std::string::npos,
+				"Oasis equipped proofs/rewards/key inferred turn-in or payment");
+			supplies.equipped.clear();
+			supplies.carried[78030] = 1;
+			journal = journey.render_journal(7, 42, 780, 10, 1, 106, false, false,
+							 &supplies);
+			require(ready(mayor, 0) && missing(mayor, 1) &&
+					journey.progress_for_zone(7, 42, 780).completed == 0,
+				"Oasis one proof completed full mayor bundle");
+			supplies.carried[78057] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 780, 10, 1, 107, false, false,
+							 &supplies);
+			require(ready(mother, 0) && before == journey.serialize_state(),
+				"Oasis supplied girl required escort/history or rendering mutated state");
+			// Synthetic receipts qualify projection, not played source/payment/consumption/rescue or access.
+			record(journey, mother.contracts.front(), "oasis-girl", 780, 78087);
+			supplies.carried.erase(78057);
+			require(journey.progress_for_zone(7, 42, 780).completed == 1 &&
+					journey.evidence_for(mayor.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Oasis girl receipt completed village proofs");
+			supplies.carried[78063] = 1;
+			supplies.carried[78017] = 1;
+			supplies.carried[78018] = 1;
+			supplies.carried[78044] = 1;
+			journal = journey.render_journal(7, 42, 780, 10, 1, 108, false, false,
+							 &supplies);
+			require(ready(mayor, 0) && ready(mayor, 1) && ready(swirl, 0) &&
+					ready(swirl, 1) && ready(sweet, 0) && ready(sweet, 1),
+				"Oasis exact supplied bundle or shared rose required prior briefing/name/kill");
+			record(journey, swirl.contracts.front(), "oasis-swirling", 780, 78104);
+			supplies.carried.erase(78017);
+			supplies.carried.erase(78018);
+			journal = journey.render_journal(7, 42, 780, 10, 1, 109, false, false,
+							 &supplies);
+			require(missing(swirl, 0) && missing(swirl, 1) && ready(sweet, 0) &&
+					missing(sweet, 1) &&
+					journey.evidence_for(sweet.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.progress_for_zone(7, 42, 780).completed == 1,
+				"Oasis spent rose recreated stock or service credited another recipe/achievement");
+			record(journey, mayor.contracts.front(), "oasis-mayor", 780, 78066);
+			require(journey.progress_for_zone(7, 42, 780).completed == 2 &&
+					journey.progress_for_zone(7, 42, 780).total == 3,
+				"Oasis two proofs/two outputs duplicated completion");
+			for (const auto &entry : mapping.stories)
+				if (entry.contracts.front() != mother.contracts.front() &&
+				    entry.contracts.front() != swirl.contracts.front() &&
+				    entry.contracts.front() != mayor.contracts.front())
+					record(journey, entry.contracts.front(),
+					       ("oasis-" + entry.id).c_str(), 780, 78066);
+			require(journey.progress_for_zone(7, 42, 780).completed == 3,
+				"Oasis services became achievement units");
+			auto replay = completion(mayor.contracts.front(), "oasis-mayor", 120);
+			replay.transaction.zone_number = 780;
+			replay.transaction.room_vnum = 78066;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Oasis replay duplicated receipt");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 780) &&
+					recovered.progress_for_zone(7, 42, 780).completed == 3,
+				"Oasis cold recovery lost discovery/receipts");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 780, 78000, 100, "arrival") ==
+					result::applied,
+				"Historical Oasis discovery failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("oasis-old-" + entry.id).c_str(), 780, 78066);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 780).completed == 3 &&
+					authored.progress_for_zone(7, 42, 780).total == 3,
+				"Oasis raw-to-authored lost classification/history");
+			for (const auto &entry : mapping.stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1 &&
+						recovered.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1,
+					"Oasis exact service/story receipt lost");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 780 &&
+							     u.achievement && u.daily_candidate;
+					      }) == 3 &&
+					std::count_if(units.begin(), units.end(),
+						      [](const auto &u) {
+							      return u.zone_number == 780 &&
+								     !u.achievement &&
+								     !u.daily_candidate;
+						      }) == 6,
+				"Oasis service classification changed");
 		}
 
 		{

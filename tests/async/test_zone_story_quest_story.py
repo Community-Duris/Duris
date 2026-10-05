@@ -15,8 +15,8 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1421
-assert report['mapped_area_count'] == 128 and report['eligible_by_zone']['162'] == 4
+assert report["daily_unit_count"] == 1416
+assert report['mapped_area_count'] == 129 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,18 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+oasis=next(m for m in catalog['story_mappings'] if m['source_area']=='oasis')
+assert (oasis['schema_version'],oasis['revision'],oasis['coverage'])==(3,1,'complete')
+assert len(oasis['stories'])==9 and len(oasis['contacts'])==9 and not oasis['exclusions']
+assert report['eligible_by_zone']['780']==3 and sum(len(c['topics']) for c in oasis['contacts'])==34
+assert [s['category'] for s in oasis['stories']]==['story','story','service','service','service','service','service','service','story']
+assert [len(s['steps']) for s in oasis['stories']]==[4,3,1,2,4,3,4,3,2]
+assert sum(len(s['steps'])-1 for s in oasis['stories'])==17
+for story in oasis['stories']:
+ assert len(story['contracts'])==1 and story['steps'][-1]['contracts']==story['contracts']
+ assert all(t['kind']=='carried_item' and t['optional'] and t['count']==1 for t in story['steps'][:-1])
+units=[u for u in module.story_units(catalog) if u['zone_number']==780];assert len(units)==9 and sum(u['achievement'] for u in units)==sum(u['daily_candidate'] for u in units)==3
 
 pharrvly=next(m for m in catalog['story_mappings'] if m['source_area']=='pharrvly')
 assert (pharrvly['schema_version'],pharrvly['revision'],pharrvly['coverage'])==(3,1,'complete')
