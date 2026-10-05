@@ -191,7 +191,7 @@ try:
             if broken_fk:
                 execute("SET SESSION FOREIGN_KEY_CHECKS=1")
 
-    def cut(label, changes, repairs, findings=None, refusal=None, broken_fk=False, probe=None):
+    def cut(label, changes, repairs, findings=None, refusal=None, broken_fk=False, probe=None, full_restore=False):
         original = captured()
         try:
             fixture_changes(changes, broken_fk)
@@ -213,12 +213,22 @@ try:
                 assert restore_code.startswith("restore_economic_"), (label, restore_code)
             else:
                 raise AssertionError(label + ": corrupt baseline passed independent restore qualification")
+            full_restore_code = None
+            if full_restore:
+                try:
+                    restore_qualification()
+                except RuntimeError as error:
+                    full_restore_code = str(error)
+                    assert full_restore_code == restore_code, (label, full_restore_code, restore_code)
+                else:
+                    raise AssertionError(label + ": corrupt baseline passed full restore qualification")
             assert captured() == damaged, label + ": reader changed authority"
         finally:
             fixture_changes(repairs, broken_fk)
         assert captured() == original, label + ": disposable fixture was not restored"
         cuts.append({"label": label, "findings": findings, "refusal": refusal,
-                     "damaged_import": broken_fk, "restore_refusal": restore_code})
+                     "damaged_import": broken_fk, "restore_refusal": restore_code,
+                     "full_restore_refusal": full_restore_code})
         print("BASELINE_CUT " + json.dumps(cuts[-1], sort_keys=True), flush=True)
 
     def field(label, table, column, operation, changed, findings=None, refusal=None, broken_fk=False):
@@ -238,6 +248,49 @@ try:
     old_epoch = bytes.fromhex(native["epochs"][0])
     lineage = bytes.fromhex(native["lineage"])
     claims = {row["operation_id"]: row for row in intact["economic_accounting_source_claim"]}
+    def root_fault(operation):
+        return ({"findings": {"baseline_source_claim": 1}} if operation == old else
+                {"refusal": "EAB1 committed root mismatch"})
+
+    binding_red = os.environ.get("DURIS_PLAN5_BASELINE_COMMAND_BINDING_RED") == "1"
+    binding_cuts = []
+    for operation, scope_name in ((selected, "selected"), (old, "retained")):
+        root_row = next(row for row in intact["economic_accounting_operation"] if row["operation_id"] == operation)
+        damaged_intent = bytearray(root_row["canonical_intent"])
+        damaged_intent[160] ^= 1
+        damaged_intent = bytes(damaged_intent)
+        changed_intent_digest = hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0"+damaged_intent).digest()
+        damaged_plan = bytearray(root_row["canonical_plan"])
+        damaged_plan[152:184] = changed_intent_digest
+        damaged_plan = bytes(damaged_plan)
+        query = ("UPDATE economic_accounting_operation SET canonical_intent=%s,intent_digest=%s,"
+                 "canonical_plan=%s,plan_digest=%s WHERE operation_id=%s")
+        changes = [(query, (damaged_intent, changed_intent_digest, damaged_plan,
+                           hashlib.sha256(damaged_plan).digest(), operation))]
+        repairs = [(query, (root_row["canonical_intent"], root_row["intent_digest"],
+                           root_row["canonical_plan"], root_row["plan_digest"], operation))]
+        if binding_red:
+            try:
+                fixture_changes(changes, False)
+                damaged = captured()
+                _, observed = audit()
+                assert observed == base_counts, (scope_name, observed)
+                restore_evidence()
+                restore_qualification()
+                assert captured() == damaged, "binding RED reader changed authority"
+            finally:
+                fixture_changes(repairs, False)
+            assert captured() == intact
+            print("BASELINE_COMMAND_BINDING_RED " + json.dumps({"scope": scope_name,
+                  "original_native_binding": root_row["canonical_intent"][160:192].hex(),
+                  "resealed_binding": damaged_intent[160:192].hex(), "all_three_readers_admitted": True,
+                  "authority_unchanged": True}, sort_keys=True), flush=True)
+        else:
+            cut(scope_name+"-command-binding-resealed", changes, repairs, full_restore=True, **root_fault(operation))
+            binding_cuts.append(scope_name)
+    if binding_red:
+        print("NATIVE_BASELINE_COMMAND_BINDING_RED_ADMITTED native_original_roots_resealed_both_epochs_unchanged", flush=True)
+        raise SystemExit(0)
     reservation_orphan = bytes([89]) * 16
     orphan_insert = ("INSERT INTO economic_baseline_reservation(lineage,epoch,identity_kind,identity_id,operation_id) "
                      "VALUES(%s,%s,%s,%s,%s)")
@@ -453,10 +506,6 @@ try:
     constrained("reservation-kind-check",
                 "UPDATE economic_baseline_reservation SET identity_kind=3 WHERE operation_id=%s",
                 (selected,), (3819, 4025))
-    def root_fault(operation):
-        return ({"findings": {"baseline_source_claim": 1}} if operation == old else
-                {"refusal": "EAB1 committed root mismatch"})
-
     for operation, scope_name in ((selected, "selected"), (old, "retained")):
         retained_witness = next(row for row in intact["economic_baseline_witness"] if row["operation_id"] == operation)
         original_blob = retained_witness["canonical_witness"]
@@ -628,6 +677,7 @@ try:
           "active_epoch_null": True, "complete_world_capture": False}, sort_keys=True), flush=True)
     print("NATIVE_BASELINE_AUDIT_QUALIFIED " + json.dumps({"baseline_claims": 2, "epochs": 2,
           "cuts": len(cuts), "constraint_refusals": len(constraints),
+          "command_binding_cuts": binding_cuts,
           "restore_refusals": len(cuts), "native_baseline_dump_import": True,
           "authority_unchanged": True, "activation": False,
           "production_access": False, "complete_native_capture": False}, sort_keys=True), flush=True)

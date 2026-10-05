@@ -44,12 +44,16 @@ def baseline_root(blob, revision=1):
     holdings, items = struct.unpack_from("<II", blob, 184)
     payload = b"EBC1" + struct.pack("<HHII", 1, 48, len(blob), 0) + hashlib.sha256(blob).digest()
     domain = hashlib.sha256(b"DURIS-ECONOMIC-DOMAIN-V1\0" + struct.pack("<HHI", 20, 1, 48) + payload).digest()
+    command = (b"CCM1" + struct.pack("<I", 1) + operation +
+               struct.pack("<HHHBBQIII", 20, 1, 6, 4, 0, 1, 1, 0, 48) +
+               struct.pack("<B7xQ", 9, 0x45434f4e42415345) + payload)
+    binding = hashlib.sha256(b"DURIS-ECONOMIC-COMMAND-V1\0" + command).digest()
     intent = bytearray(256)
     intent[:4] = b"EAI1"
     struct.pack_into("<HHIIIIHBBH", intent, 4, 1, 256, 256, 4, 1, 1, 38, 2, 1, 1)
     intent[32:80] = lineage + epoch + operation
     struct.pack_into("<Q", intent, 96, actor)
-    intent[112:160], intent[160:192], intent[192:224] = source, bytes([91]) * 32, domain
+    intent[112:160], intent[160:192], intent[192:224] = source, binding, domain
     intent = bytes(intent)
     intent_digest = hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + intent).digest()
     accounts, postings, equity = [], [], []
@@ -248,6 +252,29 @@ class ItemRevisionTests(unittest.TestCase):
 
 
 class OriginTests(unittest.TestCase):
+    def test_resealed_command_binding_substitution_refuses_read_only(self):
+        for offset in range(160, 192):
+            with self.subTest(offset=offset):
+                row = witness()
+                intent = bytearray(row["canonical_intent"])
+                intent[offset] ^= 1
+                row["canonical_intent"] = bytes(intent)
+                row["intent_digest"] = hashlib.sha256(b"DURIS-ECONOMIC-INTENT-V1\0" + intent).digest()
+                plan = bytearray(row["canonical_plan"])
+                plan[152:184] = row["intent_digest"]
+                row["canonical_plan"] = bytes(plan)
+                row["plan_digest"] = hashlib.sha256(plan).digest()
+                self.assertEqual(decode_plan(row["canonical_plan"])["intent_digest"], row["intent_digest"])
+                original = copy.deepcopy(row)
+                connection = Connection(rows=[row])
+                with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertEqual(row, original)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+                self.assertTrue(all(sql.startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
+                                    for sql, _ in connection.scan.statements))
+
     def test_baseline_native_events_children_and_outbox_refuse_read_only(self):
         for index, (table, column) in enumerate(origin_exporter.BASELINE_ZERO_EFFECTS):
             for value in (1, -1, None, True):
