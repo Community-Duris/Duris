@@ -1,5 +1,16 @@
 # Accounting review status — 2026-10-04
 
+## Baseline equipment defect and versioned repair handoff — 2026-10-05
+
+[The exact peer evidence and reviewed native interface](BASELINE_EQUIPMENT_V2_SOURCE_HANDOFF_2026-10-05.md) establish that
+EAB1 loses an accepted equipment slot and cannot regenerate its original plan.
+Original baseline/replay acceptance is reopened; earlier results remain their
+recorded historical scope. Private EAB2 retains the full position and both
+equipment fingerprints; five core inputs and three native fixture updates pass
+source review/inverse/format only, with no execution or installation. Primary
+schema/compatibility and Plan5 independent readers meet on that exact contract.
+Current inactive behavior stays; R1–R8, release and activation remain BLOCKED.
+
 ## Guarded original SHOP refusal callback integrated — 2026-10-05
 
 [The shared cancellation interface](SHOP_GUARDED_REFUSAL_CALLBACK_2026-10-05.md) authenticates and pins the original
