@@ -1,5 +1,12 @@
 # Plan 3: item supply, custody, and provenance
 
+## Integrated NPC flat bundle preparation — 2026-10-05
+
+[Canonical flat image read and exact-before preparation](../QUEST_MOBILE_FLAT_SOURCE_2026-10-05.md)
+are source-integrated with no caller or standalone commit. Original admitted
+parent, protected namespace/Plan5 evidence, recovery and qualification remain open.
+No executed backend parity or native lifecycle completion is claimed.
+
 ## Integrated NPC native SQL participant — 2026-10-05
 
 [Borrowed native image/stock SQL participation](../QUEST_MOBILE_SQL_SOURCE_2026-10-05.md)
