@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 116 authored journals.
+2668 distinct Q contracts; 117 authored journals.
 
 Regenerate with:
 
@@ -85,7 +85,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Treasure Caves (`dungeon`) | 1 | 1 | 0 | Fallback | [1 × a small brass figurine → native reward/response](../../areas/qst/dungeon.qst#L13) | blue_sword_armor |
 | Temple of the Earth (`earth`) | 2 | 22 | 0 | Fallback | [1 × a badge of gloomhaven → a vial of blood](../../areas/qst/earth.qst#L27) | eligoth_rift_spawn, patrol_shops, toe_chamber_switch |
 | Grumbar's Domain (`earthp`) | 2 | 9 | 0 | Fallback | [10 × a shard of planar granite → a huge key of blazing white flame](../../areas/qst/earthp.qst#L65) | purple_worm |
-| The Elemental Groves (`element`) | 3 | 60 | 0 | Fallback | [1 × a cube of ethereal matter → a greenstone earring](../../areas/qst/element.qst#L385) | glades_dagger |
+| The Elemental Groves (`element`) | 3 | 60 | 0 | Yes | [1 × a cube of ethereal matter → a greenstone earring](../../areas/qst/element.qst#L385) | glades_dagger |
 | Barrow of the Quiosho (`elftomb`) | 1 | 0 | 0 | Fallback | [1 × the bloody head of the elven king → a amulet of the Blood-eye](../../areas/qst/elftomb.qst#L2) | — |
 | Abandoned Elven Homestead (`elvish`) | 4 | 6 | 3 | Yes | [4 × some unhatched spider eggs → a spider-shaped key forged from adamantium](../../areas/qst/elvish.qst#L76) | — |
 | The Spires of the Elder Eternal Evil (`eternal`) | 6 | 2 | 0 | Fallback | [1 × the scale of the Death Serpent; 1 × the scale of the Night Serpent; 1 × the scale of the Shadow Serpent; other required items → the key of the Elder Eternal Evil](../../areas/qst/eternal.qst#L2) | — |

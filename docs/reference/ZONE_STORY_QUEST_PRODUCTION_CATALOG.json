@@ -41576,6 +41576,389 @@
     {
       "contacts": [
         {
+          "description": "Evergreen groves: pixie greeting and woodland lore.",
+          "keyword": "pixie",
+          "mob_vnum": 3800,
+          "name": "the pixie",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Silverleaf groves: danger and things heard; a fairy-dust pouch does not grant flight.",
+          "keyword": "fairy",
+          "mob_vnum": 3801,
+          "name": "the fairy",
+          "topics": [
+            "hi",
+            "hello",
+            "danger",
+            "heard"
+          ]
+        },
+        {
+          "description": "Willow groves: water sprite; ask fairy, talk, home, how, realm and sanctum for the water-fragment lead.",
+          "keyword": "sprite",
+          "mob_vnum": 3802,
+          "name": "the water sprite",
+          "topics": [
+            "hi",
+            "hello",
+            "fairy",
+            "talk",
+            "home",
+            "how",
+            "realm",
+            "sanctum"
+          ]
+        },
+        {
+          "description": "Aspen groves: fire sprite; ask fairy, home, there and either for the fire-fragment lead.",
+          "keyword": "sprite",
+          "mob_vnum": 3803,
+          "name": "the fire sprite",
+          "topics": [
+            "hi",
+            "hello",
+            "fairy",
+            "home",
+            "there",
+            "either"
+          ]
+        },
+        {
+          "description": "Beech groves: air sprite; ask fairy, home and emptier for the air-fragment lead.",
+          "keyword": "sprite",
+          "mob_vnum": 3804,
+          "name": "the air sprite",
+          "topics": [
+            "hi",
+            "hello",
+            "fairy",
+            "home",
+            "emptier"
+          ]
+        },
+        {
+          "description": "Oak groves: earth sprite; ask fairy, home, there and wanted for the earth-fragment lead.",
+          "keyword": "sprite",
+          "mob_vnum": 3805,
+          "name": "the earth sprite",
+          "topics": [
+            "hi",
+            "hello",
+            "fairy",
+            "home",
+            "there",
+            "wanted"
+          ]
+        },
+        {
+          "description": "Dogwood groves: brownie greeting and funny lore, without a delivery recipe.",
+          "keyword": "brownie",
+          "mob_vnum": 3806,
+          "name": "the brownie",
+          "topics": [
+            "hi",
+            "hello",
+            "funny"
+          ]
+        },
+        {
+          "description": "Eucalyptus groves: koala greeting and lore.",
+          "keyword": "koala",
+          "mob_vnum": 3807,
+          "name": "the koala bear",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Pine grove: the dryad\u2019s help, forrestal, him and caretaker leads.",
+          "keyword": "dryad",
+          "mob_vnum": 3808,
+          "name": "the dryad",
+          "topics": [
+            "hi",
+            "hello",
+            "help",
+            "forrestal",
+            "him",
+            "caretaker"
+          ]
+        },
+        {
+          "description": "Twisted groves: hostile su-monster greeting, without a kill-credit contract.",
+          "keyword": "su-monster",
+          "mob_vnum": 3809,
+          "name": "the su-monster",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Baobab climb: wombat greeting and equipment.",
+          "keyword": "wombat",
+          "mob_vnum": 3810,
+          "name": "the wombat",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Earth entrance: earth elemental has the gravel key for the next chamber.",
+          "keyword": "elemental",
+          "mob_vnum": 3811,
+          "name": "the earth elemental",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Earth corridor: ooze creature has the slate key toward the sanctum.",
+          "keyword": "ooze",
+          "mob_vnum": 3812,
+          "name": "the ooze",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Underwater water route: water weird has the seashell key.",
+          "keyword": "weird",
+          "mob_vnum": 3813,
+          "name": "the water weird",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Underwater water route: elemental has the coral key and blue waterbreathing shell.",
+          "keyword": "elemental",
+          "mob_vnum": 3814,
+          "name": "the water elemental",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Fire route: fire elemental has the igneous key.",
+          "keyword": "fire",
+          "mob_vnum": 3815,
+          "name": "the fire elemental",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Fire route: magma man has the magma key.",
+          "keyword": "magma",
+          "mob_vnum": 3816,
+          "name": "a magma man",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Air route: eddy of smoke has the glass key.",
+          "keyword": "smoke",
+          "mob_vnum": 3817,
+          "name": "an eddy of smoke",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Air route: kirin has the crystal key and gleaming horn; dialogue has no accepted permission outcome.",
+          "keyword": "kirin",
+          "mob_vnum": 3818,
+          "name": "the kirin",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Starts in the northwest maple grove and can wander: grove/sprite/realm/rowan/heal leads and three exact offerings. Cube acceptance retires this giver.",
+          "keyword": "forrestal",
+          "mob_vnum": 3819,
+          "name": "the forrestal",
+          "topics": [
+            "hi",
+            "hello",
+            "groves",
+            "fairy",
+            "sprite",
+            "earth",
+            "water",
+            "fire",
+            "air",
+            "brownie",
+            "koala",
+            "su",
+            "su-monster",
+            "monster",
+            "dryad",
+            "dark",
+            "twisted",
+            "rift",
+            "rowans",
+            "heal",
+            "element",
+            "elemental"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Meet the woodland folk, follow the forrestal\u2019s leads and explore the elemental fragments and ether tower. Three independent offerings record accepted outcomes; the six-plaque treasure puzzle is a separate exploration route. New discovery and progress require active, ready accounting.",
+      "orientation": [
+        "Enter from the animal path through the forest. The protector stands at the eastern entrance. Woodland fairies, sprites, brownies, koalas and the dryad have different leads. ASK a nearby person about one of their listed topics; a recognized reply can reveal that contact, without making every keyword a separate achievement.",
+        "Find the forrestal, who starts in the northwest maple grove and can wander. Ask groves, sprite, dark, rift, rowans and heal for the damaged-grove story. He accepts two exact keys for experience, or the cube of ethereal matter for a greenstone earring and experience. These are three independent deliveries; no earlier personal discussion or offering receipt is required.",
+        "The cloudy key starts on the ground in the maple grove, and the black key starts on the ground in the dogwood grove. Each fits a different upper tower door. Use the key for access before spending it on the forrestal if you want that route. A supplied key fits too; an already-open shared path does not prove your own unlocking.",
+        "The twisted rowan grove leads west into separate earth, water, fire and air fragments. Follow the sprites\u2019 realm and sanctum clues. Each fragment has two different guardian keys and a sanctum route; the exact keys and doors differ. Combat, key recovery and travel are separate from the forrestal\u2019s accepted deliveries.",
+        "Earth uses the gravel and slate keys; water uses seashell and coral; fire uses igneous and magma; air uses glass and crystal. The guardian equipment or carried stock supplies these keys when legitimately available. Current possession can prepare access, but does not prove a personal kill or first acquisition from its original source.",
+        "Water routes include deep water and underwater rooms; air routes include rooms without ground, and fire routes include fire-plane terrain. Native movement, breath, flight, levitation, mounts and hazards still apply. The blue seashell has a worn waterbreathing effect; the fairy-dust pouch explicitly does not grant flight. Neither item is a compulsory forrestal offering.",
+        "The four sanctums and the two upper tower rooms are the intended plaque branches. Five copies of the same runed pedestal and one black pedestal are closed display containers, without a lock. Open the display case and examine its actual contents. Available stock depends on what has already been recovered and whether the grove has renewed.",
+        "Climb the baobab to the ether tower. The five climbing rooms have different native fall settings, and the tower contains wombats and an ether wraith. The wraith\u2019s equipment includes the actual cube of ethereal matter. It is an offering item, not a container you must open, and it appears before the final six-plaque treasure chamber.",
+        "The cloudy key fits the upper door from the northeastern tower corner to the ethereal sanctum; the black key fits the other upper door to the empty tower. Those rooms are intended to supply the cloudy and black plaques. Returning either key for experience consumes it, so a reward receipt cannot replace access stock.",
+        "The six plaque keys fit the northern corridor in this order: stone, silver, gold, crystal, cloudy, black. Each plaque carries part of the final riddle. The last elemental door answers to SAY nothing beside it; then OPEN it if closed. Speech ability and native shared door state matter. Reading, saying the word and opening a door do not currently create personal puzzle-completion receipts.",
+        "The final chamber holds a small black cube, a fixed closed container distinct from the ether wraith\u2019s offering. Its reset children are a black wand and a jagged obsidian dagger. The dagger has its own combat effects. The room\u2019s epic stone and memory trophy follow separate rules; none is an input to the forrestal\u2019s three deliveries.",
+        "The enchanted valley can be reached through downward exits from the air route. Its lady has equipment and lore, without a native delivery contract. The northern archway returns to the winding path through the glades through an ordinary exit. The bubbling spring is an object with a DRINK spring effect, not a quest turn-in.",
+        "Returning the ethereal cube rewards the earring and experience, then retires that forrestal. His reply says he may heal the grove and will tell the dryad; the current contract does not restore rooms, escort anyone or record a personal rescue. The earring\u2019s worn effect is protection from fire. Base experience amounts still follow native capped and frozen recipient reward rules.",
+        "These three deliveries are potential dailies only when the real giver and legitimate proof stock are available. Current stock and wandering or retired givers can limit availability; the journal does not guarantee renewed supplies. No new discovery, journal or completion credit is available without active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "element",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:3808;receive=E:20000;disappear=0",
+              "giver_vnum": 3819
+            }
+          ],
+          "id": "forrestal-cloudy-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The key\u2019s floor source is the maple grove. It fits the upper door from the northeastern tower corner to the ethereal sanctum. Plan access before spending it. Carry the exact item loose. Held, worn, nested, spent or handed-away stock does not satisfy current preparation. Matching supplied proof fits without your own earlier source, access or delivery history.",
+              "id": "material-3808",
+              "item_vnums": [
+                3808
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the cloudy key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:3808;receive=E:20000;disappear=0",
+                  "giver_vnum": 3819
+                }
+              ],
+              "hint": "Only an accepted delivery records this outcome. Current reward possession, speech, recovery and access are separate. New progress requires active, ready accounting.",
+              "id": "accepted-hand-in",
+              "kind": "completion",
+              "text": "Offer the cloudy key to the forrestal"
+            }
+          ],
+          "summary": "Offer the exact cloudy key for base 20,000 experience under native reward rules. He remains afterward. This consumes a key that also opens the cloudy upper tower room; it does not record opening that door or recovering a plaque.",
+          "title": "The forrestal: investigate the cloudy key"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:3809;receive=E:40000;disappear=0",
+              "giver_vnum": 3819
+            }
+          ],
+          "id": "forrestal-black-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The key\u2019s floor source is the dogwood grove. It fits the upper door from the southwestern tower corner to the empty tower. Use it for access before handing it in if needed. Carry the exact item loose. Held, worn, nested, spent or handed-away stock does not satisfy current preparation. Matching supplied proof fits without your own earlier source, access or delivery history.",
+              "id": "material-3809",
+              "item_vnums": [
+                3809
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the black key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:3809;receive=E:40000;disappear=0",
+                  "giver_vnum": 3819
+                }
+              ],
+              "hint": "Only an accepted delivery records this outcome. Current reward possession, speech, recovery and access are separate. New progress requires active, ready accounting.",
+              "id": "accepted-hand-in",
+              "kind": "completion",
+              "text": "Offer the black key to the forrestal"
+            }
+          ],
+          "summary": "Offer the exact black key for base 40,000 experience under native reward rules. He remains afterward. This spends the key for the other upper tower room; it does not complete the final riddle or collect its plaque.",
+          "title": "The forrestal: investigate the black key"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:3831;receive=E:200000,I:3830;disappear=1",
+              "giver_vnum": 3819
+            }
+          ],
+          "id": "forrestal-ethereal-matter",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The ether wraith in the tower has this exact item in its equipment. It is distinct from the final chamber\u2019s fixed black container. The six-plaque corridor and earlier key offerings are not goals in this recipe. Carry the exact item loose. Held, worn, nested, spent or handed-away stock does not satisfy current preparation. Matching supplied proof fits without your own earlier source, access or delivery history.",
+              "id": "material-3831",
+              "item_vnums": [
+                3831
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the cube of ethereal matter"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:3831;receive=E:200000,I:3830;disappear=1",
+                  "giver_vnum": 3819
+                }
+              ],
+              "hint": "Only an accepted delivery records this outcome. Current reward possession, speech, recovery and access are separate. New progress requires active, ready accounting.",
+              "id": "accepted-hand-in",
+              "kind": "completion",
+              "text": "Deliver the ethereal cube to the forrestal"
+            }
+          ],
+          "summary": "Bring the cube of ethereal matter for a greenstone earring and base 200,000 experience under native reward rules. The forrestal leaves to tell the dryad. The accepted offering is recorded; actual grove restoration and rescue are not implemented outcomes.",
+          "title": "The forrestal: an otherworldly offering"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "This person offers local conversation. Try these topics to learn more.",
           "keyword": "druid",
           "mob_vnum": 5317,

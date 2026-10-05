@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 116 &&
+		require(catalog.story_mappings.size() == 117 &&
 				tracker.summary_for(7, 42).total == 1567,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7551,6 +7551,109 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &cloudy = story_for("element", "forrestal-cloudy-key");
+			const auto &black = story_for("element", "forrestal-black-key");
+			const auto &cube = story_for("element", "forrestal-ethereal-matter");
+			const auto mapping = std::find_if(catalog.story_mappings.begin(),
+							  catalog.story_mappings.end(),
+							  [](const auto &m)
+							  { return m.source_area == "element"; });
+			require(mapping != catalog.story_mappings.end(),
+				"Elemental mapping missing");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 38, 3800, 100, "arrival") ==
+					result::applied,
+				"Elemental discovery failed");
+			for (const auto &contact : mapping->contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 3800, 101) ==
+						result::applied,
+					"Elemental contact projection failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Elemental journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.equipped[18] = 3831;
+			supplies.carried[3814] = 1;
+			supplies.carried[3815] = 1;
+			supplies.carried[3832] = 1;
+			supplies.carried[3830] = 1;
+			journal = journey.render_journal(7, 42, 38, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto *entry : { &cloudy, &black, &cube })
+				require(section(*entry).find("[Missing now] " +
+							     entry->steps[0].text) !=
+						std::string::npos,
+					"Held cube, plaque, black container or reward established offering preparation");
+			require(journey.progress_for_zone(7, 42, 38).completed == 0,
+				"Elemental reward possession proved delivery");
+			supplies.equipped.clear();
+			supplies.carried[3808] = 1;
+			supplies.carried[3809] = 1;
+			supplies.carried[3831] = 1;
+			journal = journey.render_journal(7, 42, 38, 10, 1, 108, false, false,
+							 &supplies);
+			for (const auto *entry : { &cloudy, &black, &cube })
+				require(section(*entry).find("[Ready now] " +
+							     entry->steps[0].text) !=
+						std::string::npos,
+					"Supplied Elemental proof required personal recovery or puzzle history");
+			// Synthetic settled receipts verify projection, not native source/access admission.
+			record(journey, cube.contracts.front(), "element-cube-receipt", 38, 3851);
+			supplies.carried.erase(3831);
+			journal = journey.render_journal(7, 42, 38, 10, 1, 110, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 38).completed == 1 &&
+					journey.evidence_for(cloudy.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(black.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Cube receipt required or completed earlier key offerings");
+			require(section(cube).find("[Missing now] " + cube.steps[0].text) !=
+					std::string::npos,
+				"Spent cube restored current preparation");
+			record(journey, black.contracts.front(), "element-black-receipt", 38, 3851);
+			record(journey, cloudy.contracts.front(), "element-cloudy-receipt", 38,
+			       3851);
+			require(journey.progress_for_zone(7, 42, 38).completed == 3,
+				"Independent Elemental deliveries failed");
+			auto replay =
+				completion(cube.contracts.front(), "element-cube-receipt", 120);
+			replay.transaction.zone_number = 38;
+			replay.transaction.room_vnum = 3851;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Elemental replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 38).completed == 3 &&
+					!recovered.has_discovered(7, 42, 5000),
+				"Elemental recovery lost receipts or invented surface discovery");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 38 &&
+							     u.daily_candidate;
+					      }) == 3,
+				"Elemental independent daily units changed");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 38, 3800, 100, "arrival") ==
+					result::applied,
+				"Historical Elemental discovery failed");
+			for (const auto *entry : { &cube, &black, &cloudy })
+				record(historical, entry->contracts.front(),
+				       ("element-historical-" + entry->id).c_str(), 38, 3851);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 38).completed == 3,
+				"Elemental historical native receipts changed under authored projection");
+		}
 		{
 			const auto &key = story_for("citadel", "wandering-apprentice-bluish-key");
 			const auto &notes = story_for("citadel", "lost-apprentice-notes");
