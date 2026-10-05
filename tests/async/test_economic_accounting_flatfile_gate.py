@@ -10,6 +10,7 @@ from _paths import source
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = (
+    'quest_mobile_native.c', 'quest_mobile_native_flatfile.c',
     "flatfile_item_repository.c", "flatfile_collector_repository.c",
     "collector_command.c", "collector_codec.c", "collector_policy.c",
     "coin_transfer_command.c", "flatfile_player_snapshot_file.c",

@@ -1,4 +1,5 @@
 #include "world/quest_mobile_native.h"
+#include "item/item_transfer_command.h"
 
 #include "core/prototypes.h"
 #include "core/structs.h"
@@ -435,5 +436,136 @@ quest_mobile_native_capture(P_char mob, const quest_mobile_native_reference &ref
 	catch (const std::bad_alloc &)
 	{
 		return player_snapshot_capture_result::retryable_allocation_failure;
+	}
+}
+
+player_snapshot_codec_result quest_mobile_native_item_transition(
+	const quest_mobile_native_image &before, const item_transfer_payload &payload,
+	const critical_operation_id &operation, quest_mobile_native_image *after) noexcept
+{
+	if (!after || !nonzero(operation) || !payload.native_mobile.present ||
+	    (payload.native_mobile.action != item_native_mobile_action::acceptance &&
+	     payload.native_mobile.action != item_native_mobile_action::consumption) ||
+	    !payload.item_blob_size || payload.item_blob_size > payload.item_blob.size() ||
+	    before.state != quest_mobile_lifetime_state::live || !before.cash ||
+	    before.reference.mobile_revision == UINT64_MAX ||
+	    before.reference.stock_revision == UINT64_MAX)
+		return player_snapshot_codec_result::invalid_value;
+	try
+	{
+		std::vector<uint8_t> canonical;
+		auto code = quest_mobile_native_image_encode(before, &canonical);
+		if (code != player_snapshot_codec_result::ok)
+			return code;
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> expected{}, actual{};
+		if (quest_mobile_native_reference_encode(before.reference, &actual) !=
+			    player_snapshot_codec_result::ok ||
+		    quest_mobile_native_reference_encode(payload.native_mobile.reference,
+							 &expected) !=
+			    player_snapshot_codec_result::ok ||
+		    actual != expected)
+			return player_snapshot_codec_result::invalid_value;
+		std::vector<player_item_snapshot> selected;
+		code = player_item_snapshot_list_decode(payload.item_blob.data(),
+							payload.item_blob_size, &selected);
+		if (code != player_snapshot_codec_result::ok)
+			return code;
+		if (selected.empty() || selected.size() != payload.item_count ||
+		    forest_valid(selected) != player_snapshot_codec_result::ok)
+			return player_snapshot_codec_result::invalid_value;
+		if (payload.native_mobile.action == item_native_mobile_action::acceptance &&
+		    std::count_if(selected.begin(), selected.end(), [](const auto &item)
+				  { return item.parent_index == PLAYER_SNAPSHOT_NO_PARENT; }) != 1)
+			return player_snapshot_codec_result::invalid_value;
+		quest_mobile_native_image candidate = before;
+		const bool acceptance = payload.native_mobile.action ==
+					item_native_mobile_action::acceptance;
+		if (acceptance)
+		{
+			if (selected.size() > PLAYER_SNAPSHOT_MAX_OBJECTS - before.items.size())
+				return player_snapshot_codec_result::limit_exceeded;
+			for (const auto &item : selected)
+				if (std::any_of(before.items.begin(), before.items.end(),
+						[&](const auto &old)
+						{ return old.object_uid == item.object_uid; }))
+					return player_snapshot_codec_result::invalid_value;
+			// obj_to_char_checked inserts before the first carried root of the same
+			// prototype, or at the carried head if none. Never group equipment roots.
+			size_t inventory = before.items.size();
+			size_t insertion = before.items.size();
+			for (size_t i = 0; i < before.items.size(); ++i)
+				if (before.items[i].parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+				    !before.items[i].equipment_slot)
+				{
+					if (inventory == before.items.size())
+						inventory = i;
+					if (before.items[i].vnum == selected[0].vnum)
+					{
+						insertion = i;
+						break;
+					}
+				}
+			if (insertion == before.items.size())
+				insertion = inventory;
+			for (auto &item : candidate.items)
+				if (item.parent_index >= static_cast<int32_t>(insertion))
+					item.parent_index += static_cast<int32_t>(selected.size());
+			selected[0].equipment_slot = 0;
+			for (auto &item : selected)
+				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+					item.parent_index += static_cast<int32_t>(insertion);
+			candidate.items.insert(candidate.items.begin() + insertion,
+					       selected.begin(), selected.end());
+		}
+		else
+		{
+			std::unordered_set<uint64_t> removed;
+			for (const auto &item : selected)
+				removed.insert(item.object_uid);
+			std::vector<player_item_snapshot> observed, retained;
+			std::vector<int32_t> selected_index(before.items.size(),
+							    PLAYER_SNAPSHOT_NO_PARENT);
+			std::vector<int32_t> retained_index(before.items.size(),
+							    PLAYER_SNAPSHOT_NO_PARENT);
+			for (size_t i = 0; i < before.items.size(); ++i)
+			{
+				auto item = before.items[i];
+				const bool erase = removed.count(item.object_uid) != 0;
+				const auto parent = item.parent_index;
+				if (parent != PLAYER_SNAPSHOT_NO_PARENT &&
+				    (removed.count(before.items[parent].object_uid) != 0) != erase)
+					return player_snapshot_codec_result::
+						invalid_value; // No partial subtree retirement.
+				auto &indexes = erase ? selected_index : retained_index;
+				auto &items = erase ? observed : retained;
+				if (parent != PLAYER_SNAPSHOT_NO_PARENT)
+					item.parent_index = indexes[parent];
+				indexes[i] = static_cast<int32_t>(items.size());
+				items.push_back(std::move(item));
+			}
+			std::vector<uint8_t> observed_bytes, selected_bytes;
+			code = player_item_snapshot_list_encode(observed, &observed_bytes);
+			if (code == player_snapshot_codec_result::ok)
+				code = player_item_snapshot_list_encode(selected, &selected_bytes);
+			if (code != player_snapshot_codec_result::ok)
+				return code;
+			if (observed_bytes != selected_bytes)
+				return player_snapshot_codec_result::invalid_value;
+			candidate.items = std::move(retained);
+		}
+		++candidate.reference.mobile_revision;
+		++candidate.reference.stock_revision;
+		candidate.last_transition_operation = operation;
+		code = quest_mobile_native_image_encode(candidate, &canonical);
+		if (code != player_snapshot_codec_result::ok)
+			return code;
+		if (!quest_mobile_native_cash_transition_valid(&before, candidate))
+			return player_snapshot_codec_result::invalid_value;
+		*after = std::move(candidate);
+		return player_snapshot_codec_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
 	}
 }

@@ -109,3 +109,6 @@ src/item/item_transfer_command.h text eol=lf
 src/persistence/critical_command.h text eol=lf
 src/player/player_load_repository.c text eol=lf
 src/player/player_snapshot_codec.c text eol=lf
+src/flatfile/flatfile_item_repository.h text eol=lf
+src/item/item_transfer_repository.c text eol=lf
+src/item/item_transfer_repository.h text eol=lf

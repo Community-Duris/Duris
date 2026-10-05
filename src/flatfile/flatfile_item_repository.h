@@ -14,6 +14,7 @@
 #include "economy/coin_transfer_command.h"
 
 #include <cstdint>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -259,5 +260,18 @@ flatfile_critical_command_repository_apply_selected(const critical_command &comm
 flatfile_item_repository_result flatfile_item_repository_craft_root_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const critical_operation_id &operation, std::string *error);
+
+struct item_transfer_custody_delta;
+struct quest_mobile_native_image;
+// Borrow the already recovered original authority lock. Root authenticates
+// admission/source and commits the returned native/catalog/player-removal
+// operations with evidence/references/receipt in ONE authority bundle.
+// Never selected by generic execution, never commits or fabricates generations.
+// Successful refusal sets result_code and publishes no output operations.
+flatfile_item_repository_result flatfile_item_repository_prepare_native_mobile(
+	const std::string &root, const flatfile_authority_lock &, const critical_command &,
+	std::span<const player_item_snapshot> original_player_items, item_transfer_result *,
+	unsigned int *result_code, item_transfer_custody_delta *, quest_mobile_native_image *after,
+	std::vector<flatfile_authority_operation> *operations, std::string *error);
 
 #endif

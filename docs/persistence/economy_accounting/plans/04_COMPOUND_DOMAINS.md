@@ -1,5 +1,22 @@
 # Plan 4: priced and compound gameplay domains
 
+## SHOP source-contract anchors corrected — 2026-10-05
+
+[The source probe repair](../SHOP_SOURCE_CONTRACT_ANCHOR_REPAIR_2026-10-05.md) follows actual checked-placement implementation and
+unique SQL writes in their owning functions. Complete operation sets, exact route
+ownership and all refusal/unqualified assertions remain. AST/inverse/source
+extraction checks only; original 71-method qualification stays deferred.
+No production behavior or activation change; full R1–R8/release remain BLOCKED.
+
+## SHOP frozen epoch field corrected — 2026-10-05
+
+[The one-expression repair](../SHOP_FROZEN_EPOCH_FIELD_REPAIR_2026-10-05.md) reads the decoded original epoch from the existing
+frozen admission metadata before checking the retained SHOP mapping. The prior
+direct field did not exist and blocked the peer maintained SQL build. All other
+guards and source bodies are unchanged. Source inverse/format/pins only; native
+build and gameplay qualification remain deferred to major-plan readiness.
+Admission/inactive behavior stay unchanged; full R1–R8/release remain BLOCKED.
+
 ## Original cold SHOP world observation integrated — 2026-10-05
 
 [The pure sibling](../SHOP_COLD_WORLD_OBSERVATION_2026-10-05.md) records unique addressed-body presence, account availability,

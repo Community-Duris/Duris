@@ -6,6 +6,7 @@ from native_build_artifacts import build_native
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = [
+    rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'),
     "tests/async/flatfile_player_repository_harness.cpp",
     rel("flatfile_player_repository.c"),
     rel("player_load_topology.c"),

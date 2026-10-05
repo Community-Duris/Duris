@@ -6,7 +6,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = """
 flatfile_player_repository player_load_topology flatfile_identity_repository
-flatfile_account_repository flatfile_item_repository coin_transfer_command
+flatfile_account_repository flatfile_item_repository quest_mobile_native quest_mobile_native_flatfile coin_transfer_command
 flatfile_player_snapshot_file flatfile_corpse_repository flatfile_locker_repository
 flatfile_world_item_repository flatfile_artifact_repository flatfile_shop_trade_repository
 artifact_mana_model artifact_mana_store

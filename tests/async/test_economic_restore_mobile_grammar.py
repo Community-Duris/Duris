@@ -119,6 +119,23 @@ class MobilePositionTests(unittest.TestCase):
 def native_source():
     from test_plan5_child_identity import NATIVE_PROBE
     prefix = '#include "economy/economic_baseline_adapter.h"\n' + NATIVE_PROBE.split('    std::cout<<', 1)[0]
+    # The older maintained child probe omits this original item cut. Keep the
+    # grammar fixture coherent without importing its unrelated audit successor.
+    # A later coherent probe may already carry these exact retained seed lines.
+    custody_seed = r'''    economic_item_position old;
+    old.owner={item_owner_type::player,8,0}; old.root_uid=81; old.revision=1;
+    old.state=item_custody_state::active;
+    auto next=old; next.owner.id=7; next.revision=2;
+    plan.items_before={{81,old}}; plan.items_after={{81,next}};
+    plan.item_events={{0,1,81,old,next}};
+'''
+    anchor = '    economic_frozen_intent intent;\n'
+    assert prefix.count(anchor) == 1
+    if '    economic_item_position old;\n' not in prefix:
+        assert 'auto next=' not in prefix and 'plan.item_events=' not in prefix
+        prefix = prefix.replace(anchor, custody_seed + anchor, 1)
+    else:
+        assert prefix.count(custody_seed) == 1
     rows = ',\n'.join('{"'+label+'",'+','.join(str(value)+'ULL' for value in fields)+'}'
                       for label,*fields in CASES)
     return prefix + r'''
