@@ -45,7 +45,7 @@ with tempfile.TemporaryDirectory(prefix='duris-baseline-') as temporary:
         if mode=='client-free':command += ['-D__NO_MYSQL__', '-I'+str(ROOT/'src/no_mysql')]
         command += [str(ROOT/name) for name in ('tests/async/economic_baseline_adapter_test.cpp',
             'src/economy/economic_baseline_command.c','src/economy/economic_baseline_adapter.c','src/economy/economic_baseline_codec.c','src/economy/economic_accounting_intent.c',
-            'src/economy/economic_accounting_plan.c','src/economy/economic_accounting_types.c',
+            'src/economy/economic_accounting_plan.c', 'src/economy/economic_source_event.c','src/economy/economic_accounting_types.c',
             'src/economy/economic_command_admission.c','src/economy/economic_currency_adapter.c',
             'src/persistence/critical_command_coordinator.c','src/persistence/critical_command_journal.c',
             'src/flatfile/flatfile_accounting_store.c','src/flatfile/flatfile_authority_transaction.c','src/flatfile/flatfile_store.c',

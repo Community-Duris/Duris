@@ -30,7 +30,7 @@ SOURCES = (
     "economic_command_admission.c", "economic_currency_adapter.c",
     "coin_transfer_accounting.c", "critical_command_journal.c",
     "critical_command_coordinator.c",
-    "economic_accounting_plan.c", "economic_accounting_types.c",
+    "economic_accounting_plan.c", "economic_source_event.c", "economic_accounting_types.c",
     "economic_baseline_codec.c", "economic_baseline_adapter.c",
     "auction_item_claim_accounting.c", "auction_accounting.c",
     "auction_settlement_accounting.c", "auction_money_claim_accounting.c",

@@ -29,7 +29,7 @@ class RestoreCoinEffectsTests(unittest.TestCase):
                        "bin/tests/plan5-retained-namespace-coins")
         work.mkdir(mode=0o700, parents=True, exist_ok=True)
         sources = ["tests/async/restore_coin_effects_fixture.cpp",
-                   "src/economy/economic_accounting_plan.c", "src/economy/economic_accounting_types.c",
+                   "src/economy/economic_accounting_plan.c", "src/economy/economic_source_event.c", "src/economy/economic_accounting_types.c",
                    "src/economy/economic_accounting_intent.c", "src/persistence/critical_command.c",
                    "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c",
                    "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c"]

@@ -118,7 +118,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/economy/shop_trade_command.c src/economy/shop_trade_accounting.c \
     src/economy/economic_accounting_intent.c \
     src/economy/economic_accounting_types.c \
-    src/economy/economic_accounting_plan.c \
+    src/economy/economic_accounting_plan.c src/economy/economic_source_event.c \
     src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
     src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
     "${MYSQL_LIBS[@]}" -lcrypto -lz \

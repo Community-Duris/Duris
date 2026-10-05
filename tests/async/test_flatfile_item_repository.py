@@ -25,7 +25,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-", dir=
             rel("collector_policy.c"),
             rel("coin_transfer_command.c"),
             rel("economic_accounting_types.c"),
-            rel("economic_accounting_plan.c"),
+            rel("economic_accounting_plan.c"), rel("economic_source_event.c"),
             rel("economic_accounting_intent.c"),
             rel("economic_currency_adapter.c"),
             rel("economic_accounting_item_reference.c"),

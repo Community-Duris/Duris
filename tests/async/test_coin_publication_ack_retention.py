@@ -569,7 +569,7 @@ SOURCES = (
     "currency_transaction.c", "currency_command.c", "critical_command.c",
     "economic_currency_adapter.c", "economic_accounting_intent.c",
     "economic_gameplay_authority.c", "economic_command_admission.c",
-    "economic_accounting_plan.c", "economic_accounting_types.c",
+    "economic_accounting_plan.c", "economic_source_event.c", "economic_accounting_types.c",
     "coin_transfer_command.c", "item_transfer_command.c", "craft_pouch_mutation.c",
     "chaos_pouch_ledger.c", "coin_transfer_accounting.c", "item_transfer_accounting.c",
     "player_snapshot_codec.c",

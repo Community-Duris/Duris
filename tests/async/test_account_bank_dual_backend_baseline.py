@@ -45,7 +45,7 @@ class AccountBankDualBackendBaselineTest(unittest.TestCase):
                 "src/persistence/economic_sql_bank_transaction.c",
                 "src/economy/economic_currency_adapter.c",
                 "src/economy/economic_accounting_intent.c",
-                "src/economy/economic_accounting_plan.c",
+                "src/economy/economic_accounting_plan.c", "src/economy/economic_source_event.c",
                 "src/economy/economic_accounting_types.c",
                 "src/economy/currency_command.c",
                 "src/persistence/critical_command.c",

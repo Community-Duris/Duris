@@ -1,5 +1,16 @@
 # Accounting review status — 2026-10-04
 
+## Native reference and original-generation observation — 2026-10-05
+
+[The coherent source integration](NATIVE_REFERENCE_RUNTIME_INTEGRATION_2026-10-05.md)
+extracts the existing native/source-event codecs, updates all 63 focused link
+recipes and adds zeroable runtime reference storage. The read-only accessor
+checks the originally retained runtime generation before pointer access.
+Independent review corrected eleven invalid source-helper calls before import.
+Source/format/pins/inventory only; native birth/restore ownership, explicit
+durable reference records, major-plan execution and full R1–R8 remain open.
+Private cold shop value/receipt proof is reviewed but not installed or qualified.
+
 ## Independent child identity audit integrated — 2026-10-05
 
 [The exact peer fix and class-specific registration](PLAN5_CHILD_IDENTITY_INTEGRATION_2026-10-05.md)

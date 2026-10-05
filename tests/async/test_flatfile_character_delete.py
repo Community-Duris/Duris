@@ -56,7 +56,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
         rel("flatfile_accounting_authority.c"),
         rel("flatfile_accounting_store.c"),
         rel("economic_accounting_types.c"),
-        rel("economic_accounting_plan.c"),
+        rel("economic_accounting_plan.c"), rel("economic_source_event.c"),
         rel("auction_item_claim_accounting.c"),
         rel("auction_accounting.c"),
         rel("auction_listing_accounting.c"),

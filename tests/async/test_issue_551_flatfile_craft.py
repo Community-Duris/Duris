@@ -16,7 +16,7 @@ sources = [
   rel("flatfile_accounting_authority.c"),
   rel("flatfile_accounting_store.c"),
   rel("economic_accounting_types.c"),
-  rel("economic_accounting_plan.c"),
+  rel("economic_accounting_plan.c"), rel("economic_source_event.c"),
   rel("economic_accounting_intent.c"),
   rel("economic_accounting_item_reference.c"),
   rel("item_transfer_accounting.c"),

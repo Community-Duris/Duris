@@ -477,6 +477,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/item_transfer_accounting.o \
 				 economy/economic_accounting_types.o \
 				 economy/economic_accounting_plan.o \
+				 economy/economic_source_event.o \
 				 economy/economic_accounting_intent.o \
 				 economy/economic_command_admission.o \
 				 economy/economic_gameplay_authority.o \
@@ -575,6 +576,8 @@ OBJS =  $(SHIP_OBJS) \
 				 player/output_preferences.o player/output_message.o player/player_snapshot_capture.o \
 				 player/player_snapshot_codec.o \
 				 world/quest_mobile_native.o \
+				 world/quest_mobile_native_reference.o \
+				 world/quest_mobile_native_binding.o \
 				 persistence/quest_mobile_native_sql.o \
 				 persistence/persistence_queue.o \
 				 persistence/latency_trace.o \

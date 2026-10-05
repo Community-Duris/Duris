@@ -43,7 +43,7 @@ SQL_DISPATCH_SOURCES = (
     'persistence/economic_sql_bank_transaction.c',
     'economy/economic_currency_adapter.c',
     'economy/economic_accounting_types.c',
-    'economy/economic_accounting_plan.c',
+    'economy/economic_accounting_plan.c', 'economy/economic_source_event.c',
     'economy/economic_accounting_intent.c',
     'persistence/economic_sql_lifecycle_guard.c',
     'persistence/critical_command_repository.c',

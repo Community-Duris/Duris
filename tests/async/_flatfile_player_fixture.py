@@ -32,7 +32,7 @@ SOURCES = [
     rel("flatfile_accounting_authority.c"),
     rel("flatfile_accounting_store.c"),
     rel("economic_accounting_types.c"),
-    rel("economic_accounting_plan.c"),
+    rel("economic_accounting_plan.c"), rel("economic_source_event.c"),
     rel("auction_listing_accounting.c"),
     rel("auction_accounting.c"),
     rel("auction_settlement_accounting.c"),
