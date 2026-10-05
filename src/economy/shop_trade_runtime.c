@@ -15,6 +15,7 @@
 #include <new>
 #include <set>
 #include <unordered_map>
+#include <utility>
 #ifndef __NO_MYSQL__
 #include "persistence/economic_sql_shop_trade_transaction.h"
 #endif
@@ -344,7 +345,7 @@ bool shop_trade_current_runtime_owner::publish(
 		     cached > current.keeper_owner_revision))
 			return false;
 		const auto old_shop = shop_revisions.find(payload.shop_id);
-		if (old_shop == shop_revisions.end() || old_shop->second > current.shop_revision)
+		if (old_shop != shop_revisions.end() && old_shop->second > current.shop_revision)
 			return false;
 		// Rejected produced outputs have no SQL rows and therefore are not in
 		// current.custody. The original output IDs must also be absent in cache.
@@ -390,6 +391,16 @@ bool shop_trade_current_runtime_owner::publish(
 			batch.push_back({ entry.uid, position.root_uid, position.parent_uid,
 					  position.owner, position.revision, owner_revision,
 					  current.custody_vnums[index], position.state });
+		}
+		// Allocate the missing authenticated SQL revision before any cache hydration.
+		// Keep its node private until the complete owner readback succeeds.
+		decltype(shop_revisions)::node_type staged_shop;
+		if (old_shop == shop_revisions.end())
+		{
+			decltype(shop_revisions) staged;
+			staged.emplace(payload.shop_id, current.shop_revision);
+			staged_shop = staged.extract(payload.shop_id);
+			shop_revisions.reserve(shop_revisions.size() + 1);
 		}
 		if (!item_ownership_runtime_hydrate_many_atomic(batch.data(), batch.size()) ||
 		    !item_ownership_runtime_hydrate_owner(player, current.wallet_owner_revision) ||
@@ -441,7 +452,16 @@ bool shop_trade_current_runtime_owner::publish(
 		    !item_ownership_runtime_peek_owner_revision(keeper, &cached) ||
 		    cached != current.keeper_owner_revision)
 			return false;
-		shop_revisions.find(payload.shop_id)->second = current.shop_revision;
+		if (mysql_thread_id(connection) != current.session_id ||
+		    !(connection->server_status & SERVER_STATUS_IN_TRANS))
+			return false;
+		if (staged_shop)
+		{
+			if (!shop_revisions.insert(std::move(staged_shop)).inserted)
+				return false;
+		}
+		else
+			shop_revisions.find(payload.shop_id)->second = current.shop_revision;
 		return mysql_thread_id(connection) == current.session_id &&
 		       (connection->server_status & SERVER_STATUS_IN_TRANS);
 	}

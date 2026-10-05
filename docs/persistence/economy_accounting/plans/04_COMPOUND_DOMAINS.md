@@ -1,5 +1,14 @@
 # Plan 4: priced and compound gameplay domains
 
+## SQL SHOP missing revision cache corrected — 2026-10-05
+
+[The private owner fix](../SHOP_SQL_REVISION_CACHE_2026-10-05.md) initializes a missing runtime revision only from
+the authenticated current SQL projection, with staged allocation and final
+session/census/readback proof. Newer cached revisions still refuse; inactive
+behavior and admission stay unchanged. Source review/format/pins/inventory only,
+without native execution. Cold publication/ACK, coherent schemas, original major
+plan qualification and full R1–R8 remain open; release/activation stay BLOCKED.
+
 ## Retained SHOP producers and game-thread driver integrated — 2026-10-05
 
 [The source integration](../SHOP_RETAINED_PRODUCER_DRIVER_INTEGRATION_2026-10-05.md) connects the four original buy/sell selections
