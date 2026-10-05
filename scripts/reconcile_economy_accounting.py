@@ -445,6 +445,9 @@ class Reconciler:
                             source_policy_coverage["missing_required_source_events"])
 
         for operation in tables["operations"]:
+            result_code = operation.get("result_code")
+            if type(result_code) is not int or not 0 <= result_code < 2**32:
+                raise SnapshotError("invalid operation result_code")
             for field, maximum in OPERATION_COUNT_LIMITS.items():
                 value = operation.get(field)
                 if type(value) is not int or not 0 <= value <= maximum:

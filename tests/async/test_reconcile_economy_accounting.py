@@ -113,6 +113,18 @@ def clean_snapshot():
     }
 
 
+def rejected_snapshot():
+    snapshot = clean_snapshot()
+    rejected = copy.deepcopy(snapshot["operations"][0])
+    rejected.update(operation_id="66" * 16, original_operation_id=None, outcome="rejected",
+                    result_code=9, source_event=None, account_count=0, posting_count=0,
+                    child_count=0, item_event_count=0)
+    snapshot["operations"].append(rejected)
+    snapshot["receipts"].append({"operation_id": "66" * 16, "status": 1, "result_code": 9,
+                                 "failure_stage": 0, "committed_at_present": True})
+    return snapshot
+
+
 def set_operation_source(snapshot, kind):
     source = source_identity(kind=kind)
     snapshot["operations"][0]["source_event"] = source
@@ -345,6 +357,77 @@ class ReconciliationTests(unittest.TestCase):
                                 self.assertEqual(result.stdout, "")
                                 self.assertEqual(result.stderr.strip(), "reconciliation failed: invalid operation " + field)
                                 self.assertNotIn("private-count-alias", result.stderr)
+                                self.assertEqual(path.read_bytes(), payload)
+
+    def test_selected_operation_result_types_and_uint32_bounds_refuse(self):
+        for make in (clean_snapshot, rejected_snapshot):
+            for limit in (0, 1, 100):
+                for value in (None, True, False, 0.0, 9.0, -1, 2**32,
+                              "private-result-alias", [], {}, float("inf"), float("nan")):
+                    snapshot = make()
+                    snapshot["operations"][-1]["result_code"] = value
+                    before = json.dumps(snapshot, sort_keys=True)
+                    with self.subTest(outcome=snapshot["operations"][-1]["outcome"], value=value, limit=limit):
+                        with self.assertRaisesRegex(SnapshotError, "invalid operation result_code"):
+                            Reconciler(limit).audit(snapshot)
+                        self.assertEqual(json.dumps(snapshot, sort_keys=True), before)
+                snapshot = make()
+                del snapshot["operations"][-1]["result_code"]
+                before = json.dumps(snapshot, sort_keys=True)
+                with self.subTest(outcome=snapshot["operations"][-1]["outcome"], missing=True, limit=limit):
+                    with self.assertRaisesRegex(SnapshotError, "invalid operation result_code"):
+                        Reconciler(limit).audit(snapshot)
+                    self.assertEqual(json.dumps(snapshot, sort_keys=True), before)
+
+    def test_selected_operation_result_boundaries_keep_outcome_findings(self):
+        for make in (clean_snapshot, rejected_snapshot):
+            for limit in (0, 1, 100):
+                self.assertEqual(Reconciler(limit).audit(make())["exception_count"], 0)
+                for value in (0, 1, 2**32 - 1):
+                    snapshot = make()
+                    op = snapshot["operations"][-1]
+                    op["result_code"] = snapshot["receipts"][-1]["result_code"] = value
+                    before = json.dumps(snapshot, sort_keys=True)
+                    report = Reconciler(limit).audit(snapshot)
+                    invalid = value != 0 if op["outcome"] == "committed" else value == 0
+                    self.assertEqual(report["exception_counts"], {"invalid_result_code": 1} if invalid else {})
+                    self.assertEqual(json.dumps(snapshot, sort_keys=True), before)
+
+    def test_duplicate_operation_cannot_hide_invalid_result_code(self):
+        snapshot = clean_snapshot()
+        duplicate = dict(snapshot["operations"][0], result_code=0.0)
+        snapshot["operations"].append(duplicate)
+        before = json.dumps(snapshot, sort_keys=True)
+        with self.assertRaisesRegex(SnapshotError, "invalid operation result_code"):
+            Reconciler(0).audit(snapshot)
+        self.assertEqual(json.dumps(snapshot, sort_keys=True), before)
+
+    def test_selected_operation_result_cli_refusal_is_bounded_and_private(self):
+        with tempfile.TemporaryDirectory(prefix="duris-result-types-") as directory:
+            path = Path(directory) / "snapshot.json"
+            for make, values in ((clean_snapshot, (0.0, False, "private-result-alias")),
+                                 (rejected_snapshot, (9.0, True, -1, 2**32, "private-result-alias"))):
+                for value in values:
+                    snapshot = make()
+                    op = snapshot["operations"][-1]
+                    op["result_code"] = value
+                    op["personal_alias"] = "private-result-alias"
+                    if make is rejected_snapshot and type(value) in (int, bool):
+                        snapshot["receipts"][-1]["result_code"] = int(value)
+                    payload = json.dumps(snapshot, sort_keys=True).encode()
+                    path.write_bytes(payload)
+                    for limit in (0, 1, 100):
+                        for name in ("exceptions", "operation"):
+                            command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                       str(path), "--view", name, "--limit", str(limit)]
+                            if name == "operation":
+                                command.extend(("--operation-id", op["operation_id"]))
+                            with self.subTest(outcome=op["outcome"], value=value, limit=limit, view=name):
+                                result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                                self.assertEqual(result.returncode, 2, result)
+                                self.assertEqual(result.stdout, "")
+                                self.assertEqual(result.stderr.strip(), "reconciliation failed: invalid operation result_code")
+                                self.assertNotIn("private-result-alias", result.stderr)
                                 self.assertEqual(path.read_bytes(), payload)
 
     def test_mapping_creation_effect_comparison_scans_evidence_once(self):
@@ -2724,7 +2807,12 @@ def native_stake_sql():
     count_types_red=os.environ.get('DURIS_PLAN5_COUNT_TYPES_RED')=='1'
     count_types_only=os.environ.get('DURIS_PLAN5_COUNT_TYPES_ONLY')=='1'
     assert not count_types_red or count_types_only
+    result_types_red=os.environ.get('DURIS_PLAN5_RESULT_TYPES_RED')=='1'
+    result_types_only=os.environ.get('DURIS_PLAN5_RESULT_TYPES_ONLY')=='1'
+    assert not result_types_red or result_types_only
+    assert not (count_types_only and result_types_only)
     count_type_results=[]
+    result_type_results=[]
     projection_results=[]
     with tempfile.TemporaryDirectory(prefix='duris-stake-audit-sql-') as directory:
         base=Path(directory)
@@ -2801,7 +2889,11 @@ def native_stake_sql():
                             assert snapshot==snapshot_before
                             if captures==1:
                                 selected=snapshot['operations'][0]
-                                for field in ('account_count','posting_count','child_count','item_event_count'):
+                                fields=('account_count','posting_count','child_count','item_event_count')
+                                if not count_types_only: fields+=('result_code',)
+                                for field in fields:
+                                    is_result=field=='result_code'
+                                    red=result_types_red if is_result else count_types_red
                                     value=selected[field]
                                     assert type(value) is int
                                     values=[('float',float(value))]
@@ -2810,24 +2902,25 @@ def native_stake_sql():
                                         altered=copy.deepcopy(snapshot)
                                         altered['operations'][0][field]=corrupt
                                         payload=json.dumps(altered,sort_keys=True,separators=(',',':')).encode()
-                                        path=work/('count-type-'+engine+'-'+field+'-'+kind+'.json')
+                                        label='result-type-' if is_result else 'count-type-'
+                                        path=work/(label+engine+'-'+field+'-'+kind+'.json')
                                         path.write_bytes(payload)
                                         altered=json.loads(payload)
                                         original_bytes=json.dumps(altered,sort_keys=True)
                                         for limit in (0,1,100):
-                                            if count_types_red:
+                                            if red:
                                                 assert Reconciler(limit).audit(altered)['exception_count']==0
                                             else:
                                                 try: Reconciler(limit).audit(altered)
                                                 except SnapshotError as error: assert str(error)=='invalid operation '+field
-                                                else: raise AssertionError('malformed native count admitted: '+field)
+                                                else: raise AssertionError('malformed native header admitted: '+field)
                                             assert json.dumps(altered,sort_keys=True)==original_bytes
                                             for name in ('exceptions','operation'):
                                                 command=[sys.executable,str(root/'scripts/reconcile_economy_accounting.py'),
                                                          str(path),'--view',name,'--limit',str(limit)]
                                                 if name=='operation': command.extend(('--operation-id',selected['operation_id']))
                                                 result=subprocess.run(command,capture_output=True,text=True,timeout=30)
-                                                if count_types_red:
+                                                if red:
                                                     assert result.returncode==0 and not result.stderr,result
                                                     json.loads(result.stdout)
                                                 else:
@@ -2835,9 +2928,10 @@ def native_stake_sql():
                                                     assert result.stderr.strip()=='reconciliation failed: invalid operation '+field
                                                 assert path.read_bytes()==payload
                                         assert rows()==before and snapshot==snapshot_before
-                                        count_type_results.append(dict(engine=engine,field=field,kind=kind,
+                                        records=result_type_results if is_result else count_type_results
+                                        records.append(dict(engine=engine,field=field,kind=kind,
                                             input_sha256=hashlib.sha256(payload).hexdigest(),api_checks=3,cli_checks=6,
-                                            source_tables_unchanged=7,RED=count_types_red))
+                                            source_tables_unchanged=7,RED=red))
                             if prices:
                                 assert price_coverage['column_available'] and price_coverage['candidate_rows']==4
                                 assert len(price_rows)==4 and {row['epoch'] for row in price_rows}=={EPOCH,'77'*16}
@@ -2943,13 +3037,13 @@ def native_stake_sql():
                                 insert('economic_accounting_coin_posting',fields)
                             insert('economic_accounting_source_claim',dict(lineage=plan[8:24],source_event=plan[104:152],operation_id=op,outcome=1))
                             audit(bool(index))
-                            if count_types_only: break
-                        if count_types_only:
+                            if count_types_only or result_types_only: break
+                        if count_types_only or result_types_only:
                             with owner.cursor() as cursor:
                                 cursor.execute('SELECT active_epoch FROM economic_lineage_state')
                                 assert cursor.fetchall()==[{'active_epoch':None}]
                             assert captures==1
-                            print('PASS count-types-read-only '+engine+' capture=1 source-tables=7 unchanged inactive',flush=True)
+                            print('PASS header-types-read-only '+engine+' capture=1 source-tables=7 unchanged inactive',flush=True)
                             continue
                         with owner.cursor() as cursor:
                             cursor.execute('UPDATE economic_accounting_account_effect SET after_copper=1 WHERE operation_id=%s AND account_index=1',(op,))
@@ -3067,7 +3161,13 @@ def native_stake_sql():
     print(('NATIVE_COUNT_TYPES_RED_ADMITTED ' if count_types_red else 'NATIVE_COUNT_TYPES_REFUSED ')+
           json.dumps({'cuts':len(count_type_results),'api_checks':36,'cli_checks':72,
                       'source_tables_unchanged':7,'engines':2,'inactive':True},sort_keys=True),flush=True)
-    if count_types_only: return
+    if not count_types_only:
+        (work/'result-type-results.json').write_text(json.dumps(result_type_results,indent=2,sort_keys=True)+'\n')
+        assert len(result_type_results)==4
+        print(('NATIVE_RESULT_TYPES_RED_ADMITTED ' if result_types_red else 'NATIVE_RESULT_TYPES_REFUSED ')+
+              json.dumps({'cuts':len(result_type_results),'api_checks':12,'cli_checks':24,
+                          'source_tables_unchanged':7,'engines':2,'inactive':True},sort_keys=True),flush=True)
+    if count_types_only or result_types_only: return
     (work/'price-scope-results.json').write_text(json.dumps(projection_results,indent=2,sort_keys=True)+'\n')
     print('NATIVE_PRICE_SCOPE '+json.dumps(projection_results,sort_keys=True),flush=True)
     assert len(projection_results)==16 and all(row['expected']==row['observed'] for row in projection_results)
