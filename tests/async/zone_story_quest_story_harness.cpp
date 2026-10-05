@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 121 &&
+		require(catalog.story_mappings.size() == 122 &&
 				tracker.summary_for(7, 42).total == 1548,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7551,6 +7551,156 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &relics = story_for("barovia2", "eva-witch-relics");
+			const auto &marks = story_for("barovia2", "eva-vistani-marks");
+			const auto &urik = story_for("barovia2", "urik-perganan-note");
+			const auto &dragon = story_for("barovia2", "mirkodesiuska-dragon-egg");
+			const auto &megosh = story_for("barovia2", "megosh-devil-heart");
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "barovia2"; });
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 588, 58800, 100, "arrival") ==
+						result::applied &&
+					journey.meet_npc(7, 42, 58812, 58855, 101) ==
+						result::applied,
+				"Barovia Continued discovery/Eva encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 588, 10, 1, 102, false, false);
+			require(journal.find(relics.title) != std::string::npos &&
+					journal.find(marks.title) != std::string::npos &&
+					journal.find(urik.title) == std::string::npos &&
+					journal.find(megosh.title) == std::string::npos,
+				"Barovia independent Eva requests or hidden contacts merged");
+			require(journey.meet_npc(7, 42, 58846, 58567, 102) == result::rejected,
+				"Barovia outer Megosh encountered before physical Castle discovery");
+			require(journey.discover_zone(7, 42, 583, 58567, 102, "arrival") ==
+						result::applied &&
+					journey.meet_npc(7, 42, 58846, 58567, 103) ==
+						result::applied,
+				"Barovia foreign physical Megosh encounter failed");
+			require(journey.meet_npc(7, 42, 58804, 58857, 103) == result::applied &&
+					journey.meet_npc(7, 42, 58822, 58922, 103) ==
+						result::applied,
+				"Barovia Urik/crystal dragon encounters failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Barovia story card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry, size_t step) {
+				return section(entry).find("[Ready now] " +
+							   entry.steps[step].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry, size_t step) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[step].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[58826] = 1;
+			supplies.carried[58825] = 1;
+			supplies.carried[58846] = 1;
+			supplies.carried[58849] = 1;
+			supplies.carried[58810] = 1;
+			supplies.equipped[1] = 58824;
+			supplies.equipped[2] = 58844;
+			journal = journey.render_journal(7, 42, 588, 10, 1, 104, false, false,
+							 &supplies);
+			require(missing(relics, 0) && missing(relics, 1) && missing(marks, 0) &&
+					missing(marks, 1) && missing(urik, 0) &&
+					missing(dragon, 0) && missing(megosh, 0),
+				"Barovia worn/held/reward-only stock substituted for exact offerings");
+			supplies.equipped.clear();
+			supplies.carried[58817] = 1;
+			supplies.carried[58844] = 1;
+			supplies.carried[58416] = 1;
+			journal = journey.render_journal(7, 42, 588, 10, 1, 105, false, false,
+							 &supplies);
+			require(ready(relics, 0) && missing(relics, 1) && missing(marks, 0) &&
+					ready(marks, 1) && ready(urik, 0) && missing(dragon, 0) &&
+					missing(megosh, 0),
+				"Barovia Eva bundles or note merged");
+			supplies.carried[58824] = 1;
+			supplies.carried[58845] = 1;
+			supplies.carried[58809] = 1;
+			supplies.carried[58834] = 1;
+			journal = journey.render_journal(7, 42, 588, 10, 1, 106, false, false,
+							 &supplies);
+			require(ready(relics, 1) && ready(marks, 0) && ready(dragon, 0) &&
+					ready(megosh, 0) &&
+					journey.progress_for_zone(7, 42, 588).completed == 0,
+				"Barovia supplied stock required personal source/stealth/puzzle/kill history or manufactured acceptance");
+			// Synthetic settled receipts qualify projection, not native consumption or accounting settlement.
+			record(journey, relics.contracts.front(), "barovia2-relics", 588, 58855);
+			supplies.carried.erase(58817);
+			supplies.carried.erase(58824);
+			journal = journey.render_journal(7, 42, 588, 10, 1, 108, false, false,
+							 &supplies);
+			require(missing(relics, 0) && missing(relics, 1) && ready(megosh, 0) &&
+					journey.progress_for_zone(7, 42, 588).completed == 1 &&
+					journey.evidence_for(megosh.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Barovia shared outer key reward merged alternative acceptance");
+			record(journey, marks.contracts.front(), "barovia2-marks", 588, 58855);
+			supplies.carried.erase(58845);
+			journal = journey.render_journal(7, 42, 588, 10, 1, 110, false, false,
+							 &supplies);
+			require(missing(marks, 0) && ready(marks, 1) &&
+					journey.evidence_for(marks.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Barovia returned mark restored consumed badge or lost accepted history");
+			record(journey, megosh.contracts.front(), "barovia2-megosh", 588, 58567);
+			record(journey, urik.contracts.front(), "barovia2-urik", 588, 58857);
+			record(journey, dragon.contracts.front(), "barovia2-dragon", 588, 58922);
+			require(journey.progress_for_zone(7, 42, 588).completed == 5 &&
+					journey.progress_for_zone(7, 42, 588).total == 5 &&
+					journey.progress_for_zone(7, 42, 583).completed == 0 &&
+					!journey.has_discovered(7, 42, 590),
+				"Barovia accepted ownership duplicated Castle quests or Catacombs discovery");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u)
+					      { return u.zone_number == 588; }) == 5 &&
+					std::count_if(units.begin(), units.end(),
+						      [](const auto &u) {
+							      return u.zone_number == 588 &&
+								     u.daily_candidate;
+						      }) == 1,
+				"Barovia returned-proof/retiring hand-ins became daily candidates");
+			auto replay = completion(marks.contracts.front(), "barovia2-marks", 120);
+			replay.transaction.zone_number = 588;
+			replay.transaction.room_vnum = 58855;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Barovia membership replay duplicated acceptance");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 588).completed == 5 &&
+					recovered.has_discovered(7, 42, 583) &&
+					!recovered.has_discovered(7, 42, 590),
+				"Barovia cold recovery lost cross-zone receipts or invented onward discovery");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 588, 58800, 100, "arrival") ==
+					result::applied,
+				"Historical Barovia discovery failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("barovia2-old-" + entry.id).c_str(), 588, 58855);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 588).completed == 5 &&
+					authored.has_discovered(7, 42, 588),
+				"Barovia raw5-to-authored5 reclassification lost progress/discovery");
+			for (const auto &entry : mapping.stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+							.successful_attempts == 1,
+					"Barovia accepted independent receipt lost on reclassification");
+		}
 		{
 			const auto &vey = story_for("ravenloft", "vey-temporal-essences");
 			const auto &perganan = story_for("ravenloft", "perganan-lenience");

@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1421
-assert report['mapped_area_count'] == 121 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 122 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -392,6 +392,20 @@ assert all(t['optional'] and t['kind'] == 'carried_item' and t['count'] == 1 for
 assert all(s['category'] == 'story' and s['steps'][-1]['contracts'] == s['contracts'] for s in ravenloft['stories'])
 assert ravenloft['exclusions'][0]['contracts'] == [{'giver_vnum':58343,'completion_key':'give=I:58427;receive=I:58427;disappear=0'}]
 assert sum(u['daily_candidate'] for u in module.story_units(catalog) if u['zone_number'] == 583) == 1
+
+barovia2=next(m for m in catalog['story_mappings'] if m['source_area']=='barovia2')
+assert (barovia2['schema_version'],barovia2['revision'],barovia2['coverage'])==(3,1,'complete')
+assert len(barovia2['stories'])==5 and len(barovia2['contacts'])==4 and not barovia2['exclusions']
+assert report['eligible_by_zone']['588']==5 and sum(len(c['topics']) for c in barovia2['contacts'])==32
+bv={s['id']:s for s in barovia2['stories']}
+assert [t['item_vnums'] for t in bv['eva-witch-relics']['steps'][:-1]]==[[58817],[58824]]
+assert [t['item_vnums'] for t in bv['eva-vistani-marks']['steps'][:-1]]==[[58845],[58844]]
+assert bv['urik-perganan-note']['steps'][0]['item_vnums']==[58416]
+assert bv['mirkodesiuska-dragon-egg']['steps'][0]['item_vnums']==[58809] and bv['megosh-devil-heart']['steps'][0]['item_vnums']==[58834]
+assert all(t['optional'] and t['kind']=='carried_item' and t['count']==1 for s in barovia2['stories'] for t in s['steps'][:-1])
+assert all(s['category']=='story' and s['steps'][-1]['contracts']==s['contracts'] for s in barovia2['stories'])
+assert sum(u['daily_candidate'] for u in module.story_units(catalog) if u['zone_number']==588)==1
+
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'
