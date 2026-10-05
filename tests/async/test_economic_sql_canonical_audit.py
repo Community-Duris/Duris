@@ -142,14 +142,8 @@ class NativeCanonicalAuditTests(unittest.TestCase):
         self.assertTrue(work.is_relative_to((ROOT/'bin').resolve()))
         work.mkdir(parents=True)
         source = work/'canonical-probe.cpp'
-        native_source = NATIVE_PROBE.replace('    economic_frozen_intent intent;', '''
-    economic_item_position old;
-    old.owner={item_owner_type::player,8,0}; old.root_uid=81; old.revision=1;
-    old.state=item_custody_state::active;
-    auto next=old; next.owner.id=7; next.revision=2;
-    plan.items_before={{81,old}}; plan.items_after={{81,next}};
-    plan.item_events={{0,1,81,old,next}};
-    economic_frozen_intent intent;''')
+        # The shared independent probe now includes the custody transition.
+        native_source = NATIVE_PROBE
         source.write_text(native_source)
         builds, native = [], None
         sources = [str(source), 'src/economy/economic_accounting_types.c',
@@ -357,7 +351,7 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                                     cursor.execute('UPDATE economic_accounting_child SET child_operation_id=%s WHERE operation_id=%s AND child_index=2',
                                         (bytes.fromhex(second['child_operation_id']), operation))
                             try:
-                                # The previous partial projection admits these three exact cuts.
+                                # Both independent readers now refuse these original-plan cuts.
                                 if label in ('coherent_children','posting_child','item_child'):
                                     with owner.cursor() as cursor:
                                         cut = exporter.read_evidence(cursor,encoded[8:24],encoded[24:40],True)
@@ -367,10 +361,13 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                                     modeled.update(cut)
                                     modeled['account_origins'] = origins
                                     modeled['item_origins'] = items
-                                    (work/(engine+'-'+label+'-old-clean.json')).write_text(json.dumps(modeled,indent=2)+'\n')
-                                    old_report = Reconciler().audit(modeled)
-                                    (work/(engine+'-'+label+'-old-report.json')).write_text(json.dumps(old_report,indent=2)+'\n')
-                                    self.assertEqual(old_report['exception_count'],0,old_report)
+                                    (work/(engine+'-'+label+'-projection.json')).write_text(json.dumps(modeled,indent=2)+'\n')
+                                    projection_report = Reconciler().audit(modeled)
+                                    (work/(engine+'-'+label+'-projection-report.json')).write_text(json.dumps(projection_report,indent=2)+'\n')
+                                    expected = {'coherent_children': 'original_plan_child_mismatch',
+                                                'posting_child': 'original_plan_posting_mismatch',
+                                                'item_child': 'original_plan_item_mismatch'}[label]
+                                    self.assertEqual(projection_report['exception_counts'], {expected: 1}, projection_report)
                                 check(label,'restore_economic_'+code+'_mismatch')
                             finally:
                                 with owner.cursor() as cursor:
