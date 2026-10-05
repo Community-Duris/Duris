@@ -58,4 +58,15 @@ struct shop_trade_world_witness
 // roots; every omitted physical sibling is still included in the world census.
 bool shop_trade_world_witness_observe(const shop_trade_world_expectation &,
 				      shop_trade_world_witness *) noexcept;
+struct shop_trade_payload;
+// Pure conversion of already derived AFTER values to actual native insertion
+// order (before first same-R_num sibling, otherwise head). Caller must first
+// census these transient pointers under its original owner exclusions.
+// Includes omitted NORENT physical anchors, preserves equipment/root/DFS order
+// and existing bounds. No mutation, SQL, publication, handler-tail or ACK proof.
+bool shop_trade_world_expected_player_order(const shop_trade_payload &, char_data *actor,
+					    obj_data *selected, obj_data *destination,
+					    const std::vector<player_item_snapshot> &values,
+					    std::vector<player_item_snapshot> *output) noexcept;
+
 #endif

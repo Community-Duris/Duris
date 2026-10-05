@@ -1,5 +1,30 @@
 # Accounting implementation and qualification handoff
 
+## Integrated evidence index representation repair — 2026-10-05
+
+[The independent index-validation slice](PLAN5_EVIDENCE_INDEX_TYPES_SLICE_2026-10-05.md)
+is imported as three exact82a44c3dd blobs after matching current preimages.
+All ten original evidence index fields require exact integers and native bounds
+before dictionary indexing; duplicate and semantic relationship findings remain.
+Peer110 units and both-engine money-index export evidence qualify their frozen
+e018/canonical0056 inputs, not native item/child producers or this combined tree.
+Independent source review, raw hashes, two Python AST checks and whitespace pass;
+no local tests/native/SQL execution or waived qualification gate.
+
+## Integrated NPC flat bundle preparation — 2026-10-05
+
+[Canonical flat image read and exact-before preparation](QUEST_MOBILE_FLAT_SOURCE_2026-10-05.md)
+are source-integrated with no caller or standalone commit. Original admitted
+parent, protected namespace/Plan5 evidence, recovery and qualification remain open.
+No executed backend parity or native lifecycle completion is claimed.
+
+## Shared native shop ordering — 2026-10-05
+
+[Native insertion-order conversion](SHOP_NATIVE_ORDER_SOURCE_2026-10-05.md)
+is integrated into the read-only world witness and reused by the private owner.
+Signed native row-ID guards and private0059 schema are source accepted.
+Publication/recovery/guarded ACK and major-plan qualification remain open.
+
 ## Integrated NPC native SQL participant — 2026-10-05
 
 [Borrowed native image/stock SQL participation](QUEST_MOBILE_SQL_SOURCE_2026-10-05.md)

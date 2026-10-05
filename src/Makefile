@@ -377,6 +377,7 @@ OBJS =  $(SHIP_OBJS) \
 				 core/env_file.o \
 				 flatfile/flatfile_store.o \
 				 flatfile/flatfile_authority_transaction.o \
+				 flatfile/quest_mobile_native_flatfile.o \
 				 flatfile/flatfile_accounting_store.o \
 				 flatfile/flatfile_accounting_authority.o \
 				 flatfile/flatfile_accounting_bank_transaction.o \
