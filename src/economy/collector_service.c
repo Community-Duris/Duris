@@ -535,7 +535,12 @@ bool purchase_effect(P_char character, const collector_command_result &result,
 	const bool flat = persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY;
 	if (flat && state.materializer_returned)
 		selected->db_item_id = 0;
-	if (selected->db_item_id != (flat ? 0 : result.materialized_item_id))
+	// Flat materialization has no SQL row. SQL must prove an exact positive
+	// native row before comparing it to the unsigned retained result.
+	if (flat ? selected->db_item_id != 0 :
+		   (selected->db_item_id <= 0 ||
+		    result.materialized_item_id > static_cast<uint32_t>(INT_MAX) ||
+		    static_cast<uint32_t>(selected->db_item_id) != result.materialized_item_id))
 		return false;
 	if (state.materializer_returned)
 		// The unique UID/body/root/row checks above bind this completed native

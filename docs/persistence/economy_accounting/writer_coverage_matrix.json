@@ -8,8 +8,8 @@
     "Baseline/cutover, source-event dedupe, item UID lifetime, lifecycle retirement and restore/reconciliation remain activation blockers."
   ],
   "candidate_worktree_evidence": {
-    "base_commit": "4c2abb3297742e3c48661616a1b424d53f48b8e2",
-    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim.",
+    "base_commit": "bd222e282d9f20e4798b0420e54aac1dc4ec7441",
+    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification.",
     "source_pins": {
       "migrations/data_lifecycle_manifest.json": "b37efc35e5865e466a5623e11f1f43f587d63ffa3de25acfe769faec79508fbf",
       "scripts/validate_data_lifecycle.py": "948868127e84196d4998159c58e9114a8bdb0eaead2495d0d9da0f86d5f904ca",
@@ -19,7 +19,7 @@
       "src/economy/collector_purchase_publication.c": "7ca24ec6b64fb1a1a12517d39efa26bf39629f01b475ac972c507a98a9800f36",
       "src/economy/collector_repository.c": "4a4467a8330a9b25e3d417b147834ed231558acceeafe4736754d0681acf57fd",
       "src/economy/collector_repository.h": "2b5cea486a07731dd3066231d0b8eead7781a5d047d25e6c066ea9b79b791866",
-      "src/economy/collector_service.c": "6745b7195d6a3fea29d1c055361b5cc7946d89425d4869fc8d2d9edf87bf1da9",
+      "src/economy/collector_service.c": "73721e2182bfbd25b32d42df42574a01c4aef5b26812c0e8695d275479f7136e",
       "src/economy/collector_service.h": "93e570d53700b31019ac9e981e737d2a1f2361bcc4fe82be021677e4fee42d2c",
       "src/economy/collector_transaction.c": "f0dfb12bcfc4b1efc6369e0bc19d9b15d4e07543360320df5614a34d19bf8ddf",
       "src/economy/collector_transaction.h": "e079d6188874f2cc05b73a7aaf919fef077d8445070074cbad8ea5f1ce2b44b9",
@@ -6974,7 +6974,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          803
+          808
         ],
         "file": "src/economy/collector_service.c",
         "function": "handle_found",
