@@ -140,10 +140,24 @@ def realized_price_column_available(cursor) -> bool:
 
 def operation_rows(cursor, lineage: bytes, epoch: bytes,
                    has_realized_price: bool) -> tuple[list[dict], list[bytes]]:
+    # EAP1 contains fixed-width non-personal IDs and arithmetic, unlike opaque
+    # EAI1 facts. Bound the source before fetching/hex-encoding retained plans.
+    from economic_restore_evidence import MAX_PLAN
+    cursor.execute(
+        "SELECT COUNT(*) AS root_count,COALESCE(SUM(OCTET_LENGTH(canonical_plan)),0) AS plan_bytes,"
+        "COALESCE(MAX(OCTET_LENGTH(canonical_plan)),0) AS max_plan_bytes "
+        "FROM economic_accounting_operation WHERE lineage=%s AND epoch=%s AND reason<>38",
+        (lineage, epoch))
+    bounds = cursor.fetchone()
+    if (bounds is None or bounds["root_count"] > MAX_ROWS or bounds["plan_bytes"] * 2 > MAX_INPUT_BYTES or
+            bounds["max_plan_bytes"] > MAX_PLAN):
+        raise ExportError("original plan source exceeds audit input limit")
     price_column = "realized_price_copper" if has_realized_price else "NULL AS realized_price_copper"
     rows = bounded(cursor,
         "SELECT operation_id,original_operation_id,reason,outcome,result_code,source_event,"
-        "account_count,posting_count,child_count,item_event_count," + price_column + " "
+        "accounting_version,writer_id,policy_version,compiler_version,actor_kind,actor_id,"
+        "intent_digest,domain_digest,plan_digest,canonical_plan,"
+        "account_count,posting_count,child_count,before_witness_count,after_witness_count,item_event_count," + price_column + " "
         "FROM economic_accounting_operation WHERE lineage=%s AND epoch=%s "
         "AND reason<>38 ORDER BY operation_id", (lineage, epoch))
     operations = []
@@ -157,6 +171,11 @@ def operation_rows(cursor, lineage: bytes, epoch: bytes,
                            "outcome": {1: "committed", 2: "rejected"}.get(row["outcome"], "unknown"),
                            "result_code": row["result_code"],
                            "source_event": hex_id(row["source_event"]),
+                           **{field: row[field] for field in ("accounting_version", "writer_id", "policy_version",
+                                                             "compiler_version", "actor_kind", "actor_id",
+                                                             "before_witness_count", "after_witness_count")},
+                           **{field: hex_id(row[field]) for field in ("intent_digest", "domain_digest", "plan_digest",
+                                                                     "canonical_plan")},
                            "account_count": row["account_count"],
                            "posting_count": row["posting_count"],
                            "child_count": row["child_count"],
@@ -219,12 +238,13 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
             "after": [row[f"after_{unit}"] for unit in ("copper", "silver", "gold", "platinum")],
             "before_revision": row["before_revision"], "after_revision": row["after_revision"]})
     postings = scoped_rows(cursor, "economic_accounting_coin_posting",
-        "e.operation_id,e.line_index,e.account_index,e.child_index,e.delta_copper,"
+        "e.operation_id,e.line_index,e.event_index,e.account_index,e.child_index,e.delta_copper,"
         "e.delta_silver,e.delta_gold,e.delta_platinum,e.copper_value", lineage, epoch,
         "e.operation_id,e.line_index")
     for row in postings:
         result["postings"].append({
             "operation_id": hex_id(row["operation_id"]), "line_index": row["line_index"],
+            "event_index": row["event_index"],
             "account_index": row["account_index"], "child_index": row["child_index"],
             "delta": [row[f"delta_{unit}"] for unit in ("copper", "silver", "gold", "platinum")],
             "copper_value": row["copper_value"]})
@@ -242,12 +262,13 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
                                     "relationship": row["relationship"],
                                     "receipt_operation_id": hex_id(row["receipt_operation_id"])})
     references = scoped_rows(cursor, "economic_accounting_item_reference",
-        "e.operation_id,e.event_index,e.child_index,e.item_uid,e.before_revision,"
+        "e.operation_id,e.line_index,e.event_index,e.child_index,e.item_uid,e.before_revision,"
         "e.after_revision,e.legacy_operation_id,e.legacy_event_index", lineage, epoch,
         "e.operation_id,e.event_index")
     for row in references:
         result["item_references"].append({
             "operation_id": hex_id(row["operation_id"]), "event_index": row["event_index"],
+            "line_index": row["line_index"],
             "child_index": row["child_index"], "uid": row["item_uid"],
             "before_revision": row["before_revision"], "after_revision": row["after_revision"],
             "legacy_operation_id": hex_id(row["legacy_operation_id"]),
@@ -327,6 +348,8 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
                           for row in receipts]
     ledger = bounded(cursor,
         "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
+        "l.from_owner_type,l.from_owner_id,l.from_owner_context_id,"
+        "l.from_equipment_slot,l.to_equipment_slot,"
         "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,l.reason_type,"
         "r.before_revision FROM item_ownership_ledger l "
         "JOIN economic_accounting_item_reference r ON r.legacy_operation_id=l.operation_id "
@@ -342,6 +365,8 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
             "revision": row["item_revision"], "root": row["root_item_uid"],
             "parent": row["parent_item_uid"],
             "owner": [row["to_owner_type"], row["to_owner_id"], row["to_owner_context_id"]],
+            "from_owner": [row["from_owner_type"], row["from_owner_id"], row["from_owner_context_id"]],
+            "from_equipment_slot": row["from_equipment_slot"], "to_equipment_slot": row["to_equipment_slot"],
             "state": "tombstone" if row["to_owner_type"] == 8 else "live",
             "action": "create" if reason == 2 else "destroy" if reason == 3 else "move"})
     return result
