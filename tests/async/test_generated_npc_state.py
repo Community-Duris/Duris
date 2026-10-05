@@ -116,8 +116,8 @@ with tempfile.TemporaryDirectory(prefix='generated-npc-') as directory:
     cpp.write_text(HARNESS)
     subprocess.run(['g++','-std=c++20','-Wall','-Wextra','-Werror','-D__NO_MYSQL__',
         '-Isrc','-Isrc/no_mysql','-fsanitize=address,undefined','-g',str(cpp),
-        'src/persistence/copyover_codec.c','src/item/item_transfer_command.c',
+        'src/persistence/copyover_codec.c','src/item/item_transfer_command.c', 'src/world/quest_mobile_native_reference.c', 'src/economy/economic_source_event.c',
         '-ffunction-sections','-fdata-sections','-Wl,--gc-sections',
         'src/world/generated_npc_state.c','src/world/generated_npc_runtime.c',
-        'src/player/pet_restore_state.c','src/world/world_recovery_codec.c','-o',str(binary)],cwd=ROOT,check=True)
+        'src/player/pet_restore_state.c','src/world/world_recovery_codec.c','-lcrypto', '-o',str(binary)],cwd=ROOT,check=True)
     subprocess.run([str(binary)],check=True)

@@ -429,7 +429,7 @@ def main():
                         '-fsanitize=address,undefined', '-fno-pie', '-no-pie', '-pthread', '-Isrc', '-Itests/async', str(source),
                         *[str(SRC / name) for name in ['output_profiles.c', 'output_style.c', 'prompt.c', 'ansi.c', 'mccp.c', 'unicode.c', 'json_utils.c', 'safe_format.c',
                             'item_movement_transaction.c', 'item_ownership_runtime.c',
-                            'item_transfer_command.c', "craft_pouch_mutation.c", "chaos_pouch_ledger.c", 'critical_command.c',
+                            'item_transfer_command.c', 'quest_mobile_native_reference.c', 'economic_source_event.c', "craft_pouch_mutation.c", "chaos_pouch_ledger.c", 'critical_command.c',
                             'player_snapshot_capture.c', 'player_snapshot_codec.c', 'character_identity.c']],
                         '-Wl,--gc-sections', '-Wl,--wrap=write', '-lz', '-lcrypto', '-lcjson', '-lbsd', '-o', str(binary)],
                        cwd=ROOT, check=True, timeout=300)

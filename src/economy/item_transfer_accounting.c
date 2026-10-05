@@ -371,6 +371,62 @@ economic_accounting_error item_transfer_accounting_intent(const critical_command
 	}
 }
 
+// Pure frozen native facts only. This constructor does not extend the current
+// admission predicate or install a SQL/flat owner for this native mutation.
+economic_accounting_error item_native_mobile_accounting_intent(
+	const critical_command &command, const critical_operation_id &lineage,
+	const critical_operation_id &epoch, uint32_t actor_pid,
+	const economic_source_event *original_quest_event, std::vector<uint8_t> *encoded) noexcept
+{
+	using error = economic_accounting_error;
+	if (!encoded || !actor_pid || actor_pid > INT32_MAX ||
+	    command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	    !command.accounting_intent.empty() || command.accepted_at_usec ||
+	    command.publication_required || command.type != critical_command_type::item_transfer ||
+	    command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION ||
+	    critical_operation_id_is_zero(lineage) || critical_operation_id_is_zero(epoch))
+		return error::invalid_identity;
+	try
+	{
+		item_transfer_payload payload = {};
+		if (!item_transfer_command_decode_payload(command, &payload) ||
+		    payload.native_mobile.final_giver_pid != actor_pid)
+			return error::unauthorized;
+		economic_admission_facts facts;
+		facts.metadata.lineage = lineage;
+		facts.metadata.epoch = epoch;
+		facts.metadata.actor_kind = economic_actor_kind::domain;
+		facts.metadata.actor_id = actor_pid;
+		facts.metadata.writer_id = ECONOMIC_WRITER_ITEM_TRANSFER;
+		if (payload.native_mobile.action == item_native_mobile_action::acceptance)
+		{
+			if (original_quest_event)
+				return error::
+					unauthorized; // Acceptance does not create reward authority.
+			facts.metadata.reason = economic_reason::item_move;
+		}
+		else
+		{
+			if (!original_quest_event ||
+			    !economic_source_event_valid(*original_quest_event) ||
+			    (original_quest_event->kind != economic_source_kind::quest_action &&
+			     original_quest_event->kind !=
+				     economic_source_kind::quest_completion) ||
+			    (payload.continuation.kind ==
+				     item_transfer_continuation_kind::quest_offering &&
+			     original_quest_event->kind != economic_source_kind::quest_completion))
+				return error::unauthorized;
+			facts.metadata.reason = economic_reason::item_destroy;
+			facts.metadata.source_event = *original_quest_event;
+		}
+		return economic_intent_freeze(command, facts, encoded);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
 bool item_transfer_accounting_command_supported(const critical_command &command) noexcept
 {
 	using error = economic_accounting_error;

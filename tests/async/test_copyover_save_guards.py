@@ -234,8 +234,8 @@ with tempfile.TemporaryDirectory(prefix="duris-copyover-pet-owner-") as director
     subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-Isrc",
                     str(source), "src/persistence/copyover_codec.c", "src/world/world_recovery_codec.c",
                     "src/world/generated_npc_state.c", "src/player/pet_restore_state.c",
-                    "src/item/item_transfer_command.c", "-ffunction-sections", "-fdata-sections",
-                    "-Wl,--gc-sections", "-lbsd", "-o", str(binary)], cwd=root, check=True)
+                    "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/economy/economic_source_event.c", "-ffunction-sections", "-fdata-sections",
+                    "-Wl,--gc-sections", "-lbsd", '-lcrypto', "-o", str(binary)], cwd=root, check=True)
     subprocess.run([str(binary)], check=True)
 
 print("copyover save guards passed")

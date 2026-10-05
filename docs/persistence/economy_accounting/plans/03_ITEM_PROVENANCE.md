@@ -1,5 +1,15 @@
 # Plan 3: item supply, custody, and provenance
 
+## Native quest identity and final-giver contracts integrated — 2026-10-05
+
+[The source prerequisite](../NATIVE_QUEST_CONTRACT_INTEGRATION_2026-10-05.md) adds explicit native owner/key/v11 item contexts,
+original final-giver reward binding and complete extracted-codec link closure.
+Historical/default formats and shared SHOP proof remain unchanged; ordinary
+execution/admission refuse native mutations. Source review/AST/syntax/pins/census
+only; no native execution. Original atomic parent, birth/source/lifecycle/restore,
+producer/publication and original major-plan qualification remain open. Accounting
+stays inactive; R1–R8, release and activation remain BLOCKED.
+
 ## Original NPC cash retained in native images — 2026-10-05
 
 [The source milestone](../NATIVE_MOBILE_CASH_IMAGE_2026-10-05.md) adds explicit v2 four-denomination cash/revision

@@ -137,7 +137,7 @@ def flatfile_reader(api) -> Path:
         "src/flatfile/flatfile_world_item_repository.c", "src/flatfile/flatfile_locker_repository.c",
         "src/flatfile/flatfile_player_snapshot_file.c", "src/flatfile/flatfile_store.c",
         "src/flatfile/flatfile_authority_transaction.c", "src/player/player_snapshot_codec.c",
-        "src/item/item_transfer_command.c", "src/persistence/critical_command.c")]
+        "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/economy/economic_source_event.c", "src/persistence/critical_command.c")]
     dependencies = sources + list((api.ROOT / "src").rglob("*.h"))
     if binary.exists() and binary.stat().st_mtime_ns >= max(p.stat().st_mtime_ns for p in dependencies):
         return binary

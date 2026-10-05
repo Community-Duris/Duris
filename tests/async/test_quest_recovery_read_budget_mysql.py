@@ -258,7 +258,7 @@ def main() -> None:
         subprocess.run([
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-Isrc",
             "-I/usr/include/mysql", str(source), "src/persistence/quest_reward_obligation_repository.c",
-            "src/persistence/critical_command.c", "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
+            "src/persistence/critical_command.c", "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/economy/economic_source_event.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
             "src/economy/currency_command.c", "src/player/player_snapshot_codec.c",
             "-Wl,--wrap=mysql_real_query", "-lmysqlclient", "-lcrypto", "-o", str(binary),
         ], cwd=ROOT, check=True)

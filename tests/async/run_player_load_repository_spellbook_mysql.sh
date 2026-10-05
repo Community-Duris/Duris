@@ -90,7 +90,7 @@ docker exec "$TOOLS_CONTAINER" bash -lc '
 		src/persistence/player_death_restitution_command.c \
 		src/persistence/quest_reward_obligation_repository.c \
 		src/player/player_save_journal.c \
-		src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/economy/currency_command.c \
+		src/item/item_transfer_command.c src/world/quest_mobile_native_reference.c src/economy/economic_source_event.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/economy/currency_command.c \
 		-Wl,--gc-sections "${MYSQL_LIBS[@]}" -lcrypto \
 		-o /tmp/player_load_repository_spellbook_mysql_harness
 '

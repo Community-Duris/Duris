@@ -199,8 +199,8 @@ int main() {
                         '-ffunction-sections', '-fdata-sections', str(cpp),
                         'src/persistence/copyover_codec.c', 'src/world/world_recovery_codec.c',
                         'src/world/generated_npc_state.c', 'src/player/pet_restore_state.c',
-                        'src/item/item_transfer_command.c', '-Wl,--gc-sections', '-lbsd',
-                        '-o', str(binary)], cwd=ROOT, check=True)
+                        'src/item/item_transfer_command.c', 'src/world/quest_mobile_native_reference.c', 'src/economy/economic_source_event.c', '-Wl,--gc-sections', '-lbsd',
+                        '-lcrypto', '-o', str(binary)], cwd=ROOT, check=True)
         subprocess.run([str(binary)], check=True)
 
 

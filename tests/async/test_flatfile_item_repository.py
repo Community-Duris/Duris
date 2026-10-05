@@ -53,7 +53,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-", dir=
             rel("collector_accounting.c"),
             rel("flatfile_store.c"),
             rel("player_snapshot_codec.c"),
-            rel("item_transfer_command.c"),
+            rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"),
             rel("craft_pouch_mutation.c"),
             rel("chaos_pouch_ledger.c"),
             rel("corpse_lifecycle_command.c"),

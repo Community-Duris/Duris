@@ -21,7 +21,7 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 ACK_SYMBOL = "_Z52critical_command_coordinator_acknowledge_publicationRK21critical_operation_id"
 SOURCES = (
-    "account/character_identity.c", "item/item_movement_transaction.c", "item/item_transfer_command.c",
+    "account/character_identity.c", "item/item_movement_transaction.c", "item/item_transfer_command.c", "world/quest_mobile_native_reference.c",
     "item/craft_pouch_mutation.c", "combat/chaos_pouch_ledger.c", "combat/chaos_pouch_publication.c",
     "player/player_snapshot_codec.c", "economy/item_transfer_accounting.c",
     "economy/economic_accounting_types.c", "economy/economic_accounting_plan.c", "economy/economic_source_event.c",
