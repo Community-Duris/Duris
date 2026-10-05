@@ -14,6 +14,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
     temporary_path = pathlib.Path(temporary)
     binary = temporary_path / "flatfile_character_delete_test"
     sources = [
+        rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'),
         "tests/async/flatfile_character_delete_harness.cpp",
         rel("flatfile_account_delete.c"),
         rel("flatfile_account_repository.c"),
@@ -70,7 +71,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
         rel("player_save_journal.c"),
         rel("player_quarantine_recovery.c"),
         rel("flatfile_store.c"),
-        rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+        rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
         rel("corpse_lifecycle_command.c"),
         rel("shop_trade_command.c"), rel("shop_trade_recovery_manifest.c"),
         rel("critical_command.c"),

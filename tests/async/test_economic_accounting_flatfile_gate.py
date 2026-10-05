@@ -10,6 +10,7 @@ from _paths import source
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = (
+    'quest_mobile_native.c', 'quest_mobile_native_flatfile.c',
     "flatfile_item_repository.c", "flatfile_collector_repository.c",
     "collector_command.c", "collector_codec.c", "collector_policy.c",
     "coin_transfer_command.c", "flatfile_player_snapshot_file.c",
@@ -20,7 +21,7 @@ SOURCES = (
     "flatfile_boon_repository.c", "flatfile_player_domain_repository.c",
     "flatfile_ip_activity_repository.c", "flatfile_authority_transaction.c",
     "flatfile_accounting_authority.c", "flatfile_accounting_store.c", "flatfile_item_accounting_reference.c",
-    "flatfile_store.c", "player_snapshot_codec.c", "item_transfer_command.c", "craft_pouch_mutation.c", "chaos_pouch_ledger.c",
+    "flatfile_store.c", "player_snapshot_codec.c", "item_transfer_command.c", "quest_mobile_native_reference.c", "craft_pouch_mutation.c", "chaos_pouch_ledger.c",
     "economic_accounting_item_reference.c",
     "corpse_lifecycle_command.c", "shop_trade_command.c", "shop_trade_recovery_manifest.c", "critical_command.c",
     "epic_command.c", "currency_command.c", "auction_command.c",

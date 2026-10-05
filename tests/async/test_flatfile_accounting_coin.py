@@ -15,6 +15,7 @@ def main():
         assert fixture.count(marker) == 1
         (work / "phase8_bank_fixture.h").write_text(fixture.split(marker)[0])
         sources = [
+            'src/world/quest_mobile_native.c', 'src/flatfile/quest_mobile_native_flatfile.c',
             "tests/async/flatfile_accounting_coin_test.cpp",
             "src/flatfile/flatfile_accounting_coin_transaction.c",
             "src/flatfile/flatfile_accounting_pile_state.c",

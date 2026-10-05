@@ -39,6 +39,7 @@ enum class critical_entity_type : uint8_t
 	shopkeeper,
 	collector,
 	pet,
+	native_mobile = 15,
 };
 
 struct critical_entity_key

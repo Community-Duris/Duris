@@ -30,7 +30,7 @@ def main() -> None:
                 str(ROOT / "src/economy/collector_purchase_preparation.c"),
                 str(ROOT / "src/economy/collector_expiry_preparation.c"),
                 str(ROOT / "src/player/player_snapshot_codec.c"),
-                str(ROOT / "src/item/item_transfer_command.c"), str(ROOT / "src/item/craft_pouch_mutation.c"), str(ROOT / "src/combat/chaos_pouch_ledger.c"),
+                str(ROOT / "src/item/item_transfer_command.c"), str(ROOT / "src/world/quest_mobile_native_reference.c"), str(ROOT / "src/economy/economic_source_event.c"), str(ROOT / "src/item/craft_pouch_mutation.c"), str(ROOT / "src/combat/chaos_pouch_ledger.c"),
                 str(ROOT / "src/persistence/critical_command.c"),
                 str(ROOT / "tests/async/collector_expiry_preparation_harness.cpp"),
                 "-lcrypto",

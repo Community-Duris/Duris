@@ -6,6 +6,8 @@
 #include "economy/economic_accounting_types.h"
 
 #include <mysql/mysql.h>
+#include "player/player_snapshot.h"
+#include <span>
 
 // Only an enclosing, admitted accounting owner may supply this context. A
 // schema-v1 inbox ID alone is not admission. The enclosing owner inserts and
@@ -62,5 +64,20 @@ bool item_transfer_repository_destroy_owners(MYSQL *connection, const item_owner
 bool item_transfer_repository_revoke_roots_preserving_children(MYSQL *connection,
 							       const uint64_t *item_uids,
 							       size_t item_count);
+
+struct quest_mobile_native_image;
+// Explicit participant only; never selected by generic/legacy execution.
+// The root authenticates original admission/source and owns the caller's
+// reconnect-disabled transaction, identity/exclusion locks, reward obligation,
+// evidence, commit and publication. Lock the native image before owner/custody.
+// On true with result_code!=0 no mutation occurred. Any false after
+// mutation_applied=true requires rollback/retirement of the ORIGINAL transaction.
+// original_player_items is the complete held EQ/INV preimage for acceptance;
+// consumption supplies an empty span. No birth/adoption or owner creation.
+bool item_transfer_repository_execute_native_mobile(
+	MYSQL *, const critical_command &,
+	std::span<const player_item_snapshot> original_player_items, item_transfer_result *,
+	unsigned int *result_code, bool *mutation_applied, item_transfer_custody_delta *,
+	quest_mobile_native_image *after);
 
 #endif

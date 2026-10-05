@@ -1741,7 +1741,7 @@ def main() -> None:
                 "src/persistence/critical_command.c",
                 "src/persistence/player_death_restitution_command.c",
                 "src/persistence/quest_reward_obligation_repository.c",
-                "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/economy/currency_command.c",
+                "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/economy/economic_source_event.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/economy/currency_command.c",
                 "src/sql/item_extra_descr_codec.c", "src/persistence/persistence_observability.c",
                 "-Wl,--gc-sections", "-Wl,--wrap=mysql_real_query", "-lmysqlclient", "-lcrypto", "-pthread", "-o", str(binary),
             ],

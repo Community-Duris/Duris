@@ -16,6 +16,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-", dir=
     binary = build_native(
         binary,
         [
+            rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'), 'tests/async/native_quest_world_unavailable.cpp',
             "tests/async/flatfile_item_repository_harness.cpp",
             rel("flatfile_item_repository.c"),
             rel("flatfile_accounting_store.c"),
@@ -53,7 +54,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-", dir=
             rel("collector_accounting.c"),
             rel("flatfile_store.c"),
             rel("player_snapshot_codec.c"),
-            rel("item_transfer_command.c"),
+            rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"),
             rel("craft_pouch_mutation.c"),
             rel("chaos_pouch_ledger.c"),
             rel("corpse_lifecycle_command.c"),

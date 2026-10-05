@@ -101,7 +101,7 @@ def decode_witness(row: dict, lineage: bytes, epoch: bytes, opening: bytes) -> t
         uid = unsigned(blob[offset:offset + 8])
         owner_type = blob[offset + 8]
         state = blob[offset + 9]
-        if (uid <= previous_uid or not 1 <= owner_type <= 11 or state not in ITEM_STATES or
+        if (uid <= previous_uid or not 1 <= owner_type <= 12 or state not in ITEM_STATES or
                 blob[offset + 10:offset + 16] != bytes(6)):
             raise OriginError("invalid or duplicate EAB1 item")
         previous_uid = uid
@@ -109,7 +109,8 @@ def decode_witness(row: dict, lineage: bytes, epoch: bytes, opening: bytes) -> t
         system_owner = owner_type in (7, 8)
         owner_valid = (owner_id == 0 and context == 0 if system_owner else
                        owner_id > 0 and (owner_type != 10 or context == 0) and
-                       (owner_type != 11 or 0 < context <= 2**31 - 1))
+                       (owner_type != 11 or 0 < context <= 2**31 - 1) and
+                       (owner_type != 12 or (owner_id < 2**64 - 1 and context == 0 and state in (1, 3))))
         if not owner_valid or not root or parent == uid:
             raise OriginError("invalid EAB1 item topology")
         digest(blob[offset + 56:offset + 88], "item source digest")

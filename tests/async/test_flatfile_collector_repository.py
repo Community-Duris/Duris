@@ -12,6 +12,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-collector-") as temporary:
     temporary_path = pathlib.Path(temporary)
     binary = temporary_path / "flatfile_collector_test"
     sources = [
+        rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'), 'tests/async/native_quest_world_unavailable.cpp',
         "tests/async/flatfile_collector_repository_harness.cpp",
         rel("flatfile_collector_repository.c"),
         rel("flatfile_auction_repository.c"),
@@ -48,7 +49,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-collector-") as temporary:
         rel("collector_codec.c"),
         rel("collector_policy.c"),
         rel("auction_command.c"),
-        rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+        rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
         rel("corpse_lifecycle_command.c"),
         rel("shop_trade_command.c"), rel("shop_trade_recovery_manifest.c"),
         rel("epic_command.c"),

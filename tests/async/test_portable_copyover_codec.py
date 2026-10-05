@@ -116,8 +116,8 @@ def main():
                         "-ffunction-sections", "-fdata-sections", "-Isrc",
                         "tests/async/copyover_codec_harness.cpp", "src/persistence/copyover_codec.c",
                         "src/world/world_recovery_codec.c", "src/world/generated_npc_state.c",
-                        "src/player/pet_restore_state.c", "src/item/item_transfer_command.c",
-                        "-Wl,--gc-sections", "-Wl,--wrap=fsync", "-o", str(binary)], cwd=ROOT, check=True)
+                        "src/player/pet_restore_state.c", "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/economy/economic_source_event.c",
+                        "-Wl,--gc-sections", "-Wl,--wrap=fsync", '-lcrypto', "-o", str(binary)], cwd=ROOT, check=True)
 
         def run(action, *files):
             subprocess.run([str(binary), action, *map(str, files)], cwd=directory, check=True, timeout=60)

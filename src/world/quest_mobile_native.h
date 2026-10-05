@@ -77,4 +77,14 @@ quest_mobile_native_capture(P_char, const quest_mobile_native_reference &,
 			    const critical_operation_id &last_transition, uint64_t cash_revision,
 			    quest_mobile_native_image *output) noexcept;
 
+struct item_transfer_payload;
+// Pure ordered stock transition for an already LIVE original native image.
+// The enclosing participant validates the complete native-v11 payload contract;
+// this helper validates only the original image/reference and literal stock transform.
+// Values only: no birth, admission, custody, native mutation or ACK authority.
+// Item-only transitions preserve the exact known wallet and its revision.
+player_snapshot_codec_result quest_mobile_native_item_transition(
+	const quest_mobile_native_image &before, const item_transfer_payload &payload,
+	const critical_operation_id &operation, quest_mobile_native_image *after) noexcept;
+
 #endif

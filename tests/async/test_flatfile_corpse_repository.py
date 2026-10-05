@@ -23,6 +23,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
     binary = temporary_path / "flatfile_corpse_test"
     compile_result = subprocess.run(
         [
+            rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'), 'tests/async/native_quest_world_unavailable.cpp',
             "g++",
             "-std=c++20",
             "-Wall",
@@ -51,7 +52,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
             rel("flatfile_player_domain_repository.c"),
             rel("flatfile_ip_activity_repository.c"),
             rel("corpse_lifecycle_command.c"),
-            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+            rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("player_snapshot_codec.c"),
             rel("collector_command.c"),
             rel("collector_codec.c"),

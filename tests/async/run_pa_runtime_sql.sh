@@ -324,7 +324,7 @@ run_image() {
         src/economy/economic_accounting_types.c
         src/economy/currency_command.c
         src/persistence/critical_command.c
-        src/item/item_transfer_command.c
+        src/item/item_transfer_command.c src/world/quest_mobile_native_reference.c
         src/player/player_snapshot_codec.c
     )
     local -a runtime_objects=()
