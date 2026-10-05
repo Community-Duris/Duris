@@ -137,6 +137,36 @@ export DB_HOST DB_PORT DB_NAME DB_USER=root DB_PASSWD="$PASSWORD"
 export ECONOMIC_SQL_LIFECYCLE_DISPOSABLE_SCHEMA=1
 bash migrations/immutable/0040_economic_sql_global_activation.sh
 unset DB_SOCKET
+# Preserve the historical schema-only probes above. Current native witnesses
+# require the normal sealed EAB2 migration chain on this same owned fixture.
+(
+    [[ "$mapping" =~ ^127\.0\.0\.1:([0-9]+)$ ]] &&
+        (( DB_PORT >= 1 && DB_PORT <= 65535 )) || {
+        echo 'Migration qualification requires the owned loopback container port' >&2
+        exit 1
+    }
+    export ENVIRONMENT=test DB_HOST=127.0.0.1
+    export RUNTIME_COMPATIBILITY_MANIFEST="$ROOT/migrations/runtime_compatibility_manifest.json"
+    unset DB_SOCKET
+    python3 - <<'DURIS_LIFECYCLE_HEAD_PY'
+import json
+from pathlib import Path
+
+history = json.loads(Path("migrations/migration_manifest.json").read_text())["migrations"]
+if len(history) != 61 or history[-1]["sequence"] != 61 or \
+        history[-1]["id"] != "0061_economic_baseline_equipment":
+    raise RuntimeError("current lifecycle qualification requires sealed canonical schema61")
+DURIS_LIFECYCLE_HEAD_PY
+    python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
+    python3 scripts/migration_runner.py run
+    head=$(mysql --no-defaults --protocol=tcp -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" \
+        -N -B --raw "$DB_NAME" -e "SELECT COUNT(*),MAX(sequence_number),SUM(sequence_number=61 AND migration_id='0061_economic_baseline_equipment') FROM mud_schema_history")
+    [[ "$head" == $'61\t61\t1' ]] || {
+        echo 'Current lifecycle qualification did not reach the original schema61 head' >&2
+        exit 1
+    }
+    bash migrations/verify_runtime_compatibility.sh
+)
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
 read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
 "${CXX:-g++}" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -O1 -g \

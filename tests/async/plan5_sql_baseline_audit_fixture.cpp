@@ -60,7 +60,8 @@ static economic_baseline_batch batch(unsigned index)
 					     81 + i,
 					     0,
 					     3 + i,
-					     item_custody_state::active } },
+					     item_custody_state::active,
+					     static_cast<uint16_t>(5 + i) } },
 					 source });
 	}
 	return result;

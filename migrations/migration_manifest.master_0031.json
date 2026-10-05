@@ -738,6 +738,56 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "e53e06ca7a5b482b6efee950a4db69fdb7d796b7ff71ed495e67bd3194133bb1",
       "verify_checksum": "e3fbff0b062da55fc7231411beefe8be216341755df7fa088ba64b1f86653551"
+    },
+    {
+      "id": "0057_shopkeeper_item_runtime_state",
+      "sequence": 57,
+      "description": "Preserve complete current keeper item state across accounted trades and saves",
+      "apply": "immutable/0057_shopkeeper_item_runtime_state.sql",
+      "verify": "immutable/0057_shopkeeper_item_runtime_state.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "754f468ae1ed62c4986020a92110428e5d4e6b33e7cf36fa6be8a776883535bb",
+      "verify_checksum": "b0fca440c35eac274c647d19aed17d8a7791cfa6522b6fa39e392910ef9c127e"
+    },
+    {
+      "id": "0058_economic_baseline_command_admission_time",
+      "sequence": 58,
+      "description": "Retain original baseline command admission time without inferring legacy timestamps",
+      "apply": "immutable/0058_economic_baseline_command_admission_time.sql",
+      "verify": "immutable/0058_economic_baseline_command_admission_time.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "02ce7791f26884b463ce765e03800f8cd0d23aab361844538a7ff45bf84893da",
+      "verify_checksum": "93d8b3c0a8d2ec3e88c9efe1939ea2352a592ef0caee74e1bd1d51c45321aca3"
+    },
+    {
+      "id": "0059_quest_mobile_native",
+      "sequence": 59,
+      "description": "Persist canonical addressed native mobile lifetime and ordered stock images",
+      "apply": "immutable/0059_quest_mobile_native.sql",
+      "verify": "immutable/0059_quest_mobile_native.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "8ca3e8133be2b7a88b06bed762ca73b903de3709a05ceb81bf2e9bc3f9ec308a",
+      "verify_checksum": "21cc7ea9edb356e8821b6b3a774b9c75d49d6d46579adec9d7633567075e98da"
+    },
+    {
+      "id": "0060_native_mobile_item_owner",
+      "sequence": 60,
+      "description": "Extend existing item owner constraints to native mobile custody without changing stored rows",
+      "apply": "immutable/0060_native_mobile_item_owner.sql",
+      "verify": "immutable/0060_native_mobile_item_owner.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "ec93f8142446c07d814b55d0d512dd6e203ab0623cba9a1c26d858fb4720a33c",
+      "verify_checksum": "8e687e165a1d45f0630080fcfaad30cdf7ccfdccf90c58665c35bb5019779bae"
+    },
+    {
+      "id": "0061_economic_baseline_equipment",
+      "sequence": 61,
+      "description": "Preserve baseline equipment positions while retaining exact original EAB1 witness compatibility",
+      "apply": "immutable/0061_economic_baseline_equipment.sql",
+      "verify": "immutable/0061_economic_baseline_equipment.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "c728260b0f02d6de9343b6abaf162ebd0aae0416efbc220b2fac41b676d5c072",
+      "verify_checksum": "479a11417a5bc9cd31b1705efffbfb68b640625651883e051b75ef8fb68fbb31"
     }
   ]
 }

@@ -56,6 +56,8 @@ economic_baseline_prepare(const economic_baseline_batch &input,
 {
 	if (!prepared)
 		return error::invalid_identity;
+	if (!economic_baseline_witness_version_valid(input.witness_version))
+		return error::invalid_version;
 	if (input.holdings.size() > ECONOMIC_BASELINE_MAX_HOLDINGS ||
 	    input.items.size() > ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES)
 		return error::capacity;
@@ -92,7 +94,7 @@ economic_baseline_prepare(const economic_baseline_batch &input,
 							   input.preparation_id, input.epoch,
 							   input.batch_index, 0 };
 		encoding intent;
-		intent.integer(1, 2);
+		intent.integer(input.witness_version, 2);
 		intent.block(input.lineage.bytes);
 		intent.block(input.epoch.bytes);
 		intent.block(input.preparation_id.bytes);
@@ -104,6 +106,8 @@ economic_baseline_prepare(const economic_baseline_batch &input,
 		intent.integer(witness.holdings.size(), 4);
 		intent.integer(witness.items.size(), 4);
 		encoding domain;
+		if (input.witness_version == 2)
+			domain.integer(2, 2);
 		std::set<uint64_t> lifetimes;
 		std::vector<std::pair<economic_coin_vector, int64_t>> equity;
 		for (const auto &holding : witness.holdings)
@@ -155,20 +159,46 @@ economic_baseline_prepare(const economic_baseline_batch &input,
 			    item.snapshot.position.state == item_custody_state::absent)
 				return error::invalid_identity;
 			const auto &position = item.snapshot.position;
+			// v1 cannot authentically encode a nonzero slot. Retained v1 decode
+			// preserves its old zero-slot interpretation and outer plan refusal.
+			if (input.witness_version == 1 && position.equipment_slot)
+				return error::invalid_version;
 			domain.integer(item.snapshot.uid);
 			domain.integer(static_cast<uint8_t>(position.owner.type), 1);
+			if (input.witness_version == 2)
+			{
+				domain.integer(static_cast<uint8_t>(position.state), 1);
+				domain.integer(0, 6);
+			}
 			domain.integer(position.owner.id);
 			domain.integer(position.owner.context_id);
 			domain.integer(position.root_uid);
 			domain.integer(position.parent_uid);
 			domain.integer(position.revision);
-			domain.integer(static_cast<uint8_t>(position.state), 1);
+			if (input.witness_version == 1)
+				domain.integer(static_cast<uint8_t>(position.state), 1);
+			else
+			{
+				domain.integer(position.equipment_slot, 2);
+				domain.integer(0, 6);
+			}
 			domain.block(item.source_digest);
 			plan.items_before.push_back(item.snapshot);
 		}
 		plan.items_after = plan.items_before;
-		meta.intent_digest = intent.digest("DURIS-ECONOMIC-BASELINE-INTENT-V1");
-		meta.domain_digest = domain.digest("DURIS-ECONOMIC-BASELINE-DOMAIN-V1");
+		if (input.witness_version == 1)
+		{
+			meta.intent_digest = intent.digest("DURIS-ECONOMIC-BASELINE-INTENT-V1");
+			meta.domain_digest = domain.digest("DURIS-ECONOMIC-BASELINE-DOMAIN-V1");
+		}
+		else
+		{
+			meta.domain_digest = domain.digest("DURIS-ECONOMIC-BASELINE-DOMAIN-V2");
+			// Equipment-only changes bind both prepared fingerprints. EBC1
+			// separately binds the complete original EAB2 witness bytes.
+			intent.block(meta.domain_digest);
+			meta.intent_digest = intent.digest("DURIS-ECONOMIC-BASELINE-INTENT-V2");
+		}
 		auto status = economic_plan_normalize(&plan);
 		if (status != error::ok)
 			return status;
