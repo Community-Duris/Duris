@@ -31,6 +31,7 @@
 #include "player/output_preferences.h"
 #include "net/command_latency.h"
 #include "world/db.h"
+#include "world/object_template.h"
 #include "world/events.h"
 #include "world/world_activity.h"
 #include "cmd/interp.h"
@@ -325,12 +326,16 @@ static void quest_reward_ack_pipeline_pulse(void)
 static bool critical_gameplay_restore_replayed_command(const critical_command &command,
 						       void *context)
 {
-	// Replay runs under the coordinator mutex. Neither observer may call back
+	// Replay runs under the coordinator mutex. No observer may call back
 	// into the coordinator; refusal keeps the journal and fails startup closed.
 	return player_death_restitution_runtime_restore_replayed_command(command, context) &&
 	       currency_transaction_restore_replayed_command(command) &&
 	       spell_item_lifecycle_restore_replayed_command(command) &&
 	       item_movement_transaction_restore_replayed_command(command) &&
+	       (command.type != critical_command_type::shop_trade ||
+		command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		!command.publication_required ||
+		shop_trade_transaction_restore_replayed_command(command)) &&
 	       (command.type != critical_command_type::collector ||
 		command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
 		!command.publication_required ||
@@ -965,6 +970,13 @@ int run_the_game(int port, int sslport)
 	{
 		fprintf(stderr, "--  Skipping optional subsystems in mini mode.\r\n");
 	}
+	// Final SQL recovery binding provenance uses all existing optional startup
+	// assignments. Native stock restoration already used the parsed boot values.
+	// This pre-worker cut never reparses, prebinds instance procedures or grants
+	// accounting/publication authority; failure keeps recovery closed.
+	if (persistence_mode_requires_mysql() && !finalize_recovery_object_template_bindings())
+		logit(LOG_STATUS, "SQL recovery object-template final binding seal unavailable");
+
 	ssl_read_cert();
 
 	fprintf(stderr, "Assigning map glyph variations.\r\n");
@@ -2258,6 +2270,7 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 		locker_async_pulse();
 		corpse_lifecycle_transaction_pulse();
 		shop_trade_preparation_owner::pulse();
+		shop_trade_transaction_restore_pulse();
 		critical_completion critical_completions[64] = {};
 		const size_t critical_completion_count =
 			critical_command_coordinator_pulse(critical_completions, 64);

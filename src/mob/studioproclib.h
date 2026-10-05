@@ -19,6 +19,7 @@
 #define _STUDIOPROCLIB_H_
 
 #include "core/structs.h"
+#include <cstddef>
 
 char *proclibobj_parse_sayresponse(char *argument);
 int proclibobj_sayresponse(P_obj obj, P_char ch, int cmd, char *argument);
@@ -36,6 +37,13 @@ int proclib_obj_cmd_bridge(P_obj obj, P_char ch, int cmd, char *argument);
    bridge can call it first instead of the vnum having to choose between
    its existing proc and its instance proclibs. */
 void proclib_chain_install(int rnum, int (*prev)(P_obj, P_char, int, char *));
+
+// Probe one already-restored saved description through the existing registry.
+// No parameter parser, description mutation, template binding or event schedule.
+// Normal success preserves the individual library's CMD_SET_PERIODIC result;
+// failure/exception preserves output. Caller owns original proof and must retain
+// callback uncertainty/reobserve the complete world before another callback.
+bool proclib_saved_periodic_probe(P_obj, size_t description_index, bool *periodic) noexcept;
 
 /* Help text for the object_proc_libs[] registry rows in specs.library.c,
    hoisted here so each row stays one line. */

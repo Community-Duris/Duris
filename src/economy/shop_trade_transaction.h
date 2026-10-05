@@ -36,6 +36,31 @@ using shop_trade_accounted_publication_fn = bool (*)(P_char character, P_char ke
 						     const shop_trade_payload &payload,
 						     uint32_t &stages);
 
+// Original startup journal observer. Stages the exact command/map node before
+// registering the existing typed player hold; never enters the coordinator.
+bool shop_trade_transaction_restore_replayed_command(const critical_command &) noexcept;
+// Actor-independent, bounded original cold entries on the normal game pulse.
+void shop_trade_transaction_restore_pulse() noexcept;
+
+enum class shop_trade_cold_native_step : uint8_t
+{
+	detach,
+	place_player,
+	place_keeper,
+	nest,
+	destroy,
+	retire_copy,
+	reject_produced
+};
+// One normally returned native handler leg. A started/unreturned effect is
+// retained forever until its actual owner resolves it, never inferred from UID
+// placement. This carries no SQL, receipt, publication or ACK authority.
+struct shop_trade_cold_native_effect
+{
+	shop_trade_cold_native_step step = shop_trade_cold_native_step::detach;
+	bool started = false, returned = false, succeeded = false;
+};
+
 bool shop_trade_transaction_submit(P_char character, const shop_trade_payload &payload,
 				   shop_trade_completion_fn completion);
 void shop_trade_transaction_handle_completions(const critical_completion *completions,

@@ -2222,6 +2222,9 @@
       ],
       "mode": "unittest",
       "required_cases": [
+        "ChildIdentityTests.test_original_posting_value_requires_native_integer_representation",
+        "ChildIdentityTests.test_original_uid_root_and_destination_owner_require_native_integer_representation",
+        "ChildIdentityTests.test_original_nullable_parent_requires_native_integer_representation",
         "ChildIdentityTests.test_valid_chain_is_independent_of_row_order_and_limits",
         "ChildIdentityTests.test_malformed_child_ids_do_not_inherit_string_validity",
         "ChildIdentityTests.test_derivation_binds_original_parent_domain_and_discriminator",
@@ -2229,7 +2232,14 @@
         "ChildIdentityTests.test_missing_child_identity_evidence_is_not_a_verified_legacy_child",
         "ChildIdentityTests.test_duplicate_child_identity_is_separate_from_child_slot",
         "ChildIdentityTests.test_duplicate_identity_across_roots_is_not_hidden_by_root_filter",
-        "ChildIdentityTests.test_cli_mismatch_is_global_bounded_and_read_only"
+        "ChildIdentityTests.test_cli_mismatch_is_global_bounded_and_read_only",
+        "ChildIdentityTests.test_coherent_child_rewrite_is_bound_to_original_plan",
+        "ChildIdentityTests.test_posting_and_item_child_associations_bind_original_plan",
+        "ChildIdentityTests.test_missing_original_plan_is_unverified_for_every_backend_and_limit",
+        "ChildIdentityTests.test_original_plan_shape_digest_metadata_and_counts_are_strict",
+        "ChildIdentityTests.test_original_plan_account_and_custody_projections_are_exact",
+        "ChildIdentityTests.test_original_plan_sql_source_is_bounded_before_fetch",
+        "ChildIdentityTests.test_original_plan_cli_preserves_global_findings_and_omits_capsules"
       ],
       "arguments": [
         "ChildIdentityTests",
@@ -2345,6 +2355,123 @@
       "required_markers": [
         "MOBILE_GRAMMAR "
       ]
+    },
+    {
+      "id": "plan5_canonical_audit_pure",
+      "path": "tests/async/test_economic_sql_canonical_audit.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "CanonicalAuditTests.test_bounded_scalar_projection_and_select_only",
+        "CanonicalAuditTests.test_root_limit_refuses_before_capsule_reads",
+        "CanonicalAuditTests.test_missing_or_nontransactional_source_refuses",
+        "CanonicalAuditTests.test_capsule_budget_refuses_before_decoding",
+        "CanonicalAuditTests.test_orphan_and_rejected_details_refuse_before_decoding",
+        "CanonicalAuditTests.test_streamed_detail_limits_refuse",
+        "CanonicalAuditTests.test_malformed_scalar_refuses",
+        "CanonicalAuditTests.test_fixed_refusal_and_verifier_failure_always_roll_back",
+        "CanonicalAuditTests.test_transaction_start_failure_and_rollback_failure_close_cursor",
+        "CanonicalAuditTests.test_success_discloses_database_scope_and_remaining_gates",
+        "CanonicalAuditTests.test_source_claim_limit_refuses_before_original_capsule_decoding",
+        "CanonicalAuditTests.test_database_wide_source_claim_disagreement_refuses_before_decoding"
+      ],
+      "arguments": [
+        "CanonicalAuditTests",
+        "-v"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_sql_canonical_audit.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "plan5_canonical_audit_default",
+      "path": "tests/async/test_economic_sql_canonical_audit.py",
+      "provider": "self-sql",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "NativeCanonicalAuditTests.test_original_plans_and_projection_faults_both_engines"
+      ],
+      "arguments": [
+        "NativeCanonicalAuditTests",
+        "-v"
+      ],
+      "environment": {
+        "DURIS_PLAN5_CANONICAL_NATIVE": "1",
+        "DURIS_PLAN5_CANONICAL_ARTIFACTS": "bin/ca-{token}/n",
+        "DURIS_PLAN5_CANONICAL_MOBILE": "0",
+        "DURIS_PLAN5_CANONICAL_SOURCE": "0",
+        "DURIS_PLAN5_CANONICAL_PROBE_REUSE": ""
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_sql_canonical_audit.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "plan5_canonical_audit_mobile",
+      "path": "tests/async/test_economic_sql_canonical_audit.py",
+      "provider": "self-sql",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "NativeCanonicalAuditTests.test_original_plans_and_projection_faults_both_engines"
+      ],
+      "arguments": [
+        "NativeCanonicalAuditTests",
+        "-v"
+      ],
+      "environment": {
+        "DURIS_PLAN5_CANONICAL_NATIVE": "1",
+        "DURIS_PLAN5_CANONICAL_ARTIFACTS": "bin/ca-{token}/n",
+        "DURIS_PLAN5_CANONICAL_MOBILE": "1",
+        "DURIS_PLAN5_CANONICAL_SOURCE": "0",
+        "DURIS_PLAN5_CANONICAL_PROBE_REUSE": ""
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_sql_canonical_audit.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "plan5_canonical_audit_source",
+      "path": "tests/async/test_economic_sql_canonical_audit.py",
+      "provider": "self-sql",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "NativeCanonicalAuditTests.test_original_plans_and_projection_faults_both_engines"
+      ],
+      "arguments": [
+        "NativeCanonicalAuditTests",
+        "-v"
+      ],
+      "environment": {
+        "DURIS_PLAN5_CANONICAL_NATIVE": "1",
+        "DURIS_PLAN5_CANONICAL_ARTIFACTS": "bin/ca-{token}/n",
+        "DURIS_PLAN5_CANONICAL_MOBILE": "0",
+        "DURIS_PLAN5_CANONICAL_SOURCE": "1",
+        "DURIS_PLAN5_CANONICAL_PROBE_REUSE": ""
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_sql_canonical_audit.py"
+      ],
+      "required_markers": []
     }
   ]
 }
