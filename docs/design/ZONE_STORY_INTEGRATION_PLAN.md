@@ -2922,3 +2922,30 @@ inactive second bracelet, copied shard clue or name spelling is builder evidence
 not authorization to add a producer or alter mobility. Active, ready accounting
 is mandatory for new credit; frozen recovery remains separate. Source review
 and synthetic projection do not qualify played settlement or daily renewal.
+
+
+## Basin Wastes: selection-sensitive recipes and learned expedition clues
+
+The [complete dossier](zone-stories/THE_BASIN_WASTES.md) maps seven outcomes
+from ten native recipes. Four potion rewards remain distinct; equal cash-sale
+branches form one achievement/daily candidate, with individual native receipts
+retained. The heartstone refusal is a zero-credit service. Current schema3
+materials and optional earlier red-potion receipt explain the ring route.
+
+| Requirement | Source evidence | Implementation / qualification plan |
+| --- | --- | --- |
+| Offer-trigger selection | Native Q blocks load in reverse order; part offers select cash before crafts; elixir matches four crafts | **ZSQ-BASIN-DISPATCH-CHOICE:** show offered-item instruction per card now. Builder chooses explicit supported selection before any dispatch change; qualify all trigger/partial/excess/ambiguous bundles, actor roots, replay, concurrency and frozen terms. No generic shared reorder from mapping. |
+| Source versus supplied proof | Cap-one elixir carried by one minotaur; glands only on ten tunnel instances; signet inside Aberden container; scale on dragon | Admit actual source generation/parent/root/custody and successful recovery/transfer/reward lineage. Supplied proofs need no personal earlier craft or kill. **ZSQ-BASIN-SOURCE-RENEWAL** qualifies scarce material/recipient availability and real daily renewal before relying on six candidates. Preserve native mode2 and scarcity. |
+| Learned clues versus collection | Six hidden books have distinct fixed corpse parents; Milton has three E passages; READ delegates to LOOK | **ZSQ-BASIN-LEARNED-BOOKS:** admit reader, exact target/UID/E-keyword/text revision and delivered response. Gift or carrying does not prove reading. Builder defines optional investigation and updates/version/replay/recovery without duplicating terminal credit. |
+| Refusal identity | Heartstone Q97 consumes item and rewards same prototype despite keep-it response | **ZSQ-BASIN-HEARTSTONE-REFUSAL:** decide replacement versus actual non-consuming refusal. Qualify enhancements/UID/custody, rollback/retry and historical recovery; no achievement/daily, multiplication or promise of preserved original identity. |
+| Fair clue repairs and intentional false leads | City/Nizari prose differs from surface boundary; pool/Oasis contexts differ; dress has canteen E; wear prose mismatches | **ZSQ-BASIN-CLUE-CONSISTENCY:** prefer intended caption/keyword clarification after builder review. False-city cave explicitly ends and spider blocks the only EAST return; **ZSQ-BASIN-CAVE-ACCESS** needs actual personal blocker/movement/arrival facts. Do not create exits, alter wear, relax combat or activate disabled mobility. |
+
+Player presentation should show seven clear cards, thirteen optional current
+material checks and one earlier potion receipt. Give the elixir for crafting,
+the part for cash, and carry only the intended crafting part kind loose. Show
+refusal separately from six achievements. Learned-reading, first-source/gift,
+access and larger expedition investigation need admitted events before richer
+ANSI/GMCP milestones. All new tracking requires active, ready accounting; frozen
+recovery is separate. No native repair ships. Any actual fix requires a separate
+named commit, concrete before/after proof and prominent PR/news. The Fields
+intentional escape hotfix and inert-proof replacement follow-up remain intact.

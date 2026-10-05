@@ -58004,6 +58004,467 @@
     {
       "contacts": [
         {
+          "description": "Starts at the basin entrance with a wooden staff. Ask the listed topics; greetings and welcome get a helpful response. Crafts four distinct potions, performs the signet ritual, buys any one beetle part, and refuses the heartstone. She also has the shared teacher flag; teaching is a separate service.",
+          "keyword": "witch",
+          "mob_vnum": 34013,
+          "name": "an old witch",
+          "topics": [
+            "hello",
+            "hi",
+            "howdy",
+            "greetings",
+            "welcome",
+            "help",
+            "search",
+            "yes",
+            "no",
+            "nope",
+            "sorry",
+            "components",
+            "ring",
+            "signet"
+          ]
+        },
+        {
+          "description": "One minotaur lizard at the witch\u2019s starting room carries the hidden dark-magic elixir. Other minotaur resets do not supply it. The cap-one source and competing crafts make fresh availability important.",
+          "keyword": "minotaur",
+          "mob_vnum": 34008,
+          "name": "a minotaur lizard",
+          "topics": []
+        },
+        {
+          "description": "Starts in the swamp carrying a hidden smoldering scale and imported black skull, while holding the heartstone. Only the exact scale enters the signet ritual. A supplied scale does not prove a personal dragon kill.",
+          "keyword": "sakaslan",
+          "mob_vnum": 34012,
+          "name": "Sakaslan, the destroyer",
+          "topics": []
+        },
+        {
+          "description": "The bombardier beetles start wearing the exact shell. It can feed either the milky white potion or the shared cash payment; each consumed copy has one use.",
+          "keyword": "bombardier",
+          "mob_vnum": 34011,
+          "name": "a bombardier beetle",
+          "topics": []
+        },
+        {
+          "description": "Equipped slicer beetles carry the exact mandible. It can feed the milky brown potion or cash payment; not every slicer at the pool has the part.",
+          "keyword": "slicer",
+          "mob_vnum": 34001,
+          "name": "the slicer beetle",
+          "topics": []
+        },
+        {
+          "description": "Ten tunnel fire beetles start holding light glands. The fire beetle at the pool has no gland reset. The gland can feed the red potion or cash payment.",
+          "keyword": "fire",
+          "mob_vnum": 34003,
+          "name": "a fire beetle",
+          "topics": []
+        },
+        {
+          "description": "Equipped rhino beetles carry the exact horn. It can feed the spotted white potion or cash payment; the pool rhino has no horn reset.",
+          "keyword": "rhinoceros",
+          "mob_vnum": 34004,
+          "name": "a rhinoceros beetle",
+          "topics": []
+        },
+        {
+          "description": "Starts at Milton\u2019s corpse at the cave dead end. The shared procedure blocks EAST, which is the only ordinary exit back toward the basin, while the spider is present for an ordinary player. The endpoint contains no Crystal City entrance.",
+          "keyword": "spider",
+          "mob_vnum": 34014,
+          "name": "a wolf spider",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Help the witch gather useful beetle parts, choose among four potion crafts, and combine the red potion with an ancient signet and dragon scale for the ring ritual. Follow the expedition books as clues while keeping actual ingredients, accepted outcomes and the heartstone refusal distinct.",
+      "orientation": [
+        "Go DOWN from the Khomani-Khan surface depression to the cliff landing, then follow the zigzag path down into the basin. The landing\u2019s UP exit returns to the surface. Old city/Nizari prose is a clue mismatch: the actual boundary is to the surface. The witch and the elixir-bearing minotaur start at the basin entrance.",
+        "Ask witch greetings or welcome for the helpful opening, then help, search, components, ring or signet. Hello, hi and howdy receive a different response. The six response families have fourteen aliases; each keyword reveals a response, not another quest achievement.",
+        "The witch makes four distinct potions from a dark-magic elixir plus one exact beetle part. The elixir starts hidden on one minotaur lizard beside her. Give the elixir to choose crafting while carrying only the intended part kind loose: gland makes red, mandible brown, shell white and horn spotted white. Giving a part chooses its cash sale even if you also carry the elixir.",
+        "The four part sales pay the same native 25,000 coin amount and form one journal outcome. Any one exact shell, mandible, gland or horn fits. Each sold copy is consumed and cannot also be used for a potion. A minotaur or beetle name alone does not guarantee that reset instance carries its component.",
+        "The ring ritual needs the exact glowing red potion, ancient signet and smoldering scale together. Sakaslan carries the hidden scale in the swamp; Aberden\u2019s fixed corpse holds the signet. The red potion is the gland craft reward. Matching supplied ingredients need no personal earlier craft, mage kill, dragon kill or expedition reading history.",
+        "Six fixed corpse containers hold the distinct expedition books: Michith near the oasis description, Cyril by the western wall, Tomak in the swamp, Gordas on the wastes, Aberden in the swamp and Milton at the cave dead end. They start open, not locked. SEARCH the named container to reveal hidden contents, recover the book and READ its descriptions. Reading reveals native prose but currently records no durable learned-clue milestone.",
+        "Milton\u2019s partially ruined book includes separate passage1, passage2 and passage3 descriptions. These explain the doomed search for the Crystal City. The cave\u2019s final room explicitly has no door or portal onward. Its spider blocks EAST, the only ordinary way back; neither the journal nor lore creates a new exit or removes the blocker.",
+        "The pool\u2019s actual fixed water source is in a wastes room, separate from the room titled Oasis that holds Michith\u2019s corpse. The pool attracts many vermin, but its fire beetle has no gland reset. Ordinary water, combat, staff use, potion drinking, armor and diary reading are supporting activities, not additional accepted quest outcomes.",
+        "Sakaslan\u2019s heartstone, imported black skull and smoldering scale are three distinct prototypes. The witch refuses the heartstone through a same-kind replacement recipe, with no achievement or daily. Do not offer it for the ring or assume the original object identity, custody or enhancements survive that exchange.",
+        "Current loose inputs, earlier accepted receipts, source recovery, gifts, reading, access, combat and actual rewards remain separate. An old potion receipt cannot restore a consumed elixir or potion. The cap-one elixir/signature sources and live reset/accounting admission still govern availability; static daily candidates do not prove renewable supply.",
+        "Discovery has its own achievement; meeting the witch reveals the seven cards. All new discovery, encounter, journal, achievement and daily credit requires active, ready accounting, with frozen reward recovery separate. No native recipe, reset, blocker, item flags, portal or PvP mobility change is enabled here."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "basin_wa",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:34018,I:34019,I:34031;receive=E:500000,I:34028;disappear=0",
+              "giver_vnum": 34013
+            }
+          ],
+          "id": "witch-signet-ritual",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:34002,I:34030;receive=I:34019;disappear=0",
+                  "giver_vnum": 34013
+                }
+              ],
+              "hint": "Offer the dark-magic elixir while carrying exactly the requested fire beetle gland for the glowing red potion. A supplied matching potion also fits the ritual; an old craft receipt never replaces the current potion.",
+              "id": "earlier-red-potion",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: craft the glowing red potion"
+            },
+            {
+              "count": 1,
+              "hint": "Sakaslan starts carrying this hidden scale. The heartstone and imported black skull are different items; the recipe does not require proof of your personal kill. Carry exact copies loose. Worn, nested, spent or handed-away copies do not count; possession does not prove personal first recovery or who supplied them.",
+              "id": "scale",
+              "item_vnums": [
+                34031
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the smoldering dragon scale"
+            },
+            {
+              "count": 1,
+              "hint": "The witch\u2019s elixir-and-gland recipe supplies this exact potion. Other milky/spotted potions do not replace it. Do not drink a potion you intend to offer. Carry exact copies loose. Worn, nested, spent or handed-away copies do not count; possession does not prove personal first recovery or who supplied them.",
+              "id": "red-potion",
+              "item_vnums": [
+                34019
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the glowing red potion"
+            },
+            {
+              "count": 1,
+              "hint": "Aberden\u2019s fixed corpse container in the swamp starts holding this signet. Inspect the container and recover the ring; the witch\u2019s guess about a mage is not a separate source or kill requirement. Remove the ring from equipment before offering it. Carry exact copies loose. Worn, nested, spent or handed-away copies do not count; possession does not prove personal first recovery or who supplied them.",
+              "id": "ancient-signet",
+              "item_vnums": [
+                34018
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ancient signet ring"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:34018,I:34019,I:34031;receive=E:500000,I:34028;disappear=0",
+                  "giver_vnum": 34013
+                }
+              ],
+              "hint": "An exact accepted native receipt records this outcome. Current materials, source recovery, dialogue, reading, combat, access and reward settlement remain separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Bring the exact smoldering scale, glowing red potion and ancient signet together for the white-gold ring and native 500,000 XP reward. The potion can be crafted here; supplied matching proof needs no personal earlier craft or kill. The signet starts in Aberden\u2019s fixed corpse container. Killing an unidentified mage or reaching the Crystal City is not required.",
+          "title": "Witch: enchant the ancient signet"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:34002,I:34030;receive=I:34019;disappear=0",
+              "giver_vnum": 34013
+            }
+          ],
+          "id": "witch-light-gland-potion",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The minotaur lizard starting beside the witch carries the exact hidden dark-magic elixir. The witch does not start stocked with it. It is a potion prototype, but drinking it spends a crafting input. Carry exact copies loose. Worn, nested, spent or handed-away copies do not count; possession does not prove personal first recovery or who supplied them.",
+              "id": "elixir",
+              "item_vnums": [
+                34030
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the elixir of dark magic"
+            },
+            {
+              "count": 1,
+              "hint": "Ten fire beetles in the dark tunnel start holding this gland; the fire beetle at the pool does not. It is also a functioning light and a cash-sale input. Carry exact copies loose. Worn, nested, spent or handed-away copies do not count; possession does not prove personal first recovery or who supplied them.",
+              "id": "light-gland",
+              "item_vnums": [
+                34002
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the fire beetle light gland"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:34002,I:34030;receive=I:34019;disappear=0",
+                  "giver_vnum": 34013
+                }
+              ],
+              "hint": "An exact accepted native receipt records this outcome. Current materials, source recovery, dialogue, reading, combat, access and reward settlement remain separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Carry one exact dark-magic elixir and fire beetle light gland together for the glowing red potion. Give the elixir to the witch to select crafting; giving the part selects its cash sale. Carry only the intended part kind loose when choosing a potion, because other matching parts can select another recipe. Crafting does not prove personal recovery or drinking effects.",
+          "title": "Witch: craft the glowing red potion"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:34001,I:34030;receive=I:34025;disappear=0",
+              "giver_vnum": 34013
+            }
+          ],
+          "id": "witch-mandible-potion",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The minotaur lizard starting beside the witch carries the exact hidden dark-magic elixir. The witch does not start stocked with it. It is a potion prototype, but drinking it spends a crafting input. Carry exact copies loose. Worn, nested, spent or handed-away copies do not count; possession does not prove personal first recovery or who supplied them.",
+              "id": "elixir",
+              "item_vnums": [
+                34030
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the elixir of dark magic"
+            },
+            {
+              "count": 1,
+              "hint": "The equipped slicer beetles carry this exact mandible. Its current type is a weapon; headwear prose is not an additional wearable or quest controller. It is also a cash-sale input. Carry exact copies loose. Worn, nested, spent or handed-away copies do not count; possession does not prove personal first recovery or who supplied them.",
+              "id": "mandible",
+              "item_vnums": [
+                34001
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the beetle mandible"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:34001,I:34030;receive=I:34025;disappear=0",
+                  "giver_vnum": 34013
+                }
+              ],
+              "hint": "An exact accepted native receipt records this outcome. Current materials, source recovery, dialogue, reading, combat, access and reward settlement remain separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Carry one exact dark-magic elixir and beetle mandible together for the milky brown potion. Give the elixir to the witch to select crafting; giving the part selects its cash sale. Carry only the intended part kind loose when choosing a potion, because other matching parts can select another recipe. Crafting does not prove personal recovery or drinking effects.",
+          "title": "Witch: craft the milky brown potion"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:34000,I:34030;receive=I:34026;disappear=0",
+              "giver_vnum": 34013
+            }
+          ],
+          "id": "witch-shell-potion",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The minotaur lizard starting beside the witch carries the exact hidden dark-magic elixir. The witch does not start stocked with it. It is a potion prototype, but drinking it spends a crafting input. Carry exact copies loose. Worn, nested, spent or handed-away copies do not count; possession does not prove personal first recovery or who supplied them.",
+              "id": "elixir",
+              "item_vnums": [
+                34030
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the elixir of dark magic"
+            },
+            {
+              "count": 1,
+              "hint": "The bombardier beetles start wearing this exact shell. It is armor and a cash-sale input; a different beetle shell does not match. Carry exact copies loose. Worn, nested, spent or handed-away copies do not count; possession does not prove personal first recovery or who supplied them.",
+              "id": "shell",
+              "item_vnums": [
+                34000
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bombardier beetle shell"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:34000,I:34030;receive=I:34026;disappear=0",
+                  "giver_vnum": 34013
+                }
+              ],
+              "hint": "An exact accepted native receipt records this outcome. Current materials, source recovery, dialogue, reading, combat, access and reward settlement remain separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Carry one exact dark-magic elixir and bombardier beetle shell together for the milky white potion. Give the elixir to the witch to select crafting; giving the part selects its cash sale. Carry only the intended part kind loose when choosing a potion, because other matching parts can select another recipe. Crafting does not prove personal recovery or drinking effects.",
+          "title": "Witch: craft the milky white potion"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:34003,I:34030;receive=I:34027;disappear=0",
+              "giver_vnum": 34013
+            }
+          ],
+          "id": "witch-horn-potion",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The minotaur lizard starting beside the witch carries the exact hidden dark-magic elixir. The witch does not start stocked with it. It is a potion prototype, but drinking it spends a crafting input. Carry exact copies loose. Worn, nested, spent or handed-away copies do not count; possession does not prove personal first recovery or who supplied them.",
+              "id": "elixir",
+              "item_vnums": [
+                34030
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the elixir of dark magic"
+            },
+            {
+              "count": 1,
+              "hint": "The equipped rhino beetles carry this exact horn. It is a weapon and a cash-sale input, not a required CARVE result. Carry exact copies loose. Worn, nested, spent or handed-away copies do not count; possession does not prove personal first recovery or who supplied them.",
+              "id": "horn",
+              "item_vnums": [
+                34003
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the rhino beetle horn"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:34003,I:34030;receive=I:34027;disappear=0",
+                  "giver_vnum": 34013
+                }
+              ],
+              "hint": "An exact accepted native receipt records this outcome. Current materials, source recovery, dialogue, reading, combat, access and reward settlement remain separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Carry one exact dark-magic elixir and rhino beetle horn together for the spotted white potion. Give the elixir to the witch to select crafting; giving the part selects its cash sale. Carry only the intended part kind loose when choosing a potion, because other matching parts can select another recipe. Crafting does not prove personal recovery or drinking effects.",
+          "title": "Witch: craft the spotted white potion"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:34000;receive=C:25000;disappear=0",
+              "giver_vnum": 34013
+            },
+            {
+              "completion_key": "give=I:34001;receive=C:25000;disappear=0",
+              "giver_vnum": 34013
+            },
+            {
+              "completion_key": "give=I:34002;receive=C:25000;disappear=0",
+              "giver_vnum": 34013
+            },
+            {
+              "completion_key": "give=I:34003;receive=C:25000;disappear=0",
+              "giver_vnum": 34013
+            }
+          ],
+          "id": "witch-part-payment",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The corresponding equipped beetles supply these exact parts. Only one accepted kind is needed, not all four. Their potion recipes compete for the same copies. Carry exact copies loose. Worn, nested, spent or handed-away copies do not count; possession does not prove personal first recovery or who supplied them.",
+              "id": "any-part",
+              "item_vnums": [
+                34000,
+                34001,
+                34002,
+                34003
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a shell, mandible, light gland or rhino horn"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:34000;receive=C:25000;disappear=0",
+                  "giver_vnum": 34013
+                },
+                {
+                  "completion_key": "give=I:34001;receive=C:25000;disappear=0",
+                  "giver_vnum": 34013
+                },
+                {
+                  "completion_key": "give=I:34002;receive=C:25000;disappear=0",
+                  "giver_vnum": 34013
+                },
+                {
+                  "completion_key": "give=I:34003;receive=C:25000;disappear=0",
+                  "giver_vnum": 34013
+                }
+              ],
+              "hint": "An exact accepted native receipt records this outcome. Current materials, source recovery, dialogue, reading, combat, access and reward settlement remain separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Sell one exact shell, mandible, light gland or rhino horn for the native 25,000 coin payment. The four recipes are alternatives for one achievement, with each receipt retained. Give the intended part to select the sale; that consumed copy cannot also make a potion.",
+          "title": "Witch: sell one useful beetle part"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:34024;receive=I:34024;disappear=0",
+              "giver_vnum": 34013
+            }
+          ],
+          "id": "witch-heartstone-refusal",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Sakaslan starts holding the heartstone. It is distinct from his smoldering scale and black skull. Its _noquest_ alias excludes random world-quest reward selection; the local refusal still exists. Carry exact copies loose. Worn, nested, spent or handed-away copies do not count; possession does not prove personal first recovery or who supplied them.",
+              "id": "heartstone",
+              "item_vnums": [
+                34024
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional clue: carry Sakaslan\u2019s heartstone"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:34024;receive=I:34024;disappear=0",
+                  "giver_vnum": 34013
+                }
+              ],
+              "hint": "An exact accepted native receipt records this outcome. Current materials, source recovery, dialogue, reading, combat, access and reward settlement remain separate. This refusal has no achievement or daily credit.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the heartstone refusal"
+            }
+          ],
+          "summary": "The witch says she has no use for Sakaslan\u2019s heartstone. The native recipe consumes the offered item and rewards the same item kind; it does not promise preservation of the same object identity. This guidance service grants no achievement or daily. Keeping the heartstone is sufficient; offering it is not required for the ring.",
+          "title": "Witch: understand the heartstone refusal"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "A sleeping Fomorian reacts to a greeting. The response is scene lore, not proof against the chieftain.",
           "keyword": "giant",
           "mob_vnum": 34400,

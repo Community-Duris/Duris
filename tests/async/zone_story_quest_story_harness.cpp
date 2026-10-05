@@ -181,8 +181,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 100 &&
-				tracker.summary_for(7, 42).total == 1589,
+		require(catalog.story_mappings.size() == 101 &&
+				tracker.summary_for(7, 42).total == 1585,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7547,6 +7547,149 @@ int main(int argc, char **argv)
 					recovered.has_discovered(7, 42, 5000) &&
 					!recovered.has_discovered(7, 42, 530),
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
+		}
+
+		{
+			const auto &ring = story_for("basin_wa", "witch-signet-ritual");
+			const auto &red = story_for("basin_wa", "witch-light-gland-potion");
+			const auto &brown = story_for("basin_wa", "witch-mandible-potion");
+			const auto &white = story_for("basin_wa", "witch-shell-potion");
+			const auto &spotted = story_for("basin_wa", "witch-horn-potion");
+			const auto &cash = story_for("basin_wa", "witch-part-payment");
+			const auto &refusal = story_for("basin_wa", "witch-heartstone-refusal");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 340, 34000, 100, "arrival") ==
+					result::applied,
+				"Basin Wastes discovery failed");
+			require(journey.render_journal(7, 42, 340, 10, 1, 101, false, false)
+						.find(ring.title) == std::string::npos,
+				"Basin Wastes exposed unmet witch");
+			require(journey.meet_npc(7, 42, 34013, 34052, 102) == result::applied,
+				"Basin Wastes encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Basin Wastes section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[34024] = 1;
+			supplies.carried[67240] = 1;
+			supplies.carried[34025] = 1;
+			supplies.carried[34018] = 3;
+			supplies.equipped[18] = 34031;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 340, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(ring).find("[Ready now] " + ring.steps[3].text) !=
+					std::string::npos,
+				"Basin Wastes loose signet missing");
+			for (size_t step : { size_t{ 1 }, size_t{ 2 } })
+				require(section(ring).find("[Missing now] " +
+							   ring.steps[step].text) !=
+						std::string::npos,
+					"Basin Wastes duplicate signet, worn scale or wrong potion satisfied ritual");
+			require(section(cash).find("[Missing now] " + cash.steps[0].text) !=
+						std::string::npos &&
+					section(refusal).find("[Ready now] " +
+							      refusal.steps[0].text) !=
+						std::string::npos,
+				"Basin Wastes heartstone or skull became beetle part");
+			supplies.carried[34030] = 1;
+			for (int part : { 34000, 34001, 34002, 34003 })
+			{
+				supplies.carried[part] = 1;
+				journal = journey.render_journal(7, 42, 340, 10, 1, 106, false,
+								 false, &supplies);
+				require(section(cash).find("[Ready now] " + cash.steps[0].text) !=
+						std::string::npos,
+					"Basin Wastes required all sale alternatives");
+				for (const auto *craft : { &red, &brown, &white, &spotted })
+					require((section(*craft).find("[Ready now] " +
+								      craft->steps[1].text) !=
+						 std::string::npos) ==
+							(part ==
+							 craft->steps[1].item_vnums.front()),
+						"Basin Wastes wrong part satisfied distinct potion");
+				supplies.carried.erase(part);
+			}
+			supplies.carried[34019] = 1;
+			supplies.carried[34031] = 1;
+			journal = journey.render_journal(7, 42, 340, 10, 1, 107, false, false,
+							 &supplies);
+			for (size_t step = 1; step <= 3; step++)
+				require(section(ring).find("[Ready now] " +
+							   ring.steps[step].text) !=
+						std::string::npos,
+					"Basin Wastes supplied ingredients required personal source history");
+			require(section(ring).find("[Pending] " + ring.steps[0].text) !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 340).completed == 0,
+				"Basin Wastes readiness fabricated receipt or earlier craft");
+			// Synthetic receipts qualify projection, not real native dispatch,
+			// reading, source recovery, replacement identity or reward settlement.
+			record(journey, ring.contracts.front(), "basin-supplied-ring", 340, 34052);
+			require(journey.progress_for_zone(7, 42, 340).completed == 1 &&
+					journey.evidence_for(red.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Basin Wastes ring fabricated earlier potion");
+			record(journey, refusal.contracts.front(), "basin-heartstone-refusal", 340,
+			       34052);
+			require(journey.progress_for_zone(7, 42, 340).completed == 1,
+				"Basin Wastes refusal awarded achievement");
+			for (const auto *craft : { &red, &brown, &white, &spotted })
+			{
+				const auto id = std::string("basin-craft-") + craft->id;
+				record(journey, craft->contracts.front(), id.c_str(), 340, 34052);
+			}
+			require(journey.progress_for_zone(7, 42, 340).completed == 5,
+				"Basin Wastes distinct potion rewards collapsed");
+			for (size_t branch = 0; branch < cash.contracts.size(); branch++)
+			{
+				const auto id = std::string("basin-sale-") + std::to_string(branch);
+				record(journey, cash.contracts[branch], id.c_str(), 340, 34052);
+				require(journey.progress_for_zone(7, 42, 340).completed == 6,
+					"Basin Wastes sales inflated achievement count");
+			}
+			supplies.carried.clear();
+			journal = journey.render_journal(7, 42, 340, 10, 1, 122, false, false,
+							 &supplies);
+			require(section(ring).find("[Recorded] " + ring.steps[0].text) !=
+					std::string::npos,
+				"Basin Wastes earlier potion receipt missing");
+			for (size_t step = 1; step <= 3; step++)
+				require(section(ring).find("[Missing now] " +
+							   ring.steps[step].text) !=
+						std::string::npos,
+					"Basin Wastes old receipt restored ritual materials");
+			for (const auto *entry :
+			     { &ring, &red, &brown, &white, &spotted, &cash, &refusal })
+				require(section(*entry).find("[Recorded] " +
+							     entry->steps.back().text) !=
+						std::string::npos,
+					"Basin Wastes accepted outcome lost");
+			auto replay =
+				completion(ring.contracts.front(), "basin-supplied-ring", 120);
+			replay.transaction.zone_number = 340;
+			replay.transaction.room_vnum = 34052;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Basin Wastes replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 340).completed == 6 &&
+					recovered.progress_for_zone(7, 42, 340).total == 6 &&
+					!recovered.has_discovered(7, 42, 5000),
+				"Basin Wastes cold recovery lost grouping or fabricated surface discovery");
+			for (const auto *entry :
+			     { &ring, &red, &brown, &white, &spotted, &cash, &refusal })
+				for (const auto &binding : entry->contracts)
+					require(recovered.evidence_for(binding, 2)
+								.successful_attempts == 1,
+						"Basin Wastes canonical receipt lost in recovery");
 		}
 
 		{

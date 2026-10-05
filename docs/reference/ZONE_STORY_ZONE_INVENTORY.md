@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 100 authored journals.
+2668 distinct Q contracts; 101 authored journals.
 
 Regenerate with:
 
@@ -41,7 +41,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Bandit Camp (`banditca`) | 4 | 4 | 0 | Fallback | [1 × a shackle key → native reward/response](../../areas/qst/banditca.qst#L38) | — |
 | The Realm of Barovia (`barovia`) | 9 | 41 | 2 | Yes | [1 × a silver horse shoe; 1 × a gold chalice; 1 × a rare engraved electrum coin; other required items → the time warp mask](../../areas/qst/barovia.qst#L169) | — |
 | The Realm of Barovia Continued (`barovia2`) | 5 | 16 | 0 | Fallback | [1 × a tiny locket on a platinum chain; 1 × an old, cloudy glass eye → a holy symbol of the Ravenkind, the key to the outer gates of Castle Ravenloft](../../areas/qst/barovia2.qst#L132) | barovia_undead_necklace |
-| The Basin Wastes (`basin_wa`) | 10 | 6 | 1 | Fallback | [1 × a smoldering dragon scale; 1 × a glowing potion; 1 × an ancient signet ring → a glowing white-gold ring](../../areas/qst/basin_wa.qst#L35) | block_dir |
+| The Basin Wastes (`basin_wa`) | 10 | 6 | 1 | Yes | [1 × a smoldering dragon scale; 1 × a glowing potion; 1 × an ancient signet ring → a glowing white-gold ring](../../areas/qst/basin_wa.qst#L35) | block_dir |
 | Bastine Castle (`bastine`) | 14 | 4 | 0 | Yes | [1 × the wand of Life → a seal of the order of the bastine knights, the platemail of knighthood](../../areas/qst/bastine.qst#L141) | — |
 | The Battlefield (`battlefi`) | 7 | 12 | 0 | Fallback | [1 × some swirling mist; 1 × a holy cross; 1 × a skull; other required items → a holy gleaming longsword 'Righteous'](../../areas/qst/battlefi.qst#L67) | righteous_blade, undead_inn |
 | The Bronze Citadel (`bctdl`) | 2 | 1 | 0 | Fallback | [1 × the seal of the Dungeon Master → an intricate black stone key](../../areas/qst/bctdl.qst#L11) | artifact_invisible, bel_sword |

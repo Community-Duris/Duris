@@ -1992,3 +1992,33 @@ gift, successful SEARCH/key/door/arrival and timeline restoration still need
 committed event qualification. Active, ready accounting is mandatory for all
 new tracking, with frozen recovery separate. This checkpoint ships guidance,
 not a native proof, rare-spawn, reset or mobility repair.
+
+
+## Basin Wastes example: an offered item can choose the outcome
+
+The [dossier](../design/zone-stories/THE_BASIN_WASTES.md) and
+[sidecar](../../areas/story/basin_wa.story.json) preserve ten native recipes as
+seven cards. Keep four different potion rewards independent; group four equal
+part payments as ANY, retaining each branch receipt. Classify a keep-it/same-kind
+heartstone refusal as service, without achievement or daily.
+
+Read actual shared dispatch before telling a player to give ingredients.
+Here Q blocks load in reverse order and the offered kind filters matching:
+giving a part chooses cash; giving elixir chooses crafting. Multiple carried
+part kinds make crafting ambiguous, so explain the intended single loose part.
+Do not silently reorder shared recipes. **ZSQ-BASIN-DISPATCH-CHOICE** records
+builder intent and played accounting-active qualification before a repair.
+
+Trace each actual reset instance: only one minotaur carries elixir, only the
+ten tunnel fire beetles hold glands, and Aberden's fixed container supplies the
+signet. Optional earlier craft history explains a route, never blocks supplied
+matching proof. Source/gift and scarce renewal still need admitted events.
+
+Books are clues with distinct parents/E passages. Carrying or READ→LOOK prose
+does not yet record durable learning; **ZSQ-BASIN-LEARNED-BOOKS** plans exact
+reader/target/passage/revision evidence. Same-kind reward does not mean the
+original UID survives. Explicitly false-city cave prose and a real spider
+return barrier are not authorization to add an exit or bypass. Treat copy/clue
+mismatches fairly and isolate any real repairs in named fixes/news. Preserve
+the owner-confirmed Fields PvP hotfix; all new credit requires active, ready
+accounting with frozen recovery separate. No native repair ships here.
