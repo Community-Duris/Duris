@@ -12,12 +12,15 @@ For a non-elemental of trained level L, start with `120 + 0.30 * L²`. Multiply 
 | Human and other ordinary humanoids | 0.95–1.15 |
 | Dwarf, duergar, troll, wight, revenant, gargoyle, golem, construct | 1.15–1.40 |
 | Ogre, minotaur, firbolg | 1.60–2.00 |
-| Giants, snow ogre, titan, avatar | 2.10–2.60 |
+| Giants, titan, avatar | 2.10–2.60 |
+| Snow ogre | 3.00–4.00 |
 | Insect, arachnid, flying animal, parasite | 0.65–0.85 |
 | Dragon, dragonkin, dracolich, quadruped, carnivore, herbivore, centaur, purple worm | 1.20–1.65 |
 | Plant, slime | 1.45–1.90 |
 
-Role factors, in priority order: bard 0.85; multiclass 0.90; other caster 0.80; rogue/thief/assassin 0.90; other 1.00. HP, including equipment and buffs, is bounded by the upper end of that racial profile, the strongest level-appropriate necromancer body, and the old ordinary captured-body allowance. The necromancer benchmark uses existing undead/golem recipes, mean HP dice, actual spell unlock levels, and Infuse Life; it excludes artifact bonuses.
+Role factors, in priority order: bard 0.85; multiclass 0.90; other caster 0.80; rogue/thief/assassin 0.90; other 1.00. Maximum HP, including equipment and buffs, is bounded by the upper end of that racial profile, 5,000 HP, and the old ordinary captured-body allowance. Non-elemental captures can exceed the former necromancer benchmark; elemental captures retain it alongside their heater limits.
+
+At owner level 56 with full Infuse Life, a snow ogre warrior receives 4,546 HP at CHA 100 or 5,000 at CHA 130, compared with 5,427 on an ordinary old summon and 7,598 on its best old roll. Other racial ranges are unchanged: an ordinary ogre warrior still receives 2,545 at CHA 130. The 5,000 ceiling caps maximum HP after equipment/buffs and also rejects a larger saved ceiling. Existing 110% overheal allows a 5,000-max-HP capture to temporarily hold 5,500 current HP.
 
 The old-body ceiling freezes the checked-in normal-mode racial Constitution and class HP factors. It uses the trained level, the old conversion formula and Infuse Life, without the random Charisma or elite bonuses. This conservative ceiling prevents low-HP races from gaining HP through the new profiles. Wild NPC property changes, zone difficulty and Chaos's wild HP division do not change this allowance. For example, at owner level 56, CHA 130 and Infuse Life 100, Bran receives 1,603 HP, A’den 835 and Xavier 974; Bran is not reduced to his 228-HP wild Chaos body.
 
@@ -44,7 +47,7 @@ The old base-HP cap was 8,000. The following calculations use the checked-in nor
 | Huge ancient walking tree (42236; Naturalist) | 56 | 3,342 | 4,677 |
 | Living current / large water elemental (45521, 71225; Mentalist) | 56 | 2,986 | 4,180 |
 
-Level-57–61 captures require a greater orb for a level-56 owner; captures above level 56 cannot be conjured without one. The accounting branch blocks orb summoning while item accounting is active, so those 8,000-HP examples are unavailable through the orb path in active accounting mode. In the active prototype survey, the largest level-56 body was 7,598 on the best roll. The rework uses the lower trained-body ceilings above; 8,000 is historical context, not the new trained HP budget.
+Level-57–61 captures require a greater orb for a level-56 owner; captures above level 56 cannot be conjured without one. The accounting branch blocks orb summoning while item accounting is active, so those 8,000-HP examples are unavailable through the orb path in active accounting mode. In the active prototype survey, the largest level-56 body was 7,598 on the best roll. The rework lowers the hard maximum-HP limit to 5,000, with racial and old-body limits still applying.
 
 ## Resources
 

@@ -191,12 +191,35 @@ int main() {
     summoner_pet_configure(&tiny.ch, &owner.ch, true);
     summoner_pet_configure(&giant.ch, &owner.ch, true);
     assert(GET_MAX_HIT(&tiny.ch) < GET_MAX_HIT(&giant.ch));
-    assert(GET_MAX_HIT(&giant.ch) <= necro_hp_ceiling(&owner.ch));
+    assert(GET_MAX_HIT(&giant.ch) <= 5000);
+    assert(GET_MAX_HIT(&giant.ch) <= normal_capture_hp(&giant.ch, &owner.ch));
+    Fixture snow_ogre(true, RACE_SNOW_OGRE, CLASS_WARRIOR, 56);
+    summoner_pet_configure(&snow_ogre.ch, &owner.ch, true);
+    assert(GET_MAX_HIT(&snow_ogre.ch) == 4546); // CHA 100, full infusion
+    owner.ch.curr_stats.Cha = 130;
+    summoner_pet_configure(&snow_ogre.ch, &owner.ch, true);
+    assert(GET_MAX_HIT(&snow_ogre.ch) == 5000); // tough captures can reach the new cap
+    assert(normal_capture_hp(&snow_ogre.ch, &owner.ch) == 5427);
+    assert(snow_ogre.npc.summoner_hp_ceiling == 5000);
+    assert(snow_ogre.ch.points.base_damroll == 58);
+    snow_ogre.ch.points.max_hit = snow_ogre.ch.points.hit = 8000;
+    snow_ogre.npc.summoner_hp_ceiling = 8000; // an old stored ceiling cannot bypass the hard cap
+    summoner_pet_finish_affects(&snow_ogre.ch);
+    assert(GET_MAX_HIT(&snow_ogre.ch) == 5000 && GET_HIT(&snow_ogre.ch) == 5000);
+    assert(summoner_pet_heal_cap(&snow_ogre.ch, 8000) == 5500);
+    chaos = true;
+    summoner_pet_configure(&snow_ogre.ch, &owner.ch, true);
+    assert(GET_MAX_HIT(&snow_ogre.ch) == 5000);
+    chaos = false;
+    Fixture ordinary_ogre(true, RACE_OGRE, CLASS_WARRIOR, 56);
+    summoner_pet_configure(&ordinary_ogre.ch, &owner.ch, true);
+    assert(GET_MAX_HIT(&ordinary_ogre.ch) == 2545); // the higher cap does not grant HP to every race
+    owner.ch.curr_stats.Cha = 100;
     Fixture early_owner(false, RACE_HUMAN, CLASS_SUMMONER, 21);
     Fixture early_pet(true, RACE_SGIANT, CLASS_WARRIOR, 26);
     summoner_pet_configure(&early_pet.ch, &early_owner.ch, true);
     assert(GET_LEVEL((&early_pet.ch)) == 21);
-    assert(GET_MAX_HIT(&early_pet.ch) <= necro_hp_ceiling(&early_owner.ch));
+    assert(GET_MAX_HIT(&early_pet.ch) <= normal_capture_hp(&early_pet.ch, &early_owner.ch));
 
     for (int habitat : {-1, 0, 1}) {
         terrain = habitat;

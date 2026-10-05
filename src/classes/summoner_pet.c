@@ -21,6 +21,7 @@ int conjure_terrain_check(P_char ch, P_char mob);
 
 namespace
 {
+constexpr int capture_hp_cap = 5000;
 constexpr int bank_width = 16;
 constexpr int mana_bank = 13;
 constexpr int capacity_bank = 14;
@@ -149,12 +150,13 @@ std::pair<double, double> racial_range(int race)
 		return { 1.60, 2.00 };
 	case RACE_SGIANT:
 	case RACE_GIANT:
-	case RACE_SNOW_OGRE:
 	case RACE_FIREGIANT:
 	case RACE_FROSTGIANT:
 	case RACE_TITAN:
 	case RACE_AVATAR:
 		return { 2.10, 2.60 };
+	case RACE_SNOW_OGRE:
+		return { 3.00, 4.00 };
 	case RACE_INSECT:
 	case RACE_ARACHNID:
 	case RACE_FLYING_ANIMAL:
@@ -606,7 +608,7 @@ void summoner_pet_configure(P_char pet, P_char owner, bool preview, bool restori
 		const double quality = std::clamp((GET_C_CHA(owner) - 60) / 70.0, 0.0, 1.0);
 		const double infusion =
 			1 + std::clamp(GET_CHAR_SKILL(owner, SKILL_INFUSE_LIFE), 0, 100) / 500.0;
-		const int ceiling = necro_hp_ceiling(owner);
+		const int ceiling = capture_hp_cap;
 		pet->points.base_hit = std::min(
 			ceiling,
 			static_cast<int>(base *
@@ -692,6 +694,7 @@ void summoner_pet_finish_affects(P_char pet)
 	if (!summoner_balanced_body(pet))
 		return;
 	const int missing_hp = GET_MAX_HIT(pet) - GET_HIT(pet);
+	GET_MAX_HIT(pet) = std::min<int>(GET_MAX_HIT(pet), capture_hp_cap);
 	if (pet->only.npc->summoner_hp_ceiling > 0)
 		GET_MAX_HIT(pet) =
 			std::min<int>(GET_MAX_HIT(pet), pet->only.npc->summoner_hp_ceiling);
