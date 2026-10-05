@@ -1,5 +1,16 @@
 # Finish accounting implementation plan
 
+## Flat baseline marker recovery fixture verified — 2026-10-05
+
+[The exact marker fixture correction](FLAT_BASELINE_MARKER_RECOVERY_FIXTURE_2026-10-05.md) passes the unchanged native owner
+with ASan/UBSan: all19 initialization and20 batch after-image recovery cuts,
+626 staging/421 lookup allocation failures and original replay/corruption limits.
+Production initialization/retry behavior is unchanged. Both original baseline
+component owners have now passed separately on the frozen EAB2/schema61 candidate;
+pending native/schema sources are not installed here. Maintained builds, independent
+audit and historical C05/populated upgrade remain open. Plan1/R1–R8/coverage/release
+are incomplete; inactive behavior and activation gates stay.
+
 ## Baseline component collector linkage verified — 2026-10-05
 
 [The real-provider recipe repair](BASELINE_COMPONENT_COLLECTOR_LINKAGE_2026-10-05.md) passes original SQL and client-free
