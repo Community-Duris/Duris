@@ -1,0 +1,386 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "temple",
+  "coverage": "complete",
+  "introduction": "Trace the Temple of Flames’ fallen order, recover its exact proofs and follow the stories of its surviving voices. Six independent requests record accepted outcomes. New discovery and progress require active, ready accounting.",
+  "orientation": [
+    "Enter the temple lands from the southern boundary. Illyn at the guarded entrance can explain the fallen order, the fire emblem and the messiah. The haunted forest, moat currents, hidden shafts and temple inhabitants remain dangerous.",
+    "Illyn asks for his lost soul. Aku, deep within the temple, carries the soul of Illyn that is the exact proof. Illyn gives his armor and sword and leaves after accepting it. Wearing similar equipment or hearing his story does not record the hand-in.",
+    "The graveyard attendant hints at the sepulchre. At its entrance, SAY sepulchre, then OPEN door and go SOUTH when the route is closed. ASK lleddraick water or well explains the king’s request for the sick man’s knife. The hidden basin below the old well leads toward that man: SEARCH, OPEN basin and go DOWN. The well itself is scenery.",
+    "Bring the contortionate man’s well-crafted dagger to King Lleddraick. He reveals illesarus and leaves; this request has no item reward. The same knife can instead be spent on the little child’s request in the Hall of the Ancients. One consumed copy cannot complete both requests.",
+    "The bridge inscriptions and Illyn’s fire hint describe the outer temple puzzle. The current eastern doors respond to SAY bdkn, then OPEN doors and EAST. Their reverse inscription spells the word differently; the intended clues need builder review. An already open route requires no personal earlier password action.",
+    "Follow the faerie forest for the sage’s four-item bundle: two yellow daggers from the yellow devil, the green devil’s green token and the blue devil’s blue wooden sword. The faerie children do not carry these proofs. Bring two actual daggers together with the two different other items for 500 platinum.",
+    "STARE mirror at the curved mirror to enter the shimmering void. STARE backside at the return surface to leave. The old sage waits in the void; his globe and stories are separate from the accepted four-item bundle.",
+    "In the upper throne room, SAY illesarus behind the throne, then OPEN wall and go EAST when the route is closed. The angel accepts the exact wedding band and gives two vials of the angel before leaving. This spoken route and the angel’s hand-in require no personal king receipt.",
+    "The weapons master remembers his lost love by her golden locket. The first pale maiden in the forest wears it. The locket starts closed but unlocked and can contain a photograph. The master accepts the locket itself, gives a steel key, points you toward the cemetery shack and leaves. Remove anything you wish to keep before offering the container.",
+    "The wedding ring is in the steel chest in the cemetery shack. The master’s steel key belongs to that chest, but the chest currently starts open with its locked flag set, so check its actual state before trying to unlock it. The key breaks after a successful unlock. The key, locket and ring do not survive ordinary rent/save handling. A matching supplied ring fits the angel’s request without a prior master receipt.",
+    "Ommsh, the massive thorned monster, asks for the stonecrusher. A hallucination carries this hammer in the rooms of melting walls. They have no ordinary walking entrance; native teleport can reach the area, but the intended puzzle route needs builder review. “Drink drop” is a clue, not a recorded drinking objective. Bring the actual hammer for Ommsh’s secret about the hole; he remains and gives no item reward.",
+    "Useful shared controls include PUSH table for the shack’s basement panel, PULL latch for the hidden drain and TOUCH statue for the western wall passage. Some hidden routes still need SEARCH and OPEN afterward; the drain’s reverse side does not automatically clear. Opening shared routes does not itself record a story outcome.",
+    "The angel’s two vials provide vitality, rather than teleportation. Unholy water has alignment-sensitive healing or harm and finite supply. The epic rune, ambient fire advice, combat traps, statues and other scenery are separate from these six requests.",
+    "All six requests are potential dailies under current rules. Exact current stock, legitimate item supply and the return of departing givers govern availability. The journal keeps each accepted outcome independent; no earlier personal kill, access action or different quest receipt is required."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 18302,
+      "name": "Illyn the Gatekeeper",
+      "keyword": "illyn",
+      "description": "At the guarded entrance: explains the fallen order and accepts his exact lost soul.",
+      "topics": [
+        "fire",
+        "emblem",
+        "temple",
+        "messiah"
+      ]
+    },
+    {
+      "mob_vnum": 18310,
+      "name": "King Lleddraick",
+      "keyword": "lleddraick",
+      "description": "In the sepulchre: asks for the sick man’s knife, reveals the throne-room word and leaves.",
+      "topics": [
+        "temple",
+        "first",
+        "plague",
+        "possibility",
+        "cause",
+        "water",
+        "well",
+        "second",
+        "king"
+      ]
+    },
+    {
+      "mob_vnum": 18311,
+      "name": "the graveyard attendant",
+      "keyword": "spectre",
+      "description": "In the graveyard: hints at the sepulchre. Dialogue supplies guidance without a separate proof request.",
+      "topics": [
+        "blood",
+        "rape",
+        "graveyard",
+        "attendant"
+      ]
+    },
+    {
+      "mob_vnum": 18317,
+      "name": "Lord Samael",
+      "keyword": "samael",
+      "description": "Lord of the former patrol guards: describes the possessed souls and their struggle; this is lore.",
+      "topics": [
+        "blood",
+        "hunt",
+        "sustenance",
+        "battle"
+      ]
+    },
+    {
+      "mob_vnum": 18325,
+      "name": "the old sage",
+      "keyword": "sage",
+      "description": "Beyond the curved mirror: accepts a bundle of two daggers, token and sword for 500 platinum.",
+      "topics": [
+        "globe",
+        "here",
+        "temple",
+        "faeries",
+        "things",
+        "demon",
+        "demons",
+        "illyn",
+        "samael",
+        "soul"
+      ]
+    },
+    {
+      "mob_vnum": 18329,
+      "name": "the rotting chef",
+      "keyword": "chef",
+      "description": "In the temple kitchen: identifies himself as Stitch and explains Ommsh’s hole.",
+      "topics": [
+        "name",
+        "hole"
+      ]
+    },
+    {
+      "mob_vnum": 18331,
+      "name": "the angel",
+      "keyword": "angel",
+      "description": "Beyond the throne-room wall: accepts the exact wedding ring for two vials of the angel, then leaves.",
+      "topics": [
+        "help",
+        "possessed",
+        "others"
+      ]
+    },
+    {
+      "mob_vnum": 18336,
+      "name": "the weapons master",
+      "keyword": "master",
+      "description": "On the temple’s upper floor: accepts the golden locket for the steel key, then leaves.",
+      "topics": [
+        "sad",
+        "her"
+      ]
+    },
+    {
+      "mob_vnum": 18337,
+      "name": "the crazy monster",
+      "keyword": "monster",
+      "description": "Ommsh, the massive thorned monster: gives his secret after accepting the stonecrusher and remains.",
+      "topics": [
+        "rock",
+        "rocks",
+        "smart",
+        "puzzle"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "illyn-lost-soul",
+      "title": "Illyn: reclaim the lost soul",
+      "category": "story",
+      "summary": "Return Illyn’s exact soul of Illyn for his armor and sword. He leaves after the accepted hand-in; the story records this proof exchange.",
+      "contracts": [
+        {
+          "giver_vnum": 18302,
+          "completion_key": "give=I:18300;receive=I:18301,I:18302;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-18300",
+          "text": "Carry the soul of Illyn",
+          "kind": "carried_item",
+          "item_vnums": [
+            18300
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Aku carries this orb deep within the temple. Its identity is the proof; another soul-like item or finding Illyn’s equipment does not substitute. Carry the exact items loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give Illyn the soul of Illyn",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 18302,
+              "completion_key": "give=I:18300;receive=I:18301,I:18302;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "king-plague-knife",
+      "title": "Lleddraick: the source of the plague",
+      "category": "story",
+      "summary": "Return the contortionate man’s exact well-crafted dagger. Lleddraick reveals the throne-room word and leaves, without an item reward. His receipt remains independent of the angel’s request.",
+      "contracts": [
+        {
+          "giver_vnum": 18310,
+          "completion_key": "give=I:18309;receive=;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-18309",
+          "text": "Carry the well-crafted dagger",
+          "kind": "carried_item",
+          "item_vnums": [
+            18309
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The contortionate man below the old well wields this blade. SEARCH and OPEN the hidden basin to follow the downward route. The Hall of the Ancients’ little child consumes the same knife for a separate request. Carry the exact items loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the well-crafted dagger to King Lleddraick",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 18310,
+              "completion_key": "give=I:18309;receive=;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "sage-four-proofs",
+      "title": "The sage: four proofs from the faerie forest",
+      "category": "story",
+      "summary": "Bring two yellow daggers, the green token and the blue wooden sword together for 500 platinum. The sage remains; the bundle checks exact items rather than personal combat history.",
+      "contracts": [
+        {
+          "giver_vnum": 18325,
+          "completion_key": "give=I:18322,I:18322,I:18324,I:18325;receive=C:500000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-18322",
+          "text": "Carry two yellow daggers",
+          "kind": "carried_item",
+          "item_vnums": [
+            18322
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "The yellow devil carries two of these daggers. A single dagger or another yellow weapon cannot fill both positions. Carry the exact items loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "material-18324",
+          "text": "Carry the green token",
+          "kind": "carried_item",
+          "item_vnums": [
+            18324
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The green devil carries this distinct token in the faerie forest. Carry the exact items loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "material-18325",
+          "text": "Carry the blue wooden sword",
+          "kind": "carried_item",
+          "item_vnums": [
+            18325
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The blue devil wields this sword. Reach the sage through the curved mirror with STARE mirror; STARE backside provides the return. Carry the exact items loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the sage all four proofs together",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 18325,
+              "completion_key": "give=I:18322,I:18322,I:18324,I:18325;receive=C:500000;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "angel-wedding-ring",
+      "title": "The angel: a token of another soul",
+      "category": "story",
+      "summary": "Offer the exact wedding band for two vials of the angel. The angel leaves afterward. The master’s story explains one route to the ring; a supplied matching ring also fits.",
+      "contracts": [
+        {
+          "giver_vnum": 18331,
+          "completion_key": "give=I:18336;receive=I:18337,I:18337;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-18336",
+          "text": "Carry the wedding band",
+          "kind": "carried_item",
+          "item_vnums": [
+            18336
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The ring is in the steel chest in the cemetery shack. Check its current state: it starts open with its locked flag set. The master gives its steel key for the golden locket. The ring does not survive ordinary rent/save handling; no prior master or king receipt is required. Carry the exact items loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the wedding ring to the angel",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 18331,
+              "completion_key": "give=I:18336;receive=I:18337,I:18337;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "master-lost-locket",
+      "title": "The weapons master: a memory of his love",
+      "category": "story",
+      "summary": "Return the exact golden locket for a steel key and the clue to the wedding ring. The master leaves. The photograph inside is lore, rather than a separate required proof.",
+      "contracts": [
+        {
+          "giver_vnum": 18336,
+          "completion_key": "give=I:18307;receive=I:18316;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-18307",
+          "text": "Carry the golden locket",
+          "kind": "carried_item",
+          "item_vnums": [
+            18307
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The first pale maiden wears the locket in the forest. It starts closed but unlocked; open it and remove anything you wish to keep before offering it. The request checks the locket, and the hand-in can consume its contents. The locket does not survive ordinary rent/save handling. Carry the exact items loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the golden locket to the weapons master",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 18336,
+              "completion_key": "give=I:18307;receive=I:18316;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "ommsh-stonecrusher",
+      "title": "Ommsh: the stonecrusher and the smash-hole",
+      "category": "story",
+      "summary": "Bring the exact stonecrusher for Ommsh’s secret about the hole. He remains and gives no item reward. Drinking, dropping items or obtaining the hammer alone does not record this outcome.",
+      "contracts": [
+        {
+          "giver_vnum": 18337,
+          "completion_key": "give=I:18339;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-18339",
+          "text": "Carry the stonecrusher",
+          "kind": "carried_item",
+          "item_vnums": [
+            18339
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A hallucination carries this hammer in the rooms of melting walls. There is no ordinary walking entrance; native teleport can reach them, while the intended puzzle route needs builder review. A matching legitimately supplied hammer fits without your own access or drinking history. Carry the exact items loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the stonecrusher to Ommsh",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 18337,
+              "completion_key": "give=I:18339;receive=;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

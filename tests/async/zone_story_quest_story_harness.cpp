@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 113 &&
+		require(catalog.story_mappings.size() == 114 &&
 				tracker.summary_for(7, 42).total == 1571,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7551,6 +7551,157 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &sage = story_for("temple", "sage-four-proofs");
+			const auto &master = story_for("temple", "master-lost-locket");
+			const auto &angel = story_for("temple", "angel-wedding-ring");
+			const auto &king = story_for("temple", "king-plague-knife");
+			const auto &ommsh = story_for("temple", "ommsh-stonecrusher");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 183, 18300, 100, "arrival") ==
+					result::applied,
+				"Temple discovery failed");
+			const auto mapping = std::find_if(catalog.story_mappings.begin(),
+							  catalog.story_mappings.end(),
+							  [](const auto &m)
+							  { return m.source_area == "temple"; });
+			require(mapping != catalog.story_mappings.end(), "Temple mapping missing");
+			for (const auto &contact : mapping->contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 18300, 101) ==
+						result::applied,
+					"Temple contact projection failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Temple journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[18322] = 1;
+			supplies.carried[18324] = 1;
+			supplies.equipped[16] = 18325;
+			supplies.carried[18312] = 1;
+			supplies.carried[18316] = 1;
+			supplies.carried[18337] = 2;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 183, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(sage).find("[Missing now] " + sage.steps[0].text) !=
+						std::string::npos &&
+					section(sage).find("[Missing now] " + sage.steps[2].text) !=
+						std::string::npos,
+				"One dagger or worn sword supplied the full bundle");
+			require(section(master).find("[Missing now] " + master.steps[0].text) !=
+						std::string::npos &&
+					section(angel).find("[Missing now] " +
+							    angel.steps[0].text) !=
+						std::string::npos,
+				"Photo/key/vial substituted for locket or ring proof");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 183).completed == 0 &&
+					journey.progress_for_zone(7, 42, 183).total == 6,
+				"Temple preparation fabricated accepted outcome");
+			supplies.equipped.clear();
+			supplies.carried[18322] = 2;
+			supplies.carried[18325] = 1;
+			supplies.carried[18336] = 1;
+			supplies.carried[18339] = 1;
+			journal = journey.render_journal(7, 42, 183, 10, 1, 108, false, false,
+							 &supplies);
+			for (size_t i = 0; i + 1 < sage.steps.size(); ++i)
+				require(section(sage).find("[Ready now] " + sage.steps[i].text) !=
+						std::string::npos,
+					"Exact supplied sage bundle required own kill/access history");
+			require(section(angel).find("[Ready now] " + angel.steps[0].text) !=
+						std::string::npos &&
+					section(ommsh).find("[Ready now] " + ommsh.steps[0].text) !=
+						std::string::npos,
+				"Supplied ring/hammer required master/king/drinking history");
+			// Synthetic settled receipts verify projection, not native wallet/child/source admission.
+			record(journey, angel.contracts.front(), "temple-ring-receipt", 183, 18564);
+			supplies.carried.erase(18336);
+			journal = journey.render_journal(7, 42, 183, 10, 1, 110, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 183).completed == 1 &&
+					journey.evidence_for(master.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(king.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Angel receipt fabricated prerequisite or duplicate-vial completion");
+			require(section(angel).find("[Recorded] " + angel.steps.back().text) !=
+						std::string::npos &&
+					section(angel).find("[Missing now] " +
+							    angel.steps[0].text) !=
+						std::string::npos,
+				"Recorded ring receipt recreated spent proof");
+			supplies.carried[18307] = 1;
+			supplies.carried.erase(18312);
+			journal = journey.render_journal(7, 42, 183, 10, 1, 112, false, false,
+							 &supplies);
+			require(section(master).find("[Ready now] " + master.steps[0].text) !=
+					std::string::npos,
+				"Locket required separate photo proof");
+			record(journey, master.contracts.front(), "temple-locket-receipt", 183,
+			       18572);
+			record(journey, king.contracts.front(), "temple-knife-receipt", 183, 18363);
+			record(journey, ommsh.contracts.front(), "temple-hammer-receipt", 183,
+			       18569);
+			require(journey.progress_for_zone(7, 42, 183).completed == 4 &&
+					journey.evidence_for(sage.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Empty reward responses were excluded or crossed into bundle receipt");
+			for (const auto &entry : mapping->stories)
+			{
+				if (entry.id == angel.id || entry.id == master.id ||
+				    entry.id == king.id || entry.id == ommsh.id)
+					continue;
+				const std::string tx = "temple-" + entry.id;
+				record(journey, entry.contracts.front(), tx.c_str(), 183, 18300);
+			}
+			require(journey.progress_for_zone(7, 42, 183).completed == 6,
+				"Temple coins or independent story receipt lost");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &unit) {
+						      return unit.zone_number == 183 &&
+							     unit.daily_candidate;
+					      }) == 6,
+				"Temple empty/coin reward daily eligibility changed");
+			auto replay =
+				completion(angel.contracts.front(), "temple-ring-receipt", 120);
+			replay.transaction.zone_number = 183;
+			replay.transaction.room_vnum = 18564;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Temple replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 183).completed == 6 &&
+					!recovered.has_discovered(7, 42, 777),
+				"Temple recovery lost receipt or invented Hall discovery");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 183, 18300, 100, "arrival") ==
+					result::applied,
+				"Historical Temple discovery failed");
+			for (const auto &entry : mapping->stories)
+			{
+				const std::string tx = "temple-historical-" + entry.id;
+				record(historical, entry.contracts.front(), tx.c_str(), 183, 18300);
+			}
+			require(historical.progress_for_zone(7, 42, 183).completed == 6,
+				"Historical raw Temple fixture failed");
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 183).completed == 6,
+				"Historical Temple receipts lost after authoring");
+			for (const auto &entry : mapping->stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+							.successful_attempts == 1,
+					"Historical Temple receipt erased");
+		}
 		{
 			const auto &bundle = story_for("jotun", "mimir-five-proofs");
 			const auto &amulet = story_for("jotun", "mimir-shaman-proof");

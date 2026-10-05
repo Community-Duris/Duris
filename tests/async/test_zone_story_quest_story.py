@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1438
-assert report['mapped_area_count'] == 113 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 114 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -301,6 +301,18 @@ assert jstories['grishnar-rashnik-totem']['steps'][0]['item_vnums']==[96061] and
 assert jstories['smith-remorhaz-armor']['steps'][0]['item_vnums']==[96069] and jstories['smith-ancient-remorhaz-armor']['steps'][0]['item_vnums']==[96071]
 assert all(t.get('optional') and t['count']==1 for s in jotun['stories'] for t in s['steps'][:-1])
 assert all(s['steps'][-1]['contracts']==s['contracts'] for s in jotun['stories'])
+
+temple=next(m for m in catalog['story_mappings'] if m['source_area']=='temple')
+assert (temple['schema_version'],temple['revision'],temple['coverage'])==(3,1,'complete')
+assert len(temple['stories'])==6 and len(temple['contacts'])==9 and not temple['exclusions'] and report['eligible_by_zone']['183']==6
+assert sum(len(c['topics']) for c in temple['contacts'])==42
+assert sum(t.get('optional',False) for s in temple['stories'] for t in s['steps'])==8
+tstories={s['id']:s for s in temple['stories']}
+assert [t['item_vnums'] for t in tstories['sage-four-proofs']['steps'][:-1]]==[[18322],[18324],[18325]]
+assert [t['count'] for t in tstories['sage-four-proofs']['steps'][:-1]]==[2,1,1]
+assert tstories['master-lost-locket']['steps'][0]['item_vnums']==[18307] and tstories['angel-wedding-ring']['steps'][0]['item_vnums']==[18336]
+assert all(t.get('optional') for s in temple['stories'] for t in s['steps'][:-1])
+assert all(s['category']=='story' and len(s['contracts'])==1 and s['steps'][-1]['contracts']==s['contracts'] for s in temple['stories'])
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'
