@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1421
-assert report['mapped_area_count'] == 126 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 127 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -432,6 +432,18 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
  assert 'Accounting currently blocks' in s['summary'] and s['steps'][-1]['contracts']==s['contracts']
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
+
+
+mistywood=next(m for m in catalog['story_mappings'] if m['source_area']=='mistywood')
+assert (mistywood['schema_version'],mistywood['revision'],mistywood['coverage'])==(3,1,'complete')
+assert len(mistywood['stories'])==3 and len(mistywood['contacts'])==5 and not mistywood['exclusions']
+assert report['eligible_by_zone']['950']==3 and sum(len(c['topics']) for c in mistywood['contacts'])==37
+for story in mistywood['stories']:
+ assert story['category']=='story' and len(story['contracts'])==1 and len(story['steps'])==2
+ assert story['steps'][0]['kind']=='carried_item' and story['steps'][0]['optional'] and story['steps'][0]['count']==1
+ assert story['steps'][-1]['contracts']==story['contracts']
+assert [s['steps'][0]['item_vnums'] for s in mistywood['stories']]==[[95000],[95001],[95003]]
+units=[u for u in module.story_units(catalog) if u['zone_number']==950];assert len(units)==3 and all(u['achievement'] and u['daily_candidate'] for u in units)
 
 
 library=next(m for m in catalog['story_mappings'] if m['source_area']=='library')

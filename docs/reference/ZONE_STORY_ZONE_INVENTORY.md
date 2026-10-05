@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 126 authored journals.
+2668 distinct Q contracts; 127 authored journals.
 
 Regenerate with:
 
@@ -148,7 +148,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Myrabolus (`mira`) | 16 | 1 | 2 | Yes | [1 × a token of light; 1 × a token of evil; 1 × a token of undeath → the mage boots of the maelstrom, the axe of the maelstrom](../../areas/qst/mira.qst#L140) | crew_shop_proc, generic_parry_proc, inn, master_set, money_changer, ship_shop_proc |
 | The Shadow Forest (`mist`) | 1 | 1 | 0 | Fallback | [1 × the bloody head of Darnac → a crown of light](../../areas/qst/mist.qst#L6) | mist_protect |
 | The Chasm of the Misty Vale (`mist_chasm`) | 4 | 3 | 0 | Fallback | [2 × a small salamander scale; 2 × a large salamander scale → a salamander scale shield](../../areas/qst/mist_chasm.qst#L69) | — |
-| Mistywood (`mistywood`) | 3 | 14 | 0 | Fallback | [1 × a bear claw necklace → native reward/response](../../areas/qst/mistywood.qst#L32) | — |
+| Mistywood (`mistywood`) | 3 | 14 | 0 | Yes | [1 × a bear claw necklace → native reward/response](../../areas/qst/mistywood.qst#L32) | — |
 | Mitashi - Capital City of the Jade Empire (`mitashi`) | 1 | 3 | 0 | Fallback | [1 × a katana called 'Shadows Breath'; 1 × a katana called 'The North Wind'; 1 × a katana called 'Divine Fury'; other required items → a katana called 'Retribution'](../../areas/qst/mitashi.qst#L48) | — |
 | Du'Maathe Castle (`mntcastl`) | 8 | 12 | 1 | Yes | [1 × a small handful of fine sand; 1 × a recipe for a granular potion → a granular potion](../../areas/qst/mntcastl.qst#L237) | inn |
 | Moonshae Island (`moonshae`) | 2 | 5 | 0 | Fallback | [1 × the lost sword of Cymrych Hugh → a scarlet ring](../../areas/qst/moonshae.qst#L18) | sister_knight |

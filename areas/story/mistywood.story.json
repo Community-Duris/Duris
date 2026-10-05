@@ -1,0 +1,215 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "mistywood",
+  "coverage": "complete",
+  "introduction": "Explore Mistywood's forest, druid branches, caves and swamps through three independent requests and the tower's unresolved lore. Exact offerings and accepted receipts determine progress. New discovery and progress require active, ready accounting.",
+  "orientation": [
+    "ASK riliatar about job, bear or scar for the hunter's request. He accepts the exact bear claw necklace for his payment and experience reward. The scarred black bear is distinct from ordinary brown bears; recovering or receiving the necklace does not prove that you personally killed it.",
+    "ASK ascuren about protect or forest for his request. He accepts the large club for a bark potion. The club has limited floor stock in the giant's clearing; the sentinel giant's native scavenging may pick it up and use it. Ascuren can wander from his initial room. Availability and custody can change before you arrive. The accepted request does not require a personal giant kill or a recorded forest restoration.",
+    "The hunter's and druid's requests are independent, despite their disagreement about the forest and its animals. Completing either does not unlock, reject or finish the other. Their dialogue does not impose a tracked allegiance choice, and each keyword is guidance rather than a separate achievement.",
+    "ASK daumis about jarnes or concern for the missing student's story, then about yes or sure for mushroom guidance. Daumis is a lore contact rather than another turn-in recipient. You may also learn the request directly from Jarnes without first speaking to his master.",
+    "ASK jarnes about trapped or mushroom. Bring the exact speckled mushroom from the forest's underground tunnels, carried loose, and GIVE it to Jarnes. Ordinary mushrooms, scimitars or bark potions do not substitute. Eating the quest mushroom spends it as food and can make you sick; it does not teleport or rescue anyone.",
+    "Jarnes leaves after accepted delivery and offers an obsidian scimitar and experience. His disappearance describes his escape, but the native request removes him rather than placing him beside Daumis. It does not record a player teleport, escort, reunion, restored swamp or second completion.",
+    "Follow actual exits when reaching the druid branches, hilltop, caves, mushroom tunnels and the swamp pit. Jarnes's pit and part of the ancient road suppress healing. River and lagoon routes include water that requires a boat or another native travel ability. Upper branches retain falling and movement rules. Descriptive warnings do not add hidden quest gates.",
+    "The hunter's cabin door and the tower's lower wooden door start closed and unlocked. OPEN follows native rules; they do not require a new journal key objective. The tower's upper trapdoor starts locked on the laboratory side and closed on the roof side. Kromor carries the matching skull key; an already opened passage or supplied matching key remains valid.",
+    "The dense vegetation near the old campsite hides the route to the korred. SEARCH and OPEN follow actual native exit state unless the passage is already revealed and open. The foliage passage below the lower branches has different secret state on its two sides. A successful shared opening does not prove that you personally discovered or solved it.",
+    "ASK korred about fix, him or alive for Kromor's unwanted immortality. The tower's old book and runes expand that story, but the book is an extra description rather than a carried recipe. No accepted cure or transformation request is declared. Tower combat, reading the book and owning the skull key do not finish another local story.",
+    "The hunter's horse carcass, silver arrows, animal trophies, skeletal containers and half-cooked lizard are descriptive clues or ordinary stock. No local carcass delivery, arrow recovery, animal rescue or item-combination contract is declared. Similar-looking objects do not replace the exact necklace, club or mushroom.",
+    "Carry your chosen offering loose to see current preparation. Worn, held, nested, consumed or handed-away materials are not current loose custody. A gift of the exact item can fit without personal first-recovery, kill, training or dialogue history. Readiness and reward possession do not create an accepted receipt.",
+    "Limited material and recipient stock, native reset timing, scavenging and other players affect availability. Riliatar and Ascuren remain after acceptance; Jarnes leaves and needs a fresh available encounter for another attempt. Potential daily eligibility does not guarantee stock. New credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 95019,
+      "name": "the woodsman",
+      "keyword": "riliatar",
+      "description": "The hunter accepts the scarred black bear's exact claw necklace. His victory speech does not require personal killing.",
+      "topics": [
+        "hi",
+        "hello",
+        "hail",
+        "yes",
+        "job",
+        "ascuren",
+        "druid",
+        "bear",
+        "scar"
+      ]
+    },
+    {
+      "mob_vnum": 95020,
+      "name": "Ascuren",
+      "keyword": "ascuren",
+      "description": "The druid accepts the large club for a bark potion. Forest protection is the request's story, without a recorded world restoration.",
+      "topics": [
+        "hi",
+        "hello",
+        "hail",
+        "yes",
+        "protect",
+        "forest"
+      ]
+    },
+    {
+      "mob_vnum": 95021,
+      "name": "Daumis the sage",
+      "keyword": "daumis",
+      "description": "The master explains where to find Jarnes's spell component. He has no accepted turn-in of his own.",
+      "topics": [
+        "hi",
+        "hail",
+        "hello",
+        "jarnes",
+        "concern",
+        "distress",
+        "yes",
+        "sure"
+      ]
+    },
+    {
+      "mob_vnum": 95022,
+      "name": "Jarnes",
+      "keyword": "jarnes",
+      "description": "The trapped student accepts a speckled mushroom and then leaves. His disappearance does not establish a reunion or player teleport.",
+      "topics": [
+        "hail",
+        "hi",
+        "hello",
+        "trapped",
+        "mushroom",
+        "no",
+        "yes"
+      ]
+    },
+    {
+      "mob_vnum": 95023,
+      "name": "The korred",
+      "keyword": "korred",
+      "description": "The korred explains Kromor's immortality and points toward the tower. No accepted cure or transformation is declared.",
+      "topics": [
+        "hi",
+        "hello",
+        "hail",
+        "fix",
+        "he",
+        "him",
+        "alive"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "riliatar-bear-claw",
+      "title": "Riliatar: bear claw trophy",
+      "category": "story",
+      "summary": "Bring the exact necklace for the hunter's payment. A supplied trophy fits without inventing personal kill or allegiance requirements.",
+      "contracts": [
+        {
+          "giver_vnum": 95019,
+          "completion_key": "give=I:95000;receive=C:15000,E:25000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-95000",
+          "text": "Carry a bear claw necklace",
+          "kind": "carried_item",
+          "item_vnums": [
+            95000
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The scarred black bear carries limited exact necklace stock in its cave. Ordinary brown bears do not carry this proof. Current loose custody is preparation; a gift can fit without personal first-recovery history."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Riliatar: bear claw trophy",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 95019,
+              "completion_key": "give=I:95000;receive=C:15000,E:25000;disappear=0"
+            }
+          ],
+          "hint": "GIVE the exact item, carried loose, to the available recipient. Acceptance consumes it; Jarnes then leaves. Readiness, dialogue, rewards and source access do not prove acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "ascuren-large-club",
+      "title": "Ascuren: proof for the forest",
+      "category": "story",
+      "summary": "Bring the exact large club for a bark potion. Its acceptance is independent of the hunter's request and does not record a restored forest.",
+      "contracts": [
+        {
+          "giver_vnum": 95020,
+          "completion_key": "give=I:95001;receive=I:95004;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-95001",
+          "text": "Carry a large club",
+          "kind": "carried_item",
+          "item_vnums": [
+            95001
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Limited club stock starts on the floor of the giant's clearing. Native scavenging may let the sentinel giant take and use it; custody is not guaranteed on arrival. Current loose custody is preparation; a gift can fit without personal first-recovery history."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Ascuren: proof for the forest",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 95020,
+              "completion_key": "give=I:95001;receive=I:95004;disappear=0"
+            }
+          ],
+          "hint": "GIVE the exact item, carried loose, to the available recipient. Acceptance consumes it; Jarnes then leaves. Readiness, dialogue, rewards and source access do not prove acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "jarnes-speckled-mushroom",
+      "title": "Jarnes: mushroom delivery",
+      "category": "story",
+      "summary": "Deliver the exact speckled mushroom to the trapped student for his scimitar and experience. He leaves after acceptance; no master conversation or reunion is required.",
+      "contracts": [
+        {
+          "giver_vnum": 95022,
+          "completion_key": "give=I:95003;receive=E:10000,I:95002;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-95003",
+          "text": "Carry a speckled mushroom",
+          "kind": "carried_item",
+          "item_vnums": [
+            95003
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Limited exact mushroom stock belongs in the underground forest tunnels. This is edible native food; consuming it can cause sickness and does not rescue Jarnes. Current loose custody is preparation; a gift can fit without personal first-recovery history."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Jarnes: mushroom delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 95022,
+              "completion_key": "give=I:95003;receive=E:10000,I:95002;disappear=1"
+            }
+          ],
+          "hint": "GIVE the exact item, carried loose, to the available recipient. Acceptance consumes it; Jarnes then leaves. Readiness, dialogue, rewards and source access do not prove acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

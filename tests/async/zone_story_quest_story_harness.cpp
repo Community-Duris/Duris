@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 126 &&
+		require(catalog.story_mappings.size() == 127 &&
 				tracker.summary_for(7, 42).total == 1543,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7687,6 +7687,140 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "mistywood"; });
+			const auto &hunter = story_for("mistywood", "riliatar-bear-claw");
+			const auto &forest = story_for("mistywood", "ascuren-large-club");
+			const auto &student = story_for("mistywood", "jarnes-speckled-mushroom");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 950, 95000, 100, "arrival") ==
+					result::applied,
+				"Mistywood discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 950, 10, 1, 101, false, false);
+			require(journal.find(student.title) == std::string::npos &&
+					journal.find(hunter.title) == std::string::npos,
+				"Mistywood exposed unseen recipients");
+			require(journey.meet_npc(7, 42, 95022, 95059, 102) == result::applied,
+				"Mistywood student encounter failed");
+			supplies = {};
+			supplies.carried[95003] = 1;
+			journal = journey.render_journal(7, 42, 950, 10, 1, 103, false, false,
+							 &supplies);
+			require(journal.find(student.title) != std::string::npos &&
+					journal.find("[Ready now] " + student.steps[0].text) !=
+						std::string::npos &&
+					journal.find(hunter.title) == std::string::npos,
+				"Mistywood mushroom delivery required a master referral or exposed the hunter");
+			for (const auto &contact : mapping.contacts)
+				if (contact.mob_vnum != 95022)
+					require(journey.meet_npc(7, 42, contact.mob_vnum, 95000,
+								 104) == result::applied,
+						"Mistywood contact encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Mistywood card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry) {
+				return section(entry).find("[Ready now] " + entry.steps[0].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[0].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[95002] = supplies.carried[95004] =
+				supplies.carried[95022] = 10;
+			int equipped_slot = 0;
+			for (const auto &entry : mapping.stories)
+				supplies.equipped[equipped_slot++] =
+					entry.steps[0].item_vnums.front();
+			journal = journey.render_journal(7, 42, 950, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				require(missing(entry),
+					"Mistywood equipped/reward/key items supplied exact loose input");
+			supplies.equipped.clear();
+			for (const auto &entry : mapping.stories)
+				supplies.carried[entry.steps[0].item_vnums.front()] = 1;
+			const auto before_read = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 950, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				require(ready(entry) && section(entry).find("[Pending]") !=
+								std::string::npos,
+					"Mistywood gifts required source/kill/allegiance history or manufactured acceptance");
+			require(before_read == journey.serialize_state() &&
+					journey.progress_for_zone(7, 42, 950).completed == 0 &&
+					journey.progress_for_zone(7, 42, 950).total == 3,
+				"Mistywood reading mutated progress");
+			// Synthetic accepted events qualify projection; actual source/reward/retirement journeys remain pending.
+			record(journey, student.contracts.front(), "mistywood-student", 950, 95059);
+			require(journey.progress_for_zone(7, 42, 950).completed == 1 &&
+					journey.evidence_for(hunter.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(forest.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Mistywood student receipt completed other stories");
+			supplies.carried.erase(95003);
+			journal = journey.render_journal(7, 42, 950, 10, 1, 108, false, false,
+							 &supplies);
+			require(missing(student) && ready(hunter) && ready(forest),
+				"Mistywood history recreated spent mushroom or consumed independent preparations");
+			record(journey, hunter.contracts.front(), "mistywood-hunter", 950, 95170);
+			require(journey.progress_for_zone(7, 42, 950).completed == 2 &&
+					journey.evidence_for(forest.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Mistywood hunter imposed an allegiance branch");
+			record(journey, forest.contracts.front(), "mistywood-forest", 950, 95023);
+			require(journey.progress_for_zone(7, 42, 950).completed == 3,
+				"Mistywood lost independent druid receipt");
+			auto replay =
+				completion(student.contracts.front(), "mistywood-student", 120);
+			replay.transaction.zone_number = 950;
+			replay.transaction.room_vnum = 95059;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Mistywood replay duplicated receipt");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 950) &&
+					recovered.progress_for_zone(7, 42, 950).completed == 3,
+				"Mistywood cold recovery lost receipts/discovery");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 950, 95000, 100, "arrival") ==
+					result::applied,
+				"Historical Mistywood discovery failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("mistywood-old-" + entry.id).c_str(), 950, 95000);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 950).completed == 3 &&
+					authored.progress_for_zone(7, 42, 950).total == 3,
+				"Mistywood raw-to-authored history lost three identities");
+			for (const auto &entry : mapping.stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1 &&
+						recovered.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1,
+					"Mistywood exact receipt lost");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 950 &&
+							     u.achievement && u.daily_candidate;
+					      }) == 3,
+				"Mistywood receipt classification changed");
 		}
 
 		{
