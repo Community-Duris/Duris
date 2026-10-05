@@ -20,7 +20,7 @@ import economic_sql_canonical_audit as audit
 import economic_restore_evidence as evidence
 from test_plan5_child_identity import NATIVE_PROBE, child
 from test_reconcile_economy_accounting import clean_snapshot, Reconciler
-from reconcile_economy_accounting import view
+from reconcile_economy_accounting import SnapshotError, view
 
 
 class RestoreProjectionFixture:
@@ -641,6 +641,42 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                         self.assertEqual(before,inventory())
                         (work/(engine+'-saved-results.json')).write_text(json.dumps(saved_results,indent=2)+'\n')
                         self.assertEqual(len(saved_results),108)
+                        position_results = []
+                        for collection, positions in (('native',modeled['native']['items']),
+                                                      ('item_origins',modeled['item_origins'])):
+                            for field,index in (('uid',None),('root',None),('parent',None),
+                                                ('owner',0),('owner',1),('owner',2)):
+                                original = positions[0][field] if index is None else positions[0][field][index]
+                                aliases = ([0,0.0,False] if original is None else
+                                    [float(original)] + ([bool(original)] if original in (0,1) else []))
+                                for value in aliases:
+                                    damaged = copy.deepcopy(modeled)
+                                    target = damaged['native']['items'] if collection == 'native' else damaged['item_origins']
+                                    if index is None: target[0][field] = value
+                                    else: target[0][field][index] = value
+                                    target[0]['personal_alias'] = 'private-position-alias'
+                                    label = collection+'-'+field+'-'+str(index)+'-'+type(value).__name__
+                                    path = work/(engine+'-position-'+label+'.json')
+                                    path.write_text(json.dumps(damaged,indent=2)+'\n')
+                                    original_bytes = path.read_bytes()
+                                    for limit in (0,1,100):
+                                        with self.assertRaisesRegex(SnapshotError,'invalid item position'):
+                                            Reconciler(limit).audit(damaged)
+                                        for name,filters in (
+                                                ('exceptions',[]),('holdings',[]),('supply',[]),('prices',[]),
+                                                ('routes',[]),('provenance',['--uid','81']),
+                                                ('operation',['--operation-id',operation.hex()])):
+                                            command = [sys.executable,str(ROOT/'scripts/reconcile_economy_accounting.py'),
+                                                str(path),'--view',name,'--limit',str(limit),*filters]
+                                            ran = subprocess.run(command,capture_output=True,text=True,timeout=30)
+                                            self.assertEqual((ran.returncode,ran.stdout,ran.stderr),
+                                                (2,'','reconciliation failed: invalid item position\n'))
+                                            position_results.append(dict(label=label,limit=limit,view=name,
+                                                command=command,exit=ran.returncode,read_only=True))
+                                    self.assertEqual(path.read_bytes(),original_bytes)
+                                    self.assertEqual(damaged,json.loads(original_bytes))
+                        self.assertEqual(before,inventory())
+                        (work/(engine+'-position-results.json')).write_text(json.dumps(position_results,indent=2)+'\n')
                         constraints = []
                         for table, field, where, value in (
                             ('economic_accounting_coin_posting','event_index','line_index=0',9),

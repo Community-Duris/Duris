@@ -185,6 +185,17 @@ and copper-total ranges. Item events advance one revision; money effects retain
 their native before/after revision chain. Origins, current authority and retained
 creation/retirement roots must agree across the complete unsigned range.
 
+Opening and current native item positions also require exact JSON integers
+before UID indexing. `uid` is in 1..UINT64_MAX, `root` is in 0..UINT64_MAX,
+and the required `parent` is either null or in 1..UINT64_MAX. `owner` is a
+three-element list: its native owner type is an integer in 0..12, and its
+identity/context are integers in 0..UINT64_MAX. The zero/unknown owner and root
+remain available to the existing absent-creation and semantic checks; parsing
+does not grant them live custody. Floats and Booleans never authenticate these
+integer positions or UID keys. A malformed or missing position refuses every
+CLI view with status 2 and the fixed `invalid item position` diagnostic, even
+at limit zero, without rewriting the supplied snapshot.
+
 Each parsed denomination vector must have signed 64-bit fields and a checked
 signed 64-bit copper total using weights 1/10/100/1000. This includes native
 holdings, opening origins and account-effect before/after vectors, even if they
