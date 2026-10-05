@@ -2134,3 +2134,32 @@ Any actual repair needs a separate named fix, focused before/after proof and
 prominent news. Preserve pickup/charges/stock/terrain/PvP, especially the Fields
 intentional rift hotfix. All new credit requires active, ready accounting;
 frozen recovery remains separate.
+
+
+## Orcish Slave Camp example: a quest prop is not every item with a food name
+
+The [dossier](../design/zone-stories/THE_ORCISH_SLAVE_CAMP.md) and
+[sidecar](../../areas/story/shortc.story.json) explain the exact key→steak and
+steak→mace/XP exchanges, including the hero's tragic departure. Do not title
+the scene a rescue or turn text about a corpse into combat-death evidence.
+Supplied steak fits without personal master history; alternate master stock
+means possessing it does not prove earning it.
+
+Key value 1=20 means20-percent break chance, not 20 uses. Key hand-in consumes
+the trapdoor tool. Current loose key, native held-key eligibility, earlier
+receipt, accepted destruction, reveal/unlock/OPEN and actual arrival differ.
+Raw door kind2 adds EX_PICKABLE, not EX_PICKPROOF; preserve native picking
+after reveal and other existing admission. No mandatory personal key-only gate.
+
+The steak is TRASH13. A separate G T19 request accepts ordinary FOOD, has no
+reward and leaves the hero hungry. Active exact-only durable admission refuses
+that type branch, so classify it as an explicit exclusion until qualified typed
+root consumption/outcome support exists. Do not make the prop edible to bypass
+the limitation. The schema cannot truthfully check arbitrary item-type inventory.
+
+For D retirement inspect selected NPC identity and epoch. Current template/room
+reselection needs a delayed commit/reset replacement qualification case before
+assuming it preserves the original target. Confirm prop/clue intent before
+native repairs, and give actual fixes separate commits/tests/news. Preserve
+key chance, locks, stock/PvP and Fields escape hotfix. All new credit requires
+active, ready accounting; frozen recovery remains separate.

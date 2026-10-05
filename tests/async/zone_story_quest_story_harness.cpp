@@ -181,8 +181,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 105 &&
-				tracker.summary_for(7, 42).total == 1585,
+		require(catalog.story_mappings.size() == 106 &&
+				tracker.summary_for(7, 42).total == 1584,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7547,6 +7547,124 @@ int main(int argc, char **argv)
 					recovered.has_discovered(7, 42, 5000) &&
 					!recovered.has_discovered(7, 42, 530),
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
+		}
+
+		{
+			const auto &master = story_for("shortc", "master-lost-key");
+			const auto &hero = story_for("shortc", "hero-final-steak");
+			const auto &map = *std::find_if(catalog.story_mappings.begin(),
+							catalog.story_mappings.end(),
+							[](const auto &entry)
+							{ return entry.source_area == "shortc"; });
+			require(map.exclusions.size() == 1,
+				"Orcish Slave Camp lost typed-food exclusion");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 532, 53200, 100, "arrival") ==
+					result::applied,
+				"Orcish Slave Camp discovery failed");
+			require(journey.render_journal(7, 42, 532, 10, 1, 101, false, false)
+						.find(hero.title) == std::string::npos,
+				"Orcish Slave Camp exposed unmet hero");
+			for (const auto &[vnum, room] :
+			     { std::pair{ 53200, 53202 }, std::pair{ 53201, 53212 } })
+				require(journey.meet_npc(7, 42, vnum, room, 102) == result::applied,
+					"Orcish Slave Camp encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Orcish Slave Camp section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[53204] = 2;
+			supplies.carried[53203] = 1;
+			supplies.equipped[18] = 53200;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 532, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(hero).find("[Missing now] " + hero.steps[2].text) !=
+					std::string::npos,
+				"Orcish Slave Camp ordinary rations became exact steak");
+			require(section(master).find("[Missing now] " + master.steps[0].text) !=
+						std::string::npos &&
+					section(hero).find("[Missing now] " + hero.steps[1].text) !=
+						std::string::npos,
+				"Orcish Slave Camp held key became loose hand-in material or access proof");
+			require(section(hero).find("[Pending] " + hero.steps.back().text) !=
+					std::string::npos,
+				"Orcish Slave Camp mace ownership fabricated tragic exchange");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 532).completed == 0 &&
+					journey.progress_for_zone(7, 42, 532).total == 2,
+				"Orcish Slave Camp readiness fabricated outcomes or included refused food branch");
+			supplies.carried[53201] = 1;
+			journal = journey.render_journal(7, 42, 532, 10, 1, 107, false, false,
+							 &supplies);
+			require(section(hero).find("[Ready now] " + hero.steps[2].text) !=
+						std::string::npos &&
+					section(hero).find("[Pending] " + hero.steps[0].text) !=
+						std::string::npos &&
+					section(hero).find("[Missing now] " + hero.steps[1].text) !=
+						std::string::npos,
+				"Orcish Slave Camp supplied steak required personal master or key history");
+			record(journey, hero.contracts.front(), "shortc-supplied-steak", 532,
+			       53212);
+			require(journey.progress_for_zone(7, 42, 532).completed == 1 &&
+					journey.evidence_for(master.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Orcish Slave Camp steak fabricated key return or other outcomes");
+			supplies.carried[53200] = 1;
+			journal = journey.render_journal(7, 42, 532, 10, 1, 109, false, false,
+							 &supplies);
+			require(section(master).find("[Ready now] " + master.steps[0].text) !=
+						std::string::npos &&
+					section(hero).find("[Ready now] " + hero.steps[1].text) !=
+						std::string::npos,
+				"Orcish Slave Camp loose key did not fit optional checks");
+			// Synthetic receipts qualify projection, not reveal/unlock/key break,
+			// native offers, poisoning, rescue or selected recipient retirement.
+			record(journey, master.contracts.front(), "shortc-key-return", 532, 53202);
+			for (const auto &[id, reason] : map.exclusions)
+				record(journey, id, "shortc-historical-food", 532, 53212);
+			require(journey.progress_for_zone(7, 42, 532).completed == 2 &&
+					journey.progress_for_zone(7, 42, 532).total == 2,
+				"Orcish Slave Camp historical excluded food added an achievement");
+			supplies.carried.clear();
+			journal = journey.render_journal(7, 42, 532, 10, 1, 122, false, false,
+							 &supplies);
+			require(section(hero).find("[Recorded] " + hero.steps[0].text) !=
+						std::string::npos &&
+					section(hero).find("[Missing now] " + hero.steps[1].text) !=
+						std::string::npos,
+				"Orcish Slave Camp old master receipt restored spent access key");
+			for (const auto *entry : { &master, &hero })
+				require(section(*entry).find("[Recorded] " +
+							     entry->steps.back().text) !=
+						std::string::npos,
+					"Orcish Slave Camp accepted outcome lost");
+			auto replay =
+				completion(hero.contracts.front(), "shortc-supplied-steak", 120);
+			replay.transaction.zone_number = 532;
+			replay.transaction.room_vnum = 53212;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Orcish Slave Camp replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 532).completed == 2 &&
+					recovered.progress_for_zone(7, 42, 532).total == 2 &&
+					!recovered.has_discovered(7, 42, 103),
+				"Orcish Slave Camp recovery lost outcomes or fabricated Split Shield discovery");
+			for (const auto *entry : { &master, &hero })
+				require(recovered.evidence_for(entry->contracts.front(), 2)
+							.successful_attempts == 1,
+					"Orcish Slave Camp receipt lost in recovery");
+			for (const auto &[id, reason] : map.exclusions)
+				require(recovered.evidence_for(id, 2).successful_attempts == 1,
+					"Orcish Slave Camp exclusion erased historical food evidence");
 		}
 
 		{

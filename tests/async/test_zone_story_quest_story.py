@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1441
-assert report['mapped_area_count'] == 105 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 106 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -219,6 +219,16 @@ assert all(s['category']=='story' for s in mountaintracks['stories'])
 assert mountaintracks['stories'][3]['steps'][0]['contracts']==mountaintracks['stories'][2]['contracts']
 assert [t['item_vnums'][0] for t in mountaintracks['stories'][2]['steps'][:-1]]==[20947,20948]
 assert mountaintracks['stories'][0]['steps'][0]['item_vnums']==[20923] and mountaintracks['stories'][3]['steps'][1]['item_vnums']==[20949]
+
+shortc=next(m for m in catalog['story_mappings'] if m['source_area']=='shortc')
+assert (shortc['schema_version'],shortc['revision'],shortc['coverage'])==(3,1,'complete')
+assert len(shortc['stories'])==2 and len(shortc['contacts'])==5 and len(shortc['exclusions'])==1
+assert report['eligible_by_zone']['532']==2 and sum(len(c['topics']) for c in shortc['contacts'])==13
+assert sum(t.get('optional',False) for s in shortc['stories'] for t in s['steps'])==4
+assert all(s['category']=='story' for s in shortc['stories'])
+assert shortc['stories'][1]['steps'][0]['contracts']==shortc['stories'][0]['contracts']
+assert [t['item_vnums'][0] for t in shortc['stories'][1]['steps'][1:-1]]==[53200,53201]
+assert shortc['exclusions'][0]['contracts']==[{'giver_vnum':53201,'completion_key':'give=T:19;receive=;disappear=0'}]
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

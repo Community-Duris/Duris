@@ -70860,6 +70860,189 @@
     {
       "contacts": [
         {
+          "description": "In the main square, carrying a steak and a whip. Offers steak and coins for the guard\u2019s key; giving him the key consumes it.",
+          "keyword": "master",
+          "mob_vnum": 53200,
+          "name": "the slave master",
+          "topics": [
+            "slaves",
+            "camp",
+            "encampement"
+          ]
+        },
+        {
+          "description": "Resting in the dark cell beneath the square. Accepts the exact steak for a mace and experience, followed by a tragic death scene. His ordinary-food request is currently unavailable.",
+          "keyword": "hero",
+          "mob_vnum": 53201,
+          "name": "an incapacitated barbarian hero",
+          "topics": [
+            "food",
+            "hi",
+            "hello",
+            "howdy",
+            "greetings",
+            "help",
+            "quest",
+            "camp",
+            "orc",
+            "encampenet"
+          ]
+        },
+        {
+          "description": "In the northern barracks, carrying the hidden metallic key. You do not need a personal guard-kill record to use a matching key.",
+          "keyword": "guard",
+          "mob_vnum": 53206,
+          "name": "the slave guard",
+          "topics": []
+        },
+        {
+          "description": "In cell 53210, carrying a hidden half-eaten iron ration. That ordinary food differs from the steak required for the hero\u2019s final exchange.",
+          "keyword": "human",
+          "mob_vnum": 53222,
+          "name": "the enslaved human",
+          "topics": []
+        },
+        {
+          "description": "In cell 53211, wearing a bag associated with white and black scrolls. These items have no implemented teaching or prisoner-rescue outcome.",
+          "keyword": "gnome",
+          "mob_vnum": 53227,
+          "name": "the enslaved gnomish man",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [
+        {
+          "contracts": [
+            {
+              "completion_key": "give=T:19;receive=;disappear=0",
+              "giver_vnum": 53201
+            }
+          ],
+          "reason": "The ordinary-food request uses type19 instead of an exact durable item. Active accounting currently refuses type-based offerings; keep this branch excluded until typed admission, selected-root consumption and accepted outcome are qualified. No reward or recipient departure is authored, and it is not the exact steak exchange or a rescue."
+        }
+      ],
+      "introduction": "Find the missing key, plan your way into the hero\u2019s cell, and follow the steak exchange to its tragic ending. Returning the key and feeding the hero are separate recorded exchanges; other prisoners\u2019 stories have no implemented rescue outcome.",
+      "orientation": [
+        "Enter from Split Shield\u2019s Eastern Gate (10327) and head EAST through the muddy approach to the main square (53202). From the square, NORTH reaches the guard and elven barracks, SOUTH the barbarian and dwarven barracks, and EAST the human and gnomish barracks. Doors, darkness and hostile inhabitants can affect your route.",
+        "Ask the master slaves, camp or encampement. Ask the hero food, hi, hello, howdy, greetings, help, quest, camp, orc or encampenet. These spellings match his existing topics. Several keywords lead to the same response; asking each one does not earn a separate achievement.",
+        "The slave guard in the northern barracks carries the small metallic key. The mud on the approach mentions something shiny, but there is no matching key on the ground. A key received from another player still fits the exchange; carrying it does not show how you obtained it.",
+        "The same key opens the hidden trapdoor between the main square and the hero\u2019s cell (53212). Find the door before trying to unlock it, then OPEN it before going DOWN. Lockpicking remains another option if your skills and tools allow it. Each successful use of the key has a 20 percent chance to break it.",
+        "Plan access to the cell before giving the key to the master. He takes it in exchange for the large steak and a configured reward of 1,500 coins. Returning the key does not open the trapdoor or restore your key. An already opened door may let you enter without carrying one.",
+        "The master also carries a copy of the steak. A matching steak obtained from another source can be offered to the hero without your own key-return record. Having a steak does not prove you completed the master\u2019s exchange, and the available supply is limited.",
+        "The hero accepts the exact large steak for a lightweight spiked mace and a configured reward of 15,000 experience, subject to the game\u2019s reward rules. The scene ends with poisoning and his death. The journal records that tragic exchange; it does not describe a successful rescue or count it as a combat kill.",
+        "Although named as food, this particular steak cannot normally be eaten by a player. It is the specific item for the hero\u2019s final exchange. Ordinary food, including the half-eaten iron ration carried by the enslaved human in cell 53210, does not substitute for it.",
+        "The hero also has an ordinary-food request that would leave him asking for more, with no reward. That request is currently unavailable with active accounting and is excluded from achievements and dailies. Use the exact steak exchange described above for the supported story.",
+        "The well in the square supplies water. The gnomish man in cell 53211 wears a bag associated with white and black scrolls. Water, scrolls and the other prisoners\u2019 backstories have no additional local quest outcome, teaching objective or liberation objective.",
+        "The southern barracks description points toward gnomes, but the cell directly EAST of it (53206) holds dwarves. The gnomes are off the eastern barracks instead. Descriptions of mines, escape and family hardship do not add travel or rescue steps to these two exchanges."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "shortc",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:53200;receive=C:1500,I:53201;disappear=0",
+              "giver_vnum": 53200
+            }
+          ],
+          "id": "master-lost-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The slave guard in the northern barracks carries this hidden key. The shiny-mud description on the approach has no matching key on the ground. Each successful keyed unlock has a 20 percent break chance, so a used key may not survive for hand-in. Carry the item loose for this inventory check; held or nested copies do not count here. This check shows current possession, not whether you recovered the item yourself or received it from another player.",
+              "id": "key",
+              "item_vnums": [
+                53200
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small metallic key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:53200;receive=C:1500,I:53201;disappear=0",
+                  "giver_vnum": 53200
+                }
+              ],
+              "hint": "Recorded after the game accepts this exact exchange. Carrying a reward item, asking a question or opening the trapdoor does not record completion.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Return the small metallic key for the large steak and a coin reward. The same key opens the hero\u2019s trapdoor, and this exchange consumes it. Plan access before handing it over; returning it does not unlock the cell.",
+          "title": "Slave master: return the missing key"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:53201;receive=E:15000,I:53203;disappear=1",
+              "giver_vnum": 53201
+            }
+          ],
+          "id": "hero-final-steak",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:53200;receive=C:1500,I:53201;disappear=0",
+                  "giver_vnum": 53200
+                }
+              ],
+              "hint": "The master rewards the steak and also carries a copy. A supplied matching steak fits without your own key-return record. Returning the key consumes it; an old record cannot restore a spent or broken key or prove you reached the cell.",
+              "id": "earlier-key-return",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: return the master\u2019s key"
+            },
+            {
+              "count": 1,
+              "hint": "Find the hidden trapdoor beneath the main square, unlock or pick it as your skills allow, then OPEN it before entering the hero\u2019s cell. A key held in your hand can unlock the door even though this loose-inventory check does not count it. An already opened door can make the key unnecessary. Carry the item loose for this inventory check; held or nested copies do not count here. This check shows current possession, not whether you recovered the item yourself or received it from another player.",
+              "id": "access-key",
+              "item_vnums": [
+                53200
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional access tool: carry the trapdoor key"
+            },
+            {
+              "count": 1,
+              "hint": "The master in the main square rewards this item and also carries a copy. Ordinary food, including the human prisoner\u2019s iron ration, does not satisfy this exchange. This specific steak cannot normally be eaten by a player. Carry the item loose for this inventory check; held or nested copies do not count here. This check shows current possession, not whether you recovered the item yourself or received it from another player.",
+              "id": "steak",
+              "item_vnums": [
+                53201
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact large steak"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:53201;receive=E:15000,I:53203;disappear=1",
+                  "giver_vnum": 53201
+                }
+              ],
+              "hint": "Recorded after the game accepts this exact exchange. Carrying a reward item, asking a question or opening the trapdoor does not record completion.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer the exact large steak for the lightweight spiked mace and an experience reward. The scene ends with the hero being poisoned and dying. Recording this exchange does not record a successful rescue, a combat kill or the freeing of other prisoners.",
+          "title": "Barbarian hero: the final steak"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Ask about these topics for clues, then follow the exact requests. Conversation alone does not complete a delivery.",
           "keyword": "layla",
           "mob_vnum": 55001,

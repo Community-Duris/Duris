@@ -3042,3 +3042,26 @@ Source/projection does not qualify played transactions, QUAFF, controls, arrival
 or renewal. All new credit needs active, ready accounting; frozen recovery
 remains separate. Preserve Fields owner-confirmed escape hotfix and required
 replacement design, with the live portal stationary.
+
+
+## Orcish Slave Camp: fragile access proof, typed-food refusal and tragic retirement
+
+The [complete dossier](zone-stories/THE_ORCISH_SLAVE_CAMP.md) classifies all three
+native recipes: two supported exact exchanges and one excluded type-based food
+branch. The story system must explain the actual tragic result without implying
+a rescue, and distinguish material history from access and current key custody.
+
+| Requirement | Evidence | Plan and qualification |
+| --- | --- | --- |
+| Sources and actual renewal | Hidden cap1 guard key/ration, alternate cap1 master steak stock, consumed roots and departing hero | **ZSQ-SHORTC-SOURCE-RENEWAL:** authoritative source/root/UID/custody/actor and gifts versus reset/reward; qualify visibility, held/nested input, concurrent offers, retries/rollback/reward settlement/recipient reappearance/frozen recovery and actual mode 2 renewal. Preserve scarcity. |
+| Access and material allocation | Key is consumed by master and has 20-percent unlock break; held key accepted by native has_key; raw trapdoors EX_PICKABLE | **ZSQ-SHORTC-KEY-ACCESS-ALLOCATION:** admitted reveal/unlock/OPEN/arrival and current key differ from receipt. Qualify break accepted/rejected destruction, held versus loose view, native picking, other actor/open door/relock/reset and return without key. No mandatory personal key history or new escape route. |
+| Universal type offering | G T19 gives no reward; exact-only durable matcher refuses it under active accounting | **ZSQ-SHORTC-TYPED-FOOD-ADMISSION:** keep excluded. Future type support binds actual selected UID/type/count/owner, rejects drift/duplicates/invalid/worn/nested roots, atomically consumes and records no-reward accepted outcome with fixed/type precedence, retries/rollback/replay/cold recovery. Existing schema has no arbitrary-type inventory check. Reclassify/version deliberately only after qualification; no legacy fallback or steak-type workaround. |
+| Recipient instance and truthful outcome | Death text plus extract_char, not combat death/corpse/rescue; quest_mobile_for reselects template+room without captured NPC instance/epoch | **ZSQ-SHORTC-RECIPIENT-RETIREMENT:** define admitted target generation and authoritative retirement. Qualify delayed commit/removal/reset replacement/disconnect/replay before adding retirement credit or repairing shared selection, so an old result cannot retire a later matching NPC. Actual fix separate named commit/news and shared cases. |
+| Prop-versus-consumable intent | Steak TRASH13 has food-looking values; mortal EAT rejects it; native specific GIVE still matches | **ZSQ-SHORTC-STEAK-TYPE-INTENT:** builder confirms intentional protection versus data error before type/effect changes. Prefer honest prop explanation. Any conversion needs EAT/poison balance, fixed/type GIVE precedence, ownership/recovery/source stock and receipt compatibility; separate fix/news. |
+| Accurate clues | Mud glint without source reset; southern gnome wording versus actual dwarf cell; copied family text/spelling | **ZSQ-SHORTC-CLUE-CONSISTENCY:** confirm intended minimal truthful captions and source hints. Preserve sources/locks/recipes; do not place extra keys or invent liberation/mines travel. Actual repairs separate named fixes with original-fails/repaired-passes and prominent before/after news. |
+
+Two cards ship with an explicit unsupported exclusion and no runtime or native
+repair. One fallback achievement/row is removed from projection while all native
+definitions and historical evidence remain. All new credit requires active,
+ready accounting; frozen recovery remains separate. Preserve Fields intentional
+escape hotfix and required replacement design with the live portal stationary.
