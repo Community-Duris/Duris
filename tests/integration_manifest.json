@@ -2291,6 +2291,60 @@
         "test_plan5_child_identity.py"
       ],
       "required_markers": []
+    },
+    {
+      "id": "plan5_mobile_grammar_pure",
+      "path": "tests/async/test_economic_restore_mobile_grammar.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "MobilePositionTests.test_original_native_mobile_witness_identity_and_quarantine",
+        "MobilePositionTests.test_original_native_mobile_witness_refuses_invalid_lifetime",
+        "MobilePositionTests.test_native_mobile_identity_and_quarantine_are_valid",
+        "MobilePositionTests.test_native_mobile_invalid_identity_context_and_state_refuse",
+        "MobilePositionTests.test_native_mobile_equipment_bounds_and_topology",
+        "MobilePositionTests.test_historical_player_equipment_and_pet_owner_rules"
+      ],
+      "arguments": [
+        "MobilePositionTests",
+        "-v"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_restore_mobile_grammar.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "plan5_mobile_grammar_native",
+      "path": "tests/async/test_economic_restore_mobile_grammar.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "NativeMobileGrammarTests.test_original_native_plan_and_witness_grammar_matches_independent_readers"
+      ],
+      "arguments": [
+        "NativeMobileGrammarTests",
+        "-v"
+      ],
+      "environment": {
+        "DURIS_PLAN5_MOBILE_GRAMMAR_NATIVE": "1",
+        "DURIS_PLAN5_MOBILE_GRAMMAR_ARTIFACTS": "bin/mg-{token}/n"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_restore_mobile_grammar.py"
+      ],
+      "required_markers": [
+        "MOBILE_GRAMMAR "
+      ]
     }
   ]
 }
