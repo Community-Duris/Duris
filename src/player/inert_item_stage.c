@@ -298,3 +298,49 @@ inert_item_stage_result inert_item_stage::allocate_literal(const object_template
 	output = std::move(candidate);
 	return inert_item_stage_result::ok;
 }
+
+// Original SHOP literal cleanup never extracts unpublished objects, removes
+// affects through native handlers, cancels events or changes custody/global
+// counts. Pool ownership is retained until the publication owner consumes all
+// stages together. The legacy inert reset/eligibility functions above are intact.
+shop_trade_original_item_stage::~shop_trade_original_item_stage() noexcept
+{
+	reset();
+}
+shop_trade_original_item_stage::shop_trade_original_item_stage(
+	shop_trade_original_item_stage &&other) noexcept
+	: object_(std::exchange(other.object_, nullptr))
+	, pool_(std::exchange(other.pool_, nullptr))
+	, affect_pool_(std::exchange(other.affect_pool_, nullptr))
+{
+}
+shop_trade_original_item_stage &
+shop_trade_original_item_stage::operator=(shop_trade_original_item_stage &&other) noexcept
+{
+	if (this != &other)
+	{
+		reset();
+		object_ = std::exchange(other.object_, nullptr);
+		pool_ = std::exchange(other.pool_, nullptr);
+		affect_pool_ = std::exchange(other.affect_pool_, nullptr);
+	}
+	return *this;
+}
+void shop_trade_original_item_stage::reset() noexcept
+{
+	if (!object_)
+		return;
+	for (obj_affect *affect = object_->affects; affect;)
+	{
+		obj_affect *next = affect->next;
+		mm_release(affect_pool_, affect);
+		affect = next;
+	}
+	object_->affects = nullptr;
+	// Reuse only the existing raw literal release, which owns scalar strings and
+	// descriptions and has no graph/native effect. Dynamic nodes are gone first.
+	inert_item_stage literal;
+	literal.object_ = std::exchange(object_, nullptr);
+	literal.pool_ = std::exchange(pool_, nullptr);
+	affect_pool_ = nullptr;
+}

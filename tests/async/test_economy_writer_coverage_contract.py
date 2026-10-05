@@ -179,6 +179,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
             self.source_site("src/cmd/actobj.c", "int remove_item(",
                              "item_publication", "obj_to_char_checked(unequip_char(ch, position), ch)")[:2]:
                 "item.equipment_remove",
+            self.source_site("src/economy/shop.c", "bool shop_trade_cold_native_step_execute(",
+                             "item_publication", "obj_to_char_checked(selected, destination)")[:2]:
+                "shop.cold_physical_publication",
             self.source_site("src/economy/shop.c", "static bool shop_trade_publish_physical_impl(",
                              "item_publication", "obj_to_char_checked(object, buying ? ch : keeper)")[:2]:
                 "shop.buy_produced",
