@@ -354,3 +354,14 @@ compilation and original publication cases remain at the major-plan batch.
 Peer also identified stale central lifecycle test counts and a retained historical
 writer-census gap; these remain separate primary-owned follow-ups. No warning
 suppression, production mutation or activation is performed.
+
+
+### Central lifecycle inventory assertion correction
+
+The maintained test now expects51 non-database stores and36 protected economic
+recovery stores after the original lifecycle-receipt registration. The existing
+per-store mutation loop automatically includes file:economic-lifecycle-receipt
+and still rejects removing protection, changing reset action or deactivating
+retained evidence. Peer observed the exact two stale-count failures; this changes
+only those counts. Python AST/diff checks pass; execution remains at the original
+major-plan batch. No store policy, native schema or release permission changes.

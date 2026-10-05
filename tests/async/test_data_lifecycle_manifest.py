@@ -109,7 +109,7 @@ class LifecycleManifestTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         self.assertEqual(report["database_tables"], 226)
-        self.assertEqual(report["non_database_stores"], 50)
+        self.assertEqual(report["non_database_stores"], 51)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
 
@@ -258,7 +258,7 @@ class LifecycleManifestTest(unittest.TestCase):
         }
         stores = {row["id"] for row in self.manifest["entries"]
                   if row["id"].startswith(("database:economic_", "file:economic-"))} | shared
-        self.assertEqual(len(stores), 35)
+        self.assertEqual(len(stores), 36)
         for entry_id in sorted(stores):
             for field, value in (("protected_record", False), ("season_action", "reset_delete"),
                                  ("terminal_action", "deactivate")):
