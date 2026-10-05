@@ -169,7 +169,10 @@ void stop_singing(P_char ch)
 		unlink_char(tch, ch, LNK_SONG);
 	}
 	if (summoner_owned_pet(ch))
+	{
+		ch->only.npc->summoner_flight_tick = 0;
 		disarm_char_nevents(ch, event_echosong);
+	}
 	if (get_scheduled(ch, event_bardsong))
 	{
 		disarm_char_nevents(ch, event_bardsong);

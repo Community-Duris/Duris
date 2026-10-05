@@ -687,7 +687,11 @@ bool summoner_pet_song(P_char bard, int song, bool aggressive, bool self_only, b
 			 song == SONG_FLIGHT  ? 6 :
 						10;
 	if (summoner_pet_spend(bard, cost + extra_cost))
+	{
+		if (song == SONG_FLIGHT && useful && !bard->only.npc->summoner_flight_tick)
+			bard->only.npc->summoner_flight_tick = ne_event_tick;
 		return true;
+	}
 	stop_singing(bard);
 	return false;
 }

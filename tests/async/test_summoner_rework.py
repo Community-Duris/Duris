@@ -196,7 +196,8 @@ int main() {
     songs[&ally.ch] = &bard.ch;
     for (int tick = 0; tick < 60 * WAIT_SEC; ++tick) {
         ++ne_event_tick;
-        assert(summoner_pet_flight_regen(&ally.ch, 1));
+        // The first regen event may have started before the song was applied.
+        assert(summoner_pet_flight_regen(&ally.ch, tick ? 1 : 30 * WAIT_SEC));
         summoner_pet_sync_resources(&bard.ch); // repeated saves preserve fractional expenditure
         assert(summoner_pet_flight_regen(&ally.ch, 1)); // party members do not multiply cost
     }
