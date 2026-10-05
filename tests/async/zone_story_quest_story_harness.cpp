@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 102 &&
+		require(catalog.story_mappings.size() == 103 &&
 				tracker.summary_for(7, 42).total == 1585,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7547,6 +7547,134 @@ int main(int argc, char **argv)
 					recovered.has_discovered(7, 42, 5000) &&
 					!recovered.has_discovered(7, 42, 530),
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
+		}
+
+		{
+			const auto &king = story_for("val", "king-three-family-seals");
+			const auto &dwarf = story_for("val", "dwarf-four-crafting-models");
+			const auto &assassin = story_for("val", "assassin-two-royal-seals");
+			const auto &cook = story_for("val", "cook-wine-for-dinner");
+			const auto &queen = story_for("val", "queen-dinner-token");
+			const auto &roses = story_for("val", "madam-beautiful-roses");
+			const auto &rose = story_for("val", "madam-white-rose");
+			const auto &note = story_for("val", "ambassador-elvish-note");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 384, 38575, 100, "arrival") ==
+					result::applied,
+				"Valois discovery failed");
+			require(journey.render_journal(7, 42, 384, 10, 1, 101, false, false)
+						.find(king.title) == std::string::npos,
+				"Valois exposed unmet king");
+			for (const auto &[vnum, room] :
+			     { std::pair{ 38422, 38465 }, std::pair{ 38426, 38405 },
+			       std::pair{ 38427, 38493 }, std::pair{ 38434, 38551 },
+			       std::pair{ 38438, 38475 }, std::pair{ 38449, 38546 },
+			       std::pair{ 38463, 38451 } })
+				require(journey.meet_npc(7, 42, vnum, room, 102) == result::applied,
+					"Valois encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Valois section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[38415] = 3;
+			supplies.carried[38442] = 1;
+			supplies.carried[38425] = 1;
+			supplies.equipped[3] = 38451;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 384, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(king).find("[Ready now] " + king.steps[0].text) !=
+						std::string::npos &&
+					section(king).find("[Missing now] " + king.steps[1].text) !=
+						std::string::npos &&
+					section(king).find("[Missing now] " + king.steps[2].text) !=
+						std::string::npos,
+				"Valois duplicate seal replaced another family");
+			require(section(roses).find("[Ready now] " + roses.steps[0].text) !=
+						std::string::npos &&
+					section(rose).find("[Missing now] " + rose.steps[0].text) !=
+						std::string::npos,
+				"Valois beautiful roses or worn rose substituted for loose white rose");
+			require(section(queen).find("[Ready now] " + queen.steps[1].text) !=
+						std::string::npos &&
+					section(queen).find("[Pending] " + queen.steps[0].text) !=
+						std::string::npos,
+				"Valois supplied dinner required personal cook history");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 384).completed == 0,
+				"Valois readiness fabricated source, learning, access or receipts");
+			record(journey, queen.contracts.front(), "val-supplied-dinner", 384, 38475);
+			require(journey.progress_for_zone(7, 42, 384).completed == 1 &&
+					journey.evidence_for(cook.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Valois queen fabricated cook history");
+			for (int vnum : { 38416, 38417, 38410, 38409, 38413, 38414, 38430, 38431,
+					  38424, 38451, 38438 })
+				supplies.carried[vnum] = 1;
+			journal = journey.render_journal(7, 42, 384, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto *entry :
+			     { &king, &dwarf, &assassin, &cook, &roses, &rose, &note })
+				for (size_t step = 0; step + 1 < entry->steps.size(); step++)
+					require(section(*entry).find("[Ready now] " +
+								     entry->steps[step].text) !=
+							std::string::npos,
+						"Valois supplied exact inputs did not fit");
+			// Synthetic receipts qualify projection, not source, combat, key,
+			// native transactions, recipient renewal or final settlement.
+			for (const auto *entry :
+			     { &king, &dwarf, &assassin, &cook, &roses, &rose, &note })
+			{
+				const auto id = std::string("val-outcome-") + entry->id;
+				const int room = entry == &king	    ? 38465 :
+						 entry == &dwarf    ? 38405 :
+						 entry == &assassin ? 38493 :
+						 entry == &cook	    ? 38551 :
+						 entry == &note	    ? 38451 :
+								      38546;
+				record(journey, entry->contracts.front(), id.c_str(), 384, room);
+			}
+			require(journey.progress_for_zone(7, 42, 384).completed == 8,
+				"Valois distinct outcomes collapsed or inflated");
+			supplies.carried.clear();
+			journal = journey.render_journal(7, 42, 384, 10, 1, 122, false, false,
+							 &supplies);
+			require(section(queen).find("[Recorded] " + queen.steps[0].text) !=
+						std::string::npos &&
+					section(queen).find("[Missing now] " +
+							    queen.steps[1].text) !=
+						std::string::npos,
+				"Valois prior cook receipt restored spent meal");
+			for (const auto *entry :
+			     { &king, &dwarf, &assassin, &cook, &queen, &roses, &rose, &note })
+				require(section(*entry).find("[Recorded] " +
+							     entry->steps.back().text) !=
+						std::string::npos,
+					"Valois accepted outcome lost");
+			auto replay =
+				completion(queen.contracts.front(), "val-supplied-dinner", 120);
+			replay.transaction.zone_number = 384;
+			replay.transaction.room_vnum = 38475;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Valois replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 384).completed == 8 &&
+					recovered.progress_for_zone(7, 42, 384).total == 8 &&
+					!recovered.has_discovered(7, 42, 5000) &&
+					!recovered.has_discovered(7, 42, 281),
+				"Valois recovery lost outcomes or fabricated foreign discovery");
+			for (const auto *entry :
+			     { &king, &dwarf, &assassin, &cook, &queen, &roses, &rose, &note })
+				require(recovered.evidence_for(entry->contracts.front(), 2)
+							.successful_attempts == 1,
+					"Valois receipt lost in recovery");
 		}
 
 		{

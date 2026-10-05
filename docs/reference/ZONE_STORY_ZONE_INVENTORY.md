@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 102 authored journals.
+2668 distinct Q contracts; 103 authored journals.
 
 Regenerate with:
 
@@ -235,7 +235,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Ruins of Undermountain (`undermountain`) | 2 | 3 | 1 | Fallback | [1 × a crude note → a scimitar named 'Convalescence'](../../areas/qst/undermountain.qst#L13) | flame_of_north, flying_dagger, generic_drow_eq, generic_parry_proc, helmed_horror, iron_flindbar |
 | The Underworld (`underworld`) | 1 | 3 | 0 | Fallback | [1 × the unholy relic of life and death → native reward/response](../../areas/qst/underworld.qst#L18) | hammer, magic_pool, piercer, purple_worm, underdark_track |
 | Vargan II (`v2`) | 1 | 2 | 0 | Fallback | [1 × an ancient hilt; 1 × an ancient cross-piece; 1 × a broken blade → the sword of Vurlok](../../areas/qst/v2.qst#L13) | — |
-| The Valoisian Castle (`val`) | 8 | 5 | 1 | Fallback | [1 × a battle mace; 1 × a huge polearm; 1 × some steel sleeves; other required items → a pair of leggings of clan crunch head](../../areas/qst/val.qst#L38) | — |
+| The Valoisian Castle (`val`) | 8 | 5 | 1 | Yes | [1 × a battle mace; 1 × a huge polearm; 1 × some steel sleeves; other required items → a pair of leggings of clan crunch head](../../areas/qst/val.qst#L38) | — |
 | Phantasmagoric Caverns (`valdrak`) | 1 | 2 | 0 | Fallback | [1 × a blood soaked longsword; 1 × a blood stained claymore; 1 × a heart of living darkness → native reward/response](../../areas/qst/valdrak.qst#L40) | — |
 | Valley of Crushk (`valley_crushk`) | 1 | 1 | 0 | Fallback | [1 × a bandit shiv → native reward/response](../../areas/qst/valley_crushk.qst#L16) | — |
 | Vargan (`vargan`) | 1 | 5 | 0 | Fallback | [2 × an ancient shoulder plate; 1 × an ancient breast plate → a suit of ancient dwarven plate](../../areas/qst/vargan.qst#L26) | — |

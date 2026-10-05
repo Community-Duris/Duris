@@ -2052,3 +2052,29 @@ clue-only repair proposals. Isolate actual repairs with before/after proof and
 prominent named fix/news. Preserve fixed orb TAKE/charges and the owner-confirmed
 Fields PvP hotfix. New credit requires active, ready accounting; frozen recovery
 stays separate. No native zone or quest repair ships in this example.
+
+
+## Valoisian Castle example: decode state and avoid implied prerequisites
+
+The [dossier](../design/zone-stories/THE_VALOISIAN_CASTLE.md) and
+[sidecar](../../areas/story/val.story.json) map eight native exchanges. Family
+seals differ from prince/princess seals; beautiful roses differ from the white
+rose. F replaces the current holder, so guard maces belong to followers rather
+than the chamberlain. Exact kinds and live custody matter more than appearance.
+
+Wine→cook→plate→queen is helpful progression, not a mandatory personal history
+gate: supplied plate works. An old cook receipt never replaces consumed proof.
+The actual keyed cellar and courtyard gates explain source access. Native D
+state5 masks to1(closed/unlocked) and adds secret4; it does not mean open.
+ROOM_INN registers rent without literal assignment. _spec1_ selects a mob's
+class specialization, not a quest gate. Shop prose/inventory alone proves no
+BUY transaction. Check shared/flag/table dispatch before declaring functionality.
+
+Two blank rose responses still have exact input/reward outcomes; don't invent
+a relationship, reading or sexual scene. King/assassin lore does not prove a
+personal kill predicate or political ending. Fifteen unfinished Veralis rooms
+are isolated; choose reserve/retirement/completion explicitly before connecting
+or populating them. Richer source/learning/access/politics needs authoritative
+events, not guessed milestones. Actual repairs need separate named fix/news.
+Preserve the owner-confirmed Fields PvP hotfix and required replacement plan.
+All new credit requires active, ready accounting; frozen recovery stays separate.

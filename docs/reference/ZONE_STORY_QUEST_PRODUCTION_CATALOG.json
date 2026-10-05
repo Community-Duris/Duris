@@ -61526,6 +61526,564 @@
     {
       "contacts": [
         {
+          "description": "Starts in room38465 and accepts all three family seals together. His political request is not a personal kill predicate.",
+          "keyword": "king",
+          "mob_vnum": 38422,
+          "name": "King Ulgris",
+          "topics": [
+            "hi",
+            "king",
+            "quest"
+          ]
+        },
+        {
+          "description": "Starts in room38405, exchanges four exact crafting models for one leggings reward and departs.",
+          "keyword": "dwarf",
+          "mob_vnum": 38426,
+          "name": "a hearty mountain dwarf",
+          "topics": [
+            "hi",
+            "quest",
+            "dwarf",
+            "old",
+            "hearty",
+            "mountain"
+          ]
+        },
+        {
+          "description": "The stealthy figure starts in the Wailing Griffon38493 and accepts the prince\u2019s and princess\u2019s seals together.",
+          "keyword": "figure",
+          "mob_vnum": 38427,
+          "name": "a stealthy figure",
+          "topics": [
+            "hi",
+            "shadowy",
+            "figure",
+            "dark",
+            "assassin",
+            "king"
+          ]
+        },
+        {
+          "description": "The bakery cook in38551 accepts wine for the dinner plate. Other castle cooks do not own this recipe.",
+          "keyword": "cook",
+          "mob_vnum": 38434,
+          "name": "a cook",
+          "topics": [
+            "hi",
+            "quest",
+            "cook",
+            "bakery",
+            "wine"
+          ]
+        },
+        {
+          "description": "Queen Napolia in38475 accepts the exact dinner plate for the royal token. Prior cook history is optional.",
+          "keyword": "queen",
+          "mob_vnum": 38438,
+          "name": "Queen Napolia",
+          "topics": []
+        },
+        {
+          "description": "Madam Oakencrest starts on the balcony38546. Beautiful roses and the white rose select two distinct rewards; both native responses are empty.",
+          "keyword": "madam",
+          "mob_vnum": 38449,
+          "name": "madam Oakencrest",
+          "topics": []
+        },
+        {
+          "description": "The elven ambassador in38451 requests his overdue elvish note. Other ambassadors are supporting diplomacy.",
+          "keyword": "ambassador",
+          "mob_vnum": 38463,
+          "name": "an elven ambassador",
+          "topics": [
+            "hi",
+            "quest",
+            "note",
+            "elven",
+            "ambassador",
+            "porter"
+          ]
+        },
+        {
+          "description": "Lord Oakencrest in38545 starts carrying his exact family seal.",
+          "keyword": "oakencrest",
+          "mob_vnum": 38419,
+          "name": "lord Oakencrest",
+          "topics": []
+        },
+        {
+          "description": "Lord Du\u2019kel in38496 starts carrying his exact family seal.",
+          "keyword": "du",
+          "mob_vnum": 38420,
+          "name": "lord Du'kel",
+          "topics": []
+        },
+        {
+          "description": "Lord Berani in38525 starts carrying his exact family seal.",
+          "keyword": "berani",
+          "mob_vnum": 38421,
+          "name": "Lord Berani",
+          "topics": []
+        },
+        {
+          "description": "Prince Karyn in38472 starts carrying the prince\u2019s seal.",
+          "keyword": "prince",
+          "mob_vnum": 38428,
+          "name": "prince Karyn",
+          "topics": []
+        },
+        {
+          "description": "Princess Dyneen in38473 starts carrying the princess\u2019s seal.",
+          "keyword": "princess",
+          "mob_vnum": 38429,
+          "name": "princess Dyneen",
+          "topics": []
+        },
+        {
+          "description": "The red porter in38454 starts carrying the elvish note. His nearby fellow porter has no matching note reset.",
+          "keyword": "porter",
+          "mob_vnum": 38459,
+          "name": "a porter",
+          "topics": []
+        },
+        {
+          "description": "The royal weaponsmith in38487 starts carrying crafting models. No local shop file or matching keeper assignment was identified; inventory alone does not prove BUY admission.",
+          "keyword": "weaponsmith",
+          "mob_vnum": 38416,
+          "name": "the weaponsmith",
+          "topics": []
+        },
+        {
+          "description": "The royal armorsmith in38490 starts carrying the exact steel sleeves and leggings. Inspect actual source/stock admission rather than assuming a shop from the room name.",
+          "keyword": "armorsmith",
+          "mob_vnum": 38418,
+          "name": "an armorsmith",
+          "topics": []
+        },
+        {
+          "description": "The vineyard keeper in38525 carries cellar key38429, which breaks on successful unlock.",
+          "keyword": "keeper",
+          "mob_vnum": 38439,
+          "name": "the vineyard keeper",
+          "topics": []
+        },
+        {
+          "description": "The former soldier in38534 starts wearing the white rose; the exact equipped proof differs from the courtyard flowers.",
+          "keyword": "soldier",
+          "mob_vnum": 38483,
+          "name": "a former soldier",
+          "topics": []
+        },
+        {
+          "description": "Royal guards follow the chamberlain in38439 and wield the battle mace. The F reset changes the current item holder; the chamberlain is not its carrier.",
+          "keyword": "guard",
+          "mob_vnum": 38445,
+          "name": "an royal guard",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow Valois\u2019s family-seal requests, the dwarf\u2019s crafting models, the wine-to-dinner delivery, Madam Oakencrest\u2019s two flower gifts and the ambassador\u2019s overdue note. Each card distinguishes current proof from an accepted outcome.",
+      "orientation": [
+        "The active Surface plain leads NORTH to Valois\u2019s dusty road38575; SOUTH returns to the Surface. Roads lead toward the castle, royal shops, three inhabited estates and the old tavern. Native gates, guards and terrain still apply; source locations do not promise safe access.",
+        "Ask King Ulgris hi, king or quest. Ask the hearty dwarf hi, quest, dwarf, old, hearty or mountain; the stealthy figure hi, shadowy, figure, dark, assassin or king; the bakery cook hi, quest, cook, bakery or wine; the elven ambassador hi, quest, note, elven, ambassador or porter. These are five response families with twenty-six aliases, not twenty-six achievements.",
+        "The king\u2019s family-seal bundle uses Oakencrest, Du\u2019kel and Berani, each a distinct item. The assassin\u2019s bundle uses the prince and princess, also distinct. Seal and ring names do not prove personal kills. A matching gift can satisfy a hand-in without proving you recovered it from the named person.",
+        "The dwarf wants four crafting models together: mace, polearm, sleeves and leggings. Royal guards following the chamberlain wield maces; patrolling pikemen wield polearms; the royal smiths carry models too. The dwarf gives one leggings reward and departs. Native stock/caps and actual recipient renewal determine whether another attempt is available.",
+        "The vineyard keeper\u2019s key opens the pickproof cellar door DOWN from38525 to38526. It breaks on a successful unlock. SEARCH for the hidden quest wine in the cellar, then take the exact bottle to the bakery cook38551. His dinner plate goes to Queen Napolia in the third-floor dining room38475 for the royal token. Wine possession, a cook receipt, current plate and queen receipt remain separate.",
+        "The beautiful roses start in Du\u2019kel\u2019s courtyard38495 beyond the exterior keyed gate; its crimson key comes from a loyal swordsman at38484. The white rose starts worn by a former soldier in Oakencrest\u2019s courtyard38534. Madam Oakencrest on balcony38546 accepts these as two separate gift exchanges. No magical garden belt or extra relationship scene is inferred.",
+        "The castle has public and private gardens and secret UP/DOWN ladder pairs to royal balconies. Their native reset state is secret, closed and unlocked; the ordinary garden doors are closed, not a new magical quest barrier. Finding or seeing an open ladder or another player\u2019s unlocked gate does not record your own access action.",
+        "The elven ambassador waits in38451 while the red porter carries the exact note in38454. Read its description if useful, but the native exchange does not check personal reading or language knowledge. Other ambassadors\u2019 trade, the king\u2019s wider politics and the monk\u2019s library are supporting stories without authored accepted endpoints.",
+        "F resets load the chamberlain\u2019s royal guards and replace the current item holder for subsequent equipment. No local teleport or switch prototype is present. The Wailing Griffon room flag registers the shared inn handler even though there is no literal local assignment. The swordsman\u2019s _spec1_ keyword selects class specialization; it is not a quest gate procedure.",
+        "Fifteen Veralis Mansion rooms have explicit unfinished descriptions and no connection to the main local road component. Two banquet rooms form another isolated component. These are builder review items, not new passages or completion requirements. The mere existence of unplaced mobile prototypes does not authorize spawning them.",
+        "All eight native exchanges have exact input, reward and acceptance identities. Current loose proof, gifts, source recovery, addressed dialogue, reading, keyed access, combat and accepted receipts are different facts. The optional cook history never blocks a matching supplied dinner plate or restores a consumed one.",
+        "Static daily candidates require actual material, stock and recipient renewal under native mode1. All new discovery, encounter, journal, achievement and daily credit requires active, ready accounting; frozen recovery stays separate. No native zone/quest repair, pickup, key, route, shop or mobility change ships."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "val",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:38415,I:38416,I:38417;receive=I:38418;disappear=0",
+              "giver_vnum": 38422
+            }
+          ],
+          "id": "king-three-family-seals",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Lord Oakencrest starts carrying it at room38545. A different ring, prince\u2019s seal or princess\u2019s seal cannot substitute. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "seal-38415",
+              "item_vnums": [
+                38415
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the Oakencrest seal"
+            },
+            {
+              "count": 1,
+              "hint": "Lord Du\u2019kel starts carrying it at room38496. A different ring, prince\u2019s seal or princess\u2019s seal cannot substitute. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "seal-38416",
+              "item_vnums": [
+                38416
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the Du\u2019kel seal"
+            },
+            {
+              "count": 1,
+              "hint": "Lord Berani starts carrying it at room38525. A different ring, prince\u2019s seal or princess\u2019s seal cannot substitute. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "seal-38417",
+              "item_vnums": [
+                38417
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the Berani seal"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:38415,I:38416,I:38417;receive=I:38418;disappear=0",
+                  "giver_vnum": 38422
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Personal source recovery, reading, access, combat and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Bring the exact seals of Oakencrest, Du\u2019kel and Berani together for the winged boots. The king talks about the lords\u2019 demise, but the accepted recipe checks these items, not personal kills or a political campaign endpoint. Matching supplied seals also fit.",
+          "title": "King Ulgris: the three family seals"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:38409,I:38410,I:38413,I:38414;receive=I:38420;disappear=1",
+              "giver_vnum": 38426
+            }
+          ],
+          "id": "dwarf-four-crafting-models",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A royal guard following the chamberlain starts wielding it; the royal weaponsmith also stocks the same kind. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "model-38410",
+              "item_vnums": [
+                38410
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the steel battle mace"
+            },
+            {
+              "count": 1,
+              "hint": "Patrolling pikemen on the ambassadorial level wield it; the royal weaponsmith also stocks the same kind. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "model-38409",
+              "item_vnums": [
+                38409
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the steel polearm"
+            },
+            {
+              "count": 1,
+              "hint": "The royal armorsmith starts carrying this exact armor. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "model-38413",
+              "item_vnums": [
+                38413
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the steel sleeves"
+            },
+            {
+              "count": 1,
+              "hint": "The royal armorsmith starts carrying this exact armor. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "model-38414",
+              "item_vnums": [
+                38414
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the steel leggings"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:38409,I:38410,I:38413,I:38414;receive=I:38420;disappear=1",
+                  "giver_vnum": 38426
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Personal source recovery, reading, access, combat and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Bring a steel battle mace, steel polearm, steel sleeves and steel leggings together for clan crunch head leggings. The dwarf\u2019s broad crafting ambitions do not mean four separate rewards: this recipe gives one leggings item and makes him depart.",
+          "title": "Hearty dwarf: four crafting models"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:38430,I:38431;receive=I:38432;disappear=0",
+              "giver_vnum": 38427
+            }
+          ],
+          "id": "assassin-two-royal-seals",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Prince Karyn starts carrying it in room38472. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "prince-seal",
+              "item_vnums": [
+                38430
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Prince Karyn\u2019s seal"
+            },
+            {
+              "count": 1,
+              "hint": "Princess Dyneen starts carrying it in room38473. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "princess-seal",
+              "item_vnums": [
+                38431
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Princess Dyneen\u2019s seal"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:38430,I:38431;receive=I:38432;disappear=0",
+                  "giver_vnum": 38427
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Personal source recovery, reading, access, combat and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer Prince Karyn\u2019s and Princess Dyneen\u2019s exact seals together for the serrated dagger. The figure\u2019s muttering about the king is supporting lore; this exchange neither requires personal royal kills nor records the king\u2019s overthrow.",
+          "title": "Stealthy figure: the two royal seals"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:38424;receive=I:38425;disappear=0",
+              "giver_vnum": 38434
+            }
+          ],
+          "id": "cook-wine-for-dinner",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "It starts hidden on the floor of the cellar at room38526. The cellar is behind a locked pickproof door keyed by the vineyard keeper\u2019s key38429; that key breaks on successful use. A matching supplied bottle also fits. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "bottled-wine",
+              "item_vnums": [
+                38424
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bottled wine"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:38424;receive=I:38425;disappear=0",
+                  "giver_vnum": 38434
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Personal source recovery, reading, access, combat and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Recover the exact bottled wine from the cellar and offer it to the bakery cook for the dinner plate. He asks you to deliver that plate to the queen on the third floor. The wine is a quest treasure and the plate is a quest proof; drinking or eating is not a separate required action.",
+          "title": "Cook: prepare the queen\u2019s dinner"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:38425;receive=I:38428;disappear=0",
+              "giver_vnum": 38438
+            }
+          ],
+          "id": "queen-dinner-token",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:38424;receive=I:38425;disappear=0",
+                  "giver_vnum": 38434
+                }
+              ],
+              "hint": "An earlier accepted cook receipt explains a dinner-plate source. A supplied plate also fits, and an old receipt does not replace a spent plate.",
+              "id": "earlier-cook",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: bring wine to the cook"
+            },
+            {
+              "count": 1,
+              "hint": "The bakery cook rewards it for exact wine. Deliver this plate to Queen Napolia in the royal dining room38475. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "dinner-plate",
+              "item_vnums": [
+                38425
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the dinner plate"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:38425;receive=I:38428;disappear=0",
+                  "giver_vnum": 38438
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Personal source recovery, reading, access, combat and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer the exact dinner plate to the queen for the Valoisian royal token. Your earlier cook receipt explains one source of the plate, but a supplied matching plate is accepted without it. The recipe records delivery, not eating, personal cellar access or royal political standing.",
+          "title": "Queen Napolia: serve the dinner"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:38442;receive=I:38456;disappear=0",
+              "giver_vnum": 38449
+            }
+          ],
+          "id": "madam-beautiful-roses",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "They start on the floor of Du\u2019kel\u2019s courtyard38495. Its exterior pickproof gate uses crimson key38454 from a loyal swordsman outside. This is distinct from the castle\u2019s private garden and from the white rose. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "beautiful-roses",
+              "item_vnums": [
+                38442
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the beautiful roses"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:38442;receive=I:38456;disappear=0",
+                  "giver_vnum": 38449
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Personal source recovery, reading, access, combat and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer the exact beautiful roses to Madam Oakencrest for her book. This is one of two different flower exchanges with different inputs and rewards. The native response is empty; the journal does not invent a romantic scene, learned reading or another relationship achievement.",
+          "title": "Madam Oakencrest: the beautiful roses"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:38451;receive=I:38455;disappear=0",
+              "giver_vnum": 38449
+            }
+          ],
+          "id": "madam-white-rose",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A former soldier starts wearing it in Oakencrest\u2019s courtyard38534. Recover the exact rose and remove it from equipment before offering it; a matching supplied loose rose also fits. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "white-rose",
+              "item_vnums": [
+                38451
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the white rose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:38451;receive=I:38455;disappear=0",
+                  "giver_vnum": 38449
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Personal source recovery, reading, access, combat and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer the exact white rose to Madam Oakencrest for her silk garment. The beautiful roses do not substitute. The blank native response supplies no larger relationship endpoint; keep this accepted exchange distinct from the other gift.",
+          "title": "Madam Oakencrest: the white rose"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:38438;receive=I:38439;disappear=0",
+              "giver_vnum": 38463
+            }
+          ],
+          "id": "ambassador-elvish-note",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The red porter starts carrying it in room38454. The ambassador waits in room38451; other porters and miscellaneous papers are different sources. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "elvish-note",
+              "item_vnums": [
+                38438
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the elvish note"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:38438;receive=I:38439;disappear=0",
+                  "giver_vnum": 38463
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Personal source recovery, reading, access, combat and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Bring the exact elvish note to the elven ambassador for Opticlude. The porter has the note; neither personal porter defeat nor reading or translating it is a native acceptance condition. This delivery does not conclude all trade negotiations.",
+          "title": "Elven ambassador: the overdue note"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "This person offers local conversation. Try these topics to learn more.",
           "keyword": "female",
           "mob_vnum": 39100,

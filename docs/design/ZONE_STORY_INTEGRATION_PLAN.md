@@ -2973,3 +2973,26 @@ control, source/gift, investigation and group milestones need authoritative
 events before ANSI/GMCP progress. All new tracking requires active, ready
 accounting; frozen recovery separate. No native repair ships. The Fields
 intentional escape hotfix and required replacement follow-up remain intact.
+
+
+## Valoisian Castle: actual gates, optional meal history and sparse endings
+
+The [complete dossier](zone-stories/THE_VALOISIAN_CASTLE.md) maps eight exact
+outcomes. Two seal bundles differ; F guards hold maces; cook→queen is an optional
+personal-history chain; two roses select different rewards despite blank responses.
+
+| Requirement | Evidence | Plan and qualification |
+| --- | --- | --- |
+| Exact source and renewal | F-holder, multiple model sources, cap1 proofs, departing dwarf, mode1 | **ZSQ-VAL-SOURCE-RENEWAL:** preserve current holder/root/UID/reset/custody, source versus gifts and actual live recipient/stock. Qualify worn/nested proof, concurrency, retry/replay, frozen reward recovery and actual renewal. Static candidates are not daily renewal proof. |
+| Personal access and learning | Hidden wine, break100 keys, pickproof doors, secret closed/unlocked ladders, elvish note | **ZSQ-VAL-ACCESS-LEARNING:** admit actual search/get, delivered reading, selected passage/revision, unlock transition and committed arrival separately. D state5 is secret plus closed/unlocked; observing clearance is not actor action. No magical garden belt inferred. Preserve original access/PvP. |
+| Campaign endpoint and branch policy | King/assassin mention demise/downfall; recipes only consume seals | **ZSQ-VAL-POLITICAL-ENDPOINTS:** define optional investigation versus personal kills/supplied proof, allegiance and actual final result before authoritative branch/combat/group credit. No inferred overthrow or treaty completion. |
+| Empty response clarification | Two quest-marked flower proofs select distinct reward identities | **ZSQ-VAL-FLOWER-EXPLANATION:** builder confirms minimal truthful acceptance explanation, not invented romantic/reading milestones. Native text repair separate fix/news. |
+| Incomplete authored topology |15 explicit unfinished Veralis rooms and two-room isolated banquet; two unplaced mobile prototypes | **ZSQ-VAL-UNFINISHED-COMPONENTS:** confirm reserve/retirement/completion and intended estate identity, population and access. Prefer descriptions first; new reciprocal connections/spawns need balance/terrain review and played tests. Never auto-activate from lore. |
+| Native explanation consistency | Shop names without matching keeper, four-model dialogue/one reward, book/wine/plate types and copy errors | **ZSQ-VAL-CLUE-CONSISTENCY:** reconcile captions with actual acceptance, preserve native types and rewards pending builder design. No implicit SHOP/BUY or new consumption/learning controller. Actual repairs separate named fixes and prominent news. |
+
+Current UI shows exact loose proof, optional earlier cook receipt and eight
+recorded outcomes. Supplied dinner is valid without prior personal cook history;
+old receipt cannot restore a plate. Richer dynamic source/reading/access/politics
+needs committed authoritative events before ANSI/GMCP milestones. All new credit
+requires active, ready accounting; frozen recovery separate. No native repair
+ships; the Fields intentional escape hotfix and replacement follow-up remain.

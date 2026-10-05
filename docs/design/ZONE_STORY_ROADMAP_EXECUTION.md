@@ -158,9 +158,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 82 | Past Ceothia | [Comprehensive dossier](zone-stories/PAST_CEOTHIA.md): all14 blocks/293 rooms/46 mobiles/25 objects/129 resets and bounded timeline/shared closure | Four cards bind six recipes: blossom, three components, any-color pelt and current black-pelt mismatch;13 contacts/21 aliases/11 optional checks explain actual sources and three breaking-key gates | No native repair ships. Wolfspeed proof mismatch, rare staging probability/availability and mode0 renewal are builder follow-ups; source/gifts, committed access/travel and timeline campaigns remain plans |
 | 83 | The Basin Wastes | [Comprehensive dossier](zone-stories/THE_BASIN_WASTES.md): all16 blocks/200 rooms/15 mobiles/32 objects/204 resets and bounded imported/shared closure | Seven cards bind ten recipes: ring ritual, four distinct crafts, any-one cash sale and zero-credit heartstone refusal;8 contacts/14 aliases/14 optional checks explain sources and offered-item dispatch | No native repair ships. Dispatch choice, learned books, source renewal, same-kind refusal semantics and clue consistency are builder follow-ups; no new Crystal City exit or spider bypass |
 | 84 | Nakral's Crypt | [Comprehensive dossier](zone-stories/NAKRALS_CRYPT.md): all11 blocks/294 rooms/59 mobiles/201 objects/521 resets, F-current-holder and bounded imported/shared closure | Five cards/five recipes/nine contacts/21 aliases/14 optional checks; exact four/two wood, five same-name chunks, trophy→token→bracelet and distinct collar upgrade | No native repair. Learned words, four control actions, exact follower sources/renewal, collar presentation, stale surface exit and clue/epic investigation are builder follow-ups; preserve fixed mobility and Fields protection |
-| 85–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 85 | The Valoisian Castle | [Comprehensive dossier](zone-stories/THE_VALOISIAN_CASTLE.md): all13 blocks/174 rooms/93 mobiles/57 objects/320 resets, shared inn and bounded Surface/Verspin closure | Eight cards/eight recipes/18 contacts/26 aliases/15 optional checks; separate family/royal seals, four models, wine→dinner→token, two rose gifts and overdue note | No native repair. Personal sources/renewal/access/learning, political endpoints, blank flower responses, unfinished components and clue review require builder decisions; preserve Fields protection |
+| 86–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Valoisian Castle (`val`).
+The next area is Harrow -The Gnome Village (`harrow`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -171,6 +172,7 @@ matches, or a candidate item graph was extracted.
 | --- | --- | --- |
 | ZSQ-BRAD-PHYSICAL-AFFILIATION / DISCOVERY / RENEWAL / EXPLORATION | Five Tower contracts retain Braddistock credit ownership; Tower encounters do not discover this journal, and owner reset mode differs from physical retiring recipients. Local exploration has no native terminal. | Keep canonical receipt identities. Add explicit physical affiliation/referrals and real source/actor renewal; admitted clue/access/custody and builder-designed lab/smuggler/campaign endpoints. Entry speech repair ships separately; missing key/weapon supply and copied prose remain proposals. |
 | ZSQ-CEOTHIA-CHOICE / TIMELINE / TARGETED-EFFECT / LEGACY-TRAINING | Four retiring guild alternatives, three independent Lenbrea rewards, breaking keys, two nested crates, foreign timeline proofs, imported agility pool and legacy tablet/scroll differ from modern epic purchases. | Six source-guided cards ship. Qualify source/recipient reset episodes, actual access/travel/targeted effects and shared-material ownership; define all-stage campaign and restore/retire legacy training only with builder intent. Pool target ambiguity is a pending shared repair, not shipped news. |
+| ZSQ-VAL-SOURCE-RENEWAL / ACCESS-LEARNING / POLITICAL-ENDPOINTS / FLOWER-EXPLANATION / UNFINISHED-COMPONENTS / CLUE-CONSISTENCY | Exact F-held models, source alternatives, breaking keys, secret closed ladders, supplied dinner and two blank flower exchanges;15 isolated unfinished Veralis rooms. | Eight existing-schema cards ship. Plan authoritative source/learning/access and meaningful political endpoints; native copy/component/stock design remains builder work, no native repair or mobility activation. |
 | ZSQ-CRYPT-LEARNED-WORDS / CONTROL-ACCESS / SOURCE-RENEWAL / COLLAR-PRESENTATION / STALE-SURFACE-EXIT / CLUE-CONSISTENCY / EPIC-INVESTIGATION | Three-note magic word works; four fixed switches; F changes current proof holder; same-name chunk/collar identities differ; old surface target absent active. | Five guided cards ship. Plan authoritative learning/control/source/arrival/group facts and actual recipient renewal. Stale route/clue repairs remain builder proposals; no native fix or portability change. |
 | ZSQ-BASIN-DISPATCH-CHOICE / LEARNED-BOOKS / SOURCE-RENEWAL / HEARTSTONE-REFUSAL / CLUE-CONSISTENCY / CAVE-ACCESS | Part offers select cash before crafting; cap-one elixir serves four crafts; book reading has no durable milestone; same-kind refusal replaces identity; false-city cave is a deliberate dead end with spider return barrier. | Seven source-guided cards ship. Explain actual selection and sources; builder chooses qualified selection, reading, source/renewal and identity policy. Clue-only repairs remain proposals; preserve existing scarcity, barrier and disabled mobility. No native repair ships. |
 | ZSQ-CEOPAST-WOLFSPEED-PROOF / RARE-AVAILABILITY / RENEWAL | Native skull dialogue differs from black-pelt recipe; two initial hair sources, three breaking-key gates, rare staging geometry and reset mode0 affect progression/availability. | Four source-guided cards ship; any pelt counts once with all branch receipts retained. Builder decides proof repair/versioning, measured rare availability and actual renewal before changing native mechanics. Qualify source/gifts, access/arrival and campaign facts; no native repair ships. |
@@ -4566,3 +4568,52 @@ F spawning, learning/SAY/switches/keys, native offer/consumption/rewards,
 same-name collar identity, actual travel/combat/group claims, persistence or
 renewal. Active, ready accounting mandatory; frozen recovery separate. No
 accounting activation, DB/server operation, migration, deployment or merge.
+
+
+## Priority 85 checkpoint: The Valoisian Castle
+
+The [complete dossier](zone-stories/THE_VALOISIAN_CASTLE.md) closes all13
+native blocks(M5/Q8),174 rooms/120 full prose families/17 headers/374 exits/
+145 relative patterns/11 full exit texts/two non-exit metadata families,93 full
+mobiles/57 full objects and320 resets(270 exact/280 M-parent-aware families,
+166 expanded groups). F changes the chamberlain's current guard holder.
+No imported local reset prototype, literal local assignment, ACT_TEACHER or
+epic teacher identified; shared ROOM_INN registers Wailing Griffon rent.
+Global shop scan found no matching local keeper. All eight touching recipes
+are local. One bounded Verspin reset group supplies the non-quest ebony dagger
+to its leader before four F smugglers. Full Surface boundary is reciprocal;
+no incoming portal across713 active type25 prototypes identified.
+
+Schema3/revision1 adds eight cards/eight recipes/18 contacts/26 aliases/15
+optional checks(14 current materials, one earlier cook receipt). Family seals,
+royal seals, exact four crafting models, wine→plate→queen token, two different
+rose gifts and elvish note are separate accepted outcomes. A supplied plate
+does not require personal cook history; prior receipt cannot replace spent
+proof. Dialogue does not prove personal kills, politics or learning. All four
+keyed gate pairs remain locked/pickproof; steel/ancient/vineyard keys break on
+successful unlock. Secret ladder reset5 means closed/unlocked plus secret,
+not open. No magical flower belt, shop, new route or portable escape inferred.
+
+**No native repair ships.** Six builder follow-ups cover source/renewal,
+access/learning, meaningful political endpoints, blank flower explanations,
+isolated unfinished components and clue consistency. Fifteen Veralis rooms
+have unfinished descriptions and isolated topology; banquet38440–41 is a
+separate isolated component. Builder confirms reserve versus repair and
+intended identity/population/access before a separate named fix/news. No
+automatic spawn or gap-filling. Owner-confirmed Fields intentional PvP hotfix
+and its required replacement follow-up remain intact.
+
+Required checks: source/schema, all103 Python/C++ loader/projection journeys,
+full production regression, maintained build, changed/staged formatting,
+links/whitespace and preservation/publication proof. All102 prior journals,
+2668 definitions/fingerprint/revision2/registry and original220 queue stay
+unchanged. Exact50467-byte previous Crypt PR body is archived with SHA-256;
+all ten repair/news/accounting sections retained verbatim. Catalog103 journals/
+1585 achievements/1441 potential dailies/2195 rows: eight authored cards
+replace eight fallback units without changing global counts.
+**85/220 source-comprehensive,135 pending; Harrow -The Gnome Village (`harrow`) next.**
+Goal remains active. Synthetic receipts do not qualify played source/gifts,
+F spawning, keys/SEARCH/READ/GET/access, native offer/consumption/rewards,
+combat/politics, actual stock/recipient renewal or database persistence.
+Active, ready accounting mandatory; frozen recovery separate. No accounting
+activation, database/server operation, migration, deployment or merge.
