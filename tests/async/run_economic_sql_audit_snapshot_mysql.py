@@ -86,7 +86,7 @@ TABLES = (
     "actor_kind INT NULL,actor_id BIGINT UNSIGNED NULL,intent_digest BINARY(32) NULL,domain_digest BINARY(32) NULL,"
     "plan_digest BINARY(32) NULL,canonical_intent MEDIUMBLOB NULL,canonical_plan MEDIUMBLOB NULL,"
     "before_witness_count INT DEFAULT 0,after_witness_count INT DEFAULT 0) ENGINE=InnoDB",
-    "CREATE TABLE critical_operation_inbox (operation_id BINARY(16),status INT,result_code INT,"
+    "CREATE TABLE critical_operation_inbox (operation_id BINARY(16),status INT,result_code INT,keys_hash BINARY(32),"
     "failure_stage INT NOT NULL DEFAULT 0,committed_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,"
     "durable_revision BIGINT UNSIGNED DEFAULT 1,command_type INT DEFAULT 20,schema_version INT DEFAULT 2,"
     "payload_version INT DEFAULT 1,result_payload VARBINARY(16) DEFAULT X'') ENGINE=InnoDB",
@@ -224,6 +224,8 @@ try:
                            "(operation_id,status,result_code) VALUES "
                            "(%s,1,0),(%s,1,0),(%s,1,0)",
                            (OP, root, INSTALL))
+            cursor.execute("UPDATE critical_operation_inbox SET keys_hash=%s WHERE operation_id=%s",
+                           (baseline["inbox_keys_hash"], OP))
             cursor.execute("INSERT INTO critical_operation_inbox "
                            "(operation_id,status,result_code) VALUES (%s,1,0)",
                            (creation_root,))

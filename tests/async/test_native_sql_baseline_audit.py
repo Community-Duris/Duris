@@ -46,6 +46,8 @@ class NativeBaselineAuditTests(unittest.TestCase):
             raise RuntimeError("select a fresh baseline artifact directory below bin/tests/plan5-baseline-sql-restore")
         work.mkdir(mode=0o700, parents=True, exist_ok=not selected_work)
         binding_red = os.environ.get("DURIS_PLAN5_BASELINE_COMMAND_BINDING_RED") == "1"
+        keys_red = os.environ.get("DURIS_PLAN5_BASELINE_KEYS_HASH_RED") == "1"
+        self.assertFalse(binding_red and keys_red, "select one RED proof")
         engine_results = []
         sources = ["tests/async/plan5_sql_baseline_audit_fixture.cpp",
                    "src/persistence/economic_sql_baseline_transaction.c",
@@ -97,6 +99,7 @@ class NativeBaselineAuditTests(unittest.TestCase):
                                                DURIS_PLAN5_BASELINE_FIXTURE=str(work / "fixture-sql"),
                                                DURIS_PLAN5_BASELINE_RED=os.environ.get("DURIS_PLAN5_BASELINE_RED", "0"),
                                                DURIS_PLAN5_BASELINE_COMMAND_BINDING_RED=str(int(binding_red)),
+                                               DURIS_PLAN5_BASELINE_KEYS_HASH_RED=str(int(keys_red)),
                                                ASAN_OPTIONS=environment["ASAN_OPTIONS"], UBSAN_OPTIONS=environment["UBSAN_OPTIONS"])
                         with (work / (engine + ".log")).open("w") as log:
                             result = subprocess.run([sys.executable, "-u", str(ROOT / "tests/async/run_native_sql_baseline_audit.py")],
@@ -104,17 +107,20 @@ class NativeBaselineAuditTests(unittest.TestCase):
                         output = (work / (engine + ".log")).read_text()
                         print(output, end="", flush=True)
                         self.assertEqual(result.returncode, 0, output)
-                        self.assertIn("NATIVE_BASELINE_COMMAND_BINDING_RED_ADMITTED" if binding_red else
+                        self.assertIn("NATIVE_BASELINE_KEYS_HASH_RED_ADMITTED" if keys_red else
+                                      "NATIVE_BASELINE_COMMAND_BINDING_RED_ADMITTED" if binding_red else
                                       "NATIVE_BASELINE_AUDIT_QUALIFIED", output)
                         engine_results.append({"engine": engine, "exit": result.returncode,
-                                               "original_binding_gap_admitted": binding_red})
+                                               "original_binding_gap_admitted": binding_red,
+                                               "original_keys_hash_gap_admitted": keys_red})
         self.assertEqual(fingerprint(ROOT / "src"), native_inputs)
         self.assertEqual(fingerprint(ROOT / "migrations"), migration_inputs)
         for name, checksum in owned_inputs.items():
             self.assertEqual(hashlib.sha256((ROOT/name).read_bytes()).hexdigest(), checksum, name)
         report = {"format": 1, "native_raw_inputs": native_inputs, "migration_raw_inputs": migration_inputs,
                   "owned_inputs": owned_inputs, "engines": engine_results, "skips": 0,
-                  "binding_RED": binding_red, "accounting_activated": False, "release_complete": False,
+                  "binding_RED": binding_red, "keys_hash_RED": keys_red,
+                  "accounting_activated": False, "release_complete": False,
                   "source_capture_complete": False,
                   "binary_sha256": {str(work/("fixture-"+mode)): hashlib.sha256((work/("fixture-"+mode)).read_bytes()).hexdigest()
                                     for mode in ("sql", "client-free")}}

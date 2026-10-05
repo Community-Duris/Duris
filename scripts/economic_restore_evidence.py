@@ -358,7 +358,7 @@ def require_integrity(executor):
                    "w.holding_count", "w.item_count", hexadecimal("w.witness_digest"),
                    "OCTET_LENGTH(w.canonical_witness)", hexadecimal("c.opening_account"),
                    "i.durable_revision", "i.command_type", "i.schema_version", "i.payload_version",
-                   hexadecimal("i.result_payload")]
+                   hexadecimal("i.result_payload"), hexadecimal("i.keys_hash")]
         table = ("economic_baseline_witness w JOIN economic_baseline_control c "
                  "ON c.lineage=w.lineage AND c.epoch=w.epoch "
                  "JOIN critical_operation_inbox i ON i.operation_id=w.operation_id")
@@ -377,6 +377,7 @@ def require_integrity(executor):
                     872144, "baseline_witness", table="economic_baseline_witness", minimum=192),
                 inbox_revision=value[9], inbox_type=value[10], inbox_schema=value[11], inbox_payload=value[12],
                 inbox_result_payload=binary(value[13], 0), canonical_intent=frozen, canonical_plan=encoded,
+                inbox_keys_hash=binary(value[14], 32),
                 intent_digest=binary(row[12], 32), domain_digest=binary(row[13], 32), plan_digest=binary(row[14], 32))
             witness.update(zip(("account_count", "posting_count", "child_count", "before_witness_count",
                                 "after_witness_count", "item_event_count"), row[19:25]))
