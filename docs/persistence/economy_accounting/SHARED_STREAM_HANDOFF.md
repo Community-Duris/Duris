@@ -1,5 +1,18 @@
 # Accounting implementation and qualification handoff
 
+## Integrated NPC values and stock capture component — 2026-10-04
+
+The exact reviewed quest_mobile_native C871b2473/H2a149708 is now source-integrated
+and registered in the maintained Makefile. It supplies canonical values and pure
+complete ordered NPC EQ/INV capture, including the corrected shared size estimate.
+This changes no birth, ID allocator, native custody, quest/lifecycle route, activation
+or inactive behavior. Current candidate source pins are refreshed; no coverage
+completion is inferred. Builds/tests remain deferred to major-plan readiness.
+The previous e018 SQL build/restore evidence remains valid for that historical
+tree and does not qualify this newly extended native candidate. Actual native SQL/
+flat participant, owner/source authority, rebind, producer and guarded ACK remain
+required. See [the detailed source checkpoint](QUEST_MOBILE_VALUES_SOURCE_2026-10-04.md).
+
 ## Integrated selected result-code representation repair — 2026-10-04
 
 [The independent result-code repair](PLAN5_SELECTED_ROOT_RESULT_TYPES_SLICE_2026-10-04.md)

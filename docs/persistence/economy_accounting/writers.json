@@ -64020,9 +64020,9 @@
   "candidate_worktree_evidence": {
     "base_commit": "9155b623419b960c17f117ed8c87d8f783ce42a1",
     "status": "source_integrated_unqualified",
-    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification.",
+    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs.",
     "source_pins": {
-      "src/Makefile": "a1001cc386ac461f54dbf98b03b5b177eae378529333ee87c15ac32f9c54ef6d",
+      "src/Makefile": "2f9e11d5e8eca0e8036be1a76e5e1f55ef27b755e2b575e6b04651fded9a1b3e",
       "src/economy/coin_physical_recovery.c": "0670e71865ebe3543ec18c4142653ed0ea6499cd93cc3bb36f06407f951e8397",
       "src/economy/coin_physical_recovery.h": "c68cc556958cc45b8e71260824f4ac717d060cd7750bd45d57a45b798bccaf9a",
       "src/economy/collector_purchase_publication.c": "51478b2dfadb97c5aa910735a0337238e8aee964a3150b97fe80b0f9912ba9d1",
@@ -64069,7 +64069,9 @@
       "src/economy/shop_trade_accounting.c": "db81ef03272058bb300ccfaba96a2df5afb5cb41bea67b2128ad01e7e7e4c35c",
       "src/economy/shop_trade_accounting.h": "60dbe36c5216ba4e72ad9d12e708ddac1ebb8b80c5d424a5748b502b8cfc9946",
       "scripts/validate_economy_accounting.py": "984d3170c3b4b17cb96dbcb6568a288b63a9db5278861d59cc860bf996f237be",
-      "scripts/generate_economy_writer_coverage.py": "407a87e2289fa9e29535bea9402647cf67059db7ec7678834535920a80dfd5d8"
+      "scripts/generate_economy_writer_coverage.py": "407a87e2289fa9e29535bea9402647cf67059db7ec7678834535920a80dfd5d8",
+      "src/world/quest_mobile_native.c": "871b247307723cbdae9e5aa29a21ed8f0f48bfb90ff5c1202b8f5b7bcfe8601d",
+      "src/world/quest_mobile_native.h": "2a1497080811cc6e85ba58c89846a85fce6cd275d8812101dcb2a5e358b91dd4"
     }
   },
   "pending_source_integration": {
