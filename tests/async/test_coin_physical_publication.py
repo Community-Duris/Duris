@@ -44,7 +44,7 @@ PHYSICAL_SOURCES = ("tests/async/coin_physical_publication_harness.cpp",
                     "src/economy/coin_physical_publication.c",
                     "src/economy/coin_transfer_command.c", "src/economy/currency_command.c",
                     "src/item/item_transfer_command.c", "src/item/item_ownership_runtime.c",
-                    "src/item/craft_pouch_mutation.c", "src/item/chaos_pouch_ledger.c",
+                    "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
                     "src/player/player_snapshot_capture.c", "src/player/player_snapshot_codec.c",
                     "src/persistence/critical_command.c")
 

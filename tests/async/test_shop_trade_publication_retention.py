@@ -16,7 +16,7 @@ CASES = ("success", "preflight", "balances", "custody", "revision", "exception",
 SOURCES = ["tests/async/shop_trade_publication_retention_harness.cpp",
            "src/economy/shop_trade_transaction.c", "src/economy/shop_trade_command.c",
            "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c",
-           "src/item/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c",
+           "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c",
            "src/economy/currency_command.c", "src/persistence/critical_command.c"]
 PHYSICAL_CASES = ("success", "destroy_success", "missing_object", "missing_keeper",
                   "payload_conflict", "placement_refused", "placement_exception",
