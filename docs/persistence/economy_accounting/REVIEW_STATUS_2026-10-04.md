@@ -1,5 +1,12 @@
 # Accounting review status — 2026-10-04
 
+## Independent evidence-index density repair — 2026-10-05
+
+[Exact imported Plan5 slice](PLAN5_INDEX_DENSITY_INTEGRATION_2026-10-05.md)
+detects sparse/offset positions despite balanced counts and links. Peer117
+selected checks qualify its frozen inputs; current combined native execution
+remains deferred. No shared schema, producer or activation change.
+
 ## Shared keeper sale insertion order — 2026-10-05
 
 [Keeper sell-store native order](SHOP_KEEPER_NATIVE_ORDER_SOURCE_2026-10-05.md)
