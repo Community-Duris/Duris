@@ -196,6 +196,14 @@ integer positions or UID keys. A malformed or missing position refuses every
 CLI view with status 2 and the fixed `invalid item position` diagnostic, even
 at limit zero, without rewriting the supplied snapshot.
 
+The SQL opening-origin reader also contains EAB2 position and forest decoder
+refusals within its `OriginError` boundary, using the fixed
+`invalid EAB2 item position` diagnostic. A malformed selected book refuses
+capture and still rolls back and closes the cursor. A malformed retained-epoch
+book cannot authenticate a baseline claim; the existing claim consumer leaves
+its witness unbound for reconciliation. Neither path repairs or reseals the
+supplied evidence, and this reader behavior does not qualify native EAB2/schema61.
+
 Each parsed denomination vector must have signed 64-bit fields and a checked
 signed 64-bit copper total using weights 1/10/100/1000. This includes native
 holdings, opening origins and account-effect before/after vectors, even if they

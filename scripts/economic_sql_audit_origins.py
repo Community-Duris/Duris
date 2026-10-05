@@ -16,7 +16,7 @@ import struct
 import sys
 
 from reconcile_economy_accounting import MAX_INPUT_BYTES, MAX_ROWS, account_key, copper, same_projection
-from economic_restore_evidence import decode_intent, decode_plan, forest, position
+from economic_restore_evidence import EvidenceError, decode_intent, decode_plan, forest, position
 
 HEADER_BYTES = 192
 HOLDING_BYTES = 112
@@ -131,11 +131,17 @@ def decode_witness(row: dict, lineage: bytes, epoch: bytes, opening: bytes) -> t
                       "root": root, "parent": parent or None,
                       "owner": [owner_type, owner_id, context], "state": ITEM_STATES[state]})
         if version == 2:
-            positions[uid] = position(blob[offset + 8:offset + 64])
+            try:
+                positions[uid] = position(blob[offset + 8:offset + 64])
+            except EvidenceError as error:
+                raise OriginError("invalid EAB2 item position") from error
             items[-1]["equipment_slot"] = positions[uid][-1]
         offset += stride
     if version == 2:
-        forest(positions)
+        try:
+            forest(positions)
+        except EvidenceError as error:
+            raise OriginError("invalid EAB2 item position") from error
     return holdings, items
 
 
