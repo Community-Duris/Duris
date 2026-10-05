@@ -1,5 +1,23 @@
 # Accounting implementation and qualification handoff
 
+## Current source handoff: writer census repair
+
+Published native parent:a265a5053. See
+[current census repair](WRITER_CENSUS_REANCHOR_2026-10-04.md): exact guarded shop
+submit scanning and current locations repair the reported normal inventory
+failure. Current2843 occurrences/2784 unique sites are mapped to886 rows; this
+does not establish executable coverage or release readiness. Original broad
+regression/native qualification remains deferred to major-plan readiness.
+
+Primary private five-source shop candidate passes source review, manifest
+af7ea211318d6e11720ecbc80d5739e4cae3afb43a40a2a08d755fff6f0ebab3.
+Full literal persistence and shared-v6 native/retained paid/free/cleanup plans
+are implemented privately; producer/status/keeper checkpoint, migration
+fingerprints, publication and native qualification remain open. This adds no
+Plan5 gate or production authorization. Primary maintains the owning notebook.
+
+## Earlier checkpoints
+
 Updated 2026-10-04. Latest primary source `97fef7a09` aligns live ordinary-drop
 admission with existing cold-recovery eligibility before mutation, after selected
 SQL ownership boot and definitive rejection settlement. Latest Plan5 projection
