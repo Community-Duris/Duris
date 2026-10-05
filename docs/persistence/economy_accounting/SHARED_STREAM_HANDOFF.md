@@ -334,3 +334,23 @@ Plan5 backup/cold-restart slice94e81480b is imported and pushed in4c2abb329, wit
 three exact peer blobs and Python AST checked; its native evidence remains tied
 to the peer's frozen older source. Matching v3 discovery and combined qualification
 remain pending.
+
+
+### October 4 independent v3 reader and collector build repair
+
+Peer3f496660c is integrated/pushed inbd222e282, with nine exact peer blobs,
+three Python AST inputs and diff hygiene checked. Its independent136 lifecycle
+cases and71 marker cases pass at its original87b production inputs. Matching
+v3 origin/discovery is now source-integrated; original primary native installer,
+startup/current holdings, atomic faults and combined service/release qualification
+remain open. Peer maintained flat build failed on collector_service.c signed vs
+unsigned row comparison, so its new managed service journey remains unexecuted.
+
+The primary comparison now requires flat row0, or SQL positive signed row and
+an unsigned result within INT_MAX before exact unsigned equality. Negative, zero
+SQL, foreign and unrepresentable rows refuse; existing body/UID/materializer and
+hold checks remain. Source review and clang18 changed-line formatting only; native
+compilation and original publication cases remain at the major-plan batch.
+Peer also identified stale central lifecycle test counts and a retained historical
+writer-census gap; these remain separate primary-owned follow-ups. No warning
+suppression, production mutation or activation is performed.
