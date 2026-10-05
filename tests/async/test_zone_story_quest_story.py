@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1438
-assert report['mapped_area_count'] == 114 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 115 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -313,6 +313,20 @@ assert [t['count'] for t in tstories['sage-four-proofs']['steps'][:-1]]==[2,1,1]
 assert tstories['master-lost-locket']['steps'][0]['item_vnums']==[18307] and tstories['angel-wedding-ring']['steps'][0]['item_vnums']==[18336]
 assert all(t.get('optional') for s in temple['stories'] for t in s['steps'][:-1])
 assert all(s['category']=='story' and len(s['contracts'])==1 and s['steps'][-1]['contracts']==s['contracts'] for s in temple['stories'])
+
+pods=next(m for m in catalog['story_mappings'] if m['source_area']=='pods')
+assert (pods['schema_version'],pods['revision'],pods['coverage'])==(3,1,'complete')
+assert len(pods['stories'])==4 and len(pods['contacts'])==5 and not pods['exclusions'] and report['eligible_by_zone']['285']==1
+assert sum(len(c['topics']) for c in pods['contacts'])==52
+assert sum(t.get('optional',False) for s in pods['stories'] for t in s['steps'])==4
+pstories={s['id']:s for s in pods['stories']}
+assert [t['count'] for t in pstories['podaling-birdfeather-headdress']['steps'][:-1]]==[6,1]
+assert [t['item_vnums'] for t in pstories['podaling-birdfeather-headdress']['steps'][:-1]]==[[28554],[28555]]
+assert pstories['podaling-neberihide-necklace']['steps'][0]['count']==3
+assert len(pstories['chamberlain-tongue-key']['steps'])==1
+assert all(t.get('optional') for s in pods['stories'] for t in s['steps'][:-1])
+assert sum(s['category']=='service' for s in pods['stories'])==3
+assert all(s['steps'][-1]['contracts']==s['contracts'] and len(s['contracts'])==1 for s in pods['stories'])
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

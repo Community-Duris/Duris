@@ -2331,3 +2331,12 @@ Locket identity alone is accepted; actual container children may be consumed, so
 | **ZSQ-TEMPLE-FOREIGN-OWNERSHIP** | Knife18309 also goes to Hall child77742/Q223 at77911 for letter77743, feeding that zone’s own subsequent chain. Consumed copy cannot complete both; foreign receipts/discovery remain foreign. Imported358 is a separately guarded epic node. Unplaced statue18342 and reward-only18301/18302/18316/18337 are not extra local quests/sources. Ambient temple_illyn and commented sword binding supply no accepted outcomes. Preserve registry/boundary and service/unused intent. |
 
 Active, ready accounting is mandatory for new progress. These follow-ups are plans; no native repair ships in this checkpoint. Any actual clue/access/lifecycle correction requires separate named fix/news commit and exact original/repaired evidence.
+
+
+## Pharr Valley Swamp: explain paid materials without fabricating payment
+
+The [journal](../../areas/story/pods.story.json) and [complete dossier](../design/zone-stories/PHARR_VALLEY_SWAMP.md) show one shard story and three guarded paid services. Use optional carried-item rows for six actual feathers/one hide and three actual hides; current preparation does not prove payment, craft, own source recovery or any earlier receipt. Native fees differ from spoken craft prices; show both and record builder intent before a separate fee/caption repair.
+
+The mummy contains a tome, not the shard. Its key can be supplied and its lock picked; do not require a personal purchase. Follow F to identify the real equipment receiver. Missing stock29555/38555 sits beside valid hides; guessing replacements could change scarcity. SHAKE/PULL/PUSH are exact switch commands, while shared already-open routes need no personal action. Keera/fresco/stranded traveler prose needs explicit episodes before rescue/restoration credit. Foreign hermit receipts remain foreign.
+
+The dossier records ten ZSQ-PODS follow-ups for payments, price intent, missing reset prototypes, shared controls, material custody, key/container lifecycle, source renewal, narrative episodes, scenery/altitude and foreign ownership. All new progress requires active, ready accounting; native guards remain. Any actual repair needs a separate named fix/news commit with original/repaired evidence.
