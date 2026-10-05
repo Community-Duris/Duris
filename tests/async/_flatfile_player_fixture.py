@@ -50,7 +50,7 @@ SOURCES = [
     rel("craft_pouch_mutation.c"),
     rel("chaos_pouch_ledger.c"),
     rel("corpse_lifecycle_command.c"),
-    rel("shop_trade_command.c"),
+    rel("shop_trade_command.c"), rel("shop_trade_recovery_manifest.c"),
     rel("critical_command.c"),
     rel("epic_command.c"),
     rel("currency_command.c"),

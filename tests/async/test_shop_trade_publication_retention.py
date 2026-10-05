@@ -14,7 +14,7 @@ CASES = ("success", "preflight", "balances", "custody", "revision", "exception",
          "notification_exception", "notification_reentry_exception", "many_transient_failures",
          "duplicate_burst", "equivalent_readback", "fresh_body")
 SOURCES = ["tests/async/shop_trade_publication_retention_harness.cpp",
-           "src/economy/shop_trade_transaction.c", "src/economy/shop_trade_command.c",
+           "src/economy/shop_trade_transaction.c", "src/economy/shop_trade_command.c", "src/economy/shop_trade_recovery_manifest.c",
            "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c",
            "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c",
            "src/economy/currency_command.c", "src/persistence/critical_command.c"]

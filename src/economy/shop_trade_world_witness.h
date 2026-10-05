@@ -45,6 +45,9 @@ struct shop_trade_world_witness
 {
 	char_data *actor = nullptr;
 	char_data *keeper = nullptr;
+	// Complete bounded physical actor census, including saved-policy omitted
+	// NORENT bodies. This is an observation, never a custody or ACK capability.
+	size_t player_physical_item_count = 0;
 	std::vector<player_item_snapshot> player_items;
 	std::vector<player_item_snapshot> keeper_items;
 	std::vector<player_item_snapshot> detached_items;
@@ -58,6 +61,10 @@ struct shop_trade_world_witness
 // roots; every omitted physical sibling is still included in the world census.
 bool shop_trade_world_witness_observe(const shop_trade_world_expectation &,
 				      shop_trade_world_witness *) noexcept;
+// Pure feasibility check reuses the observer's native budget/DFS/wire rules.
+// Original held values grant no custody, placement or publication authority.
+bool shop_trade_world_player_values_supported(std::span<const player_item_snapshot>) noexcept;
+
 struct shop_trade_payload;
 // Pure conversion of already derived AFTER values to actual native insertion
 // order (before first same-R_num sibling, otherwise head). Caller must first

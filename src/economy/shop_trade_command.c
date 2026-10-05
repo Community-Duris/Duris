@@ -207,8 +207,11 @@ uint64_t get_u64(const uint8_t *input)
 bool shop_trade_command_encode_payload(const shop_trade_payload &payload,
 				       std::vector<uint8_t> *encoded)
 {
-	if (!encoded || !valid_payload(payload) || payload.expected_player_save_revision ||
-	    payload.expected_player_level)
+	if (!encoded || payload.recovery_manifest_recorded ||
+	    !shop_trade_recovery_manifest_is_empty(payload.recovery_manifest) ||
+	    !valid_payload(payload) || payload.expected_player_save_revision ||
+	    payload.expected_player_level || payload.native_destination_weight_recorded ||
+	    payload.destination_weight != shop_trade_destination_weight{})
 		return false;
 	try
 	{
@@ -263,8 +266,12 @@ bool shop_trade_command_encode_payload(const shop_trade_payload &payload,
 bool shop_trade_command_encode_accounted_payload(const shop_trade_payload &payload,
 						 std::vector<uint8_t> *encoded)
 {
-	if (!encoded || !payload.expected_player_save_revision || !payload.expected_player_level ||
-	    payload.expected_player_level > UINT8_MAX)
+	if (!encoded || payload.recovery_manifest_recorded ||
+	    !shop_trade_recovery_manifest_is_empty(payload.recovery_manifest) ||
+	    !payload.expected_player_save_revision || !payload.expected_player_level ||
+	    payload.expected_player_level > UINT8_MAX ||
+	    payload.native_destination_weight_recorded ||
+	    payload.destination_weight != shop_trade_destination_weight{})
 		return false;
 	try
 	{
@@ -289,10 +296,74 @@ bool shop_trade_command_encode_accounted_payload(const shop_trade_payload &paylo
 	}
 }
 
-bool shop_trade_command_decode_payload(const critical_command &command, shop_trade_payload *payload)
+bool shop_trade_command_encode_native_payload(const shop_trade_payload &payload,
+					      std::vector<uint8_t> *encoded)
 {
-	if (!payload || command.type != critical_command_type::shop_trade ||
-	    (command.payload_version != SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION &&
+	if (!encoded || payload.recovery_manifest_recorded ||
+	    !shop_trade_recovery_manifest_is_empty(payload.recovery_manifest) ||
+	    !payload.native_destination_weight_recorded ||
+	    (payload.target_parent_item_uid ?
+		     payload.action != shop_trade_action::buy_produced ||
+			     payload.target_root_item_uid != payload.target_parent_item_uid :
+		     payload.destination_weight != shop_trade_destination_weight{}))
+		return false;
+	try
+	{
+		auto previous = payload;
+		previous.native_destination_weight_recorded = false;
+		previous.destination_weight = {};
+		std::vector<uint8_t> candidate;
+		if (!shop_trade_command_encode_accounted_payload(previous, &candidate) ||
+		    candidate.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES - 16)
+			return false;
+		candidate.reserve(candidate.size() + 16);
+		append_le<int32_t>(&candidate, payload.destination_weight.before);
+		append_le<int32_t>(&candidate, payload.destination_weight.direct_contents);
+		append_le<int32_t>(&candidate, payload.destination_weight.shell);
+		append_le<int32_t>(&candidate, payload.destination_weight.after);
+		*encoded = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_command_encode_recovery_payload(const shop_trade_payload &payload,
+						std::vector<uint8_t> *encoded)
+{
+	if (!encoded || !payload.recovery_manifest_recorded ||
+	    !shop_trade_recovery_manifest_shape_valid(payload.recovery_manifest) ||
+	    payload.recovery_manifest.live_target_before.present !=
+		    (payload.target_parent_item_uid != 0))
+		return false;
+	try
+	{
+		auto previous = payload;
+		previous.recovery_manifest_recorded = false;
+		previous.recovery_manifest = {};
+		std::vector<uint8_t> candidate, extension;
+		if (!shop_trade_command_encode_native_payload(previous, &candidate) ||
+		    !shop_trade_recovery_manifest_encode(payload.recovery_manifest, &extension) ||
+		    extension.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+		    candidate.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES - extension.size())
+			return false;
+		candidate.insert(candidate.end(), extension.begin(), extension.end());
+		*encoded = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+static bool decode_payload_impl(const critical_command &command, shop_trade_payload *payload)
+{
+	if (!payload || command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+	    command.type != critical_command_type::shop_trade ||
+	    (!shop_trade_payload_version_is_accounted(command.payload_version) &&
 	     command.payload_version != SHOP_TRADE_PAYLOAD_VERSION &&
 	     command.payload_version != SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION &&
 	     command.payload_version != SHOP_TRADE_CONTAINER_PAYLOAD_VERSION &&
@@ -353,24 +424,59 @@ bool shop_trade_command_decode_payload(const critical_command &command, shop_tra
 	}
 	if (!read_le(&cursor, end, &payload->item_blob_size) || !payload->item_blob_size ||
 	    payload->item_blob_size > payload->item_blob.size() ||
-	    static_cast<size_t>(end - cursor) !=
-		    payload->item_blob_size +
-			    (command.payload_version == SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION ?
-				     SHOP_TRADE_ACCOUNTED_TAIL_BYTES :
-				     0))
+	    (command.payload_version == SHOP_TRADE_RECOVERY_PAYLOAD_VERSION ?
+		     static_cast<size_t>(end - cursor) <
+			     payload->item_blob_size + SHOP_TRADE_NATIVE_TAIL_BYTES +
+				     SHOP_TRADE_RECOVERY_MANIFEST_MIN_BYTES :
+		     static_cast<size_t>(end - cursor) !=
+			     payload->item_blob_size +
+				     (command.payload_version == SHOP_TRADE_NATIVE_PAYLOAD_VERSION ?
+					      SHOP_TRADE_NATIVE_TAIL_BYTES :
+				      command.payload_version ==
+						      SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION ?
+					      SHOP_TRADE_ACCOUNTED_TAIL_BYTES :
+					      0)))
 		return false;
 	memcpy(payload->item_blob.data(), cursor, payload->item_blob_size);
-	if (command.payload_version == SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION)
+	if (shop_trade_payload_version_is_accounted(command.payload_version))
 	{
 		cursor += payload->item_blob_size;
 		uint32_t padding = 0;
 		if (!read_le(&cursor, end, &payload->expected_player_save_revision) ||
 		    !read_le(&cursor, end, &payload->expected_player_level) ||
-		    !read_le(&cursor, end, &padding) || cursor != end || padding ||
+		    !read_le(&cursor, end, &padding) || padding ||
 		    !payload->expected_player_save_revision || !payload->expected_player_level ||
 		    payload->expected_player_level > UINT8_MAX)
 			return false;
 	}
+	if (command.payload_version == SHOP_TRADE_NATIVE_PAYLOAD_VERSION ||
+	    command.payload_version == SHOP_TRADE_RECOVERY_PAYLOAD_VERSION)
+	{
+		payload->native_destination_weight_recorded = true;
+		if (!read_le(&cursor, end, &payload->destination_weight.before) ||
+		    !read_le(&cursor, end, &payload->destination_weight.direct_contents) ||
+		    !read_le(&cursor, end, &payload->destination_weight.shell) ||
+		    !read_le(&cursor, end, &payload->destination_weight.after) ||
+		    (payload->target_parent_item_uid ?
+			     payload->action != shop_trade_action::buy_produced ||
+				     payload->target_root_item_uid !=
+					     payload->target_parent_item_uid :
+			     payload->destination_weight != shop_trade_destination_weight{}))
+			return false;
+	}
+	if (command.payload_version == SHOP_TRADE_RECOVERY_PAYLOAD_VERSION)
+	{
+		payload->recovery_manifest_recorded = true;
+		if (!shop_trade_recovery_manifest_decode(
+			    std::span<const uint8_t>(cursor, static_cast<size_t>(end - cursor)),
+			    &payload->recovery_manifest) ||
+		    payload->recovery_manifest.live_target_before.present !=
+			    (payload->target_parent_item_uid != 0))
+			return false;
+		cursor = end;
+	}
+	if (shop_trade_payload_version_is_accounted(command.payload_version) && cursor != end)
+		return false;
 	if (command.payload_version == SHOP_TRADE_LEGACY_PAYLOAD_VERSION)
 	{
 		if (payload->action == shop_trade_action::buy_produced)
@@ -392,13 +498,41 @@ bool shop_trade_command_decode_payload(const critical_command &command, shop_tra
 		return false;
 	critical_command expected = {};
 	const bool built =
+		command.payload_version == SHOP_TRADE_RECOVERY_PAYLOAD_VERSION ?
+			shop_trade_command_build_recovery(&expected, command.operation_id, *payload,
+							  command.source_site,
+							  command.deadline_class) :
+		command.payload_version == SHOP_TRADE_NATIVE_PAYLOAD_VERSION ?
+			shop_trade_command_build_native(&expected, command.operation_id, *payload,
+							command.source_site,
+							command.deadline_class) :
 		command.payload_version == SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION ?
 			shop_trade_command_build_accounted(&expected, command.operation_id,
 							   *payload, command.source_site,
 							   command.deadline_class) :
 			shop_trade_command_build(&expected, command.operation_id, *payload,
 						 command.source_site, command.deadline_class);
-	return built && matching_fences(expected, command);
+	return built && matching_fences(expected, command) &&
+	       (command.payload_version != SHOP_TRADE_RECOVERY_PAYLOAD_VERSION ||
+		expected.payload == command.payload);
+}
+
+bool shop_trade_command_decode_payload(const critical_command &command, shop_trade_payload *payload)
+{
+	if (!payload)
+		return false;
+	try
+	{
+		shop_trade_payload candidate{};
+		if (!decode_payload_impl(command, &candidate))
+			return false;
+		*payload = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 }
 
 bool shop_trade_command_encode_result(const shop_trade_result &result,
@@ -589,6 +723,65 @@ bool shop_trade_command_build_accounted(critical_command *command,
 		    !shop_trade_command_encode_accounted_payload(payload, &encoded))
 			return false;
 		candidate.payload_version = SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION;
+		candidate.payload = std::move(encoded);
+		*command = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_command_build_native(critical_command *command, critical_operation_id operation_id,
+				     const shop_trade_payload &payload,
+				     critical_source_site source_site,
+				     critical_deadline_class deadline_class)
+{
+	if (!command)
+		return false;
+	try
+	{
+		auto previous = payload;
+		previous.native_destination_weight_recorded = false;
+		previous.destination_weight = {};
+		critical_command candidate;
+		std::vector<uint8_t> encoded;
+		if (!shop_trade_command_build_accounted(&candidate, operation_id, previous,
+							source_site, deadline_class) ||
+		    !shop_trade_command_encode_native_payload(payload, &encoded))
+			return false;
+		candidate.payload_version = SHOP_TRADE_NATIVE_PAYLOAD_VERSION;
+		candidate.payload = std::move(encoded);
+		*command = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_command_build_recovery(critical_command *command,
+				       critical_operation_id operation_id,
+				       const shop_trade_payload &payload,
+				       critical_source_site source_site,
+				       critical_deadline_class deadline_class)
+{
+	if (!command)
+		return false;
+	try
+	{
+		auto previous = payload;
+		previous.recovery_manifest_recorded = false;
+		previous.recovery_manifest = {};
+		critical_command candidate;
+		std::vector<uint8_t> encoded;
+		if (!shop_trade_command_build_native(&candidate, operation_id, previous,
+						     source_site, deadline_class) ||
+		    !shop_trade_command_encode_recovery_payload(payload, &encoded))
+			return false;
+		candidate.payload_version = SHOP_TRADE_RECOVERY_PAYLOAD_VERSION;
 		candidate.payload = std::move(encoded);
 		*command = std::move(candidate);
 		return true;

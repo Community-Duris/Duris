@@ -58,6 +58,7 @@ extern struct time_info_data time_info;
 extern struct zone_data *zone_table;
 extern int mini_mode;
 extern P_obj object_list;
+extern P_char character_list;
 
 struct shop_data *shop_index;
 int number_of_shops = 0;
@@ -119,10 +120,45 @@ static P_char shop_trade_find_keeper(uint32_t shop_id)
 	return NULL;
 }
 
+// Accounted path uses one original keeper lifetime, including roaming shops.
+// A duplicate/missing runtime identity refuses before a keeper-dependent effect.
+static P_char shop_trade_find_original_keeper(uint32_t shop_id, uint64_t runtime_id)
+{
+	if (!runtime_id || !shop_index || shop_id >= static_cast<uint32_t>(number_of_shops))
+		return nullptr;
+	P_char found = nullptr;
+	size_t count = 0;
+	for (P_char candidate = character_list; candidate; candidate = candidate->next)
+	{
+		if (++count > 262144)
+			return nullptr;
+		if (candidate->runtime_id != runtime_id)
+			continue;
+		if (found || !IS_NPC(candidate) ||
+		    GET_RNUM(candidate) != shop_index[shop_id].keeper)
+			return nullptr;
+		found = candidate;
+	}
+	return found;
+}
+
+// v6 freezes full literal selected-tree bytes. Ordinary v5 capture remains
+// unchanged; neither matcher proves native custody or publication authority.
+static bool shop_trade_source_bytes_match(P_obj object, const shop_trade_payload &payload)
+{
+	if (payload.expected_player_save_revision || payload.expected_player_level)
+		return shop_trade_runtime_object_matches_accounted_payload(object, payload);
+	return shop_trade_runtime_object_matches_payload(object, payload);
+}
+
 static bool shop_trade_published_bytes_match(P_char ch, P_obj object,
 					     const shop_trade_payload &payload, bool buying,
 					     bool placement_complete = true)
 {
+	const bool accounted = payload.expected_player_save_revision != 0;
+	if (accounted && (!ch || !payload.expected_player_level ||
+			  static_cast<uint32_t>(GET_LEVEL(ch)) != payload.expected_player_level))
+		return false;
 	std::vector<player_item_snapshot> expected, actual;
 	std::vector<uint8_t> expected_bytes, actual_bytes;
 	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
@@ -138,8 +174,10 @@ static bool shop_trade_published_bytes_match(P_char ch, P_obj object,
 		    GET_PID(ch) < 10000000 && (placement_complete || object->g_key == 1))
 			expected.front().generated_key = 1;
 	}
-	return player_item_snapshot_tree_capture(object, &actual, nullptr) ==
-		       player_snapshot_capture_result::ok &&
+	const auto captured =
+		accounted ? player_item_snapshot_tree_capture_literal(object, &actual, nullptr) :
+			    player_item_snapshot_tree_capture(object, &actual, nullptr);
+	return captured == player_snapshot_capture_result::ok &&
 	       player_item_snapshot_list_encode(expected, &expected_bytes) ==
 		       player_snapshot_codec_result::ok &&
 	       player_item_snapshot_list_encode(actual, &actual_bytes) ==
@@ -147,8 +185,9 @@ static bool shop_trade_published_bytes_match(P_char ch, P_obj object,
 	       expected_bytes == actual_bytes;
 }
 
-static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &result,
-					const shop_trade_payload &payload, uint32_t &stages)
+static bool shop_trade_publish_physical_impl(P_char ch, const shop_trade_result &result,
+					     const shop_trade_payload &payload, uint32_t &stages,
+					     uint64_t original_keeper_id)
 {
 	constexpr uint32_t source_verified = 1, detach_started = 2, audited = 4, audit_started = 8,
 			   destruction_started = 16, physically_complete = 32,
@@ -156,7 +195,8 @@ static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &resu
 			   placement_started = 512, placement_returned = 1024,
 			   nesting_started = 2048, nesting_returned = 4096,
 			   destruction_returned = 8192, room_notice_returned = 16384,
-			   detachment_started = 32768, detachment_returned = 65536;
+			   detachment_started = 32768, detachment_returned = 65536,
+			   nesting_succeeded = 131072;
 	if (!ch || IS_NPC(ch) || static_cast<uint32_t>(GET_PID(ch)) != payload.player_pid)
 		return false;
 	// Location/snapshot agreement cannot prove carry bookkeeping, artifact
@@ -168,7 +208,15 @@ static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &resu
 	    ((stages & room_notice_started) && !(stages & room_notice_returned)) ||
 	    ((stages & detachment_started) && !(stages & detachment_returned)))
 		return false;
-	P_char keeper = shop_trade_find_keeper(payload.shop_id);
+	if (payload.expected_player_save_revision && !original_keeper_id)
+		return false;
+	auto find_keeper = [&]()
+	{
+		return original_keeper_id ? shop_trade_find_original_keeper(payload.shop_id,
+									    original_keeper_id) :
+					    shop_trade_find_keeper(payload.shop_id);
+	};
+	P_char keeper = find_keeper();
 	P_obj object = shop_trade_find_object(payload.selected_item_uid);
 	P_obj destination = payload.target_parent_item_uid ?
 				    shop_trade_find_object(payload.target_parent_item_uid) :
@@ -201,7 +249,7 @@ static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &resu
 				     ((buying || cleanup) && OBJ_CARRIED_BY(object, keeper)) ||
 				     (!buying && !cleanup && OBJ_CARRIED_BY(object, ch)));
 		if (!restored_target &&
-		    (!source || !shop_trade_runtime_object_matches_payload(object, payload) ||
+		    (!source || !shop_trade_source_bytes_match(object, payload) ||
 		     (buying && IS_OBJ_STAT2(object, ITEM2_CRUMBLELOOT) && !IS_TRUSTED(ch)) ||
 		     (destination && !obj_can_nest(object, destination))))
 			return false;
@@ -220,7 +268,7 @@ static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &resu
 		}
 		else if (destroying)
 		{
-			if (!shop_trade_runtime_object_matches_payload(object, payload))
+			if (!shop_trade_source_bytes_match(object, payload))
 				return false;
 			if (!cleanup && !(stages & audited))
 			{
@@ -231,6 +279,12 @@ static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &resu
 			if (!(stages & room_notice_started))
 			{
 				stages |= room_notice_started;
+				if (original_keeper_id)
+				{
+					keeper = find_keeper();
+					if (!keeper || GET_VNUM(keeper) != payload.keeper_vnum)
+						return false;
+				}
 				if (cleanup)
 					wizlog(56,
 					       "(%s) shopkeeper durably destroyed invalid stock (%s %d).",
@@ -256,7 +310,7 @@ static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &resu
 			if (!at_target)
 			{
 				if (!(stages & detach_started) &&
-				    !shop_trade_runtime_object_matches_payload(object, payload))
+				    !shop_trade_source_bytes_match(object, payload))
 					return false;
 				if ((stages & detach_started) &&
 				    !shop_trade_published_bytes_match(ch, object, payload, buying,
@@ -267,6 +321,12 @@ static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &resu
 					stages |= audit_started;
 					sql_shop_sell(ch, object, payload.price);
 					stages |= audited;
+				}
+				if (original_keeper_id)
+				{
+					keeper = find_keeper();
+					if (!keeper || GET_VNUM(keeper) != payload.keeper_vnum)
+						return false;
 				}
 				stages |= detach_started;
 				if (OBJ_CARRIED(object))
@@ -284,6 +344,12 @@ static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &resu
 					return false;
 				if (buying)
 					SET_BIT(object->extra2_flags, ITEM2_STOREITEM);
+				if (original_keeper_id)
+				{
+					keeper = find_keeper();
+					if (!keeper || GET_VNUM(keeper) != payload.keeper_vnum)
+						return false;
+				}
 				stages |= placement_started;
 				stages &= ~placement_returned;
 				const auto placement =
@@ -308,9 +374,17 @@ static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &resu
 					    !obj_can_nest(object, destination))
 						return false;
 					stages |= nesting_started;
-					stages &= ~nesting_returned;
-					obj_to_obj(object, destination);
+					stages &= ~(nesting_returned | nesting_succeeded);
+					const bool nested =
+						payload.native_destination_weight_recorded ?
+							obj_to_obj_shop_frozen_weight(
+								object, destination,
+								payload.destination_weight) :
+							(obj_to_obj(object, destination), true);
 					stages |= nesting_returned;
+					if (!nested)
+						return false;
+					stages |= nesting_succeeded;
 				}
 			}
 		}
@@ -344,7 +418,7 @@ static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &resu
 			    OBJ_CARRIED_BY(object, keeper)) ||
 		 !shop_trade_published_bytes_match(ch, object, payload, buying))
 		return false;
-	keeper = shop_trade_find_keeper(payload.shop_id);
+	keeper = find_keeper();
 	if (!keeper || GET_VNUM(keeper) != payload.keeper_vnum)
 		return false;
 	if (!(stages & cash_complete))
@@ -369,6 +443,23 @@ static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &resu
 		stages |= cash_complete;
 	}
 	return true;
+}
+
+static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &result,
+					const shop_trade_payload &payload, uint32_t &stages)
+{
+	return shop_trade_publish_physical_impl(ch, result, payload, stages, 0);
+}
+
+[[maybe_unused]] static bool
+shop_trade_publish_accounted_physical(P_char ch, P_char keeper, const shop_trade_result &result,
+				      const shop_trade_payload &payload, uint32_t &stages)
+{
+	if (!keeper || !IS_NPC(keeper) || !keeper->runtime_id ||
+	    !payload.expected_player_save_revision || GET_VNUM(keeper) != payload.keeper_vnum)
+		return false;
+	const uint64_t original_keeper_id = keeper->runtime_id;
+	return shop_trade_publish_physical_impl(ch, result, payload, stages, original_keeper_id);
 }
 
 static void shop_trade_completion(P_char ch, bool committed, const shop_trade_result &result,
@@ -782,7 +873,7 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 					  "live_publish_failed", NULL);
 		}
 		else if (produced && object && OBJ_NOWHERE(object) &&
-			 shop_trade_runtime_object_matches_payload(object, payload))
+			 shop_trade_source_bytes_match(object, payload))
 			extract_obj(object, FALSE);
 		if (batch_reported)
 			return;

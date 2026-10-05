@@ -493,6 +493,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/auction_listing_accounting.o \
 				 persistence/economic_sql_auction_listing_transaction.o \
 				 persistence/economic_sql_shop_trade_transaction.o \
+				 persistence/shop_item_runtime_payload.o \
 				 persistence/economic_sql_auction_bid_transaction.o \
 				 persistence/economic_sql_auction_money_claim_transaction.o \
 				 economy/auction_item_claim_accounting.o \
@@ -514,6 +515,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/boon_shop_transaction.o \
 				 economy/shop_trade_command.o \
 				 economy/shop_trade_recovery_manifest.o \
+				 economy/shop_trade_recovery_image.o \
 				 economy/shop_trade_accounting.o \
 				 world/zone_story_quest_tracking.o \
 				 world/zone_story_quest_catalog.o \

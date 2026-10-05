@@ -56,7 +56,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
             rel("collector_command.c"),
             rel("collector_codec.c"),
             rel("collector_policy.c"),
-            rel("shop_trade_command.c"),
+            rel("shop_trade_command.c"), rel("shop_trade_recovery_manifest.c"),
             rel("critical_command.c"),
             rel("epic_command.c"),
             rel("currency_command.c"),
