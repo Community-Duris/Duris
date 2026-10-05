@@ -908,6 +908,17 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
     return {"decision": decision, "must_block_on_activation": decision in {"block_until_active_craft_journeys", "refuse_before_allocation_until_native_source_and_root_exist", "block_until_typed_schema2_accounting", "block_until_projection_proof", "keep_unreachable_or_block_if_reactivated", "sql_component_requires_qualified_root"}, "required_policy": policy}
 
 
+def source_state(registry: dict) -> str:
+    candidate = registry.get("candidate_worktree_evidence")
+    if candidate is None:
+        return "registry_source_commit"
+    if candidate.get("status") == "unpublished_candidate_worktree":
+        return "published_base_with_unpublished_candidate_worktree"
+    if candidate.get("status") == "source_integrated_unqualified":
+        return "source_integrated_unqualified"
+    raise ValueError("review unknown candidate source provenance status")
+
+
 def build() -> dict:
     registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
     validator = load_validator()
@@ -1014,7 +1025,7 @@ def build() -> dict:
         "schema_version": 1,
         "artifact_kind": "source_reviewed_economy_item_writer_coverage_matrix",
         "repository_head": source_commit,
-        "source_state": "published_base_with_unpublished_candidate_worktree" if registry.get("candidate_worktree_evidence") else "registry_source_commit",
+        "source_state": source_state(registry),
         "candidate_worktree_evidence": registry.get("candidate_worktree_evidence"),
         "coverage_complete": False,
         "playable_release_status": "BLOCKED",
