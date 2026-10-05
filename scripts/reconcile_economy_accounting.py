@@ -83,6 +83,17 @@ class SnapshotError(ValueError):
     pass
 
 
+def same_projection(actual, expected) -> bool:
+    # Expected values come from the bounded native decoder. Preserve their
+    # types and ranges without coercing floats or booleans into integers.
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, (list, tuple)):
+        return len(actual) == len(expected) and all(
+            same_projection(value, original) for value, original in zip(actual, expected))
+    return actual == expected
+
+
 def vector(value: object) -> tuple[int, int, int, int]:
     if (not isinstance(value, list) or len(value) != 4 or
             any(type(part) is not int or not -(2**63) <= part < 2**63 for part in value)):
@@ -794,17 +805,6 @@ class Reconciler:
             def projected(name: str, index: str, fields: tuple) -> list:
                 return [[row.get(field) for field in fields]
                         for row in sorted(by_op[name].get(op_id, []), key=lambda row: row[index])]
-
-            def same_projection(actual, expected) -> bool:
-                # Expected values come from the bounded native decoder. Exact
-                # types and values preserve those ranges without coercing
-                # JSON floats or booleans into authenticated native integers.
-                if type(actual) is not type(expected):
-                    return False
-                if isinstance(expected, list):
-                    return len(actual) == len(expected) and all(
-                        same_projection(value, original) for value, original in zip(actual, expected))
-                return actual == expected
 
             expected = [[i, key.hex(), list(before), list(after), old, new]
                         for i, (key, before, after, old, new) in enumerate(plan["effects"])]
