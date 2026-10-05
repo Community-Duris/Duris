@@ -142,8 +142,15 @@ def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> dict:
         plan = decode_plan(row["canonical_plan"])
         payload = b"EBC1" + struct.pack("<HHII", 1, 48, len(blob), 0) + hashlib.sha256(blob).digest()
         domain = hashlib.sha256(b"DURIS-ECONOMIC-DOMAIN-V1\0" + struct.pack("<HHI", 20, 1, 48) + payload).digest()
+        # Baseline CCM1 binding uses schema 1, no intent/publication/revisions,
+        # operator-repair source, recovery deadline, one system fence and time 1.
+        command = (b"CCM1" + struct.pack("<I", 1) + operation +
+                   struct.pack("<HHHBBQIII", 20, 1, 6, 4, 0, 1, 1, 0, 48) +
+                   struct.pack("<B7xQ", 9, 0x45434f4e42415345) + payload)
+        binding = hashlib.sha256(b"DURIS-ECONOMIC-COMMAND-V1\0" + command).digest()
         if (len(row["canonical_intent"]) != 256 or intent["metadata"] != expected or
-                plan["metadata"] != expected or intent["domain_digest"] != domain or
+                plan["metadata"] != expected or row["canonical_intent"][160:192] != binding or
+                intent["domain_digest"] != domain or
                 plan["domain_digest"] != domain or row["domain_digest"] != domain or
                 intent["intent_digest"] != plan["intent_digest"] or
                 row["intent_digest"] != intent["intent_digest"] or row["plan_digest"] != plan["plan_digest"]):

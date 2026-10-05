@@ -23,9 +23,30 @@ class NativeBaselineAuditTests(unittest.TestCase):
         import persistence_restore as restore
         from native_build_artifacts import build_native
         import pymysql
+        from test_flatfile_restore_baseline_markers import fingerprint
 
-        work = ROOT / "bin/tests/plan5-baseline-sql-restore"
-        work.mkdir(mode=0o700, parents=True, exist_ok=True)
+        native_inputs = fingerprint(ROOT / "src")
+        migration_inputs = fingerprint(ROOT / "migrations")
+        consumed = ["scripts/economic_sql_audit_origins.py", "scripts/economic_sql_audit_snapshot.py",
+                    "scripts/economic_restore_evidence.py", "scripts/reconcile_economy_accounting.py",
+                    "scripts/qualify_database_restore.py", "scripts/persistence_restore.py",
+                    "scripts/persistence_backup.py", "scripts/migration_runner.py",
+                    "tests/async/plan5_sql_baseline_audit_fixture.cpp",
+                    "tests/async/test_native_sql_baseline_audit.py", "tests/async/run_native_sql_baseline_audit.py",
+                    "tests/async/run_economic_sql_audit_snapshot_mysql.py",
+                    "tests/async/test_economic_sql_audit_origins.py", "tests/async/native_build_artifacts.py",
+                    "tests/async/server_build_artifacts.py", "scripts/build_restore_qualifier.py",
+                    "tests/async/test_flatfile_restore_baseline_markers.py",
+                    "tests/async/test_flatfile_restore_economic_authority.py", "tests/async/_paths.py"]
+        owned_inputs = {name: hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in consumed}
+        default_work = ROOT / "bin/tests/plan5-baseline-sql-restore"
+        selected_work = os.environ.get("DURIS_PLAN5_BASELINE_AUDIT_ARTIFACTS")
+        work = Path(selected_work).resolve() if selected_work else default_work
+        if selected_work and (work.exists() or not work.is_relative_to(default_work.resolve())):
+            raise RuntimeError("select a fresh baseline artifact directory below bin/tests/plan5-baseline-sql-restore")
+        work.mkdir(mode=0o700, parents=True, exist_ok=not selected_work)
+        binding_red = os.environ.get("DURIS_PLAN5_BASELINE_COMMAND_BINDING_RED") == "1"
+        engine_results = []
         sources = ["tests/async/plan5_sql_baseline_audit_fixture.cpp",
                    "src/persistence/economic_sql_baseline_transaction.c",
                    "src/economy/economic_baseline_command.c", "src/economy/economic_baseline_adapter.c",
@@ -75,6 +96,7 @@ class NativeBaselineAuditTests(unittest.TestCase):
                                                ENVIRONMENT="test", TEST_DB_DISPOSABLE="1",
                                                DURIS_PLAN5_BASELINE_FIXTURE=str(work / "fixture-sql"),
                                                DURIS_PLAN5_BASELINE_RED=os.environ.get("DURIS_PLAN5_BASELINE_RED", "0"),
+                                               DURIS_PLAN5_BASELINE_COMMAND_BINDING_RED=str(int(binding_red)),
                                                ASAN_OPTIONS=environment["ASAN_OPTIONS"], UBSAN_OPTIONS=environment["UBSAN_OPTIONS"])
                         with (work / (engine + ".log")).open("w") as log:
                             result = subprocess.run([sys.executable, "-u", str(ROOT / "tests/async/run_native_sql_baseline_audit.py")],
@@ -82,7 +104,21 @@ class NativeBaselineAuditTests(unittest.TestCase):
                         output = (work / (engine + ".log")).read_text()
                         print(output, end="", flush=True)
                         self.assertEqual(result.returncode, 0, output)
-                        self.assertIn("NATIVE_BASELINE_AUDIT_QUALIFIED", output)
+                        self.assertIn("NATIVE_BASELINE_COMMAND_BINDING_RED_ADMITTED" if binding_red else
+                                      "NATIVE_BASELINE_AUDIT_QUALIFIED", output)
+                        engine_results.append({"engine": engine, "exit": result.returncode,
+                                               "original_binding_gap_admitted": binding_red})
+        self.assertEqual(fingerprint(ROOT / "src"), native_inputs)
+        self.assertEqual(fingerprint(ROOT / "migrations"), migration_inputs)
+        for name, checksum in owned_inputs.items():
+            self.assertEqual(hashlib.sha256((ROOT/name).read_bytes()).hexdigest(), checksum, name)
+        report = {"format": 1, "native_raw_inputs": native_inputs, "migration_raw_inputs": migration_inputs,
+                  "owned_inputs": owned_inputs, "engines": engine_results, "skips": 0,
+                  "binding_RED": binding_red, "accounting_activated": False, "release_complete": False,
+                  "source_capture_complete": False,
+                  "binary_sha256": {str(work/("fixture-"+mode)): hashlib.sha256((work/("fixture-"+mode)).read_bytes()).hexdigest()
+                                    for mode in ("sql", "client-free")}}
+        (work/"evidence.json").write_text(json.dumps(report, sort_keys=True, indent=2)+"\n")
 
 
 if __name__ == "__main__":

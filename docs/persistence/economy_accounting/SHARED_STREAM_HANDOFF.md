@@ -383,3 +383,24 @@ and still rejects removing protection, changing reset action or deactivating
 retained evidence. Peer observed the exact two stale-count failures; this changes
 only those counts. Python AST/diff checks pass; execution remains at the original
 major-plan batch. No store policy, native schema or release permission changes.
+
+### October 4 independent baseline command binding integration
+
+Peer1afe82fb6 and build handoff8d9ce039a are imported through the history-preserving
+local integration. Six exact peer blobs, four Python AST inputs and all48 existing
+raw candidate source pins match. The independent reader now reconstructs the
+native normalized baseline CCM1 binding rather than accepting arbitrary nonzero
+binding bytes. Peer native RED and both-engine GREEN (147 damage cuts per engine,
+cold dump/import/replay) remain proof for its frozen152acc1cd inputs only. No
+combined primary native qualification or full world capture is claimed.
+
+The refreshed peer build compiled the corrected collector but exposed missing
+replay-ownership header visibility in flatfile_economic_runtime.c. Primary owns
+that narrow repair; actual managed v3 service qualification remains unexecuted.
+Its stale census observations precede published e1e3028cd and do not supersede
+that current source-inventory evidence. Complete baseline inbox authentication
+still needs the exact original admission timestamp or equivalent retained full
+command; the primary is inspecting existing authority before selecting a new
+persisted field. Shops, sequential quests, remaining writers and activation/
+release qualification stay open. Major-plan testing remains deferred; accounting
+is inactive and no requirement or release gate is waived.
