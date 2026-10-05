@@ -1028,3 +1028,14 @@ is under source review; exact preparation token/native keeper checkpoint, held
 publication/recovery integration and original backend journeys remain required.
 The independent baseline admission-time additive0058 draft proceeds separately,
 after pending0057; measured metadata is still required before coherent integration.
+
+
+### Flat coin recovery parent-index compiler repair
+
+[The narrow primary repair](COIN_FLAT_PARENT_INDEX_REPAIR_2026-10-04.md) follows
+Plan5's exact maintained build finding8ca6b223e. It excludes negative root
+sentinels before comparing the nonnegative signed parent to the size_t vector
+index, preserving valid graph refusal semantics and all native/publication holds.
+Source review, changed-line formatting and candidate-pin/source metadata checks
+only; new native builds and actual v3 restore/retained-pile recovery remain at
+the original major-plan qualification batch. Coverage and release remain blocked.
