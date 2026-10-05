@@ -70,7 +70,8 @@ class checker
 					  [&](const auto &entry) { return entry.epoch == epoch; });
 		need(found != catalog.entries.end());
 		const auto &marker = *found;
-		need(marker.initialization == baseline_initialization::initialized &&
+		need(marker.origin != initialization_origin::baseline_participant &&
+		     marker.initialization == baseline_initialization::initialized &&
 		     marker.creating_operation == operation &&
 		     marker.initializing_operation == operation && marker.transition_kind == 1 &&
 		     marker.transition_digest == coverage && marker.opening == opening);
@@ -235,6 +236,7 @@ class checker
 	template <typename Mapped> void load(const identity &lineage, const epoch_catalog &catalog,
 					     std::span<const uint8_t> control, Mapped mapped)
 	{
+		std::set<identity> present;
 		for (const auto &file : std::filesystem::directory_iterator(directory))
 		{
 			auto name = file.path().filename().string();
@@ -243,8 +245,14 @@ class checker
 			need(name.size() == 46 && name.starts_with("lifecycle-") &&
 			     name.ends_with(".elr") && expected.size() < 4096);
 			auto operation = restore_economic_baseline::unhex(name.substr(10, 32));
+			need(present.insert(operation).second);
 			receipt(name, operation, lineage, catalog, control, mapped);
 		}
+		// The authority-bound origin supplies required-file discovery, including
+		// old inactive epochs. An absent file cannot declare a generic origin.
+		for (const auto &entry : catalog.entries)
+			if (entry.origin == initialization_origin::lifecycle_owner)
+				need(present.contains(entry.initializing_operation));
 	}
 	void record(const identity &operation, std::span<const uint8_t> command,
 		    std::span<const uint8_t> plan, uint64_t revision, uint64_t result,
