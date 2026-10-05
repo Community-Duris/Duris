@@ -30,8 +30,13 @@
 #include "player/player_playtime.h"
 #include "player/player_save_journal.h"
 #include "player/player_save_replay_ownership.h"
+#include "economy/shop_trade_transaction.h"
 #ifndef __NO_MYSQL__
 #include "player/player_sql_transaction_cleanup.h"
+#include "persistence/shop_item_runtime_payload.h"
+#include "persistence/economic_accounting_repository.h"
+#include <memory>
+#include "sql/sql_exclusion_guard.h"
 #endif
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_items.h"
@@ -113,6 +118,14 @@ static bool sql_load_player_items(P_char ch);
 #endif
 
 #ifdef __NO_MYSQL__
+
+// Flat checkpoint parity is not supplied by this SQL native owner.
+shop_trade_preparation_state
+shop_trade_native_checkpoint_owner::attempt(const shop_trade_preparation_token &, P_char, P_char,
+					    P_obj, P_obj, P_obj) noexcept
+{
+	return shop_trade_preparation_state::refused;
+}
 
 // stubs when mysql is disabled
 #pragma GCC diagnostic push
@@ -9135,9 +9148,453 @@ static bool sql_save_shopkeeper_item_affects(int item_id, P_obj obj)
 	return true;
 }
 
-static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot, int container_id)
+namespace shop_native_checkpoint
+{
+struct refusal
+{
+};
+void require(bool value)
+{
+	if (!value)
+		throw refusal{};
+}
+using result_owner = std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)>;
+void execute(MYSQL *connection, const std::string &query)
+{
+	require(DB == connection && duris_sql_exclusion_guard_allows(connection) &&
+		!mysql_real_query(connection, query.data(), query.size()));
+}
+result_owner read(MYSQL *connection, const std::string &query, unsigned int fields)
+{
+	execute(connection, query);
+	result_owner result(mysql_store_result(connection), mysql_free_result);
+	require(result && mysql_num_fields(result.get()) == fields &&
+		mysql_num_rows(result.get()) <= 1);
+	return result;
+}
+template <class T> T number(const char *text)
+{
+	require(text != nullptr);
+	T value{};
+	const auto *end = text + strlen(text);
+	const auto parsed = std::from_chars(text, end, value);
+	require(parsed.ec == std::errc{} && parsed.ptr == end);
+	return value;
+}
+std::string quote(MYSQL *connection, const char *text)
+{
+	const size_t count = strnlen(text, CURRENCY_ACCOUNT_NAME_MAX_BYTES + 1);
+	require(count && count <= CURRENCY_ACCOUNT_NAME_MAX_BYTES);
+	std::string escaped(count * 2 + 1, '\0');
+	escaped.resize(mysql_real_escape_string(connection, escaped.data(), text, count));
+	return "'" + escaped + "'";
+}
+uint64_t owner_revision(MYSQL *connection, const item_owner_identity &owner)
+{
+	auto result = read(connection,
+			   "SELECT revision FROM item_owner_revision WHERE owner_type=" +
+				   std::to_string(static_cast<uint8_t>(owner.type)) +
+				   " AND owner_id=" + std::to_string(owner.id) +
+				   " AND owner_context_id=" + std::to_string(owner.context_id) +
+				   " FOR UPDATE",
+			   1);
+	const auto row = mysql_fetch_row(result.get());
+	// Observe optimistic revision zero without adopting or manufacturing an owner row.
+	return row ? number<uint64_t>(row[0]) : 0;
+}
+std::vector<uint8_t> item_bytes(const player_item_snapshot &item)
+{
+	auto standalone = item;
+	standalone.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	std::vector<uint8_t> bytes;
+	require(player_item_snapshot_list_encode({ standalone }, &bytes) ==
+		player_snapshot_codec_result::ok);
+	return bytes;
+}
+bool same_image(const shop_item_runtime_image &a, const shop_item_runtime_image &b, bool after)
+{
+	if (a.size() != b.size())
+		return false;
+	auto left = a.begin(), right = b.begin();
+	for (; left != a.end(); ++left, ++right)
+	{
+		const auto &x = left->second, &y = right->second;
+		if (left->first != right->first || x.id != y.id || x.parent_id != y.parent_id ||
+		    x.root_uid != y.root_uid || x.revision != y.revision || x.slot != y.slot ||
+		    x.payload_present != (after ? true : y.payload_present) ||
+		    item_bytes(x.item) != item_bytes(y.item))
+			return false;
+	}
+	return true;
+}
+// This stage is a value observation under the original transaction, never a
+// standalone capability. The pending trade owns the original full body/hold.
+shop_trade_native_checkpoint_stage lock_image(MYSQL *connection,
+					      const shop_trade_checkpoint_context &context)
+{
+	shop_trade_native_checkpoint_stage stage;
+	uint64_t bank_id = 0;
+	{
+		auto result =
+			read(connection,
+			     "SELECT native_id FROM economic_account_mapping WHERE mapping_id=" +
+				     std::to_string(context.mapping.bank.authority_id),
+			     1);
+		auto row = mysql_fetch_row(result.get());
+		require(row);
+		bank_id = number<uint64_t>(row[0]);
+		require(bank_id && bank_id <= UINT32_MAX);
+	}
+	const std::array<economic_sql_mapping_request, 2> mappings{
+		{ { context.mapping.wallet, 1, context.player_pid },
+		  { context.mapping.bank, 2, bank_id } }
+	};
+	economic_sql_authority_snapshot authority;
+	require(!economic_sql_lock_authority(connection, context.mapping.lineage,
+					     context.mapping.epoch, mappings, &authority));
+	{
+		auto result = read(
+			connection,
+			"SELECT account_name,racewar,level,save_revision,copper,silver,gold,platinum,wallet_revision "
+			"FROM player_data WHERE pid=" +
+				std::to_string(context.player_pid) + " FOR UPDATE",
+			9);
+		auto row = mysql_fetch_row(result.get());
+		require(row && row[0] && !strcasecmp(row[0], context.account_name.data()));
+		require(number<uint8_t>(row[1]) == context.racewar &&
+			number<uint32_t>(row[2]) == context.player.level &&
+			number<uint64_t>(row[3]) == context.player.save_revision);
+		for (size_t index = 0; index < 4; ++index)
+		{
+			stage.wallet.amount[index] = number<int64_t>(row[index + 4]);
+			require(stage.wallet.amount[index] >= 0 &&
+				stage.wallet.amount[index] <= INT_MAX);
+		}
+		stage.wallet_revision = number<uint64_t>(row[8]);
+	}
+	{
+		auto result = read(
+			connection,
+			"SELECT id,bank_copper,bank_silver,bank_gold,bank_platinum,bank_revision FROM account_banks WHERE account_name=" +
+				quote(connection, context.account_name.data()) +
+				" AND racewar=" + std::to_string(context.racewar) + " FOR UPDATE",
+			6);
+		auto row = mysql_fetch_row(result.get());
+		require(row && number<uint64_t>(row[0]) == bank_id);
+		for (size_t index = 0; index < 4; ++index)
+		{
+			stage.bank.amount[index] = number<int64_t>(row[index + 1]);
+			require(stage.bank.amount[index] >= 0 &&
+				stage.bank.amount[index] <= INT_MAX);
+		}
+		stage.bank_revision = number<uint64_t>(row[5]);
+		stage.bank_id = bank_id;
+	}
+	{
+		auto result = read(
+			connection,
+			"SELECT id,shop_id,mob_vnum,cash,shop_revision,keeper_roaming,runtime_payload_checkpoint_revision FROM shopkeepers WHERE shop_id=" +
+				std::to_string(context.shop_id) + " FOR UPDATE",
+			7);
+		auto row = mysql_fetch_row(result.get());
+		require(row);
+		stage.keeper_id = number<uint64_t>(row[0]);
+		require(stage.keeper_id && stage.keeper_id <= UINT32_MAX &&
+			number<uint32_t>(row[1]) == context.shop_id &&
+			number<int32_t>(row[2]) == context.keeper_vnum &&
+			number<int64_t>(row[3]) == context.keeper_cash &&
+			number<uint8_t>(row[5]) == static_cast<uint8_t>(context.keeper_roaming));
+		stage.shop_revision_before = number<uint64_t>(row[4]);
+		stage.payload_checkpoint_recorded_before = row[6] != nullptr;
+		if (row[6])
+		{
+			stage.payload_checkpoint_revision_before = number<uint64_t>(row[6]);
+			require(stage.payload_checkpoint_revision_before &&
+				stage.payload_checkpoint_revision_before <=
+					stage.shop_revision_before);
+		}
+	}
+	std::array<item_owner_identity, 2> owners{
+		{ { item_owner_type::player, context.player_pid, 0 },
+		  { item_owner_type::shopkeeper, item_shopkeeper_owner_id(context.shop_id), 0 } }
+	};
+	std::sort(owners.begin(), owners.end(),
+		  [](const auto &a, const auto &b)
+		  {
+			  return a.type != b.type ?
+					 a.type < b.type :
+					 (a.id != b.id ? a.id < b.id : a.context_id < b.context_id);
+		  });
+	for (const auto &owner : owners)
+	{
+		const auto revision = owner_revision(connection, owner);
+		if (owner.type == item_owner_type::player)
+			stage.player_owner_revision = revision;
+		else
+			stage.keeper_owner_revision = revision;
+	}
+	require(shop_item_runtime_lock_checkpoint_image(connection, stage.keeper_id,
+							context.shop_id, context.keeper_vnum,
+							context.keeper_items, &stage.keeper_image));
+	return stage;
+}
+bool same_cut(const shop_trade_native_checkpoint_stage &a,
+	      const shop_trade_native_checkpoint_stage &b, bool after)
+{
+	return a.keeper_id == b.keeper_id && a.bank_id == b.bank_id &&
+	       a.player_owner_revision == b.player_owner_revision &&
+	       a.keeper_owner_revision == b.keeper_owner_revision &&
+	       a.wallet.amount == b.wallet.amount && a.bank.amount == b.bank.amount &&
+	       a.wallet_revision == b.wallet_revision && a.bank_revision == b.bank_revision &&
+	       (after ? (a.payload_checkpoint_recorded_before &&
+			 a.payload_checkpoint_revision_before == b.shop_revision_after) :
+			(a.payload_checkpoint_recorded_before ==
+				 b.payload_checkpoint_recorded_before &&
+			 a.payload_checkpoint_revision_before ==
+				 b.payload_checkpoint_revision_before)) &&
+	       same_image(a.keeper_image, b.keeper_image, after);
+}
+}
+
+shop_trade_preparation_state
+shop_trade_native_checkpoint_owner::attempt(const shop_trade_preparation_token &token, P_char actor,
+					    P_char keeper, P_obj selected, P_obj stock,
+					    P_obj destination) noexcept
+{
+	using namespace shop_native_checkpoint;
+	if (!nevent_is_game_thread() || !economic_gameplay_authority::active_regular_sql() || !DB ||
+	    sql_in_transaction() || player_sql_idle_error(DB))
+		return shop_trade_preparation_state::pending;
+	shop_trade_checkpoint_context context;
+	shop_trade_native_checkpoint_stage retained;
+	if (shop_trade_preparation_owner::completed_native_checkpoint(token, &retained))
+		return shop_trade_preparation_state::ready;
+	bool retry = false;
+	if (!shop_trade_preparation_owner::begin_native_checkpoint(token, actor, keeper, selected,
+								   stock, destination, &context,
+								   &retained, &retry))
+		return shop_trade_preparation_state::refused;
+	MYSQL *const original = DB;
+	player_sql_cleanup proof;
+	bool commit_attempted = false, completed = false, readback = false, before_readback = false,
+	     clean = false, sealed = false;
+	{
+		player_sql_transaction_cleanup cleanup(original, proof);
+		cleanup.starting();
+		try
+		{
+			execute(original, "START TRANSACTION");
+			require(cleanup.same_session() &&
+				(original->server_status & SERVER_STATUS_IN_TRANS));
+			in_transaction = true;
+			auto stage = lock_image(original, context);
+			if (retry)
+			{
+				// Neither branch mutates or reincrements. The fresh read-only
+				// rollback below only closes this proof transaction; complete
+				// original pre/post facts determine the earlier disposition.
+				require(retained.keeper_id);
+				if (stage.shop_revision_before == retained.shop_revision_after)
+				{
+					require(same_cut(stage, retained, true));
+					for (const auto &[uid, row] : stage.keeper_image)
+					{
+						(void)uid;
+						require(shop_item_runtime_verify(
+							original, true, row.id, stage.keeper_id,
+							row.parent_id, row.item));
+					}
+					readback = true;
+				}
+				else
+				{
+					require(stage.shop_revision_before ==
+							retained.shop_revision_before &&
+						same_cut(stage, retained, false));
+					before_readback = true;
+				}
+			}
+			else
+			{
+				require(stage.shop_revision_before != UINT64_MAX);
+				stage.shop_revision_after = stage.shop_revision_before + 1;
+				// Strong copy completes before original stage ownership transfer/mutation.
+				auto expected = stage;
+				require(shop_trade_preparation_owner::seal_native_checkpoint(
+					token, std::move(stage)));
+				sealed = true;
+				for (const auto &[uid, row] : expected.keeper_image)
+				{
+					(void)uid;
+					require(shop_item_runtime_write(original, true, row.id,
+									row.item));
+				}
+				const std::string update =
+					"UPDATE shopkeepers SET shop_revision=" +
+					std::to_string(expected.shop_revision_after) +
+					",runtime_payload_checkpoint_revision=" +
+					std::to_string(expected.shop_revision_after) +
+					" WHERE id=" + std::to_string(expected.keeper_id) +
+					" AND shop_revision=" +
+					std::to_string(expected.shop_revision_before);
+				execute(original, update);
+				require(mysql_affected_rows(original) == 1);
+				auto after = lock_image(original, context);
+				require(same_cut(after, expected, true) &&
+					after.shop_revision_before == expected.shop_revision_after);
+				for (const auto &[uid, row] : after.keeper_image)
+				{
+					(void)uid;
+					require(shop_item_runtime_verify(original, true, row.id,
+									 after.keeper_id,
+									 row.parent_id, row.item));
+				}
+				require(DB == original && cleanup.same_session());
+				cleanup.committing();
+				commit_attempted = true;
+				execute(original, "COMMIT");
+				completed = cleanup.committed();
+			}
+		}
+		catch (...)
+		{
+			// Every failure keeps original ownership until explicit native disposition.
+		}
+		// Direct native calls have no domain callbacks or main-handle replacement.
+		// Keep the original allocated until explicit cleanup and its owner unwind.
+		cleanup.finish();
+		clean = proof.disposition == player_sql_cleanup_disposition::idle_verified &&
+			!proof.cleanup_error && (completed || proof.rollback_confirmed);
+	}
+	// Cleanup owner has unwound before any exact main-session retirement.
+	const bool retired = !clean && DB == original && sql_retire_main_save_connection(original);
+	if (clean || DB != original)
+	{
+		in_transaction = false;
+		character_deletion_guard_pid = 0;
+		sql_clear_account_character_cache_sync();
+	}
+	const bool settled = clean && (completed || readback);
+	// A fresh unsealed attempt issued no DML. Actual original-session disposal
+	// removes its locks even when rollback could not be confirmed; this is
+	// never-mutated retirement, not fabricated rollback proof.
+	const auto disposition =
+		!retry && !sealed && retired ?
+			shop_trade_native_checkpoint_disposition::never_mutated_retired :
+		settled ? shop_trade_native_checkpoint_disposition::committed :
+			  (clean && ((!commit_attempted && !retry) || before_readback) ?
+				   shop_trade_native_checkpoint_disposition::rolled_back :
+				   shop_trade_native_checkpoint_disposition::uncertain);
+	if (!shop_trade_preparation_owner::finish_native_checkpoint(token, disposition))
+		return shop_trade_preparation_state::pending;
+	return settled ? shop_trade_preparation_state::ready :
+			 shop_trade_preparation_state::pending;
+}
+
+// Enabled only when the additive sidecar exists. Legacy schemas keep their
+// existing transaction path. The original global session remains borrowed.
+class shop_payload_transaction
+{
+	MYSQL *original_;
+	player_sql_cleanup proof_{};
+	player_sql_transaction_cleanup cleanup_;
+	bool enabled_, started_ = false;
+
+    public:
+	explicit shop_payload_transaction(bool enabled) noexcept
+		: original_(DB)
+		, cleanup_(original_, proof_)
+		, enabled_(enabled)
+	{
+	}
+	bool starting() noexcept
+	{
+		if (!enabled_)
+			return true;
+		if (player_sql_idle_error(original_) || sql_in_transaction())
+			return false;
+		cleanup_.starting();
+		started_ = true;
+		return true;
+	}
+	void committing() noexcept
+	{
+		if (enabled_)
+			cleanup_.committing();
+	}
+	bool committed() noexcept
+	{
+		if (!enabled_)
+			return true;
+		const bool okay = cleanup_.committed();
+		if (okay)
+			started_ = false;
+		return okay;
+	}
+	bool finish() noexcept
+	{
+		if (!enabled_ || !started_)
+			return true;
+		cleanup_.finish();
+		in_transaction = false;
+		character_deletion_guard_pid = 0;
+		sql_clear_account_character_cache_sync();
+		const bool okay = proof_.disposition ==
+					  player_sql_cleanup_disposition::idle_verified &&
+				  proof_.rollback_confirmed && !proof_.cleanup_error;
+		if (!okay)
+			(void)sql_retire_main_save_connection(original_);
+		started_ = false;
+		return okay;
+	}
+	~shop_payload_transaction() noexcept { (void)finish(); }
+};
+static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot, int container_id,
+				    shop_item_runtime_image *enrolled = nullptr,
+				    bool complete_payload = false)
 {
 	if (!obj || !DB || shopkeeper_id <= 0 || !obj->obj_uid)
+		return 0;
+	try
+	{
+		if (enrolled)
+		{
+			const auto found = enrolled->find(obj->obj_uid);
+			if (found != enrolled->end())
+			{
+				const auto &item = found->second.item;
+				if (item.equipment_slot != equip_slot)
+					return 0;
+				const std::string insert =
+					"INSERT INTO shopkeeper_items(shopkeeper_id,vnum,equip_slot,container_id,quantity,obj_uid) VALUES(" +
+					std::to_string(shopkeeper_id) + ',' +
+					std::to_string(item.vnum) + ',' +
+					std::to_string(equip_slot) + ',' +
+					(container_id ? std::to_string(container_id) : "NULL") +
+					",1," + std::to_string(item.object_uid) + ")";
+				if (!sql_run_query(insert.c_str()))
+					return 0;
+				const uint64_t saved_id = mysql_insert_id(DB);
+				if (!saved_id || saved_id > INT_MAX ||
+				    !shop_item_runtime_write(DB, true, saved_id, item))
+					return 0;
+				enrolled->erase(found);
+				for (P_obj child = obj->contains; child;
+				     child = child->next_content)
+					if (!sql_save_shopkeeper_item(shopkeeper_id, child, 0,
+								      static_cast<int>(saved_id),
+								      enrolled, complete_payload))
+						return 0;
+				return static_cast<int>(saved_id);
+			}
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return 0;
+	}
+	if (complete_payload)
 		return 0;
 	std::string properties_suffix;
 	if (!sql_player_item_properties_value_suffix(obj, &properties_suffix))
@@ -9246,7 +9703,8 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 	{
 		for (P_obj content = obj->contains; content; content = content->next_content)
 		{
-			if (!sql_save_shopkeeper_item(shopkeeper_id, content, 0, item_id))
+			if (!sql_save_shopkeeper_item(shopkeeper_id, content, 0, item_id, enrolled,
+						      complete_payload))
 				return 0;
 		}
 	}
@@ -9296,6 +9754,15 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 	    cash > INT_MAX)
 		return false;
 
+	bool payload_storage = false;
+	if (!shop_item_runtime_storage_available(DB, &payload_storage))
+		return false;
+	shop_item_runtime_image enrolled, expected_complete;
+	bool complete_payload = false;
+	std::vector<player_item_snapshot> complete_literal;
+	shop_payload_transaction payload_transaction(payload_storage);
+	if (!payload_transaction.starting())
+		return false;
 	// start transaction
 	if (!sql_begin_transaction())
 	{
@@ -9312,6 +9779,44 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 							      shop_index[shop_nr].in_room;
 	long save_time = time(0);
 
+	int prior_keeper_id = 0;
+	if (payload_storage)
+	{
+		MYSQL_RES *prior =
+			db_query("SELECT id FROM shopkeepers WHERE shop_id=%d FOR UPDATE", shop_nr);
+		if (!prior)
+		{
+			sql_rollback();
+			return false;
+		}
+		MYSQL_ROW prior_row = mysql_fetch_row(prior);
+		const bool unique = mysql_num_rows(prior) <= 1;
+		const bool existed = prior_row != nullptr;
+		if (prior_row)
+			prior_keeper_id = atoi(prior_row[0]);
+		mysql_free_result(prior);
+		if (!unique || (existed && prior_keeper_id <= 0) ||
+		    (prior_keeper_id && !shop_item_runtime_refresh_image(
+						DB, prior_keeper_id, shop_nr, mob_vnum, ch,
+						&enrolled, &complete_payload, &complete_literal)))
+		{
+			sql_rollback();
+			return false;
+		}
+	}
+	// Capture all post-replacement proof values before any native mutation.
+	if (complete_payload)
+	{
+		try
+		{
+			expected_complete = enrolled;
+		}
+		catch (...)
+		{
+			sql_rollback();
+			return false;
+		}
+	}
 	char ins_query[512];
 	snprintf(
 		ins_query, sizeof(ins_query),
@@ -9333,6 +9838,11 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 
 	int shopkeeper_id = (int)mysql_insert_id(DB);
 	if (shopkeeper_id <= 0)
+	{
+		sql_rollback();
+		return false;
+	}
+	if (prior_keeper_id && prior_keeper_id != shopkeeper_id)
 	{
 		sql_rollback();
 		return false;
@@ -9365,7 +9875,8 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 	{
 		if (ch->equipment[i])
 		{
-			if (!sql_save_shopkeeper_item(shopkeeper_id, ch->equipment[i], i + 1, 0))
+			if (!sql_save_shopkeeper_item(shopkeeper_id, ch->equipment[i], i + 1, 0,
+						      &enrolled, complete_payload))
 			{
 				logit(LOG_DEBUG,
 				      "sql_save_shopkeeper: failed to save equip slot %d for shop %d",
@@ -9379,9 +9890,10 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 	{
 		// skip producing items - they're regenerated from zone definitions
-		if (shop_producing(obj, shop_nr))
+		if (shop_producing(obj, shop_nr) && !enrolled.count(obj->obj_uid))
 			continue;
-		if (!sql_save_shopkeeper_item(shopkeeper_id, obj, 0, 0))
+		if (!sql_save_shopkeeper_item(shopkeeper_id, obj, 0, 0, &enrolled,
+					      complete_payload))
 		{
 			logit(LOG_DEBUG,
 			      "sql_save_shopkeeper: failed to save inventory item for shop %d",
@@ -9391,12 +9903,42 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 		}
 	}
 
+	if (!enrolled.empty())
+	{
+		sql_rollback();
+		return false;
+	}
+	if (complete_payload)
+	{
+		shop_item_runtime_image rebuilt;
+		if (!shop_item_runtime_lock_checkpoint_image(DB, shopkeeper_id, shop_nr, mob_vnum,
+							     complete_literal, &rebuilt) ||
+		    rebuilt.size() != expected_complete.size())
+		{
+			sql_rollback();
+			return false;
+		}
+		for (const auto &[uid, row] : rebuilt)
+		{
+			const auto old = expected_complete.find(uid);
+			if (old == expected_complete.end() ||
+			    row.revision != old->second.revision || !row.payload_present)
+			{
+				sql_rollback();
+				return false;
+			}
+		}
+	}
+	payload_transaction.committing();
 	if (!sql_commit())
 	{
 		logit(LOG_DEBUG, "sql_save_shopkeeper: failed to commit for shop %d", shop_nr);
 		sql_rollback();
 		return false;
 	}
+
+	if (!payload_transaction.committed())
+		return false;
 
 	return true;
 }
@@ -9694,11 +10236,18 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 	if (!DB)
 		return false;
 
+	bool payload_storage = false;
+	if (!shop_item_runtime_storage_available(DB, &payload_storage))
+		return false;
+	shop_payload_transaction payload_transaction(payload_storage);
+	if (!payload_transaction.starting() || (payload_storage && !sql_begin_transaction()))
+		return false;
+	std::map<int, shop_item_runtime_image> payload_images;
 	// query 1: load all shopkeepers
 	MYSQL_RES *result =
 		db_query("SELECT shop_id, id, mob_vnum, room_vnum, cash FROM shopkeepers "
-			 "WHERE (%d < 0 OR shop_id=%d) ORDER BY save_time DESC, id DESC",
-			 only_shop, only_shop);
+			 "WHERE (%d < 0 OR shop_id=%d) ORDER BY save_time DESC, id DESC%s",
+			 only_shop, only_shop, payload_storage ? " FOR UPDATE" : "");
 	if (!result)
 		return false;
 
@@ -9762,6 +10311,28 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 			saved_cash = static_cast<int>(parsed_cash);
 		}
 
+		if (payload_storage)
+		{
+			shop_item_runtime_image image;
+			if (!shop_item_runtime_keeper_image(DB, shopkeeper_id, shop_nr, mob_vnum,
+							    &image))
+			{
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
+			try
+			{
+				payload_images.emplace(shopkeeper_id, std::move(image));
+			}
+			catch (const std::bad_alloc &)
+			{
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				errno = ENOMEM;
+				return false;
+			}
+		}
 		P_char mob = read_mobile(mob_vnum, VIRTUAL);
 		if (!mob)
 		{
@@ -9809,7 +10380,7 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 	mysql_free_result(result);
 
 	if (keeper_count == 0)
-		return true;
+		return payload_transaction.finish();
 
 	// query 2: load all shopkeeper affects
 	result = db_query(
@@ -10120,6 +10691,31 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 		mysql_free_result(result);
 	}
 
+	// All base/metadata/properties were read while original custody and keeper
+	// locks remained held. Runtime properties are not applied a second time.
+	for (struct all_items_temp *item = all_items; item; item = item->next)
+	{
+		const auto keeper = payload_images.find(item->shopkeeper_id);
+		if (keeper == payload_images.end())
+			continue;
+		const auto found = keeper->second.find(item->obj->obj_uid);
+		if (found == keeper->second.end())
+			continue;
+		if (found->second.id != static_cast<uint64_t>(item->item_id) ||
+		    found->second.parent_id != static_cast<uint64_t>(item->container_id) ||
+		    !shop_item_runtime_restore_stage(item->obj, found->second.item))
+		{
+			discard_shopkeeper_restore_stage(keepers, all_items, false);
+			return false;
+		}
+		keeper->second.erase(found);
+	}
+	for (const auto &[id, image] : payload_images)
+		if (!image.empty())
+		{
+			discard_shopkeeper_restore_stage(keepers, all_items, false);
+			return false;
+		}
 	// link container contents
 	int item_count = 0;
 	for (struct all_items_temp *item = all_items; item; item = item->next)
@@ -10248,6 +10844,12 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 		}
 	}
 
+	// Explicit same-session rollback/idle proof precedes any live placement.
+	if (!payload_transaction.finish())
+	{
+		discard_shopkeeper_restore_stage(keepers, all_items, true);
+		return false;
+	}
 	// free item temp structs
 	struct all_items_temp *ti = all_items;
 	while (ti)

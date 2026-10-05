@@ -14,6 +14,8 @@ class player_save_restored_publication_owner;
 // collector refusal. This neither checkpoints a journal nor fabricates ACK.
 bool critical_command_coordinator_cancel_collector_publication(
 	player_save_restored_publication_owner &);
+// Same exact private reservation, restricted to decoded schema-2 v6 SHOP.
+bool critical_command_coordinator_cancel_shop_publication(player_save_restored_publication_owner &);
 
 // Private coordinator-side lease operations used only by the SQL lifecycle
 // owner. They expose no readiness boolean or lease identity to public callers.

@@ -56,6 +56,7 @@ DORMANT_WRITERS = {
     "player.confiscate_all_dormant": "Compiled bulk rent confiscation helper has no in-tree callsite; its direct inventory extraction requires bounded UID retirement if revived.",
 }
 NON_WRITERS = {
+    "item.shop_container_shell_probe": "Reads and extracts a temporary unowned template to observe container shell weight; no admitted UID, custody root, durable holding or ACK authority.",
     "coin.restored_pile_rendering": "Compares retained opening/result literals on detached stack-local objects; no UID admission or native holding change.",
     "recovery.ordinary_drop_graph_reconstruction": "Reconstructs only an entirely absent graph from exact original receipt/current SQL authority using retained UIDs and literals. Projection enrollment changes global/index/room/runtime caches without economic issuance, destruction or ACK.",
     "recovery.inert_literal_eligibility": "Pure bounded classification of literal/prototype eligibility; no allocation, pool access, hydration, native mutation or enrollment permission.",
@@ -164,6 +165,8 @@ NON_WRITERS = {
     "special.flying_citadel_unreachable_move": "flying_citadel returns FALSE unconditionally before the room-to-room object movement; the two calls cannot execute in this build.",
 }
 PROJECTION_ROUTES = {
+    "shop.native_current_publication": "Original held SHOP native publication projects complete current SQL images only after exact retained receipt and whole-world proof; cold continuation and real native journeys remain unqualified.",
+    "shop.native_current_runtime": "Friend-only native owner projects current custody, owner and shop revision caches from its original locked SQL session; observed values alone grant no publication or ACK authority.",
     "recovery.ordinary_drop_retained_live_publication": "After exact retained SQL drop receipt, current custody/literal/session and live graph proof, relinks the existing UID tree from player to original room and hydrates its committed runtime revision. It creates no new economic root, supply event or publication ACK; interrupted native tails remain held.",
     "coin.restored_balance_projection": "Copies verified current native wallet/shared-bank vectors into exact original live bodies under retained receipt/current authority; no new posting.",
     "coin.restored_room_projection": "Projects an original-UID committed room pile, including private inert-stage hydration and global/room enrollment not represented by scanner hits; complete native authority and guarded ACK remain mandatory.",
@@ -835,7 +838,8 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
     elif disposition == "offline_operational_writer":
         decision = "maintenance_only_no_live_admission"
         policy = OFFLINE_WRITERS[route_id] + " Require a quiesced boundary, exact retained lineage/epoch, source snapshot witness and idempotent resume; fail closed on unknown rows."
-    elif route_id in {"player.legacy_flatfile_load", "player.sql_status_projection",
+    elif route_id in {"shop.native_current_publication", "shop.native_current_runtime",
+                      "player.legacy_flatfile_load", "player.sql_status_projection",
                       "player.sql_bank_live_load", "world.generated_npc_hydration",
                       "recovery.copyover_npc_gold_projection",
                       "recovery.flat_corpse_coin_materialization",
@@ -870,7 +874,9 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
                       "special.disarm_pick_gloves_slot_relink",
                       "artifact.good_evil_sword_slot_relink"}:
         decision = "block_until_projection_proof"
-        if route_id == "player.sql_bank_live_load":
+        if route_id in {"shop.native_current_publication", "shop.native_current_runtime"}:
+            policy = PROJECTION_ROUTES[route_id] + " Keep accounted SHOP admission closed until coherent native/schema/backend recovery and the original major-plan qualification are complete."
+        elif route_id == "player.sql_bank_live_load":
             policy = PROJECTION_ROUTES[route_id] + " The login caller ignores a failed bank read after this function has zeroed the PC bank. Refuse publication until the selected bank result and revision are verified."
         elif route_id == "player.sql_status_projection":
             policy = PROJECTION_ROUTES[route_id] + " Refuse publication until the separate selected account-bank load succeeds and wallet/bank revisions form one complete player view."

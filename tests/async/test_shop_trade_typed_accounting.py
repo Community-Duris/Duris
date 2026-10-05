@@ -18,7 +18,7 @@ def main():
         "-D__NO_MYSQL__", "-Isrc/no_mysql", "-Isrc",
         "tests/async/shop_trade_typed_accounting_test.cpp",
         "src/economy/shop_trade_accounting.c",
-        "src/economy/shop_trade_command.c",
+        "src/economy/shop_trade_command.c", "src/economy/shop_trade_recovery_manifest.c",
         "src/economy/currency_command.c",
         "src/economy/economic_accounting_types.c",
         "src/economy/economic_accounting_plan.c", "src/economy/economic_source_event.c",

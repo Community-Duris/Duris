@@ -56,7 +56,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/economy/collector_command.c src/economy/collector_codec.c \
     src/economy/collector_policy.c src/economy/collector_repository.c \
     src/economy/collector_accounting.c \
-    src/economy/shop_trade_command.c src/economy/shop_trade_accounting.c \
+    src/economy/shop_trade_command.c src/economy/shop_trade_recovery_manifest.c src/economy/shop_trade_accounting.c \
     src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
     src/persistence/player_death_restitution_command.c \
     src/persistence/player_death_restitution_repository.c \
@@ -69,7 +69,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/persistence/economic_sql_bank_transaction.c \
     src/persistence/economic_sql_item_transfer_transaction.c \
     src/persistence/economic_sql_collector_transaction.c \
-    src/persistence/economic_sql_shop_trade_transaction.c \
+    src/persistence/economic_sql_shop_trade_transaction.c src/persistence/shop_item_runtime_payload.c src/economy/shop_trade_recovery_image.c \
     src/economy/economic_currency_adapter.c \
     src/economy/item_transfer_accounting.c \
     src/economy/coin_transfer_accounting.c \

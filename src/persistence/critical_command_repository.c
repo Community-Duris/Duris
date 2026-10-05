@@ -3842,3 +3842,85 @@ critical_apply_result critical_command_repository_verify_collector_purchase_in_t
 	}
 #endif
 }
+
+critical_apply_result critical_command_repository_verify_shop_trade_in_transaction(
+	MYSQL *connection, const critical_command &command) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	return { critical_apply_outcome::retryable_failure, 0, ENOTSUP };
+#else
+	try
+	{
+		last_statement_error = 0;
+		economic_frozen_intent intent;
+		shop_trade_payload payload{};
+		economic_account_key wallet, bank, keeper;
+		if (!connection || !command.publication_required ||
+		    command.type != critical_command_type::shop_trade ||
+		    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		    shop_trade_accounting_decode(command, &intent, &payload, &wallet, &bank,
+						 &keeper) != economic_accounting_error::ok ||
+		    intent.admission.facts.size() != 16 || !root_transaction_active(connection))
+			return { critical_apply_outcome::retryable_failure, 0, EINVAL };
+		unsigned long session = 0;
+		auto error = accounted_session_check(connection, &session, false);
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return { critical_apply_outcome::retryable_failure, 0, error };
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash{}, keys_hash{};
+		stored_operation stored{};
+		bool found = false;
+		if (!command_hashes(command, &command_hash, &keys_hash) ||
+		    !read_operation(connection, command.operation_id, false, &stored, &found))
+			return { critical_apply_outcome::retryable_failure, 0,
+				 database_error(connection) ? database_error(connection) : ENOMEM };
+		if (!found || stored.status != INBOX_COMMITTED)
+			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+		if (!identity_matches(stored, command, command_hash, keys_hash))
+			return { critical_apply_outcome::retryable_failure, 0, EEXIST };
+		shop_trade_result result{};
+		std::array<uint8_t, SHOP_TRADE_RESULT_BYTES> encoded{};
+		if (stored.failure_stage != static_cast<uint16_t>(critical_failure_stage::none) ||
+		    stored.result_payload.size() != encoded.size() ||
+		    !shop_trade_command_decode_result(stored.result_payload.data(),
+						      stored.result_payload.size(), &result) ||
+		    !shop_trade_command_encode_result(result, &encoded) ||
+		    !std::equal(encoded.begin(), encoded.end(), stored.result_payload.begin()) ||
+		    result.action != payload.action ||
+		    stored.durable_revision !=
+			    std::max({ result.wallet_revision, result.bank_revision,
+				       result.shop_revision, result.player_owner_revision,
+				       result.counterparty_owner_revision,
+				       *std::max_element(result.item_revisions.begin(),
+							 result.item_revisions.end()) }))
+			return { critical_apply_outcome::retryable_failure, 0, EILSEQ };
+		// This existing verifier reconstructs the frozen original plan, each
+		// account/posting and exact item ledger/reference, including no-effect
+		// rejection. It deliberately does not inspect today's inventory.
+		error = economic_sql_shop_trade_verify_retained(
+			connection, command, stored.result_code, encoded.data(), encoded.size());
+		if (!error)
+			error = verify_accounted_root_outbox(connection, command,
+							     stored.result_code, encoded.data(),
+							     encoded.size());
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return { critical_apply_outcome::retryable_failure, 0, error };
+		return stored_result(stored.result_code ? critical_apply_outcome::terminal_failure :
+							  critical_apply_outcome::already_applied,
+				     stored);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
+	}
+	catch (...)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, EIO };
+	}
+#endif
+}

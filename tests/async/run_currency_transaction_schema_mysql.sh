@@ -111,11 +111,11 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/persistence/economic_accounting_repository.c \
     src/persistence/economic_sql_bank_transaction.c \
     src/persistence/economic_sql_item_transfer_transaction.c \
-    src/persistence/economic_sql_collector_transaction.c src/persistence/economic_sql_shop_trade_transaction.c \
+    src/persistence/economic_sql_collector_transaction.c src/persistence/economic_sql_shop_trade_transaction.c src/persistence/shop_item_runtime_payload.c src/economy/shop_trade_recovery_image.c \
     src/economy/economic_currency_adapter.c \
     src/economy/economic_command_admission.c src/economy/item_transfer_accounting.c \
     src/economy/coin_transfer_accounting.c src/item/economic_accounting_item_reference.c \
-    src/economy/shop_trade_command.c src/economy/shop_trade_accounting.c \
+    src/economy/shop_trade_command.c src/economy/shop_trade_recovery_manifest.c src/economy/shop_trade_accounting.c \
     src/economy/economic_accounting_intent.c \
     src/economy/economic_accounting_types.c \
     src/economy/economic_accounting_plan.c src/economy/economic_source_event.c \

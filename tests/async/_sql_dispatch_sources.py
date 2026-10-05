@@ -51,11 +51,11 @@ SQL_DISPATCH_SOURCES = (
     'economy/coin_transfer_accounting.c',
     'economy/item_transfer_accounting.c',
     'economy/collector_accounting.c',
-    'economy/shop_trade_command.c',
+    'economy/shop_trade_command.c', 'economy/shop_trade_recovery_manifest.c',
     'economy/shop_trade_accounting.c',
     'persistence/economic_sql_item_transfer_transaction.c',
     'persistence/economic_sql_collector_transaction.c',
-    'persistence/economic_sql_shop_trade_transaction.c',
+    'persistence/economic_sql_shop_trade_transaction.c', 'persistence/shop_item_runtime_payload.c', 'economy/shop_trade_recovery_image.c',
     'economy/economic_command_admission.c',
 )
 

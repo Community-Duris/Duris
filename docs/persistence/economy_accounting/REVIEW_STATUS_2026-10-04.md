@@ -1,5 +1,18 @@
 # Accounting review status — 2026-10-04
 
+## Coherent SHOP source installed — 2026-10-05
+
+[The composed source milestone](SHOP_COHERENT_SOURCE_INTEGRATION_2026-10-05.md)
+installs 32 reviewed production inputs and 22 current-based recipe/Makefile
+inputs, including native checkpoint, literal payload, v8 recovery manifests,
+original current SQL images and exact retained receipt verification. Independent
+source review and raw-preimage/inverse/AST/include checks passed; no native
+execution occurred. Current accounted SHOP admission stays closed and canonical
+schema0056 is unchanged. Actual gameplay producer invocation, coherent0057,
+cold continuation/publication/ACK, flat parity and original major-plan
+qualification remain open. Source census/projection rows are unqualified;
+release and activation remain BLOCKED.
+
 ## Native reference and original-generation observation — 2026-10-05
 
 [The coherent source integration](NATIVE_REFERENCE_RUNTIME_INTEGRATION_2026-10-05.md)

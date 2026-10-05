@@ -3,6 +3,9 @@
 #include "economy/coin_transfer_accounting.h"
 #include "economy/item_transfer_accounting.h"
 #include "economy/collector_accounting.h"
+#include "persistence/persistence_mode.h"
+#include "economy/shop_trade_accounting.h"
+#include "economy/shop_trade_item_payload.h"
 
 #include <atomic>
 #include <climits>
@@ -193,6 +196,42 @@ void economic_gameplay_authority::clear_flat_runtime() noexcept
 bool economic_gameplay_authority::active()
 {
 	return bool(current.load(std::memory_order_acquire));
+}
+
+bool economic_gameplay_authority::active_regular_sql()
+{
+	const auto selected = current.load(std::memory_order_acquire);
+	return persistence_mode_requires_mysql() && selected &&
+	       selected->scope == projection_scope::regular && selected->scope_version == 0;
+}
+
+bool economic_gameplay_authority::observe_shop_checkpoint(
+	uint32_t pid, std::string_view account_name, uint8_t racewar,
+	economic_shop_checkpoint_projection *output) noexcept
+{
+	if (!output || !pid || pid > INT32_MAX || racewar > INT8_MAX ||
+	    !persistence_mode_requires_mysql())
+		return false;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version)
+			return false;
+		std::string canonical;
+		if (!bank_locator(account_name, &canonical))
+			return false;
+		const auto wallet = selected->wallets.find(pid);
+		const auto bank = selected->banks.find({ canonical, racewar });
+		if (wallet == selected->wallets.end() || bank == selected->banks.end())
+			return false;
+		*output = { selected->lineage, selected->epoch, wallet->second, bank->second };
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
 }
 
 economic_accounting_error economic_gameplay_authority::prepare_currency(critical_command *command)
@@ -462,6 +501,88 @@ economic_gameplay_authority::prepare_collector_purchase(critical_command *comman
 		frozen.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
 		frozen.accounting_intent = std::move(intent);
 		if (!supported_candidate(frozen))
+			return error::corrupt_evidence;
+		*command = std::move(frozen);
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+economic_accounting_error economic_gameplay_authority::prepare_shop_trade(critical_command *command)
+{
+	using error = economic_accounting_error;
+	if (!command)
+		return error::invalid_identity;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (selected && sql_wallet_root_scope(*selected))
+			return error::unauthorized;
+		if (!shop_trade_payload_version_is_accounted(command->payload_version))
+			return !selected && critical_command_legacy_execution_supported(*command) &&
+					       command->type == critical_command_type::shop_trade ?
+				       error::ok :
+				       error::unauthorized;
+		if (command->type != critical_command_type::shop_trade)
+			return error::unauthorized;
+		auto projection = *command;
+		if (!projection.accepted_at_usec)
+			projection.accepted_at_usec = 1;
+		if (!critical_command_envelope_valid(projection))
+			return error::corrupt_evidence;
+		if (command->schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+		{
+			// Exact-ID history keeps the original epoch, lifetimes and status.
+			// This pure check never rebinds it to today's admission projection.
+			economic_frozen_intent intent;
+			shop_trade_payload payload = {};
+			economic_account_key wallet, bank, counterparty;
+			const auto result = shop_trade_accounting_decode(
+				projection, &intent, &payload, &wallet, &bank, &counterparty);
+			if (result != error::ok)
+				return result;
+			std::vector<player_item_snapshot> after;
+			return shop_trade_accounted_after_items(payload, &after) ?
+				       error::ok :
+				       error::corrupt_evidence;
+		}
+		// v6 is only a transient pure source checkpoint until schema2 freezing.
+		// It cannot enter the legacy native executor, even without authority.
+		if (!selected || command->schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+		    !command->accounting_intent.empty() || command->accepted_at_usec ||
+		    command->publication_required)
+			return error::unauthorized;
+		shop_trade_payload payload = {};
+		std::vector<player_item_snapshot> after;
+		if (!shop_trade_command_decode_payload(*command, &payload) ||
+		    !shop_trade_accounted_after_items(payload, &after))
+			return error::corrupt_evidence;
+		std::string canonical;
+		if (!bank_locator(payload.account_name.data(), &canonical))
+			return error::invalid_identity;
+		const auto wallet = selected->wallets.find(payload.player_pid);
+		const auto bank = selected->banks.find({ canonical, payload.racewar });
+		if (wallet == selected->wallets.end() || bank == selected->banks.end())
+			return error::incomplete_coverage;
+		critical_command frozen = *command;
+		std::vector<uint8_t> intent;
+		const auto result = shop_trade_shared_accounting_intent(
+			frozen, selected->epoch, wallet->second, bank->second, &intent);
+		if (result != error::ok)
+			return result;
+		frozen.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		frozen.accounting_intent = std::move(intent);
+		projection = frozen;
+		projection.accepted_at_usec = 1;
+		economic_frozen_intent verified;
+		shop_trade_payload verified_payload = {};
+		economic_account_key verified_wallet, verified_bank, counterparty;
+		if (shop_trade_accounting_decode(projection, &verified, &verified_payload,
+						 &verified_wallet, &verified_bank,
+						 &counterparty) != error::ok)
 			return error::corrupt_evidence;
 		*command = std::move(frozen);
 		return error::ok;

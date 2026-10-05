@@ -2,6 +2,9 @@
 
 #include "item/economic_accounting_item_reference.h"
 #include "player/player_snapshot_codec.h"
+#include "persistence/shop_item_runtime_payload.h"
+#include "economy/shop_trade_item_payload.h"
+#include "economy/shop_trade_recovery_image.h"
 
 #include <cerrno>
 
@@ -12,12 +15,14 @@
 #include <cstring>
 #include <limits>
 #include <memory>
+#include <map>
 #include <new>
 #include <optional>
 #include <set>
 #include <string>
 #include <strings.h>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 namespace
@@ -199,15 +204,20 @@ uint64_t owner_revision(MYSQL *connection, const item_owner_identity &owner)
 void balances(MYSQL *connection, const shop_trade_payload &payload, uint32_t bank_id,
 	      shop_trade_accounting_authority *before)
 {
-	const auto player =
-		one(connection,
-		    "SELECT account_name,racewar,copper,silver,gold,platinum,wallet_revision "
-		    "FROM player_data WHERE pid=" +
-			    std::to_string(payload.player_pid) + " FOR UPDATE",
-		    7);
+	const auto player = one(
+		connection,
+		"SELECT account_name,racewar,copper,silver,gold,platinum,wallet_revision,level,save_revision "
+		"FROM player_data WHERE pid=" +
+			std::to_string(payload.player_pid) + " FOR UPDATE",
+		9);
 	require(player[0] && !strcasecmp(player[0]->c_str(), payload.account_name.data()) &&
 			number<uint8_t>(player[1]) == payload.racewar,
 		ESTALE);
+	if (payload.expected_player_level)
+		require(number<uint32_t>(player[7]) == payload.expected_player_level &&
+				number<uint64_t>(player[8]) ==
+					payload.expected_player_save_revision,
+			ESTALE);
 	for (size_t index = 0; index < 4; ++index)
 	{
 		const auto amount = number<int64_t>(player[index + 2]);
@@ -237,23 +247,37 @@ void balances(MYSQL *connection, const shop_trade_payload &payload, uint32_t ban
 		ESTALE);
 }
 
-void keeper(MYSQL *connection, const shop_trade_payload &payload, uint32_t keeper_id,
-	    shop_trade_accounting_authority *before)
+uint32_t keeper(MYSQL *connection, const shop_trade_payload &payload, uint32_t keeper_id,
+		shop_trade_accounting_authority *before)
 {
-	const auto row = one(connection,
-			     "SELECT shop_id,mob_vnum,cash,shop_revision,keeper_roaming "
-			     "FROM shopkeepers WHERE id=" +
-				     std::to_string(keeper_id) + " FOR UPDATE",
-			     5);
-	require(number<uint64_t>(row[0]) == payload.shop_id &&
-			number<int32_t>(row[1]) == payload.keeper_vnum,
+	const bool shared = payload.expected_player_level != 0;
+	const auto row = shared ?
+				 one(connection,
+				     "SELECT id,shop_id,mob_vnum,cash,shop_revision,keeper_roaming "
+				     "FROM shopkeepers WHERE shop_id=" +
+					     std::to_string(payload.shop_id) + " FOR UPDATE",
+				     6) :
+				 one(connection,
+				     "SELECT shop_id,mob_vnum,cash,shop_revision,keeper_roaming "
+				     "FROM shopkeepers WHERE id=" +
+					     std::to_string(keeper_id) + " FOR UPDATE",
+				     5);
+	const size_t offset = shared ? 1 : 0;
+	if (shared)
+	{
+		const auto id = number<uint64_t>(row[0]);
+		require(id && id <= UINT32_MAX, ESTALE);
+		keeper_id = static_cast<uint32_t>(id);
+	}
+	require(number<uint64_t>(row[offset]) == payload.shop_id &&
+			number<int32_t>(row[offset + 1]) == payload.keeper_vnum,
 		ESTALE);
-	require(row[2].has_value(), ENODATA);
-	const auto cash = number<int64_t>(row[2]);
+	require(row[offset + 2].has_value(), ENODATA);
+	const auto cash = number<int64_t>(row[offset + 2]);
 	require(cash >= 0 && cash <= INT_MAX, ERANGE);
-	const auto revision = number<uint64_t>(row[3]);
-	require(row[4].has_value(), ENODATA);
-	const auto roaming = number<uint8_t>(row[4]);
+	const auto revision = number<uint64_t>(row[offset + 3]);
+	require(row[offset + 4].has_value(), ENODATA);
+	const auto roaming = number<uint8_t>(row[offset + 4]);
 	require(roaming <= 1, ERANGE);
 	require(cash == payload.expected_keeper_cash && revision == payload.expected_shop_revision,
 		ESTALE);
@@ -263,6 +287,7 @@ void keeper(MYSQL *connection, const shop_trade_payload &payload, uint32_t keepe
 	before->keeper_cash_before = cash;
 	before->keeper_roaming = roaming != 0;
 	before->shop_revision_before = revision;
+	return keeper_id;
 }
 
 struct locked_item
@@ -271,6 +296,22 @@ struct locked_item
 	int32_t vnum = 0;
 	bool exists = false;
 };
+
+// These helpers share the publication reader's bounded, sorted original cut.
+// Definitions below are also used by live retained-result publication.
+void publication_session(MYSQL *, unsigned long);
+void publication_absence(MYSQL *, uint64_t, const char *);
+std::map<uint64_t, uint64_t> publication_keeper_routes(MYSQL *, uint32_t, bool);
+std::map<uint64_t, locked_item> publication_custody(MYSQL *, const shop_trade_payload &,
+						    std::span<const uint64_t>,
+						    const std::map<uint64_t, uint64_t> &,
+						    bool retained_only = false);
+void recovery_keeper_closure(const shop_trade_payload &, const std::map<uint64_t, locked_item> &,
+			     bool);
+std::vector<uint64_t> recovery_custody_scope(const shop_trade_payload &,
+					     const std::map<uint64_t, locked_item> &,
+					     const std::map<uint64_t, uint64_t> &);
+void recovery_images(MYSQL *, const shop_trade_payload &, uint32_t, unsigned long, bool);
 
 locked_item item(MYSQL *connection, uint64_t uid, bool optional = false)
 {
@@ -524,12 +565,62 @@ void insert_plan_rows(MYSQL *connection, const critical_operation_id &operation,
 	}
 }
 
+player_item_snapshot native_destination_weight_before(MYSQL *connection,
+						      const shop_trade_payload &payload,
+						      uint64_t *row_id)
+{
+	require(row_id && payload.native_destination_weight_recorded &&
+			payload.action == shop_trade_action::buy_produced &&
+			payload.target_parent_item_uid &&
+			payload.target_parent_item_uid == payload.target_root_item_uid,
+		EILSEQ);
+	const auto target = item(connection, payload.target_parent_item_uid);
+	require(target.exists && target.snapshot.position.state == item_custody_state::active &&
+			item_owner_identity_equal(target.snapshot.position.owner,
+						  player_owner(payload)) &&
+			!target.snapshot.position.parent_uid &&
+			target.snapshot.position.root_uid == payload.target_parent_item_uid &&
+			target.snapshot.position.revision ==
+				payload.expected_target_parent_revision,
+		ESTALE);
+	const auto native = native_row(connection, { "player_items", "pid", payload.player_pid },
+				       payload.target_parent_item_uid, target.vnum);
+	require(!native.parent_row_id, ESTALE);
+	player_item_snapshot original{};
+	bool present = false;
+	require(shop_item_runtime_read(connection, false, native.row_id, &original, &present),
+		errno ? errno : EIO);
+	require(present && original.object_uid == payload.target_parent_item_uid &&
+			original.vnum == target.vnum && original.type == ITEM_CONTAINER &&
+			!original.equipment_slot &&
+			original.parent_index == PLAYER_SNAPSHOT_NO_PARENT,
+		ENODATA);
+	require(shop_item_runtime_verify(connection, false, native.row_id, payload.player_pid, 0,
+					 original),
+		errno ? errno : EIO);
+	std::vector<player_item_snapshot> selected;
+	require(shop_trade_accounted_after_items(payload, &selected) && !selected.empty() &&
+			selected.front().object_uid == payload.selected_item_uid &&
+			shop_trade_destination_weight_verify(original, selected.front().weight,
+							     payload.destination_weight),
+		EILSEQ);
+	*row_id = native.row_id;
+	return original;
+}
+
 void physical_items(MYSQL *connection, const shop_trade_payload &payload, uint32_t keeper_id,
 		    const shop_trade_accounting_authority &before)
 {
 	const native_domain player{ "player_items", "pid", payload.player_pid };
 	const native_domain shop{ "shopkeeper_items", "shopkeeper_id", keeper_id };
 	const bool produced = payload.action == shop_trade_action::buy_produced;
+	if (payload.expected_player_level)
+	{
+		// Validate the complete original graph for every v6 action, including
+		// destruction, whose path has no destination write to validate it later.
+		std::vector<player_item_snapshot> validated_after;
+		require(shop_trade_accounted_after_items(payload, &validated_after), EILSEQ);
+	}
 	if (produced)
 	{
 		for (size_t index = 0; index < payload.item_count; ++index)
@@ -542,6 +633,24 @@ void physical_items(MYSQL *connection, const shop_trade_payload &payload, uint32
 		const auto stock =
 			native_row(connection, shop, payload.stock_item_uid, payload.stock_vnum);
 		require(stock.parent_row_id == 0, ESTALE);
+		if (payload.expected_player_level)
+		{
+			// The output blob is the new staged object, not original stock.
+			// Verify existing locked native stock independently; do not invent
+			// an original stock literal that the command never recorded.
+			player_item_snapshot stock_item{};
+			bool present = false;
+			require(shop_item_runtime_read(connection, true, stock.row_id, &stock_item,
+						       &present),
+				errno ? errno : EIO);
+			require(present && stock_item.object_uid == payload.stock_item_uid &&
+					stock_item.vnum == payload.stock_vnum &&
+					stock_item.equipment_slot == 0,
+				ENODATA);
+			require(shop_item_runtime_verify(connection, true, stock.row_id, keeper_id,
+							 0, stock_item),
+				errno ? errno : EIO);
+		}
 		std::vector<native_item> ancestors;
 		uint64_t uid = payload.target_parent_item_uid;
 		while (uid)
@@ -562,6 +671,11 @@ void physical_items(MYSQL *connection, const shop_trade_payload &payload, uint32
 						 ancestors[index + 1].row_id :
 						 0),
 				ESTALE);
+		if (payload.native_destination_weight_recorded && payload.target_parent_item_uid)
+		{
+			uint64_t target_row = 0;
+			(void)native_destination_weight_before(connection, payload, &target_row);
+		}
 		return;
 	}
 	const bool from_shop = payload.action == shop_trade_action::buy_existing ||
@@ -576,6 +690,12 @@ void physical_items(MYSQL *connection, const shop_trade_payload &payload, uint32
 		rows.push_back(native_row(connection, source, entry.item_uid, entry.vnum));
 		require(!native_count(connection, other, entry.item_uid), ESTALE);
 	}
+	std::vector<player_item_snapshot> source_items;
+	if (payload.expected_player_level)
+		require(player_item_snapshot_list_decode(payload.item_blob.data(),
+							 payload.item_blob_size, &source_items) ==
+				player_snapshot_codec_result::ok,
+			EILSEQ);
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		const auto &entry = payload.items[index];
@@ -589,6 +709,16 @@ void physical_items(MYSQL *connection, const shop_trade_payload &payload, uint32
 			parent_row_id = found->row_id;
 		}
 		require(rows[index].parent_row_id == parent_row_id, ESTALE);
+		if (payload.expected_player_level)
+		{
+			const auto snapshot = std::find_if(
+				source_items.begin(), source_items.end(), [&](const auto &candidate)
+				{ return candidate.object_uid == entry.item_uid; });
+			require(snapshot != source_items.end(), EILSEQ);
+			require(shop_item_runtime_verify(connection, from_shop, rows[index].row_id,
+							 source.owner_id, parent_row_id, *snapshot),
+				errno ? errno : EIO);
+		}
 		const size_t children = std::count_if(
 			payload.items.begin(), payload.items.begin() + payload.item_count,
 			[&](const auto &child) { return child.parent_item_uid == entry.item_uid; });
@@ -676,6 +806,9 @@ void move_existing_tree(MYSQL *connection, const shop_trade_payload &payload, ui
 		require(mysql_affected_rows(connection) == 1, ESTALE);
 		return;
 	}
+	std::vector<player_item_snapshot> after_items;
+	if (payload.expected_player_level)
+		require(shop_trade_accounted_after_items(payload, &after_items), EILSEQ);
 	const auto order = item_order(payload);
 	std::vector<uint64_t> new_row_ids(payload.item_count, 0);
 	constexpr const char *shared_columns =
@@ -725,6 +858,16 @@ void move_existing_tree(MYSQL *connection, const shop_trade_payload &payload, ui
 					    std::to_string(new_row_ids[index]) +
 					    ",keyword,description FROM " + source_descriptions +
 					    " WHERE item_id=" + std::to_string(source_row));
+		if (payload.expected_player_level)
+		{
+			const auto after = std::find_if(
+				after_items.begin(), after_items.end(), [&](const auto &candidate)
+				{ return candidate.object_uid == entry.item_uid; });
+			require(after != after_items.end(), EILSEQ);
+			require(shop_item_runtime_write(connection, !from_shop, new_row_ids[index],
+							*after),
+				errno ? errno : EIO);
+		}
 	}
 	const auto root = std::find_if(old_rows.begin(), old_rows.end(), [&](const auto &entry)
 				       { return entry.uid == payload.selected_item_uid; });
@@ -749,6 +892,8 @@ void insert_produced_items(MYSQL *connection, const shop_trade_payload &payload)
 	require(player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
 						 &snapshots) == player_snapshot_codec_result::ok,
 		EILSEQ);
+	if (payload.expected_player_level)
+		require(shop_trade_accounted_after_items(payload, &snapshots), EILSEQ);
 	std::vector<uint64_t> row_ids(snapshots.size(), 0);
 	for (size_t index = 0; index < snapshots.size(); ++index)
 	{
@@ -819,6 +964,18 @@ void insert_produced_items(MYSQL *connection, const shop_trade_payload &payload)
 					quoted(connection, description.description.data(),
 					       description.description.size()) +
 					")");
+		}
+		if (payload.expected_player_level)
+		{
+			require(shop_item_runtime_write(connection, false, row_ids[index], row),
+				errno ? errno : EIO);
+			// Newly produced UIDs have no legitimate source/destination overlap.
+			// Reuse the exclusive native check before this transaction can commit.
+			const uint64_t parent_id =
+				container == "NULL" ? 0 : number<uint64_t>(cell{ container });
+			require(shop_item_runtime_verify(connection, false, row_ids[index],
+							 payload.player_pid, parent_id, row),
+				errno ? errno : EIO);
 		}
 	}
 }
@@ -1055,10 +1212,29 @@ void apply_native_trade(MYSQL *connection, const shop_trade_payload &payload, ui
 			uint32_t keeper_id, const shop_trade_accounting_authority &before,
 			const shop_trade_result &result)
 {
+	uint64_t target_row = 0;
+	player_item_snapshot destination_after{};
+	const bool updates_destination = payload.native_destination_weight_recorded &&
+					 payload.target_parent_item_uid;
+	if (updates_destination)
+	{
+		destination_after =
+			native_destination_weight_before(connection, payload, &target_row);
+		destination_after.weight = payload.destination_weight.after;
+	}
 	if (payload.action == shop_trade_action::buy_produced)
 		insert_produced_items(connection, payload);
 	else
 		move_existing_tree(connection, payload, keeper_id);
+	if (updates_destination)
+	{
+		// Same transaction/locked row: content weight is not a second custody move.
+		require(shop_item_runtime_write(connection, false, target_row, destination_after),
+			errno ? errno : EIO);
+		require(shop_item_runtime_verify(connection, false, target_row, payload.player_pid,
+						 0, destination_after),
+			errno ? errno : EIO);
+	}
 	if (payload.action != shop_trade_action::discard_invalid)
 	{
 		execute(connection,
@@ -1181,13 +1357,17 @@ unsigned int economic_sql_shop_trade_lock(MYSQL *connection, const critical_comm
 			return EPROTONOSUPPORT;
 		produced_items(payload);
 		economic_sql_shop_trade_context candidate;
+		const bool shared = intent.admission.facts.size() == 16;
 		candidate.bank_id = native_id(connection, bank.authority_id);
-		candidate.keeper_id = native_id(connection, treasury.authority_id);
-		const std::vector<economic_sql_mapping_request> mappings = {
+		std::vector<economic_sql_mapping_request> mappings = {
 			{ wallet, PLAYER_LOCATOR, payload.player_pid },
-			{ bank, BANK_LOCATOR, candidate.bank_id },
-			{ treasury, SHOPKEEPER_LOCATOR, candidate.keeper_id }
+			{ bank, BANK_LOCATOR, candidate.bank_id }
 		};
+		if (!shared)
+		{
+			candidate.keeper_id = native_id(connection, treasury.authority_id);
+			mappings.push_back({ treasury, SHOPKEEPER_LOCATOR, candidate.keeper_id });
+		}
 		const auto status = economic_sql_lock_authority(connection,
 								intent.admission.metadata.lineage,
 								intent.admission.metadata.epoch,
@@ -1201,22 +1381,62 @@ unsigned int economic_sql_shop_trade_lock(MYSQL *connection, const critical_comm
 		before.bank_account = bank;
 		before.keeper_account = treasury;
 		balances(connection, payload, candidate.bank_id, &before);
-		keeper(connection, payload, candidate.keeper_id, &before);
+		candidate.keeper_id = keeper(connection, payload, candidate.keeper_id, &before);
 		const item_owner_identity primary = primary_owner(payload);
 		const item_owner_identity other = counterparty_owner(payload);
 		require(!item_owner_identity_equal(primary, other));
-		const bool primary_first = std::tie(primary.type, primary.id, primary.context_id) <
-					   std::tie(other.type, other.id, other.context_id);
-		const auto first_revision =
-			owner_revision(connection, primary_first ? primary : other);
-		const auto second_revision =
-			owner_revision(connection, primary_first ? other : primary);
-		before.player_owner_revision_before = primary_first ? first_revision :
-								      second_revision;
-		before.counterparty_owner_revision_before = primary_first ? second_revision :
-									    first_revision;
+		if (payload.recovery_manifest_recorded)
+		{
+			publication_session(connection, candidate.session_id);
+			require(shop_trade_recovery_manifest_shape_valid(payload.recovery_manifest),
+				EILSEQ);
+			std::vector<item_owner_identity> owners = { primary, other,
+								    player_owner(payload),
+								    shop_owner(payload) };
+			std::sort(owners.begin(), owners.end(),
+				  [](const auto &a, const auto &b) {
+					  return std::tie(a.type, a.id, a.context_id) <
+						 std::tie(b.type, b.id, b.context_id);
+				  });
+			owners.erase(std::unique(owners.begin(), owners.end(),
+						 item_owner_identity_equal),
+				     owners.end());
+			for (const auto &owner : owners)
+			{
+				const uint64_t revision = owner_revision(connection, owner);
+				if (item_owner_identity_equal(owner, primary))
+					before.player_owner_revision_before = revision;
+				if (item_owner_identity_equal(owner, other))
+					before.counterparty_owner_revision_before = revision;
+			}
+			const auto routes =
+				publication_keeper_routes(connection, candidate.keeper_id, false);
+			// The manifest's four persisted lists and routed rows are locked before
+			// selected/ancestor helpers touch physical rows. No fabricated body.
+			const auto custody = publication_custody(connection, payload, {}, routes);
+			recovery_keeper_closure(payload, custody, false);
+			candidate.recovery_custody_uids =
+				recovery_custody_scope(payload, custody, routes);
+		}
+		else
+		{
+			const bool primary_first =
+				std::tie(primary.type, primary.id, primary.context_id) <
+				std::tie(other.type, other.id, other.context_id);
+			const auto first_revision =
+				owner_revision(connection, primary_first ? primary : other);
+			const auto second_revision =
+				owner_revision(connection, primary_first ? other : primary);
+			before.player_owner_revision_before = primary_first ? first_revision :
+									      second_revision;
+			before.counterparty_owner_revision_before =
+				primary_first ? second_revision : first_revision;
+		}
 		items(connection, payload, &before);
 		physical_items(connection, payload, candidate.keeper_id, before);
+		if (payload.recovery_manifest_recorded)
+			recovery_images(connection, payload, candidate.keeper_id,
+					candidate.session_id, false);
 		require(connection->server_status & SERVER_STATUS_IN_TRANS, ENOTCONN);
 		require(mysql_thread_id(connection) == candidate.session_id, ENOTCONN);
 		*context = std::move(candidate);
@@ -1327,6 +1547,19 @@ economic_sql_shop_trade_execute_and_record(MYSQL *connection, const critical_com
 				   active.before, candidate);
 		apply_item_events(connection, command, payload, active.before, candidate, plan);
 		advance_owner_revisions(connection, payload, active.before);
+		// A failed complete AFTER image is an original-transaction error. It
+		// returns through the parent's rollback path, never a business denial.
+		if (payload.recovery_manifest_recorded)
+		{
+			// Re-read only original locked/gap-locked identities, not a new
+			// discovery after physical mutation. The broad BEFORE cut includes
+			// references into both phases' keeper forests, including future UIDs.
+			const auto custody = publication_custody(
+				connection, payload, active.recovery_custody_uids, {}, true);
+			recovery_keeper_closure(payload, custody, true);
+			recovery_images(connection, payload, active.keeper_id, active.session_id,
+					true);
+		}
 		insert_operation(connection, command, intent, &plan, payload, 0);
 		insert_source_claim(connection, intent.admission.metadata);
 		insert_plan_rows(connection, command.operation_id, plan);
@@ -1377,6 +1610,14 @@ unsigned int economic_sql_shop_trade_verify_retained(MYSQL *connection,
 		    !shop_trade_command_decode_result(result_payload, result_size, &result) ||
 		    result.action != payload.action)
 			return EILSEQ;
+		const bool shared = intent.admission.facts.size() == 16;
+		if (shared)
+		{
+			std::array<uint8_t, SHOP_TRADE_RESULT_BYTES> canonical{};
+			require(shop_trade_command_encode_result(result, &canonical) &&
+					!memcmp(canonical.data(), result_payload, canonical.size()),
+				EILSEQ);
+		}
 		const auto row = one(
 			connection,
 			"SELECT lineage,epoch,original_operation_id,accounting_version,writer_id,"
@@ -1541,12 +1782,50 @@ unsigned int economic_sql_shop_trade_verify_retained(MYSQL *connection,
 			else if (economic_account_key_equal(effect.key, keeper_account))
 				keeper_effect = &effect;
 		}
-		require(wallet_effect && bank_effect && keeper_effect, EILSEQ);
-		authority.balances_before.wallet.amount = wallet_effect->before;
-		authority.balances_before.bank.amount = bank_effect->before;
-		authority.balances_before.wallet_revision = wallet_effect->before_revision;
-		authority.balances_before.bank_revision = bank_effect->before_revision;
-		require(keeper_effect->before[0] == payload.expected_keeper_cash, EILSEQ);
+		if (shared && payload.action == shop_trade_action::discard_invalid)
+		{
+			// Cleanup has no monetary effects. The authentic original receipt
+			// carries unchanged balances; revisions are the frozen original ones.
+			require(retained.accounts.empty() && retained.postings.empty() &&
+					!wallet_effect && !bank_effect && !keeper_effect &&
+					result.wallet_revision ==
+						payload.expected_wallet_revision &&
+					result.bank_revision == payload.expected_bank_revision,
+				EILSEQ);
+			authority.balances_before.wallet.amount = result.wallet.amount;
+			authority.balances_before.bank.amount = result.bank.amount;
+			authority.balances_before.wallet_revision =
+				payload.expected_wallet_revision;
+			authority.balances_before.bank_revision = payload.expected_bank_revision;
+		}
+		else
+		{
+			require(wallet_effect && bank_effect, EILSEQ);
+			authority.balances_before.wallet.amount = wallet_effect->before;
+			authority.balances_before.bank.amount = bank_effect->before;
+			authority.balances_before.wallet_revision = wallet_effect->before_revision;
+			authority.balances_before.bank_revision = bank_effect->before_revision;
+			if (shared)
+			{
+				if (payload.price)
+					require(keeper_effect &&
+							keeper_effect->before ==
+								economic_coin_vector{} &&
+							keeper_effect->after ==
+								economic_coin_vector{} &&
+							!keeper_effect->before_revision &&
+							!keeper_effect->after_revision,
+						EILSEQ);
+				else
+					require(!keeper_effect, EILSEQ);
+			}
+			else
+			{
+				require(keeper_effect, EILSEQ);
+				require(keeper_effect->before[0] == payload.expected_keeper_cash,
+					EILSEQ);
+			}
+		}
 		authority.items_before = retained.items_before;
 		authority.item_vnums_before.reserve(retained.items_before.size());
 		for (const auto &snapshot : retained.items_before)
@@ -1615,4 +1894,995 @@ unsigned int economic_sql_shop_trade_verify_retained(MYSQL *connection,
 		return ENOMEM;
 	}
 #endif
+}
+
+#ifndef __NO_MYSQL__
+namespace
+{
+void publication_session(MYSQL *connection, unsigned long session)
+{
+	using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+	flag reconnect = true;
+	require(connection && session && mysql_thread_id(connection) == session &&
+			(connection->server_status & SERVER_STATUS_IN_TRANS) &&
+			(connection->server_status & SERVER_STATUS_AUTOCOMMIT) &&
+			!mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) &&
+			!reconnect,
+		ENOTCONN);
+}
+
+uint64_t publication_owner_revision(MYSQL *connection, const item_owner_identity &owner)
+{
+	require(item_owner_identity_valid(owner), EINVAL);
+	const auto row = one(connection,
+			     "SELECT revision FROM item_owner_revision WHERE owner_type=" +
+				     std::to_string(static_cast<uint8_t>(owner.type)) +
+				     " AND owner_id=" + std::to_string(owner.id) +
+				     " AND owner_context_id=" + std::to_string(owner.context_id) +
+				     " FOR UPDATE",
+			     1, true);
+	// Missing is the actual native optimistic zero; this reader never inserts.
+	return row.empty() ? 0 : number<uint64_t>(row[0]);
+}
+
+void publication_absence(MYSQL *connection, uint64_t uid, const char *allowed = nullptr)
+{
+	// Only physical holdings; retained payload/accounting history survives moves.
+	for (const char *table :
+	     { "player_items", "shopkeeper_items", "player_pet_items", "locker_items",
+	       "account_locker_items", "corpse_items", "saved_items", "siege_items" })
+	{
+		execute(connection, "SELECT id FROM " + std::string(table) + " WHERE obj_uid=" +
+					    std::to_string(uid) + " LIMIT 2 FOR UPDATE");
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+			mysql_store_result(connection), mysql_free_result);
+		require(bool(rows), EIO);
+		require(mysql_num_rows(rows.get()) == (allowed && !strcmp(allowed, table) ? 1 : 0),
+			ESTALE);
+	}
+}
+
+bool publication_position_equal(const economic_item_position &a, const economic_item_position &b)
+{
+	return item_owner_identity_equal(a.owner, b.owner) && a.root_uid == b.root_uid &&
+	       a.parent_uid == b.parent_uid && a.revision == b.revision && a.state == b.state &&
+	       a.equipment_slot == b.equipment_slot;
+}
+
+// Routing only under the already locked keeper row. The first read is
+// nonlocking so it does not precede custody locks; the second read locks and
+// verifies exact membership without discovering any new custody authority.
+std::map<uint64_t, uint64_t> publication_keeper_routes(MYSQL *connection, uint32_t keeper_id,
+						       bool locked)
+{
+	execute(connection, "SELECT id,obj_uid FROM shopkeeper_items WHERE shopkeeper_id=" +
+				    std::to_string(keeper_id) + " ORDER BY id LIMIT " +
+				    std::to_string(PLAYER_SNAPSHOT_MAX_OBJECTS + 1) +
+				    (locked ? " FOR UPDATE" : ""));
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
+	require(rows && mysql_num_fields(rows.get()) == 2, EIO);
+	require(mysql_num_rows(rows.get()) <= PLAYER_SNAPSHOT_MAX_OBJECTS, E2BIG);
+	std::map<uint64_t, uint64_t> result;
+	std::set<uint64_t> uids;
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(rows.get())))
+	{
+		require(row[0] && row[1], ESTALE);
+		const uint64_t row_id = number<uint64_t>(cell(std::string(row[0]))),
+			       uid = number<uint64_t>(cell(std::string(row[1])));
+		require(row_id && uid && uid != UINT64_MAX && uids.insert(uid).second &&
+				result.emplace(row_id, uid).second,
+			ESTALE);
+	}
+	return result;
+}
+
+std::map<uint64_t, locked_item>
+publication_custody(MYSQL *connection, const shop_trade_payload &payload,
+		    std::span<const uint64_t> retained_player_uids,
+		    const std::map<uint64_t, uint64_t> &keeper_routes, bool retained_only)
+{
+	std::string selected;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		if (index)
+			selected += ',';
+		selected += std::to_string(payload.items[index].item_uid);
+	}
+	std::set<uint64_t> claimed;
+	const auto add_uid = [&](uint64_t uid)
+	{
+		require(uid && uid != UINT64_MAX, EINVAL);
+		claimed.insert(uid);
+	};
+	for (size_t index = 0; index < payload.item_count; ++index)
+		add_uid(payload.items[index].item_uid);
+	if (payload.stock_item_uid)
+		add_uid(payload.stock_item_uid);
+	if (payload.target_parent_item_uid)
+	{
+		add_uid(payload.target_parent_item_uid);
+		add_uid(payload.target_root_item_uid);
+	}
+	for (const auto &[row_id, uid] : keeper_routes)
+	{
+		(void)row_id;
+		add_uid(uid);
+	}
+	for (uint64_t uid : retained_player_uids)
+		add_uid(uid);
+	if (payload.recovery_manifest_recorded)
+	{
+		require(shop_trade_recovery_manifest_shape_valid(payload.recovery_manifest),
+			EILSEQ);
+		const auto &manifest = payload.recovery_manifest;
+		for (const auto *binding : { &manifest.player_before, &manifest.player_after,
+					     &manifest.keeper_before, &manifest.keeper_after })
+			for (uint64_t uid : binding->ordered_item_uids)
+				add_uid(uid);
+	}
+	std::string explicit_uids;
+	for (uint64_t uid : claimed)
+	{
+		if (!explicit_uids.empty())
+			explicit_uids += ',';
+		explicit_uids += std::to_string(uid);
+	}
+	require(!explicit_uids.empty(), EINVAL);
+	std::string player_scope =
+		" OR (owner_type=" + std::to_string(static_cast<uint8_t>(item_owner_type::player)) +
+		" AND owner_id=" + std::to_string(payload.player_pid) +
+		" AND coin_payload IS NULL AND state=" +
+		std::to_string(static_cast<uint8_t>(item_custody_state::active)) + ")";
+	// Explicit identities ignore ownership, context, state and coin payload.
+	// Active references to ANY claimed UID must join this original sorted cut.
+	player_scope += " OR ((root_item_uid IN(" + explicit_uids + ") OR parent_item_uid IN(" +
+			explicit_uids + ")) AND state=" +
+			std::to_string(static_cast<uint8_t>(item_custody_state::active)) + ")";
+	// Two complete bounded forests. Original selected destruction/production
+	// and stock/ancestor references may lie outside those current forests;
+	// bound those separately instead of retaining the old selected-only cut.
+	const size_t limit = PLAYER_SNAPSHOT_MAX_OBJECTS * 2 + SHOP_TRADE_MAX_ITEMS +
+			     PLAYER_SNAPSHOT_MAX_DEPTH + 1;
+	require(claimed.size() <= limit, E2BIG);
+	// One globally sorted custody cut BEFORE either helper reads physical rows.
+	// Include the full player's ordinary scope and all claimed/active root-parent
+	// references regardless of coin_payload, matching the whole-player reader.
+	// Truly unphysical inline coin holdings are neither omitted physical rows
+	// nor mistaken for ordinary persisted inventory.
+
+	execute(connection,
+		"SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),owner_type,owner_id,"
+		"owner_context_id,item_revision,vnum,state,equipment_slot FROM item_current_owner WHERE "
+		"item_uid IN(" +
+			explicit_uids + ")" +
+			(retained_only ?
+				 "" :
+				 " OR root_item_uid=" + std::to_string(payload.selected_item_uid) +
+					 " OR parent_item_uid IN(" + selected +
+					 ") OR (owner_type=" +
+					 std::to_string(static_cast<uint8_t>(
+						 item_owner_type::shopkeeper)) +
+					 " AND owner_id=" +
+					 std::to_string(item_shopkeeper_owner_id(payload.shop_id)) +
+					 ")" +
+					 (payload.target_parent_item_uid ?
+						  " OR root_item_uid=" +
+							  std::to_string(
+								  payload.target_root_item_uid) :
+						  "") +
+					 player_scope) +
+			" ORDER BY item_uid LIMIT " + std::to_string(limit + 1) + " FOR UPDATE");
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
+	require(rows && mysql_num_fields(rows.get()) == 10, EIO);
+	require(mysql_num_rows(rows.get()) <= limit, E2BIG);
+	std::map<uint64_t, locked_item> result;
+	MYSQL_ROW raw;
+	while ((raw = mysql_fetch_row(rows.get())))
+	{
+		std::array<cell, 10> row{};
+		for (size_t index = 0; index < row.size(); ++index)
+			if (raw[index])
+				row[index] = std::string(raw[index]);
+		const uint64_t uid = number<uint64_t>(row[0]);
+		const auto type = number<uint8_t>(row[3]), state = number<uint8_t>(row[8]);
+		const auto slot = number<uint16_t>(row[9]);
+		require(uid && uid != UINT64_MAX &&
+				type <= static_cast<uint8_t>(item_owner_type::pet) &&
+				state <= static_cast<uint8_t>(item_custody_state::quarantined) &&
+				slot <= MAX_WEAR,
+			ESTALE);
+		locked_item entry{};
+		entry.exists = true;
+		entry.snapshot.uid = uid;
+		entry.snapshot.position = { { static_cast<item_owner_type>(type),
+					      number<uint64_t>(row[4]), number<uint64_t>(row[5]) },
+					    number<uint64_t>(row[1]),
+					    number<uint64_t>(row[2]),
+					    number<uint64_t>(row[6]),
+					    static_cast<item_custody_state>(state),
+					    slot };
+		entry.vnum = number<int32_t>(row[7]);
+		require(item_owner_identity_valid(entry.snapshot.position.owner) &&
+				entry.snapshot.position.revision &&
+				result.emplace(uid, entry).second,
+			ESTALE);
+	}
+	return result;
+}
+
+std::vector<uint64_t> recovery_custody_scope(const shop_trade_payload &payload,
+					     const std::map<uint64_t, locked_item> &custody,
+					     const std::map<uint64_t, uint64_t> &routes)
+{
+	std::set<uint64_t> scope;
+	for (const auto &[uid, entry] : custody)
+	{
+		(void)entry;
+		scope.insert(uid);
+	}
+	for (const auto &[row_id, uid] : routes)
+	{
+		(void)row_id;
+		scope.insert(uid);
+	}
+	const auto &manifest = payload.recovery_manifest;
+	for (const auto *binding : { &manifest.player_before, &manifest.player_after,
+				     &manifest.keeper_before, &manifest.keeper_after })
+		scope.insert(binding->ordered_item_uids.begin(), binding->ordered_item_uids.end());
+	for (size_t index = 0; index < payload.item_count; ++index)
+		scope.insert(payload.items[index].item_uid);
+	for (uint64_t uid : { payload.stock_item_uid, payload.target_parent_item_uid,
+			      payload.target_root_item_uid })
+		if (uid)
+			scope.insert(uid);
+	require(scope.size() <= PLAYER_SNAPSHOT_MAX_OBJECTS * 2 + SHOP_TRADE_MAX_ITEMS +
+					PLAYER_SNAPSHOT_MAX_DEPTH + 1,
+		E2BIG);
+	return { scope.begin(), scope.end() };
+}
+
+void recovery_keeper_closure(const shop_trade_payload &payload,
+			     const std::map<uint64_t, locked_item> &custody, bool after)
+{
+	const auto &binding = after ? payload.recovery_manifest.keeper_after :
+				      payload.recovery_manifest.keeper_before;
+	const std::set<uint64_t> keeper_uids(binding.ordered_item_uids.begin(),
+					     binding.ordered_item_uids.end());
+	const auto owner = shop_owner(payload);
+	for (const auto &[uid, entry] : custody)
+	{
+		const auto &position = entry.snapshot.position;
+		if (position.state != item_custody_state::active)
+			continue;
+		const bool same_keeper = position.owner.type == owner.type &&
+					 position.owner.id == owner.id;
+		const bool references_keeper = keeper_uids.count(position.root_uid) ||
+					       keeper_uids.count(position.parent_uid);
+		if (same_keeper || references_keeper)
+			require(keeper_uids.count(uid) &&
+					item_owner_identity_equal(position.owner, owner),
+				ESTALE);
+	}
+}
+
+// Authenticate complete current values in the original open transaction.
+// The pre-mutation cut already holds the union of all persisted manifest UIDs.
+// This is NOT historical receipt validation or permission to publish/ACK.
+void recovery_images(MYSQL *connection, const shop_trade_payload &payload, uint32_t keeper_id,
+		     unsigned long session, bool after)
+{
+	publication_session(connection, session);
+	require(payload.recovery_manifest_recorded &&
+			shop_trade_recovery_manifest_shape_valid(payload.recovery_manifest),
+		EILSEQ);
+	const auto &manifest = payload.recovery_manifest;
+	const auto &player_binding = after ? manifest.player_after : manifest.player_before;
+	const auto &keeper_binding = after ? manifest.keeper_after : manifest.keeper_before;
+	const auto marker = one(
+		connection,
+		"SELECT shop_revision,runtime_payload_checkpoint_revision FROM shopkeepers WHERE id=" +
+			std::to_string(keeper_id) + " FOR UPDATE",
+		2);
+	require(marker[1].has_value(), ENODATA);
+	const auto checkpoint = number<uint64_t>(marker[1]);
+	require(checkpoint && checkpoint <= number<uint64_t>(marker[0]), ESTALE);
+	// Routes are only a membership check under the retained keeper lock.
+	// They cannot grant newly discovered custody after physical reads began.
+	std::set<uint64_t> retained_keeper;
+	for (const auto *binding : { &manifest.keeper_before, &manifest.keeper_after })
+		retained_keeper.insert(binding->ordered_item_uids.begin(),
+				       binding->ordered_item_uids.end());
+	const auto routes = publication_keeper_routes(connection, keeper_id, false);
+	for (const auto &[row_id, uid] : routes)
+	{
+		(void)row_id;
+		require(retained_keeper.count(uid), ESTALE);
+	}
+	shop_item_runtime_image player_image, keeper_image;
+	require(shop_item_runtime_lock_player_image(
+			connection, payload.player_pid,
+			std::span<const uint64_t>(player_binding.ordered_item_uids), &player_image),
+		errno ? errno : EAGAIN);
+	require(publication_keeper_routes(connection, keeper_id, true) == routes, ESTALE);
+	require(shop_item_runtime_keeper_image(connection, keeper_id, payload.shop_id,
+					       payload.keeper_vnum, &keeper_image),
+		errno ? errno : EAGAIN);
+	for (const auto &[uid, row] : keeper_image)
+	{
+		(void)row;
+		publication_absence(connection, uid, "shopkeeper_items");
+	}
+	std::vector<player_item_snapshot> player_values, keeper_values;
+	require(shop_trade_recovery_image_reconstruct(
+			player_binding,
+			after ? shop_trade_recovery_forest_role::player_after :
+				shop_trade_recovery_forest_role::player_before,
+			player_image, &player_values) &&
+			shop_trade_recovery_image_reconstruct(
+				keeper_binding,
+				after ? shop_trade_recovery_forest_role::keeper_after :
+					shop_trade_recovery_forest_role::keeper_before,
+				keeper_image, &keeper_values),
+		ESTALE);
+	publication_session(connection, session);
+}
+
+shop_item_runtime_row publication_player_row(MYSQL *connection, const shop_trade_payload &payload,
+					     const locked_item &entry,
+					     const std::map<uint64_t, locked_item> &custody,
+					     const player_item_snapshot *expected)
+{
+	const auto &position = entry.snapshot.position;
+	require(position.state == item_custody_state::active &&
+			item_owner_identity_equal(position.owner, player_owner(payload)),
+		ESTALE);
+	const auto row = one(
+		connection,
+		"SELECT id,pid,vnum,equip_slot,COALESCE(container_id,0) FROM player_items WHERE obj_uid=" +
+			std::to_string(entry.snapshot.uid) + " LIMIT 2 FOR UPDATE",
+		5);
+	const uint64_t row_id = number<uint64_t>(row[0]), parent_id = number<uint64_t>(row[4]);
+	require(row_id && number<uint64_t>(row[1]) == payload.player_pid &&
+			number<int32_t>(row[2]) == entry.vnum &&
+			number<uint16_t>(row[3]) == position.equipment_slot,
+		ESTALE);
+	if (position.parent_uid)
+	{
+		const auto parent = custody.find(position.parent_uid);
+		require(parent != custody.end() && parent_id &&
+				parent->second.snapshot.position.state ==
+					item_custody_state::active &&
+				item_owner_identity_equal(parent->second.snapshot.position.owner,
+							  player_owner(payload)) &&
+				parent->second.snapshot.position.root_uid == position.root_uid,
+			ESTALE);
+		const auto physical_parent =
+			one(connection,
+			    "SELECT id,pid FROM player_items WHERE obj_uid=" +
+				    std::to_string(position.parent_uid) + " LIMIT 2 FOR UPDATE",
+			    2);
+		require(number<uint64_t>(physical_parent[0]) == parent_id &&
+				number<uint64_t>(physical_parent[1]) == payload.player_pid,
+			ESTALE);
+	}
+	else
+		require(!parent_id && position.root_uid == entry.snapshot.uid, ESTALE);
+	player_item_snapshot current{};
+	bool present = false;
+	require(shop_item_runtime_read(connection, false, row_id, &current, &present),
+		errno ? errno : EAGAIN);
+	require(present && current.object_uid == entry.snapshot.uid && current.vnum == entry.vnum &&
+			current.equipment_slot == position.equipment_slot,
+		ENODATA);
+	require(shop_item_runtime_verify(connection, false, row_id, payload.player_pid, parent_id,
+					 current),
+		errno ? errno : EAGAIN);
+	publication_absence(connection, entry.snapshot.uid, "player_items");
+	if (expected)
+	{
+		auto literal = *expected;
+		literal.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		std::vector<uint8_t> actual_bytes, expected_bytes;
+		require(player_item_snapshot_list_encode({ current }, &actual_bytes) ==
+					player_snapshot_codec_result::ok &&
+				player_item_snapshot_list_encode({ literal }, &expected_bytes) ==
+					player_snapshot_codec_result::ok,
+			EAGAIN);
+		require(actual_bytes == expected_bytes, ESTALE);
+	}
+	return { row_id,
+		 parent_id,
+		 position.root_uid,
+		 position.revision,
+		 static_cast<int16_t>(position.equipment_slot),
+		 std::move(current),
+		 true };
+}
+} // namespace
+#endif
+
+static unsigned int shop_trade_lock_publication_image(
+	MYSQL *connection, const critical_command &command, const critical_completion &sealed,
+	std::span<const player_item_snapshot> expected_current_player_items, bool cold,
+	economic_sql_shop_trade_publication *output) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)sealed;
+	(void)expected_current_player_items;
+	(void)cold;
+	(void)output;
+	return ENOTSUP;
+#else
+	if (!connection || !output)
+		return EINVAL;
+	try
+	{
+		const unsigned long session = mysql_thread_id(connection);
+		publication_session(connection, session);
+		require(expected_current_player_items.size() <= PLAYER_SNAPSHOT_MAX_OBJECTS, E2BIG);
+		const std::vector<player_item_snapshot> expected_player(
+			expected_current_player_items.begin(), expected_current_player_items.end());
+		if (!cold)
+		{
+			std::vector<uint8_t> expected_player_bytes;
+			const auto player_code = player_item_snapshot_list_encode(
+				expected_player, &expected_player_bytes);
+			require(player_code == player_snapshot_codec_result::ok,
+				player_code == player_snapshot_codec_result::allocation_failure ?
+					ENOMEM :
+					EINVAL);
+			require(expected_player_bytes.size() <= PLAYER_SNAPSHOT_MAX_BYTES, E2BIG);
+		}
+		economic_frozen_intent intent;
+		shop_trade_payload payload{};
+		economic_account_key wallet, bank, virtual_keeper;
+		shop_trade_result receipt{};
+		std::array<uint8_t, SHOP_TRADE_RESULT_BYTES> encoded{};
+		require(command.publication_required &&
+				command.schema_version ==
+					CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+				command.type == critical_command_type::shop_trade &&
+				shop_trade_accounting_decode(command, &intent, &payload, &wallet,
+							     &bank, &virtual_keeper) ==
+					economic_accounting_error::ok &&
+				intent.admission.facts.size() == 16,
+			EPROTONOSUPPORT);
+		if (cold)
+			require(command.payload_version == SHOP_TRADE_RECOVERY_MANIFEST_VERSION &&
+					payload.recovery_manifest_recorded &&
+					shop_trade_recovery_manifest_shape_valid(
+						payload.recovery_manifest),
+				EPROTONOSUPPORT);
+		const bool rejected = sealed.outcome == critical_apply_outcome::terminal_failure;
+		require(sealed.operation_id.bytes == command.operation_id.bytes &&
+				sealed.disposition == critical_completion_disposition::execution &&
+				sealed.failure_stage == critical_failure_stage::none &&
+				(rejected ?
+					 sealed.error_code != 0 :
+					 !sealed.error_code &&
+						 (sealed.outcome ==
+							  critical_apply_outcome::applied ||
+						  sealed.outcome ==
+							  critical_apply_outcome::already_applied)) &&
+				sealed.result_size == encoded.size() &&
+				shop_trade_command_decode_result(sealed.result_payload.data(),
+								 sealed.result_size, &receipt) &&
+				shop_trade_command_encode_result(receipt, &encoded) &&
+				std::equal(encoded.begin(), encoded.end(),
+					   sealed.result_payload.begin()) &&
+				std::all_of(sealed.result_payload.begin() + encoded.size(),
+					    sealed.result_payload.end(),
+					    [](uint8_t byte) { return !byte; }) &&
+				receipt.action == payload.action &&
+				sealed.durable_revision ==
+					std::max({ receipt.wallet_revision, receipt.bank_revision,
+						   receipt.shop_revision,
+						   receipt.player_owner_revision,
+						   receipt.counterparty_owner_revision,
+						   *std::max_element(
+							   receipt.item_revisions.begin(),
+							   receipt.item_revisions.end()) }),
+			EILSEQ);
+		std::vector<player_item_snapshot> after;
+		require(shop_trade_accounted_after_items(payload, &after), EAGAIN);
+		economic_sql_shop_trade_publication current;
+		current.session_id = session;
+		current.rejected = rejected;
+		current.bank_id = native_id(connection, bank.authority_id);
+		const std::array<economic_sql_mapping_request, 2> mappings = {
+			economic_sql_mapping_request{ wallet, PLAYER_LOCATOR, payload.player_pid },
+			economic_sql_mapping_request{ bank, BANK_LOCATOR, current.bank_id }
+		};
+		const auto authority_error = economic_sql_lock_authority(
+			connection, intent.admission.metadata.lineage,
+			intent.admission.metadata.epoch, mappings, &current.authority);
+		require(!authority_error, authority_error);
+		const auto player = one(
+			connection,
+			"SELECT account_name,racewar,copper,silver,gold,platinum,wallet_revision,level,save_revision "
+			"FROM player_data WHERE pid=" +
+				std::to_string(payload.player_pid) + " FOR UPDATE",
+			9);
+		require(player[0] && !strcasecmp(player[0]->c_str(), payload.account_name.data()) &&
+				number<uint8_t>(player[1]) == payload.racewar,
+			ESTALE);
+		current.player_level = number<uint32_t>(player[7]);
+		current.player_save_revision = number<uint64_t>(player[8]);
+		require(current.player_level && current.player_level <= UINT8_MAX &&
+				current.player_save_revision >=
+					payload.expected_player_save_revision,
+			ESTALE);
+		for (size_t coin = 0; coin < 4; ++coin)
+		{
+			current.wallet.amount[coin] = number<int64_t>(player[coin + 2]);
+			require(current.wallet.amount[coin] >= 0 &&
+					current.wallet.amount[coin] <= INT_MAX,
+				ERANGE);
+		}
+		current.wallet_revision = number<uint64_t>(player[6]);
+		const auto bank_row = one(
+			connection,
+			"SELECT id,account_name,racewar,bank_copper,bank_silver,bank_gold,bank_platinum,bank_revision "
+			"FROM account_banks WHERE id=" +
+				std::to_string(current.bank_id) + " FOR UPDATE",
+			8);
+		require(number<uint64_t>(bank_row[0]) == current.bank_id && bank_row[1] &&
+				!strcasecmp(bank_row[1]->c_str(), payload.account_name.data()) &&
+				number<uint8_t>(bank_row[2]) == payload.racewar,
+			ESTALE);
+		for (size_t coin = 0; coin < 4; ++coin)
+		{
+			current.bank.amount[coin] = number<int64_t>(bank_row[coin + 3]);
+			require(current.bank.amount[coin] >= 0 &&
+					current.bank.amount[coin] <= INT_MAX,
+				ERANGE);
+		}
+		current.bank_revision = number<uint64_t>(bank_row[7]);
+		// Later legitimate revisions are current values, never overwritten by
+		// this historical operation. At the same revision the vectors are exact.
+		require(current.wallet_revision >= receipt.wallet_revision &&
+				current.bank_revision >= receipt.bank_revision &&
+				(current.wallet_revision != receipt.wallet_revision ||
+				 current.wallet.amount == receipt.wallet.amount) &&
+				(current.bank_revision != receipt.bank_revision ||
+				 current.bank.amount == receipt.bank.amount),
+			ESTALE);
+		const auto keeper_row = one(
+			connection,
+			"SELECT id,shop_id,mob_vnum,cash,shop_revision,keeper_roaming,runtime_payload_checkpoint_revision "
+			"FROM shopkeepers WHERE shop_id=" +
+				std::to_string(payload.shop_id) + " FOR UPDATE",
+			7);
+		const uint64_t keeper_id = number<uint64_t>(keeper_row[0]);
+		require(keeper_id && keeper_id <= UINT32_MAX &&
+				number<uint32_t>(keeper_row[1]) == payload.shop_id &&
+				number<int32_t>(keeper_row[2]) == payload.keeper_vnum,
+			ESTALE);
+		current.keeper_id = static_cast<uint32_t>(keeper_id);
+		current.keeper_cash = number<int64_t>(keeper_row[3]);
+		current.shop_revision = number<uint64_t>(keeper_row[4]);
+		const auto roaming = number<uint8_t>(keeper_row[5]);
+		require(current.keeper_cash >= 0 && current.keeper_cash <= INT_MAX &&
+				roaming <= 1 && roaming == payload.keeper_roaming &&
+				current.shop_revision >= (rejected ?
+								  payload.expected_shop_revision :
+								  receipt.shop_revision),
+			ESTALE);
+		current.keeper_roaming = roaming != 0;
+		require(rejected ? (current.shop_revision != payload.expected_shop_revision ||
+				    current.keeper_cash == payload.expected_keeper_cash) :
+				   (receipt.keeper_cash_recorded &&
+				    (current.shop_revision != receipt.shop_revision ||
+				     current.keeper_cash == receipt.keeper_cash)),
+			ESTALE);
+		current.payload_checkpoint_recorded = keeper_row[6].has_value();
+		require(current.payload_checkpoint_recorded, ENODATA);
+		current.payload_checkpoint_revision = number<uint64_t>(keeper_row[6]);
+		require(current.payload_checkpoint_revision &&
+				current.payload_checkpoint_revision <= current.shop_revision,
+			ESTALE);
+		const auto primary = primary_owner(payload), other = counterparty_owner(payload);
+		std::vector<item_owner_identity> owners = { primary, other, player_owner(payload),
+							    shop_owner(payload) };
+		const auto owner_less = [](const auto &a, const auto &b) {
+			return std::tie(a.type, a.id, a.context_id) <
+			       std::tie(b.type, b.id, b.context_id);
+		};
+		std::sort(owners.begin(), owners.end(), owner_less);
+		owners.erase(std::unique(owners.begin(), owners.end(), item_owner_identity_equal),
+			     owners.end());
+		for (const auto &owner : owners)
+		{
+			const uint64_t revision = publication_owner_revision(connection, owner);
+			if (item_owner_identity_equal(owner, primary))
+				current.player_owner_revision = revision;
+			if (item_owner_identity_equal(owner, other))
+				current.counterparty_owner_revision = revision;
+			if (item_owner_identity_equal(owner, player_owner(payload)))
+				current.wallet_owner_revision = revision;
+			if (item_owner_identity_equal(owner, shop_owner(payload)))
+				current.keeper_owner_revision = revision;
+		}
+		require(rejected ||
+				(current.player_owner_revision >= receipt.player_owner_revision &&
+				 current.counterparty_owner_revision >=
+					 receipt.counterparty_owner_revision),
+			ESTALE);
+		const auto keeper_routes =
+			publication_keeper_routes(connection, current.keeper_id, false);
+		std::vector<uint64_t> expected_player_uids;
+		if (cold)
+			expected_player_uids = (rejected ? payload.recovery_manifest.player_before :
+							   payload.recovery_manifest.player_after)
+						       .ordered_item_uids;
+		else
+		{
+			expected_player_uids.reserve(expected_player.size());
+			for (const auto &entry : expected_player)
+				expected_player_uids.push_back(entry.object_uid);
+		}
+		const auto custody = publication_custody(connection, payload, expected_player_uids,
+							 keeper_routes);
+		if (payload.recovery_manifest_recorded)
+			recovery_keeper_closure(payload, custody, !rejected);
+		for (const auto &[row_id, uid] : keeper_routes)
+		{
+			(void)row_id;
+			const auto entry = custody.find(uid);
+			require(entry != custody.end() &&
+					entry->second.snapshot.position.state ==
+						item_custody_state::active &&
+					item_owner_identity_equal(
+						entry->second.snapshot.position.owner,
+						shop_owner(payload)),
+				ESTALE);
+		}
+		economic_accounting_plan retained_plan;
+		if (!rejected)
+		{
+			const auto plan_row = one(
+				connection,
+				"SELECT SUBSTRING(canonical_plan,1," +
+					std::to_string(ECONOMIC_ACCOUNTING_MAX_PLAN_BYTES + 1) +
+					"),OCTET_LENGTH(canonical_plan) FROM economic_accounting_operation WHERE operation_id=" +
+					id(command.operation_id),
+				2);
+			require(plan_row[0] &&
+					plan_row[0]->size() <= ECONOMIC_ACCOUNTING_MAX_PLAN_BYTES &&
+					number<uint64_t>(plan_row[1]) == plan_row[0]->size(),
+				EILSEQ);
+			require(economic_plan_decode(
+					std::span<const uint8_t>(reinterpret_cast<const uint8_t *>(
+									 plan_row[0]->data()),
+								 plan_row[0]->size()),
+					&retained_plan) == economic_accounting_error::ok,
+				EAGAIN);
+			require(economic_plan_validate_structure(retained_plan) ==
+						economic_accounting_error::ok &&
+					receipt.item_count == payload.item_count,
+				EILSEQ);
+		}
+		std::set<uint64_t> selected;
+		for (size_t index = 0; index < payload.item_count; ++index)
+			require(selected.insert(payload.items[index].item_uid).second, EILSEQ);
+		for (const auto &[uid, entry] : custody)
+		{
+			current.custody.push_back(entry.snapshot);
+			current.custody_vnums.push_back(entry.vnum);
+			require((!selected.count(entry.snapshot.position.parent_uid) ||
+				 selected.count(uid)) &&
+					(entry.snapshot.position.root_uid !=
+						 payload.selected_item_uid ||
+					 selected.count(uid)),
+				ESTALE);
+		}
+		// All active ordinary player custody and exact claimed/root-parent
+		// references were locked above in the same sorted cut as keeper custody.
+		// The reader rechecks those locks, then proves the complete native forest
+		// BEFORE any keeper helper physical query, without acquiring a new owner.
+		if (cold)
+			require(shop_item_runtime_lock_player_image(
+					connection, payload.player_pid,
+					std::span<const uint64_t>(expected_player_uids),
+					&current.whole_player_items),
+				errno ? errno : EAGAIN);
+		else
+			require(shop_item_runtime_lock_player_image(connection, payload.player_pid,
+								    expected_player,
+								    &current.whole_player_items),
+				errno ? errno : EAGAIN);
+		require(publication_keeper_routes(connection, current.keeper_id, true) ==
+				keeper_routes,
+			ESTALE);
+		require(shop_item_runtime_keeper_image(connection, current.keeper_id,
+						       payload.shop_id, payload.keeper_vnum,
+						       &current.keeper_items),
+			errno ? errno : EAGAIN);
+		for (const auto &[uid, row] : current.keeper_items)
+			publication_absence(connection, uid, "shopkeeper_items");
+		if (payload.recovery_manifest_recorded)
+		{
+			const auto &manifest = payload.recovery_manifest;
+			std::vector<player_item_snapshot> player_values, keeper_values;
+			require(shop_trade_recovery_image_reconstruct(
+					rejected ? manifest.player_before : manifest.player_after,
+					rejected ? shop_trade_recovery_forest_role::player_before :
+						   shop_trade_recovery_forest_role::player_after,
+					current.whole_player_items, &player_values) &&
+					shop_trade_recovery_image_reconstruct(
+						rejected ? manifest.keeper_before :
+							   manifest.keeper_after,
+						rejected ?
+							shop_trade_recovery_forest_role::
+								keeper_before :
+							shop_trade_recovery_forest_role::keeper_after,
+						current.keeper_items, &keeper_values),
+				ESTALE);
+		}
+		std::vector<player_item_snapshot> before;
+		require(player_item_snapshot_list_decode(payload.item_blob.data(),
+							 payload.item_blob_size, &before) ==
+				player_snapshot_codec_result::ok,
+			EAGAIN);
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const auto &original = payload.items[index];
+			const auto found = custody.find(original.item_uid);
+			if (rejected && payload.action == shop_trade_action::buy_produced)
+			{
+				require(found == custody.end(), ESTALE);
+				publication_absence(connection, original.item_uid);
+				continue;
+			}
+			require(found != custody.end() && found->second.vnum == original.vnum,
+				ESTALE);
+			const auto &entry = found->second;
+			const auto &position = entry.snapshot.position;
+			const player_item_snapshot *literal = nullptr;
+			if (rejected)
+			{
+				const bool from_shop =
+					payload.action == shop_trade_action::buy_existing ||
+					payload.action == shop_trade_action::discard_invalid;
+				require(position.state == item_custody_state::active &&
+						item_owner_identity_equal(
+							position.owner,
+							from_shop ? shop_owner(payload) :
+								    player_owner(payload)) &&
+						position.root_uid == original.root_item_uid &&
+						position.parent_uid == original.parent_item_uid &&
+						!position.equipment_slot &&
+						position.revision >=
+							original.expected_item_revision,
+					ESTALE);
+				if (position.revision == original.expected_item_revision)
+				{
+					const auto snapshot = std::find_if(
+						before.begin(), before.end(), [&](const auto &value)
+						{ return value.object_uid == original.item_uid; });
+					require(snapshot != before.end(), EILSEQ);
+					literal = &*snapshot;
+				}
+			}
+			else
+			{
+				const auto event = std::find_if(
+					retained_plan.item_events.begin(),
+					retained_plan.item_events.end(), [&](const auto &value)
+					{ return value.uid == original.item_uid; });
+				require(event != retained_plan.item_events.end() &&
+						event->event_index == index &&
+						receipt.item_uids[index] == original.item_uid &&
+						receipt.item_revisions[index] ==
+							event->after.revision &&
+						publication_position_equal(position, event->after),
+					ESTALE);
+				const auto snapshot = std::find_if(
+					after.begin(), after.end(), [&](const auto &value)
+					{ return value.object_uid == original.item_uid; });
+				require(snapshot != after.end(), EILSEQ);
+				literal = &*snapshot;
+			}
+			if (position.state == item_custody_state::destroyed)
+			{
+				publication_absence(connection, original.item_uid);
+				continue;
+			}
+			if (item_owner_identity_equal(position.owner, player_owner(payload)))
+				require(current.player_items
+						.emplace(original.item_uid,
+							 publication_player_row(connection, payload,
+										entry, custody,
+										literal))
+						.second,
+					EILSEQ);
+			else
+			{
+				require(item_owner_identity_equal(position.owner,
+								  shop_owner(payload)),
+					ESTALE);
+				const auto physical = current.keeper_items.find(original.item_uid);
+				require(physical != current.keeper_items.end() &&
+						physical->second.revision == position.revision,
+					ESTALE);
+				if (literal)
+				{
+					auto expected = *literal;
+					expected.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+					std::vector<uint8_t> actual_bytes, expected_bytes;
+					require(player_item_snapshot_list_encode(
+							{ physical->second.item }, &actual_bytes) ==
+								player_snapshot_codec_result::ok &&
+							player_item_snapshot_list_encode(
+								{ expected }, &expected_bytes) ==
+								player_snapshot_codec_result::ok,
+						EAGAIN);
+					require(actual_bytes == expected_bytes, ESTALE);
+				}
+			}
+		}
+		if (payload.action == shop_trade_action::buy_produced)
+		{
+			const auto stock = custody.find(payload.stock_item_uid);
+			require(stock != custody.end() &&
+					stock->second.vnum == payload.stock_vnum &&
+					stock->second.snapshot.position.state ==
+						item_custody_state::active &&
+					item_owner_identity_equal(
+						stock->second.snapshot.position.owner,
+						shop_owner(payload)) &&
+					stock->second.snapshot.position.root_uid ==
+						payload.stock_item_uid &&
+					!stock->second.snapshot.position.parent_uid &&
+					!stock->second.snapshot.position.equipment_slot &&
+					stock->second.snapshot.position.revision >=
+						payload.expected_stock_item_revision &&
+					current.keeper_items.count(payload.stock_item_uid),
+				ESTALE);
+			if (!rejected)
+			{
+				const auto witness = std::find_if(
+					retained_plan.items_after.begin(),
+					retained_plan.items_after.end(), [&](const auto &entry)
+					{ return entry.uid == payload.stock_item_uid; });
+				require(witness != retained_plan.items_after.end() &&
+						publication_position_equal(
+							stock->second.snapshot.position,
+							witness->position),
+					ESTALE);
+			}
+			std::set<uint64_t> ancestors;
+			uint64_t uid = payload.target_parent_item_uid;
+			while (uid)
+			{
+				require(ancestors.size() < PLAYER_SNAPSHOT_MAX_DEPTH &&
+						ancestors.insert(uid).second,
+					ELOOP);
+				const auto ancestor = custody.find(uid);
+				require(ancestor != custody.end() &&
+						ancestor->second.snapshot.position.state ==
+							item_custody_state::active &&
+						item_owner_identity_equal(
+							ancestor->second.snapshot.position.owner,
+							player_owner(payload)) &&
+						ancestor->second.snapshot.position.root_uid ==
+							payload.target_root_item_uid,
+					ESTALE);
+				if (!rejected)
+				{
+					const auto witness =
+						std::find_if(retained_plan.items_after.begin(),
+							     retained_plan.items_after.end(),
+							     [&](const auto &entry)
+							     { return entry.uid == uid; });
+					require(witness != retained_plan.items_after.end() &&
+							publication_position_equal(
+								ancestor->second.snapshot.position,
+								witness->position),
+						ESTALE);
+				}
+				require(current.player_items
+						.emplace(uid,
+							 publication_player_row(connection, payload,
+										ancestor->second,
+										custody, nullptr))
+						.second,
+					EILSEQ);
+				uid = ancestor->second.snapshot.position.parent_uid;
+			}
+		}
+		size_t player_bytes = 0;
+		for (const auto &[uid, row] : current.player_items)
+		{
+			(void)uid;
+			std::vector<uint8_t> bytes;
+			require(player_item_snapshot_list_encode({ row.item }, &bytes) ==
+					player_snapshot_codec_result::ok,
+				EAGAIN);
+			require(bytes.size() <= PLAYER_SNAPSHOT_MAX_BYTES - player_bytes, E2BIG);
+			player_bytes += bytes.size();
+		}
+		// Each selected physical parent's entire child closure must agree with
+		// the exact selected subtree; unrelated destination ancestors may also
+		// contain other roots and are not mislabeled a complete player census.
+		for (const auto uid : selected)
+		{
+			const auto &image = current.player_items.count(uid) ? current.player_items :
+									      current.keeper_items;
+			const auto parent = image.find(uid);
+			if (parent == image.end())
+				continue; // A rejected production or a destroyed tree has no rows.
+			const bool player_domain = &image == &current.player_items;
+			execute(connection,
+				"SELECT obj_uid FROM " +
+					std::string(player_domain ? "player_items" :
+								    "shopkeeper_items") +
+					" WHERE container_id=" + std::to_string(parent->second.id) +
+					" LIMIT " + std::to_string(SHOP_TRADE_MAX_ITEMS + 1) +
+					" FOR UPDATE");
+			std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> children(
+				mysql_store_result(connection), mysql_free_result);
+			require(children && mysql_num_rows(children.get()) <= SHOP_TRADE_MAX_ITEMS,
+				E2BIG);
+			size_t count = 0;
+			MYSQL_ROW child;
+			while ((child = mysql_fetch_row(children.get())))
+			{
+				require(child[0], ESTALE);
+				const uint64_t child_uid =
+					number<uint64_t>(cell(std::string(child[0])));
+				const auto entry = custody.find(child_uid);
+				require(selected.count(child_uid) && entry != custody.end() &&
+						entry->second.snapshot.position.parent_uid == uid,
+					ESTALE);
+				++count;
+			}
+			const size_t expected = std::count_if(
+				custody.begin(), custody.end(),
+				[&](const auto &entry) {
+					return selected.count(entry.first) &&
+					       entry.second.snapshot.position.parent_uid == uid;
+				});
+			require(count == expected, ESTALE);
+		}
+		publication_session(connection, session);
+		*output = std::move(current);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code ? error.code : EIO;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+#endif
+}
+
+unsigned int economic_sql_shop_trade_lock_publication(
+	MYSQL *connection, const critical_command &command, const critical_completion &sealed,
+	std::span<const player_item_snapshot> expected_current_player_items,
+	economic_sql_shop_trade_publication *output) noexcept
+{
+	return shop_trade_lock_publication_image(connection, command, sealed,
+						 expected_current_player_items, false, output);
+}
+
+unsigned int
+economic_sql_shop_trade_lock_publication(MYSQL *connection, const critical_command &command,
+					 const critical_completion &sealed,
+					 economic_sql_shop_trade_publication *output) noexcept
+{
+	return shop_trade_lock_publication_image(
+		connection, command, sealed, std::span<const player_item_snapshot>{}, true, output);
 }

@@ -21,6 +21,7 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "world/handler.h"
+#include "economy/shop_trade_destination_weight.h"
 #include "world/bloodstains.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -143,6 +144,20 @@ static int obj_prototype_weight(P_obj obj)
 	w = proto->weight;
 	extract_obj(proto, TRUE);
 	return w;
+}
+
+bool obj_capture_container_shell_weight(P_obj container, int32_t *output)
+{
+	if (!output || !nevent_is_game_thread() || !container ||
+	    container->type != ITEM_CONTAINER || container->R_num < 0)
+		return false;
+	P_obj probe = read_object(container->R_num, REAL);
+	if (!probe)
+		return false;
+	const int32_t staged = probe->weight;
+	extract_obj(probe, TRUE);
+	*output = staged;
+	return true;
 }
 
 /*
@@ -2951,7 +2966,7 @@ bool obj_can_nest(P_obj obj, P_obj obj_to)
 
 /* put an object in an object (quaint) */
 
-void obj_to_obj(P_obj obj, P_obj obj_to)
+static bool obj_to_obj_impl(P_obj obj, P_obj obj_to, const int32_t *frozen_correction)
 {
 	P_obj o;
 	char buf[MAX_STRING_LENGTH];
@@ -2963,7 +2978,7 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 		      J_NAME(dummy_owner), obj ? OBJ_VNUM(obj) : -1);
 		if (obj && OBJ_NOWHERE(obj) && dummy_owner->in_room != NOWHERE)
 			obj_to_room(obj, dummy_owner->in_room);
-		return;
+		return false;
 	}
 
 	if (!obj_can_nest(obj, obj_to))
@@ -2980,7 +2995,7 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 		else
 			logit(LOG_EXIT, "obj_to_obj: obj or obj_to is somehow invalid");
 
-		return;
+		return false;
 	}
 	obj->loc_p = LOC_INSIDE;
 	obj->loc.inside = obj_to;
@@ -3012,7 +3027,10 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 	}
 
 	add_weight(obj_to, obj->weight);
-	resync_reducing_container(obj_to);
+	if (frozen_correction)
+		add_weight(obj_to, *frozen_correction);
+	else
+		resync_reducing_container(obj_to);
 	world_activity_object_enter(obj);
 	/* Broken out into a recursive function; neater and more correct for handling negative weights properly.
 	  wgt = GET_OBJ_WEIGHT(obj);
@@ -3036,6 +3054,63 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 	  }
 	*/
 	mark_container_dirty(obj_to);
+	return true;
+}
+
+void obj_to_obj(P_obj obj, P_obj obj_to)
+{
+	(void)obj_to_obj_impl(obj, obj_to, nullptr);
+}
+
+bool obj_to_obj_shop_frozen_weight(P_obj object, P_obj destination,
+				   const shop_trade_destination_weight &frozen)
+{
+	if (!nevent_is_game_thread() || !object || !destination || !object->obj_uid ||
+	    !destination->obj_uid || !OBJ_NOWHERE(object) || !OBJ_CARRIED(destination) ||
+	    !destination->loc.carrying || !IS_PC(destination->loc.carrying) ||
+	    destination->type != ITEM_CONTAINER || !obj_can_nest(object, destination) ||
+	    training_dummy_item_owner(destination))
+		return false;
+	const item_owner_identity player{ item_owner_type::player,
+					  static_cast<uint32_t>(GET_PID(destination->loc.carrying)),
+					  0 };
+	item_ownership_runtime_entry selected{}, target{};
+	if (!item_ownership_runtime_lookup(object->obj_uid, &selected) ||
+	    !item_ownership_runtime_lookup(destination->obj_uid, &target) ||
+	    selected.state != item_custody_state::active ||
+	    target.state != item_custody_state::active ||
+	    !item_owner_identity_equal(selected.owner, player) ||
+	    !item_owner_identity_equal(target.owner, player) ||
+	    selected.root_item_uid != destination->obj_uid ||
+	    selected.parent_item_uid != destination->obj_uid || target.parent_item_uid ||
+	    target.root_item_uid != destination->obj_uid)
+		return false;
+	player_item_snapshot before{};
+	before.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	before.type = destination->type;
+	std::copy(std::begin(destination->value), std::end(destination->value),
+		  before.values.begin());
+	before.weight = destination->weight;
+	int32_t correction = 0;
+	if (!shop_trade_destination_weight_verify(before, object->weight, frozen, &correction))
+		return false;
+	if (before.values[4] > 0)
+	{
+		int64_t direct = 0;
+		size_t count = 0;
+		for (P_obj child = destination->contains; child; child = child->next_content)
+		{
+			if (++count > PLAYER_SNAPSHOT_MAX_OBJECTS || !OBJ_INSIDE(child) ||
+			    child->loc.inside != destination)
+				return false;
+			direct += child->weight;
+			if (direct < INT32_MIN || direct > INT32_MAX)
+				return false;
+		}
+		if (direct != frozen.direct_contents)
+			return false;
+	}
+	return obj_to_obj_impl(object, destination, &correction);
 }
 
 // appends obj to end of a linked list - used during load to preserve order

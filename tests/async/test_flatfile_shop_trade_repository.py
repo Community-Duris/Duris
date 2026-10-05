@@ -63,7 +63,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-shop-trade-") as temporary:
         rel("economic_accounting_item_reference.c"),
         rel("item_transfer_accounting.c"),
         rel("player_snapshot_codec.c"),
-        rel("shop_trade_command.c"),
+        rel("shop_trade_command.c"), rel("shop_trade_recovery_manifest.c"),
         rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
         rel("corpse_lifecycle_command.c"),
         rel("epic_command.c"),

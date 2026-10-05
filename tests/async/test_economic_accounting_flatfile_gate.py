@@ -22,7 +22,7 @@ SOURCES = (
     "flatfile_accounting_authority.c", "flatfile_accounting_store.c", "flatfile_item_accounting_reference.c",
     "flatfile_store.c", "player_snapshot_codec.c", "item_transfer_command.c", "craft_pouch_mutation.c", "chaos_pouch_ledger.c",
     "economic_accounting_item_reference.c",
-    "corpse_lifecycle_command.c", "shop_trade_command.c", "critical_command.c",
+    "corpse_lifecycle_command.c", "shop_trade_command.c", "shop_trade_recovery_manifest.c", "critical_command.c",
     "epic_command.c", "currency_command.c", "auction_command.c",
     "combat_outcome_command.c", "boon_reward_command.c", "boon_shop_command.c",
     "persistence_mode.c", "economic_accounting_intent.c",
