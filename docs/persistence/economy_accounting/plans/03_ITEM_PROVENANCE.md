@@ -11,11 +11,11 @@ completion is inferred. Builds/tests remain deferred to major-plan readiness.
 The previous e018 SQL build/restore evidence remains valid for that historical
 tree and does not qualify this newly extended native candidate. Actual native SQL/
 flat participant, owner/source authority, rebind, producer and guarded ACK remain
-required. See [the detailed source checkpoint](QUEST_MOBILE_VALUES_SOURCE_2026-10-04.md).
+required. See [the detailed source checkpoint](../QUEST_MOBILE_VALUES_SOURCE_2026-10-04.md).
 
 ## Quest native values/stock source checkpoint — 2026-10-04
 
-[Private canonical mobile values and full ordered stock capture](QUEST_MOBILE_VALUES_SOURCE_2026-10-04.md)
+[Private canonical mobile values and full ordered stock capture](../QUEST_MOBILE_VALUES_SOURCE_2026-10-04.md)
 are implemented and source reviewed. Shared capture overhead is counted once;
 existing bounds and actual equipment/carry order remain. Native birth/custody,
 SQL/flat participant, lifecycle/rebind, sequential quest/reward, publication/ACK

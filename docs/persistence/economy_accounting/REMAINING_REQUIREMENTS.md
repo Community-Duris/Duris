@@ -1,5 +1,12 @@
 # Double-entry economy: remaining requirements
 
+## Integrated shop world witness — 2026-10-04
+
+[Complete read-only world observation](SHOP_WORLD_WITNESS_SOURCE_2026-10-04.md)
+is source-integrated and registered. Original-lease publication, current native
+projections, native placement order, recovery and guarded ACK remain unfinished.
+Source checks only; major-plan build/runtime qualification remains deferred.
+
 ## Integrated NPC values and stock capture component — 2026-10-04
 
 The exact reviewed quest_mobile_native C871b2473/H2a149708 is now source-integrated
