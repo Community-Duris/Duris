@@ -1,5 +1,12 @@
 # Plan 4: priced and compound gameplay domains
 
+## Shared keeper sale insertion order — 2026-10-05
+
+[Keeper sell-store native order](../SHOP_KEEPER_NATIVE_ORDER_SOURCE_2026-10-05.md)
+now shares the reviewed player ordering body with typed NPC/action checks.
+Private successful shop publication and recovery are still being implemented.
+Source review/format/pins/census only; major-plan native qualification stays open.
+
 ## Shared native shop ordering — 2026-10-05
 
 [Native insertion-order conversion](../SHOP_NATIVE_ORDER_SOURCE_2026-10-05.md)

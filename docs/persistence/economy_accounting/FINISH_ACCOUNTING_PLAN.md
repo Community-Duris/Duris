@@ -1,5 +1,12 @@
 # Finish accounting implementation plan
 
+## Shared keeper sale insertion order — 2026-10-05
+
+[Keeper sell-store native order](SHOP_KEEPER_NATIVE_ORDER_SOURCE_2026-10-05.md)
+now shares the reviewed player ordering body with typed NPC/action checks.
+Private successful shop publication and recovery are still being implemented.
+Source review/format/pins/census only; major-plan native qualification stays open.
+
 ## Writer coverage source-contract reconciliation — 2026-10-05
 
 [Strict operation identity and provenance repair](WRITER_CONTRACT_RECONCILIATION_2026-10-05.md)
