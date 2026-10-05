@@ -1,5 +1,12 @@
 # Finish accounting implementation plan
 
+## Shared native shop ordering — 2026-10-05
+
+[Native insertion-order conversion](SHOP_NATIVE_ORDER_SOURCE_2026-10-05.md)
+is integrated into the read-only world witness and reused by the private owner.
+Signed native row-ID guards and private0059 schema are source accepted.
+Publication/recovery/guarded ACK and major-plan qualification remain open.
+
 ## Integrated NPC native SQL participant — 2026-10-05
 
 [Borrowed native image/stock SQL participation](QUEST_MOBILE_SQL_SOURCE_2026-10-05.md)

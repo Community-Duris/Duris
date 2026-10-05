@@ -1,4 +1,5 @@
 #include "economy/shop_trade_world_witness.h"
+#include "economy/shop_trade_command.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
 #include "player/player_snapshot_capture.h"
@@ -7,6 +8,8 @@
 #include <array>
 #include <climits>
 #include <new>
+#include <map>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -634,6 +637,146 @@ bool shop_trade_world_witness_observe(const shop_trade_world_expectation &expect
 		return true;
 	}
 	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_world_expected_player_order(const shop_trade_payload &payload, P_char actor,
+					    P_obj selected, P_obj destination,
+					    const std::vector<player_item_snapshot> &values,
+					    std::vector<player_item_snapshot> *output) noexcept
+{
+	if (!output || !nevent_is_game_thread() || !actor || !IS_PC(actor) || !actor->only.pc ||
+	    static_cast<uint32_t>(GET_PID(actor)) != payload.player_pid || !selected ||
+	    selected->obj_uid != payload.selected_item_uid || selected->R_num < 0 ||
+	    (payload.action != shop_trade_action::buy_existing &&
+	     payload.action != shop_trade_action::buy_produced) ||
+	    values.empty() || values.size() > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+	    (payload.target_parent_item_uid ?
+		     (!destination || destination->obj_uid != payload.target_parent_item_uid ||
+		      !OBJ_CARRIED_BY(destination, actor)) :
+		     destination != nullptr))
+		return false;
+	try
+	{
+		std::map<uint64_t, size_t> indices;
+		std::vector<std::vector<size_t>> children(values.size());
+		std::vector<size_t> roots;
+		for (size_t index = 0; index < values.size(); ++index)
+		{
+			const auto &row = values[index];
+			if (!row.object_uid || row.object_uid == UINT64_MAX ||
+			    !indices.emplace(row.object_uid, index).second ||
+			    row.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    row.parent_index >= static_cast<int32_t>(index))
+				return false;
+			if (row.parent_index < 0)
+				roots.push_back(index);
+			else
+			{
+				if (row.equipment_slot)
+					return false;
+				children[static_cast<size_t>(row.parent_index)].push_back(index);
+			}
+		}
+		const auto picked = indices.find(payload.selected_item_uid);
+		if (picked == indices.end() || values[picked->second].equipment_slot ||
+		    real_object(values[picked->second].vnum) != selected->R_num)
+			return false;
+		const size_t selected_index = picked->second;
+		const int32_t parent = values[selected_index].parent_index;
+		if (payload.target_parent_item_uid ?
+			    (parent < 0 || values[static_cast<size_t>(parent)].object_uid !=
+						   payload.target_parent_item_uid) :
+			    parent != PLAYER_SNAPSHOT_NO_PARENT)
+			return false;
+		auto &siblings = parent < 0 ? roots : children[static_cast<size_t>(parent)];
+		const auto removed = std::find(siblings.begin(), siblings.end(), selected_index);
+		if (removed == siblings.end())
+			return false;
+		siblings.erase(removed);
+		// Existing handler grouping uses actual R_num, including ephemeral
+		// NORENT siblings omitted from the saved forest. Observe the complete
+		// target chain, skipping this selected node on a resumed placement.
+		std::vector<P_obj> physical;
+		std::set<P_obj> seen;
+		std::vector<size_t> observed_saved;
+		for (P_obj object = destination ? destination->contains : actor->carrying; object;
+		     object = object->next_content)
+		{
+			if (physical.size() >= PLAYER_SNAPSHOT_MAX_OBJECTS ||
+			    !seen.insert(object).second ||
+			    (destination ?
+				     (!OBJ_INSIDE(object) || object->loc.inside != destination) :
+				     !OBJ_CARRIED_BY(object, actor)))
+				return false;
+			if (object == selected)
+				continue;
+			physical.push_back(object);
+			const auto saved = indices.find(object->obj_uid);
+			if (saved != indices.end())
+			{
+				if (std::find(siblings.begin(), siblings.end(), saved->second) ==
+				    siblings.end())
+					return false;
+				observed_saved.push_back(saved->second);
+			}
+		}
+		const auto inventory_begin =
+			parent < 0 ?
+				std::find_if(siblings.begin(), siblings.end(), [&](size_t index)
+					     { return !values[index].equipment_slot; }) :
+				siblings.begin();
+		if (observed_saved != std::vector<size_t>(inventory_begin, siblings.end()))
+			return false; // The original remaining sibling order must still agree.
+		const auto same_template =
+			std::find_if(physical.begin(), physical.end(), [&](P_obj object)
+				     { return object->R_num == selected->R_num; });
+		const auto physical_anchor = same_template == physical.end() ? physical.begin() :
+									       same_template;
+		auto insertion = siblings.end();
+		for (auto node = physical_anchor; node != physical.end(); ++node)
+		{
+			const auto saved = indices.find((*node)->obj_uid);
+			if (saved != indices.end())
+			{
+				insertion =
+					std::find(inventory_begin, siblings.end(), saved->second);
+				if (insertion == siblings.end())
+					return false;
+				break;
+			}
+		}
+		siblings.insert(insertion, selected_index);
+		std::vector<player_item_snapshot> ordered;
+		ordered.reserve(values.size());
+		const auto append = [&](auto &&self, size_t index, int32_t parent_index,
+					size_t depth) -> bool
+		{
+			if (depth > PLAYER_SNAPSHOT_MAX_DEPTH || ordered.size() >= values.size())
+				return false;
+			const int32_t placed = static_cast<int32_t>(ordered.size());
+			ordered.push_back(values[index]);
+			ordered.back().parent_index = parent_index;
+			for (size_t child : children[index])
+				if (!self(self, child, placed, depth + 1))
+					return false;
+			return true;
+		};
+		for (size_t root : roots)
+			if (!append(append, root, PLAYER_SNAPSHOT_NO_PARENT, 1))
+				return false;
+		std::vector<uint8_t> canonical;
+		if (ordered.size() != values.size() ||
+		    player_item_snapshot_list_encode(ordered, &canonical) !=
+			    player_snapshot_codec_result::ok ||
+		    canonical.size() > PLAYER_SNAPSHOT_MAX_BYTES - sizeof(uint32_t))
+			return false;
+		*output = std::move(ordered);
+		return true;
+	}
+	catch (...)
 	{
 		return false;
 	}

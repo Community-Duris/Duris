@@ -1,5 +1,12 @@
 # Plan 4: priced and compound gameplay domains
 
+## Shared native shop ordering — 2026-10-05
+
+[Native insertion-order conversion](../SHOP_NATIVE_ORDER_SOURCE_2026-10-05.md)
+is integrated into the read-only world witness and reused by the private owner.
+Signed native row-ID guards and private0059 schema are source accepted.
+Publication/recovery/guarded ACK and major-plan qualification remain open.
+
 ## Integrated shop world witness — 2026-10-05
 
 [Complete read-only world observation](../SHOP_WORLD_WITNESS_SOURCE_2026-10-04.md)
