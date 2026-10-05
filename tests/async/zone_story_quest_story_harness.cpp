@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 117 &&
+		require(catalog.story_mappings.size() == 118 &&
 				tracker.summary_for(7, 42).total == 1567,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7551,6 +7551,102 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &badge = story_for("earth", "gromdishar-brothers-badge");
+			const auto &band = story_for("earth", "captain-fallen-patrol");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 435, 43500, 100, "arrival") ==
+					result::applied,
+				"Earth discovery failed");
+			require(journey.meet_npc(7, 42, 43502, 43572, 101) == result::applied &&
+					journey.meet_npc(7, 42, 43509, 43512, 101) ==
+						result::applied,
+				"Earth givers missing");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Earth story section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.equipped[1] = 43539;
+			supplies.carried[43538] = 1;
+			supplies.carried[43561] = 1;
+			supplies.carried[43562] = 1;
+			journal = journey.render_journal(7, 42, 435, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto *entry : { &badge, &band })
+				require(section(*entry).find("[Missing now] " +
+							     entry->steps[0].text) !=
+						std::string::npos,
+					"Worn band, corpse or reward established Earth preparation");
+			require(journey.progress_for_zone(7, 42, 435).completed == 0,
+				"Reward possession completed an Earth patrol mission");
+			supplies.equipped.clear();
+			supplies.equipped[18] = 43525;
+			supplies.carried[43539] = 1;
+			journal = journey.render_journal(7, 42, 435, 10, 1, 106, false, false,
+							 &supplies);
+			require(section(badge).find("[Missing now] " + badge.steps[0].text) !=
+						std::string::npos &&
+					section(band).find("[Ready now] " + band.steps[0].text) !=
+						std::string::npos,
+				"Held badge or loose supplied band classification failed");
+			// Synthetic settled receipts test projection; they do not supply the missing badge or qualify native access.
+			record(journey, band.contracts.front(), "earth-band-receipt", 435, 43512);
+			supplies.carried.erase(43539);
+			require(journey.progress_for_zone(7, 42, 435).completed == 1 &&
+					journey.evidence_for(badge.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Captain receipt required or completed the other patrol or a puzzle");
+			journal = journey.render_journal(7, 42, 435, 10, 1, 108, false, false,
+							 &supplies);
+			require(section(band).find("[Missing now] " + band.steps[0].text) !=
+					std::string::npos,
+				"Spent band remained current preparation");
+			supplies.equipped.clear();
+			supplies.carried[43525] = 1;
+			journal = journey.render_journal(7, 42, 435, 10, 1, 109, false, false,
+							 &supplies);
+			require(section(badge).find("[Ready now] " + badge.steps[0].text) !=
+					std::string::npos,
+				"Legitimate supplied badge required personal source history");
+			record(journey, badge.contracts.front(), "earth-badge-receipt", 435, 43572);
+			require(journey.progress_for_zone(7, 42, 435).completed == 2,
+				"Independent Earth deliveries failed");
+			auto replay =
+				completion(badge.contracts.front(), "earth-badge-receipt", 120);
+			replay.transaction.zone_number = 435;
+			replay.transaction.room_vnum = 43572;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Earth replay duplicated completion");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 435).completed == 2 &&
+					!recovered.has_discovered(7, 42, 433) &&
+					!recovered.has_discovered(7, 42, 252),
+				"Earth recovery changed receipts or foreign discovery");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 435 &&
+							     u.daily_candidate;
+					      }) == 0,
+				"Earth story-only eligibility changed");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 435, 43500, 100, "arrival") ==
+					result::applied,
+				"Historical Earth discovery failed");
+			record(historical, band.contracts.front(), "earth-old-band", 435, 43512);
+			record(historical, badge.contracts.front(), "earth-old-badge", 435, 43572);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 435).completed == 2,
+				"Earth historical native receipts lost under authored map");
+		}
 		{
 			const auto &cloudy = story_for("element", "forrestal-cloudy-key");
 			const auto &black = story_for("element", "forrestal-black-key");

@@ -69936,6 +69936,248 @@
     {
       "contacts": [
         {
+          "description": "Starts in A Small Alcove in the Cavern Wall: Gloomhaven patrol, abyss outpost and brother's badge leads; exact badge delivery.",
+          "keyword": "gromdishar",
+          "mob_vnum": 43502,
+          "name": "Gromdishar",
+          "topics": [
+            "hi",
+            "hello",
+            "yes",
+            "scouts",
+            "mission",
+            "gloomhaven"
+          ]
+        },
+        {
+          "description": "Starts in A Secret Chamber within the Temple: imprisoned grand protector, temple history and nights/wishes/day hint; rescue is narrative.",
+          "keyword": "lithibar",
+          "mob_vnum": 43504,
+          "name": "Lithibar",
+          "topics": [
+            "hi",
+            "hello",
+            "trouble",
+            "troubling",
+            "problem",
+            "cursed",
+            "temple",
+            "hide",
+            "hidden",
+            "yes",
+            "hint"
+          ]
+        },
+        {
+          "description": "Starts in A Guard's Cave: Woodseer patrol, survivors and bloodrune mission; exact silver-band delivery.",
+          "keyword": "captain",
+          "mob_vnum": 43509,
+          "name": "a paladin captain",
+          "topics": [
+            "hi",
+            "hello",
+            "yes",
+            "woodseer",
+            "scout",
+            "scouts",
+            "mission"
+          ]
+        },
+        {
+          "description": "Elven landing in the abyss: Autumnglen outpost and paladin contact lead, without an accepted defense outcome.",
+          "keyword": "mage",
+          "mob_vnum": 43533,
+          "name": "an elven mage",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Starts at The Edge of a Large Cavern: opened bloodrune and Gloomhaven outpost leads; no extra delivery contract.",
+          "keyword": "scout",
+          "mob_vnum": 43547,
+          "name": "a duergar scout",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Starts in A Small Chamber Within the Temple: keeper and bloodrune leads; native carried flesh sliver serves a keyed route.",
+          "keyword": "charinth",
+          "mob_vnum": 43571,
+          "name": "Charinth, the mad",
+          "topics": [
+            "hi",
+            "hello",
+            "keeper",
+            "bloodrune"
+          ]
+        },
+        {
+          "description": "Starts in A Shallow Cave: quest and bloodrune warnings; no accepted closure or rescue endpoint.",
+          "keyword": "paladin",
+          "mob_vnum": 43573,
+          "name": "a paladin warrior",
+          "topics": [
+            "quest",
+            "hi",
+            "hello",
+            "bloodrune"
+          ]
+        },
+        {
+          "description": "War wizard starts in the rare-load room: hostile Cormyr greeting; words alone do not save Duris.",
+          "keyword": "tarlimar",
+          "mob_vnum": 43588,
+          "name": "Tarlimar, the war wizard",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Death knight starts in the rare-load room: searches for the paladin camp; no local kill or camp quest.",
+          "keyword": "knight",
+          "mob_vnum": 43591,
+          "name": "a death knight",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Gnome starts in the rare-load room: seek the paladin encampment for safety; no accepted escort endpoint.",
+          "keyword": "gnome",
+          "mob_vnum": 43593,
+          "name": "a gnome sorcerer",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Elven mage starts in the sage room: ignores the greeting, carries a hydra-scale key for another route.",
+          "keyword": "mage",
+          "mob_vnum": 43595,
+          "name": "a elven mage",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Elder shaman starts in the rare-load room: spirits and fallen priests are lore, not recorded kill history.",
+          "keyword": "shaman",
+          "mob_vnum": 43596,
+          "name": "an elder shaman",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the duergar and paladin patrol stories through the temple, its hidden passages and the earthen abyss. Two independent item deliveries record accepted outcomes. Rescue, closing the bloodrune and solving the shared chamber remain separate exploration stories. New discovery and progress require active, ready accounting.",
+      "orientation": [
+        "Enter from the Underdark caverns and meet the temple patrols. ASK a nearby contact about a listed topic to follow their leads. A recognized response can reveal that contact; each keyword is not a separate achievement. Gromdishar and the paladin captain begin in different parts of the temple.",
+        "Gromdishar asks about the lost Gloomhaven patrol, the abyss outpost and his brother. His recorded request accepts the exact badge of Gloomhaven for a vial of blood. The hydra-lair lead is in his dialogue, but a current world source for the badge is unresolved. This journal does not promise that a corpse or scout supplies it.",
+        "The paladin captain describes a search for survivors and a mission to stop the bloodrune. His accepted request takes the silver band of Torm the true for a crested shield of Melkivar. The band starts inside the slain paladin's body in the abandoned temple. The body is an open container; the band must be retrieved and carried loose for the hand-in.",
+        "Both deliveries are independent. Exact supplied proof can fit without your own earlier recovery, combat, puzzle, rescue or rune travel. Wearing the silver band, keeping either item inside a bag, holding it, spending it or handing it away does not satisfy the journal's current loose-material check. A reward item alone does not prove acceptance.",
+        "Find Lithibar for the temple history and the nights, wishes and summer-day hint. His study has a keyed approach; the nearby tapestry gives another clue. He describes imprisonment and escape, but the present journal has no accepted rescue or escort endpoint. Shared-open passages and supplied keys remain separate routes.",
+        "The chamber before the illusions has five material buttons. A shared hidden selection determines the custom PUSH puzzle, and a wrong recognized choice can release a hostile creature. The selection and reset behavior need builder qualification before the journal can promise a reproducible solution. Solving or entering a shared-open passage is not yet personal puzzle credit.",
+        "Explore the maze, hidden library, abandoned temple and side caverns using their actual exits and controls. The sun symbol, metallic button and red book use PUSH; the wooden wheel and rune-shaped dial use PULL. Keys and controls affect different doors. Search and open actions may still be necessary after a wall moves. These controls do not create accepted delivery receipts.",
+        "The bloodrune in the private summoning chambers leads to the earthen abyss. Its counterpart in the abyss leads back to those chambers. Two other ancient runes respond to TOUCH, and green mirrors provide different return routes. Travel is distinct from deciphering or closing a rune; a room arrival does not establish every earlier step.",
+        "Seek the duergar outpost, paladin encampment and elven landing in the abyss. Their contacts describe the invasion and surviving patrols. These replies do not record a defended outpost, a reunited patrol or a slain high priest. Some contacts start in holding rooms and can move; availability depends on the current world.",
+        "Eligoth guards the abyss fortress. A return portal may form after his defeat; its availability depends on the current world. Defeating him, finding an actual portal and using it are distinct outcomes. None is required for the captain's or Gromdishar's delivery.",
+        "Plan for the actual native hazards and underwater rooms. Floating-rock descriptions do not by themselves require flight, and a heavy-door description does not create a giant-strength gate. Shared door state, key custody and item effects still govern access. The journal does not grant movement protection or change the temple's dangers.",
+        "Accepted delivery retires that giver. Gromdishar's escort text and the captain's Word of recall text do not move you or close the bloodrune. These are currently story quests. Daily repetition still needs deliberate integration of their material supplies and returning givers; the badge source is unresolved. New credit requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "earth",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:43525;receive=I:43561;disappear=1",
+              "giver_vnum": 43502
+            }
+          ],
+          "id": "gromdishar-brothers-badge",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Gromdishar describes his brother dying in a water-filled lair. The current source for this badge is unresolved; seek builder guidance if no legitimate stock is available. Carry the exact item loose. Held, worn, nested, spent or handed-away stock does not satisfy current preparation. Supplied proof fits without your own earlier source or access history.",
+              "id": "material-43525",
+              "item_vnums": [
+                43525
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the badge of Gloomhaven"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43525;receive=I:43561;disappear=1",
+                  "giver_vnum": 43502
+                }
+              ],
+              "hint": "Only an accepted delivery records this outcome. Current reward possession, dialogue, combat, rescue and travel are separate. New progress requires active, ready accounting.",
+              "id": "accepted-hand-in",
+              "kind": "completion",
+              "text": "Return the badge to Gromdishar"
+            }
+          ],
+          "summary": "Return the exact badge of Gloomhaven for a vial of blood. Gromdishar retires after acceptance. His hydra-lair lead does not identify a working badge supply in the current world data, and the narrated escort is not a player-travel outcome.",
+          "title": "Gromdishar: a brother's badge"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:43539;receive=I:43562;disappear=1",
+              "giver_vnum": 43509
+            }
+          ],
+          "id": "captain-fallen-patrol",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Look inside the slain paladin's body in the abandoned temple. Retrieve the exact band from the open remains. Remove it from equipment before offering it; the body, a different ring and the rewarded shield are not substitutes. Carry the exact item loose. Held, worn, nested, spent or handed-away stock does not satisfy current preparation. Supplied proof fits without your own earlier source or access history.",
+              "id": "material-43539",
+              "item_vnums": [
+                43539
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the silver band of Torm the true"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43539;receive=I:43562;disappear=1",
+                  "giver_vnum": 43509
+                }
+              ],
+              "hint": "Only an accepted delivery records this outcome. Current reward possession, dialogue, combat, rescue and travel are separate. New progress requires active, ready accounting.",
+              "id": "accepted-hand-in",
+              "kind": "completion",
+              "text": "Return the silver band to the paladin captain"
+            }
+          ],
+          "summary": "Return the silver band of Torm the true for a crested shield of Melkivar. The captain retires after acceptance. The separate rescue and bloodrune missions are dialogue, not goals required by this delivery.",
+          "title": "The captain: the fallen patrol leader"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "The crafty magician waits in the hidden chamber beneath the Necromancy temple. Ask about mages, list or help and examine the room journal for the resistance plan. He assembles the treasure key and offers 25 separate equipment services; no implemented takeover finale follows those recipes.",
           "keyword": "magician",
           "mob_vnum": 44101,
