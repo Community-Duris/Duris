@@ -69655,6 +69655,534 @@
     {
       "contacts": [
         {
+          "description": "The witch doctor seeks strange mushrooms from the merchant, distinct from common cave shrooms.",
+          "keyword": "trosat",
+          "mob_vnum": 42903,
+          "name": "Trosat, The Witch Doctor",
+          "topics": [
+            "shrooms",
+            "mushrooms",
+            "mush",
+            "smurfs"
+          ]
+        },
+        {
+          "description": "The hunter offers independent Raxthan-head and lost-arrow-head requests. He leaves after either acceptance.",
+          "keyword": "drustl",
+          "mob_vnum": 42912,
+          "name": "Drustl, The Great Raxian Hunter",
+          "topics": [
+            "raxthan",
+            "quest",
+            "head",
+            "enslaver",
+            "drusto",
+            "jasmona",
+            "son",
+            "daughter"
+          ]
+        },
+        {
+          "description": "The trader accepts Agama's exact tongue. Dialogue does not declare a recorded spared-life outcome.",
+          "keyword": "volgk",
+          "mob_vnum": 42915,
+          "name": "Volgk, The infamous slave trader",
+          "topics": [
+            "agama"
+          ]
+        },
+        {
+          "description": "The elder accepts Graskal's head together with Noctule's heart. The heart also serves T'rin's independent request.",
+          "keyword": "dravkult",
+          "mob_vnum": 42938,
+          "name": "Dravkult, The Ancient One",
+          "topics": [
+            "raxthan",
+            "graskal",
+            "noctule"
+          ]
+        },
+        {
+          "description": "The craftsman seeks revenge on Morklar and accepts the serpent's exact scales for sleeves.",
+          "keyword": "rethorn",
+          "mob_vnum": 42939,
+          "name": "Rethorn, The Raxian Craftsman",
+          "topics": [
+            "morklar",
+            "scales"
+          ]
+        },
+        {
+          "description": "The prince accepts Elytron's head together with a giant zvorgast fang. Transformation text is completion narration.",
+          "keyword": "epolon",
+          "mob_vnum": 42941,
+          "name": "Epolon, Prince of Thrask",
+          "topics": [
+            "elytron",
+            "thrask"
+          ]
+        },
+        {
+          "description": "The priestess accepts Noctule's heart and a Bloodbeast heart. These compete with other independent uses.",
+          "keyword": "trin",
+          "mob_vnum": 42944,
+          "name": "T'rin, Priestess of Bozk",
+          "topics": [
+            "noctule",
+            "bloodbeast"
+          ]
+        },
+        {
+          "description": "The minion accepts Darthus's spine for a seal and route hints. The reward is not a declared door key.",
+          "keyword": "drasklor",
+          "mob_vnum": 42945,
+          "name": "Drasklor, Minion of Bozk",
+          "topics": [
+            "darthus"
+          ]
+        },
+        {
+          "description": "The mystic accepts three exact cave shrooms together for his ritual. Buying the same potion is not acceptance.",
+          "keyword": "grobklarn",
+          "mob_vnum": 42946,
+          "name": "Grobklarn, Mystic of Mayhem",
+          "topics": [
+            "shroom",
+            "shrooms"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore Yerdonia's cavern maze, learn the Yerdons' story and choose among ten independent native requests. Exact offerings and accepted receipts determine progress. New discovery and progress require active, ready accounting.",
+      "orientation": [
+        "ASK drustl about raxthan, quest, head or enslaver for the tribe's history, and drusto, jasmona, son or daughter for his family request. ASK dravkult about raxthan, graskal or noctule for the wider conflict. These are independent turn-ins; conversation and each keyword are not separate achievements.",
+        "Drustl accepts either Raxthan's head for serpentine leggings or his lost slime-covered arrow head for an earring. He leaves after either accepted request. Completing one does not unlock the other; a fresh available Drustl is needed for the second. The arrow head is carried by the slime-speckled slug accompanying the giant slug, not by Drustl or every slug.",
+        "Dravkult asks for Graskal's head and Noctule's black heart together. Some of his replies say two heads, but the accepted offering needs the heart. Raxthan carries his own head, and Noctule follows him and carries the heart. These are separate objects and requests, without a mandatory Drustl-before-Dravkult order.",
+        "T'rin also accepts Noctule's heart, paired with a Malstrog Bloodbeast heart. One copy of Noctule's heart can prepare either her request or Dravkult's, but it cannot be consumed for both. The Bloodbeast heart also has a separate use with Ravi Bjornson in Alatorin. Choose where to spend each copy; foreign acceptance does not finish a local request.",
+        "ASK rethorn about morklar or scales for his revenge and crafting request. Morklar carries large serpent scales and a different black heart. Only the exact scales fit Rethorn's offering. Epolon asks for Elytron's head and a giant zvorgast fang; ordinary zvorgasts and the other named hearts do not substitute.",
+        "ASK drasklor about darthus for his request. Darthus wields the spine that Drasklor accepts for a serpentine seal of Bozk. The seal is a reward, not an access key. Drasklor's hints about bones, searching, touching and gazing provide guidance; they do not declare an additional accepted puzzle or a requirement to wear the badge.",
+        "In the rock-filled room, TOUCH baphomet operates the wall symbol and clears the blocked northern passage toward the marble chamber. The return rock is an ordinary initially closed, unlocked door; OPEN follows native rules. The other symbol targets that return side and has nothing to clear while it is unblocked. A passage already opened by someone else remains usable without your own switch history.",
+        "The slab between the dismal cave and Raxthan's dark hall starts closed and unlocked on both sides. Its hidden-looking description does not itself make SEARCH mandatory. Follow the actual door and movement state. Dark caverns, bone-lined routes, the swamp, slug lair and bloody shaft retain their native travel, fall, breathing, combat and PvP restrictions.",
+        "Several downward routes have native fall chances. Flying, levitation, climbing, door state and actual arrival affect the journey. Falling into a room, seeing a route or reaching a named creature does not by itself prove a personal kill, source recovery, switch activation or accepted quest.",
+        "Trosat needs one strange mushroom from the orcish slave merchant's gnomeskin backpack. These differ from common cave shrooms and the dealer's other fungi. Grobklarn needs three exact cave shrooms for his ritual, offered together. Loose supplied mushrooms also fit; one or two cave shrooms do not prepare the three-shroom request.",
+        "Volgk accepts Agama's tongue for a mystical serpent-runed quiver. Agama currently carries that object. His dialogue mentions sparing her, but no recorded cutting, rescue or spared-life outcome is declared by this request. The card tracks the exact accepted item without inventing a method or making personal violence a prerequisite.",
+        "Carry each chosen offering loose to see current preparation. Held, worn, nested, consumed or handed-away items are not current preparation. Exact supplied items can fit without a personal kill, first-recovery or prior dialogue record. The item-and-item bundles settle as one native request; readiness and reward possession do not prove acceptance.",
+        "All ten native requests retire their recipient after acceptance. Source and recipient caps, reset timing and other players affect availability; potential daily eligibility does not guarantee fresh stock. Epolon's transformation, T'rin's hellfire, Grobklarn's ritual and freedom speeches are native completion narration, not additional recorded world-state achievements.",
+        "The local dealer also sells an azure potion, so owning that potion does not prove Grobklarn's ritual. Ordinary shopping, training, rune-covered stones, memories and descriptive symbols do not complete another local accepted request. Surface and Underdark passages, foreign quests and guarded arrival abilities retain their own ownership and discovery rules."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "raxthan",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42926;receive=C:15000,E:25000;disappear=1",
+              "giver_vnum": 42903
+            }
+          ],
+          "id": "trosat-strange-mushrooms",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Strange mushrooms are placed inside the gnomeskin backpack worn by the orcish slave merchant. Common cave shrooms and the dealer's fungi are different exact items. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-42926",
+              "item_vnums": [
+                42926
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry some strange mushrooms"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42926;receive=C:15000,E:25000;disappear=1",
+                  "giver_vnum": 42903
+                }
+              ],
+              "hint": "GIVE the exact chosen offering to the available recipient. Multi-item requests require the complete bundle. Acceptance consumes the materials and retires the recipient; current readiness, conversation, source ownership and reward possession do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Trosat: strange mushrooms"
+            }
+          ],
+          "summary": "Prepare one strange mushroom for the witch doctor. His accepted payment is separate from the common cave-shroom ritual.",
+          "title": "Trosat: strange mushrooms"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42931;receive=I:42930;disappear=1",
+              "giver_vnum": 42912
+            }
+          ],
+          "id": "drustl-raxthan-head",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Raxthan carries his own head in his lair. Noctule follows him with a different proof. Exact supplied stock fits without a personal kill record. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-42931",
+              "item_vnums": [
+                42931
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the head of Raxthan"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42931;receive=I:42930;disappear=1",
+                  "giver_vnum": 42912
+                }
+              ],
+              "hint": "GIVE the exact chosen offering to the available recipient. Multi-item requests require the complete bundle. Acceptance consumes the materials and retires the recipient; current readiness, conversation, source ownership and reward possession do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Drustl: the enslaver's head"
+            }
+          ],
+          "summary": "Bring Raxthan's exact head for serpentine leggings. This request is independent of Drustl's family request, and either acceptance retires him.",
+          "title": "Drustl: the enslaver's head"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42934;receive=I:42938;disappear=1",
+              "giver_vnum": 42912
+            }
+          ],
+          "id": "drustl-lost-arrow",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The slime-speckled slug following the giant slug carries this lost arrow head. The giant slug's visor and ordinary arrows are different objects. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-42934",
+              "item_vnums": [
+                42934
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a slime covered arrow head"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42934;receive=I:42938;disappear=1",
+                  "giver_vnum": 42912
+                }
+              ],
+              "hint": "GIVE the exact chosen offering to the available recipient. Multi-item requests require the complete bundle. Acceptance consumes the materials and retires the recipient; current readiness, conversation, source ownership and reward possession do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Drustl: the lost arrow head"
+            }
+          ],
+          "summary": "Recover the exact slime-covered arrow head for an earring. Drustl's other request is independent; either acceptance retires him.",
+          "title": "Drustl: the lost arrow head"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42957;receive=E:100000,I:42955;disappear=1",
+              "giver_vnum": 42915
+            }
+          ],
+          "id": "volgk-agama-tongue",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Agama carries this exact tongue. Supplied stock fits; possession does not prove a cutting, killing, rescue or spared-life outcome. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-42957",
+              "item_vnums": [
+                42957
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the tongue of Agama"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42957;receive=E:100000,I:42955;disappear=1",
+                  "giver_vnum": 42915
+                }
+              ],
+              "hint": "GIVE the exact chosen offering to the available recipient. Multi-item requests require the complete bundle. Acceptance consumes the materials and retires the recipient; current readiness, conversation, source ownership and reward possession do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Volgk: Agama's tongue"
+            }
+          ],
+          "summary": "Bring the exact tongue for a mystical serpent-runed quiver. The accepted offering does not record a personal kill or a spared-life outcome.",
+          "title": "Volgk: Agama's tongue"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42939,I:42940;receive=E:250000,I:42935;disappear=1",
+              "giver_vnum": 42938
+            }
+          ],
+          "id": "dravkult-paired-proofs",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Graskal carries his own head along the bone-lined routes. Both this head and Noctule's heart are required for Dravkult's single offering. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-42939",
+              "item_vnums": [
+                42939
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the head of Graskal"
+            },
+            {
+              "count": 1,
+              "hint": "Noctule follows Raxthan and carries this black heart. Dravkult and T'rin each consume their own copy; one current copy can prepare alternatives but cannot settle both. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-42940",
+              "item_vnums": [
+                42940
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the black heart of Noctule"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42939,I:42940;receive=E:250000,I:42935;disappear=1",
+                  "giver_vnum": 42938
+                }
+              ],
+              "hint": "GIVE the exact chosen offering to the available recipient. Multi-item requests require the complete bundle. Acceptance consumes the materials and retires the recipient; current readiness, conversation, source ownership and reward possession do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Dravkult: head and heart"
+            }
+          ],
+          "summary": "Bring Graskal's head and Noctule's heart together for the ancestral mask. This heart competes with T'rin's separate offering.",
+          "title": "Dravkult: head and heart"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42937;receive=E:50000,I:42936;disappear=1",
+              "giver_vnum": 42939
+            }
+          ],
+          "id": "rethorn-serpent-scales",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Morklar carries large serpent scales and a different black heart in the swamp. Only the exact scales fit this request. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-42937",
+              "item_vnums": [
+                42937
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry some large serpent scales"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42937;receive=E:50000,I:42936;disappear=1",
+                  "giver_vnum": 42939
+                }
+              ],
+              "hint": "GIVE the exact chosen offering to the available recipient. Multi-item requests require the complete bundle. Acceptance consumes the materials and retires the recipient; current readiness, conversation, source ownership and reward possession do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Rethorn: Morklar's scales"
+            }
+          ],
+          "summary": "Bring the exact serpent scales for Rethorn's revenge request and serpentine sleeves. Morklar's black heart is a different item.",
+          "title": "Rethorn: Morklar's scales"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42942,I:42949;receive=E:50000,I:42941;disappear=1",
+              "giver_vnum": 42941
+            }
+          ],
+          "id": "epolon-head-and-fang",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Elytron carries his own head. This head and the giant fanged zvorgast's exact fang form Epolon's one offering. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-42942",
+              "item_vnums": [
+                42942
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the head of Elytron"
+            },
+            {
+              "count": 1,
+              "hint": "The giant fanged zvorgast carries this exact fang. Ordinary zvorgasts, other trophies and descriptive fangs cannot substitute. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-42949",
+              "item_vnums": [
+                42949
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a giant zvorgast fang"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42942,I:42949;receive=E:50000,I:42941;disappear=1",
+                  "giver_vnum": 42941
+                }
+              ],
+              "hint": "GIVE the exact chosen offering to the available recipient. Multi-item requests require the complete bundle. Acceptance consumes the materials and retires the recipient; current readiness, conversation, source ownership and reward possession do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Epolon: head and fang"
+            }
+          ],
+          "summary": "Bring Elytron's head and a giant zvorgast fang together for the bracer bearing Bozk's seal. The transformation remains native completion narration.",
+          "title": "Epolon: head and fang"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42940,I:42948;receive=E:60000,I:42947;disappear=1",
+              "giver_vnum": 42944
+            }
+          ],
+          "id": "trin-paired-hearts",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Noctule follows Raxthan and carries this black heart. Dravkult and T'rin each consume their own copy; one current copy can prepare alternatives but cannot settle both. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-42940",
+              "item_vnums": [
+                42940
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the black heart of Noctule"
+            },
+            {
+              "count": 1,
+              "hint": "The Malstrog Bloodbeast carries this exact heart. T'rin's local offering and Ravi Bjornson's separate Alatorin offering each consume their own copy. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-42948",
+              "item_vnums": [
+                42948
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the black heart of a Bloodbeast"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42940,I:42948;receive=E:60000,I:42947;disappear=1",
+                  "giver_vnum": 42944
+                }
+              ],
+              "hint": "GIVE the exact chosen offering to the available recipient. Multi-item requests require the complete bundle. Acceptance consumes the materials and retires the recipient; current readiness, conversation, source ownership and reward possession do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete T'rin: the two black hearts"
+            }
+          ],
+          "summary": "Bring Noctule's heart and a Bloodbeast heart together for the cloak. Both materials have competing uses; dialogue does not enforce a recorded first-heart then second-heart sequence.",
+          "title": "T'rin: the two black hearts"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42956;receive=E:25000,I:42952;disappear=1",
+              "giver_vnum": 42945
+            }
+          ],
+          "id": "drasklor-darthus-spine",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Darthus wields this spine. Bring it loose rather than held or worn. The seal reward and other bones cannot substitute. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-42956",
+              "item_vnums": [
+                42956
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the spine of Darthus"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42956;receive=E:25000,I:42952;disappear=1",
+                  "giver_vnum": 42945
+                }
+              ],
+              "hint": "GIVE the exact chosen offering to the available recipient. Multi-item requests require the complete bundle. Acceptance consumes the materials and retires the recipient; current readiness, conversation, source ownership and reward possession do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Drasklor: Darthus's spine"
+            }
+          ],
+          "summary": "Bring the exact spine for the serpentine seal and native route hints. The seal is a reward, not a declared access key.",
+          "title": "Drasklor: Darthus's spine"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:42927,I:42927,I:42927;receive=E:25000,I:42953;disappear=1",
+              "giver_vnum": 42946
+            }
+          ],
+          "id": "grobklarn-three-shrooms",
+          "steps": [
+            {
+              "count": 3,
+              "hint": "Gather three exact cave shrooms together. Seven floor placements share native stock limits; strange mushrooms and the dealer's other fungi do not substitute. One or two is not ready. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-42927",
+              "item_vnums": [
+                42927
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 copies of a cave shroom"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:42927,I:42927,I:42927;receive=E:25000,I:42953;disappear=1",
+                  "giver_vnum": 42946
+                }
+              ],
+              "hint": "GIVE the exact chosen offering to the available recipient. Multi-item requests require the complete bundle. Acceptance consumes the materials and retires the recipient; current readiness, conversation, source ownership and reward possession do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Grobklarn: the triad of cave shrooms"
+            }
+          ],
+          "summary": "Bring three exact cave shrooms together for the mystic's ritual and azure potion. Purchasing the same potion does not prove the ritual.",
+          "title": "Grobklarn: the triad of cave shrooms"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Canderthal pole shop: ordinary fishing poles are shop stock. The refundable note service is separate from the ten-material lure request.",
           "keyword": "pol",
           "mob_vnum": 43103,

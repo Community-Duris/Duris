@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 124 &&
+		require(catalog.story_mappings.size() == 125 &&
 				tracker.summary_for(7, 42).total == 1544,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7689,6 +7689,159 @@ int main(int argc, char **argv)
 					"Werrun accepted independent receipt lost on reclassification");
 		}
 
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "raxthan"; });
+			const auto &head = story_for("raxthan", "drustl-raxthan-head");
+			const auto &arrow = story_for("raxthan", "drustl-lost-arrow");
+			const auto &elder = story_for("raxthan", "dravkult-paired-proofs");
+			const auto &priestess = story_for("raxthan", "trin-paired-hearts");
+			const auto &triad = story_for("raxthan", "grobklarn-three-shrooms");
+			const auto &strange = story_for("raxthan", "trosat-strange-mushrooms");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 429, 42980, 100, "arrival") ==
+					result::applied,
+				"Yerdonia discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 429, 10, 1, 101, false, false);
+			require(journal.find(head.title) == std::string::npos &&
+					journal.find(triad.title) == std::string::npos,
+				"Yerdonia exposed unseen requests");
+			for (const auto &contact : mapping.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 42900, 102) ==
+						result::applied,
+					"Yerdonia contact encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Yerdonia request card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry, size_t i) {
+				return section(entry).find("[Ready now] " + entry.steps[i].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry, size_t i) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[i].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 42930, 42935, 42936, 42938, 42941, 42944, 42947, 42952,
+				       42953, 42955, 53101, 53105 })
+				supplies.carried[v] = 3;
+			for (int v : { 42926, 42927, 42931, 42934, 42937, 42939, 42940, 42942,
+				       42948, 42949, 42956, 42957 })
+				supplies.equipped[v] = v;
+			journal = journey.render_journal(7, 42, 429, 10, 1, 103, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				for (size_t i = 0; i + 1 < entry.steps.size(); ++i)
+					require(missing(entry, i),
+						"Yerdonia reward/worn/wrong mushroom stock substituted for exact loose inputs");
+			supplies.equipped.clear();
+			supplies.carried[42927] = 2;
+			journal = journey.render_journal(7, 42, 429, 10, 1, 104, false, false,
+							 &supplies);
+			require(missing(triad, 0) && missing(strange, 0),
+				"Yerdonia two/common shrooms prepared triad or strange mushroom");
+			supplies.carried[42927] = 3;
+			supplies.carried[42926] = 1;
+			supplies.carried[42940] = 1;
+			journal = journey.render_journal(7, 42, 429, 10, 1, 105, false, false,
+							 &supplies);
+			require(ready(triad, 0) && ready(strange, 0) && ready(elder, 1) &&
+					ready(priestess, 0) && missing(elder, 0) &&
+					missing(priestess, 1),
+				"Yerdonia exact quantity/competing single heart readiness failed");
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (!step.item_vnums.empty())
+						supplies.carried[step.item_vnums.front()] =
+							step.count;
+			const auto before_read = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 429, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+			{
+				for (size_t i = 0; i + 1 < entry.steps.size(); ++i)
+					require(ready(entry, i),
+						"Yerdonia supplied exact stock required personal kill/source/control/dialogue history");
+				require(section(entry).find("[Pending]") != std::string::npos &&
+						journey.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 0,
+					"Yerdonia preparation manufactured accepted receipt");
+			}
+			require(journey.serialize_state() == before_read &&
+					journey.progress_for_zone(7, 42, 429).completed == 0 &&
+					journey.progress_for_zone(7, 42, 429).total == 10,
+				"Yerdonia reading/custody manufactured achievements");
+			// Synthetic committed events qualify independent projection, not native stock, retirement or consume-once allocation.
+			record(journey, head.contracts.front(), "raxthan-head", 429, 42922);
+			require(journey.evidence_for(arrow.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.progress_for_zone(7, 42, 429).completed == 1,
+				"Yerdonia Drustl requests merged");
+			record(journey, elder.contracts.front(), "raxthan-elder", 429, 42933);
+			require(journey.evidence_for(priestess.contracts.front(), 2)
+						.successful_attempts == 0,
+				"Yerdonia shared heart manufactured another acceptance");
+			supplies.carried.erase(42940);
+			supplies.carried.erase(42939);
+			journal = journey.render_journal(7, 42, 429, 10, 1, 108, false, false,
+							 &supplies);
+			require(missing(elder, 0) && missing(elder, 1) && missing(priestess, 0) &&
+					ready(priestess, 1),
+				"Yerdonia accepted history recreated spent competing hearts");
+			for (const auto &entry : mapping.stories)
+				if (entry.id != head.id && entry.id != elder.id)
+					record(journey, entry.contracts.front(), entry.id.c_str(),
+					       429, 42900);
+			require(journey.progress_for_zone(7, 42, 429).completed == 10 &&
+					journey.progress_for_zone(7, 42, 429).total == 10,
+				"Yerdonia independent accepted receipts lost units");
+			auto replay = completion(head.contracts.front(), "raxthan-head", 120);
+			replay.transaction.zone_number = 429;
+			replay.transaction.room_vnum = 42922;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Yerdonia replay duplicated acceptance");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 429) &&
+					recovered.progress_for_zone(7, 42, 429).completed == 10,
+				"Yerdonia cold recovery lost discovery/receipts");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 429, 42980, 100, "arrival") ==
+					result::applied,
+				"Historical Yerdonia discovery failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("raxthan-old-" + entry.id).c_str(), 429, 42900);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.has_discovered(7, 42, 429) &&
+					authored.progress_for_zone(7, 42, 429).completed == 10 &&
+					authored.progress_for_zone(7, 42, 429).total == 10,
+				"Yerdonia raw-to-authored projection lost ten independent receipts");
+			for (const auto &entry : mapping.stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1 &&
+						recovered.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1,
+					"Yerdonia recovery merged exact receipts");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 429 &&
+							     u.achievement && u.daily_candidate;
+					      }) == 10,
+				"Yerdonia changed ten achievement/potentialdaily units");
+		}
 		{
 			const auto &short_sword = story_for("newhope", "vitrius-short-sword");
 			const auto &long_sword = story_for("newhope", "vitrius-long-sword");

@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1421
-assert report['mapped_area_count'] == 124 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 125 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -432,6 +432,24 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
  assert 'Accounting currently blocks' in s['summary'] and s['steps'][-1]['contracts']==s['contracts']
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
+
+
+raxthan=next(m for m in catalog['story_mappings'] if m['source_area']=='raxthan')
+assert (raxthan['schema_version'],raxthan['revision'],raxthan['coverage'])==(3,1,'complete')
+assert len(raxthan['stories'])==10 and len(raxthan['contacts'])==9 and not raxthan['exclusions']
+assert report['eligible_by_zone']['429']==10 and sum(len(c['topics']) for c in raxthan['contacts'])==25
+assert sum(len(s['steps'])-1 for s in raxthan['stories'])==13
+yr={s['id']:s for s in raxthan['stories']}
+assert yr['grobklarn-three-shrooms']['steps'][0]['count']==3 and yr['grobklarn-three-shrooms']['steps'][0]['item_vnums']==[42927]
+assert yr['trosat-strange-mushrooms']['steps'][0]['item_vnums']==[42926]
+assert yr['dravkult-paired-proofs']['steps'][1]['item_vnums']==yr['trin-paired-hearts']['steps'][0]['item_vnums']==[42940]
+assert yr['drustl-raxthan-head']['contracts'][0]['giver_vnum']==yr['drustl-lost-arrow']['contracts'][0]['giver_vnum']==42912
+assert yr['drustl-raxthan-head']['contracts']!=yr['drustl-lost-arrow']['contracts']
+for s in raxthan['stories']:
+ assert s['category']=='story' and s['steps'][-1]['contracts']==s['contracts']
+ assert all(t['kind']=='carried_item' and t['optional'] for t in s['steps'][:-1])
+units=[u for u in module.story_units(catalog) if u['zone_number']==429]
+assert len(units)==10 and all(u['achievement'] and u['daily_candidate'] for u in units)
 
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
