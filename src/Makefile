@@ -461,6 +461,7 @@ OBJS =  $(SHIP_OBJS) \
 				 item/item_movement_transaction.o \
 				 economy/shop_trade_transaction.o \
 				 economy/shop_trade_runtime.o \
+				 economy/shop_trade_world_witness.o \
 				 item/item_transfer_repository.o \
 				 item/economic_accounting_item_reference.o \
 				 item/item_transfer_synthetic.o \

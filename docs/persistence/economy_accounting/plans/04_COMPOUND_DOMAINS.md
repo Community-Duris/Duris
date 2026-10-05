@@ -1,5 +1,12 @@
 # Plan 4: priced and compound gameplay domains
 
+## Integrated shop world witness — 2026-10-05
+
+[Complete read-only world observation](../SHOP_WORLD_WITNESS_SOURCE_2026-10-04.md)
+is source-integrated and registered. Original-lease publication, current native
+projections, native placement order, recovery and guarded ACK remain unfinished.
+Source checks only; major-plan build/runtime qualification remains deferred.
+
 ## Actorless shop refusal and v6 callback source checkpoint — 2026-10-04
 
 [Exact disconnected-player hold cancellation and literal callback matching](SHOP_ACTORLESS_REFUSAL_SOURCE_2026-10-04.md)
