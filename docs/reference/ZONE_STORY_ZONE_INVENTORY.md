@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 122 authored journals.
+2668 distinct Q contracts; 123 authored journals.
 
 Regenerate with:
 
@@ -242,7 +242,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Vecna's Tomb (`vecna`) | 2 | 2 | 0 | Fallback | [1 × a rotting brain → the breastplate of preservation](../../areas/qst/vecna.qst#L11) | block_dir, chressan_shout, mob_vecna_procs, vecna_black_mass, vecna_boneaxe, vecna_bubble_room |
 | vehicles (`vehicles`) | 255 | 19 | 1 | Fallback | [2 × a gnomish shopkeepers token; 5 × item 400941 → a crystal harp named 'The Vokstron'](../../areas/qst/vehicles.qst#L2545) | — |
 | Verspin (`verspin`) | 12 | 9 | 1 | Yes | [5 × a small gnomish totem → an extemely large pair of silken pants](../../areas/qst/verspin.qst#L20) | crew_shop_proc, stat_shops |
-| Village of Werrun (`werrun`) | 4 | 16 | 0 | Fallback | [1 × an old book by Revan → a small white key](../../areas/qst/werrun.qst#L80) | world_quest |
+| Village of Werrun (`werrun`) | 4 | 16 | 0 | Yes | [1 × an old book by Revan → a small white key](../../areas/qst/werrun.qst#L80) | world_quest |
 | The City of Winterhaven (`wh`) | 221 | 191 | 87 | Yes | [1 × a strange glowing flint of armor; 1 × the gnomish orb of binding; 1 × a pair of magical mithril legplates; other required items → the legplates of the Storm](../../areas/qst/wh.qst#L1170) | artifact_stone, attribute_scroll, blackjack_table, blur_shortsword, board, buckler_saints |
 | The Ruins of Turolopolis (`willem`) | 6 | 19 | 1 | Yes | [1 × a brown Glory Badge; 1 × a green Glory Badge; 1 × a blue Glory Badge; other required items → a lesser bloodsaber](../../areas/qst/willem.qst#L117) | — |
 | Woodseer (`woodseer`) | 7 | 11 | 0 | Yes | [1 × some raw turtle meat → a bowl of turtle soup](../../areas/qst/woodseer.qst#L140) | artifact_invisible, guild_guard, inn, pet_shops, world_quest |

@@ -1,0 +1,228 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "werrun",
+  "coverage": "complete",
+  "introduction": "Meet the people of Werrun and explore the hidden mirror passage to its dark counterpart. Four independent requests connect the village to the Library of Doom and Lady Death. New discovery and progress require active, ready accounting.",
+  "orientation": [
+    "Malfun lives upstairs in his home; the former mage shopkeeper starts in the magic shop; the stable owner starts at the village stables. The old githzerai traveller has a load route into the cottage bar, but can instead be trapped away from public routes or depart after his request. Contacts can move. ASK the listed topics for native replies; each keyword is not an achievement.",
+    "Malfun tells of leaving Verspin, trading toward Fort Marigot and losing Lady Sklera after a troll attack in the Twisted Woods. Ask about wife, trouble and task for his keepsake request, or book and revan for his separate reading request. Neither tale requires a recorded visit to those other places.",
+    "A bush at the southern village approach hides the westward route to an abandoned shack. PUSH bush to clear that blocked passage, then explore the shack. STARE mirror at the broken mirror leads to a second shack beside the dark Werrun; its perfect mirror leads back. Looking at a mirror is different from the native STARE action. Shared-open routes do not prove you opened them.",
+    "The dark village has a bone bridge, blood river, wasteland trail, sinister inhabitants and the Temple of Night. Its Library of Doom holds both the old book by Revan and the large book by Vewon Etsh. These are different exact items for different recipients. Recovering either is current preparation, not proof of reading, personal travel or accepted delivery.",
+    "Bring the old book by Revan to Malfun for coins and a small white key. The key fits the desk in Malfun's library; the desk contains a black scroll of flight and a blue scroll of venom. His recollection of four colored scrolls is broader than the two currently placed there. The key is a reward and access tool, not another accepted quest step.",
+    "Lady Death in the dark village wears the sacred braid of Lady Sklera and has two demon bodyguards. Bring that exact braid to Malfun for the silver ring of honor. His mourning reply does not prove your own Lady Death kill or establish a recorded transformation of his wife. Exact supplied braid stock fits the request.",
+    "Ask the mage about werrun, help and money for his debt. The native offering is 350 platinum, or 350000 copper-value coins, for a magical blue sack. This coin-only turn-in is currently unavailable while accounting is active. Keep it visible as an explained, blocked story; there is no recorded reopening of his shop or settlement with Malfun.",
+    "Ask the old githzerai traveller about vewon, then bring the large book by Vewon Etsh for tight blue sandals and the native experience reward. He departs on acceptance. Actual experience remains subject to native caps and recipient rules; the journal records acceptance separately from later reward recovery. The small metal key he initially carries fits two storage crates; the ordinary storage crate holds vigor potions, while the dark corpse-storage crate has no placed potion stock.",
+    "The skull-shaped key carried by the barbaric official fits the locked nightmare stable in dark Werrun. The stable owner's free-horse offer, ordinary supplies, keys, potions, nightmares and other equipment are supporting world interactions; the four accepted requests do not require personal riding, shopping or key use.",
+    "The strong bartender in the cottage bar offers generated world quests: ask about quest, map, abandon or resign, and use quest to review an assigned task. Those missions use their own target, payment, participant, reward and history rules. They do not become a fifth local authored story or guarantee a Werrun target.",
+    "The cigars in the cottage bar storage have an onward exchange with Frull Thelstone in Thur'Gurax. Lady Death also carries a Werrun memory used by a foreign quest and a rune-covered stone. Foreign deliveries and discoveries are separately owned. Imported prison keys and foreign reset reuse do not automatically connect every matching item to this journal.",
+    "Carry the exact chosen book or braid loose. Held, worn, nested, consumed or handed-away items are not current preparation; owning a key, ring, sack or sandals does not prove acceptance. Supplied materials fit without earlier questions, source custody, kills or puzzle history. Malfun's two item requests and the traveller's book request are three potential local dailies; the traveller departs but mode-two resets allow recipient renewal. Source caps and recipient availability do not promise daily stock. New credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 38301,
+      "name": "Malfun",
+      "keyword": "malfun",
+      "description": "Malfun starts upstairs in his home. Ask about wife and task for the braid, or book and revan for his separate book request.",
+      "topics": [
+        "hello",
+        "hi",
+        "yes",
+        "wife",
+        "young",
+        "trouble",
+        "task",
+        "book",
+        "revan",
+        "vewon",
+        "etsh",
+        "delwyn",
+        "scrolls"
+      ]
+    },
+    {
+      "mob_vnum": 38302,
+      "name": "the Werrun stable owner",
+      "keyword": "stable",
+      "description": "The stable owner starts at the village stables. Ask about stable or werrun for his free-horse offer; no accepted quest receipt records that lease.",
+      "topics": [
+        "hello",
+        "stable",
+        "werrun"
+      ]
+    },
+    {
+      "mob_vnum": 38305,
+      "name": "a mage",
+      "keyword": "mage",
+      "description": "The former mage shopkeeper starts in the magic shop. Ask about help or money for the debt; the coin-only offering is currently blocked with active accounting.",
+      "topics": [
+        "werrun",
+        "help",
+        "broke",
+        "money"
+      ]
+    },
+    {
+      "mob_vnum": 38308,
+      "name": "an old githzerai traveller",
+      "keyword": "githzerai",
+      "description": "The old githzerai traveller can emerge into the cottage bar from a load room or become trapped away from public routes. Ask about vewon for his book request; he departs after acceptance.",
+      "topics": [
+        "vewon"
+      ]
+    },
+    {
+      "mob_vnum": 38309,
+      "name": "a strong bartender",
+      "keyword": "bartender",
+      "description": "The strong bartender starts in the cottage bar. His generated world quests and map/abandon services use separate mission state and are not static village story completions.",
+      "topics": [
+        "quest",
+        "map",
+        "abandon",
+        "resign"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "malfun-revan-book",
+      "title": "Malfun: another book by Revan",
+      "category": "story",
+      "summary": "Bring the old book by Revan for 12345 copper-value coins and the small white desk key. This request is independent of Lady Sklera's keepsake.",
+      "contracts": [
+        {
+          "giver_vnum": 38301,
+          "completion_key": "give=I:38311;receive=C:12345,I:38308;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-38311",
+          "text": "Carry an old book by Revan",
+          "kind": "carried_item",
+          "item_vnums": [
+            38311
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Library of Doom in dark Werrun holds the old book by Revan. It is different from Vewon's book; the bush and STARE mirrors provide a native route. Exact supplied stock fits without personal reading or travel. Keep it loose; current preparation is distinct from source and accepted delivery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete Malfun: another book by Revan",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 38301,
+              "completion_key": "give=I:38311;receive=C:12345,I:38308;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted exact offering completes this independent story. Reward custody, dialogue, source, access, riding and combat history are separate facts. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "malfun-sklera-braid",
+      "title": "Malfun: Lady Sklera's keepsake",
+      "category": "story",
+      "summary": "Bring the sacred braid of Lady Sklera for the silver ring of honor. Malfun's mourning does not require or prove your own Lady Death kill.",
+      "contracts": [
+        {
+          "giver_vnum": 38301,
+          "completion_key": "give=I:38312;receive=I:38313;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-38312",
+          "text": "Carry the sacred braid of Lady Sklera",
+          "kind": "carried_item",
+          "item_vnums": [
+            38312
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Lady Death in the dark village wears the sacred braid of Lady Sklera. Supplied braid stock fits without your own kill, theft or source history. Keep it loose; current preparation is distinct from source and accepted delivery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete Malfun: Lady Sklera's keepsake",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 38301,
+              "completion_key": "give=I:38312;receive=I:38313;disappear=0"
+            }
+          ],
+          "hint": "Only the accepted exact offering completes this independent story. Reward custody, dialogue, source, access, riding and combat history are separate facts. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "mage-debt",
+      "title": "The mage: help with his debt",
+      "category": "story",
+      "summary": "The native request is 350 platinum, or 350000 copper-value coins, for a magical blue sack. Active accounting currently blocks this coin-only turn-in; acceptance does not reopen a shop or settle Malfun's account.",
+      "contracts": [
+        {
+          "giver_vnum": 38305,
+          "completion_key": "give=C:350000;receive=I:38304;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "accepted-delivery",
+          "text": "Complete The mage: help with his debt",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 38305,
+              "completion_key": "give=C:350000;receive=I:38304;disappear=0"
+            }
+          ],
+          "hint": "The native 350-platinum coin offering is currently refused while accounting is active. No item check can prove payment, and the journal does not claim the shop reopened. A separately qualified payment adapter is required; new progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "githzerai-vewon-book",
+      "title": "The traveller: Vewon's writing",
+      "category": "story",
+      "summary": "Bring the large book by Vewon Etsh for tight blue sandals and the native 35000 experience reward, subject to native caps and recipient rules. The traveller departs after acceptance.",
+      "contracts": [
+        {
+          "giver_vnum": 38308,
+          "completion_key": "give=I:38326;receive=E:35000,I:38327;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-38326",
+          "text": "Carry a large book by Vewon Etsh",
+          "kind": "carried_item",
+          "item_vnums": [
+            38326
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Library of Doom holds the large book by Vewon Etsh. It is not Revan's book. The recipient can emerge into the cottage bar, be trapped away from public routes or depart; exact supplied stock needs no earlier personal reading. Keep it loose; current preparation is distinct from source and accepted delivery."
+        },
+        {
+          "id": "accepted-delivery",
+          "text": "Complete The traveller: Vewon's writing",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 38308,
+              "completion_key": "give=I:38326;receive=E:35000,I:38327;disappear=1"
+            }
+          ],
+          "hint": "Only the accepted exact offering completes this independent story. Reward custody, dialogue, source, access, riding and combat history are separate facts. New progress requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

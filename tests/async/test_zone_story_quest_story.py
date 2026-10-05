@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1421
-assert report['mapped_area_count'] == 122 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 123 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -405,6 +405,20 @@ assert bv['mirkodesiuska-dragon-egg']['steps'][0]['item_vnums']==[58809] and bv[
 assert all(t['optional'] and t['kind']=='carried_item' and t['count']==1 for s in barovia2['stories'] for t in s['steps'][:-1])
 assert all(s['category']=='story' and s['steps'][-1]['contracts']==s['contracts'] for s in barovia2['stories'])
 assert sum(u['daily_candidate'] for u in module.story_units(catalog) if u['zone_number']==588)==1
+
+
+werrun=next(m for m in catalog['story_mappings'] if m['source_area']=='werrun')
+assert (werrun['schema_version'],werrun['revision'],werrun['coverage'])==(3,1,'complete')
+assert len(werrun['stories'])==4 and len(werrun['contacts'])==5 and not werrun['exclusions']
+assert report['eligible_by_zone']['383']==4 and sum(len(c['topics']) for c in werrun['contacts'])==25
+ws={s['id']:s for s in werrun['stories']}
+for id,item in (('malfun-revan-book',38311),('malfun-sklera-braid',38312),('githzerai-vewon-book',38326)):
+ assert [(t['item_vnums'],t['count']) for t in ws[id]['steps'][:-1]]==[([item],1)]
+ assert ws[id]['steps'][0]['optional'] and ws[id]['steps'][0]['kind']=='carried_item'
+assert len(ws['mage-debt']['steps'])==1 and 'blocks' in ws['mage-debt']['summary'] and '350000' in ws['mage-debt']['summary']
+assert all(s['category']=='story' and s['steps'][-1]['contracts']==s['contracts'] for s in werrun['stories'])
+assert sum(u['daily_candidate'] for u in module.story_units(catalog) if u['zone_number']==383)==3
+assert not any(d['giver_vnum']==38309 for d in catalog['definitions'])
 
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')

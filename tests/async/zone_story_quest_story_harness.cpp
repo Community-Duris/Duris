@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 122 &&
+		require(catalog.story_mappings.size() == 123 &&
 				tracker.summary_for(7, 42).total == 1548,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7551,6 +7551,143 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &revan = story_for("werrun", "malfun-revan-book");
+			const auto &braid = story_for("werrun", "malfun-sklera-braid");
+			const auto &debt = story_for("werrun", "mage-debt");
+			const auto &vewon = story_for("werrun", "githzerai-vewon-book");
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "werrun"; });
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 383, 38300, 100, "arrival") ==
+						result::applied &&
+					journey.meet_npc(7, 42, 38301, 38332, 101) ==
+						result::applied,
+				"Werrun discovery/Malfun encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 383, 10, 1, 102, false, false);
+			require(journal.find(revan.title) != std::string::npos &&
+					journal.find(braid.title) != std::string::npos &&
+					journal.find(debt.title) == std::string::npos &&
+					journal.find(vewon.title) == std::string::npos,
+				"Werrun independent Malfun stories or hidden contacts merged");
+			require(journey.meet_npc(7, 42, 38305, 38329, 103) == result::applied &&
+					journey.meet_npc(7, 42, 38308, 38337, 103) ==
+						result::applied &&
+					journey.meet_npc(7, 42, 38302, 38315, 103) ==
+						result::applied &&
+					journey.meet_npc(7, 42, 38309, 38337, 103) ==
+						result::applied,
+				"Werrun supporting contacts or recipient encounters failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Werrun story card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry) {
+				return section(entry).find("[Ready now] " +
+							   entry.steps.front().text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps.front().text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[38308] = 1;
+			supplies.carried[38313] = 1;
+			supplies.carried[38304] = 1;
+			supplies.carried[38327] = 1;
+			supplies.carried[38336] = 1;
+			supplies.equipped[1] = 38311;
+			supplies.equipped[2] = 38312;
+			supplies.equipped[3] = 38326;
+			journal = journey.render_journal(7, 42, 383, 10, 1, 104, false, false,
+							 &supplies);
+			require(missing(revan) && missing(braid) && missing(vewon) &&
+					journey.progress_for_zone(7, 42, 383).completed == 0,
+				"Werrun worn/held/reward/key stock substituted for exact offerings");
+			require(debt.steps.size() == 1 &&
+					section(debt).find("accounting currently blocks") !=
+						std::string::npos &&
+					section(debt).find("[Ready now]") == std::string::npos &&
+					section(debt).find("[Pending]") != std::string::npos,
+				"Werrun blocked coin offering claimed paid readiness or completion");
+			supplies.equipped.clear();
+			supplies.carried[38311] = 1;
+			journal = journey.render_journal(7, 42, 383, 10, 1, 105, false, false,
+							 &supplies);
+			require(ready(revan) && missing(braid) && missing(vewon),
+				"Werrun Revan book substituted for Vewon book or braid");
+			supplies.carried[38312] = 1;
+			supplies.carried[38326] = 1;
+			journal = journey.render_journal(7, 42, 383, 10, 1, 106, false, false,
+							 &supplies);
+			require(ready(revan) && ready(braid) && ready(vewon) &&
+					journey.progress_for_zone(7, 42, 383).completed == 0,
+				"Werrun supplied stock required reading/kill/source/mirror history or manufactured acceptance");
+			// Synthetic settled receipts qualify projection, not native consumption, XP or payment settlement.
+			record(journey, revan.contracts.front(), "werrun-revan", 383, 38332);
+			supplies.carried.erase(38311);
+			journal = journey.render_journal(7, 42, 383, 10, 1, 108, false, false,
+							 &supplies);
+			require(missing(revan) && ready(braid) && ready(vewon) &&
+					journey.progress_for_zone(7, 42, 383).completed == 1 &&
+					journey.evidence_for(braid.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Werrun consumed Revan stock or Malfun story acceptance merged");
+			record(journey, braid.contracts.front(), "werrun-braid", 383, 38332);
+			record(journey, vewon.contracts.front(), "werrun-vewon", 383, 38337);
+			require(journey.progress_for_zone(7, 42, 383).completed == 3 &&
+					journey.evidence_for(debt.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Werrun book/braid acceptance completed the blocked coin request");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u)
+					      { return u.zone_number == 383; }) == 4 &&
+					std::count_if(units.begin(), units.end(),
+						      [](const auto &u) {
+							      return u.zone_number == 383 &&
+								     u.daily_candidate;
+						      }) == 3,
+				"Werrun generated missions or coin-only exchange became local dailies");
+			auto replay = completion(braid.contracts.front(), "werrun-braid", 120);
+			replay.transaction.zone_number = 383;
+			replay.transaction.room_vnum = 38332;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Werrun replay duplicated acceptance");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 383).completed == 3 &&
+					!recovered.has_discovered(7, 42, 431) &&
+					!recovered.has_discovered(7, 42, 550),
+				"Werrun cold recovery lost receipts or invented onward discovery");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 383, 38300, 100, "arrival") ==
+					result::applied,
+				"Historical Werrun discovery failed");
+			// Previously accepted coin receipts survive reclassification; this does not execute today's refused payment.
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("werrun-old-" + entry.id).c_str(), 383, 38332);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 383).completed == 4 &&
+					authored.progress_for_zone(7, 42, 383).total == 4 &&
+					authored.has_discovered(7, 42, 383),
+				"Werrun raw4-to-authored4 reclassification lost progress/discovery");
+			for (const auto &entry : mapping.stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+							.successful_attempts == 1,
+					"Werrun accepted independent receipt lost on reclassification");
+		}
 		{
 			const auto &relics = story_for("barovia2", "eva-witch-relics");
 			const auto &marks = story_for("barovia2", "eva-vistani-marks");
