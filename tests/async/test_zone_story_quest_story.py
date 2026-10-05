@@ -15,8 +15,8 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1438
-assert report['mapped_area_count'] == 118 and report['eligible_by_zone']['162'] == 4
+assert report["daily_unit_count"] == 1437
+assert report['mapped_area_count'] == 119 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -349,6 +349,21 @@ assert len(earth['stories'])==2 and len(earth['contacts'])==12 and not earth['ex
 assert sum(len(c['topics']) for c in earth['contacts'])==46 and report['eligible_by_zone']['435']==2
 assert [s['steps'][0]['item_vnums'] for s in earth['stories']]==[[43525],[43539]]
 assert all(len(s['steps'])==2 and s['steps'][0]['optional'] and s['steps'][-1]['contracts']==s['contracts'] for s in earth['stories'])
+
+githzer=next(m for m in catalog['story_mappings'] if m['source_area']=='githzer')
+assert (githzer['schema_version'],githzer['revision'],githzer['coverage'])==(3,1,'complete')
+assert len(githzer['stories'])==13 and len(githzer['contacts'])==8 and not githzer['exclusions']
+assert sum(len(c['topics']) for c in githzer['contacts'])==35 and report['eligible_by_zone']['444']==11
+assert sum(t.get('optional',False) for s in githzer['stories'] for t in s['steps'])==20
+gs={s['id']:s for s in githzer['stories']}
+assert gs['prazyz-red-hide']['steps'][1]['count']==gs['prazyz-green-hide']['steps'][1]['count']==2
+assert gs['prophet-five-signet-rings']['steps'][0]['item_vnums']==[44563] and gs['prophet-five-signet-rings']['steps'][0]['count']==5
+assert len(gs['zangzk-paid-key']['steps'])==1 and gs['zangzk-adamantite-information']['contracts'][0]['completion_key']=='give=I:44509;receive=;disappear=0'
+assert next(c for c in githzer['contacts'] if c['mob_vnum']==44437)['topics']==[]
+assert all(t.get('optional') for s in githzer['stories'] for t in s['steps'][:-1])
+assert all(s['steps'][-1]['contracts']==s['contracts'] for s in githzer['stories'])
+
+assert sum(s["category"]=="service" for s in githzer["stories"])==2
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

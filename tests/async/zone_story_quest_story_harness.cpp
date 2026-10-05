@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 118 &&
-				tracker.summary_for(7, 42).total == 1567,
+		require(catalog.story_mappings.size() == 119 &&
+				tracker.summary_for(7, 42).total == 1565,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7551,6 +7551,162 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &signets = story_for("githzer", "prophet-five-signet-rings");
+			const auto &red = story_for("githzer", "prazyz-red-hide");
+			const auto &green = story_for("githzer", "prazyz-green-hide");
+			const auto &info = story_for("githzer", "zangzk-adamantite-information");
+			const auto &paid = story_for("githzer", "zangzk-paid-key");
+			const auto &trophies = story_for("githzer", "zangzk-githyanki-trophies");
+			const auto &potion = story_for("githzer", "zangzk-potion-map-poison");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 444, 44400, 100, "arrival") ==
+					result::applied,
+				"Githzer discovery failed");
+			for (const auto &[giver, room] : std::map<int, int>{ { 44402, 44404 },
+									     { 44422, 44462 },
+									     { 44431, 44541 },
+									     { 44437, 44519 },
+									     { 44461, 44589 },
+									     { 44465, 44612 },
+									     { 44494, 44665 },
+									     { 44509, 44729 } })
+				require(journey.meet_npc(7, 42, giver, room, 101) ==
+						result::applied,
+					"Githzer giver contact missing");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Githzer story section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry, size_t step) {
+				return section(entry).find("[Ready now] " +
+							   entry.steps[step].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry, size_t step) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[step].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[44550] = 5;
+			supplies.carried[44572] = 1;
+			supplies.carried[44439] = 1;
+			supplies.carried[44516] = 1;
+			supplies.equipped[1] = 44563;
+			journal = journey.render_journal(7, 42, 444, 10, 1, 102, false, false,
+							 &supplies);
+			require(missing(signets, 0) && missing(red, 0) && missing(red, 1) &&
+					journey.progress_for_zone(7, 42, 444).completed == 0,
+				"Wrong/worn rings or reward possession completed Githzer preparation");
+			supplies.equipped.clear();
+			supplies.carried[44563] = 4;
+			supplies.carried[44436] = 1;
+			supplies.carried[44440] = 1;
+			supplies.carried[44441] = 2;
+			journal = journey.render_journal(7, 42, 444, 10, 1, 103, false, false,
+							 &supplies);
+			require(missing(signets, 0) && ready(red, 0) && missing(red, 1) &&
+					ready(green, 1) && missing(green, 0),
+				"Incomplete or mixed hide/ring bundles appeared ready");
+			supplies.carried[44563] = 5;
+			supplies.carried[44440] = 2;
+			supplies.equipped[18] = 44509;
+			journal = journey.render_journal(7, 42, 444, 10, 1, 104, false, false,
+							 &supplies);
+			require(ready(signets, 0) && ready(red, 1) && missing(info, 0),
+				"Five distinct loose ring counts, two scraps or held coins misclassified");
+			require(journey.progress_for_zone(7, 42, 444).completed == 0,
+				"Ready materials completed native contracts");
+			// Synthetic settled receipts exercise projection, not native bundle settlement, cash admission or source availability.
+			record(journey, signets.contracts.front(), "githzer-five-rings", 444,
+			       44729);
+			supplies.carried.erase(44563);
+			journal = journey.render_journal(7, 42, 444, 10, 1, 106, false, false,
+							 &supplies);
+			require(missing(signets, 0) &&
+					journey.progress_for_zone(7, 42, 444).completed == 1,
+				"Spent signets stayed ready or forcefield/source history was required");
+			supplies.equipped.clear();
+			supplies.carried[44509] = 1;
+			journal = journey.render_journal(7, 42, 444, 10, 1, 107, false, false,
+							 &supplies);
+			require(ready(info, 0),
+				"Loose adamantite item required wallet payment or foreign history");
+			record(journey, info.contracts.front(), "githzer-information", 444, 44462);
+			supplies.carried.erase(44509);
+			require(journey.progress_for_zone(7, 42, 444).completed == 1 &&
+					journey.evidence_for(info.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					journey.evidence_for(paid.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(trophies.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(potion.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Consume-only information completed a different key request");
+			record(journey, trophies.contracts.front(), "githzer-trophies", 444, 44462);
+			require(journey.progress_for_zone(7, 42, 444).completed == 2 &&
+					journey.evidence_for(potion.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Alternative key rewards merged independent requests");
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "githzer"; });
+			for (const auto &entry : mapping.stories)
+			{
+				if (entry.id == signets.id || entry.id == info.id ||
+				    entry.id == trophies.id)
+					continue;
+				record(journey, entry.contracts.front(),
+				       ("githzer-" + entry.id).c_str(), 444, 44462);
+			}
+			require(journey.progress_for_zone(7, 42, 444).completed == 11,
+				"All independent Githzer outcomes failed projection");
+			auto replay =
+				completion(signets.contracts.front(), "githzer-five-rings", 120);
+			replay.transaction.zone_number = 444;
+			replay.transaction.room_vnum = 44729;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Githzer replay duplicated acceptance");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 444).completed == 11 &&
+					!recovered.has_discovered(7, 42, 830) &&
+					!recovered.has_discovered(7, 42, 550),
+				"Githzer cold recovery changed receipts or foreign discovery");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 444 &&
+							     u.daily_candidate;
+					      }) == 11,
+				"Githzer currency or consume-only daily classification changed");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 444, 44400, 100, "arrival") ==
+					result::applied,
+				"Historical Githzer discovery failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("githzer-old-" + entry.id).c_str(), 444, 44462);
+			require(historical.progress_for_zone(7, 42, 444).completed == 13,
+				"Historical raw Githzer outcomes changed");
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 444).completed == 11 &&
+					authored.evidence_for(info.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					authored.evidence_for(paid.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Githzer service reclassification lost retained native receipts");
+		}
 		{
 			const auto &badge = story_for("earth", "gromdishar-brothers-badge");
 			const auto &band = story_for("earth", "captain-fallen-patrol");
