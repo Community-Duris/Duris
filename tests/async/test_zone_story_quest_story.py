@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1438
-assert report['mapped_area_count'] == 112 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 113 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -287,6 +287,20 @@ assert [t['count'] for t in hstories['diorite-boots']['steps'][:-1]]==[1,2,3]
 assert hstories['diorite-boots']['steps'][0]['item_vnums']==hstories['diorite-warlord-statue']['steps'][0]['item_vnums']==[94378]
 assert all(t.get('optional') for s in herders['stories'] for t in s['steps'][:-1])
 assert all(s['steps'][-1]['contracts']==s['contracts'] for s in herders['stories'])
+
+jotun=next(m for m in catalog['story_mappings'] if m['source_area']=='jotun')
+assert (jotun['schema_version'],jotun['revision'],jotun['coverage'])==(3,1,'complete')
+assert len(jotun['stories'])==15 and len(jotun['contacts'])==10 and not jotun['exclusions'] and report['eligible_by_zone']['960']==11
+assert sum(s['category']=='service' for s in jotun['stories'])==4
+assert sum(len(c['topics']) for c in jotun['contacts'])==47
+assert sum(t.get('optional',False) for s in jotun['stories'] for t in s['steps'])==19
+jstories={s['id']:s for s in jotun['stories']}
+assert [t['item_vnums'] for t in jstories['mimir-five-proofs']['steps'][:-1]]==[[96036],[96038],[96039],[96037],[96081]]
+assert jstories['mimir-five-proofs']['steps'][1]['item_vnums']==jstories['quelranor-balor-sword']['steps'][0]['item_vnums']==[96038]
+assert jstories['grishnar-rashnik-totem']['steps'][0]['item_vnums']==[96061] and jstories['rashnik-grishnar-standard']['steps'][0]['item_vnums']==[96060]
+assert jstories['smith-remorhaz-armor']['steps'][0]['item_vnums']==[96069] and jstories['smith-ancient-remorhaz-armor']['steps'][0]['item_vnums']==[96071]
+assert all(t.get('optional') and t['count']==1 for s in jotun['stories'] for t in s['steps'][:-1])
+assert all(s['steps'][-1]['contracts']==s['contracts'] for s in jotun['stories'])
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

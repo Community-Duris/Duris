@@ -153,9 +153,10 @@ int main(int argc, char **argv)
 		service tracker(catalog);
 		for (const auto &mapping : catalog.story_mappings)
 		{
-			const auto &zone = *std::find_if(
-				catalog.zones.begin(), catalog.zones.end(), [&](const auto &z)
-				{ return z.source_area == mapping.source_area; });
+			const auto &zone =
+				*std::find_if(catalog.zones.begin(), catalog.zones.end(),
+					      [&](const auto &z)
+					      { return z.source_area == mapping.source_area; });
 			require(tracker.discover_zone(7, 42, zone.zone_number,
 						      std::max(1, zone.first_vnum), 100,
 						      "arrival") == result::applied,
@@ -181,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 112 &&
-				tracker.summary_for(7, 42).total == 1575,
+		require(catalog.story_mappings.size() == 113 &&
+				tracker.summary_for(7, 42).total == 1571,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -774,9 +775,9 @@ int main(int argc, char **argv)
 		const auto &cosmos = story_for("wh", "request-55103-0e8b41819618");
 		const auto &dagger_marks = story_for("wh", "request-55116-e78a927f5454");
 		const auto &chief_key = story_for("wh", "request-55229-23f9768a6235");
-		const auto &winter = *std::find_if(catalog.story_mappings.begin(),
-						   catalog.story_mappings.end(), [](const auto &m)
-						   { return m.source_area == "wh"; });
+		const auto &winter =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "wh"; });
 		service supplied_winter(catalog);
 		require(supplied_winter.discover_zone(7, 42, 550, 55125, 100, "arrival") ==
 				result::applied,
@@ -860,9 +861,9 @@ int main(int argc, char **argv)
 				restored_winter.progress_for_zone(7, 42, 306).completed == 0 &&
 				restored_winter.progress_for_zone(7, 42, 831).completed == 0,
 			"Winterhaven reload changed local receipts or invented foreign completion");
-		const auto &smoke = *std::find_if(catalog.story_mappings.begin(),
-						  catalog.story_mappings.end(), [](const auto &m)
-						  { return m.source_area == "smokev"; });
+		const auto &smoke =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "smokev"; });
 		const auto &ivar_hearts = story_for("smokev", "the-two-dragon-hearts");
 		const auto &ivar_talon = story_for("smokev", "ivars-talon-reward");
 		const auto &tarlator = story_for("smokev", "tarlators-humanity-request");
@@ -950,9 +951,9 @@ int main(int argc, char **argv)
 		const auto &figurine = story_for("caertannad", "hindiss-figurine-exchange");
 		const auto &head = story_for("caertannad", "hindiss-thel-samar-proof");
 		const auto &remedy = story_for("caertannad", "mungirs-silverleaf-remedy");
-		const auto &keeps = *std::find_if(catalog.story_mappings.begin(),
-						  catalog.story_mappings.end(), [](const auto &m)
-						  { return m.source_area == "caertannad"; });
+		const auto &keeps =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "caertannad"; });
 		service supplied_keeps(catalog);
 		require(supplied_keeps.discover_zone(7, 42, 784, 78504, 100, "arrival") ==
 				result::applied,
@@ -1188,9 +1189,9 @@ int main(int argc, char **argv)
 		const auto &claw_blue = story_for("clwcvrn", "blue-shield");
 		const auto &claw_violet = story_for("clwcvrn", "violet-collar");
 		const auto &claw_sage = story_for("clwcvrn", "the-sages-paid-secret");
-		const auto &claw = *std::find_if(catalog.story_mappings.begin(),
-						 catalog.story_mappings.end(), [](const auto &m)
-						 { return m.source_area == "clwcvrn"; });
+		const auto &claw =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "clwcvrn"; });
 		service supplied_claw(catalog);
 		require(supplied_claw.discover_zone(7, 42, 807, 80700, 100, "arrival") ==
 				result::applied,
@@ -1258,9 +1259,9 @@ int main(int argc, char **argv)
 		const auto &long_viper = story_for("long", "vipers-delight");
 		const auto &long_boots = story_for("long", "four-skins-for-snakeskin-boots");
 		const auto &long_fish = story_for("long", "the-fishscale-potion-experiment");
-		const auto &long_map = *std::find_if(catalog.story_mappings.begin(),
-						     catalog.story_mappings.end(), [](const auto &m)
-						     { return m.source_area == "long"; });
+		const auto &long_map =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "long"; });
 		service supplied_long(catalog);
 		require(supplied_long.discover_zone(7, 42, 344, 34401, 100, "arrival") ==
 				result::applied,
@@ -1870,9 +1871,9 @@ int main(int argc, char **argv)
 				restored_tikitt.progress_for_zone(7, 42, 441).completed == 4 &&
 				restored_tikitt.progress_for_zone(7, 42, 441).total == 4,
 			"temple receipt recovery counted services or changed independent outcomes");
-		const auto &jade_map = *std::find_if(catalog.story_mappings.begin(),
-						     catalog.story_mappings.end(), [](const auto &m)
-						     { return m.source_area == "jade"; });
+		const auto &jade_map =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "jade"; });
 		const auto &jade_fish = story_for("jade", "one-fish-for-the-fisherman");
 		const auto &jade_token = story_for("jade", "the-princesss-royal-token");
 		service supplied_jade(catalog);
@@ -1963,9 +1964,10 @@ int main(int argc, char **argv)
 		const auto &jade_hat = story_for("jade", "rice-paper-hat");
 		journal = supplied_jade.render_journal(7, 42, 766, 10, 1, 128, false, false,
 						       &supplies);
-		const auto missing_rice = std::find_if(
-			jade_hat.steps.begin(), jade_hat.steps.end(), [](const auto &step)
-			{ return step.kind == "carried_item" && !step.optional; });
+		const auto missing_rice =
+			std::find_if(jade_hat.steps.begin(), jade_hat.steps.end(),
+				     [](const auto &step)
+				     { return step.kind == "carried_item" && !step.optional; });
 		require(missing_rice != jade_hat.steps.end() &&
 				jade_section(jade_hat).find("Next: " + missing_rice->text) !=
 					std::string::npos,
@@ -4496,10 +4498,10 @@ int main(int argc, char **argv)
 			"Abyss cold recovery counted aliases/histories/narrated effects as additional outcomes");
 
 		{
-			const auto &surface_map =
-				*std::find_if(catalog.story_mappings.begin(),
-					      catalog.story_mappings.end(), [](const auto &mapping)
-					      { return mapping.source_area == "surfacemini"; });
+			const auto &surface_map = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &mapping)
+				{ return mapping.source_area == "surfacemini"; });
 			const auto &surface_clothes =
 				story_for("surfacemini", "hermit-clothing-recipe");
 			const auto &surface_glands = story_for("surfacemini", "gleb-eight-glands");
@@ -4533,8 +4535,8 @@ int main(int argc, char **argv)
 				return journal.substr(start,
 						      end == std::string::npos ? end : end - start);
 			};
-			const auto surface_material = [](const auto &entry,
-							 int item) -> const auto &
+			const auto surface_material =
+				[](const auto &entry, int item) -> const auto &
 			{
 				return *std::find_if(entry.steps.begin(), entry.steps.end(),
 						     [&](const auto &step) {
@@ -4823,10 +4825,10 @@ int main(int argc, char **argv)
 		}
 
 		{
-			const auto &map =
-				*std::find_if(catalog.story_mappings.begin(),
-					      catalog.story_mappings.end(), [](const auto &mapping)
-					      { return mapping.source_area == "crakkaro"; });
+			const auto &map = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &mapping)
+				{ return mapping.source_area == "crakkaro"; });
 			const auto &badges = story_for("crakkaro", "woman-four-badges");
 			const auto &ogres = story_for("crakkaro", "burnhard-ogre-shield");
 			const auto &bracer = story_for("crakkaro", "burnhard-ogre-bracer");
@@ -4933,10 +4935,10 @@ int main(int argc, char **argv)
 		}
 
 		{
-			const auto &map =
-				*std::find_if(catalog.story_mappings.begin(),
-					      catalog.story_mappings.end(), [](const auto &mapping)
-					      { return mapping.source_area == "roguerai"; });
+			const auto &map = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &mapping)
+				{ return mapping.source_area == "roguerai"; });
 			const auto &cloud = story_for("roguerai", "cloud-giant-promise");
 			const auto &storm = story_for("roguerai", "storm-giant-promise");
 			const auto &promises = story_for("roguerai", "mediator-two-promises");
@@ -5075,10 +5077,10 @@ int main(int argc, char **argv)
 		}
 
 		{
-			const auto &map =
-				*std::find_if(catalog.story_mappings.begin(),
-					      catalog.story_mappings.end(), [](const auto &mapping)
-					      { return mapping.source_area == "desolate"; });
+			const auto &map = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &mapping)
+				{ return mapping.source_area == "desolate"; });
 			const auto &ale = story_for("desolate", "halfling-ale");
 			const auto &fill = story_for("desolate", "mercenary-tankard");
 			const auto &chain = story_for("desolate", "minotaur-lost-chain");
@@ -7549,6 +7551,165 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &bundle = story_for("jotun", "mimir-five-proofs");
+			const auto &amulet = story_for("jotun", "mimir-shaman-proof");
+			const auto &quelranor = story_for("jotun", "quelranor-balor-sword");
+			const auto &grishnar = story_for("jotun", "grishnar-rashnik-totem");
+			const auto &rashnik = story_for("jotun", "rashnik-grishnar-standard");
+			const auto &ordinary = story_for("jotun", "smith-remorhaz-armor");
+			const auto &ancient = story_for("jotun", "smith-ancient-remorhaz-armor");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 960, 96004, 100, "arrival") ==
+					result::applied,
+				"Jotunheim discovery failed");
+			const auto mapping = std::find_if(catalog.story_mappings.begin(),
+							  catalog.story_mappings.end(),
+							  [](const auto &m)
+							  { return m.source_area == "jotun"; });
+			require(mapping != catalog.story_mappings.end(),
+				"Jotunheim mapping missing");
+			for (const auto &contact : mapping->contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 96004, 101) ==
+						result::applied,
+					"Jotunheim contact projection failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Jotunheim journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[96081] = 2;
+			supplies.carried[96046] = 1;
+			supplies.carried[96038] = 1;
+			supplies.carried[96039] = 1;
+			supplies.equipped[18] = 96037;
+			supplies.carried[96071] = 1;
+			supplies.carried[96062] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 960, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(bundle).find("[Missing now] " + bundle.steps[0].text) !=
+						std::string::npos &&
+					section(bundle).find("[Missing now] " +
+							     bundle.steps[3].text) !=
+						std::string::npos,
+				"Nightshade/duplicate sapphire/held shield supplied distinct bundle proofs");
+			require(section(ordinary).find("[Missing now] " + ordinary.steps[0].text) !=
+						std::string::npos &&
+					section(ancient).find("[Ready now] " +
+							      ancient.steps[0].text) !=
+						std::string::npos,
+				"Ancient scale substituted for ordinary material");
+			require(section(grishnar).find("[Missing now] " + grishnar.steps[0].text) !=
+						std::string::npos &&
+					section(rashnik).find("[Missing now] " +
+							      rashnik.steps[0].text) !=
+						std::string::npos,
+				"Shared rival reward substituted for either proof");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 960).completed == 0 &&
+					journey.progress_for_zone(7, 42, 960).total == 11,
+				"Jotunheim preparation fabricated accepted outcome");
+			supplies.equipped.clear();
+			supplies.carried[96036] = 1;
+			supplies.carried[96037] = 1;
+			supplies.carried[96061] = 1;
+			supplies.carried[96069] = 1;
+			journal = journey.render_journal(7, 42, 960, 10, 1, 108, false, false,
+							 &supplies);
+			for (size_t i = 0; i + 1 < bundle.steps.size(); ++i)
+				require(section(bundle).find("[Ready now] " +
+							     bundle.steps[i].text) !=
+						std::string::npos,
+					"Supplied exact bundle required personal kill/access history");
+			require(section(quelranor).find("[Ready now] " + quelranor.steps[0].text) !=
+						std::string::npos &&
+					section(grishnar).find("[Ready now] " +
+							       grishnar.steps[0].text) !=
+						std::string::npos &&
+					section(rashnik).find("[Missing now] " +
+							      rashnik.steps[0].text) !=
+						std::string::npos,
+				"Matching sword/totem crossed independent branches");
+			// Synthetic settled receipts verify journal projection, not native source/coin/XP admission.
+			record(journey, grishnar.contracts.front(), "jotun-totem-receipt", 960,
+			       96040);
+			record(journey, quelranor.contracts.front(), "jotun-sword-receipt", 960,
+			       96104);
+			supplies.carried.erase(96038);
+			journal = journey.render_journal(7, 42, 960, 10, 1, 112, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 960).completed == 2 &&
+					journey.evidence_for(rashnik.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(amulet.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(bundle.contracts.front(), 2)
+							.successful_attempts == 0,
+				"One native receipt fabricated rival or earlier campaign outcomes");
+			require(section(quelranor).find("[Recorded] " +
+							quelranor.steps.back().text) !=
+						std::string::npos &&
+					section(bundle).find("[Missing now] " +
+							     bundle.steps[1].text) !=
+						std::string::npos,
+				"Recorded sword receipt recreated spent material");
+			for (const auto &entry : mapping->stories)
+			{
+				if (entry.id == grishnar.id || entry.id == quelranor.id)
+					continue;
+				const std::string tx = "jotun-" + entry.id;
+				record(journey, entry.contracts.front(), tx.c_str(), 960, 96004);
+			}
+			require(journey.progress_for_zone(7, 42, 960).completed == 11,
+				"Jotunheim service counted or independent story lost");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &unit) {
+						      return unit.zone_number == 960 &&
+							     unit.daily_candidate;
+					      }) == 11,
+				"Jotunheim XP daily/service eligibility changed");
+			auto replay =
+				completion(grishnar.contracts.front(), "jotun-totem-receipt", 120);
+			replay.transaction.zone_number = 960;
+			replay.transaction.room_vnum = 96040;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Jotunheim replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 960).completed == 11 &&
+					!recovered.has_discovered(7, 42, 833) &&
+					!recovered.has_discovered(7, 42, 131) &&
+					!recovered.has_discovered(7, 42, 328),
+				"Jotunheim recovery lost receipt or invented foreign discovery");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 960, 96004, 100, "arrival") ==
+					result::applied,
+				"Jotunheim historical discovery failed");
+			for (const auto &entry : mapping->stories)
+			{
+				const std::string tx = "jotun-historical-" + entry.id;
+				record(historical, entry.contracts.front(), tx.c_str(), 960, 96004);
+			}
+			require(historical.progress_for_zone(7, 42, 960).completed == 15,
+				"Historical raw Jotunheim fixture failed");
+			service reclassified(catalog);
+			require(reclassified.deserialize_state(historical.serialize_state(),
+							       &error) &&
+					reclassified.progress_for_zone(7, 42, 960).completed == 11,
+				"Historical Jotunheim receipts lost or services still count");
+			for (const auto &entry : mapping->stories)
+				require(reclassified.evidence_for(entry.contracts.front(), 2)
+							.successful_attempts == 1,
+					"Historical Jotunheim service/story receipt erased");
+		}
 		{
 			const auto &halves = story_for("herders", "two-farseer-mind-halves");
 			const auto &revenge = story_for("herders", "drakasyth-revenge");

@@ -1,0 +1,756 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "jotun",
+  "coverage": "complete",
+  "introduction": "Explore Jotunheim’s rival courts, follow its proof requests and choose how to spend scarce materials. Eleven independent stories and four service or rejection responses use exact items. New discovery and progress require active, ready accounting.",
+  "orientation": [
+    "ENTER Yggdrasil from the Astral Plane to reach Jotunheim. The tree in Jotunheim provides the return journey. The foggy downward path is not another usable destination. Hostile giants, mountain flight and water travel remain dangerous.",
+    "Find Mimir behind the hidden boulder passage in the Vinsaar mountains. ASK mimir task explains his two proof requests. His well’s legends are lore; drinking from it or learning a skill does not complete either request. For Mimir’s first request, bring the intricate golden amulet worn by the high shaman of Kostchtchie. The raven gloves are the reward; finding those gloves elsewhere does not record this hand-in.",
+    "Mimir’s larger request needs five different items together: the frost mage’s jade bracelet, the Balor’s lightning sword and barbed whip, the shaman’s rose-quartz shield, and the sapphire and gold bracelet lying among the stone huts. Five similar-looking pieces or a single leader’s proof will not do.",
+    "The Balor’s lightning sword can go to Mimir’s five-item request or Quelranor’s fiend request. Once it is spent, you need another actual sword for the other request. Recovering the sword or surviving the Balor’s death blast does not complete either quest. Quelranor accepts the Balor’s jagged lightning sword for the holy gauntlets of the planetar and experience, then leaves. His proof is the same sword needed by Mimir’s five-item bundle. Gifts of the exact sword fit without personal combat history.",
+    "Mimir rejects the blood-splattered fur leggings and the nightshade bracelet. These replies are listed for clarity and earn no story achievement or daily credit. Do not give those items expecting a quest reward.",
+    "At the fluting metal gate, SAY kostchtchie, then OPEN gate and go SOUTH when the route is closed. The plain iron key carried by a frost mage at the gate opens the alchemist’s storeroom. You may also find the hidden stone stairway and the tear behind the elegant tent. An already open route does not require your own earlier gate action.",
+    "Fireweed grows on the trail just below Mount Siva’s basalt outpost. Bring the actual clump to the frost giant alchemist for an earring and experience. Fireweed does not survive ordinary rent/save handling; keep your current supply in view. The advertised Muspelheim passage is unfinished.",
+    "Brimir in Okalnir carries the heavy pewter tankard. Bring that exact tankard to the drow emissary in Utgard. The request accepts its identity; do not assume it checks how much ale remains or records a separate brewing action.",
+    "At Utgard’s western wall, inspect the broken sign. SAY silverwing, then OPEN illusion and go EAST when the route is closed. The northern portcullis has no working entrance. The sign’s badge warning does not add a badge requirement to this spoken route.",
+    "The blacksmith in Utgard’s marketplace offers two remorhaz-scale recipes. Ordinary and ancient scales are different materials, even though they look similar on the ground. Each recipe also costs 250 platinum and is currently unavailable while accounting is active. Both remain services. Ordinary remorhaz carry the ordinary scales; the rare ancient remorhaz carries the ancient scales. These are carried stock, rather than CARVE rewards. Removing an ingredient from a container is preparation, without proving a personal kill.",
+    "Brunnhilde, Sarimar, Grishnar, Rashnik, Olaf Forkbeard and Quelranor may wander through Jotunheim. Their presence depends on the current rare inhabitants; a listed request does not promise its giver is available. ASK the named contact when you find them.",
+    "Brunnhilde accepts Sarimar’s belt of human skulls for the antlered mask of Valhalla and experience. This is separate from her request concerning Silverwing. She remains after the belt hand-in, but leaves after accepting Silverwing’s cloak. Silverwing is Telshanar, the shackled movanic deva in Utgard’s royal hall. The cloak of deva’s feathers is the exact proof Brunnhilde accepts. Her response mourns his absence; it does not record freeing, escorting or healing him. Wearing the cloak does not satisfy the loose-item preparation check.",
+    "Sarimar accepts Brunnhilde’s flaming sword of the valkyrie for a bloody minotaur’s rib cage and experience, then leaves. His bounty and Brunnhilde’s bounty are independent opposing requests; a matching supplied proof fits without your own kill.",
+    "Grishnar asks for Rashnik’s sacred snow-troll totem. Rashnik asks for Grishnar’s feathered ice-troll standard. Each giver leaves after the accepted exchange; both award the claws of the destroyer. Owning the shared reward does not identify which request you completed. Olaf Forkbeard accepts the hideous red leather mask worn by the head overseer in the mining hills, then leaves after rewarding you. His words call you dwarf-friend, but the quest records this proof exchange without a separate slave rescue or lasting faction change.",
+    "Thrym’s rune-covered stone, Mimir’s epic training, the blacksmith’s additional forging, the wells and other shops described in scenery are separate services or lore. Epic training and forging have their own restrictions and accounting guards. The journal does not manufacture quest outcomes from them. Fearfrost on the Elemental Plane of Air owns the four-item request for Frostbite, Mistweave, a token of allegiance to Thrym and the Maelstrom fragment. Mundorno in Alatorin can produce the same white-dragon leggings found here. Those foreign exchanges belong to their own journals; possessing their materials or rewards here does not complete them.",
+    "All eleven story requests are potential dailies under current rules. Exact current stock, legitimate item supply and the return of departing givers govern availability. The requests are independent; the journal requires no earlier personal travel, kill or different story receipt."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 96013,
+      "name": "Mimir",
+      "keyword": "mimir",
+      "description": "Behind the hidden boulder passage: two independent proof requests and two rejection responses. Epic training is separate.",
+      "topics": [
+        "hi",
+        "hello",
+        "task"
+      ]
+    },
+    {
+      "mob_vnum": 96049,
+      "name": "a frost giant alchemist",
+      "keyword": "alchemist",
+      "description": "In the frost mage storeroom: asks for fireweed and remains after exchanging it for an earring and experience.",
+      "topics": [
+        "hi",
+        "hello",
+        "components",
+        "fireweed"
+      ]
+    },
+    {
+      "mob_vnum": 96051,
+      "name": "a drow emissary",
+      "keyword": "drow",
+      "description": "In the diplomatic rooms of Utgard: asks for Brimir’s exact pewter tankard.",
+      "topics": [
+        "hi",
+        "hello",
+        "drink"
+      ]
+    },
+    {
+      "mob_vnum": 96058,
+      "name": "a frost giant blacksmith",
+      "keyword": "blacksmith",
+      "description": "In Utgard’s marketplace: two paid scale-armor services, currently guarded under active accounting. Additional forging is separate.",
+      "topics": [
+        "hi",
+        "hello",
+        "forge"
+      ]
+    },
+    {
+      "mob_vnum": 96068,
+      "name": "Brunnhilde",
+      "keyword": "brunnhilde",
+      "description": "Brunnhilde may roam Jotunheim: Sarimar’s belt and Silverwing’s cloak are separate requests. She leaves after the cloak hand-in.",
+      "topics": [
+        "hi",
+        "hello",
+        "help",
+        "sarimar",
+        "silverwing"
+      ]
+    },
+    {
+      "mob_vnum": 96069,
+      "name": "Sarimar",
+      "keyword": "sarimar",
+      "description": "Sarimar may roam Jotunheim: accepts the valkyrie’s exact sword and leaves afterward.",
+      "topics": [
+        "hi",
+        "hello",
+        "prey"
+      ]
+    },
+    {
+      "mob_vnum": 96071,
+      "name": "Grishnar",
+      "keyword": "grishnar",
+      "description": "Grishnar may roam Jotunheim: accepts Rashnik’s snow-troll totem and leaves afterward.",
+      "topics": [
+        "hi",
+        "hello",
+        "vaprak",
+        "shaman",
+        "snow",
+        "rashnik"
+      ]
+    },
+    {
+      "mob_vnum": 96072,
+      "name": "Rashnik",
+      "keyword": "rashnik",
+      "description": "Rashnik may roam Jotunheim: accepts Grishnar’s ice-troll standard and leaves afterward.",
+      "topics": [
+        "hi",
+        "hello",
+        "vaprak",
+        "shaman",
+        "grishnar"
+      ]
+    },
+    {
+      "mob_vnum": 96075,
+      "name": "Olaf Forkbeard",
+      "keyword": "olaf",
+      "description": "Olaf Forkbeard may roam Jotunheim: accepts the head overseer’s red mask and leaves afterward.",
+      "topics": [
+        "hi",
+        "hello",
+        "giants",
+        "giant",
+        "jotunheim",
+        "jotunslayer",
+        "help",
+        "olaf"
+      ]
+    },
+    {
+      "mob_vnum": 96077,
+      "name": "the planetar Quelranor",
+      "keyword": "quelranor",
+      "description": "Quelranor may roam Jotunheim: accepts the Balor sword, also needed by Mimir, then leaves.",
+      "topics": [
+        "hi",
+        "hello",
+        "troubles",
+        "intruders",
+        "fiends",
+        "fiend",
+        "balor"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "mimir-shaman-proof",
+      "title": "Mimir: the shaman’s golden amulet",
+      "category": "story",
+      "summary": "Offer the high shaman’s exact golden amulet for the talons of the raven and experience. This leader’s proof is separate from Mimir’s five-item request.",
+      "contracts": [
+        {
+          "giver_vnum": 96013,
+          "completion_key": "give=I:96008;receive=E:80000,I:96078;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96008",
+          "text": "Carry the intricate golden amulet",
+          "kind": "carried_item",
+          "item_vnums": [
+            96008
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The high shaman of Kostchtchie wears the amulet in the elegant tent of the frost mage camp. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give Mimir the golden amulet",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96013,
+              "completion_key": "give=I:96008;receive=E:80000,I:96078;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "mimir-five-proofs",
+      "title": "Mimir: five proofs from the frost mage camp",
+      "category": "story",
+      "summary": "Bring all five distinct items together for the wooden rune-covered spear. This accepted bundle does not establish that you personally killed every mage.",
+      "contracts": [
+        {
+          "giver_vnum": 96013,
+          "completion_key": "give=I:96036,I:96037,I:96038,I:96039,I:96081;receive=I:96016;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96036",
+          "text": "Carry the eerily glowing jade bracelet",
+          "kind": "carried_item",
+          "item_vnums": [
+            96036
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A frost mage behind the black stone wall wears this jade bracelet. It is distinct from the sapphire and gold bracelet. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "material-96038",
+          "text": "Carry the jagged lightning sword",
+          "kind": "carried_item",
+          "item_vnums": [
+            96038
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Balor carries this sword in the elegant tent. Its death blast is dangerous; inspect the actual remaining stock. Quelranor consumes the same sword in his own request. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "material-96039",
+          "text": "Carry the barbed whip",
+          "kind": "carried_item",
+          "item_vnums": [
+            96039
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The same Balor carries this many-tailed whip. Neither another whip nor an earlier sword hand-in supplies this item. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "material-96037",
+          "text": "Carry the glowing rose-quartz shield",
+          "kind": "carried_item",
+          "item_vnums": [
+            96037
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The high shaman wears this shield beside the Balor in the elegant tent. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "material-96081",
+          "text": "Carry the sapphire and gold bracelet",
+          "kind": "carried_item",
+          "item_vnums": [
+            96081
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "This distinct bracelet lies among the frost mages’ small stone huts. It is not the jade bracelet and need not be worn. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give Mimir all five different proofs together",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96013,
+              "completion_key": "give=I:96036,I:96037,I:96038,I:96039,I:96081;receive=I:96016;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "mimir-rejects-leggings",
+      "title": "Mimir declines blood-splattered leggings",
+      "category": "service",
+      "summary": "Mimir does not want the blood-splattered fur leggings. His matching-item response is a rejection, outside story achievements and dailies.",
+      "contracts": [
+        {
+          "giver_vnum": 96013,
+          "completion_key": "give=I:96035;receive=I:96035;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96035",
+          "text": "Recognize the blood-splattered fur leggings",
+          "kind": "carried_item",
+          "item_vnums": [
+            96035
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Balor wears these leggings. They are not one of Mimir’s five required proofs; do not give them expecting a story reward. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Record Mimir’s leggings rejection response",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96013,
+              "completion_key": "give=I:96035;receive=I:96035;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting. This service response earns no zone achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "mimir-rejects-nightshade",
+      "title": "Mimir declines the nightshade bracelet",
+      "category": "service",
+      "summary": "Mimir does not want the nightshade bracelet. His matching-item response is a rejection, outside story achievements and dailies.",
+      "contracts": [
+        {
+          "giver_vnum": 96013,
+          "completion_key": "give=I:96046;receive=I:96046;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96046",
+          "text": "Recognize the nightshade bracelet",
+          "kind": "carried_item",
+          "item_vnums": [
+            96046
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The frost giant alchemist wears this bracelet. It is neither the jade bracelet nor the sapphire and gold bracelet. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Record Mimir’s nightshade rejection response",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96013,
+              "completion_key": "give=I:96046;receive=I:96046;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting. This service response earns no zone achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "alchemist-fireweed",
+      "title": "Fireweed for the frost giant alchemist",
+      "category": "story",
+      "summary": "Bring the exact clump of fireweed for the woven earring and experience. The alchemist remains after the accepted hand-in.",
+      "contracts": [
+        {
+          "giver_vnum": 96049,
+          "completion_key": "give=I:96076;receive=E:50000,I:96077;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96076",
+          "text": "Carry a clump of fireweed",
+          "kind": "carried_item",
+          "item_vnums": [
+            96076
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Fireweed grows on the trail below Mount Siva’s basalt outpost. Ordinary rent/save handling omits it; keep the actual current supply in view. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the fireweed to the frost giant alchemist",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96049,
+              "completion_key": "give=I:96076;receive=E:50000,I:96077;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "emissary-brimir-tankard",
+      "title": "Brimir’s tankard for the drow emissary",
+      "category": "story",
+      "summary": "Offer Brimir’s heavy pewter tankard for the statue of Eilistraee and experience. The request checks the exact tankard, without a separate ale-content requirement.",
+      "contracts": [
+        {
+          "giver_vnum": 96051,
+          "completion_key": "give=I:96023;receive=E:100000,I:96075;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96023",
+          "text": "Carry the heavy pewter tankard",
+          "kind": "carried_item",
+          "item_vnums": [
+            96023
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Brimir carries the tankard in Okalnir. Other drinking vessels do not substitute; the hidden storeroom’s tankards are scenery. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the pewter tankard to the drow emissary",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96051,
+              "completion_key": "give=I:96023;receive=E:100000,I:96075;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "smith-remorhaz-armor",
+      "title": "The blacksmith: remorhaz-scale armor",
+      "category": "service",
+      "summary": "This recipe needs ordinary remorhaz scales and 250 platinum. The paid craft is currently unavailable while accounting is active, and earns no story achievement or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 96058,
+          "completion_key": "give=C:250000,I:96069;receive=I:96070;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96069",
+          "text": "Carry ordinary remorhaz scales",
+          "kind": "carried_item",
+          "item_vnums": [
+            96069
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Ordinary remorhaz carry these scales in the lower valley. Ancient remorhaz scales are a different item and do not substitute. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Record the accepted ordinary-scale armor craft",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96058,
+              "completion_key": "give=C:250000,I:96069;receive=I:96070;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting. This service response earns no zone achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "smith-ancient-remorhaz-armor",
+      "title": "The blacksmith: ancient remorhaz-scale armor",
+      "category": "service",
+      "summary": "This recipe needs ancient remorhaz scales and 250 platinum. The paid craft is currently unavailable while accounting is active, and earns no story achievement or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 96058,
+          "completion_key": "give=C:250000,I:96071;receive=I:96072;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96071",
+          "text": "Carry ancient remorhaz scales",
+          "kind": "carried_item",
+          "item_vnums": [
+            96071
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The rare ancient remorhaz carries these scales. Its availability varies; ordinary scales cannot replace this stronger material. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Record the accepted ancient-scale armor craft",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96058,
+              "completion_key": "give=C:250000,I:96071;receive=I:96072;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting. This service response earns no zone achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "brunnhilde-sarimar-belt",
+      "title": "Brunnhilde: Sarimar’s belt",
+      "category": "story",
+      "summary": "Offer Sarimar’s belt of human skulls for the antlered mask of Valhalla and experience. Brunnhilde remains; her Silverwing request is independent.",
+      "contracts": [
+        {
+          "giver_vnum": 96068,
+          "completion_key": "give=I:96057;receive=E:100000,I:96064;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96057",
+          "text": "Carry the belt of human skulls",
+          "kind": "carried_item",
+          "item_vnums": [
+            96057
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Sarimar wears this belt while roaming Jotunheim. Supplied matching proof fits without your own kill. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give Sarimar’s belt to Brunnhilde",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96068,
+              "completion_key": "give=I:96057;receive=E:100000,I:96064;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "brunnhilde-silverwing-cloak",
+      "title": "Brunnhilde: proof of Silverwing’s fate",
+      "category": "story",
+      "summary": "Bring Silverwing’s cloak of deva’s feathers for the ring of the valkyries and experience. Brunnhilde leaves afterward. This records the proof hand-in, without a separate rescue.",
+      "contracts": [
+        {
+          "giver_vnum": 96068,
+          "completion_key": "give=I:96042;receive=E:600000,I:96067;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96042",
+          "text": "Carry the cloak of deva’s feathers",
+          "kind": "carried_item",
+          "item_vnums": [
+            96042
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Silverwing, also known as Telshanar, wears the cloak while shackled in Utgard’s royal hall. Bring it as a loose item; wearing its magic does not satisfy this preparation check. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give Silverwing’s cloak to Brunnhilde",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96068,
+              "completion_key": "give=I:96042;receive=E:600000,I:96067;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "sarimar-valkyrie-sword",
+      "title": "Sarimar: the valkyrie’s sword",
+      "category": "story",
+      "summary": "Offer Brunnhilde’s flaming sword of the valkyrie for the bloody minotaur’s rib cage and experience. Sarimar leaves afterward. This opposing bounty is independent.",
+      "contracts": [
+        {
+          "giver_vnum": 96069,
+          "completion_key": "give=I:96056;receive=E:150000,I:96063;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96056",
+          "text": "Carry the flaming sword of the valkyrie",
+          "kind": "carried_item",
+          "item_vnums": [
+            96056
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Brunnhilde wields this sword while roaming Jotunheim. Its own flame magic, or another flaming sword, does not complete Sarimar’s request. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the valkyrie’s sword to Sarimar",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96069,
+              "completion_key": "give=I:96056;receive=E:150000,I:96063;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "grishnar-rashnik-totem",
+      "title": "Grishnar: Rashnik’s sacred totem",
+      "category": "story",
+      "summary": "Offer Rashnik’s sacred snow-troll totem for the claws of the destroyer and experience. Grishnar leaves afterward; his rival’s request has a separate outcome.",
+      "contracts": [
+        {
+          "giver_vnum": 96071,
+          "completion_key": "give=I:96061;receive=E:100000,I:96062;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96061",
+          "text": "Carry the sacred totem of the snow trolls",
+          "kind": "carried_item",
+          "item_vnums": [
+            96061
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Rashnik holds this carved wooden totem. Its shape and identity differ from Grishnar’s feathered standard; using the totem is not the hand-in. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give Rashnik’s totem to Grishnar",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96071,
+              "completion_key": "give=I:96061;receive=E:100000,I:96062;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "rashnik-grishnar-standard",
+      "title": "Rashnik: Grishnar’s feathered standard",
+      "category": "story",
+      "summary": "Offer Grishnar’s feathered ice-troll standard for the claws of the destroyer and experience. Rashnik leaves afterward; the shared reward does not complete Grishnar’s request.",
+      "contracts": [
+        {
+          "giver_vnum": 96072,
+          "completion_key": "give=I:96060;receive=E:100000,I:96062;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96060",
+          "text": "Carry the feathered standard of the ice trolls",
+          "kind": "carried_item",
+          "item_vnums": [
+            96060
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Grishnar carries this standard while roaming Jotunheim. Rashnik’s sacred totem cannot replace it. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give Grishnar’s standard to Rashnik",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96072,
+              "completion_key": "give=I:96060;receive=E:100000,I:96062;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "olaf-overseer-mask",
+      "title": "Olaf Forkbeard: the overseer’s mask",
+      "category": "story",
+      "summary": "Bring the head overseer’s hideous red leather mask for the dwarven rune amulet and experience. Olaf leaves afterward. His thanks do not add a separate rescue or faction objective.",
+      "contracts": [
+        {
+          "giver_vnum": 96075,
+          "completion_key": "give=I:96004;receive=E:175000,I:96068;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96004",
+          "text": "Carry the hideous red leather mask",
+          "kind": "carried_item",
+          "item_vnums": [
+            96004
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The head overseer wears the mask in the rocky mining hills outside Utgard. Another overseer’s whip or an earlier giant kill does not substitute. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the overseer’s mask to Olaf Forkbeard",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96075,
+              "completion_key": "give=I:96004;receive=E:175000,I:96068;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "quelranor-balor-sword",
+      "title": "Quelranor: the Balor’s lightning sword",
+      "category": "story",
+      "summary": "Offer the Balor’s exact lightning sword for the holy gauntlets of the planetar and experience. Quelranor leaves afterward. Mimir’s five-item request consumes the same proof.",
+      "contracts": [
+        {
+          "giver_vnum": 96077,
+          "completion_key": "give=I:96038;receive=E:175000,I:96074;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-96038",
+          "text": "Carry the jagged lightning sword",
+          "kind": "carried_item",
+          "item_vnums": [
+            96038
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The Balor carries this sword in the elegant tent of the frost mage camp. Recover the actual remaining stock after its dangerous death blast; it is not a CARVE reward. Once spent on Mimir’s request, that copy cannot be given again. Carry the exact item loose; held, worn or nested copies do not satisfy this preparation check. Matching supplied items fit too. Possession alone does not prove your own recovery or kill."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Give the Balor’s sword to Quelranor",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 96077,
+              "completion_key": "give=I:96038;receive=E:175000,I:96074;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted full hand-in records this response. Preparation and dialogue do not complete it. New progress requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
