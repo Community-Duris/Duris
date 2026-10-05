@@ -252,6 +252,42 @@ try:
         return ({"findings": {"baseline_source_claim": 1}} if operation == old else
                 {"refusal": "EAB1 committed root mismatch"})
 
+    keys_red = os.environ.get("DURIS_PLAN5_BASELINE_KEYS_HASH_RED") == "1"
+    keys_cuts = []
+    for operation, scope_name in ((selected, "selected"), (old, "retained")):
+        inbox = next(row for row in intact["critical_operation_inbox"] if row["operation_id"] == operation)
+        keys = b"\x09" + (0x45434f4e42415345).to_bytes(8, "little")
+        assert inbox["keys_hash"] == hashlib.sha256(keys).digest()
+        wrong = {"zero": bytes(32),
+                 "flipped": bytes([inbox["keys_hash"][0] ^ 1]) + inbox["keys_hash"][1:],
+                 "foreign-type": hashlib.sha256(b"\x08" + keys[1:]).digest(),
+                 "foreign-fence": hashlib.sha256(b"\x09" + (0x45434f4e42415344).to_bytes(8, "little")).digest(),
+                 "padded-key": hashlib.sha256(b"\x09" + bytes(7) + keys[1:]).digest()}
+        for name, changed in wrong.items():
+            query = "UPDATE critical_operation_inbox SET keys_hash=%s WHERE operation_id=%s"
+            changes, repairs = [(query, (changed, operation))], [(query, (inbox["keys_hash"], operation))]
+            if keys_red:
+                try:
+                    fixture_changes(changes, False)
+                    damaged = captured()
+                    _, observed = audit()
+                    assert observed == base_counts, (scope_name, name, observed)
+                    restore_evidence()
+                    restore_qualification()
+                    assert captured() == damaged, "keys RED reader changed authority"
+                finally:
+                    fixture_changes(repairs, False)
+                assert captured() == intact
+                print("BASELINE_KEYS_HASH_RED " + json.dumps({"scope": scope_name, "damage": name,
+                      "original_native_keys_hash": inbox["keys_hash"].hex(), "damaged_keys_hash": changed.hex(),
+                      "all_three_readers_admitted": True, "authority_unchanged": True}, sort_keys=True), flush=True)
+            else:
+                cut(scope_name+"-keys-hash-"+name, changes, repairs, full_restore=True, **root_fault(operation))
+                keys_cuts.append(scope_name+"-"+name)
+    if keys_red:
+        print("NATIVE_BASELINE_KEYS_HASH_RED_ADMITTED native_original_fence_both_epochs_unchanged", flush=True)
+        raise SystemExit(0)
+
     binding_red = os.environ.get("DURIS_PLAN5_BASELINE_COMMAND_BINDING_RED") == "1"
     binding_cuts = []
     for operation, scope_name in ((selected, "selected"), (old, "retained")):
@@ -678,6 +714,7 @@ try:
     print("NATIVE_BASELINE_AUDIT_QUALIFIED " + json.dumps({"baseline_claims": 2, "epochs": 2,
           "cuts": len(cuts), "constraint_refusals": len(constraints),
           "command_binding_cuts": binding_cuts,
+          "keys_hash_cuts": keys_cuts,
           "restore_refusals": len(cuts), "native_baseline_dump_import": True,
           "authority_unchanged": True, "activation": False,
           "production_access": False, "complete_native_capture": False}, sort_keys=True), flush=True)

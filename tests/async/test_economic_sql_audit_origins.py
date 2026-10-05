@@ -86,6 +86,7 @@ def baseline_root(blob, revision=1):
                 reason=38, outcome=1, result_code=0, inbox_status=1, inbox_result=0,
                 inbox_failure_stage=0, inbox_committed_at_present=1, inbox_revision=revision,
                 inbox_type=20, inbox_schema=2, inbox_payload=1, inbox_result_payload=b"",
+                inbox_keys_hash=hashlib.sha256(struct.pack("<BQ", 9, 0x45434f4e42415345)).digest(),
                 root_lineage=lineage, root_epoch=epoch, original_operation_id=None,
                 accounting_version=1, writer_id=4, policy_version=1, compiler_version=1,
                 actor_kind=2, actor_id=actor, source_event=source, intent_digest=intent_digest,
@@ -393,6 +394,35 @@ class OriginTests(unittest.TestCase):
         self.assertEqual(result["account_origins"][0]["balance"], [0, 0, 0, 0])
         self.assertEqual(row["posting_count"], 0)
         self.assertEqual(row["account_count"], 1)
+
+    def test_baseline_receipt_keys_hash_requires_exact_native_system_fence(self):
+        keys = struct.pack("<BQ", 9, 0x45434f4e42415345)
+        valid = hashlib.sha256(keys).digest()
+        wrong = [None, b"", bytes(31), bytes(33), bytes(32),
+                 hashlib.sha256(struct.pack("<BQ", 8, 0x45434f4e42415345)).digest(),
+                 hashlib.sha256(struct.pack("<BQ", 9, 0x45434f4e42415344)).digest(),
+                 hashlib.sha256(struct.pack(">BQ", 9, 0x45434f4e42415345)).digest(),
+                 hashlib.sha256(struct.pack("<B7xQ", 9, 0x45434f4e42415345)).digest(),
+                 hashlib.sha256(struct.pack("<I", 1) + keys).digest()]
+        for index in range(32):
+            changed = bytearray(valid)
+            changed[index] ^= 1
+            wrong.append(bytes(changed))
+        for index, changed in enumerate(wrong):
+            with self.subTest(case=index):
+                row = witness()
+                row["inbox_keys_hash"] = changed
+                before = copy.deepcopy(row)
+                connection = Connection(rows=[row])
+                with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertEqual(row, before)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+        row = witness()
+        del row["inbox_keys_hash"]
+        with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+            capture(Connection(rows=[row]), LINEAGE, EPOCH)
 
     def test_baseline_claim_books_are_cached_and_globally_bounded(self):
         current, retained = EPOCH.hex(), "88" * 16

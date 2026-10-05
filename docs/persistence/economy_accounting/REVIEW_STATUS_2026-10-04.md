@@ -1,5 +1,23 @@
 # Accounting review status — 2026-10-04
 
+## Integrated independent baseline fence-digest repair — 2026-10-04
+
+Peer slice `3c8ba021a7dd8b3ac9048651672c9a456774c5d7` is imported with all
+six existing preimages matching primary `2a357bdeb` and all seven resulting
+canonical file blobs matching the peer. Both independent native origin and
+restore readers now verify the existing baseline inbox fence digest against its
+actual nine-byte native preimage. Missing or changed digest evidence refuses;
+no native authority, migration, coordinator, accounting activation or flat marker
+format changes. Independent source review and six Python AST checks pass.
+
+The [peer report](PLAN5_SQL_BASELINE_KEYS_HASH_SLICE_2026-10-04.md) retains the
+actual pre-fix admissions, failed first correction, final 25 focused units and
+both canonical0056 engine damage/cold-restore qualification. Those results qualify
+its frozen inputs only; no new local runtime execution or combined major-plan
+qualification is claimed. Admission-time binding, complete native capture,
+remaining Plans2–4 producers and full R1–R8 release acceptance remain required.
+Testing remains batched at major-plan readiness.
+
 Status: **Plan 1's original independent acceptance is complete; activation and
 release remain blocked**. `coverage_complete=False`. R1–R8 and every applicable major-plan
 acceptance gate remain required. This checkpoint supersedes the October 3 source
