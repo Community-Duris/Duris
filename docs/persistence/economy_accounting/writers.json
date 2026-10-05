@@ -34114,7 +34114,7 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          2334,
+          2347,
           "economic_submit"
         ]
       ],
@@ -34722,22 +34722,22 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          1321,
+          1334,
           "coin_assignment"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          1323,
+          1336,
           "coin_assignment"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          1325,
+          1338,
           "coin_assignment"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          1326,
+          1339,
           "coin_assignment"
         ]
       ],
@@ -35215,17 +35215,17 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          1445,
+          1458,
           "economic_submit"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          1397,
+          1410,
           "economic_submit"
         ],
         [
           "src/economy/shop_trade_transaction.c",
-          1448,
+          1461,
           "economic_submit"
         ]
       ],
@@ -54167,49 +54167,49 @@
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1397,
+      "line": 1410,
       "family": "economic_submit",
       "excerpt": "bool shop_trade_transaction_submit_with_publication(P_char character,"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1445,
+      "line": 1458,
       "family": "economic_submit",
       "excerpt": "bool shop_trade_transaction_submit(P_char character, const shop_trade_payload &payload,"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1448,
+      "line": 1461,
       "family": "economic_submit",
       "excerpt": "return shop_trade_transaction_submit_with_publication(character, payload, nullptr,"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 2334,
+      "line": 2347,
       "family": "economic_submit",
       "excerpt": "bool shop_trade_preparation_owner::start(P_char actor, P_char keeper, P_obj selected, P_obj stock,"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1321,
+      "line": 1334,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(observed.keeper) = static_cast<int>(cash / 1000);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1323,
+      "line": 1336,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(observed.keeper) = static_cast<int>(cash / 100);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1325,
+      "line": 1338,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(observed.keeper) = static_cast<int>(cash / 10);"
     },
     {
       "path": "src/economy/shop_trade_transaction.c",
-      "line": 1326,
+      "line": 1339,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(observed.keeper) = static_cast<int>(cash % 10);"
     },
@@ -64569,9 +64569,9 @@
     "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
   },
   "candidate_worktree_evidence": {
-    "base_commit": "be0877d0c6a47170a98868fca1d6067ae711a1c8",
+    "base_commit": "a0153060c8a15e5770a45c3ce52fc51e727f5869",
     "status": "source_integrated_unqualified",
-    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified. Source-reviewed pure active-root custody census shares old root observation and preserves retained historical states; private shop consumer remains unintegrated and unqualified. Source-reviewed bounded canonical shop recovery forest binding codecs are integrated as pure value helpers; the explicit v8 command, producer, original SQL validation, cold replay/publication and final qualification remain private/unfinished. Existing journal limits, inactive shop versions and admission/ACK gates are unchanged. Maintained native reference/source-event codecs are extracted without changing original encoded bytes or image/capture policy; complete production and focused link recipes are updated. Native char_data now has zeroable runtime-only reference storage and a read-only accessor requiring the originally observed runtime generation before pointer access. No birth writer, durable restore record, UID issuance or ACK authority is installed by this slice; major-plan execution remains deferred. Reviewed SHOP v8 producer/checkpoint, literal runtime payload, complete destination weight, original SQL images, exact retained receipt verification and held live publication source are composed with all companion headers and production objects. Current cold image observation grants no startup/rebind/native publication or ACK authority. Central accounted SHOP admission remains closed and canonical schema0056 is unchanged; schema0057, real producer invocation, cold continuation, flat parity and major-plan native/gameplay/recovery qualification remain unfinished. Previously reviewed detached native-mobile loader is source integrated with both legacy overloads/probe kept on their original path. Preparation has no live list/count/runtime/event publication; consumption precedes room/special hooks. Private dormant stage grants no original source, durable UID or ACK, and adds no durable recovery format or NPC state ledger. Original issuer/birth/restore/retirement and major-plan qualification remain open. SHOP owned submission now accepts the original native v7 or recovery v8 command; the v8 builder was previously rejected by a v7-only guard. Decode, exact operation/checkpoint/held-player proof, all other version restrictions and admission/activation gates remain unchanged. Source-only correction; major-plan execution remains deferred. Four SHOP producers and the original retained driver are source integrated; central SHOP availability remains closed. Source review corrected actor-independent uncertain readback ordering and removed an unnecessary live-keeper gate after proven local cancellation. No native/SQL/services or major-plan tests ran; cold recovery, coherent schemas, flat parity and R1-R8 qualification remain open. Native mobile v2 economic images retain exact four-denomination cash and an original owner-supplied cash revision. Historical v1 cash remains unknown/read-only; both native participants enforce known cash and exact cash/mobile revision changes. Source review/pins only; original birth/source/restore/retirement and major-plan native qualification remain open. Private SQL SHOP runtime publication now stages a missing revision cache entry from the original authenticated current projection, preserving newer-cache refusal and final session/census proof. Source-reviewed only; native/cold/major-plan qualification stays open. Explicit native-mobile owner/key and v11 quest item contracts, final-giver reward binding, read-only native custody compatibility and complete extracted-codec recipe closure are source-integrated. Legacy/default payload10 remains unchanged; ordinary schema1 execution and generic admission reject native mutations. Source review/AST/syntax/pins/census only; original native parent, birth/source/restore/producer/publication and major-plan qualification remain open. Pure cold SHOP observation now records exact addressed-body presence, disconnected account availability, complete physical forests and original role bindings without rebind/publication authority. Stale same-template foreign shop bindings refuse rather than masquerading as absence. Source review/format/pins only; original replay/native mutation/guarded ACK and major-plan native qualification remain open. Explicit native quest SQL/flat borrowed item participants, ordered stock transitions and focused recipe closure are source-integrated, with full-player subtree closure, separate forest/event bounds and preserved transient error classification. Generic admission, schema0056 and inactive behavior stay closed/unchanged; native birth/source/root/publication/restore/ACK and major-plan qualification remain open. SHOP preparation reads the decoded frozen epoch through admission.metadata.epoch, preserving exact original mapping equality and all wallet/bank/token/timestamp guards. Source-only compiler-defect repair; combined native qualification remains deferred.",
+    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified. Source-reviewed pure active-root custody census shares old root observation and preserves retained historical states; private shop consumer remains unintegrated and unqualified. Source-reviewed bounded canonical shop recovery forest binding codecs are integrated as pure value helpers; the explicit v8 command, producer, original SQL validation, cold replay/publication and final qualification remain private/unfinished. Existing journal limits, inactive shop versions and admission/ACK gates are unchanged. Maintained native reference/source-event codecs are extracted without changing original encoded bytes or image/capture policy; complete production and focused link recipes are updated. Native char_data now has zeroable runtime-only reference storage and a read-only accessor requiring the originally observed runtime generation before pointer access. No birth writer, durable restore record, UID issuance or ACK authority is installed by this slice; major-plan execution remains deferred. Reviewed SHOP v8 producer/checkpoint, literal runtime payload, complete destination weight, original SQL images, exact retained receipt verification and held live publication source are composed with all companion headers and production objects. Current cold image observation grants no startup/rebind/native publication or ACK authority. Central accounted SHOP admission remains closed and canonical schema0056 is unchanged; schema0057, real producer invocation, cold continuation, flat parity and major-plan native/gameplay/recovery qualification remain unfinished. Previously reviewed detached native-mobile loader is source integrated with both legacy overloads/probe kept on their original path. Preparation has no live list/count/runtime/event publication; consumption precedes room/special hooks. Private dormant stage grants no original source, durable UID or ACK, and adds no durable recovery format or NPC state ledger. Original issuer/birth/restore/retirement and major-plan qualification remain open. SHOP owned submission now accepts the original native v7 or recovery v8 command; the v8 builder was previously rejected by a v7-only guard. Decode, exact operation/checkpoint/held-player proof, all other version restrictions and admission/activation gates remain unchanged. Source-only correction; major-plan execution remains deferred. Four SHOP producers and the original retained driver are source integrated; central SHOP availability remains closed. Source review corrected actor-independent uncertain readback ordering and removed an unnecessary live-keeper gate after proven local cancellation. No native/SQL/services or major-plan tests ran; cold recovery, coherent schemas, flat parity and R1-R8 qualification remain open. Native mobile v2 economic images retain exact four-denomination cash and an original owner-supplied cash revision. Historical v1 cash remains unknown/read-only; both native participants enforce known cash and exact cash/mobile revision changes. Source review/pins only; original birth/source/restore/retirement and major-plan native qualification remain open. Private SQL SHOP runtime publication now stages a missing revision cache entry from the original authenticated current projection, preserving newer-cache refusal and final session/census proof. Source-reviewed only; native/cold/major-plan qualification stays open. Explicit native-mobile owner/key and v11 quest item contracts, final-giver reward binding, read-only native custody compatibility and complete extracted-codec recipe closure are source-integrated. Legacy/default payload10 remains unchanged; ordinary schema1 execution and generic admission reject native mutations. Source review/AST/syntax/pins/census only; original native parent, birth/source/restore/producer/publication and major-plan qualification remain open. Pure cold SHOP observation now records exact addressed-body presence, disconnected account availability, complete physical forests and original role bindings without rebind/publication authority. Stale same-template foreign shop bindings refuse rather than masquerading as absence. Source review/format/pins only; original replay/native mutation/guarded ACK and major-plan native qualification remain open. Explicit native quest SQL/flat borrowed item participants, ordered stock transitions and focused recipe closure are source-integrated, with full-player subtree closure, separate forest/event bounds and preserved transient error classification. Generic admission, schema0056 and inactive behavior stay closed/unchanged; native birth/source/root/publication/restore/ACK and major-plan qualification remain open. SHOP preparation reads the decoded frozen epoch through admission.metadata.epoch, preserving exact original mapping equality and all wallet/bank/token/timestamp guards. Source-only compiler-defect repair; combined native qualification remains deferred. SHOP original-refusal cancellation authenticates and pins the exact command/receipt before its private cleanup callback; false cleanup retains fences/hold, and the explicit existing live no-effect continuation remains. Source-only; cold SQL BEFORE integration and native qualification remain open.",
     "source_pins": {
       "src/Makefile": "2ae8f1f3e8cba75233c75a5680e1ca423abf5e4cf5b4e1f1cf56b1b7f5a1d00e",
       "src/economy/coin_physical_recovery.c": "0670e71865ebe3543ec18c4142653ed0ea6499cd93cc3bb36f06407f951e8397",
@@ -64594,15 +64594,15 @@
       "src/flatfile/flatfile_player_repository.c": "efc58eb49106a20d0a533d5a71592b8c257fcbf7b17ced077a4421c409f9c93a",
       "src/net/comm.c": "e7962b3478908d055aa3947ddfa9628099904186331ac57b1e88b04e7b0f889c",
       "src/persistence/critical_command.c": "c7aa6deedf0e5656ad77f7875c404c48893b801c2ad1e27c9cbf149ba9032f73",
-      "src/persistence/critical_command_coordinator.c": "9f4ccc43c8b89d155c30227c1fa7cb8815edfa1f61f65e94d4de30b305123697",
-      "src/persistence/critical_command_coordinator.h": "41e40357a553ed010658354098e5064c8915e5a671bc837edb54616c4366a05e",
+      "src/persistence/critical_command_coordinator.c": "205ffe71ff0e0cd03a1048ba4266848767804c114ced552d7b81a4925a24f1e2",
+      "src/persistence/critical_command_coordinator.h": "8c891ade85820fd1f894dc751a52d4fd43ed5fc7a168438580e904c5b48d2b54",
       "src/persistence/critical_command_repository.c": "e5f48e33d289cc77ff223a821dad6e3db5593eb81ee120e8135bc294f7e9b504",
       "src/persistence/critical_command_repository.h": "2f5938b071d513bef52446003539b0a5e3eff19ace29d0db58dd3b36fada5f50",
       "src/player/inert_item_stage.c": "629ea84a78d3f2787b9122abfc3317e06a2236274cf53a09fb18a7fdfc6af26e",
       "src/player/inert_item_stage.h": "091f2cb9f7ffe81a0888b4f102a1c6874b2ce2f43549ca1203e7b7cbb4e9d05b",
       "src/player/player_save_execution_guard.h": "91e9f23b2e37fd922df47df9e657db5810b34adba080a9dc170e6f417240e2ce",
-      "src/player/player_save_pipeline.c": "041d626f97289b6c952a7ff3efa60307534bad64c5cee440f08d1f45340fa571",
-      "src/player/player_save_pipeline.h": "a3f171c9c1ade731cc7d8a0d9ddc677e0d8adf3f999b563f014fde35c545fcef",
+      "src/player/player_save_pipeline.c": "67bacb24b2edcf27a4496eb07610b6e557e11877fad7f6d160657cae6883f663",
+      "src/player/player_save_pipeline.h": "22124b688c036d0525dde81a63243004e722e39ca3ecac017455f73e41df24a7",
       "src/player/player_snapshot_repository.c": "58d5bbd01c3b48d496369b92b64178d6d5e0ec3ce4c30efca22eed3d09e8eb8f",
       "src/flatfile/flatfile_accounting_authority.h": "cc0d3ac9580c5ec586b1809818160e15725370eeea98c7b7d6abf2d5e53149c7",
       "src/flatfile/flatfile_accounting_authority.c": "887e40389a376bfc8ae635f9ea38b9fb2a24e4c7189d421fded745ad9644f00c",
@@ -64648,7 +64648,7 @@
       "src/economy/shop_trade_recovery_image.h": "39cbea3872d4ec82eb893eace5db67542359a7d88a88e47a10cbf613d86eed4a",
       "src/economy/shop_trade_runtime.c": "eefaf6fe29c877302a84d8d9cbdc078326b6cf0f0dabb3fe05d9716a039f1c14",
       "src/economy/shop_trade_runtime.h": "f15bcf72444ee351573feae8142260d2f9b0bc3f1700a1a4587143d4ff3c816d",
-      "src/economy/shop_trade_transaction.c": "c657a5c8f3ed7793ce439f84557f3d3779a1a2dd7dcac517cfda97b1ad9b2278",
+      "src/economy/shop_trade_transaction.c": "c72ff68a5792cba9e3a5c47a976813b8d6d396d227cfdd5c6cc4901f92445f32",
       "src/economy/shop_trade_transaction.h": "3aebdf9bcd9f394e003221204f27f9e58c5494a09e726a01d4ae00012764a8f3",
       "src/persistence/economic_sql_shop_trade_transaction.c": "b6d74d32f57b5f3114990da49143f3337bfb054603f76e6aac30047294f53d49",
       "src/persistence/economic_sql_shop_trade_transaction.h": "875d2aa1a4d113969123686ee43d7d412a1e202bf5ae4db660134b773424acf1",
