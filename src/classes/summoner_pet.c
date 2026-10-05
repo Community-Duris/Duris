@@ -312,9 +312,15 @@ bool summoner_owned_pet(P_char pet)
 
 void summoner_pet_start_recovery(P_char owner)
 {
-	if (owner && IS_PC(owner) && !get_scheduled(owner, event_summoner_recovery))
-		add_event(event_summoner_recovery, 6 * WAIT_SEC, owner, nullptr, nullptr, 0,
-			  nullptr, 0);
+	if (!owner || !IS_PC(owner) || get_scheduled(owner, event_summoner_recovery))
+		return;
+	for (auto *af = owner->affected; af; af = af->next)
+		if (af->type == TAG_SUMMONER_RESOURCE)
+		{
+			add_event(event_summoner_recovery, 6 * WAIT_SEC, owner, nullptr, nullptr, 0,
+				  nullptr, 0);
+			return;
+		}
 }
 
 void summoner_pet_exhausted(P_char pet)

@@ -277,6 +277,8 @@ void player_load_pets_commit(P_char owner, std::vector<P_char> *pets,
 		summoner_pet_sync_resources(pet);
 		summoner_pet_resume_slots(pet);
 	}
+	// Saved prepared slots recover even when every pet was dismissed before logout.
+	summoner_pet_start_recovery(owner);
 	if (owner->only.pc->held_pets && !owner->only.pc->held_pets->pets.empty())
 	{
 		logit(LOG_FILE, "pet recovery held pid=%d pets=%zu; saved equipment retained",

@@ -56,7 +56,7 @@ std::map<P_char, P_char> masters, songs;
 std::set<int> recipes;
 bool chaos = false;
 int infuse = 100, healing_skill = 100, terrain = 0;
-int exhaustion = 0, stopped = 0;
+int exhaustion = 0, stopped = 0, recovery_schedules = 0;
 P_char message_owner = nullptr;
 int flag2idx(int mask) { int index = 0; while (mask) { ++index; mask >>= 1; } return index; }
 int GET_CHAR_SKILL_P(P_char, int skill) {
@@ -79,7 +79,8 @@ void act(const char *message, int, P_char owner, P_obj, void *, int) {
     assert(std::strstr(message, "looks too exhausted for that")); ++exhaustion; message_owner = owner;
 }
 P_nevent get_scheduled(P_char, event_func_type) { return nullptr; }
-nevent_schedule_result add_event(event_func, int, P_char, P_char, P_obj, int, const void *, int) {
+nevent_schedule_result add_event(event_func fn, int, P_char, P_char, P_obj, int, const void *, int) {
+    if (fn == event_summoner_recovery) ++recovery_schedules;
     return {nevent_schedule_status::scheduled, {}};
 }
 void stop_singing(P_char bard) { ++stopped; bard->specials.affected_by3 &= ~AFF3_SINGING; }
@@ -251,6 +252,17 @@ int main() {
     assert(bank(&bard_owner.ch, 1, mana_bank, false)->modifier < debt);
     assert(!summoner_pet_recovery_blocked(&restored.ch));
 
+    Fixture absent_owner(false, RACE_HUMAN, CLASS_SUMMONER, 31);
+    const int scheduled_before = recovery_schedules;
+    summoner_pet_start_recovery(&absent_owner.ch);
+    assert(recovery_schedules == scheduled_before); // no pet resources, no idle timer
+    bank(&absent_owner.ch, 1, mana_bank, true)->modifier = 100000;
+    bank(&absent_owner.ch, 1, capacity_bank, true)->modifier = 248;
+    summoner_pet_start_recovery(&absent_owner.ch);
+    assert(recovery_schedules == scheduled_before + 1); // saved banks, no active pet
+    event_summoner_recovery(&absent_owner.ch, nullptr, nullptr, nullptr);
+    assert(bank(&absent_owner.ch, 1, mana_bank, false)->modifier < 100000);
+
     owner.ch.player.spec = SPEC_CONTROLLER;
     summoner_chaos_recipes(&owner.ch); assert(recipes.empty());
     chaos = true; summoner_chaos_recipes(&early_owner.ch); assert(recipes.empty());
@@ -314,4 +326,5 @@ assert "summoner_pet_recovery_blocked(ch)" in function("src/classes/memorize.c",
 assert "summoner_pet_sync_resources(ch)" in function("src/classes/memorize.c", "void use_spell(P_char ch, int spell)")
 assert (ROOT / "src/classes/bard.c").read_text().count("summoner_pet_song(") == 3
 assert "summoner_chaos_recipes(ch)" in function("src/classes/drannak.c", "void do_conjure(")
+assert "summoner_pet_start_recovery(owner)" in function("src/player/player_load_pets.c", "void player_load_pets_commit(")
 print("summoner order, spell, song, recovery and Chaos integration gates passed")
