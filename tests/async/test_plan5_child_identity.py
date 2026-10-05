@@ -40,6 +40,63 @@ def identity_snapshot(two=False):
 
 
 class ChildIdentityTests(unittest.TestCase):
+    def integer_snapshot(self, nested=False):
+        snapshot = identity_snapshot()
+        for rows in (snapshot['native']['items'], snapshot['item_origins'], snapshot['ownership_events']):
+            rows[0]['uid'] = 1
+            rows[0]['root'] = 1
+            if rows is not snapshot['item_origins']:
+                rows[0]['owner'] = [1, 1, 0]
+        snapshot['item_references'][0]['uid'] = 1
+        for index, amount in enumerate((-1, 1)):
+            snapshot['postings'][index].update(delta=[amount, 0, 0, 0], copper_value=amount)
+            snapshot['effects'][index]['after'] = [9 if index == 0 else 1, 0, 0, 0]
+            snapshot['native']['holdings'][index]['balance'] = snapshot['effects'][index]['after'].copy()
+        if nested:
+            for rows in (snapshot['native']['items'], snapshot['item_origins'], snapshot['ownership_events']):
+                rows[0].update(root=2, parent=2)
+                root = {**rows[0], 'uid': 2, 'parent': None}
+                if rows is snapshot['ownership_events']:
+                    root['event_index'] = 1
+                rows.append(root)
+            snapshot['item_references'].append({**snapshot['item_references'][0],
+                'uid': 2, 'event_index': 1, 'legacy_event_index': 1, 'line_index': 1})
+            snapshot['operations'][0]['item_event_count'] = 2
+        return bind_original_plans(snapshot)
+
+    def test_original_posting_value_requires_native_integer_representation(self):
+        snapshot = self.integer_snapshot()
+        self.assertEqual(Reconciler().audit(snapshot)['exception_count'], 0)
+        for value in (1.0, True):
+            damaged = copy.deepcopy(snapshot)
+            damaged['postings'][1]['copper_value'] = value
+            with self.subTest(value=value):
+                self.check(damaged, 'original_plan_posting_mismatch')
+                self.assertEqual(Reconciler().audit(damaged)['checked']['original_plans_verified'], 0)
+
+    def test_original_uid_root_and_destination_owner_require_native_integer_representation(self):
+        snapshot = self.integer_snapshot()
+        self.assertEqual(Reconciler().audit(snapshot)['exception_count'], 0)
+        for name, field, index in (('item_references', 'uid', None), ('ownership_events', 'uid', None),
+                ('ownership_events', 'root', None), ('ownership_events', 'owner', 0),
+                ('ownership_events', 'owner', 1), ('ownership_events', 'owner', 2)):
+            original = snapshot[name][0][field] if index is None else snapshot[name][0][field][index]
+            for value in (float(original), bool(original)):
+                damaged = copy.deepcopy(snapshot)
+                if index is None: damaged[name][0][field] = value
+                else: damaged[name][0][field][index] = value
+                with self.subTest(table=name, field=field, index=index, value=value):
+                    self.check(damaged, 'original_plan_item_mismatch' if name == 'item_references'
+                               else 'original_plan_custody_mismatch')
+                    self.assertEqual(Reconciler().audit(damaged)['checked']['original_plans_verified'], 0)
+
+    def test_original_nullable_parent_requires_native_integer_representation(self):
+        snapshot = self.integer_snapshot(nested=True)
+        self.assertEqual(Reconciler().audit(snapshot)['exception_count'], 0)
+        snapshot['ownership_events'][0]['parent'] = 2.0
+        self.check(snapshot, 'original_plan_custody_mismatch')
+        self.assertEqual(Reconciler().audit(snapshot)['checked']['original_plans_verified'], 0)
+
     def check(self, snapshot, code, count=1):
         before = copy.deepcopy(snapshot)
         for limit in (0, 1, 100):

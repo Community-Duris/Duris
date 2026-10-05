@@ -795,30 +795,38 @@ class Reconciler:
                 return [[row.get(field) for field in fields]
                         for row in sorted(by_op[name].get(op_id, []), key=lambda row: row[index])]
 
+            def same_projection(actual, expected) -> bool:
+                # Expected values come from the bounded native decoder. Exact
+                # types and values preserve those ranges without coercing
+                # JSON floats or booleans into authenticated native integers.
+                if type(actual) is not type(expected):
+                    return False
+                if isinstance(expected, list):
+                    return len(actual) == len(expected) and all(
+                        same_projection(value, original) for value, original in zip(actual, expected))
+                return actual == expected
+
             expected = [[i, key.hex(), list(before), list(after), old, new]
                         for i, (key, before, after, old, new) in enumerate(plan["effects"])]
-            check(projected("effects", "account_index", ("account_index", "account_key", "before", "after",
-                                                        "before_revision", "after_revision")) == expected,
+            check(same_projection(projected("effects", "account_index", (
+                "account_index", "account_key", "before", "after", "before_revision", "after_revision")), expected),
                   "original_plan_account_mismatch")
             expected = [[i, event, account, child, list(delta), amount]
                         for i, (event, account, child, delta, amount) in enumerate(plan["postings"])]
-            check(projected("postings", "line_index", ("line_index", "event_index", "account_index", "child_index",
-                                                      "delta", "copper_value")) == expected and
-                  all(type(row.get("event_index")) is int for row in by_op["postings"].get(op_id, [])),
+            check(same_projection(projected("postings", "line_index", (
+                "line_index", "event_index", "account_index", "child_index", "delta", "copper_value")), expected),
                   "original_plan_posting_mismatch")
             expected = [[i + 1, child.hex(), domain, discriminator, parent, relationship]
                         for i, (child, domain, discriminator, parent, relationship) in enumerate(plan["children"])]
-            check(projected("children", "child_index", ("child_index", "child_operation_id", "domain_id",
-                                                        "discriminator", "parent_index", "relationship")) == expected and
-                  all(type(row.get(field)) is int for row in by_op["children"].get(op_id, [])
-                      for field in ("domain_id", "discriminator", "relationship")),
+            check(same_projection(projected("children", "child_index", (
+                "child_index", "child_operation_id", "domain_id", "discriminator", "parent_index", "relationship")), expected),
                   "original_plan_child_mismatch")
             expected = [[i, event, child, uid, old[6], new[6]]
                         for i, (event, child, uid, old, new) in enumerate(plan["events"])]
             references = sorted(by_op["item_references"].get(op_id, []), key=lambda row: row["event_index"])
-            check([[row.get(field) for field in ("line_index", "event_index", "child_index", "uid",
-                                                "before_revision", "after_revision")]
-                   for row in references] == expected and all(type(row.get("line_index")) is int for row in references),
+            check(same_projection([[row.get(field) for field in (
+                "line_index", "event_index", "child_index", "uid", "before_revision", "after_revision")]
+                for row in references], expected),
                   "original_plan_item_mismatch")
             custody = []
             for row in references:
@@ -829,12 +837,7 @@ class Reconciler:
                          [7, 0, 0] if old[1] == 0 else [old[0], old[2], old[3]],
                          [new[0], new[2], new[3]], new[6], old[7], new[7]]
                         for _, _, uid, old, new in plan["events"]]
-            events = [ownership.get((ref.get("legacy_operation_id"), ref.get("legacy_event_index")), {})
-                      for ref in references]
-            check(custody == expected and all(type(row.get(field)) is int for row in events
-                                              for field in ("from_equipment_slot", "to_equipment_slot")) and
-                  all(isinstance(row.get("from_owner"), list) and len(row["from_owner"]) == 3 and
-                      all(type(value) is int for value in row["from_owner"]) for row in events),
+            check(same_projection(custody, expected),
                   "original_plan_custody_mismatch")
             if valid:
                 self.original_plans_verified += 1

@@ -48,8 +48,10 @@ fixed diagnostic refusal on stderr, and exits 2. Capsule and command bodies,
 aliases and passwords are absent from that output. The JSON explicitly leaves
 complete command/receipt authentication, source capture and release
 qualification false. A successful check supplements the partial snapshot
-exporter: a saved version-1 projection still omits original capsules and cannot
-independently authenticate them. Capture the two checks under the release's
+exporter: a saved version-1 projection retains original EAP1 plans and omits
+opaque EAI1 intent facts. Its reconciler authenticates projected plan fields
+against those retained plans; the canonical SQL check additionally authenticates
+the retained intent and its SQL binding. Capture the two checks under the release's
 quiescence procedure; independent runs do not constitute one combined cut.
 
 Every non-exception view includes the whole audited input's `coverage` object:
@@ -148,6 +150,15 @@ root, parent, UID revision, and equipment slots. Coherent rewrites of projected
 child derivations or reassignment of posting/item children produce specific
 `original_plan_*_mismatch` findings. These checks retain all earlier semantic
 findings and never change the supplied snapshot.
+
+All five detail projections require the exact decoded native representation,
+including nested coin and owner vectors. An integer-valued JSON float or a
+Boolean does not authenticate an integer field even when Python equality would
+consider them equal. UID, root, non-null parent and destination-owner members,
+posting scalar values, indices and revisions must be actual JSON integers equal
+to their bounded native originals. A null parent must remain null. Representation
+mismatches retain the corresponding `original_plan_*_mismatch` finding and do
+not increase `checked.original_plans_verified`.
 
 Each EAP1 is at most 4 MiB; their decoded input total is at most 32 MiB. The
 whole JSON file remains limited to 32 MiB, including hex expansion. Before

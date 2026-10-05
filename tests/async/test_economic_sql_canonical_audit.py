@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Original-capsule SQL audit: bounded reader and native/private-engine faults."""
 
+import copy
 import hashlib
 import json
 import os
@@ -18,6 +19,7 @@ sys.path.insert(0, str(ROOT/'tests/async'))
 import economic_sql_canonical_audit as audit
 from test_plan5_child_identity import NATIVE_PROBE, child
 from test_reconcile_economy_accounting import clean_snapshot, Reconciler
+from reconcile_economy_accounting import view
 
 
 class CanonicalAuditTests(unittest.TestCase):
@@ -367,6 +369,71 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                                 'read_only': True,'rollback_calls': 1,'unchanged': True})
                             (work/'results.json').write_text(json.dumps(results,indent=2)+'\n')
                         check('intact')
+                        # Damage only the saved JSON projection, after reading
+                        # the original native capsules with the SELECT-only role.
+                        # Typed SQL integers themselves cannot retain these aliases.
+                        before = inventory()
+                        try:
+                            reader.begin()
+                            with reader.cursor(pymysql.cursors.DictCursor) as cursor:
+                                cut = exporter.read_evidence(cursor,encoded[8:24],encoded[24:40],True)
+                        finally:
+                            reader.rollback()
+                        modeled = clean_snapshot()
+                        origins, items = modeled['account_origins'], modeled['item_origins']
+                        items[0]['owner'] = [native_before[0], native_before[2], native_before[3]]
+                        modeled.update(cut)
+                        modeled['account_origins'], modeled['item_origins'] = origins, items
+                        self.assertEqual(Reconciler().audit(modeled)['exception_count'],0)
+                        self.assertEqual(Reconciler().audit(modeled)['checked']['original_plans_verified'],1)
+                        (work/(engine+'-saved-intact.json')).write_text(json.dumps(modeled,indent=2)+'\n')
+                        saved_results = []
+                        for label, table, field, index, value in (
+                            ('posting_float','postings','copper_value',None,float(modeled['postings'][0]['copper_value'])),
+                            ('reference_uid_float','item_references','uid',None,81.0),
+                            ('ledger_uid_float','ownership_events','uid',None,81.0),
+                            ('ledger_root_float','ownership_events','root',None,81.0),
+                            ('owner_type_float','ownership_events','owner',0,1.0),
+                            ('owner_type_bool','ownership_events','owner',0,True),
+                            ('owner_id_float','ownership_events','owner',1,7.0),
+                            ('owner_context_float','ownership_events','owner',2,0.0),
+                            ('owner_context_bool','ownership_events','owner',2,False),
+                            ('nullable_parent_zero','ownership_events','parent',None,0),
+                            ('nullable_parent_float','ownership_events','parent',None,0.0),
+                            ('nullable_parent_bool','ownership_events','parent',None,False)):
+                            damaged = copy.deepcopy(modeled)
+                            if index is None: damaged[table][0][field] = value
+                            else: damaged[table][0][field][index] = value
+                            expected = {'postings':'original_plan_posting_mismatch',
+                                'item_references':'original_plan_item_mismatch'}.get(table,'original_plan_custody_mismatch')
+                            path = work/(engine+'-saved-'+label+'.json')
+                            path.write_text(json.dumps(damaged,indent=2)+'\n')
+                            original_bytes = path.read_bytes()
+                            for limit in (0,1,100):
+                                report = Reconciler(limit).audit(damaged)
+                                self.assertEqual(report['exception_counts'].get(expected),1,report)
+                                self.assertEqual(report['checked']['original_plans_verified'],0)
+                                for name, filters in (('exceptions',[]),('operation',['--operation-id',operation.hex()]),
+                                                       ('provenance',['--uid','81'])):
+                                    args = {'operation_id':operation.hex()} if name == 'operation' else {'uid':81} if name == 'provenance' else {}
+                                    output = view(damaged,report,name,limit,**args)
+                                    self.assertGreater(output.get('exception_count',output.get('coverage',{}).get('exception_count',0)),0)
+                                    self.assertNotIn(encoded.hex(),json.dumps(output))
+                                    command = [sys.executable,str(ROOT/'scripts/reconcile_economy_accounting.py'),
+                                        str(path),'--view',name,'--limit',str(limit),*filters]
+                                    ran = subprocess.run(command,capture_output=True,text=True)
+                                    self.assertEqual((ran.returncode,ran.stderr),(1,''),ran.stdout+ran.stderr)
+                                    cli_output = json.loads(ran.stdout)
+                                    self.assertGreater(cli_output.get('exception_count',cli_output.get('coverage',{}).get('exception_count',0)),0)
+                                    self.assertNotIn(encoded.hex(),ran.stdout)
+                                    self.assertNotIn('private-alias',ran.stdout)
+                                    saved_results.append({'label':label,'expected':expected,'limit':limit,'view':name,
+                                        'command':command,'exit':ran.returncode,'report':cli_output,'read_only':True})
+                            self.assertEqual(path.read_bytes(),original_bytes)
+                            self.assertEqual(damaged,json.loads(original_bytes))
+                        self.assertEqual(before,inventory())
+                        (work/(engine+'-saved-results.json')).write_text(json.dumps(saved_results,indent=2)+'\n')
+                        self.assertEqual(len(saved_results),108)
                         constraints = []
                         for table, field, where, value in (
                             ('economic_accounting_coin_posting','event_index','line_index=0',9),
