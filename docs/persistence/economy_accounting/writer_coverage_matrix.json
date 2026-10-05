@@ -9,13 +9,13 @@
   ],
   "candidate_worktree_evidence": {
     "base_commit": "9155b623419b960c17f117ed8c87d8f783ce42a1",
-    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled.",
+    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending.",
     "source_pins": {
       "migrations/data_lifecycle_manifest.json": "b37efc35e5865e466a5623e11f1f43f587d63ffa3de25acfe769faec79508fbf",
-      "scripts/generate_economy_writer_coverage.py": "407a87e2289fa9e29535bea9402647cf67059db7ec7678834535920a80dfd5d8",
+      "scripts/generate_economy_writer_coverage.py": "dd8dc8d31ec9d8eab3617a8333dcd36154337722a8618566354e3031b1462a6b",
       "scripts/validate_data_lifecycle.py": "948868127e84196d4998159c58e9114a8bdb0eaead2495d0d9da0f86d5f904ca",
       "scripts/validate_economy_accounting.py": "984d3170c3b4b17cb96dbcb6568a288b63a9db5278861d59cc860bf996f237be",
-      "src/Makefile": "e967761020d956b13669253257d9a65f0e32308eacc9a6b37a266c132e4f94a0",
+      "src/Makefile": "7e435c8f06a4ac100603b5dab8f9c3549c1230f8721404622e26c99712c0114d",
       "src/economy/coin_physical_recovery.c": "0670e71865ebe3543ec18c4142653ed0ea6499cd93cc3bb36f06407f951e8397",
       "src/economy/coin_physical_recovery.h": "c68cc556958cc45b8e71260824f4ac717d060cd7750bd45d57a45b798bccaf9a",
       "src/economy/collector_purchase_publication.c": "51478b2dfadb97c5aa910735a0337238e8aee964a3150b97fe80b0f9912ba9d1",
@@ -55,6 +55,8 @@
       "src/persistence/critical_command_coordinator.h": "8b3157873ab3277c87106908d5bd32c025e59469fee2a372c0cf1ff09adc8c27",
       "src/persistence/critical_command_repository.c": "7b4ea4a96fc58f8deb5a8c5cce4b19218049667289c3b7fd63a0bf6fd72544ee",
       "src/persistence/critical_command_repository.h": "157fb58754a939a1a93108ab6b80609924c3fc51e2239419fc3852616f82ccdd",
+      "src/persistence/quest_mobile_native_sql.c": "461ecd26c1c0757587e063feb8c9851be7ff29ef654f6a756be9685511844e86",
+      "src/persistence/quest_mobile_native_sql.h": "5977e35428bb8c7a6b195b496ba1a4072d2fa18773bf73eb270f9c963354ec09",
       "src/player/inert_item_stage.c": "3f62fecb86f85419aa3598500093e6f000abc8c6b22ef4748040d27261ab221b",
       "src/player/inert_item_stage.h": "8f389331e401b16d85712cec8323e1fe5bf7ef9fbc2f4f163769ec9dcfc40be4",
       "src/player/player_save_execution_guard.h": "91e9f23b2e37fd922df47df9e657db5810b34adba080a9dc170e6f417240e2ce",
@@ -67,10 +69,10 @@
     "status": "source_integrated_unqualified"
   },
   "counts": {
-    "dormant_writer_candidates": 14,
-    "draft_registry_rows": 886,
-    "function_definition_anchors_verified": 878,
-    "matrix_rows": 886,
+    "dormant_writer_candidates": 15,
+    "draft_registry_rows": 887,
+    "function_definition_anchors_verified": 879,
+    "matrix_rows": 887,
     "non_function_candidate_anchors": 8,
     "non_writer_or_out_of_scope_candidates": 106,
     "offline_operational_writer_routes": 4,
@@ -82,7 +84,7 @@
   },
   "coverage_complete": false,
   "disposition_counts": {
-    "dormant_writer_candidate": 14,
+    "dormant_writer_candidate": 15,
     "non_writer_candidate": 106,
     "offline_operational_writer": 4,
     "runtime_mutation_route": 692,
@@ -98,7 +100,7 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 886 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The matrix reconciles 887 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
     "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
@@ -122,7 +124,7 @@
       "ship_coffer_assignment": 6,
       "sql_economy": 56
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 886-row registry maps 2784 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 887-row registry maps 2784 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
     "mapped_sites_still_present": 2784,
     "mapped_unique_sites_from_draft_rows": 2784,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
@@ -52418,6 +52420,64 @@
         "original_draft_symbol": "world_quest_refund_payment"
       },
       "source_classification": "World-quest refund credits player wallet after a prior payment; source is the original paid root.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "keep_unreachable_or_block_if_reactivated",
+        "must_block_on_activation": true,
+        "required_policy": "Borrowed-transaction native NPC image/stock writer is defined but has no in-tree caller. Parent must authenticate admitted birth/transition, revisions and source/epoch/inbox, lock mobile IDs before custody, commit the unified root and own cleanup; never call as standalone authority. Any reactivation must route through the typed schema-2 writer before native mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "none",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "dormant_writer_candidate",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "not_executed_in_tree",
+        "unified_operation_postings_observed": false
+      },
+      "id": "quest.native_sql_image_participant",
+      "native_effects": {
+        "custody_effect": "legacy behavior if revived; not currently reached in-tree",
+        "holding_effect": "direct writer exists but no in-tree gameplay caller was found",
+        "native_state_targets": [
+          "legacy auction/bank persistence code; see route detail"
+        ]
+      },
+      "reachability_evidence": "Source search finds only declarations/definitions of lock/apply_locked; no producer, coordinator, lifecycle or publication caller is installed.",
+      "reason": "quest_cost",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          214
+        ],
+        "file": "src/persistence/quest_mobile_native_sql.c",
+        "function": "quest_mobile_native_sql_apply_locked",
+        "original_draft_symbol": "quest_mobile_native_sql_apply_locked"
+      },
+      "source_classification": "Source-reviewed native NPC image and ordered stock SQL participant; defined with no production caller.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     }
   ],

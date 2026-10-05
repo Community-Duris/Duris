@@ -1,5 +1,12 @@
 # Finish accounting implementation plan
 
+## Integrated NPC native SQL participant — 2026-10-05
+
+[Borrowed native image/stock SQL participation](QUEST_MOBILE_SQL_SOURCE_2026-10-05.md)
+is source-integrated and registered as a dormant definition. Admitted native
+birth/lifecycle/custody, schema0059, flat parity and qualification remain open.
+No gameplay route, activation or executed proof is added.
+
 ## Integrated shop world witness — 2026-10-04
 
 [Complete read-only world observation](SHOP_WORLD_WITNESS_SOURCE_2026-10-04.md)
