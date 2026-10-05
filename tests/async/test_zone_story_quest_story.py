@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1421
-assert report['mapped_area_count'] == 127 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 128 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,17 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+pharrvly=next(m for m in catalog['story_mappings'] if m['source_area']=='pharrvly')
+assert (pharrvly['schema_version'],pharrvly['revision'],pharrvly['coverage'])==(3,1,'complete')
+assert len(pharrvly['stories'])==2 and len(pharrvly['contacts'])==2 and not pharrvly['exclusions']
+assert report['eligible_by_zone']['402']==2 and sum(len(c['topics']) for c in pharrvly['contacts'])==22
+assert [len(s['steps']) for s in pharrvly['stories']]==[4,2]
+assert [[t['item_vnums'] for t in s['steps'][:-1]] for s in pharrvly['stories']]==[[[40208],[40209],[40210]],[[40213]]]
+for story in pharrvly['stories']:
+ assert story['category']=='story' and len(story['contracts'])==1 and story['steps'][-1]['contracts']==story['contracts']
+ assert all(t['kind']=='carried_item' and t['optional'] and t['count']==1 for t in story['steps'][:-1])
+units=[u for u in module.story_units(catalog) if u['zone_number']==402];assert len(units)==2 and all(u['achievement'] and u['daily_candidate'] for u in units)
 
 mistywood=next(m for m in catalog['story_mappings'] if m['source_area']=='mistywood')
 assert (mistywood['schema_version'],mistywood['revision'],mistywood['coverage'])==(3,1,'complete')

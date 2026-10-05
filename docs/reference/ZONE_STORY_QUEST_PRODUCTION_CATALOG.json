@@ -66300,6 +66300,165 @@
     {
       "contacts": [
         {
+          "description": "The curator explains the misplaced chest, small key and old farmer. These are optional lore leads without another accepted turn-in.",
+          "keyword": "curator",
+          "mob_vnum": 40200,
+          "name": "the Curator",
+          "topics": [
+            "hi",
+            "hello",
+            "key",
+            "chest",
+            "wives",
+            "farmers",
+            "gartham",
+            "old",
+            "farmer",
+            "grandpod"
+          ]
+        },
+        {
+          "description": "The mountain farmer accepts two independent offerings. The provision bundle retires him; the carapace offering leaves him present. His scroll and source descriptions need builder review.",
+          "keyword": "farmer",
+          "mob_vnum": 40201,
+          "name": "an old farmer",
+          "topics": [
+            "hi",
+            "hello",
+            "chest",
+            "contents",
+            "scroll",
+            "where",
+            "found",
+            "apple",
+            "orange",
+            "carapace",
+            "gartham",
+            "types"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow Pharr Valley's misplaced chest clues and the mountain farmer's two independent requests. Current materials prepare a request; accepted offerings record completion. New discovery and progress require active, ready accounting.",
+      "orientation": [
+        "ASK curator about key, chest, farmers or grandpod for the valley's misplaced chest and the old farmer. The curator offers lore and directions. You can meet the farmer and prepare either request without first speaking to the curator or recovering the chest's clue.",
+        "The display case in the Hall of Everything starts closed and unlocked. Its small key fits the small chest in the valley storage shed. The chest starts closed and locked but permits native picking attempts; an already opened chest or a supplied matching key can also fit. Its paper wad points to the old farmer. Reading that clue gives context without another completion receipt.",
+        "ASK farmer about chest, contents, scroll or where for the promised scroll's story, then about apple, orange, gartham or types for his requests. Dialogue keywords explain the story without awarding separate achievements. The curator may wander from the hall; the farmer waits on a mountain peak until he leaves after an accepted provision bundle.",
+        "For the provision bundle, carry one exact apple, one exact orange and one exact crow's nest loose together. Offer one of these materials to the available farmer to submit the whole bundle. Corn, peapods, the paper wad, an ordinary book or a carapace do not replace its three requested items.",
+        "Exact apples and oranges have limited stock in the valley fields. Exact crow's nests have stock on mountain and field floors and in scarecrows; remove a nest from its parent container to carry it loose. Open the nest and remove any contents you want to keep before offering it. Eating fruit spends it as food and does not complete the request.",
+        "The provision request grants experience and makes the farmer leave. His acceptance speech describes a parchment scroll and mentions a book and carapace, but this request declares the apple, orange and crow's nest as its inputs and experience as its only reward. The journal follows those actual declarations; a scroll's delivery and a completed Skexis history remain unresolved.",
+        "The second request accepts one exact gartham carapace for experience and leaves the farmer present. Its declared stock is carried by the gartham leader in the caves. The farmer's dialogue points to a soldier, so investigate the leader's actual stock rather than expecting every soldier to supply this shell. A supplied exact carapace can fit without a personal kill.",
+        "The carapace and provision requests are independent. Turning in the carapace first can preserve the current farmer for the bundle; turning in the bundle first makes him leave, so another request needs a fresh available farmer. Completion of one does not record or require completion of the other.",
+        "PUSH rock at the large flat rock on the road to clear its blocked eastern passage into the tunnels when the rock is available and the passage is blocked. Actual passage state is shared: another player's opening may already let you through. Valley fences and house doors start closed and unlocked. Mountain and cave movement retains native hazards, including falls at the narrow cave ledge and giant spider nest.",
+        "Follow actual paths between the mountains, fields, valley town and caves. The Rocky Trail connects to the valley and the eastern mountain route connects to Pharr Valley Swamp; discovering and completing another zone remains separate. Pirate crews and treasure in ships use their own runtime locations and availability, even though their prototypes share these area files.",
+        "Carry current exact materials loose to see preparation. Gifts can fit without personal retrieval, chest access, learned dialogue or combat history. Worn, held, nested, eaten or handed-away materials do not supply current loose custody. Limited stock, native reset timing and other players affect availability; potential daily eligibility does not guarantee a fresh attempt. New credit requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "pharrvly",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:40208,I:40209,I:40210;receive=E:2500;disappear=1",
+              "giver_vnum": 40201
+            }
+          ],
+          "id": "farmer-provision-bundle",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Limited exact apple stock comes from the valley fields; eating it spends food. Current loose custody is preparation; a gift can fit without personal first-recovery history.",
+              "id": "material-40208",
+              "item_vnums": [
+                40208
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry an apple"
+            },
+            {
+              "count": 1,
+              "hint": "Limited exact orange stock comes from the valley fields; eating it spends food. Current loose custody is preparation; a gift can fit without personal first-recovery history.",
+              "id": "material-40209",
+              "item_vnums": [
+                40209
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry an orange"
+            },
+            {
+              "count": 1,
+              "hint": "Limited exact nest stock occurs on floors and in matching scarecrow containers. Withdraw the nest into loose carrying; remove any contents you want to keep. Current loose custody is preparation; a gift can fit without personal first-recovery history.",
+              "id": "material-40210",
+              "item_vnums": [
+                40210
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a crow's nest"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:40208,I:40209,I:40210;receive=E:2500;disappear=1",
+                  "giver_vnum": 40201
+                }
+              ],
+              "hint": "Carry all three exact items loose together and GIVE one requested item to the available farmer to submit the complete bundle. He leaves after acceptance. Readiness, dialogue, source access and experience do not prove acceptance. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete The farmer: valley provisions"
+            }
+          ],
+          "summary": "Exchange one exact apple, orange and crow's nest together for experience. The farmer leaves after acceptance. His scroll speech does not declare an item reward.",
+          "title": "The farmer: valley provisions"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:40213;receive=E:4000;disappear=0",
+              "giver_vnum": 40201
+            }
+          ],
+          "id": "farmer-gartham-carapace",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The gartham leader in the caves has the declared limited carapace stock; ordinary soldier encounters do not guarantee this exact item. Current loose custody is preparation; a gift can fit without personal first-recovery history.",
+              "id": "material-40213",
+              "item_vnums": [
+                40213
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a gartham carapace"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:40213;receive=E:4000;disappear=0",
+                  "giver_vnum": 40201
+                }
+              ],
+              "hint": "GIVE the exact loose carapace to the available farmer. He stays after acceptance; a prior provision receipt is optional. Readiness, dialogue, source access and experience do not prove acceptance. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete The farmer: gartham shelter"
+            }
+          ],
+          "summary": "Exchange the exact gartham carapace for experience. The farmer stays; this request is independent of the provision bundle and does not require your own kill.",
+          "title": "The farmer: gartham shelter"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Lower teaching area. Ask shield, buckler or drow. Exact drow buckler produces Farslayer as support; a lesson is separate.",
           "keyword": "valiant",
           "mob_vnum": 40404,

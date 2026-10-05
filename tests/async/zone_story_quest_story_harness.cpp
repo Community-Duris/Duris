@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 127 &&
+		require(catalog.story_mappings.size() == 128 &&
 				tracker.summary_for(7, 42).total == 1543,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7687,6 +7687,149 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "pharrvly"; });
+			const auto &bundle = story_for("pharrvly", "farmer-provision-bundle");
+			const auto &shell = story_for("pharrvly", "farmer-gartham-carapace");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 402, 40201, 100, "arrival") ==
+					result::applied,
+				"Pharr Valley discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 402, 10, 1, 101, false, false);
+			require(journal.find(bundle.title) == std::string::npos &&
+					journal.find(shell.title) == std::string::npos,
+				"Pharr Valley exposed unseen farmer requests");
+			require(!journey.tracks_npc(40248) &&
+					journey.meet_npc(7, 42, 40248, 40250, 102) ==
+						result::rejected,
+				"Pharr Valley treated pirate prototype as local quest contact");
+			require(journey.meet_npc(7, 42, 40200, 40250, 102) == result::applied,
+				"Pharr Valley curator encounter failed");
+			journal = journey.render_journal(7, 42, 402, 10, 1, 103, false, false);
+			require(journal.find(bundle.title) == std::string::npos,
+				"Pharr Valley curator lore exposed farmer receipts");
+			require(journey.meet_npc(7, 42, 40201, 40281, 104) == result::applied,
+				"Pharr Valley farmer encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Pharr Valley card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry, size_t index) {
+				return section(entry).find("[Ready now] " +
+							   entry.steps[index].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry, size_t index) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[index].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			for (const auto v : { 40203, 40206, 40207, 40211, 40072, 67255 })
+				supplies.carried[v] = 20;
+			int slot = 0;
+			for (const auto v : { 40208, 40209, 40210, 40213 })
+				supplies.equipped[slot++] = v;
+			journal = journey.render_journal(7, 42, 402, 10, 1, 105, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 3; ++i)
+				require(missing(bundle, i),
+					"Pharr Valley equipped/wrong clue supplied bundle");
+			require(missing(shell, 0), "Pharr Valley sleeves/key supplied shell");
+			supplies.equipped.clear();
+			supplies.carried[40208] = 1;
+			journal = journey.render_journal(7, 42, 402, 10, 1, 106, false, false,
+							 &supplies);
+			require(ready(bundle, 0) && missing(bundle, 1) && missing(bundle, 2) &&
+					missing(shell, 0),
+				"Pharr Valley apple prepared whole recipe or carapace");
+			supplies.carried[40209] = 1;
+			journal = journey.render_journal(7, 42, 402, 10, 1, 107, false, false,
+							 &supplies);
+			require(ready(bundle, 0) && ready(bundle, 1) && missing(bundle, 2),
+				"Pharr Valley two fruits replaced missing nest");
+			supplies.carried.erase(40208);
+			supplies.carried.erase(40209);
+			supplies.carried[40213] = 1;
+			const auto before_read = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 402, 10, 1, 108, false, false,
+							 &supplies);
+			require(ready(shell, 0) && missing(bundle, 0) &&
+					section(shell).find("[Pending]") != std::string::npos &&
+					journey.progress_for_zone(7, 42, 402).completed == 0 &&
+					before_read == journey.serialize_state(),
+				"Pharr Valley supplied shell required bundle/history or reading changed progress");
+			// Synthetic accepted events qualify projection, not native XP/destruction/retirement or supply.
+			record(journey, shell.contracts.front(), "pharrvly-shell", 402, 40281);
+			require(journey.progress_for_zone(7, 42, 402).completed == 1 &&
+					journey.evidence_for(bundle.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Pharr Valley shell receipt completed bundle");
+			supplies.carried.erase(40213);
+			for (const auto v : { 40208, 40209, 40210 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 402, 10, 1, 110, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 3; ++i)
+				require(ready(bundle, i),
+					"Pharr Valley gifts required chest/source/kill history");
+			require(missing(shell, 0),
+				"Pharr Valley historical receipt recreated spent shell");
+			record(journey, bundle.contracts.front(), "pharrvly-bundle", 402, 40281);
+			require(journey.progress_for_zone(7, 42, 402).completed == 2 &&
+					journey.progress_for_zone(7, 42, 402).total == 2,
+				"Pharr Valley three materials became duplicate or campaign receipts");
+			for (const auto v : { 40208, 40209, 40210 })
+				supplies.carried.erase(v);
+			journal = journey.render_journal(7, 42, 402, 10, 1, 112, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 3; ++i)
+				require(missing(bundle, i),
+					"Pharr Valley receipt recreated consumed bundle");
+			auto replay = completion(bundle.contracts.front(), "pharrvly-bundle", 120);
+			replay.transaction.zone_number = 402;
+			replay.transaction.room_vnum = 40281;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Pharr Valley replay duplicated recipe");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 402) &&
+					recovered.progress_for_zone(7, 42, 402).completed == 2,
+				"Pharr Valley cold recovery lost receipts/discovery");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 402, 40201, 100, "arrival") ==
+					result::applied,
+				"Historical Pharr Valley discovery failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("pharrvly-old-" + entry.id).c_str(), 402, 40281);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 402).completed == 2 &&
+					authored.progress_for_zone(7, 42, 402).total == 2,
+				"Pharr Valley raw-to-authored lost identities");
+			for (const auto &entry : mapping.stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1 &&
+						recovered.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1,
+					"Pharr Valley exact receipt lost");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 402 &&
+							     u.achievement && u.daily_candidate;
+					      }) == 2,
+				"Pharr Valley classification changed");
 		}
 
 		{

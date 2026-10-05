@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 127 authored journals.
+2668 distinct Q contracts; 128 authored journals.
 
 Regenerate with:
 
@@ -175,7 +175,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Obsidian Citadel (`obcita`) | 5 | 3 | 0 | Fallback | [1 × a minuscule shard of shadow → a shadowsteel ring](../../areas/qst/obcita.qst#L37) | obsid_cit_death_knight, obsid_cit_satar_ghulan |
 | Enclave of the Opal Phoenix (`opalphoenix`) | 3 | 3 | 2 | Yes | [1 × a large container of fine sand → a midnight blue tome with silver bindings, an eagle feather quill](../../areas/qst/opalphoenix.qst#L14) | alch_bag, alch_rod, circlet_of_light, dragon_skull_helm, head_guard_sword, ljs_armor |
 | Orrak (`orrak`) | 1 | 1 | 0 | Fallback | [1 × a glittering staff → a bracelet of red rocks](../../areas/qst/orrak.qst#L8) | — |
-| Pharr Valley (`pharrvly`) | 2 | 14 | 0 | Fallback | [1 × an apple; 1 × an orange; 1 × a crow's nest → native reward/response](../../areas/qst/pharrvly.qst#L87) | — |
+| Pharr Valley (`pharrvly`) | 2 | 14 | 0 | Yes | [1 × an apple; 1 × an orange; 1 × a crow's nest → native reward/response](../../areas/qst/pharrvly.qst#L87) | — |
 | Pine Hollow (`pineholl`) | 7 | 10 | 1 | Yes | [1 × a green-hued gold dragon scale; 1 × a gold dragon scale; 1 × the brown-hued scale of an elder gold dragon; other required items → a dragonscale earring, a golden dagger](../../areas/qst/pineholl.qst#L35) | — |
 | Pharr Valley Swamp (`pods`) | 4 | 24 | 0 | Yes | [6 × a dark feather; 1 × a strip of neberihide → a birdfeather headdress](../../areas/qst/pods.qst#L187) | — |
 | The Prisons of Carthapia (`prison`) | 2 | 6 | 0 | Fallback | [1 × some scales of the Great Dragon Smaug; 1 × some scales of the Great Dragon Smaug; 1 × some scales of the Great Dragon Smaug → the shield of flames](../../areas/qst/prison.qst#L47) | flaming_axe_of_azer, nexus, warden_shout |
