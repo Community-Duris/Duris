@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 110 &&
+		require(catalog.story_mappings.size() == 111 &&
 				tracker.summary_for(7, 42).total == 1582,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7549,6 +7549,152 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &captain = story_for("spshold", "captain-coal-valve");
+			const auto &decker = story_for("spshold", "decker-ticket");
+			const auto &sea = story_for("spshold", "hordine-sea-maps");
+			const auto &torn = story_for("spshold", "hordine-torn-map");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 226, 22634, 100, "arrival") ==
+					result::applied,
+				"Stronghold discovery failed");
+			for (const auto &mapping : catalog.story_mappings)
+				if (mapping.source_area == "spshold")
+					for (const auto &contact : mapping.contacts)
+						require(journey.meet_npc(7, 42, contact.mob_vnum,
+									 22634,
+									 102) == result::applied,
+							"Stronghold projected contact failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Stronghold section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[22610] = 2;
+			supplies.equipped[18] = 22612;
+			supplies.carried[22621] = 1;
+			supplies.carried[40771] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 226, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(captain).find("[Ready now] " + captain.steps[0].text) !=
+						std::string::npos &&
+					section(captain).find("[Missing now] " +
+							      captain.steps[1].text) !=
+						std::string::npos,
+				"Coal duplicates or held valve satisfied exact two-root bundle");
+			require(section(decker).find("[Missing now] " + decker.steps[1].text) !=
+					std::string::npos,
+				"Helm possession implied a ticket");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 226).completed == 0 &&
+					journey.progress_for_zone(7, 42, 226).total == 4,
+				"Equipment or supplies fabricated Stronghold outcomes");
+			supplies.equipped.clear();
+			supplies.carried[22612] = 1;
+			supplies.carried[22613] = 1;
+			supplies.carried[22622] = 1;
+			journal = journey.render_journal(7, 42, 226, 10, 1, 108, false, false,
+							 &supplies);
+			require(section(captain).find("[Ready now] " + captain.steps[1].text) !=
+					std::string::npos,
+				"Loose valve not recognized");
+			require(section(decker).find("[Ready now] " + decker.steps[1].text) !=
+						std::string::npos &&
+					section(decker).find("[Pending] " + decker.steps[0].text) !=
+						std::string::npos,
+				"Supplied ticket required or fabricated captain history");
+			require(section(sea).find("[Ready now] " + sea.steps[0].text) !=
+						std::string::npos &&
+					section(torn).find("[Missing now] " + torn.steps[1].text) !=
+						std::string::npos,
+				"Sea maps substituted for torn map");
+			service supplied(catalog);
+			require(supplied.discover_zone(7, 42, 226, 22634, 100, "arrival") ==
+					result::applied,
+				"Supplied ticket discovery failed");
+			record(supplied, decker.contracts.front(), "spshold-supplied-ticket", 226,
+			       22634);
+			require(supplied.progress_for_zone(7, 42, 226).completed == 1 &&
+					supplied.evidence_for(captain.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Supplied ticket required or fabricated own captain exchange");
+			const auto referral = std::find_if(
+				catalog.definitions.begin(), catalog.definitions.end(),
+				[&](const auto &d)
+				{ return d.definition_id == torn.steps[0].contracts.front(); });
+			require(referral != catalog.definitions.end() &&
+					referral->source_area == "thetis",
+				"Foreign referral owner lost");
+			// Synthetic settled receipts exercise projection; they do not qualify source, native offering, travel or payment admission.
+			record(journey, referral->definition_id, "spshold-foreign-burgadan",
+			       referral->zone_number, 38013);
+			supplies.carried.erase(22622);
+			supplies.carried[77209] = 1;
+			journal = journey.render_journal(7, 42, 226, 10, 1, 110, false, false,
+							 &supplies);
+			require(section(torn).find("[Recorded] " + torn.steps[0].text) !=
+						std::string::npos &&
+					section(torn).find("[Ready now] " + torn.steps[1].text) !=
+						std::string::npos &&
+					section(torn).find("[Missing now] " + torn.steps[2].text) !=
+						std::string::npos,
+				"Foreign receipt supplied a spade or lost optional referral");
+			require(section(sea).find("[Missing now] " + sea.steps[0].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 226).completed == 0,
+				"Torn map or foreign referral credited Stronghold sea maps");
+			record(journey, captain.contracts.front(), "spshold-captain-bundle", 226,
+			       22643);
+			supplies.carried.erase(22613);
+			supplies.carried.erase(77209);
+			supplies.carried[38037] = 1;
+			journal = journey.render_journal(7, 42, 226, 10, 1, 115, false, false,
+							 &supplies);
+			require(section(decker).find("[Recorded] " + decker.steps[0].text) !=
+						std::string::npos &&
+					section(decker).find("[Missing now] " +
+							     decker.steps[1].text) !=
+						std::string::npos,
+				"Captain history recreated consumed ticket");
+			require(section(torn).find("[Missing now] " + torn.steps[1].text) !=
+						std::string::npos &&
+					section(torn).find("[Ready now] " + torn.steps[2].text) !=
+						std::string::npos,
+				"Referral/spade recreated consumed torn map");
+			for (const auto &mapping : catalog.story_mappings)
+				if (mapping.source_area == "spshold")
+					for (const auto &entry : mapping.stories)
+					{
+						if (journey.evidence_for(entry.contracts.front(), 2)
+							    .successful_attempts)
+							continue;
+						const auto tx = "spshold-" + entry.id;
+						record(journey, entry.contracts.front(), tx.c_str(),
+						       226, 22659);
+					}
+			require(journey.progress_for_zone(7, 42, 226).completed == 4,
+				"Independent Stronghold outcomes lost");
+			const auto tx = "spshold-" + torn.id;
+			auto replay = completion(torn.contracts.front(), tx.c_str(), 120);
+			replay.transaction.zone_number = 226;
+			replay.transaction.room_vnum = 22659;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Stronghold replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 226).completed == 4 &&
+					recovered.evidence_for(referral->definition_id, 2)
+							.successful_attempts == 1 &&
+					!recovered.has_discovered(7, 42, referral->zone_number) &&
+					!recovered.has_discovered(7, 42, 772),
+				"Stronghold recovery lost outcomes or fabricated foreign discovery");
+		}
 		{
 			const auto &beregan = story_for("desolateinv", "beregan-eight-bindings");
 			const auto &jandar = story_for("desolateinv", "jandar-three-hands");

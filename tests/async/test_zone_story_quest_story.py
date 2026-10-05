@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1441
-assert report['mapped_area_count'] == 110 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 111 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -262,6 +262,11 @@ desolateinv=next(m for m in catalog['story_mappings'] if m['source_area']=='deso
 assert len(desolateinv['stories'])==17 and len(desolateinv['contacts'])==16 and report['eligible_by_zone']['773']==16
 assert sum(t.get('optional',False) for s in desolateinv['stories'] for t in s['steps'])==27
 assert sum(s['category']=='service' for s in desolateinv['stories'])==1
+
+spshold=next(m for m in catalog['story_mappings'] if m['source_area']=='spshold')
+assert len(spshold['stories'])==4 and len(spshold['contacts'])==6 and report['eligible_by_zone']['226']==4
+assert sum(t.get('optional',False) for s in spshold['stories'] for t in s['steps'])==8
+assert not spshold['exclusions'] and not any(c['topics'] for c in spshold['contacts'])
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'
