@@ -71,3 +71,5 @@ src/player/player_save_pipeline.h text eol=lf
 src/player/player_snapshot_repository.c text eol=lf
 src/world/quest_mobile_native.c text eol=lf
 src/world/quest_mobile_native.h text eol=lf
+src/economy/shop_trade_recovery_manifest.c text eol=lf
+src/economy/shop_trade_recovery_manifest.h text eol=lf

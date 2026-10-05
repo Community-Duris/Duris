@@ -1,5 +1,14 @@
 # Plan 4: priced and compound gameplay domains
 
+## Shop durable recovery binding foundation — 2026-10-05
+
+The [current shop handoff](../SHOP_RECOVERY_BINDING_SOURCE_2026-10-05.md)
+records integrated pure canonical bindings and source-reviewed private v8
+command/producer consumers. Original forest order survives in bounded journal
+values; keeper native size and omitted NORENT physical count are checked before
+admission. Complete SQL preimage authentication, cold replay/rebind/publication,
+guarded ACK and original major-plan qualification remain unfinished.
+
 ## Active custody observation and private publication checkpoint — 2026-10-05
 
 [Bounded active-root census and shared handoff](../ACTIVE_CUSTODY_CENSUS_SOURCE_2026-10-05.md)
