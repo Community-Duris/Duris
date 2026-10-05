@@ -1,5 +1,34 @@
 # Accounting implementation and qualification handoff
 
+## Independent native-mobile grammar integrated — 2026-10-05
+
+[The four-file peer slice](PLAN5_NATIVE_MOBILE_GRAMMAR_INTEGRATION_2026-10-05.md) accepts original owner12 lifetime/context/state and
+equipment rules in the independent EAP1/EAB1 readers. Historical owner grammar
+and bounds stay. Six pure and one mandatory two-policy native method are centrally
+registered:916owners/97rows, all95 prior rows unchanged. Peer evidence is frozen
+to1e36/schema0056; local AST/pins/inventory only. Full qualification stays open.
+No producer/activation behavior changes; full R1–R8/release remain BLOCKED.
+
+### Plan5 saved-plan projection representation handoff
+
+Peer `fbe37541d`/`673b9f0f2` still compares several saved numeric cells with
+Python equality before exact type/range validation in
+`reconcile_economy_accounting.py`'s `audit_original_plans`. A projected root81.0
+equals decoded integer81, and posting copper_value3.0 equals3; either can count
+the original plan as verified. Source review only; no reproduction was executed.
+The Plan5 owner should require exact native integer types/ranges for posting
+values, reference/ledger UIDs, root/nullable parent and destination-owner members
+before counting verification, retaining original mismatch/error semantics.
+New event/line-index and from-owner/equipment checks do not close these fields.
+The broader14-file import stays withheld pending this narrow owned fix.
+
+Also correct current AUDIT_OPERATIONS text: the new exporter retains original
+EAP1, while opaque EAI1 facts remain omitted. Align the old manual exporter fixture
+with selected line_index/from-owner/equipment columns and its pre-existing child
+metadata debt separately; canonical0056 peer classes use real migrations.
+No existing peer evidence is promoted or erased. All unaffected Plans1–4 work
+continues. The primary owns central registration and combined qualification.
+
 ## SHOP source-contract anchors corrected — 2026-10-05
 
 [The source probe repair](SHOP_SOURCE_CONTRACT_ANCHOR_REPAIR_2026-10-05.md) follows actual checked-placement implementation and

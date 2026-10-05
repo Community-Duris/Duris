@@ -1,5 +1,14 @@
 # Finish accounting implementation plan
 
+## Independent native-mobile grammar integrated — 2026-10-05
+
+[The four-file peer slice](PLAN5_NATIVE_MOBILE_GRAMMAR_INTEGRATION_2026-10-05.md) accepts original owner12 lifetime/context/state and
+equipment rules in the independent EAP1/EAB1 readers. Historical owner grammar
+and bounds stay. Six pure and one mandatory two-policy native method are centrally
+registered:916owners/97rows, all95 prior rows unchanged. Peer evidence is frozen
+to1e36/schema0056; local AST/pins/inventory only. Full qualification stays open.
+No producer/activation behavior changes; full R1–R8/release remain BLOCKED.
+
 ## SHOP source-contract anchors corrected — 2026-10-05
 
 [The source probe repair](SHOP_SOURCE_CONTRACT_ANCHOR_REPAIR_2026-10-05.md) follows actual checked-placement implementation and
