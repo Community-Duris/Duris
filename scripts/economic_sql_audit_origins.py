@@ -15,7 +15,7 @@ from pathlib import Path
 import struct
 import sys
 
-from reconcile_economy_accounting import MAX_INPUT_BYTES, MAX_ROWS, account_key, copper
+from reconcile_economy_accounting import MAX_INPUT_BYTES, MAX_ROWS, account_key, copper, same_projection
 from economic_restore_evidence import decode_intent, decode_plan, forest, position
 
 HEADER_BYTES = 192
@@ -154,11 +154,13 @@ def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> dict:
                                          "compiler_version", "actor_kind", "actor_id", "reason")),
                 row["source_event"])
         keys_hash = hashlib.sha256(struct.pack("<BQ", 9, 0x45434f4e42415345)).digest()
-        if (root != expected or row["original_operation_id"] is not None or
+        if (not same_projection(root, expected) or row["original_operation_id"] is not None or
                 type(row["witness_version"]) is not int or row["witness_version"] != version or
-                row["inbox_revision"] != row["book_revision"] or
-                (row["inbox_type"], row["inbox_schema"], row["inbox_payload"], row["inbox_result_payload"]) !=
-                (20, 2, 1, b"") or type(row.get("inbox_keys_hash")) is not bytes or
+                type(row["book_revision"]) is not int or not 0 < row["book_revision"] < 2**64 or
+                not same_projection(row["inbox_revision"], row["book_revision"]) or
+                not same_projection((row["inbox_type"], row["inbox_schema"], row["inbox_payload"],
+                                     row["inbox_result_payload"]), (20, 2, 1, b"")) or
+                type(row.get("inbox_keys_hash")) is not bytes or
                 row["inbox_keys_hash"] != keys_hash):
             raise OriginError("EAB1 committed root mismatch")
         intent = decode_intent(row["canonical_intent"])
@@ -174,9 +176,10 @@ def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> dict:
         if (len(row["canonical_intent"]) != 256 or intent["metadata"] != expected or
                 plan["metadata"] != expected or row["canonical_intent"][160:192] != binding or
                 intent["domain_digest"] != domain or
-                plan["domain_digest"] != domain or row["domain_digest"] != domain or
+                plan["domain_digest"] != domain or not same_projection(row["domain_digest"], domain) or
                 intent["intent_digest"] != plan["intent_digest"] or
-                row["intent_digest"] != intent["intent_digest"] or row["plan_digest"] != plan["plan_digest"]):
+                not same_projection(row["intent_digest"], intent["intent_digest"]) or
+                not same_projection(row["plan_digest"], plan["plan_digest"])):
             raise OriginError("EAB1 committed root mismatch")
         holdings, items = struct.unpack_from("<II", blob, 184)
         effects, postings, equity = [], [], []
@@ -198,8 +201,9 @@ def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> dict:
                      (b"" if version == 2 else bytes(8)) for index in range(items)]
         counts = (len(effects), len(postings), 0, items, items, 0)
         if (plan["counts"] != counts or
-                tuple(row[name] for name in ("account_count", "posting_count", "child_count",
-                                              "before_witness_count", "after_witness_count", "item_event_count")) != counts or
+                not same_projection(tuple(row[name] for name in (
+                    "account_count", "posting_count", "child_count", "before_witness_count",
+                    "after_witness_count", "item_event_count")), counts) or
                 row["canonical_plan"][256:] != b"".join(effects + postings + snapshots + snapshots)):
             raise OriginError("EAB1 committed root mismatch")
         return plan
@@ -256,12 +260,13 @@ def baseline_projection_bound(cursor, lineage: bytes, epoch: bytes | None = None
         join, scope, arguments = baseline_projection_source(table, lineage, epoch)
         counts.append("SELECT COUNT(*) AS n FROM " + table + " p" + join + " WHERE " + scope)
         parameters += arguments
-    cursor.execute("SELECT COALESCE(SUM(n),0) AS projection_rows FROM (" +
+    cursor.execute("SELECT CAST(COALESCE(SUM(n),0) AS UNSIGNED) AS projection_rows FROM (" +
                    " UNION ALL ".join(counts) + ") baseline_projections", parameters)
     bounds = cursor.fetchone()
-    if bounds is None or bounds["projection_rows"] > MAX_ROWS:
+    if (bounds is None or type(bounds["projection_rows"]) is not int or
+            not 0 <= bounds["projection_rows"] <= MAX_ROWS):
         raise OriginError("baseline SQL projection source exceeds audit input limit")
-    return int(bounds["projection_rows"])
+    return bounds["projection_rows"]
 
 
 def verify_baseline_projections(cursor, verified: list[tuple[dict, dict]], lineage: bytes, epoch: bytes) -> None:
@@ -298,7 +303,7 @@ def verify_baseline_projections(cursor, verified: list[tuple[dict, dict]], linea
             raise OriginError("baseline SQL projection source exceeds audit input limit")
         try:
             actual = [tuple(row[field] for field in fields) for row in rows]
-            if sorted(actual) != sorted(expected[table]):
+            if not same_projection(sorted(actual), sorted(expected[table])):
                 raise OriginError("EAB1 SQL projection mismatch")
         except (KeyError, TypeError) as error:
             raise OriginError("EAB1 SQL projection mismatch") from error
@@ -334,14 +339,15 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
     if type(control["revision"]) is not int or control["revision"] < 1:
         raise OriginError("baseline has no committed opening witness")
     cursor.execute(
-        "SELECT COUNT(*) AS row_count,COALESCE(SUM(OCTET_LENGTH(w.canonical_witness)+"
-        "COALESCE(OCTET_LENGTH(o.canonical_intent),0)+COALESCE(OCTET_LENGTH(o.canonical_plan),0)),0) "
+        "SELECT COUNT(*) AS row_count,CAST(COALESCE(SUM(OCTET_LENGTH(w.canonical_witness)+"
+        "COALESCE(OCTET_LENGTH(o.canonical_intent),0)+COALESCE(OCTET_LENGTH(o.canonical_plan),0)),0) AS UNSIGNED) "
         "AS blob_bytes FROM economic_baseline_witness w LEFT JOIN economic_accounting_operation o "
         "ON o.operation_id=w.operation_id WHERE w.lineage=%s AND w.epoch=%s",
         (lineage, epoch))
     bounds = cursor.fetchone()
-    if (bounds is None or bounds["row_count"] > MAX_ROWS or
-            bounds["blob_bytes"] > MAX_INPUT_BYTES):
+    if (bounds is None or type(bounds["row_count"]) is not int or
+            not 0 <= bounds["row_count"] <= MAX_ROWS or type(bounds["blob_bytes"]) is not int or
+            not 0 <= bounds["blob_bytes"] <= MAX_INPUT_BYTES):
         raise OriginError("baseline witness source exceeds audit input limit")
     cursor.execute(
         "SELECT w.operation_id,w.book_revision,w.holding_count,w.item_count,"
@@ -371,11 +377,9 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
     seen_uids: set[int] = set()
     verified = []
     for expected_revision, row in enumerate(witnesses, 1):
-        if (row["book_revision"] != expected_revision or row["reason"] != 38 or
-                row["outcome"] != 1 or row["result_code"] != 0 or
-                row["inbox_status"] != 1 or row["inbox_result"] != 0 or
-                row["inbox_failure_stage"] != 0 or
-                row["inbox_committed_at_present"] != 1):
+        if not same_projection(tuple(row[name] for name in (
+                "book_revision", "reason", "outcome", "result_code", "inbox_status", "inbox_result",
+                "inbox_failure_stage", "inbox_committed_at_present")), (expected_revision, 38, 1, 0, 1, 0, 0, 1)):
             raise OriginError("uncommitted or noncanonical baseline witness")
         batch_holdings, batch_items = decode_witness(row, lineage, epoch, opening)
         verified.append((row, verify_baseline_root(row, lineage, epoch)))

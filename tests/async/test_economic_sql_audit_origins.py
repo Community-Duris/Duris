@@ -2,6 +2,7 @@
 """Exact EAB1 origin decoding and SQL read-only snapshot boundary checks."""
 
 import copy
+from decimal import Decimal
 import hashlib
 import json
 import os
@@ -33,6 +34,13 @@ def key(kind, authority, context=0):
 
 
 OPENING = key(9, 99)
+
+
+def integer_aliases(value):
+    aliases = [float(value), Decimal(value), str(value), None]
+    if value in (0, 1):
+        aliases.append(bool(value))
+    return aliases
 
 
 def baseline_root(blob, revision=1):
@@ -257,6 +265,83 @@ class ItemRevisionTests(unittest.TestCase):
 
 
 class OriginTests(unittest.TestCase):
+    def test_baseline_projection_integer_representations_refuse_read_only(self):
+        for index in (7, 8, 9):
+            for field, value in Connection().scan.rows[index][0].items():
+                if type(value) is not int:
+                    continue
+                for alias in integer_aliases(value):
+                    with self.subTest(family=index, field=field, representation=type(alias).__name__):
+                        connection = Connection()
+                        connection.scan.rows[index][0][field] = alias
+                        with self.assertRaisesRegex(OriginError, "EAB1 SQL projection mismatch"):
+                            capture(connection, LINEAGE, EPOCH)
+                        self.assertIs(connection.scan.rows[index][0][field], alias)
+                        self.assertEqual(connection.rollbacks, 1)
+                        self.assertTrue(connection.scan.closed)
+                        self.assertTrue(all(sql.startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
+                                            for sql, _ in connection.scan.statements))
+
+    def test_baseline_root_integer_representations_refuse_read_only(self):
+        fields = ("accounting_version", "writer_id", "policy_version", "compiler_version", "actor_kind",
+                  "actor_id", "reason", "account_count", "posting_count", "child_count", "before_witness_count",
+                  "after_witness_count", "item_event_count", "book_revision", "inbox_revision", "inbox_type",
+                  "inbox_schema", "inbox_payload", "outcome", "result_code", "inbox_status", "inbox_result",
+                  "inbox_failure_stage", "inbox_committed_at_present")
+        for field in fields:
+            for alias in integer_aliases(witness()[field]):
+                with self.subTest(field=field, representation=type(alias).__name__):
+                    row = witness()
+                    row[field] = alias
+                    connection = Connection(rows=[row])
+                    with self.assertRaises(OriginError):
+                        capture(connection, LINEAGE, EPOCH)
+                    self.assertIs(row[field], alias)
+                    self.assertEqual(connection.rollbacks, 1)
+                    self.assertTrue(connection.scan.closed)
+        # The restore reader calls the root verifier without the SQL read loop.
+        for field in ("book_revision", "inbox_revision"):
+            for value in (*integer_aliases(1), 0, -1, 2**64):
+                with self.subTest(direct=field, value=value):
+                    row = witness()
+                    row[field] = value
+                    with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                        origin_exporter.verify_baseline_root(row, LINEAGE, EPOCH)
+
+    def test_baseline_binary_projection_representations_refuse(self):
+        for field in ("root_lineage", "root_epoch", "operation_id", "source_event", "domain_digest",
+                      "intent_digest", "plan_digest", "inbox_result_payload"):
+            with self.subTest(root=field):
+                row = witness()
+                row[field] = bytearray(row[field])
+                connection = Connection(rows=[row])
+                with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+        for index in (7, 8, 9):
+            for field, value in Connection().scan.rows[index][0].items():
+                if type(value) is not bytes:
+                    continue
+                with self.subTest(family=index, field=field):
+                    connection = Connection()
+                    connection.scan.rows[index][0][field] = bytearray(value)
+                    with self.assertRaisesRegex(OriginError, "EAB1 SQL projection mismatch"):
+                        capture(connection, LINEAGE, EPOCH)
+                    self.assertEqual(connection.rollbacks, 1)
+                    self.assertTrue(connection.scan.closed)
+
+    def test_baseline_source_bounds_require_nonnegative_exact_integers(self):
+        for index, field in ((4, "row_count"), (4, "blob_bytes"), (6, "projection_rows")):
+            for alias in (*integer_aliases(Connection().scan.rows[index][field]), -1):
+                with self.subTest(field=field, representation=type(alias).__name__, value=alias):
+                    connection = Connection()
+                    connection.scan.rows[index][field] = alias
+                    with self.assertRaisesRegex(OriginError, "source exceeds audit input limit"):
+                        capture(connection, LINEAGE, EPOCH)
+                    self.assertEqual(connection.rollbacks, 1)
+                    self.assertTrue(connection.scan.closed)
+
     def test_resealed_command_binding_substitution_refuses_read_only(self):
         for offset in range(160, 192):
             with self.subTest(offset=offset):
@@ -1008,14 +1093,16 @@ class NativeSQLOriginTests(unittest.TestCase):
                                 rows.append(cursor.fetchall())
                             return rows
 
-                    def read(epoch, refuses=False):
+                    reads = {"captures": 0, "refusals": 0, "rollbacks": 0}
+
+                    def read(epoch, refusal=None):
                         before = database_rows()
                         cursor = mock.Mock(wraps=reader.cursor())
                         connection = mock.Mock(wraps=reader)
                         connection.cursor.return_value = cursor
                         try:
-                            if refuses:
-                                with self.assertRaisesRegex(OriginError, "invalid or duplicate EAB1 holding"):
+                            if refusal:
+                                with self.assertRaisesRegex(OriginError, refusal):
                                     capture(connection, self.batches[0][0][16:32], epoch)
                                 result = None
                             else:
@@ -1026,6 +1113,8 @@ class NativeSQLOriginTests(unittest.TestCase):
                         self.assertTrue(all(call.args[0].upper().startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
                                             for call in cursor.execute.call_args_list))
                         self.assertEqual(database_rows(), before)
+                        reads["refusals" if refusal else "captures"] += 1
+                        reads["rollbacks"] += 1
                         return result
 
                     for epoch in sorted({row[0][32:48] for row in self.batches}):
@@ -1047,16 +1136,38 @@ class NativeSQLOriginTests(unittest.TestCase):
                         with owner.cursor() as cursor:
                             cursor.execute("UPDATE economic_baseline_witness SET canonical_witness=%s,witness_digest=%s "
                                            "WHERE operation_id=%s", (bad, hashlib.sha256(bad).digest(), op))
-                        read(blob[32:48], refuses=True)
+                        read(blob[32:48], "invalid or duplicate EAB1 holding")
                     with owner.cursor() as cursor:
                         cursor.execute("UPDATE economic_baseline_witness SET canonical_witness=%s,witness_digest=%s "
                                        "WHERE operation_id=%s", (blob, hashlib.sha256(blob).digest(), op))
                         cursor.execute("SELECT active_epoch FROM economic_lineage_state")
                         self.assertEqual(cursor.fetchall(), [{"active_epoch": None}])
                     read(blob[32:48])
+                    # Negative disposable-schema cases: retain native bytes and
+                    # exact numeric values while the driver returns float or
+                    # Decimal projections. Restore the canonical column after
+                    # each case; altered schemas never qualify for release.
+                    for table, field in (("economic_accounting_account_effect", "after_silver"),
+                                         ("economic_accounting_coin_posting", "delta_silver")):
+                        for storage, representation in (("DOUBLE", float), ("DECIMAL(20,0)", Decimal)):
+                            with self.subTest(engine=engine, table=table, storage=storage):
+                                canonical = database_rows()
+                                with owner.cursor() as cursor:
+                                    cursor.execute("ALTER TABLE " + table + " MODIFY " + field + " " + storage + " NOT NULL")
+                                    cursor.execute("SELECT " + field + " FROM " + table)
+                                    self.assertTrue(all(type(row[field]) is representation for row in cursor.fetchall()))
+                                try:
+                                    read(blob[32:48], "EAB1 SQL projection mismatch")
+                                finally:
+                                    with owner.cursor() as cursor:
+                                        cursor.execute("ALTER TABLE " + table + " MODIFY " + field + " BIGINT NOT NULL")
+                                self.assertEqual(database_rows(), canonical)
+                                read(blob[32:48])
                     self.assertEqual({p.name: (p.read_bytes(), p.stat().st_mode, p.stat().st_nlink)
                                       for p in self.evidence.iterdir()}, self.retained)
-                    print("PASS native-origin " + engine + " captures=3 refusals=3 rollback=6 SELECT-only bytes-unchanged inactive", flush=True)
+                    self.assertEqual(reads, {"captures": 7, "refusals": 7, "rollbacks": 14})
+                    print("PASS native-origin " + engine + " " + json.dumps(reads, sort_keys=True) +
+                          " SELECT-only bytes-unchanged inactive", flush=True)
                 finally:
                     reader.close()
             finally:
