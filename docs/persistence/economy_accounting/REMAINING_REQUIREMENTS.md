@@ -1,5 +1,15 @@
 # Double-entry economy: remaining requirements
 
+## Original SHOP no-execution SQL BEFORE interface integrated — 2026-10-05
+
+[The explicit SELECT-only reader](SHOP_NEVER_ADMITTED_BEFORE_READER_2026-10-05.md) checks the original v8 BEFORE
+forests/revisions and inbox/root/source/evidence/outbox absence under one borrowed
+transaction/session. A separate never_admitted flag preserves no-execution
+semantics; existing execution/rejection wrappers retain their sealed receipts.
+Independent source review, inverse/format, source pins and static inventory pass;
+no SQL/native execution. Cold cleanup caller, sealed bindings, flat parity and
+original major-plan qualification remain open. R1–R8/release remain BLOCKED.
+
 ## Ordinary movement native-context initializer repair — 2026-10-05
 
 [The three-site source repair](ITEM_MOVEMENT_NATIVE_CONTEXT_INITIALIZERS_2026-10-05.md) explicitly initializes absent native-mobile
