@@ -2996,3 +2996,27 @@ old receipt cannot restore a plate. Richer dynamic source/reading/access/politic
 needs committed authoritative events before ANSI/GMCP milestones. All new credit
 requires active, ready accounting; frozen recovery separate. No native repair
 ships; the Fields intentional escape hotfix and replacement follow-up remain.
+
+
+## Harrow: shared consumable proof, alternate reward stock and unresolved access
+
+The [complete dossier](zone-stories/HARROW_THE_GNOME_VILLAGE.md) maps eight native
+outcomes and closes nine shops/shared procedures and all local world/reset data.
+One token can show current readiness on several cards, but each accepted craft
+consumes a fresh token. Current material, history, reservation and receipt differ.
+
+| Requirement | Evidence | Plan and qualification |
+| --- | --- | --- |
+| Source and actual renewal | Hidden/worn materials, shared caps, produced supplies, finite lucky-sack stock, departing girl/leprechaun, mode2 | **ZSQ-HARROW-SOURCE-RENEWAL:** preserve source/root/UID/custody/reset, original versus gifts/shops/rewards and selected live recipient. Qualify worn/nested/spent input, concurrent offerings, retries/rollback, frozen recovery and actual renewal. Buying a reward is not crafting. |
+| Honest progression choices | Four token-consuming recipes share optional earlier ring history | **ZSQ-HARROW-TOKEN-PROGRESSION:** explain fresh token cost, valid supplied tokens and spent-token history. Any aggregate material budget/reservation UI requires exact live admitted inventory and selected recipe; do not credit four crafts from one token. No new mandatory personal-history gate. |
+| Actual travel results | Fixed waterfall/observatory/bowl objects, JUMP target, fall/current/water rules | **ZSQ-HARROW-TRAVEL-ARRIVAL:** selected object/command/committed arrival must precede access milestone. Qualify rejected/wrong target/other actor and intended bowl return routes without pickup/charge/mobility changes. Bare command or lore is not arrival. |
+| Intended lucky-star access |29477–81 lacks identified ordinary incoming edge/fixed portal;29480 returns EAST, three spoke rooms have no ordinary exits | **ZSQ-HARROW-LUCKY-STAR-ACCESS:** builder confirms reserve/shared-travel/missing clue/retirement/entrance intent. Prefer explanation before mechanics. New controller or passage needs explicit PvP/terrain/scarcity review, traversal proof and separate fix/news. No automatic gap-filling. |
+| Accurate native clues | Sphere/staff wording rewards wand; dust copied cloth description; nonmatching toys/painting; mixed fish/kitten line; lake spelling; key on non-door | **ZSQ-HARROW-CLUE-CONSISTENCY:** confirm intent and minimal truthful text/metadata, preserving recipes/types/flags/caps/routes. Actual repairs separate named fixes, original-fails/repaired-passes and prominent before/after news. |
+| Meaningful learning | ACT_TEACHER, craft displays, altar writing, telescope and17 ambient scenes | **ZSQ-HARROW-LEARNED-CRAFTS:** define selected lesson/response/read passage and authoritative delivered/result events. Group12 aliases into four response families; timer audience and addressed actor differ. Teaching, acquired proof and accepted craft are separate milestones. |
+
+MA/QA set room echo, not automatic acceptance. Native fish-food exchange rewards
+experience; pot-of-gold is an ITEM input and coins are a reward. Source/projection
+does not qualify played transactions/access/renewal. Existing schema3 cards ship
+without new runtime mechanisms or native repairs. All new credit needs active,
+ready accounting; frozen recovery separate. Fields deliberate escape hotfix and
+required replacement design remain protected.

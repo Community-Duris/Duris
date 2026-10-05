@@ -159,9 +159,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 83 | The Basin Wastes | [Comprehensive dossier](zone-stories/THE_BASIN_WASTES.md): all16 blocks/200 rooms/15 mobiles/32 objects/204 resets and bounded imported/shared closure | Seven cards bind ten recipes: ring ritual, four distinct crafts, any-one cash sale and zero-credit heartstone refusal;8 contacts/14 aliases/14 optional checks explain sources and offered-item dispatch | No native repair ships. Dispatch choice, learned books, source renewal, same-kind refusal semantics and clue consistency are builder follow-ups; no new Crystal City exit or spider bypass |
 | 84 | Nakral's Crypt | [Comprehensive dossier](zone-stories/NAKRALS_CRYPT.md): all11 blocks/294 rooms/59 mobiles/201 objects/521 resets, F-current-holder and bounded imported/shared closure | Five cards/five recipes/nine contacts/21 aliases/14 optional checks; exact four/two wood, five same-name chunks, trophy→token→bracelet and distinct collar upgrade | No native repair. Learned words, four control actions, exact follower sources/renewal, collar presentation, stale surface exit and clue/epic investigation are builder follow-ups; preserve fixed mobility and Fields protection |
 | 85 | The Valoisian Castle | [Comprehensive dossier](zone-stories/THE_VALOISIAN_CASTLE.md): all13 blocks/174 rooms/93 mobiles/57 objects/320 resets, shared inn and bounded Surface/Verspin closure | Eight cards/eight recipes/18 contacts/26 aliases/15 optional checks; separate family/royal seals, four models, wine→dinner→token, two rose gifts and overdue note | No native repair. Personal sources/renewal/access/learning, political endpoints, blank flower responses, unfinished components and clue review require builder decisions; preserve Fields protection |
-| 86–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 86 | Harrow -The Gnome Village | [Comprehensive dossier](zone-stories/HARROW_THE_GNOME_VILLAGE.md): all29 blocks/82 rooms/59 mobiles/88 objects/280 resets, nine shops/shared dispatch and bounded imported/Surface closure | Eight cards/eight recipes/14 contacts/12 aliases/20 optional checks; ring→fresh tokens for four crafts, painting→fish, fish food→experience, pot item→clover/coins | No native repair. Source/renewal/token choice, committed travel, lucky-star entrance, clue consistency and learning remain builder work; preserve Fields hotfix |
+| 87–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Harrow -The Gnome Village (`harrow`).
+The next area is Mountain Tracts of the Untamed (`mountaintracks`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -172,6 +173,7 @@ matches, or a candidate item graph was extracted.
 | --- | --- | --- |
 | ZSQ-BRAD-PHYSICAL-AFFILIATION / DISCOVERY / RENEWAL / EXPLORATION | Five Tower contracts retain Braddistock credit ownership; Tower encounters do not discover this journal, and owner reset mode differs from physical retiring recipients. Local exploration has no native terminal. | Keep canonical receipt identities. Add explicit physical affiliation/referrals and real source/actor renewal; admitted clue/access/custody and builder-designed lab/smuggler/campaign endpoints. Entry speech repair ships separately; missing key/weapon supply and copied prose remain proposals. |
 | ZSQ-CEOTHIA-CHOICE / TIMELINE / TARGETED-EFFECT / LEGACY-TRAINING | Four retiring guild alternatives, three independent Lenbrea rewards, breaking keys, two nested crates, foreign timeline proofs, imported agility pool and legacy tablet/scroll differ from modern epic purchases. | Six source-guided cards ship. Qualify source/recipient reset episodes, actual access/travel/targeted effects and shared-material ownership; define all-stage campaign and restore/retire legacy training only with builder intent. Pool target ambiguity is a pending shared repair, not shipped news. |
+| ZSQ-HARROW-SOURCE-RENEWAL / TOKEN-PROGRESSION / TRAVEL-ARRIVAL / LUCKY-STAR-ACCESS / CLUE-CONSISTENCY / LEARNED-CRAFTS | One consumed token per craft; finite alternate reward stock; exact hidden/worn sources; fixed travel and isolated lucky-star component; room echo versus ambient scenes. | Eight existing-schema cards ship; authoritative sources/reservation/access/learning and intended entrance/text need builder design. No native repair, pickup or route activation. |
 | ZSQ-VAL-SOURCE-RENEWAL / ACCESS-LEARNING / POLITICAL-ENDPOINTS / FLOWER-EXPLANATION / UNFINISHED-COMPONENTS / CLUE-CONSISTENCY | Exact F-held models, source alternatives, breaking keys, secret closed ladders, supplied dinner and two blank flower exchanges;15 isolated unfinished Veralis rooms. | Eight existing-schema cards ship. Plan authoritative source/learning/access and meaningful political endpoints; native copy/component/stock design remains builder work, no native repair or mobility activation. |
 | ZSQ-CRYPT-LEARNED-WORDS / CONTROL-ACCESS / SOURCE-RENEWAL / COLLAR-PRESENTATION / STALE-SURFACE-EXIT / CLUE-CONSISTENCY / EPIC-INVESTIGATION | Three-note magic word works; four fixed switches; F changes current proof holder; same-name chunk/collar identities differ; old surface target absent active. | Five guided cards ship. Plan authoritative learning/control/source/arrival/group facts and actual recipient renewal. Stale route/clue repairs remain builder proposals; no native fix or portability change. |
 | ZSQ-BASIN-DISPATCH-CHOICE / LEARNED-BOOKS / SOURCE-RENEWAL / HEARTSTONE-REFUSAL / CLUE-CONSISTENCY / CAVE-ACCESS | Part offers select cash before crafting; cap-one elixir serves four crafts; book reading has no durable milestone; same-kind refusal replaces identity; false-city cave is a deliberate dead end with spider return barrier. | Seven source-guided cards ship. Explain actual selection and sources; builder chooses qualified selection, reading, source/renewal and identity policy. Clue-only repairs remain proposals; preserve existing scarcity, barrier and disabled mobility. No native repair ships. |
@@ -4617,3 +4619,60 @@ F spawning, keys/SEARCH/READ/GET/access, native offer/consumption/rewards,
 combat/politics, actual stock/recipient renewal or database persistence.
 Active, ready accounting mandatory; frozen recovery separate. No accounting
 activation, database/server operation, migration, deployment or merge.
+
+
+## Priority 86 checkpoint: Harrow -The Gnome Village
+
+The [complete dossier](zone-stories/HARROW_THE_GNOME_VILLAGE.md) closes all29
+blocks(20M/oneMA/fiveQ/threeQA),82 rooms/65 full prose families/21 headers/
+187 exits/76 relative patterns/ten full exit texts/23 complete non-exit metadata
+families,59 full mobiles/88 full objects and280 resets(230 exact/233 parent-aware
+families,152 expanded groups). Nine full shop records and shared boot/keeper
+dispatch, art instructor ACT_TEACHER, inn29403, complete imported paper/fish and
+two reciprocal Surface boundary records reviewed. Eight recipes touching local
+objects are all Harrow; imported fish link138 foreign recipes, bounded index
+reviewed without moving their ownership. No foreign reset group identified.
+Across713 active type25 prototypes, all five incoming destinations are local;
+none enters lucky-star rooms. No local epic-teacher binding identified.
+
+Schema3/revision1 adds eight cards/eight recipes/14 contacts/12 aliases/20 optional
+checks(16 materials, four earlier ring receipts). MA/QA are room echo, not
+automatic quests; seventeen ambient messages are not keyword achievements.
+Ring→token supports four alternative crafts; each needs a fresh token. Supplied
+token fits without personal ring history and an earlier receipt cannot restore
+spent proof. Lomya's finite finished lucky-sack stock does not prove Alorka's
+craft. Stylish versus shop horn, scrap versus bolt, near-finished versus gallery
+painting and actual hidden doll source remain exact. Bom gives three imported
+fish; goldfish feeding rewards experience; leprechaun consumes pot ITEM and
+rewards clover/coins before departing. Five goldfish share one recipe.
+
+Fixed non-takeable waterfall/observatory/bowl routes retain original values.
+JUMP fishbowl names the return target; command recognition does not prove actual
+arrival. Waterfall F50/C1 3 loads fall/current metadata. Lucky-star29477–81 has
+no identified ordinary incoming edge; only29480 returns EAST to29476, while
+29478/29479/29481 have no ordinary exits. Shared/random travel not qualified.
+No automatic entrance, luck/pipe gate, magical garden belt or source kill/carve
+predicate inferred. Paint set in a non-door key field is not a locked art gate.
+
+**No native repair ships.** Six required builder follow-ups cover source/renewal,
+token progression, committed travel, lucky-star access, clue consistency and
+learned crafts. Sphere/staff/wand, copied dust description, mixed kitten/fish
+ambient line and other clues require intended minimal text review; new entrances
+need explicit PvP/terrain/scarcity design. Actual repairs remain separate named
+fix commits with original-fails/repaired-passes proof and prominent news.
+Owner-confirmed Fields intentional hotfix and required replacement stay intact.
+
+Required checks: source/schema, all104 Python/C++ loader/projection journeys,
+full production regression, maintained build, changed/staged formatting,
+links/whitespace and preservation/publication proof. All103 prior journals,
+2668 native definitions/fingerprint/revision2/registry and original220 queue
+stay unchanged. Exact50691-byte previous Valois PR body is archived with SHA-256;
+all ten repair/news/accounting sections retained verbatim. Catalog104 journals/
+1585 achievements/1441 potential dailies/2195 rows: eight authored cards replace
+eight fallback units without changing global counts.
+**86/220 source-comprehensive,134 pending; Mountain Tracts of the Untamed
+(`mountaintracks`) next.** Goal remains active. Synthetic receipts do not qualify
+played source/gifts/stock/SEARCH/GET/worn recovery/teaching/portal dispatch/native
+offer/consumption/reward settlement/combat/access/daily renewal or persistence.
+Active, ready accounting mandatory; frozen recovery separate. No accounting
+activation, DB/server operation, migration, deployment or merge.

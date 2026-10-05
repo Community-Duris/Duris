@@ -57179,6 +57179,581 @@
     {
       "contacts": [
         {
+          "description": "Starts in29431, requests her lost ring, rewards a token and departs.",
+          "keyword": "girl",
+          "mob_vnum": 29418,
+          "name": "a young girl",
+          "topics": [
+            "lost",
+            "ring",
+            "sad"
+          ]
+        },
+        {
+          "description": "Starts in workshop29440; four crafts each consume a token and two exact additional inputs.",
+          "keyword": "alorka",
+          "mob_vnum": 29421,
+          "name": "Alorka",
+          "topics": [
+            "treasure",
+            "craft",
+            "list"
+          ]
+        },
+        {
+          "description": "Starts by the lake at29461; trades the near-finished painting for three imported fish.",
+          "keyword": "bom",
+          "mob_vnum": 29444,
+          "name": "Bom Fitherwood",
+          "topics": [
+            "fish",
+            "artsy",
+            "items",
+            "trade",
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Five resets in bowl29472\u201375 share the fish-food recipe and native experience reward.",
+          "keyword": "goldfish",
+          "mob_vnum": 29449,
+          "name": "a goldfish",
+          "topics": []
+        },
+        {
+          "description": "Starts in lucky-star hub29477, accepts the pot item, rewards clover and coins and departs. Ordinary entry remains unresolved.",
+          "keyword": "leprechaun",
+          "mob_vnum": 29454,
+          "name": "a leprechaun",
+          "topics": []
+        },
+        {
+          "description": "Starts in29418 holding the stylish horn; other instrument-shop horns differ.",
+          "keyword": "bard",
+          "mob_vnum": 29422,
+          "name": "a lonely bard",
+          "topics": []
+        },
+        {
+          "description": "Starts in29438 wearing the simple robe. ACT_TEACHER supplies shared teaching; no art-learning quest endpoint identified.",
+          "keyword": "instructor",
+          "mob_vnum": 29428,
+          "name": "an art instructor",
+          "topics": []
+        },
+        {
+          "description": "Starts in29423 carrying hidden jagged glass.",
+          "keyword": "brwra",
+          "mob_vnum": 29434,
+          "name": "Brwra the head glassblower",
+          "topics": []
+        },
+        {
+          "description": "Two sleeping artists in29446 carry the near-finished painting or hidden doll under separate caps.",
+          "keyword": "artist",
+          "mob_vnum": 29438,
+          "name": "a sleeping artist",
+          "topics": []
+        },
+        {
+          "description": "The working artist in29446 also carries the matching near-finished painting.",
+          "keyword": "artist",
+          "mob_vnum": 29440,
+          "name": "an artist",
+          "topics": []
+        },
+        {
+          "description": "Starts in bowl29474 carrying the pot-of-gold item.",
+          "keyword": "whale",
+          "mob_vnum": 29450,
+          "name": "a whale",
+          "topics": []
+        },
+        {
+          "description": "Shop keeper in29405: produced leather sack input, finite lucky-sack reward stock. Buying a reward is not Alorka\u2019s receipt.",
+          "keyword": "lomya",
+          "mob_vnum": 29404,
+          "name": "Lomya the crafter",
+          "topics": []
+        },
+        {
+          "description": "Shop keeper in29437 produces faerie dust; the cloth bolt and paint set are different proofs.",
+          "keyword": "torker",
+          "mob_vnum": 29429,
+          "name": "Torker Knotwood",
+          "topics": []
+        },
+        {
+          "description": "Small children in29416 and29442 carry exact scrap cloth.",
+          "keyword": "child",
+          "mob_vnum": 29406,
+          "name": "a small child",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Return a lost ring, choose among Alorka\u2019s four token crafts, trade a painting for fish, feed the goldfish and examine the leprechaun\u2019s pot exchange. Exact materials and accepted outcomes stay distinct.",
+      "orientation": [
+        "Two reciprocal Surface routes meet the dusty clearing29400: NORTH or EAST from the neighboring Surface hills enters Harrow. Main streets link crafts, shops, homes, gardens, the workshop, cave and lake. Terrain, visibility, existing doors and combat still apply; source locations do not guarantee safe access.",
+        "Ask the girl lost, ring or sad; ask Alorka treasure, craft or list; ask Bom fish, artsy, items or trade, or hi or hello. These twelve aliases select four response families. Seventeen qc_action messages are ambient scenes, not keyword achievements. MA/QA make responses visible to the room; they do not make requests automatic.",
+        "Return the hidden garden ring29405 for token29406. The girl departs. Each of Alorka\u2019s four recipes consumes a fresh token plus two exact inputs. A supplied token works without your own ring receipt; an earlier receipt never restores a spent token or completes the other crafts.",
+        "Horn: stylish horn from the lonely bard plus hidden glass carried by Brwra. Robe: hidden tunnel silk plus the instructor\u2019s worn simple robe. Wand: children\u2019s scrap cloth plus a sleeping artist\u2019s hidden doll. Sack: Lomya\u2019s leather alchemist sack plus Torker\u2019s faerie dust. Shop horns, cloth bolts, gallery paintings and other toys are different items.",
+        "The actual light reward is a wand, despite native sphere/staff wording. Lomya carries finite stock of the finished lucky sack in addition to producing its leather input. Buying or receiving the finished sack does not record Alorka\u2019s craft. Hidden/worn proof and live stock need actual admission; no added source-kill, carving, learning or magical garden-belt requirement is inferred.",
+        "Bom on the lakeside29461 accepts the near-finished artists\u2019 painting29440 and gives pike318, lobster319 and crab330. The colorful floor painting29433 does not fit. Fishing or eating the reward is separate; imported fish also support foreign recipes, which are not Harrow outcomes.",
+        "The fishbowl at29443 has an existing fixed ENTER route to29472. Fish food starts at29473 and29475; matching goldfish in29472\u201375 share one experience exchange. Return via the existing JUMP fishbowl object at29472. Water, arrival and portal rules remain native. The whale in29474 carries the pot of gold; possession does not prove defeating it.",
+        "The leprechaun\u2019s lucky-star hub29477 connects to29478\u201381;29480 has a one-way return to main room29476. No ordinary incoming route or fixed incoming portal was identified. Plan access with a builder before inventing a key, luck, pipe, clover, random-travel prerequisite or new passage. His accepted recipe consumes the pot item, rewards clover and coins, and makes him depart.",
+        "The waterfall29469 has native fall/current metadata and a fixed ENTER waterfall route to altar29470; WEST returns to29469. Workshop29440 has ordinary stairs plus existing fixed observatory ENTER/return portals. The telescope is scenery. Hearing altar lore, entering a portal or seeing stars is not a recorded learning/access milestone.",
+        "Nine native shop records cover sacks, clothes, craft supplies, food, jewelry, toys, flowers, masks and instruments. Shared boot/keeper dispatch and current stock matter. The art instructor uses the flag-based teacher handler;29403 has the explicit inn handler. Paint set29420 appears in a non-door exit key field, not an implemented locked art gate.",
+        "All eight accepted outcomes retain exact native input, reward and departure identities. Current loose proof, original source, gifts, addressed dialogue, access, teaching and accepted receipts remain separate. Daily candidates need actual material/stock/recipient renewal under mode2; static eligibility does not prove renewal.",
+        "All new discovery, encounter, journal, achievement and daily credit requires active, ready accounting; frozen recovery remains separate. No native quest/zone repair, pickup, shop, route, charge, teaching or PvP change ships. Preserve the owner-confirmed Fields Between rift hotfix and its required replacement design."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "harrow",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:29405;receive=I:29406;disappear=1",
+              "giver_vnum": 29418
+            }
+          ],
+          "id": "ring-token",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "It starts hidden on the floor of garden room29428. Native visibility and access apply. A different ring or the ordinary leather belt does not substitute; no magical garden-belt prerequisite was identified. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "ring",
+              "item_vnums": [
+                29405
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the sapphire ring"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:29405;receive=I:29406;disappear=1",
+                  "giver_vnum": 29418
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Source recovery, addressed dialogue, access, combat, teaching and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Bring the exact sapphire ring to the young girl for her token. She departs to find her father. This receipt records returning the ring; it does not prove you personally searched the garden, found its original source or met the father.",
+          "title": "Young girl: recover the lost ring"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:29406,I:29407,I:29414;receive=I:29416;disappear=0",
+              "giver_vnum": 29421
+            }
+          ],
+          "id": "glass-horn",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:29405;receive=I:29406;disappear=1",
+                  "giver_vnum": 29418
+                }
+              ],
+              "hint": "The girl rewards a token and departs. A matching supplied token also fits without your own ring receipt. An old receipt never replaces a token already consumed by another craft.",
+              "id": "earlier-ring",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: return the girl\u2019s ring"
+            },
+            {
+              "count": 1,
+              "hint": "The young girl rewards this token for ring29405. Every craft consumes its own token; one token does not fund four crafts. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "token",
+              "item_vnums": [
+                29406
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a fresh token"
+            },
+            {
+              "count": 1,
+              "hint": "The lonely bard starts holding it in room29418. Remove it from equipment before offering it; Mandar\u2019s other horn29480 is different. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "stylish-horn",
+              "item_vnums": [
+                29407
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the stylish horn"
+            },
+            {
+              "count": 1,
+              "hint": "Brwra the head glassblower starts carrying this hidden glass in room29423. Other glass products do not substitute; hidden source admission still applies. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "glass",
+              "item_vnums": [
+                29414
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the jagged glass"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:29406,I:29407,I:29414;receive=I:29416;disappear=0",
+                  "giver_vnum": 29421
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Source recovery, addressed dialogue, access, combat, teaching and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer a fresh token, stylish horn and jagged glass together for the rose-colored glass horn. The bard\u2019s stylish horn is distinct from Mandar\u2019s dragonslayer horn. An earlier ring receipt helps explain the token, but is optional personal history.",
+          "title": "Alorka: the rose glass horn"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:29406,I:29410,I:29415;receive=I:29417;disappear=0",
+              "giver_vnum": 29421
+            }
+          ],
+          "id": "many-colors-robe",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:29405;receive=I:29406;disappear=1",
+                  "giver_vnum": 29418
+                }
+              ],
+              "hint": "The girl rewards a token and departs. A matching supplied token also fits without your own ring receipt. An old receipt never replaces a token already consumed by another craft.",
+              "id": "earlier-ring",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: return the girl\u2019s ring"
+            },
+            {
+              "count": 1,
+              "hint": "The young girl rewards this token for ring29405. Every craft consumes its own token; one token does not fund four crafts. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "token",
+              "item_vnums": [
+                29406
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a fresh token"
+            },
+            {
+              "count": 1,
+              "hint": "It starts hidden on the floor of dead-end tunnel29451. The local poisonous spider is not its reset holder; native tunnel access and visibility remain in force. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "silk",
+              "item_vnums": [
+                29410
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the spider silk"
+            },
+            {
+              "count": 1,
+              "hint": "The art instructor starts wearing it in room29438. Remove the exact robe from equipment. His teacher handler does not make studying art a quest prerequisite. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "robe",
+              "item_vnums": [
+                29415
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the simple robe"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:29406,I:29410,I:29415;receive=I:29417;disappear=0",
+                  "giver_vnum": 29421
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Source recovery, addressed dialogue, access, combat, teaching and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer a fresh token, exact spider silk and simple robe together for the robe of many colors. The silk is a hidden floor reset in the tunnel, not a promised spider kill or carving reward.",
+          "title": "Alorka: the robe of many colors"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:29406,I:29413,I:29419;receive=I:29418;disappear=0",
+              "giver_vnum": 29421
+            }
+          ],
+          "id": "wand-of-light",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:29405;receive=I:29406;disappear=1",
+                  "giver_vnum": 29418
+                }
+              ],
+              "hint": "The girl rewards a token and departs. A matching supplied token also fits without your own ring receipt. An old receipt never replaces a token already consumed by another craft.",
+              "id": "earlier-ring",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: return the girl\u2019s ring"
+            },
+            {
+              "count": 1,
+              "hint": "The young girl rewards this token for ring29405. Every craft consumes its own token; one token does not fund four crafts. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "token",
+              "item_vnums": [
+                29406
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a fresh token"
+            },
+            {
+              "count": 1,
+              "hint": "Small children start carrying it in rooms29416 and29442. Torker\u2019s cloth bolt29409 is a different item. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "cloth",
+              "item_vnums": [
+                29413
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the scrap of cloth"
+            },
+            {
+              "count": 1,
+              "hint": "A sleeping artist starts carrying the hidden doll in room29446. The attic\u2019s toy-box description and Klemo\u2019s other toys do not supply this exact quest doll. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "doll",
+              "item_vnums": [
+                29419
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the pretty doll"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:29406,I:29413,I:29419;receive=I:29418;disappear=0",
+                  "giver_vnum": 29421
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Source recovery, addressed dialogue, access, combat, teaching and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer a fresh token, scrap of cloth and pretty doll together for the swirling wand of light. Native dialogue calls it a sphere or staff, but the actual reward is a wand. The journal names that outcome without altering the recipe or reward.",
+          "title": "Alorka: the swirling wand of light"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:29400,I:29402,I:29406;receive=I:29404;disappear=0",
+              "giver_vnum": 29421
+            }
+          ],
+          "id": "lucky-alchemist-sack",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:29405;receive=I:29406;disappear=1",
+                  "giver_vnum": 29418
+                }
+              ],
+              "hint": "The girl rewards a token and departs. A matching supplied token also fits without your own ring receipt. An old receipt never replaces a token already consumed by another craft.",
+              "id": "earlier-ring",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: return the girl\u2019s ring"
+            },
+            {
+              "count": 1,
+              "hint": "The young girl rewards this token for ring29405. Every craft consumes its own token; one token does not fund four crafts. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "token",
+              "item_vnums": [
+                29406
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a fresh token"
+            },
+            {
+              "count": 1,
+              "hint": "Lomya\u2019s shop in room29405 carries and produces this exact input. It differs from the lucky reward and the big bag; live purchase admission still applies. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "sack",
+              "item_vnums": [
+                29400
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the leather alchemist sack"
+            },
+            {
+              "count": 1,
+              "hint": "Torker\u2019s shop in room29437 carries and produces it. The local faerie is not an authored dust-drop controller; stale extra-description text does not turn it into cloth. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "dust",
+              "item_vnums": [
+                29402
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the faerie dust"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:29400,I:29402,I:29406;receive=I:29404;disappear=0",
+                  "giver_vnum": 29421
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Source recovery, addressed dialogue, access, combat, teaching and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer a fresh token, leather alchemist sack and faerie dust together for the lucky sack. Lomya also starts carrying the finished reward as finite stock: owning or buying it does not prove you completed Alorka\u2019s craft.",
+          "title": "Alorka: the lucky alchemist sack"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:29440;receive=I:318,I:319,I:330;disappear=0",
+              "giver_vnum": 29444
+            }
+          ],
+          "id": "painting-for-fish",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Sleeping and working artists start carrying it in room29446. The floor painting29433 in room29445 does not satisfy this recipe. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "painting",
+              "item_vnums": [
+                29440
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the near-finished painting"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:29440;receive=I:318,I:319,I:330;disappear=0",
+                  "giver_vnum": 29444
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Source recovery, addressed dialogue, access, combat, teaching and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer the near-finished painting to Bom for a large pike, impressive lobster and large hairy crab. The colorful gallery painting is a different item. These three rewards do not prove you caught or ate fish, and other zones\u2019 fish exchanges remain separate.",
+          "title": "Bom Fitherwood: a painting for fish"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:29460;receive=E:4000;disappear=0",
+              "giver_vnum": 29449
+            }
+          ],
+          "id": "feed-goldfish",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "It starts on the floor of bowl rooms29473 and29475. ENTER the fishbowl at29443 leads to29472; the existing JUMP fishbowl return object is there. Native travel and water rules apply. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "food",
+              "item_vnums": [
+                29460
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the fish food"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:29460;receive=E:4000;disappear=0",
+                  "giver_vnum": 29449
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Source recovery, addressed dialogue, access, combat, teaching and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer the exact fish food to a goldfish for the native experience reward. Five matching goldfish resets share one accepted recipe, not five achievements. Eating the food yourself or merely watching bubbles does not complete feeding.",
+          "title": "Goldfish: offer fish food"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:29444;receive=C:77777,I:29453;disappear=1",
+              "giver_vnum": 29454
+            }
+          ],
+          "id": "pot-for-clover",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The whale starts carrying it in bowl room29474. The leprechaun starts at29477; no ordinary entrance from the main zone or fixed incoming portal was identified. A matching supplied pot also fits once the actual recipient is available. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "pot",
+              "item_vnums": [
+                29444
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the pot-of-gold item"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:29444;receive=C:77777,I:29453;disappear=1",
+                  "giver_vnum": 29454
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Source recovery, addressed dialogue, access, combat, teaching and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer the exact pot-of-gold item for a four-leaf clover and native coin reward; the leprechaun departs. This is an item input, not a coin payment. His lucky-star rooms have no identified ordinary incoming route; their access remains builder review.",
+          "title": "Leprechaun: the pot of gold"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Phonar repairs the shattered diamond in the northern merchant branches; his 4000-copper mixed payment is currently unavailable.",
           "keyword": "phonar",
           "mob_vnum": 30600,

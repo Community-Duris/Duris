@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 103 authored journals.
+2668 distinct Q contracts; 104 authored journals.
 
 Regenerate with:
 
@@ -103,7 +103,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Halfcut Hills (`halfcut`) | 13 | 15 | 4 | Yes | [1 × the orc's scalp; 1 × the drow's scalp; 1 × the goblin's scalp; other required items → a duergar belt](../../areas/qst/halfcut.qst#L177) | crossbow_ambusher |
 | The Hall of the Ancients (`hall`) | 11 | 14 | 6 | Yes | [2 × a necklace of tiny steel links; 2 × the bangle of the Dreamer; 2 × an adamantium rock; other required items → Jadem's magical device of protection](../../areas/qst/hall.qst#L77) | akckx, artifact_stone, hoa_death, hoa_plat, hoa_sin, human_girl |
 | The Mountain Settlement of the Harpies (`harpyht`) | 3 | 0 | 1 | Yes | [1 × a rusted key → some prisoner shackles](../../areas/qst/harpyht.qst#L9) | gargoyle_master, harpy_evil, harpy_good, money_changer |
-| Harrow -The Gnome Village (`harrow`) | 8 | 4 | 1 | Fallback | [1 × a token; 1 × leather alchemist sack; 1 × faerie dust → lucky alchemist sack](../../areas/qst/harrow.qst#L73) | inn |
+| Harrow -The Gnome Village (`harrow`) | 8 | 4 | 1 | Yes | [1 × a token; 1 × leather alchemist sack; 1 × faerie dust → lucky alchemist sack](../../areas/qst/harrow.qst#L73) | inn |
 | Zalkapfaan, City of the Headless Horde (`headless`) | 8 | 2 | 0 | Fallback | [1 × a purchase requisition; 1 × the scales of a sea serpent → platemail of the sea serpent](../../areas/qst/headless.qst#L42) | — |
 | Heaven (`heavens`) | 9 | 3 | 0 | Fallback | [6 × a pile of brittle alloy; 1 × a gauze bandage → Token of the Gods](../../areas/qst/heavens.qst#L173) | annoying_mob, archer, artifact_biofeedback, artifact_hide, artifact_monolith, artifact_stone |
 | The Behemoth Herders (`herders`) | 12 | 29 | 0 | Fallback | [1 × some scales of diorite; 2 × a large piece of bone; 3 × a piece of a bone fragment → some bone-reinforced boots of diorite](../../areas/qst/herders.qst#L157) | — |

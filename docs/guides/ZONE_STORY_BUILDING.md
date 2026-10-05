@@ -2078,3 +2078,29 @@ or populating them. Richer source/learning/access/politics needs authoritative
 events, not guessed milestones. Actual repairs need separate named fix/news.
 Preserve the owner-confirmed Fields PvP hotfix and required replacement plan.
 All new credit requires active, ready accounting; frozen recovery stays separate.
+
+
+## Harrow example: one proof cannot fund several accepted outcomes
+
+The [dossier](../design/zone-stories/HARROW_THE_GNOME_VILLAGE.md) and
+[sidecar](../../areas/story/harrow.story.json) map a ring→token source followed
+by four alternative crafts. Each craft consumes a fresh token. Supplied token
+works without personal ring history; old history cannot restore a spent token.
+Current readiness on several cards is not a material reservation or completion.
+
+Validate exact source holders and IDs: child scrap differs from shop bolt,
+bard horn from shop horn, artists' near-finished painting from gallery decor,
+and hidden artist doll from attic toy prose. Lomya stocks the completed lucky
+sack as finite merchandise too; its purchase or possession is not crafting credit.
+Hidden floor silk is not a promised spider drop/carve. Teacher flags provide
+shared teaching, not an implied art-learning gate. MA/QA control room echo;
+seventeen ambient messages do not create automatic quests or alias achievements.
+
+For portals inspect selected target and actual arrival, retaining original pickup,
+charges and shared restrictions. JUMP fishbowl uses an object target. Lucky-star
+rooms lack identified ordinary incoming access and three spokes have no ordinary
+exits; builder confirms intentional/shared access or missing design before
+connecting anything. Non-door paint-set key field is not a locked magic gate.
+Native clue fixes must be separate named fixes/news; no repair ships here.
+Preserve Fields owner-confirmed PvP hotfix and required replacement follow-up.
+All new credit needs active, ready accounting; frozen recovery remains separate.

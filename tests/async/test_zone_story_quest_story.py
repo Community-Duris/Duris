@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1441
-assert report['mapped_area_count'] == 103 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 104 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -200,6 +200,15 @@ assert sum(t.get('optional',False) for s in val['stories'] for t in s['steps'])=
 assert all(s['category']=='story' for s in val['stories'])
 assert val['stories'][4]['steps'][0]['contracts']==val['stories'][3]['contracts']
 assert val['stories'][5]['steps'][0]['item_vnums']==[38442] and val['stories'][6]['steps'][0]['item_vnums']==[38451]
+
+harrow=next(m for m in catalog['story_mappings'] if m['source_area']=='harrow')
+assert (harrow['schema_version'],harrow['revision'],harrow['coverage'])==(3,1,'complete')
+assert len(harrow['stories'])==8 and len(harrow['contacts'])==14 and not harrow['exclusions']
+assert report['eligible_by_zone']['294']==8 and sum(len(c['topics']) for c in harrow['contacts'])==12
+assert sum(t.get('optional',False) for s in harrow['stories'] for t in s['steps'])==20
+assert all(s['category']=='story' for s in harrow['stories'])
+assert all(harrow['stories'][i]['steps'][0]['contracts']==harrow['stories'][0]['contracts'] for i in range(1,5))
+assert harrow['stories'][5]['steps'][0]['item_vnums']==[29440] and harrow['stories'][7]['steps'][0]['item_vnums']==[29444]
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 103 &&
+		require(catalog.story_mappings.size() == 104 &&
 				tracker.summary_for(7, 42).total == 1585,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7547,6 +7547,146 @@ int main(int argc, char **argv)
 					recovered.has_discovered(7, 42, 5000) &&
 					!recovered.has_discovered(7, 42, 530),
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
+		}
+
+		{
+			const auto &ring = story_for("harrow", "ring-token");
+			const auto &horn = story_for("harrow", "glass-horn");
+			const auto &robe = story_for("harrow", "many-colors-robe");
+			const auto &wand = story_for("harrow", "wand-of-light");
+			const auto &sack = story_for("harrow", "lucky-alchemist-sack");
+			const auto &painting = story_for("harrow", "painting-for-fish");
+			const auto &fish = story_for("harrow", "feed-goldfish");
+			const auto &pot = story_for("harrow", "pot-for-clover");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 294, 29400, 100, "arrival") ==
+					result::applied,
+				"Harrow discovery failed");
+			require(journey.render_journal(7, 42, 294, 10, 1, 101, false, false)
+						.find(horn.title) == std::string::npos,
+				"Harrow exposed unmet Alorka");
+			for (const auto &[vnum, room] :
+			     { std::pair{ 29418, 29431 }, std::pair{ 29421, 29440 },
+			       std::pair{ 29444, 29461 }, std::pair{ 29449, 29473 },
+			       std::pair{ 29454, 29477 } })
+				require(journey.meet_npc(7, 42, vnum, room, 102) == result::applied,
+					"Harrow encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Harrow section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[29406] = 1;
+			supplies.carried[29480] = 3;
+			supplies.carried[29409] = 1;
+			supplies.carried[29433] = 1;
+			supplies.carried[29404] = 1;
+			supplies.equipped[12] = 29415;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 294, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto *entry : { &horn, &robe, &wand, &sack })
+				require(section(*entry).find("[Ready now] " +
+							     entry->steps[1].text) !=
+							std::string::npos &&
+						section(*entry).find("[Pending] " +
+								     entry->steps[0].text) !=
+							std::string::npos,
+					"Harrow supplied token required personal ring history");
+			require(section(horn).find("[Missing now] " + horn.steps[2].text) !=
+					std::string::npos,
+				"Harrow other horn substituted for stylish horn");
+			require(section(wand).find("[Missing now] " + wand.steps[2].text) !=
+					std::string::npos,
+				"Harrow cloth bolt substituted for scrap");
+			require(section(robe).find("[Missing now] " + robe.steps[3].text) !=
+					std::string::npos,
+				"Harrow worn robe became loose proof");
+			require(section(painting).find("[Missing now] " + painting.steps[0].text) !=
+					std::string::npos,
+				"Harrow gallery painting satisfied Bom");
+			require(section(sack).find("[Pending] " + sack.steps.back().text) !=
+					std::string::npos,
+				"Harrow purchased reward fabricated crafting");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 294).completed == 0,
+				"Harrow shared token/readiness fabricated source, access or outcomes");
+			for (int vnum : { 29405, 29407, 29414, 29410, 29415, 29413, 29419, 29400,
+					  29402, 29440, 29460, 29444 })
+				supplies.carried[vnum] = 1;
+			journal = journey.render_journal(7, 42, 294, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto *entry :
+			     { &ring, &horn, &robe, &wand, &sack, &painting, &fish, &pot })
+				for (size_t step = (entry == &horn || entry == &robe ||
+						    entry == &wand || entry == &sack) ?
+							   1 :
+							   0;
+				     step + 1 < entry->steps.size(); step++)
+					require(section(*entry).find("[Ready now] " +
+								     entry->steps[step].text) !=
+							std::string::npos,
+						"Harrow exact supplied input did not fit");
+			record(journey, horn.contracts.front(), "harrow-supplied-token", 294,
+			       29440);
+			require(journey.progress_for_zone(7, 42, 294).completed == 1 &&
+					journey.evidence_for(ring.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Harrow craft fabricated ring history or other crafts");
+			// Synthetic receipts qualify projection, not token consumption,
+			// source, travel, stock, native acceptance or reward settlement.
+			for (const auto *entry :
+			     { &ring, &robe, &wand, &sack, &painting, &fish, &pot })
+			{
+				const auto id = std::string("harrow-outcome-") + entry->id;
+				const int room = entry == &ring	    ? 29431 :
+						 entry == &painting ? 29461 :
+						 entry == &fish	    ? 29473 :
+						 entry == &pot	    ? 29477 :
+								      29440;
+				record(journey, entry->contracts.front(), id.c_str(), 294, room);
+			}
+			require(journey.progress_for_zone(7, 42, 294).completed == 8,
+				"Harrow distinct crafts, feeding or pot outcome collapsed");
+			supplies.carried.clear();
+			journal = journey.render_journal(7, 42, 294, 10, 1, 122, false, false,
+							 &supplies);
+			for (const auto *entry : { &horn, &robe, &wand, &sack })
+				require(section(*entry).find("[Recorded] " +
+							     entry->steps[0].text) !=
+							std::string::npos &&
+						section(*entry).find("[Missing now] " +
+								     entry->steps[1].text) !=
+							std::string::npos,
+					"Harrow earlier ring receipt restored spent token");
+			for (const auto *entry :
+			     { &ring, &horn, &robe, &wand, &sack, &painting, &fish, &pot })
+				require(section(*entry).find("[Recorded] " +
+							     entry->steps.back().text) !=
+						std::string::npos,
+					"Harrow accepted outcome lost");
+			auto replay =
+				completion(horn.contracts.front(), "harrow-supplied-token", 120);
+			replay.transaction.zone_number = 294;
+			replay.transaction.room_vnum = 29440;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Harrow replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 294).completed == 8 &&
+					recovered.progress_for_zone(7, 42, 294).total == 8 &&
+					!recovered.has_discovered(7, 42, 5000),
+				"Harrow recovery lost outcomes or fabricated foreign discovery");
+			for (const auto *entry :
+			     { &ring, &horn, &robe, &wand, &sack, &painting, &fish, &pot })
+				require(recovered.evidence_for(entry->contracts.front(), 2)
+							.successful_attempts == 1,
+					"Harrow receipt lost in recovery");
 		}
 
 		{
