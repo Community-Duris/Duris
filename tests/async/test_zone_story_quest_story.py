@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1438
-assert report['mapped_area_count'] == 115 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 116 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -327,6 +327,14 @@ assert len(pstories['chamberlain-tongue-key']['steps'])==1
 assert all(t.get('optional') for s in pods['stories'] for t in s['steps'][:-1])
 assert sum(s['category']=='service' for s in pods['stories'])==3
 assert all(s['steps'][-1]['contracts']==s['contracts'] and len(s['contracts'])==1 for s in pods['stories'])
+
+citadel=next(m for m in catalog['story_mappings'] if m['source_area']=='citadel')
+assert (citadel['schema_version'],citadel['revision'],citadel['coverage'])==(3,1,'complete')
+assert len(citadel['stories'])==2 and len(citadel['contacts'])==20 and len(citadel['exclusions'])==1
+assert sum(len(c['topics']) for c in citadel['contacts'])==63 and report['eligible_by_zone']['130']==2
+assert all(s['category']=='story' and len(s['steps'])==2 and s['steps'][0]['optional'] and s['steps'][-1]['contracts']==s['contracts'] for s in citadel['stories'])
+assert [s['steps'][0]['item_vnums'] for s in citadel['stories']]==[[13006],[13033]]
+assert citadel['exclusions'][0]['contracts']==[{'giver_vnum':13030,'completion_key':'give=I:0;receive=;disappear=0'}]
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

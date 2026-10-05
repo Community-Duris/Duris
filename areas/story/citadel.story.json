@@ -1,0 +1,334 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "citadel",
+  "coverage": "complete",
+  "introduction": "Follow the apprentices’ notes, decode the rune doors and explore the Citadel’s guarded treasures. Two independent accepted deliveries record outcomes. The unfinished empty contract is excluded. New discovery and progress require active, ready accounting.",
+  "orientation": [
+    "Arrive at the drawbridge from the shadowed forest. Examine the plaque beside the onyx door. SAY paradox unlocks the northern entrance; OPEN it afterward if closed. Speech ability and existing shared door state still matter. The inside return starts closed, without the outside lock.",
+    "The wandering apprentice asks for a bluish key and promises information. His accepted exchange pays 50 platinum and retires that particular giver; the reply admits he knows nothing. He has many starting placements and can wander. This is a delivery outcome, without a teleport or learning objective for you.",
+    "The grumbling apprentice in the arctic greenhouse wears a heavy coat. Its pockets contain the bluish key. The key fits the chest behind the washroom’s concealed western door on the apprentice floor. A supplied key fits too, and the chest is not pickproof. Opening it is separate from spending the key on the wandering apprentice’s reward.",
+    "The concealed-room chest contains the exact sheets of notes and a ruby ring. The notes discuss the runes and riddles. Keep the notes directly carried for the lost apprentice near the Master’s chambers. Loose custody can show current preparation; it does not prove who recovered them or how the chest was opened.",
+    "Ask the arctic apprentice about runes, decipher, doors, secret and riddles. Find Growler’s Book of Runes in the library and the Book of Riddles carried by the philosophy professor. LOOK page1, page2 and the other pages for clues. Hearing or reading a clue does not record a separate quest achievement.",
+    "The four runed store-room doors use spoken words: wind at the north-facing rune, dark at the east-facing rune, black at the other north-facing rune and time at the west-facing rune. SAY the word beside its door, then OPEN it if needed. The magic unlocks matching reciprocal doors too. An already-open path does not require your own password action.",
+    "Amberyl’s ghost and lyre occupy one guarded inner room. Her books describe the lyre’s price and her lingering sorrow. The amber key she carries fits the lyre’s locked display case and has a native chance of breaking on use. Taking the lyre does not record freeing the ghost or performing a song.",
+    "Twelve treasure vaults have twelve different keys carried by their elemental guardians. Their contents include four keys to further store rooms, a paper boat, phantom boots, diamond, flask, ring, earring, katana and mask. Preserve each exact key and destination; carrying one generic vault key does not open every vault.",
+    "The upper landing’s translation says to cry master, while the actual magical door currently responds to SAY shalafi. This mismatch needs a builder decision. The stone Guardian’s Key fits the Master’s study and sleeping-chamber doors; the Master’s paradox key leads onward, and the Portal Guardian’s golden key fits the nightstone vault.",
+    "The lost apprentice asks in dialogue for his notes and all twelve vault treasures. The implemented reward checks only the exact notes and gives a very small key; he remains afterward. The journal follows that accepted recipe. It does not require twelve extra items, claim that you rescued him or invent a completed glyph study.",
+    "The very small key fits the very small chest on the desk in the sleeping chambers. Its native break setting is 100 percent after successful unlocking; the chest is pickproof. Its two necklace children each have a 35 percent reset chance, and its rune wand has a 100 percent chance, subject to caps and reset conditions. A key receipt does not guarantee chest contents or a personal opening.",
+    "The final vault’s beholder carries ordinary equipment, a Citadel memory and a separately guarded epic stone. The large church door in its stock is equipment with a RUB glass effect when worn, rather than a travel portal. Teachers, combat, books, spell effects and epic rewards have their own rules; they are separate from the two delivery outcomes.",
+    "The trailing empty request has an item-zero goal, no response and no reward. It is excluded from achievement and daily credit pending builder review. Native definitions and any historical evidence remain intact. Both usable deliveries are potential dailies only when their actual giver and legitimate current proof stock are available; no reset or new progress is promised without active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 13002,
+      "name": "the napping apprentice",
+      "keyword": "apprentice",
+      "description": "Napping in apprentice rooms and library: dreams, the Mistress and a chance.",
+      "topics": [
+        "hi",
+        "hello",
+        "dream",
+        "women",
+        "mistress",
+        "chance"
+      ]
+    },
+    {
+      "mob_vnum": 13003,
+      "name": "the wandering apprentice",
+      "keyword": "apprentice",
+      "description": "Wandering throughout the Citadel: ask errand or key; accepts the bluish key for 50 platinum and retires.",
+      "topics": [
+        "hi",
+        "hello",
+        "errand",
+        "key"
+      ]
+    },
+    {
+      "mob_vnum": 13004,
+      "name": "the severely pissed off apprentice",
+      "keyword": "apprentice",
+      "description": "In an apprentice room: hostile greeting without an accepted request.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 13006,
+      "name": "the apprentice",
+      "keyword": "apprentice",
+      "description": "Library: ask shalafi; the searching apprentice praises the Master.",
+      "topics": [
+        "hi",
+        "hello",
+        "shalafi"
+      ]
+    },
+    {
+      "mob_vnum": 13007,
+      "name": "the apprentice",
+      "keyword": "apprentice",
+      "description": "Laboratories: ask hear or sulfur; the accident is dialogue, without a repair objective.",
+      "topics": [
+        "hi",
+        "hello",
+        "hear",
+        "sulfur"
+      ]
+    },
+    {
+      "mob_vnum": 13010,
+      "name": "the apprentice",
+      "keyword": "apprentice",
+      "description": "Arctic greenhouse: ask runes, decipher, doors, secret and riddles; coat pockets contain the bluish key.",
+      "topics": [
+        "hi",
+        "hello",
+        "runes",
+        "decipher",
+        "door",
+        "doors",
+        "secret",
+        "riddles"
+      ]
+    },
+    {
+      "mob_vnum": 13011,
+      "name": "the wraith",
+      "keyword": "wraith",
+      "description": "Concealed chest room: hostile wraith, without a delivery request.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 13012,
+      "name": "Amberyl",
+      "keyword": "amberyl",
+      "description": "Inner room beyond the wind rune door: Amberyl’s ghost guards the lyre and carries its amber key.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 13014,
+      "name": "the professor",
+      "keyword": "professor",
+      "description": "Library: the philosophy professor carries the Book of Riddles; ask mad or book.",
+      "topics": [
+        "hi",
+        "hello",
+        "mad",
+        "book"
+      ]
+    },
+    {
+      "mob_vnum": 13017,
+      "name": "the master",
+      "keyword": "master",
+      "description": "Master’s study: greeting and equipment, without a quest contract.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 13018,
+      "name": "the mistress",
+      "keyword": "mistress",
+      "description": "Sleeping chambers: greeting and equipment, without an accepted request.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 13019,
+      "name": "the elemental guardian",
+      "keyword": "elemental",
+      "description": "Vault guardians: each exact vault key belongs to a particular placement; greeting alone earns no delivery outcome.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 13020,
+      "name": "the elemental guardian",
+      "keyword": "elemental",
+      "description": "Vault guardians: exact key destinations remain distinct.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 13021,
+      "name": "the elemental guardian",
+      "keyword": "elemental",
+      "description": "Vault guardians: the two placements carry different vault keys.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 13022,
+      "name": "the elemental guardian",
+      "keyword": "elemental",
+      "description": "Vault guardians: four placements carry four different vault keys.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 13023,
+      "name": "the Portal Guardian",
+      "keyword": "guardian",
+      "description": "Before the final portal: ask portal, realm or guard; carries the golden portal key.",
+      "topics": [
+        "hi",
+        "hello",
+        "portal",
+        "realms",
+        "realm",
+        "guard"
+      ]
+    },
+    {
+      "mob_vnum": 13024,
+      "name": "the guardian",
+      "keyword": "guardian",
+      "description": "Upper landing: guards the Master’s chambers and carries the stone Guardian’s Key.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 13025,
+      "name": "the wraith",
+      "keyword": "wraith",
+      "description": "Hostile wraith prototype with no current local reset placement; its native dialogue is retained.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 13026,
+      "name": "the masters elemental",
+      "keyword": "elemental",
+      "description": "Master’s study: hostile elemental greeting, without a quest contract.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 13030,
+      "name": "a lost apprentice",
+      "keyword": "lost",
+      "description": "Near the sleeping chambers: ask hi, hello, hey or howdy; currently accepts only the sheets of notes for a very small key.",
+      "topics": [
+        "hi",
+        "hello",
+        "hey",
+        "howdy"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "wandering-apprentice-bluish-key",
+      "title": "The wandering apprentice: a key for a promise",
+      "category": "story",
+      "summary": "Give the wandering apprentice the exact bluish key for 50 platinum. He admits he knows nothing and disappears after acceptance. This spends the key; it does not open the chest or rescue another apprentice.",
+      "contracts": [
+        {
+          "giver_vnum": 13003,
+          "completion_key": "give=I:13006;receive=C:50000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13006",
+          "text": "Carry the bluish key",
+          "kind": "carried_item",
+          "item_vnums": [
+            13006
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The arctic apprentice’s worn coat contains this key, which also fits the chest holding the notes. Choose when to use it before handing it in; the chest can have an alternative picked or already-open route. Carry the exact item loose. Held, worn, nested, spent or handed-away stock does not satisfy current preparation. Matching supplied proof fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Deliver the bluish key to the wandering apprentice",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13003,
+              "completion_key": "give=I:13006;receive=C:50000;disappear=1"
+            }
+          ],
+          "hint": "Only an accepted delivery records this outcome. Earlier discussion, recovery, access and reward possession are separate. New progress requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "lost-apprentice-notes",
+      "title": "The lost apprentice: recover the notes",
+      "category": "story",
+      "summary": "Return the exact sheets of notes for a very small key. Although dialogue asks for twelve vault treasures too, the current recipe checks only the notes. The lost apprentice remains; the reward does not prove rescue, glyph mastery or opening the desk chest.",
+      "contracts": [
+        {
+          "giver_vnum": 13030,
+          "completion_key": "give=I:13033;receive=I:13059;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13033",
+          "text": "Carry the sheets of notes",
+          "kind": "carried_item",
+          "item_vnums": [
+            13033
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The locked chest in the concealed room behind the apprentice-floor washroom contains these notes. Its bluish key comes from the arctic apprentice’s coat. Supplied notes bypass personal chest access. Carry the exact item loose. Held, worn, nested, spent or handed-away stock does not satisfy current preparation. Matching supplied proof fits without your own earlier source or access history."
+        },
+        {
+          "id": "accepted-hand-in",
+          "text": "Return the notes to the lost apprentice",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 13030,
+              "completion_key": "give=I:13033;receive=I:13059;disappear=0"
+            }
+          ],
+          "hint": "Only an accepted delivery records this outcome. Earlier discussion, recovery, access and reward possession are separate. New progress requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "contracts": [
+        {
+          "giver_vnum": 13030,
+          "completion_key": "give=I:0;receive=;disappear=0"
+        }
+      ],
+      "reason": "The unfinished trailing contract asks for item prototype zero, which has no declaration in the active world, and has no response or reward. Exclude this unusable placeholder from achievement/daily credit while preserving its native identity and historical evidence pending builder review."
+    }
+  ]
+}

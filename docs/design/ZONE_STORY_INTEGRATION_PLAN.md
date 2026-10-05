@@ -3277,3 +3277,22 @@ The [complete dossier](zone-stories/PHARR_VALLEY_SWAMP.md) and schema3 journal m
 | **ZSQ-PODS-FOREIGN-OWNERSHIP** | Humble hermit97901/M97907 in active surfacemini owns QA33:I28552+I28553→I97903 granular-potion recipe. Both paid outputs are exact distinct proofs; supplied matching items fit without local craft receipts. Ahgra/Mystics/castle dialogue is a wider Pharr lead without another28579 input contract. Keep foreign completion/discovery separate and preserve consumptive item competition. Imported epic358 has its own guarded TOUCH/node semantics; Choril28580,Parj28581,Harmank28588 are teachers, not hidden local quest producers. |
 
 All new credit requires active, ready accounting. Keep unported coin/mixed-item services and legacy shops guarded. Source completeness does not qualify live payment, reset issuance or personal shared-control evidence. Native stock/fee/access repairs require separate named fix/news commits.
+
+
+## The Citadel: contract intent, spoken access and key lifecycle
+
+The [complete dossier](zone-stories/THE_CITADEL.md) maps two deliveries and excludes an empty I0 placeholder. Current schema3 suffices. The thirteen-input quest described in dialogue fits the existing fourteen-item durable limit, but is not the current recipe.
+
+| Follow-up | Evidence and intended next step |
+| --- | --- |
+| ZSQ-CITADEL-REQUEST-INTENT | Lost apprentice asks for notes plus twelve vault items, while Q260 accepts only I13033. Decide whether to correct dialogue or deliberately create a thirteen-item recipe. Thirteen fits the current fourteen-item durable limit; name all exact prototypes and qualify custody, source availability and consumed keys before a separate fix/news commit. |
+| ZSQ-CITADEL-EMPTY-CONTRACT | Q267 has I0, empty response and no reward; no object-zero declaration exists. Excluded from new completion credit without deleting native identity or historical evidence. Builder should confirm intended removal or replacement; an actual native repair needs its own commit and news wording. |
+| ZSQ-CITADEL-MASTER-CLUE | Room13185 translates the magic word as master, but both door keywords end in shalafi. Decide intended clue/word, then make a narrow separate caption or keyword repair with before/after speech qualification. Journal explains current behavior. |
+| ZSQ-CITADEL-SPOKEN-ACCESS | Generic check_magic_doors matches the last keyword, clears locked/secret bits and matching reciprocal state, then leaves CLOSED intact. It records no personal quest event. Add qualified actor/door generation and successful transition evidence for optional password episodes; already-open travel is not personal puzzle proof. |
+| ZSQ-CITADEL-KEY-LIFECYCLE | Coat→bluish key→notes chest competes with spending that key for coins; notes→small key→pickproof desk chest is a separate access chain. Qualify current loose/held/worn/nested custody, supplied/picked/shared-open alternatives, breaks, durable destruction/recovery and cap renewal before promising live accounting journeys. |
+| ZSQ-CITADEL-TREASURE-SOURCES | Twelve guardians’ keys have twelve destinations; four vault contents key further store rooms. Current item possession, player supply, container extraction and first native-source acquisition are different evidence. Register exact source/container generations only if builder chooses deeper personal episodes. |
+| ZSQ-CITADEL-NARRATIVE-EPISODES | Amberyl’s sorrow, the lost apprentice’s plea and glyph research have no committed release/rescue/study outcome. Define deliberate noncombat/escort/performance endpoints and explain their distinction from delivery receipts before adding story credit. |
+| ZSQ-CITADEL-SOURCE-RENEWAL | Mode1 resets, capped coat/key/chest/notes, retiring wandering givers and two chance35 chest children govern real availability. Qualify accounting-backed reset issuance and item renewal; a potential daily is not a guarantee of a fresh key, notes or loot. |
+| ZSQ-CITADEL-FOREIGN-SYSTEMS | Diamond13036 has Caer Tannad floor and Alatorin chance15 stock. Beholder imports358/67239/55187; epic stone, worn church-door RUB glass spells and memory trophy have separate rules. Keep foreign discovery, ordinary gear effects and epic accounting distinct from local deliveries. |
+
+All new credit requires active, ready accounting. Preserve native contracts, caps, hazard/access rules and separate foreign/epic ownership. Actual repairs require separate named fix/news commits; none ships in this checkpoint.
