@@ -19,6 +19,35 @@ history before that opening and absent stores are not reconstructed. An empty
 result does not prove a UID never existed. Output remains ID-only and bounded;
 `--limit 0` retains the full count and coverage while omitting row details.
 
+Run `scripts/economic_sql_canonical_audit.py` with explicit SQL connection
+arguments and a SELECT-only account to authenticate original retained EAI1/EAP1
+capsules and their SQL projections. For example:
+
+```sh
+python3 scripts/economic_sql_canonical_audit.py \
+  --host 127.0.0.1 --user accounting_audit --database duris \
+  --password-env ACCOUNTING_AUDIT_PASSWORD
+```
+
+The command checks every retained root in the database, including inactive
+epochs and other lineages, in one read-only repeatable-read transaction. It
+always rolls back. Its independent decoder compares original metadata, hashes,
+counts, account effects, posting event/line indices, child derivation facts,
+item reference event/line indices and legacy custody projections. It requires
+InnoDB sources and refuses collections above 100,000 roots, 32 MiB of canonical
+capsules, or the per-query row/byte budget. Orphan details and details attached
+to rejected roots also refuse. It never repairs a discrepancy.
+
+Status 0 emits a small JSON report with database scope and verified root/byte
+counts. A discrepancy or missing/oversized source emits no report, prints a
+fixed diagnostic refusal on stderr, and exits 2. Capsule and command bodies,
+aliases and passwords are absent from that output. The JSON explicitly leaves
+complete command/receipt authentication, source capture and release
+qualification false. A successful check supplements the partial snapshot
+exporter: a saved version-1 projection still omits original capsules and cannot
+independently authenticate them. Capture the two checks under the release's
+quiescence procedure; independent runs do not constitute one combined cut.
+
 Every non-exception view includes the whole audited input's `coverage` object:
 `lineage`, `selected_epoch`, `complete`, `quiescent`, and `exception_count`.
 This includes unfiltered holdings, supply, prices, routes and provenance. The
