@@ -1,5 +1,12 @@
 # Accounting implementation and qualification handoff
 
+## Writer coverage source-contract reconciliation — 2026-10-05
+
+[Strict operation identity and provenance repair](WRITER_CONTRACT_RECONCILIATION_2026-10-05.md)
+addresses the three peer-established contract failures and a further stale restore
+anchor. Original owner exceptions and unqualified coverage are preserved.
+AST/pins/census/whitespace checks only; repaired contract execution remains deferred.
+
 ## NPC capture compiler-blocker source repair — 2026-10-05
 
 [Existing corruption-guard declaration inclusion](QUEST_MOBILE_CAPTURE_INCLUDE_REPAIR_2026-10-05.md)
