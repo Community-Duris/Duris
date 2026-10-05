@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 98 authored journals.
+2668 distinct Q contracts; 99 authored journals.
 
 Regenerate with:
 
@@ -74,7 +74,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Nakral's Crypt (`crypt`) | 5 | 6 | 1 | Fallback | [4 × a small collection of sticks and twigs; 2 × a medium-sized branch → native reward/response](../../areas/qst/crypt.qst#L35) | inn |
 | Darkfall Forest (`darkfall`) | 1 | 0 | 0 | Fallback | [1 × the still-beating heart of Bel; 1 × the orb of unmaking; 1 × A mystic runed stone tablet → the scroll of Agility](../../areas/qst/darkfall.qst#L37) | — |
 | The Motte and Bailey of Duke Delwyn (`delwyn`) | 11 | 9 | 6 | Yes | [1 × a spool of fine white yarn → a spool of crimson yarn](../../areas/qst/delwyn.qst#L160) | — |
-| The Desert City of Venan'Trut (`desert`) | 8 | 8 | 1 | Fallback | [1 × a large glowing potion → a leather studded mining belt](../../areas/qst/desert.qst#L10) | crew_shop_proc, ship_shop_proc, world_quest |
+| The Desert City of Venan'Trut (`desert`) | 8 | 8 | 1 | Yes | [1 × a large glowing potion → a leather studded mining belt](../../areas/qst/desert.qst#L10) | crew_shop_proc, ship_shop_proc, world_quest |
 | Desolate (`desolate`) | 11 | 1 | 3 | Yes | [1 × an iron rod; 1 × a broken wheel → a repaired wheel](../../areas/qst/desolate.qst#L81) | master_set |
 | Desolate Under Fire (`desolateinv`) | 17 | 0 | 1 | Fallback | [8 × some cut leather bindings → the cloak of the forest goddess](../../areas/qst/desolateinv.qst#L116) | inn |
 | Dirk'nspire Stronghold (`dirkn`) | 2 | 1 | 0 | Fallback | [1 × a tattered piece of silk-paper → native reward/response](../../areas/qst/dirkn.qst#L19) | — |

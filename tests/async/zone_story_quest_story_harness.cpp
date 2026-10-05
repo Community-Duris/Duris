@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 98 &&
+		require(catalog.story_mappings.size() == 99 &&
 				tracker.summary_for(7, 42).total == 1591,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7549,6 +7549,150 @@ int main(int argc, char **argv)
 					recovered.has_discovered(7, 42, 5000) &&
 					!recovered.has_discovered(7, 42, 530),
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
+		}
+
+		{
+			const auto &miner = story_for("desert", "miner-potion-rescue");
+			const auto &cloak = story_for("desert", "cloaked-figure-dusty-signet");
+			const auto &traveler = story_for("desert", "traveler-compass");
+			const auto &wizard = story_for("desert", "wizard-vernadad-signet");
+			const auto &merchant = story_for("desert", "shady-merchant-contraband");
+			const auto &eriic = story_for("desert", "eriic-lost-medallion");
+			const auto &robe = story_for("desert", "white-robed-figure-wyrm-eye");
+			const auto &goranon = story_for("desert", "goranon-queen-royal-garb");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 490, 49003, 100, "arrival") ==
+					result::applied,
+				"VenanTrut discovery failed");
+			require(journey.render_journal(7, 42, 490, 10, 1, 101, false, false)
+						.find(eriic.title) == std::string::npos,
+				"VenanTrut exposed unmet giver");
+			for (const auto &actor :
+			     { std::pair{ 49020, 49201 }, std::pair{ 49061, 49051 },
+			       std::pair{ 49087, 49666 }, std::pair{ 49099, 49034 },
+			       std::pair{ 49155, 49354 }, std::pair{ 49161, 49413 },
+			       std::pair{ 49220, 49000 }, std::pair{ 49223, 49034 } })
+				require(journey.meet_npc(7, 42, actor.first, actor.second, 102) ==
+						result::applied,
+					"VenanTrut encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "VenanTrut section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[49171] = 3;
+			supplies.carried[49170] = 1;
+			supplies.equipped[12] = 49063;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 490, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(cloak).find("[Ready now] " + cloak.steps[0].text) !=
+					std::string::npos,
+				"VenanTrut exact dusty ring missing");
+			require(section(wizard).find("[Missing now] " + wizard.steps[1].text) !=
+					std::string::npos,
+				"VenanTrut dusty ring replaced Vernadad ring");
+			require(section(goranon).find("[Missing now] " + goranon.steps[0].text) !=
+					std::string::npos,
+				"VenanTrut worn garb counted loose");
+			require(section(robe).find("[Missing now] " + robe.steps[0].text) !=
+					std::string::npos,
+				"VenanTrut ordinary reward replaced eyeball");
+			for (int kind : { 49072, 49171, 49057, 49148, 49079, 49173, 49027, 49063 })
+				supplies.carried[kind] = 1;
+			journal = journey.render_journal(7, 42, 490, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto *entry : { &miner, &cloak, &traveler, &wizard, &merchant,
+						   &eriic, &robe, &goranon })
+				require(section(*entry).find(
+						"[Ready now] " +
+						entry->steps[entry->steps.size() - 2].text) !=
+						std::string::npos,
+					"VenanTrut supplied proof required personal source, gate or combat");
+			require(section(wizard).find("[Missing now] " + wizard.steps[0].text) !=
+					std::string::npos,
+				"VenanTrut supplied signet fabricated key");
+			require(section(eriic).find("[Pending] " + eriic.steps[0].text) !=
+					std::string::npos,
+				"VenanTrut supplied medallion fabricated earlier history");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 490).completed == 0,
+				"VenanTrut readiness granted historical credit");
+			// Synthetic accepted receipts qualify projection, not native source,
+			// boulder/doors/river travel/combat/learning/group claims/settlement.
+			record(journey, eriic.contracts.front(), "desert-supplied-medallion", 490,
+			       49413);
+			require(journey.progress_for_zone(7, 42, 490).completed == 1 &&
+					journey.evidence_for(goranon.contracts.front(), 2)
+							.successful_attempts == 0,
+				"VenanTrut Eriic fabricated Goranon history");
+			supplies.carried.erase(49173);
+			journal = journey.render_journal(7, 42, 490, 10, 1, 121, false, false,
+							 &supplies);
+			require(section(eriic).find("[Missing now] " + eriic.steps[2].text) !=
+					std::string::npos,
+				"VenanTrut receipt restored spent medallion");
+			record(journey, goranon.contracts.front(), "desert-queen-garb", 490, 49034);
+			supplies.carried.erase(49063);
+			journal = journey.render_journal(7, 42, 490, 10, 1, 122, false, false,
+							 &supplies);
+			require(section(eriic).find("[Recorded] " + eriic.steps[0].text) !=
+						std::string::npos &&
+					section(eriic).find("[Missing now] " +
+							    eriic.steps[1].text) !=
+						std::string::npos &&
+					section(eriic).find("[Missing now] " +
+							    eriic.steps[2].text) !=
+						std::string::npos,
+				"VenanTrut earlier receipt recreated garb or medallion");
+			for (const auto &entry :
+			     { std::pair{ &miner, 49201 }, std::pair{ &cloak, 49051 },
+			       std::pair{ &traveler, 49666 }, std::pair{ &wizard, 49034 },
+			       std::pair{ &merchant, 49354 }, std::pair{ &robe, 49000 } })
+			{
+				const auto id = std::string("desert-outcome-") + entry.first->id;
+				record(journey, entry.first->contracts.front(), id.c_str(), 490,
+				       entry.second);
+			}
+			supplies.carried.clear();
+			journal = journey.render_journal(7, 42, 490, 10, 1, 123, false, false,
+							 &supplies);
+			for (const auto *entry : { &miner, &cloak, &traveler, &wizard, &merchant,
+						   &eriic, &robe, &goranon })
+			{
+				require(section(*entry).find("[Recorded] " +
+							     entry->steps.back().text) !=
+						std::string::npos,
+					"VenanTrut outcome lost");
+				require(section(*entry).find(
+						"[Missing now] " +
+						entry->steps[entry->steps.size() - 2].text) !=
+						std::string::npos,
+					"VenanTrut historical receipt recreated proof");
+			}
+			auto replay = completion(eriic.contracts.front(),
+						 "desert-supplied-medallion", 120);
+			replay.transaction.zone_number = 490;
+			replay.transaction.room_vnum = 49413;
+			require(journey.record_completion(replay) == result::already_applied,
+				"VenanTrut replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 490).completed == 8 &&
+					recovered.progress_for_zone(7, 42, 490).total == 8 &&
+					!recovered.has_discovered(7, 42, 550) &&
+					!recovered.has_discovered(7, 42, 431),
+				"VenanTrut recovery lost outcomes or fabricated foreign discovery");
+			for (const auto *entry : { &miner, &cloak, &traveler, &wizard, &merchant,
+						   &eriic, &robe, &goranon })
+				require(recovered.evidence_for(entry->contracts.front(), 2)
+							.successful_attempts == 1,
+					"VenanTrut recovered receipt count wrong");
 		}
 
 		{

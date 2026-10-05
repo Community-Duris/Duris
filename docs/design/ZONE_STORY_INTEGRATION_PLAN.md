@@ -2855,3 +2855,37 @@ restrictions, exact source/custody/consumption/reward settlement under active,
 ready accounting, retries/concurrency/rollback/cold recovery and played quest
 behavior. Implement in a separate reviewed fix and update news only for that
 final behavior. No replacement or mobility change is implemented here.
+
+
+## Venan'Trut: remote access, computed services and foreign progression
+
+The [complete dossier](zone-stories/DESERT_CITY_OF_VENAN_TRUT.md) and schema3
+journal bind eight exact native item outcomes. Ten optional current checks and
+one earlier Goranon receipt explain progression without requiring personal
+source recovery, kills, gates or travel for supplied proof. Twenty-two contacts
+retain all46 owned dialogue aliases; aliases are response alternatives.
+
+| Requirement | Evidence | Implementation / qualification plan |
+| --- | --- | --- |
+| Confirmed remote action and shared aperture | Boulder49012 PUSH targets49154 north, initially blocked; control is fixed in another room | Admit selected control UID/reset generation, target exit, actual before/after and reciprocal effects. Test wrong target, already open, another player's action, reset, failure/retry and cold recovery. Preserve TAKE/activation policy. |
+| Actual source/custody and access | Merchant potion, floor contraband, worn signet/garb, mob-held eye/compass; pickproof gates/secret plank/falling shaft/rivers | Keep source instance, parent/root lineage, successful purchase/removal/transfer and movement separate. Qualify failures, gifts, equipment/nesting, capacity/traps, shared doors, fall/arena/teleport failure and committed arrival. |
+| Cross-zone referral and all-stage view | Garb→Goranon→Eriic→Winterhaven ambassador→paired fabric; Sultan memory is a separate foreign recipe | Preserve canonical terminal ownership/IDs; add explicit physical affiliation/referral. Builder defines personal campaign milestones versus supplied shortcuts. Distinguish original source, receipt, current materials and final campaign without duplicate terminal credit. |
+| Dynamic registration/handler precedence | Type29 switch, flag inns, computed Eriic/Ruffus teachers, literal crew/ship/random quest and imported epic stone | Inventory actual type/flag/table/explicit bindings and final dispatch. Keep item Q separate from PRACTICE; qualify joint teaching/wallet/ship persistence before unguarding. Builder decides intended taproom rent behavior before native assignment repair. |
+| Committed group claim | Sultan's imported stone359 uses targeted TOUCH, group eligibility and zone_touch transaction | Consume authoritative committed claim identity/beneficiary/zone/revision; share frozen recovery obligations, reject observation-only touch, stale/busy/wrong-zone claims and double credit. Preserve actual level/combat/source/activation policy. |
+| Source/recipient renewal | Eight D0 recipes, mode1 empty-zone resets, cap1 proofs and wandering merchants/ambassadors | Static candidates need admitted recipient/source episodes and actual renewal checks. Test stock, failed admission, repeated reward, concurrency, replay and cold recovery before daily qualification. |
+
+Player presentation should show eight independent cards, optional earlier route,
+missing/ready loose proof, recorded receipt and foreign destination. Later ANSI/
+GMCP milestones need explicit confirmed boulder, key/door, falls/river/tower
+arrival, first-source versus gift, and committed group/learning states. Narrated
+House collapse, slave liberation, nest destruction or expedition success cannot
+be inferred from a keyword or item name.
+
+No native repair ships. Unplaced tents with absent destinations, copied map/
+ambassador clues, epic-node lore and inn/crew overlap are fair builder proposals.
+Preserve disabled/unplaced portals, TAKE, charges and PvP mobility pending design,
+as with the owner-confirmed Fields hotfix replacement follow-up. Any implemented
+repair needs an isolated fix commit, trigger/before/after/proof and prominent
+news. Active, ready accounting is mandatory for new credit; frozen recovery is
+separate. Source and synthetic projection proof do not qualify actual source/
+access/travel/effects/group claims/services/settlement or daily renewal.

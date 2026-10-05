@@ -154,9 +154,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 78 | The Town of Moregeeth | [Comprehensive dossier](zone-stories/THE_TOWN_OF_MOREGEETH.md): all20 blocks/353 rooms/109 mobiles/96 objects/549 resets/ten shops and bounded foreign/shared closure | Schema3/revision2 preserves seven IDs: five stories/two paid services;21 contacts/22 aliases/15 optional checks. Pouch → key → four planar components; exact head, killer’s sword and trapped letter | Actual desk-keyhole repair is separate fix7b916b887 with news. Actor availability/retirement, access/portal commands, container/trap lineage, fees and narrative campaigns remain qualification plans |
 | 79 | Ceothia | [Comprehensive dossier](zone-stories/CEOTHIA.md): all21 blocks/295 rooms/110 mobiles/33 objects/510 resets/one shop and bounded timeline/shared closure | Six cards bind nine recipes: one four-way guild choice, three independent Lenbrea rewards, paired crates and legacy scroll;17 contacts/22 aliases/17 optional checks | No native repair ships. Actor availability, source/gift custody, keys/container/travel/effects and campaign prerequisites remain plans; pool targeting and legacy tablet/learning are explicit repair proposals |
 | 80 | Braddistock Mansion (brad) | [Comprehensive dossier](zone-stories/BRADDISTOCK_MANSION_1350.md): all14 owned Tower blocks/48 mansion rooms/14 mobiles/73 objects/175 resets; full local gate and bounded foreign closure | Schema3/revision2 preserves5 IDs/bindings;16 contacts/32 aliases/ten optional checks; local exploration guidance and five physically Tower exchanges | Separate entry-refusal recipient/CRLF fix ships. Physical affiliation/discovery/renewal, learned clues/source/access, alchemy/boat/campaign and missing stock are explicit plans |
-| 81–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 81 | The Desert City of Venan'Trut | [Comprehensive dossier](zone-stories/DESERT_CITY_OF_VENAN_TRUT.md): all16 blocks/677 rooms/245 mobiles/194 objects/1256 resets/ten shops and shared/imported closure | Eight independent exchanges;22 contacts/46 aliases/11 optional checks explain mine, rival signets, compass, contraband and Queen→Goranon→Eriic→Winterhaven | No native repair ships. First source/gift, actual switch/door/river travel, computed services/group claims, foreign memory/fabrics and actor renewal remain plans; orphan portals/clue/inn overlap need builder intent |
+| 82–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Desert City of Venan'Trut (`desert`).
+The next area is Past Ceothia (`ceopast`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -167,6 +168,7 @@ matches, or a candidate item graph was extracted.
 | --- | --- | --- |
 | ZSQ-BRAD-PHYSICAL-AFFILIATION / DISCOVERY / RENEWAL / EXPLORATION | Five Tower contracts retain Braddistock credit ownership; Tower encounters do not discover this journal, and owner reset mode differs from physical retiring recipients. Local exploration has no native terminal. | Keep canonical receipt identities. Add explicit physical affiliation/referrals and real source/actor renewal; admitted clue/access/custody and builder-designed lab/smuggler/campaign endpoints. Entry speech repair ships separately; missing key/weapon supply and copied prose remain proposals. |
 | ZSQ-CEOTHIA-CHOICE / TIMELINE / TARGETED-EFFECT / LEGACY-TRAINING | Four retiring guild alternatives, three independent Lenbrea rewards, breaking keys, two nested crates, foreign timeline proofs, imported agility pool and legacy tablet/scroll differ from modern epic purchases. | Six source-guided cards ship. Qualify source/recipient reset episodes, actual access/travel/targeted effects and shared-material ownership; define all-stage campaign and restore/retire legacy training only with builder intent. Pool target ambiguity is a pending shared repair, not shipped news. |
+| ZSQ-VENAN-TRUT-SOURCE / REMOTE-ACCESS / REFERRAL / COMPUTED-SERVICE | Eight exact hand-ins coexist with a fixed remote boulder, falling/river routes, pickproof gates, secret floor loot, computed epic teachers, imported group stone and foreign memories/fabrics. | Eight source-guided cards ship. Qualify source/custody, actual target/transition/arrival, committed group/service settlement, explicit cross-zone referral and renewal. Orphan templates/clue/inn-handler overlap remain proposals; native mobility unchanged. |
 | ZSQ-MOREGEETH-AVAILABILITY / KEY / PORTAL / CONTAINER / FEE | Moreg carries another recipient’s sword; Gimbatul leaves after crown; pouch grants a real access key; four planar routes use different commands; letter is inside a locked trapped desk; paid crafts require all item roots and fees. | Five source-guided outcomes and two zero-achievement services ship. One-field keyhole fix7b916b887 is actual repair; qualify source/current custody, skill/trap/portal actions, NPC retirement, wallet settlement and reset. Campaign/prose additions remain builder decisions. |
 | ZSQ-FIELDS-BETWEEN-RIFT-HOTFIX-REPLACEMENT | Owner confirmed non-takeable rift71030 was an intentional old hotfix for a game-breaking escape mechanic. Original restrictions are restored; legacy delivery source remains unresolved. | Required builder follow-up: preferably distinct inert non-teleport proof while live portal stays fixed, or source-bound interaction/retirement. Define source/gifts, recipe/receipt versioning, PvP restrictions and accounting/renewal qualification; separate reviewed implementation and final-behavior news. |
 | ZSQ-FIELDS-BETWEEN-SHARED-SUPPLY / PORTAL / OWNERSHIP / CAMPAIGN | Two consumers share scarce alloy; floor portal is consumed; mother crosses into Scorched Valley; foreign seekers retain foreign ownership; narration promises unconfirmed escape, transformation and reunion. | Seven outcomes ship as source guidance/projection. Portability fix05eeca928 is withdrawn; original restrictions restored by correctiond2a64432d; qualify admitted sources, transfer, ENTER/offer, actor roaming/retirement, ownership, settlement and renewal. Builder decides other prose/controller intent. |
@@ -4379,3 +4381,46 @@ qualify PvP restrictions, source/gift rules, changed native contract/legacy
 receipt compatibility and active-accounting source/settlement/recovery/renewal.
 No replacement or new portal mobility is implemented. Any later fix gets its
 own reviewed commit and final-behavior news; the old pickup claim is withdrawn.
+
+
+## Priority 81 checkpoint: The Desert City of Venan'Trut
+
+The [comprehensive dossier](zone-stories/DESERT_CITY_OF_VENAN_TRUT.md) closes
+all16 native blocks(MA1/M7/Q8),677 complete rooms/158 full prose families/
+35 headers/1710 exits/16 exit-text families/four non-exit metadata families,
+245 mobiles/234 complete prose families,194 objects,1256 resets/942 exact/
+964 M-parent-aware families and ten shops. Literal/type/flag/computed bindings,
+full shared quest/switch/teleport/epic/ship/crew behavior, five imported reset
+objects and relevant foreign source/recipe/placement closure were reviewed.
+All713 active portals,13 boundary edges/three foreign neighbors and19 ordinary
+foreign import reset groups retain actual ownership and follower context.
+
+Schema3/revision1 adds eight independent cards with22 contacts/all46 aliases
+and11 optional checks: ten current materials/access checks and one earlier
+Goranon receipt. The remote cliff boulder opens the blocked mine; falls and
+river travel lead to miner/wyrm. Distinct signets, actual worn versus floor
+sources, pickproof House/palace gates and secret cellar are explained. Queen
+royal garb→Goranon medallion→Eriic locket→Winterhaven fabric is a progression
+story with supplied-proof shortcuts, not an enforced all-stage campaign.
+Sultan's memory/epic stone, computed Eriic/Ruffus lessons and ship/crew/random
+quest services stay separate. Fixed TOUCH stones differ from the type11 reward.
+
+**No native zone or quest repair ships.** Unplaced portal templates with missing
+destinations, copied clues, node lore and the taproom inn/crew handler overlap
+need explicit builder intent and qualification. Do not activate disabled or
+unplaced mechanics, enable TAKE or change charges to fit prose. Future repairs
+need separate named fixes and prominent before/after/proof/news. Owner-confirmed
+Fields hotfix follow-up and all earlier repair/withdrawal sections are retained.
+
+Required validation: focused complete source/schema fixture, all99 Python/C++
+file-loader/projection journeys, full production regression, maintained build,
+formatting/whitespace/source links, all98 prior journals/all2668 definitions/
+fingerprint/revision2/registry, original220 queue and exact50406-byte prior PR
+archive with SHA-256/news preservation. Catalog:99 journals/1591 achievements/
+1446 potential dailies/2200 rows; existing unit totals unchanged.
+**81/220 source-comprehensive,139 pending; Past Ceothia (`ceopast`) next.**
+The full goal remains active. Active, ready accounting is mandatory; frozen
+recovery is separate. Synthetic receipts do not qualify played source/access/
+falls/travel/combat/learning/group claims/ship/settlement/actor lifecycle/
+database persistence or daily renewal. No accounting activation, DB/server
+operation, migration, deployment or merge occurred.

@@ -1922,3 +1922,37 @@ inert non-teleport remnant; version changed native inputs/receipts explicitly
 and qualify source/gifts, PvP restrictions and accounting settlement/recovery.
 The [full acceptance checklist](../design/zone-stories/FIELDS_BETWEEN.md) keeps
 this pending work separate from shipped fixes and news.
+
+
+## Venan'Trut example: a remote switch and a foreign progression
+
+The [dossier](../design/zone-stories/DESERT_CITY_OF_VENAN_TRUT.md) and
+[sidecar](../../areas/story/desert.story.json) use eight independent native
+cards. Goranon gives the medallion Eriic requests, but Eriic accepts a supplied
+copy without earlier personal history. Put the earlier receipt and loose garb
+on optional steps; the exact terminal stays required. Winterhaven's ambassador/
+paired fabrics and Shipyard map contracts keep their own owners. A local source
+or item name does not make a foreign terminal a local achievement.
+
+Inspect every registration route: fixed boulder49012 is a type29 PUSH switch
+without a literal assignment; Eriic/Ruffus are computed epic teachers; ROOM_INN
+initialization can be overridden by the taproom's later crew handler. The
+Sultan carries a real imported epic stone and foreign memory. Preserve separate
+Q/epic/crew/random-world-quest dispatch and authoritative group claims; TOUCH
+text, source prose, a retained flag or visiting an inn does not prove success.
+
+Keep mobility and native gates intact. The boulder clears a blocked exit in
+another room; SEARCH/OPEN exposes floor contraband; two fixed rivers and tower
+TOUCH stones move actors. The white-robed figure's ordinary type11 runestone
+is another object. Pickproof gates need their real keys or a shared open route;
+old receipts never recreate spent keys/materials. Unplaced tents with absent
+rooms require builder intent before retirement, placement or repair. Do not
+activate an orphan or enable TAKE simply to match lore; Fields Between's
+intentional hotfix is the explicit example.
+
+Eight cards/22 contacts/46 aliases/11 optional checks are source-guided. Future
+source/gift/access/travel/learning/group/campaign milestones need committed event
+and recovery qualification. Active, ready accounting is mandatory for all new
+tracking; frozen recovery is separate. No native repair ships. Proposed clue,
+inn/crew or orphan-template changes stay proposals until implemented in a
+separate named fix with regression and prominent PR/news wording.

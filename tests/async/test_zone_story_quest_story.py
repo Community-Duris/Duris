@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1446
-assert report['mapped_area_count'] == 98 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 99 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -154,6 +154,14 @@ assert sum(t.get('optional',False) for s in brad['stories'] for t in s['steps'])
 assert brad['stories'][3]['steps'][0]['contracts']==brad['stories'][4]['contracts']
 assert [t['item_vnums'] for t in brad['stories'][2]['steps'][:-1]]==[[134131],[134132],[134133],[134134],[134135]]
 assert all(t.get('optional') for s in brad['stories'] for t in s['steps'][:-1])
+
+desert=next(m for m in catalog['story_mappings'] if m['source_area']=='desert')
+assert (desert['schema_version'],desert['revision'],desert['coverage'])==(3,1,'complete')
+assert len(desert['stories'])==8 and len(desert['contacts'])==22 and not desert['exclusions']
+assert report['eligible_by_zone']['490']==8 and sum(len(c['topics']) for c in desert['contacts'])==46
+assert sum(t.get('optional',False) for s in desert['stories'] for t in s['steps'])==11
+assert all(t.get('optional') for s in desert['stories'] for t in s['steps'][:-1])
+assert desert['stories'][5]['steps'][0]['contracts']==desert['stories'][7]['contracts']
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'
