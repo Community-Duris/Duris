@@ -1,5 +1,18 @@
 # Accounting review status — 2026-10-04
 
+## Integrated selected operation count validation — 2026-10-04
+
+The [independent Plan5 repair](PLAN5_SELECTED_ROOT_COUNT_TYPES_SLICE_2026-10-04.md)
+now rejects boolean, float, missing and out-of-range selected-root count fields
+before indexing, using the existing native limits. Valid integer disagreements
+retain cardinality findings. Three exact peer blobs from71d09ae160 are imported;
+reader/test preimages match this candidate and independent source review plus
+two Python AST checks pass. Native/schema/activation behavior is unchanged.
+Peer reports102 units and both-engine malformed-export refusal on frozen6a2428c
+inputs; its modeled holdings/origin oracle and canonical0056 component evidence
+do not qualify actual runtime producers or this combined candidate. Major-plan
+execution remains deferred; coverage and full release acceptance remain open.
+
 ## Full-player shop source proof — 2026-10-04
 
 See [the full-player native proof checkpoint](SHOP_FULL_PLAYER_NATIVE_PROOF_2026-10-04.md): the original whole-player body is retained
