@@ -2150,7 +2150,7 @@ bool shop_trade_preparation_owner::build_accounted_command(
 		if (shop_trade_accounting_decode(projection, &intent, &verified, &verified_wallet,
 						 &verified_bank,
 						 &counterparty) != economic_accounting_error::ok ||
-		    intent.epoch.bytes != prepared.mapping.epoch.bytes ||
+		    intent.admission.metadata.epoch.bytes != prepared.mapping.epoch.bytes ||
 		    !economic_account_key_equal(verified_wallet, prepared.mapping.wallet) ||
 		    !economic_account_key_equal(verified_bank, prepared.mapping.bank))
 			return false;
