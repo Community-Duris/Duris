@@ -67,7 +67,7 @@ def capture(connection):
         executor = CursorExecutor(cursor)
         sources = ("economic_accounting_operation", "economic_accounting_account_effect",
                    "economic_accounting_coin_posting", "economic_accounting_child",
-                   "economic_accounting_item_reference", "economic_baseline_control",
+                   "economic_accounting_item_reference", "economic_accounting_source_claim", "economic_baseline_control",
                    "economic_baseline_witness", "economic_baseline_reservation",
                    "economic_lineage_state", "economic_epoch", "critical_operation_inbox",
                    "item_ownership_ledger", "currency_ledger", "critical_outbox")
@@ -95,6 +95,27 @@ def capture(connection):
             "WHERE o.operation_id IS NULL OR o.outcome<>1 OR o.result_code<>0)" for table in details)
         if executor.sql("SELECT " + unwanted + ";") != "0":
             raise AuditError("canonical audit orphan_or_rejected_detail")
+        claims = int(executor.sql("SELECT COUNT(*) FROM economic_accounting_source_claim;"))
+        if not 0 <= claims <= MAX_ROWS:
+            raise AuditError("canonical audit source_claim count exceeds input limit")
+        # The original capsules authenticate each root's source identity. Claims
+        # must cover every committed source and name that exact successful root,
+        # even for inactive/foreign books or evidence imported with lost checks.
+        claim_checks = (
+            "EXISTS(SELECT 1 FROM economic_accounting_operation o LEFT JOIN "
+            "economic_accounting_source_claim c ON c.operation_id=o.operation_id "
+            "AND c.lineage=o.lineage AND c.source_event=o.source_event AND c.outcome=o.outcome "
+            "WHERE o.outcome=1 AND o.result_code=0 AND o.source_event IS NOT NULL AND c.operation_id IS NULL)",
+            "EXISTS(SELECT 1 FROM economic_accounting_source_claim c LEFT JOIN "
+            "economic_accounting_operation o ON o.operation_id=c.operation_id "
+            "WHERE o.operation_id IS NULL OR o.source_event IS NULL OR c.outcome<>1 "
+            "OR o.outcome<>1 OR o.result_code<>0 OR NOT (o.lineage <=> c.lineage) "
+            "OR NOT (o.source_event <=> c.source_event))",
+            "EXISTS(SELECT 1 FROM economic_accounting_source_claim GROUP BY operation_id HAVING COUNT(*)<>1)",
+            "EXISTS(SELECT 1 FROM economic_accounting_source_claim GROUP BY lineage,source_event HAVING COUNT(*)<>1)",
+        )
+        if executor.sql("SELECT " + " OR ".join(claim_checks) + ";") != "0":
+            raise AuditError("canonical audit source_claim mismatch")
         try:
             require_integrity(executor)
         except RuntimeError as error:

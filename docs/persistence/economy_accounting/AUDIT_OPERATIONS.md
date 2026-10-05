@@ -34,9 +34,13 @@ epochs and other lineages, in one read-only repeatable-read transaction. It
 always rolls back. Its independent decoder compares original metadata, hashes,
 counts, account effects, posting event/line indices, child derivation facts,
 item reference event/line indices and legacy custody projections. It requires
-InnoDB sources and refuses collections above 100,000 roots, 32 MiB of canonical
-capsules, or the per-query row/byte budget. Orphan details and details attached
-to rejected roots also refuse. It never repairs a discrepancy.
+InnoDB sources, including `economic_accounting_source_claim`, and refuses
+collections above 100,000 roots or source claims, 32 MiB of canonical capsules,
+or the per-query row/byte budget. Every committed root with a source identity
+requires its exact lineage/source/operation/success claim; orphan, foreign,
+changed, duplicate or rejected-root claims refuse across the entire database.
+Roots with no source identity and rejected roots require no source claim. Orphan details and
+details attached to rejected roots also refuse. It never repairs a discrepancy.
 
 Status 0 emits a small JSON report with database scope and verified root/byte
 counts. A discrepancy or missing/oversized source emits no report, prints a

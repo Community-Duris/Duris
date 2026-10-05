@@ -24,7 +24,8 @@ class CanonicalAuditTests(unittest.TestCase):
     def connection(self):
         connection = mock.Mock()
         cursor = connection.cursor.return_value
-        cursor.fetchmany.side_effect = [[{'count': 14}], [], [{'count': 0}], [], [{'size': 0}], [], [{'unwanted': 0}], []]
+        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 0}], [], [{'size': 0}], [],
+                                       [{'unwanted': 0}], [], [{'claims': 0}], [], [{'unwanted_claim': 0}], []]
         return connection, cursor
 
     def test_bounded_scalar_projection_and_select_only(self):
@@ -39,7 +40,7 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_root_limit_refuses_before_capsule_reads(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 14}], [], [{'count': audit.MAX_ROWS+1}], []]
+        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': audit.MAX_ROWS+1}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'root count'):
                 audit.capture(connection)
@@ -49,7 +50,7 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_missing_or_nontransactional_source_refuses(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 13}], []]
+        cursor.fetchmany.side_effect = [[{'count': 14}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'not InnoDB'):
                 audit.capture(connection)
@@ -59,7 +60,7 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_capsule_budget_refuses_before_decoding(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 14}], [], [{'count': 1}], [],
+        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 1}], [],
                                        [{'size': audit.MAX_INPUT_BYTES+1}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'capsules exceed'):
@@ -70,7 +71,7 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_orphan_and_rejected_details_refuse_before_decoding(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 14}], [], [{'count': 0}], [], [{'size': 0}], [], [{'unwanted': 1}], []]
+        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 0}], [], [{'size': 0}], [], [{'unwanted': 1}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'orphan_or_rejected_detail'):
                 audit.capture(connection)
@@ -126,6 +127,29 @@ class CanonicalAuditTests(unittest.TestCase):
         cursor.close.assert_called_once_with()
 
 
+    def test_source_claim_limit_refuses_before_original_capsule_decoding(self):
+        connection, cursor = self.connection()
+        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 1}], [], [{'size': 512}], [],
+                                       [{'unwanted': 0}], [], [{'claims': audit.MAX_ROWS+1}], []]
+        with mock.patch.object(audit, 'require_integrity') as verifier:
+            with self.assertRaisesRegex(audit.AuditError, 'source_claim'):
+                audit.capture(connection)
+            verifier.assert_not_called()
+        connection.rollback.assert_called_once_with()
+        cursor.close.assert_called_once_with()
+
+    def test_database_wide_source_claim_disagreement_refuses_before_decoding(self):
+        connection, cursor = self.connection()
+        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 1}], [], [{'size': 512}], [],
+                                       [{'unwanted': 0}], [], [{'claims': 1}], [], [{'unwanted_claim': 1}], []]
+        with mock.patch.object(audit, 'require_integrity') as verifier:
+            with self.assertRaisesRegex(audit.AuditError, 'source_claim'):
+                audit.capture(connection)
+            verifier.assert_not_called()
+        connection.rollback.assert_called_once_with()
+        cursor.close.assert_called_once_with()
+
+
 @unittest.skipUnless(os.environ.get('DURIS_PLAN5_CANONICAL_NATIVE') == '1',
                      'requires explicitly selected native and fresh private SQL checks')
 class NativeCanonicalAuditTests(unittest.TestCase):
@@ -149,6 +173,10 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                 'old.owner={item_owner_type::native_mobile,42,0}; old.equipment_slot=43;')
             native_source = native_source.replace('next.owner.id=7;',
                 'next.owner={item_owner_type::player,7,0}; next.equipment_slot=0;')
+        if os.environ.get('DURIS_PLAN5_CANONICAL_SOURCE') == '1':
+            native_source = native_source.replace('meta.reason=economic_reason::bank_transfer;',
+                'meta.reason=economic_reason::bank_transfer; '
+                'meta.source_event=economic_source_event{economic_source_kind::legacy_import,id(0x66),id(0x77),1,0};')
         source.write_text(native_source)
         builds, native = [], None
         sources = [str(source), 'src/economy/economic_accounting_types.c',
@@ -237,13 +265,16 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                     insert('economic_lineage_state', dict(lineage=encoded[8:24], active_epoch=None))
                     fields = dict(operation_id=operation, lineage=encoded[8:24], epoch=encoded[24:40],
                         original_operation_id=None, accounting_version=1, writer_id=1, policy_version=1,
-                        compiler_version=1, actor_kind=1, actor_id=7, reason=1, source_event=None,
+                        compiler_version=1, actor_kind=1, actor_id=7, reason=1, source_event=plan['metadata'][-1],
                         intent_digest=plan['intent_digest'], domain_digest=plan['domain_digest'],
                         plan_digest=plan['plan_digest'], canonical_intent=frozen, canonical_plan=encoded,
                         outcome=1, result_code=0)
                     fields.update(zip(('account_count','posting_count','child_count','before_witness_count',
                                        'after_witness_count','item_event_count'), plan['counts']))
                     insert('economic_accounting_operation', fields)
+                    if plan['metadata'][-1] is not None:
+                        insert('economic_accounting_source_claim', dict(lineage=encoded[8:24],
+                            source_event=plan['metadata'][-1], operation_id=operation, outcome=1))
                     for index, (key, before, after, oldrev, newrev) in enumerate(plan['effects']):
                         fields = dict(operation_id=operation, account_index=index, account_key=key,
                                       before_revision=oldrev, after_revision=newrev)
@@ -284,7 +315,8 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                                 for table in ('critical_operation_inbox','economic_lineage_state','economic_epoch',
                                     'economic_accounting_operation','economic_accounting_account_effect',
                                     'economic_accounting_coin_posting','economic_accounting_child',
-                                    'economic_accounting_item_reference','item_ownership_ledger'):
+                                    'economic_accounting_item_reference','economic_accounting_source_claim',
+                                    'item_ownership_ledger'):
                                     cursor.execute('SELECT * FROM '+table+' ORDER BY 1,2')
                                     result[table] = cursor.fetchall()
                                 return result
@@ -293,10 +325,22 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                             wrapped = mock.Mock(wraps=reader)
                             cursor = mock.Mock(wraps=reader.cursor())
                             wrapped.cursor.return_value = cursor
-                            if code:
-                                with self.assertRaisesRegex(audit.AuditError, code): audit.capture(wrapped)
-                            else:
+                            try:
                                 report = audit.capture(wrapped)
+                            except audit.AuditError as error:
+                                observed = str(error)
+                                report = None
+                            else:
+                                observed = None
+                            observation = {'engine': engine, 'label': label, 'expected_refusal': code,
+                                'observed_refusal': observed, 'report': report,
+                                'unchanged': before == inventory(), 'rollback_calls': wrapped.rollback.call_count}
+                            (work/(engine+'-'+label+'-observation.json')).write_text(json.dumps(observation,indent=2)+'\n')
+                            if code:
+                                self.assertIsNotNone(observed, observation)
+                                self.assertIn(code, observed)
+                            else:
+                                self.assertIsNone(observed, observation)
                                 self.assertEqual(report['retained_roots'], 1)
                                 self.assertFalse(report['release_qualified'])
                             wrapped.rollback.assert_called_once_with()
@@ -385,7 +429,11 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                             self.assertEqual(before,inventory())
                             check(label+'-repaired')
                         before = inventory()
+                        claim = dict(lineage=encoded[8:24],source_event=plan['metadata'][-1],
+                                     operation_id=operation,outcome=1) if plan['metadata'][-1] is not None else None
                         with owner.cursor() as cursor:
+                            if claim:
+                                cursor.execute('DELETE FROM economic_accounting_source_claim WHERE operation_id=%s',(operation,))
                             cursor.execute('UPDATE economic_accounting_operation SET outcome=2,result_code=9,canonical_plan=NULL,plan_digest=NULL,'
                                 'account_count=0,posting_count=0,child_count=0,before_witness_count=0,after_witness_count=0,item_event_count=0 WHERE operation_id=%s', (operation,))
                         try:
@@ -395,8 +443,41 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                                 cursor.execute('UPDATE economic_accounting_operation SET outcome=1,result_code=0,canonical_plan=%s,plan_digest=%s,'
                                     'account_count=2,posting_count=2,child_count=2,before_witness_count=1,after_witness_count=1,item_event_count=1 WHERE operation_id=%s',
                                     (encoded,plan['plan_digest'],operation))
+                            if claim:
+                                insert('economic_accounting_source_claim',claim)
                         self.assertEqual(before,inventory())
                         check('rejected_details-repaired')
+                        if claim:
+                            with owner.cursor() as cursor:
+                                cursor.execute('DELETE FROM economic_accounting_source_claim WHERE operation_id=%s',(operation,))
+                            try:
+                                check('missing_source_claim','source_claim')
+                            finally:
+                                insert('economic_accounting_source_claim',claim)
+                            for label, field, damage in (
+                                ('foreign_source_claim','lineage',bytes([0x99])*16),
+                                ('changed_source_claim','source_event',bytes([0x99])*48),
+                                ('orphan_source_claim','operation_id',bytes([0x99])*16)):
+                                before = inventory()
+                                with owner.cursor() as cursor:
+                                    with self.assertRaises(pymysql.MySQLError) as denied:
+                                        cursor.execute('UPDATE economic_accounting_source_claim SET '+field+'=%s', (damage,))
+                                    self.assertEqual(denied.exception.args[0],1452)
+                                    self.assertEqual(before,inventory())
+                                    # Model corrupt evidence imported with FK checks disabled.
+                                    # Normal writes above must still enforce the native schema.
+                                    cursor.execute('SET SESSION FOREIGN_KEY_CHECKS=0')
+                                    try:
+                                        cursor.execute('UPDATE economic_accounting_source_claim SET '+field+'=%s',(damage,))
+                                    finally:
+                                        cursor.execute('SET SESSION FOREIGN_KEY_CHECKS=1')
+                                try:
+                                    check(label,'source_claim')
+                                finally:
+                                    with owner.cursor() as cursor:
+                                        cursor.execute('UPDATE economic_accounting_source_claim SET '+field+'=%s',(claim[field],))
+                                self.assertEqual(before,inventory())
+                            check('source_claim_restored')
                         orphan = bytes([0x77])*16
                         with owner.cursor() as cursor:
                             cursor.execute('SET SESSION FOREIGN_KEY_CHECKS=0')
@@ -419,7 +500,7 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                 finally:
                     owner.close()
         (work/'results.json').write_text(json.dumps(results,indent=2)+'\n')
-        self.assertEqual(len(results),38)
+        self.assertEqual(len(results),48 if plan['metadata'][-1] is not None else 38)
 
 
 if __name__ == '__main__':
