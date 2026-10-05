@@ -69,4 +69,12 @@ bool shop_trade_world_expected_player_order(const shop_trade_payload &, char_dat
 					    const std::vector<player_item_snapshot> &values,
 					    std::vector<player_item_snapshot> *output) noexcept;
 
+// Same pure insertion conversion for a stored sale into the addressed NPC.
+// Caller proves the original keeper runtime identity and full literal stock;
+// VNUM and typed action checks here do not authenticate that native authority.
+bool shop_trade_world_expected_keeper_order(const shop_trade_payload &, char_data *keeper,
+					    obj_data *selected,
+					    const std::vector<player_item_snapshot> &values,
+					    std::vector<player_item_snapshot> *output) noexcept;
+
 #endif
