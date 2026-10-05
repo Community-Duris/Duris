@@ -1222,7 +1222,8 @@ bool observe_and_project_flat(const projection_cut &cut, const critical_command 
 			    item.equipment_slot != -1 || !snapshot_equal(item, *native.literal))
 				return false;
 			for (const auto &child : room.items)
-				if (child.parent_index == index)
+				if (child.parent_index >= 0 &&
+				    static_cast<size_t>(child.parent_index) == index)
 					return false;
 		}
 	}

@@ -133,10 +133,12 @@ def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> dict:
                 *(row[name] for name in ("accounting_version", "writer_id", "policy_version",
                                          "compiler_version", "actor_kind", "actor_id", "reason")),
                 row["source_event"])
+        keys_hash = hashlib.sha256(struct.pack("<BQ", 9, 0x45434f4e42415345)).digest()
         if (root != expected or row["original_operation_id"] is not None or
                 row["witness_version"] != 1 or row["inbox_revision"] != row["book_revision"] or
                 (row["inbox_type"], row["inbox_schema"], row["inbox_payload"], row["inbox_result_payload"]) !=
-                (20, 2, 1, b"")):
+                (20, 2, 1, b"") or type(row.get("inbox_keys_hash")) is not bytes or
+                row["inbox_keys_hash"] != keys_hash):
             raise OriginError("EAB1 committed root mismatch")
         intent = decode_intent(row["canonical_intent"])
         plan = decode_plan(row["canonical_plan"])
@@ -327,6 +329,7 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
         "o.account_count,o.posting_count,o.child_count,o.item_event_count,o.before_witness_count,o.after_witness_count,"
         "i.durable_revision AS inbox_revision,i.command_type AS inbox_type,i.schema_version AS inbox_schema,"
         "i.payload_version AS inbox_payload,i.result_payload AS inbox_result_payload,"
+        "i.keys_hash AS inbox_keys_hash,"
         "i.status AS inbox_status,i.result_code AS inbox_result,"
         "i.failure_stage AS inbox_failure_stage,"
         "(i.committed_at IS NOT NULL) AS inbox_committed_at_present "
