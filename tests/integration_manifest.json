@@ -2055,6 +2055,163 @@
         "PASS stake-read-only mysql",
         "PASS stake-read-only mariadb"
       ]
+    },
+    {
+      "id": "flatfile_restore_baseline_markers",
+      "path": "tests/async/test_flatfile_restore_baseline_markers.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--native-source",
+        ".",
+        "--artifacts",
+        "{evidence}/native"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_flatfile_restore_baseline_markers.py"
+      ],
+      "required_markers": [
+        "\"economic_evidence_unchanged\": true",
+        "\"independent_and_operator_state_unchanged\": true",
+        "\"skips\": 0"
+      ]
+    },
+    {
+      "id": "flatfile_restore_lifecycle_receipts",
+      "path": "tests/async/test_flatfile_restore_lifecycle_receipts.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--artifacts",
+        "{evidence}/native"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_flatfile_restore_lifecycle_receipts.py"
+      ],
+      "required_markers": [
+        "\"required_file_discovery_qualified\": true",
+        "\"skips\": 0"
+      ]
+    },
+    {
+      "id": "native_restore_economic_coin_effects",
+      "path": "tests/async/test_restore_economic_coin_effects.py",
+      "provider": "self-sql",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "RestoreCoinEffectsTests.test_native_coin_effects_both_modes_and_canonical_engines"
+      ],
+      "arguments": [
+        "RestoreCoinEffectsTests",
+        "-v"
+      ],
+      "environment": {
+        "DURIS_RUN_RESTORE_COIN_INTEGRATION": "1",
+        "DURIS_PLAN5_CANONICAL_EVIDENCE": "1"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_restore_economic_coin_effects.py"
+      ],
+      "required_markers": [
+        "NATIVE_RESTORE_COIN_CASES",
+        "NATIVE_RESTORE_HISTORY",
+        "COIN_RESTORE_QUALIFIED"
+      ]
+    },
+    {
+      "id": "player_snapshot_sql_exception",
+      "path": "tests/async/run_player_sql_exception_matrix.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--owner",
+        "snapshot",
+        "--artifacts",
+        "{evidence}/native"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_player_snapshot_exception_mysql.py"
+      ],
+      "required_markers": [
+        "PASS direct_start_oom",
+        "PASS pooled_start_oom",
+        "PASS direct_dml_oom",
+        "PASS pooled_dml_oom",
+        "PASS commit_readback_oom",
+        "PASS failed_rollback",
+        "PASS replacement_null",
+        "PASS borrowed_tx",
+        "PASS borrowed_autocommit",
+        "PASS borrowed_reconnect",
+        "PASS conflict_cleanup",
+        "PASS description_ownership",
+        "PASS pet_result_ownership"
+      ],
+      "schema_prefix": "economic_schema_test_se_",
+      "schema_identity_bytes": 4,
+      "migrated": true
+    },
+    {
+      "id": "player_retained_sql_exception",
+      "path": "tests/async/run_player_sql_exception_matrix.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--owner",
+        "retained",
+        "--artifacts",
+        "{evidence}/native"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_player_death_conflict_exception_mysql.py"
+      ],
+      "required_markers": [
+        "PASS retained_start_oom",
+        "PASS retained_insert_oom",
+        "PASS retained_insert_rollback_failure",
+        "PASS retained_commit_readback_oom"
+      ],
+      "schema_prefix": "economic_schema_test_se_",
+      "schema_identity_bytes": 4,
+      "migrated": true
     }
   ]
 }

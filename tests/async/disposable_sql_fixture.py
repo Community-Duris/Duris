@@ -139,12 +139,14 @@ class DisposableSQL:
         return result
 
     @contextmanager
-    def schema(self, prefix="economic_schema_test_", *, migrated=True, suffix=""):
+    def schema(self, prefix="economic_schema_test_", *, migrated=True, suffix="", identity_bytes=6):
         if not re.fullmatch(r"[a-z0-9_]+_", prefix):
             raise ValueError("invalid private schema prefix")
         if suffix not in {"", "_test"}:
             raise ValueError("invalid private schema suffix")
-        database = prefix + secrets.token_hex(6) + suffix
+        if type(identity_bytes) is not int or identity_bytes not in {4, 6}:
+            raise ValueError("invalid private schema identity size")
+        database = prefix + secrets.token_hex(identity_bytes) + suffix
         self.sql("CREATE DATABASE " + database + " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", selected=False)
         self.environment.update(DB_NAME=database, DB_ALLOWED_TARGETS="127.0.0.1/" + database,
                                 ECONOMIC_ACCOUNTING_DISPOSABLE_SCHEMA="1")

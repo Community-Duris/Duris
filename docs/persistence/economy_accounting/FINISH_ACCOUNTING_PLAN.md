@@ -1,5 +1,17 @@
 # Finish accounting implementation plan
 
+## Plan 5 evidence and complete central inventory — 2026-10-05
+
+[Exact peer evidence and runner registration](PLAN5_CENSUS_AND_INVENTORY_INTEGRATION_2026-10-05.md)
+imports frozen 71-contract pin-repair and 58-case pure custody evidence without
+promoting it to current native qualification. Eight existing test classifications
+and two existing SQL matrix omissions are repaired: 914 owners, 92 rows, all
+87 original rows unchanged. The [publication recipe path fix](PUBLICATION_RECIPE_PATH_REPAIR_2026-10-05.md)
+is separately published as `7a5f9e97d`. Source/JSON/AST/inventory checks only;
+major-plan testing, full writer/player/recovery acceptance and R1–R8 stay open.
+The private staged NPC loader is frozen for review; the cold shop player reader
+continues in parallel. Existing inactive behavior and safety gates remain.
+
 ## Shop recovery binding foundation and parallel NPC schema — 2026-10-05
 
 [Canonical recovery bindings and producer preparation](SHOP_RECOVERY_BINDING_SOURCE_2026-10-05.md)
