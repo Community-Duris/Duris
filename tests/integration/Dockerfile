@@ -14,7 +14,7 @@ COPY --from=mysql_restore /lib64/libaio.so.1 /usr/local/lib/libaio.so.1
 COPY packaging/duris-build-deps.equivs /tmp/duris-build-deps.equivs
 RUN apt-get update \
     && apt-get install --no-install-recommends --yes equivs docker.io iproute2 curl systemd \
-         mariadb-server mariadb-client libmariadb-dev-compat \
+         mariadb-server mariadb-client libmariadb-dev-compat python3-pymysql \
     && cd /tmp && equivs-build duris-build-deps.equivs \
     && apt-get install --yes /tmp/duris-build-deps_1.0_all.deb \
     && rm -rf /var/lib/apt/lists/* /tmp/duris-build-deps* \
