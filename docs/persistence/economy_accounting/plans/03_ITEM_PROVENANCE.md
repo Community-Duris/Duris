@@ -1,5 +1,16 @@
 # Plan 3: item supply, custody, and provenance
 
+## Detached native mobile stage installed — 2026-10-05
+
+[The reviewed loader integration](../NATIVE_MOBILE_STAGE_INTEGRATION_2026-10-05.md)
+prepares an actual NPC outside live list/count/index/event publication and
+consumes its private retained stage before room/special callbacks. Both legacy
+overloads and probes keep their original path. Source/raw-preimage review only;
+no native execution or original birth/UID/source/restore/retirement owner is
+claimed. The actual reset/spawn issuer and explicit durable native reference
+restore remain unfinished. No full NPC state ledger or new gate is added;
+major-plan qualification, R1–R8, release and activation remain open/BLOCKED.
+
 ## Coherent SHOP source installed — 2026-10-05
 
 [The composed source milestone](../SHOP_COHERENT_SOURCE_INTEGRATION_2026-10-05.md)

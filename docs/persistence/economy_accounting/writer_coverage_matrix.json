@@ -8,11 +8,11 @@
     "Baseline/cutover, source-event dedupe, item UID lifetime, lifecycle retirement and restore/reconciliation remain activation blockers."
   ],
   "candidate_worktree_evidence": {
-    "base_commit": "92784e323186f62cf1067b6f8a27f3fc70b702d5",
-    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified. Source-reviewed pure active-root custody census shares old root observation and preserves retained historical states; private shop consumer remains unintegrated and unqualified. Source-reviewed bounded canonical shop recovery forest binding codecs are integrated as pure value helpers; the explicit v8 command, producer, original SQL validation, cold replay/publication and final qualification remain private/unfinished. Existing journal limits, inactive shop versions and admission/ACK gates are unchanged. Maintained native reference/source-event codecs are extracted without changing original encoded bytes or image/capture policy; complete production and focused link recipes are updated. Native char_data now has zeroable runtime-only reference storage and a read-only accessor requiring the originally observed runtime generation before pointer access. No birth writer, durable restore record, UID issuance or ACK authority is installed by this slice; major-plan execution remains deferred. Reviewed SHOP v8 producer/checkpoint, literal runtime payload, complete destination weight, original SQL images, exact retained receipt verification and held live publication source are composed with all companion headers and production objects. Current cold image observation grants no startup/rebind/native publication or ACK authority. Central accounted SHOP admission remains closed and canonical schema0056 is unchanged; schema0057, real producer invocation, cold continuation, flat parity and major-plan native/gameplay/recovery qualification remain unfinished.",
+    "base_commit": "30c9a30a6e0449dcdc58499d152f8e1061b9d8ad",
+    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified. Source-reviewed pure active-root custody census shares old root observation and preserves retained historical states; private shop consumer remains unintegrated and unqualified. Source-reviewed bounded canonical shop recovery forest binding codecs are integrated as pure value helpers; the explicit v8 command, producer, original SQL validation, cold replay/publication and final qualification remain private/unfinished. Existing journal limits, inactive shop versions and admission/ACK gates are unchanged. Maintained native reference/source-event codecs are extracted without changing original encoded bytes or image/capture policy; complete production and focused link recipes are updated. Native char_data now has zeroable runtime-only reference storage and a read-only accessor requiring the originally observed runtime generation before pointer access. No birth writer, durable restore record, UID issuance or ACK authority is installed by this slice; major-plan execution remains deferred. Reviewed SHOP v8 producer/checkpoint, literal runtime payload, complete destination weight, original SQL images, exact retained receipt verification and held live publication source are composed with all companion headers and production objects. Current cold image observation grants no startup/rebind/native publication or ACK authority. Central accounted SHOP admission remains closed and canonical schema0056 is unchanged; schema0057, real producer invocation, cold continuation, flat parity and major-plan native/gameplay/recovery qualification remain unfinished. Previously reviewed detached native-mobile loader is source integrated with both legacy overloads/probe kept on their original path. Preparation has no live list/count/runtime/event publication; consumption precedes room/special hooks. Private dormant stage grants no original source, durable UID or ACK, and adds no durable recovery format or NPC state ledger. Original issuer/birth/restore/retirement and major-plan qualification remain open.",
     "source_pins": {
       "migrations/data_lifecycle_manifest.json": "b37efc35e5865e466a5623e11f1f43f587d63ffa3de25acfe769faec79508fbf",
-      "scripts/generate_economy_writer_coverage.py": "c18913dd0c27aaa46f95e13de11a13b794c7634fb45c7b48215cd08f5b22153c",
+      "scripts/generate_economy_writer_coverage.py": "ca34dfdc7eebd0c9045f95f315e4f77f74c13d053a7aec6bc10f6c07639d861a",
       "scripts/validate_data_lifecycle.py": "948868127e84196d4998159c58e9114a8bdb0eaead2495d0d9da0f86d5f904ca",
       "scripts/validate_economy_accounting.py": "984d3170c3b4b17cb96dbcb6568a288b63a9db5278861d59cc860bf996f237be",
       "src/Makefile": "2ae8f1f3e8cba75233c75a5680e1ca423abf5e4cf5b4e1f1cf56b1b7f5a1d00e",
@@ -87,6 +87,8 @@
       "src/player/player_save_pipeline.h": "a3f171c9c1ade731cc7d8a0d9ddc677e0d8adf3f999b563f014fde35c545fcef",
       "src/player/player_snapshot_repository.c": "58d5bbd01c3b48d496369b92b64178d6d5e0ec3ce4c30efca22eed3d09e8eb8f",
       "src/sql/sql_player.c": "6b54581d8b92acc5430f9413e42cc1d27b8d6137ec9044e273396abe9d2bc756",
+      "src/world/db.c": "86551201b1c094c2764d21ecf65b5c6d7d917c1c046ef69bfda35cfb5e0d0fa9",
+      "src/world/db.h": "5897c9aa58084208b407643913b24490322e77975461a69c9fb306274afc51ff",
       "src/world/handler.c": "be9a24aee571aeafabebdb747ee3e9e6b2fdb47874a529ec9b19c34459ebe71b",
       "src/world/handler.h": "3650f740dc709fc11b746cb78b59ac5d105498881adbb7239d3184edef6bb9af",
       "src/world/quest_mobile_native.c": "39dff207aa4f9b244fd3af1fb57afd5c51608d7264fdd8e2698df6c95445f909",
@@ -99,10 +101,10 @@
     "status": "source_integrated_unqualified"
   },
   "counts": {
-    "dormant_writer_candidates": 15,
-    "draft_registry_rows": 890,
-    "function_definition_anchors_verified": 882,
-    "matrix_rows": 890,
+    "dormant_writer_candidates": 16,
+    "draft_registry_rows": 891,
+    "function_definition_anchors_verified": 883,
+    "matrix_rows": 891,
     "non_function_candidate_anchors": 8,
     "non_writer_or_out_of_scope_candidates": 107,
     "offline_operational_writer_routes": 4,
@@ -114,7 +116,7 @@
   },
   "coverage_complete": false,
   "disposition_counts": {
-    "dormant_writer_candidate": 15,
+    "dormant_writer_candidate": 16,
     "non_writer_candidate": 107,
     "offline_operational_writer": 4,
     "runtime_mutation_route": 692,
@@ -130,7 +132,7 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 890 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The matrix reconciles 891 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
     "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
@@ -154,7 +156,7 @@
       "ship_coffer_assignment": 6,
       "sql_economy": 56
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 890-row registry maps 2790 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 891-row registry maps 2790 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
     "mapped_sites_still_present": 2790,
     "mapped_unique_sites_from_draft_rows": 2790,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
@@ -32641,6 +32643,64 @@
       "blocking_policy_after_activation": {
         "decision": "keep_unreachable_or_block_if_reactivated",
         "must_block_on_activation": true,
+        "required_policy": "Private detached native mobile publication is defined but has no in-tree birth owner/caller. Keep it unavailable until the original admitted source, native economic values/stock, retained candidate and final publication outcome are proved; stage consumption grants no ACK. Any reactivation must route through the typed schema-2 writer before native mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "none",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "dormant_writer_candidate",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "not_executed_in_tree",
+        "unified_operation_postings_observed": false
+      },
+      "id": "quest.native_mobile_stage_publication",
+      "native_effects": {
+        "custody_effect": "legacy behavior if revived; not currently reached in-tree",
+        "holding_effect": "direct writer exists but no in-tree gameplay caller was found",
+        "native_state_targets": [
+          "legacy auction/bank persistence code; see route detail"
+        ]
+      },
+      "reachability_evidence": "Definition only; no in-tree birth owner/caller. Legacy overloads remain on the original path.",
+      "reason": "npc_reward",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          2913
+        ],
+        "file": "src/world/db.c",
+        "function": "quest_mobile_native_stage::publish",
+        "original_draft_symbol": "quest_mobile_native_stage::publish"
+      },
+      "source_classification": "Private detached mobile stage can publish its original candidate into runtime index/list/room and arm legacy hooks; it has no current caller. Stage consumption alone grants no native commit, issuance, source, custody or ACK authority.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "keep_unreachable_or_block_if_reactivated",
+        "must_block_on_activation": true,
         "required_policy": "Borrowed-transaction native NPC image/stock writer is defined but has no in-tree caller. Parent must authenticate admitted birth/transition, revisions and source/epoch/inbox, lock mobile IDs before custody, commit the unified root and own cleanup; never call as standalone authority. Any reactivation must route through the typed schema-2 writer before native mutation."
       },
       "counts_as_operational_writer": false,
@@ -50348,17 +50408,16 @@
           "mob template cash"
         ]
       },
-      "reachability_evidence": "read_mobile is called by zone resets and copyover recovery. The two mob-file denomination branches execute before convertMob and before caller publication.",
+      "reachability_evidence": "Both legacy read_mobile overloads and read_mobile_probe reach the unchanged legacy mode of the shared read_mobile_body. The private detached stage selects its separate mode; original birth/source ownership and native qualification remain unfinished.",
       "reason": "npc_reward",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1997,
-          2825
+          2053
         ],
         "file": "src/world/db.c",
-        "function": "read_mobile",
-        "original_draft_symbol": "read_mobile"
+        "function": "read_mobile_body",
+        "original_draft_symbol": "read_mobile_body"
       },
       "source_classification": "Prototype NPC denominations are parsed from either mob-file format, then convertMob may recompute/scales them before read_mobile returns. Fresh admission and copyover reconstruction have different source semantics.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
@@ -50508,7 +50567,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3429
+          3558
         ],
         "file": "src/world/db.c",
         "function": "instantiate_object_template",
@@ -51557,7 +51616,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3547
+          3676
         ],
         "file": "src/world/db.c",
         "function": "read_object",
@@ -51617,7 +51676,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3662
+          3791
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -52092,7 +52151,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3662
+          3791
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -52153,7 +52212,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3662
+          3791
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -52213,7 +52272,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3662
+          3791
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -52273,7 +52332,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3662
+          3791
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -52333,7 +52392,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3662
+          3791
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -52380,7 +52439,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3662
+          3791
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
