@@ -1,3 +1,5 @@
+#include "player/pet_restore_runtime.h"
+#include "classes/summoner_pet.h"
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -26,7 +28,7 @@ extern int get_multicast_chars(P_char leader, int m_class, int min_level);
 #include <strings.h>
 #include <time.h>
 
-static int conjure_terrain_check(P_char, P_char);
+int conjure_terrain_check(P_char, P_char);
 
 static P_obj spell_item_by_uid(uint64_t uid)
 {
@@ -449,7 +451,6 @@ void spell_conjour_elemental(int level, P_char ch, char * /*arg*/, int /*type*/,
 			     P_obj /*obj*/)
 {
 	P_char mob;
-	int life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
 	int charisma = GET_C_CHA(ch) + (GET_LEVEL(ch) / 5);
 	int sum, lvl, duration, room = ch->in_room;
 	int good_terrain = 0;
@@ -567,44 +568,13 @@ void spell_conjour_elemental(int level, P_char ch, char * /*arg*/, int /*type*/,
 
 	good_terrain = conjure_terrain_check(ch, mob);
 
-	if (good_terrain == 1)
+	summoner_elemental_body(mob, ch, false, good_terrain);
+	if (good_terrain == 1 && GET_C_CHA(ch) > number(0, 400))
 	{
-		if (IS_SET(mob->specials.affected_by2, AFF2_SLOW))
-		{
-			REMOVE_BIT(mob->specials.affected_by2, AFF2_SLOW);
-		}
-
-		if (!IS_SET(mob->specials.affected_by, AFF_HASTE))
-		{
-			SET_BIT(mob->specials.affected_by, AFF_HASTE);
-		}
-
-		mob->points.base_hitroll = mob->points.hitroll = GET_LEVEL(mob) / 2;
-		mob->points.base_damroll = mob->points.damroll = GET_LEVEL(mob) / 2;
-
-		mob->base_stats.Str = 100;
-		mob->base_stats.Dex = 100;
-		mob->base_stats.Agi = 100;
-		mob->base_stats.Pow = 100;
-
-		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit =
-			(int)(dice(GET_LEVEL(mob) / 2, 12) + 6 * GET_LEVEL(mob) + life + charisma);
-
-		if (GET_C_CHA(ch) > number(0, 400))
-		{
-			GET_SIZE(mob) = SIZE_LARGE;
-			mob->player.spec = 2; // Guardian spec
-		}
+		GET_SIZE(mob) = SIZE_LARGE;
+		mob->player.spec = 2; // Guardian
 	}
-	else
-	{
-		mob->points.base_hitroll = mob->points.hitroll = GET_LEVEL(mob) / 3;
-		mob->points.base_damroll = mob->points.damroll = GET_LEVEL(mob) / 3;
-		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit =
-			dice(GET_LEVEL(mob) / 2, 10) + 3 * GET_LEVEL(mob) + life + charisma;
-		mob->points.damsizedice = (int)(0.8 * mob->points.damsizedice);
-	}
-
+	summoned_pet_mark(mob, summoned_pet_kind::conjurer_elemental);
 	if (IS_PC(ch) && GET_LEVEL(mob) > GET_LEVEL(ch) &&
 	    charisma <
 		    number(10, (int)(get_property("summon.lesser.elemental.charisma", 140.000))) &&
@@ -835,20 +805,41 @@ bool can_conjure_greater_elem(P_char ch, int /*level*/)
 	return TRUE;
 }
 
-static int conjure_terrain_check(P_char ch, P_char mob)
+int conjure_terrain_check(P_char ch, P_char mob)
 {
-	int room = ch->in_room;
-
 	if (!ch || !mob || !IS_ALIVE(ch))
 		return 0;
 
-	if (!GET_CLASS(ch, CLASS_CONJURER))
+	const int room = ch->in_room;
+	if (room == NOWHERE)
+		return 0;
+	int specialization = ch->player.spec;
+	if (GET_SPEC(ch, CLASS_SUMMONER, SPEC_MENTALIST))
+	{
+		switch (GET_RACE(mob))
+		{
+		case RACE_A_ELEMENTAL:
+		case RACE_V_ELEMENTAL:
+			specialization = 1;
+			break;
+		case RACE_W_ELEMENTAL:
+		case RACE_I_ELEMENTAL:
+			specialization = 2;
+			break;
+		case RACE_F_ELEMENTAL:
+			specialization = 3;
+			break;
+		case RACE_E_ELEMENTAL:
+			specialization = 4;
+			break;
+		default:
+			return 0;
+		}
+	}
+	else if (!GET_CLASS(ch, CLASS_CONJURER) || !specialization)
 		return 0;
 
-	if (!ch->player.spec)
-		return 0;
-
-	switch (ch->player.spec)
+	switch (specialization)
 	{
 	case 1: /* AIR conjurer*/
 
@@ -954,7 +945,6 @@ static void conjure_specialized(P_char ch, [[maybe_unused]] int level)
 {
 	P_char mob;
 	int summoned, room;
-	int life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
 	int charisma = GET_C_CHA(ch) + (GET_LEVEL(ch) / 5);
 	int good_terrain = 0;
 	const char *summons[] = { "&+CA HUGE gust of wind solidifies into&n $n.",
@@ -1042,78 +1032,13 @@ static void conjure_specialized(P_char ch, [[maybe_unused]] int level)
 		mob->player.level = (ubyte)number(49, 53);
 	}
 
-	// whew, big bonus for high level mobs!
-	if (mob->player.level > 53)
-	{
-		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit =
-			pets[summoned].hits * 2 + number(0, 50) + (life * 3) + charisma;
-	}
-	else if (mob->player.level > 49)
-	{
-		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit =
-			pets[summoned].hits + number(0, 50) + (life * 3) + charisma;
-	}
-	else
-		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit =
-			310 + number(0, 50) + (life * 3) + charisma;
-
-	GET_MAX_HIT(mob) = GET_HIT(mob) = (int)(GET_MAX_HIT(mob) * .66);
-
-	mob->points.base_hitroll = mob->points.hitroll = pets[summoned].damroll + number(0, 5);
-	mob->points.base_damroll = mob->points.damroll = pets[summoned].damroll + number(0, 5);
-	MonkSetSpecialDie(mob);
-	mob->points.damsizedice = (int)(0.8 * mob->points.damsizedice);
-
 	good_terrain = conjure_terrain_check(ch, mob);
-
-	if (good_terrain == -1)
-	{
-		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit =
-			(int)(50 + number(1, 100) + (life * 2) + (charisma));
-		GET_SIZE(mob) = SIZE_MEDIUM;
-	}
-	else if (good_terrain == 1)
-	{
-		if (IS_SET(mob->specials.affected_by2, AFF2_SLOW))
-		{
-			REMOVE_BIT(mob->specials.affected_by2, AFF2_SLOW);
-		}
-
-		if (!IS_SET(mob->specials.affected_by, AFF_HASTE))
-		{
-			SET_BIT(mob->specials.affected_by, AFF_HASTE);
-		}
-
-		mob->points.base_hitroll = mob->points.hitroll =
-			pets[summoned].damroll + number(20, 30);
-		mob->points.base_damroll = mob->points.damroll =
-			pets[summoned].damroll + number(20, 30);
-		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit =
-			(int)(GET_LEVEL(ch) * 30 + number(1, 100) + (life * 4) + (charisma * 2));
-		GET_SIZE(mob) = SIZE_HUGE;
-		mob->base_stats.Str = 100;
-		mob->base_stats.Dex = 100;
-		mob->base_stats.Agi = 100;
-		mob->base_stats.Pow = 100;
-
-		if (!IS_MULTICLASS_NPC(mob) && !IS_SPECIALIZED(mob) &&
-		    GET_CLASS(mob, CLASS_WARRIOR))
-		{
-			if (number(0, 3))
-			{
-				mob->player.spec = 2; // Guardian
-			}
-			else if (number(0, 3))
-			{
-				mob->player.spec = 1; // Swordsman
-			}
-			else
-			{
-				mob->player.spec = 3; // Swashbuckler
-			}
-		}
-	}
-
+	summoner_elemental_body(mob, ch, true, good_terrain, pets[summoned].hits,
+				pets[summoned].damroll);
+	if (good_terrain == 1 && !IS_MULTICLASS_NPC(mob) && !IS_SPECIALIZED(mob) &&
+	    GET_CLASS(mob, CLASS_WARRIOR))
+		mob->player.spec = number(0, 3) ? 2 : number(0, 3) ? 1 : 3;
+	summoned_pet_mark(mob, summoned_pet_kind::conjurer_elemental);
 	if (IS_PC(ch) && !IS_TRUSTED(ch) && !(has_air_staff_arti(ch)) &&
 	    charisma <
 		    number(10, (int)(get_property("summon.greater.elemental.charisma", 140.000))))
@@ -1165,7 +1090,6 @@ void spell_conjour_greater_elemental(int level, P_char ch, char * /*arg*/, int /
 {
 	P_char mob;
 	int sum, duration, room;
-	int life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
 	int charisma = GET_C_CHA(ch) + (GET_LEVEL(ch) / 5);
 	static struct
 	{
@@ -1237,23 +1161,6 @@ void spell_conjour_greater_elemental(int level, P_char ch, char * /*arg*/, int /
 	act(summons[sum].message, TRUE, mob, 0, 0, TO_ROOM);
 
 	mob->player.level = number(49, 53);
-	if (mob->player.level == 49)
-		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit =
-			450 + number(0, 50) + (life * 3) + charisma;
-	else if (mob->player.level == 50)
-		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit =
-			500 + number(0, 50) + (life * 3) + charisma;
-	else if (mob->player.level == 51)
-		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit =
-			550 + number(0, 50) + (life * 3) + charisma;
-	else if (mob->player.level == 52)
-		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit =
-			600 + number(0, 50) + (life * 3) + charisma;
-	else
-		// big bonus for highest level pet, since it's rare
-		GET_MAX_HIT(mob) = GET_HIT(mob) = mob->points.base_hit =
-			700 + number(0, 50) + (life * 3) + charisma;
-
 	SET_BIT(mob->specials.affected_by, AFF_INFRAVISION);
 
 	apply_achievement(mob, TAG_CONJURED_PET);
@@ -1264,6 +1171,8 @@ void spell_conjour_greater_elemental(int level, P_char ch, char * /*arg*/, int /
 	MonkSetSpecialDie(mob); /* 2d6 to 4d5 */
 	mob->points.damsizedice = (int)(0.8 * mob->points.damsizedice);
 
+	summoner_elemental_body(mob, ch, true, 0, 700, GET_LEVEL(mob) / 4);
+	summoned_pet_mark(mob, summoned_pet_kind::conjurer_elemental);
 	if (IS_PC(ch) && !has_air_staff_arti(ch) && !IS_TRUSTED(ch) &&
 	    (charisma + number(0, GET_LEVEL(ch)) <
 	     number(10, (int)(get_property("summon.greater.elemental.charisma", 140.000)))))

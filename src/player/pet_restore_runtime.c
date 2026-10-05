@@ -34,6 +34,14 @@ bool summoned_pet_capture(P_char pet, std::string *encoded)
 		return true;
 	const auto &npc = *pet->only.npc;
 	pet_restore_state s;
+	if (npc.summon_kind == static_cast<uint32_t>(summoned_pet_kind::summoner_capture) ||
+	    npc.summon_kind == static_cast<uint32_t>(summoned_pet_kind::conjurer_elemental))
+	{
+		s.version = 2;
+		s.specialization = pet->player.spec;
+		s.resource_slot = npc.summoner_resource_slot;
+		s.hp_ceiling = npc.summoner_hp_ceiling;
+	}
 	s.kind = static_cast<summoned_pet_kind>(npc.summon_kind);
 	s.charm_expires_at = npc.pet_charm_expires_at;
 	s.death_expires_at = npc.pet_death_expires_at;
@@ -104,6 +112,10 @@ bool summoned_pet_apply(P_char pet, const pet_restore_state &s)
 	pet->player.m_class = s.primary_class;
 	pet->player.secondary_class = s.secondary_class;
 	pet->player.level = s.level;
+	if (s.version == 2)
+		pet->player.spec = s.specialization;
+	npc.summoner_resource_slot = s.resource_slot;
+	npc.summoner_hp_ceiling = s.hp_ceiling;
 	GET_RACE(pet) = s.race;
 	GET_SEX(pet) = s.sex;
 	GET_SIZE(pet) = s.size;

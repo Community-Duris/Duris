@@ -76,6 +76,9 @@ struct golem_description
 	int cost;
 };
 
+extern const undead_description undead_data[NECROPET_LAST + 1];
+extern const golem_description golem_data[4];
+
 enum class corpse_raise_kind : uint8_t
 {
 	undead,

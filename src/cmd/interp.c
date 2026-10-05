@@ -1,4 +1,4 @@
-
+#include "classes/summoner_pet.h"
 
 /*
  * ***************************************************************************
@@ -2413,6 +2413,10 @@ void command_interpreter(P_char ch, char *argument)
 			{
 				return;
 			}
+
+			if (!summoner_pet_skill(exec_char, cmd))
+				return;
+			summoner_pet_note_command(exec_char, cmd);
 
 			// Execute the bloody thing!!!
 			if (cmd_info[cmd].req_confirm == 1)

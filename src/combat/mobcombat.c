@@ -1,3 +1,4 @@
+#include "classes/summoner_pet.h"
 /*
  * ***************************************************************************
  * *  File: mobcombatt.c                                           Part of Duris *
@@ -389,7 +390,8 @@ int UndeadCombat(P_char ch)
 
 	if (GET_RACE(ch) == RACE_VAMPIRE && victim && number(0, 1) && GOOD_FOR_GAZING(ch, victim))
 	{
-		innate_gaze(ch, victim);
+		if (summoner_pet_spend(ch, 42))
+			innate_gaze(ch, victim);
 	}
 
 	return FALSE;

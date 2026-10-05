@@ -1,3 +1,4 @@
+#include "classes/summoner_pet.h"
 /*
  * ***************************************************************************
  * *  File: actoff.c                                           Part of Duris *
@@ -468,14 +469,14 @@ float takedown_check(P_char ch, P_char victim, float chance, int skill, ulong ap
 
 	if ((applicable & TAKEDOWN_GHOST) && IS_IMMATERIAL(victim))
 	{
-		if (IS_NPC(victim))
+		if (IS_NPC(victim) && (!summoner_owned_pet(victim) || IS_ELEMENTAL(victim)))
 		{
 			show_failed_takedown_messages(ch, victim, skill, TAKEDOWN_GHOST);
 			return TAKEDOWN_PENALTY;
 		}
 
 		// Immaterial PCs get a 10% chance to dodge takedowns.
-		if (IS_PC(victim) && !number(0, 9))
+		if ((IS_PC(victim) || summoner_owned_pet(victim)) && !number(0, 9))
 		{
 			show_failed_takedown_messages(ch, victim, skill, TAKEDOWN_GHOST);
 			return TAKEDOWN_PENALTY;

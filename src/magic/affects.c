@@ -1,3 +1,4 @@
+#include "classes/summoner_pet.h"
 /*
  * ***************************************************************************
  *  file: affects.c                                          part of Duris
@@ -730,19 +731,28 @@ void apply_affs(P_char ch, int mode)
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Str) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Str + ((mode) ? TmpAffs.c_Str : 0)), t3);
-	GET_C_STR(ch) = BOUNDED(1, (int)(stat_factor[t1].Str * t2 / 100. + .55), 511);
+	GET_C_STR(ch) = BOUNDED(
+		1,
+		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Str) * t2 / 100. + .55),
+		511);
 
 	t1 = (!mode || !TmpAffs.r_Dex) ? (int)GET_RACE(ch) : TmpAffs.r_Dex;
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Dex) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Dex + ((mode) ? TmpAffs.c_Dex : 0)), t3);
-	GET_C_DEX(ch) = BOUNDED(1, (int)(stat_factor[t1].Dex * t2 / 100. + .55), 511);
+	GET_C_DEX(ch) = BOUNDED(
+		1,
+		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Dex) * t2 / 100. + .55),
+		511);
 
 	t1 = (!mode || !TmpAffs.r_Agi) ? (int)GET_RACE(ch) : TmpAffs.r_Agi;
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Agi) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Agi + ((mode) ? TmpAffs.c_Agi : 0)), t3);
-	GET_C_AGI(ch) = BOUNDED(1, (int)(stat_factor[t1].Agi * t2 / 100. + .55), 511);
+	GET_C_AGI(ch) = BOUNDED(
+		1,
+		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Agi) * t2 / 100. + .55),
+		511);
 
 	// t1 = which race to apply racial con with.
 	t1 = (!mode || !TmpAffs.r_Con) ? (int)GET_RACE(ch) : TmpAffs.r_Con;
@@ -754,43 +764,64 @@ void apply_affs(P_char ch, int mode)
 	t2 = BOUNDED(1, (ch->base_stats.Con + ((mode) ? TmpAffs.c_Con : 0)), t3);
 	// Current con = racial con * actual con / 100 + .55
 	//                 Makes more sense to do (actual con) * (racial modifier/100) + .55 (?)
-	GET_C_CON(ch) = BOUNDED(1, (int)(stat_factor[t1].Con * t2 / 100. + .55), 511);
+	GET_C_CON(ch) = BOUNDED(
+		1,
+		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Con) * t2 / 100. + .55),
+		511);
 
 	t1 = (!mode || !TmpAffs.r_Pow) ? (int)GET_RACE(ch) : TmpAffs.r_Pow;
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Pow) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Pow + ((mode) ? TmpAffs.c_Pow : 0)), t3);
-	GET_C_POW(ch) = BOUNDED(1, (int)(stat_factor[t1].Pow * t2 / 100. + .55), 511);
+	GET_C_POW(ch) = BOUNDED(
+		1,
+		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Pow) * t2 / 100. + .55),
+		511);
 
 	t1 = (!mode || !TmpAffs.r_Int) ? (int)GET_RACE(ch) : TmpAffs.r_Int;
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Int) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Int + ((mode) ? TmpAffs.c_Int : 0)), t3);
-	GET_C_INT(ch) = BOUNDED(1, (int)(stat_factor[t1].Int * t2 / 100. + .55), 511);
+	GET_C_INT(ch) = BOUNDED(
+		1,
+		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Int) * t2 / 100. + .55),
+		511);
 
 	t1 = (!mode || !TmpAffs.r_Wis) ? (int)GET_RACE(ch) : TmpAffs.r_Wis;
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Wis) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Wis + ((mode) ? TmpAffs.c_Wis : 0)), t3);
-	GET_C_WIS(ch) = BOUNDED(1, (int)(stat_factor[t1].Wis * t2 / 100. + .55), 511);
+	GET_C_WIS(ch) = BOUNDED(
+		1,
+		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Wis) * t2 / 100. + .55),
+		511);
 
 	t1 = (!mode || !TmpAffs.r_Cha) ? (int)GET_RACE(ch) : TmpAffs.r_Cha;
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Cha) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Cha + ((mode) ? TmpAffs.c_Cha : 0)), t3);
-	GET_C_CHA(ch) = BOUNDED(1, (int)(stat_factor[t1].Cha * t2 / 100. + .55), 511);
+	GET_C_CHA(ch) = BOUNDED(
+		1,
+		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Cha) * t2 / 100. + .55),
+		511);
 
 	t1 = (!mode || !TmpAffs.r_Kar) ? (int)GET_RACE(ch) : TmpAffs.r_Kar;
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Kar) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Kar + ((mode) ? TmpAffs.c_Kar : 0)), t3);
-	GET_C_KAR(ch) = BOUNDED(1, (int)(stat_factor[t1].Kar * t2 / 100. + .55), 511);
+	GET_C_KAR(ch) = BOUNDED(
+		1,
+		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Kar) * t2 / 100. + .55),
+		511);
 
 	t1 = (!mode || !TmpAffs.r_Luc) ? (int)GET_RACE(ch) : TmpAffs.r_Luc;
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Luc) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Luk + ((mode) ? TmpAffs.c_Luc : 0)), t3);
-	GET_C_LUK(ch) = BOUNDED(1, (int)(stat_factor[t1].Luk * t2 / 100. + .55), 511);
+	GET_C_LUK(ch) = BOUNDED(
+		1,
+		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Luk) * t2 / 100. + .55),
+		511);
 
 	/*
 	 * note that the current stats now show the ACTUAL stat, including
@@ -1668,6 +1699,7 @@ char affect_total(P_char ch, int kill_ch)
 		return FALSE;
 	}
 
+	summoner_pet_sync_resources(ch);
 	all_affects(ch, FALSE); /*
 	                         * effectively resets character to a state
 	                         * with NO affects
@@ -1682,6 +1714,8 @@ char affect_total(P_char ch, int kill_ch)
 	all_affects(ch, TRUE); /*
 	                        * now add them all back
 	                        */
+
+	summoner_pet_finish_affects(ch);
 
 	if (kill_ch && (GET_HIT(ch) < -10) && (GET_STAT(ch) != STAT_DEAD) &&
 	    (IS_NPC(ch) || !ch->desc || (ch->desc && (ch->desc->connected == CON_PLAYING))))
@@ -1801,6 +1835,7 @@ char affect_total(P_char ch, int kill_ch)
 		apply_reaver_mods(ch);
 
 	ch->specials.base_combat_round = MAX(3.0, ch->specials.base_combat_round);
+	summoner_pet_finish_affects(ch);
 
 	if (IS_PC(ch) && GET_CHAR_SKILL(ch, SKILL_MINE) >= 1)
 		ch->specials.affected_by5 |=
