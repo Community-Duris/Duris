@@ -642,20 +642,19 @@ bool shop_trade_world_witness_observe(const shop_trade_world_expectation &expect
 	}
 }
 
-bool shop_trade_world_expected_player_order(const shop_trade_payload &payload, P_char actor,
-					    P_obj selected, P_obj destination,
-					    const std::vector<player_item_snapshot> &values,
-					    std::vector<player_item_snapshot> *output) noexcept
+namespace
 {
-	if (!output || !nevent_is_game_thread() || !actor || !IS_PC(actor) || !actor->only.pc ||
-	    static_cast<uint32_t>(GET_PID(actor)) != payload.player_pid || !selected ||
+// Both typed wrappers use the existing handler's one insertion algorithm.
+bool expected_native_order(const shop_trade_payload &payload, P_char recipient, P_obj selected,
+			   P_obj destination, const std::vector<player_item_snapshot> &values,
+			   std::vector<player_item_snapshot> *output) noexcept
+{
+	if (!output || !nevent_is_game_thread() || !recipient || !selected ||
 	    selected->obj_uid != payload.selected_item_uid || selected->R_num < 0 ||
-	    (payload.action != shop_trade_action::buy_existing &&
-	     payload.action != shop_trade_action::buy_produced) ||
 	    values.empty() || values.size() > PLAYER_SNAPSHOT_MAX_OBJECTS ||
 	    (payload.target_parent_item_uid ?
 		     (!destination || destination->obj_uid != payload.target_parent_item_uid ||
-		      !OBJ_CARRIED_BY(destination, actor)) :
+		      !OBJ_CARRIED_BY(destination, recipient)) :
 		     destination != nullptr))
 		return false;
 	try
@@ -702,14 +701,14 @@ bool shop_trade_world_expected_player_order(const shop_trade_payload &payload, P
 		std::vector<P_obj> physical;
 		std::set<P_obj> seen;
 		std::vector<size_t> observed_saved;
-		for (P_obj object = destination ? destination->contains : actor->carrying; object;
-		     object = object->next_content)
+		for (P_obj object = destination ? destination->contains : recipient->carrying;
+		     object; object = object->next_content)
 		{
 			if (physical.size() >= PLAYER_SNAPSHOT_MAX_OBJECTS ||
 			    !seen.insert(object).second ||
 			    (destination ?
 				     (!OBJ_INSIDE(object) || object->loc.inside != destination) :
-				     !OBJ_CARRIED_BY(object, actor)))
+				     !OBJ_CARRIED_BY(object, recipient)))
 				return false;
 			if (object == selected)
 				continue;
@@ -780,4 +779,30 @@ bool shop_trade_world_expected_player_order(const shop_trade_payload &payload, P
 	{
 		return false;
 	}
+}
+} // namespace
+
+bool shop_trade_world_expected_player_order(const shop_trade_payload &payload, P_char actor,
+					    P_obj selected, P_obj destination,
+					    const std::vector<player_item_snapshot> &values,
+					    std::vector<player_item_snapshot> *output) noexcept
+{
+	if (!nevent_is_game_thread() || !actor || !IS_PC(actor) || !actor->only.pc ||
+	    static_cast<uint32_t>(GET_PID(actor)) != payload.player_pid ||
+	    (payload.action != shop_trade_action::buy_existing &&
+	     payload.action != shop_trade_action::buy_produced))
+		return false;
+	return expected_native_order(payload, actor, selected, destination, values, output);
+}
+
+bool shop_trade_world_expected_keeper_order(const shop_trade_payload &payload, P_char keeper,
+					    P_obj selected,
+					    const std::vector<player_item_snapshot> &values,
+					    std::vector<player_item_snapshot> *output) noexcept
+{
+	if (!nevent_is_game_thread() || !keeper || !IS_NPC(keeper) || !keeper->only.npc ||
+	    GET_VNUM(keeper) != payload.keeper_vnum ||
+	    payload.action != shop_trade_action::sell_store || payload.target_parent_item_uid)
+		return false;
+	return expected_native_order(payload, keeper, selected, nullptr, values, output);
 }

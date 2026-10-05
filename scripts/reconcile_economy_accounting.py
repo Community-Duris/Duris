@@ -560,10 +560,16 @@ class Reconciler:
                   type(receipt.get("committed_at_present")) is not bool or
                   not receipt.get("committed_at_present")):
                 self.emit("receipt_mismatch", operation_id=op_id)
-            for name, field in (("effects", "account_count"), ("postings", "posting_count"),
-                                ("children", "child_count"), ("item_references", "item_event_count")):
+            for name, field, index_field, first in (
+                    ("effects", "account_count", "account_index", 0),
+                    ("postings", "posting_count", "line_index", 0),
+                    ("children", "child_count", "child_index", 1),
+                    ("item_references", "item_event_count", "event_index", 0)):
                 if len(by_op[name][op_id]) != op.get(field):
                     self.emit("evidence_count_mismatch", operation_id=op_id, table=name)
+                elif sorted(row[index_field] for row in by_op[name][op_id]) != list(
+                        range(first, first + op[field])):
+                    self.emit("evidence_index_mismatch", operation_id=op_id, table=name)
             if op.get("outcome") == "rejected" and any(by_op[name][op_id] for name in by_op):
                 self.emit("rejected_operation_has_effects", operation_id=op_id)
             total = sum(copper(vector(row.get("delta"))) for row in by_op["postings"][op_id])
