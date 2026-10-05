@@ -24,10 +24,33 @@ bool accounts_valid(const economic_account_key &wallet, const economic_account_k
 	       bank.authority_id != keeper.authority_id;
 }
 
+bool shared_accounts_valid(const economic_account_key &wallet, const economic_account_key &bank,
+			   uint8_t racewar)
+{
+	return economic_account_key_valid(wallet) && economic_account_key_valid(bank) &&
+	       wallet.kind == economic_account_kind::wallet && !wallet.context_id &&
+	       bank.kind == economic_account_kind::bank && bank.context_id == racewar &&
+	       wallet.lineage.bytes == bank.lineage.bytes &&
+	       wallet.authority_id != bank.authority_id;
+}
+
 bool buying(shop_trade_action action)
 {
 	return action == shop_trade_action::buy_existing ||
 	       action == shop_trade_action::buy_produced;
+}
+
+economic_account_key shared_counterparty(const critical_operation_id &lineage,
+					 shop_trade_action action)
+{
+	return { lineage,
+		 buying(action) || action == shop_trade_action::discard_invalid ?
+			 economic_account_kind::sink :
+			 economic_account_kind::issuance,
+		 buying(action) || action == shop_trade_action::discard_invalid ?
+			 ECONOMIC_SHOP_BUY_SINK_ID :
+			 ECONOMIC_SHOP_SELL_ISSUANCE_ID,
+		 0 };
 }
 
 bool producing(shop_trade_action action)
@@ -131,7 +154,8 @@ item_owner_identity after_owner(const shop_trade_payload &payload)
 
 bool shop_payload_valid(const critical_command &command, shop_trade_payload *payload)
 {
-	return command.payload_version == SHOP_TRADE_PAYLOAD_VERSION &&
+	return (command.payload_version == SHOP_TRADE_PAYLOAD_VERSION ||
+		command.payload_version == SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION) &&
 	       shop_trade_command_decode_payload(command, payload) && payload->keeper_vnum > 0;
 }
 } // namespace
@@ -141,7 +165,8 @@ shop_trade_accounting_intent(const critical_command &command, const critical_ope
 			     const economic_account_key &wallet, const economic_account_key &bank,
 			     const economic_account_key &keeper, std::vector<uint8_t> *encoded)
 {
-	if (!encoded || command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	if (!encoded || command.payload_version != SHOP_TRADE_PAYLOAD_VERSION ||
+	    command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
 	    critical_operation_id_is_zero(epoch))
 		return error::invalid_version;
 	shop_trade_payload payload = {};
@@ -161,6 +186,43 @@ shop_trade_accounting_intent(const critical_command &command, const critical_ope
 		if (!cleanup(payload.action))
 			facts.metadata.source_event = source_for(command, payload);
 		facts.facts = facts_for(wallet, bank, keeper);
+		return economic_intent_freeze(command, facts, encoded);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+economic_accounting_error shop_trade_shared_accounting_intent(const critical_command &command,
+							      const critical_operation_id &epoch,
+							      const economic_account_key &wallet,
+							      const economic_account_key &bank,
+							      std::vector<uint8_t> *encoded)
+{
+	if (!encoded || command.payload_version != SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION ||
+	    command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	    critical_operation_id_is_zero(epoch))
+		return error::invalid_version;
+	shop_trade_payload payload = {};
+	if (!shop_payload_valid(command, &payload))
+		return error::corrupt_evidence;
+	if (!shared_accounts_valid(wallet, bank, payload.racewar))
+		return error::invalid_identity;
+	try
+	{
+		economic_admission_facts facts;
+		facts.metadata.lineage = wallet.lineage;
+		facts.metadata.epoch = epoch;
+		facts.metadata.actor_kind = economic_actor_kind::domain;
+		facts.metadata.actor_id = payload.player_pid;
+		facts.metadata.writer_id = ECONOMIC_WRITER_SHOP_TRADE;
+		facts.metadata.reason = reason_for(payload.action);
+		if (!cleanup(payload.action))
+			facts.metadata.source_event = source_for(command, payload);
+		facts.facts.reserve(16);
+		append_u64(&facts.facts, wallet.authority_id);
+		append_u64(&facts.facts, bank.authority_id);
 		return economic_intent_freeze(command, facts, encoded);
 	}
 	catch (const std::bad_alloc &)
@@ -189,7 +251,9 @@ shop_trade_accounting_decode(const critical_command &command, economic_frozen_in
 		    economic_intent_verify_binding(command, parsed_intent) != error::ok)
 			return error::corrupt_evidence;
 		const auto facts = std::span<const uint8_t>(parsed_intent.admission.facts);
-		if (facts.size() != 24)
+		const bool shared = facts.size() == 16;
+		if ((!shared && facts.size() != 24) ||
+		    shared != (command.payload_version == SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION))
 			return error::invalid_identity;
 		const auto &lineage = parsed_intent.admission.metadata.lineage;
 		const economic_account_key parsed_wallet = { lineage, economic_account_kind::wallet,
@@ -197,17 +261,22 @@ shop_trade_accounting_decode(const critical_command &command, economic_frozen_in
 		const economic_account_key parsed_bank = { lineage, economic_account_kind::bank,
 							   read_u64(facts, 8),
 							   parsed_payload.racewar };
-		const economic_account_key parsed_keeper = { lineage,
-							     economic_account_kind::treasury,
-							     read_u64(facts, 16), 0 };
+		const economic_account_key parsed_keeper =
+			shared ? shared_counterparty(lineage, parsed_payload.action) :
+				 economic_account_key{ lineage, economic_account_kind::treasury,
+						       read_u64(facts, 16), 0 };
 		critical_command projected = command;
 		projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
 		projected.accounting_intent.clear();
 		projected.publication_required = false;
 		std::vector<uint8_t> expected;
-		const auto status = shop_trade_accounting_intent(
-			projected, parsed_intent.admission.metadata.epoch, parsed_wallet,
-			parsed_bank, parsed_keeper, &expected);
+		const auto status =
+			shared ? shop_trade_shared_accounting_intent(
+					 projected, parsed_intent.admission.metadata.epoch,
+					 parsed_wallet, parsed_bank, &expected) :
+				 shop_trade_accounting_intent(
+					 projected, parsed_intent.admission.metadata.epoch,
+					 parsed_wallet, parsed_bank, parsed_keeper, &expected);
 		if (status != error::ok || expected != command.accounting_intent)
 			return error::unauthorized;
 		*intent = std::move(parsed_intent);
@@ -238,18 +307,29 @@ shop_trade_accounting_plan(const critical_command &command, const economic_froze
 		shop_trade_payload payload = {};
 		if (!shop_payload_valid(command, &payload))
 			return error::corrupt_evidence;
-		if (!accounts_valid(authority.wallet_account, authority.bank_account,
-				    authority.keeper_account, payload.racewar))
+		const bool shared = intent.admission.facts.size() == 16;
+		if (shared ? (!shared_accounts_valid(authority.wallet_account,
+						     authority.bank_account, payload.racewar) ||
+			      !economic_account_key_equal(
+				      authority.keeper_account,
+				      shared_counterparty(authority.wallet_account.lineage,
+							  payload.action))) :
+			     !accounts_valid(authority.wallet_account, authority.bank_account,
+					     authority.keeper_account, payload.racewar))
 			return error::invalid_identity;
 		critical_command projected = command;
 		projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
 		projected.accounting_intent.clear();
 		projected.publication_required = false;
 		std::vector<uint8_t> expected;
-		status = shop_trade_accounting_intent(projected, authority.epoch,
-						      authority.wallet_account,
-						      authority.bank_account,
-						      authority.keeper_account, &expected);
+		status = shared ? shop_trade_shared_accounting_intent(projected, authority.epoch,
+								      authority.wallet_account,
+								      authority.bank_account,
+								      &expected) :
+				  shop_trade_accounting_intent(projected, authority.epoch,
+							       authority.wallet_account,
+							       authority.bank_account,
+							       authority.keeper_account, &expected);
 		if (status != error::ok || expected != command.accounting_intent)
 			return error::unauthorized;
 		if (authority.shop_id != payload.shop_id ||
@@ -337,11 +417,18 @@ shop_trade_accounting_plan(const critical_command &command, const economic_froze
 				  result.bank.amount, authority.balances_before.bank_revision,
 				  result.bank_revision },
 				{ authority.keeper_account,
-				  { authority.keeper_cash_before, 0, 0, 0 },
-				  { keeper_after, 0, 0, 0 },
-				  authority.shop_revision_before,
-				  result.shop_revision }
+				  shared ? economic_coin_vector{} :
+					   economic_coin_vector{ authority.keeper_cash_before, 0, 0,
+								 0 },
+				  shared ? economic_coin_vector{} :
+					   economic_coin_vector{ keeper_after, 0, 0, 0 },
+				  shared ? 0 : authority.shop_revision_before,
+				  shared ? 0 : result.shop_revision }
 			};
+			// A free purchase has no monetary counterparty. Retain native wallet/bank
+			// revisions and any copper-neutral denomination normalization only.
+			if (shared && !payload.price)
+				candidate.accounts.pop_back();
 			economic_coin_vector delta = {};
 			status = economic_coin_delta(candidate.accounts[0].before,
 						     candidate.accounts[0].after, &delta);
@@ -353,14 +440,31 @@ shop_trade_accounting_plan(const critical_command &command, const economic_froze
 					  delta,
 					  buying(payload.action) ? -payload.price :
 								   payload.price });
-			if (keeper_after != authority.keeper_cash_before)
+			if (!shared && keeper_after != authority.keeper_cash_before)
 				candidate.postings.push_back(
 					{ static_cast<uint32_t>(candidate.postings.size()),
 					  2,
 					  0,
 					  { keeper_after - authority.keeper_cash_before, 0, 0, 0 },
 					  keeper_after - authority.keeper_cash_before });
-			if (issued)
+			if (shared)
+			{
+				economic_coin_vector opposite = {};
+				for (size_t denomination = 0; denomination < delta.size();
+				     ++denomination)
+				{
+					if (delta[denomination] == INT64_MIN)
+						return error::overflow;
+					opposite[denomination] = -delta[denomination];
+				}
+				if (payload.price)
+					candidate.postings.push_back(
+						{ static_cast<uint32_t>(candidate.postings.size()),
+						  2, 0, opposite,
+						  buying(payload.action) ? payload.price :
+									   -payload.price });
+			}
+			else if (issued)
 			{
 				candidate.accounts.push_back(
 					{ { authority.wallet_account.lineage,
