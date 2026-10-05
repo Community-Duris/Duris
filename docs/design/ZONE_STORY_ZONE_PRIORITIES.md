@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 93 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 94 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -298,7 +298,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 91 | [The Ruins of Undermountain](zone-stories/THE_RUINS_OF_UNDERMOUNTAIN.md) (`undermountain`) | Access shrine/prison; intact key→Tamsil note→Durnan scimitar. Unlock breakage and current note separate from receipts; dormant nine-weapon/inn code not active. | Comprehensive schema3/revision1:2 cards/3 contacts/8 aliases/3 optional checks;all5 blocks/441 rooms/95 mobiles/135 objects/731 resets. Seven follow-ups; no native repair; preserve PvP/hotfix. |
 | 92 | [Desolate Under Fire](zone-stories/DESOLATE_UNDER_FIRE.md) (`desolateinv`) |8 independent rescues→8 current bindings for Beregan;3 hands→Jandar key;monkey before rescue/remove chain;badge/bones. Unplaced wheel/drink routes explicit. | Comprehensive schema3/revision1:17 cards/16 story outcomes/1 service/16 contacts/27 optional checks;all17 blocks/165 rooms/110 mobiles/96 objects/332 resets/full shop. Eight follow-ups; separate two-word trial fix. |
 | 93 | [Storm Port Stronghold](zone-stories/STORM_PORT_STRONGHOLD.md) (`spshold`) |Coal+valve→ticket→helm;two independent map outcomes;optional Burgadan map/spade→Hordine key→foreign treasure access. No personal source/travel requirement invented. | Comprehensive schema3/revision1:4 cards/6 contacts/8 optional checks;all4 Q/65 rooms/44 mobiles/34 objects/129 resets. Eight follow-ups/shared crew debit defect; separate one-word direction fix. |
-| 94 | The Mountain Settlement of the Harpies (`harpyht`) | [Meet the giver → 1 × some prisoner shackles → native reward/response](../../areas/qst/harpyht.qst#L2) | 3 Q; 0 dialogue; 1 candidate link items |
+| 94 | [The Mountain Settlement of the Harpies](zone-stories/THE_MOUNTAIN_SETTLEMENT_OF_THE_HARPIES.md) (`harpyht`) | Hidden key→dwarf retirement/shackles→queen recognition; custom allegiance and dormant corpse transformation separately qualified. | Comprehensive schema3/revision2:2 cards/5 contacts/one custom ASK/3 optional checks/one shadowed exclusion;all3 Q/161 rooms/44 mobiles/19 objects/176 resets/2 shops/4 specials. Eight follow-ups; no native repair. |
 | 95 | The Behemoth Herders (`herders`) | [Meet the giver → 1 × some scales of diorite; 2 × a large piece of bone; 3 × a piece of a bone fragment → some bone-reinforced boots of diorite](../../areas/qst/herders.qst#L157) | 12 Q; 29 dialogue; 0 candidate link items |
 | 96 | Jotunheim (`jotun`) | [Meet the giver → 1 × an eerily glowing jade bracelet; 1 × a jagged lightning sword; 1 × a barbed whip and the remaining ingredients → a wooden spear entwined with glowing runes](../../areas/qst/jotun.qst#L39) | 15 Q; 34 dialogue; 0 candidate link items |
 | 97 | Temple of Flames (`temple`) | [Meet the giver → 2 × a yellow dagger; 1 × a green token; 1 × a blue wooden sword → native reward/response](../../areas/qst/temple.qst#L233) | 6 Q; 33 dialogue; 0 candidate link items |

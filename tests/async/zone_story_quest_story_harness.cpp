@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 					"met NPC was missing");
 		}
 		require(catalog.story_mappings.size() == 111 &&
-				tracker.summary_for(7, 42).total == 1582,
+				tracker.summary_for(7, 42).total == 1581,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7549,6 +7549,128 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &dwarf = story_for("harpyht", "free-the-chained-dwarf");
+			const auto &queen = story_for("harpyht", "queen-rescue-proof");
+			const auto khan = std::find_if(
+				catalog.definitions.begin(), catalog.definitions.end(),
+				[](const auto &d)
+				{ return d.source_area == "harpyht" && d.giver_vnum == 31124; });
+			require(khan != catalog.definitions.end() &&
+					zone_story_quest_catalog::excluded_contract(
+						catalog, khan->definition_id) &&
+					zone_story_quest_catalog::story_for_contract(
+						catalog, khan->definition_id) == nullptr &&
+					zone_story_quest_catalog::eligible_definition_count(
+						catalog, 311, 2) == 2,
+				"Shadowed khan remained an achievement/daily");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 311, 31177, 100, "arrival") ==
+					result::applied,
+				"Harpies discovery failed");
+			for (const auto &mapping : catalog.story_mappings)
+				if (mapping.source_area == "harpyht")
+					for (const auto &contact : mapping.contacts)
+						require(journey.meet_npc(7, 42, contact.mob_vnum,
+									 31177,
+									 102) == result::applied,
+							"Harpies projected contact failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Harpies section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.equipped[18] = 31104;
+			supplies.carried[31112] = 1;
+			supplies.carried[31109] = 1;
+			supplies.carried[31101] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 311, 10, 4, 105, false, false,
+							 &supplies);
+			require(section(dwarf).find("[Missing now] " + dwarf.steps[0].text) !=
+						std::string::npos &&
+					section(queen).find("[Missing now] " +
+							    queen.steps[1].text) !=
+						std::string::npos,
+				"Held key, feather or nested-container proxy satisfied exact native proof");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 311).completed == 0 &&
+					journey.progress_for_zone(7, 42, 311).total == 2,
+				"Supplies/custom lore fabricated Harpy outcomes");
+			supplies.equipped.clear();
+			supplies.carried[31104] = 1;
+			supplies.carried[31111] = 1;
+			journal = journey.render_journal(7, 42, 311, 10, 4, 108, false, false,
+							 &supplies);
+			require(section(dwarf).find("[Ready now] " + dwarf.steps[0].text) !=
+						std::string::npos &&
+					section(queen).find("[Ready now] " + queen.steps[1].text) !=
+						std::string::npos &&
+					section(queen).find("[Pending] " + queen.steps[0].text) !=
+						std::string::npos,
+				"Supplied proofs required or fabricated personal rescue history");
+			service supplied(catalog);
+			require(supplied.discover_zone(7, 42, 311, 31177, 100, "arrival") ==
+					result::applied,
+				"Supplied shackles discovery failed");
+			// Synthetic settled receipts test projection, not native recipient/actor/item admission or race conversion.
+			record(supplied, queen.contracts.front(), "harpyht-supplied-shackles", 311,
+			       31174);
+			require(supplied.progress_for_zone(7, 42, 311).completed == 1 &&
+					supplied.evidence_for(dwarf.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Supplied shackles fabricated own dwarf rescue");
+			record(journey, dwarf.contracts.front(), "harpyht-dwarf-key", 311, 31198);
+			supplies.carried.erase(31111);
+			journal = journey.render_journal(7, 42, 311, 10, 4, 112, false, false,
+							 &supplies);
+			require(section(queen).find("[Recorded] " + queen.steps[0].text) !=
+						std::string::npos &&
+					section(queen).find("[Missing now] " +
+							    queen.steps[1].text) !=
+						std::string::npos,
+				"Dwarf receipt recreated spent shackles");
+			record(journey, queen.contracts.front(), "harpyht-queen-proof", 311, 31174);
+			require(journey.progress_for_zone(7, 42, 311).completed == 2 &&
+					journey.evidence_for(khan->definition_id, 2)
+							.successful_attempts == 0,
+				"Native recognition fabricated custom path receipt");
+			auto replay =
+				completion(queen.contracts.front(), "harpyht-queen-proof", 120);
+			replay.transaction.zone_number = 311;
+			replay.transaction.room_vnum = 31174;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Harpies replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 311).completed == 2 &&
+					!recovered.has_discovered(7, 42, 407) &&
+					!recovered.has_discovered(7, 42, 760),
+				"Harpies recovery lost outcomes or fabricated foreign discovery");
+			// Old native receipt identity remains readable after provisional story IDs change.
+			service native_history(raw_catalog);
+			require(native_history.discover_zone(7, 42, 311, 31177, 100, "arrival") ==
+					result::applied,
+				"Historical Harpies discovery failed");
+			record(native_history, dwarf.contracts.front(), "harpyht-historical-dwarf",
+			       311, 31198);
+			record(native_history, queen.contracts.front(), "harpyht-historical-queen",
+			       311, 31174);
+			record(native_history, khan->definition_id, "harpyht-historical-khan", 311,
+			       31189);
+			service reclassified(catalog);
+			require(reclassified.deserialize_state(native_history.serialize_state(),
+							       &error) &&
+					reclassified.progress_for_zone(7, 42, 311).completed == 2 &&
+					reclassified.evidence_for(khan->definition_id, 2)
+							.successful_attempts == 1,
+				"Historical native receipts lost or shadowed khan still counted after reclassification");
+		}
 		{
 			const auto &captain = story_for("spshold", "captain-coal-valve");
 			const auto &decker = story_for("spshold", "decker-ticket");

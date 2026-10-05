@@ -15,7 +15,7 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1441
+assert report["daily_unit_count"] == 1440
 assert report['mapped_area_count'] == 111 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
@@ -267,6 +267,12 @@ spshold=next(m for m in catalog['story_mappings'] if m['source_area']=='spshold'
 assert len(spshold['stories'])==4 and len(spshold['contacts'])==6 and report['eligible_by_zone']['226']==4
 assert sum(t.get('optional',False) for s in spshold['stories'] for t in s['steps'])==8
 assert not spshold['exclusions'] and not any(c['topics'] for c in spshold['contacts'])
+
+harpyht=next(m for m in catalog['story_mappings'] if m['source_area']=='harpyht')
+assert (harpyht['schema_version'],harpyht['revision'])==(3,2)
+assert len(harpyht['stories'])==2 and len(harpyht['contacts'])==5 and len(harpyht['exclusions'])==1 and report['eligible_by_zone']['311']==2
+assert sum(t.get('optional',False) for s in harpyht['stories'] for t in s['steps'])==3
+assert [(c['mob_vnum'],c['topics']) for c in harpyht['contacts'] if c['topics']]==[(31108,['undead'])]
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'
