@@ -67,7 +67,7 @@ The original SQL source in
 `src/persistence/shop_item_runtime_payload.c:1630` declares
 `std::vector<player_item_snapshot> literal` inside `capture_literal_root`, while
 the enclosing `attempt` lambda captures the outer vector declared at1561 and
-uses it for the completed checkpoint path at1582. GCC12 rejects the inner
+uses it for the completed checkpoint path at1582. GCC13.3 rejects the inner
 declaration as shadowing a compatible captured local.
 
 Rename only the inner tree vector and all its uses within
