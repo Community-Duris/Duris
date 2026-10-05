@@ -247,7 +247,9 @@ class player_save_restored_publication_owner final
 							void *) noexcept,
 				 void *) noexcept;
 	friend bool critical_command_coordinator_cancel_shop_publication(
-		player_save_restored_publication_owner &);
+		player_save_restored_publication_owner &,
+		bool (*)(const critical_command &, const critical_completion &, void *) noexcept,
+		void *);
 	// Only the integrated native collector owner can call this; a public true
 	// callback must never fabricate authority to consume a save reservation.
 	static bool publish_collector(const critical_command &, const critical_completion &,

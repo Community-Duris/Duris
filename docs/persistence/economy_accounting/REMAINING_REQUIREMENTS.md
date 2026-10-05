@@ -1,5 +1,26 @@
 # Double-entry economy: remaining requirements
 
+## Baseline equipment defect and versioned repair handoff — 2026-10-05
+
+[The exact peer evidence and reviewed native interface](BASELINE_EQUIPMENT_V2_SOURCE_HANDOFF_2026-10-05.md) establish that
+EAB1 loses an accepted equipment slot and cannot regenerate its original plan.
+Original baseline/replay acceptance is reopened; earlier results remain their
+recorded historical scope. Private EAB2 retains the full position and both
+equipment fingerprints; five core inputs and three native fixture updates pass
+source review/inverse/format only, with no execution or installation. Primary
+schema/compatibility and Plan5 independent readers meet on that exact contract.
+Current inactive behavior stays; R1–R8, release and activation remain BLOCKED.
+
+## Guarded original SHOP refusal callback integrated — 2026-10-05
+
+[The shared cancellation interface](SHOP_GUARDED_REFUSAL_CALLBACK_2026-10-05.md) authenticates and pins the original
+never-admitted command/refusal before its private cleanup callback, then rechecks
+the same generation and hold before cancellation. Review corrected the live
+false-callback compatibility regression; original live continuation stays.
+Source review/inverse/format/pins/census only; no native execution. Cold SQL
+BEFORE/cleanup/rearm, flat parity and major-plan qualification stay open.
+Inactive/admission behavior stays; full R1–R8/release remain BLOCKED.
+
 ## Independent native-mobile grammar integrated — 2026-10-05
 
 [The four-file peer slice](PLAN5_NATIVE_MOBILE_GRAMMAR_INTEGRATION_2026-10-05.md) accepts original owner12 lifetime/context/state and

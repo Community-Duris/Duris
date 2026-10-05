@@ -1592,49 +1592,107 @@ bool critical_command_coordinator_cancel_collector_publication(
 }
 
 bool critical_command_coordinator_cancel_shop_publication(
-	player_save_restored_publication_owner &owner)
+	player_save_restored_publication_owner &owner,
+	bool (*native_cleanup)(const critical_command &, const critical_completion &,
+			       void *) noexcept,
+	void *context)
 {
-	if (!owner.reservation_.valid() || owner.acknowledged_ ||
+	if (!native_cleanup || !owner.reservation_.valid() || owner.acknowledged_ ||
 	    !accounted_shop_publication(owner.command_) ||
 	    !critical_completion_disposition_valid(owner.completion_) ||
 	    owner.completion_.disposition != critical_completion_disposition::never_admitted)
 		return false;
+	std::string identity;
+	// Only the retained original refusal authorizes cleanup. In particular,
+	// the callback must not run before its command and full receipt are proved.
+	const auto matches_original = [&](const operation_state &state)
+	{
+		const auto &receipt = state.admission_failure_completion;
+		std::vector<uint8_t> frozen;
+		return operation_is_admission_failed(state) && state.owned_refusal_delivered &&
+		       state.retain_until_publication &&
+		       critical_command_encode(state.command, &frozen) ==
+			       critical_command_codec_result::ok &&
+		       frozen == owner.frozen_ &&
+		       receipt.operation_id.bytes == owner.completion_.operation_id.bytes &&
+		       critical_completion_disposition_valid(receipt) &&
+		       receipt.disposition == owner.completion_.disposition &&
+		       receipt.outcome == owner.completion_.outcome &&
+		       receipt.error_code == owner.completion_.error_code &&
+		       receipt.attempt == owner.completion_.attempt &&
+		       receipt.queued_at_usec == owner.completion_.queued_at_usec &&
+		       receipt.started_at_usec == owner.completion_.started_at_usec &&
+		       receipt.completed_at_usec == owner.completion_.completed_at_usec &&
+		       receipt.durable_revision == owner.completion_.durable_revision &&
+		       receipt.failure_stage == owner.completion_.failure_stage &&
+		       receipt.result_size == owner.completion_.result_size &&
+		       receipt.result_payload == owner.completion_.result_payload;
+	};
+	try
+	{
+		identity = operation_key(owner.completion_.operation_id);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		auto found = operations.find(identity);
+		if (found == operations.end() || found->second->publication_checkpointing ||
+		    !coordinator_generation || coordinator_generation_exhausted ||
+		    !health.initialized || stop_requested ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    !owner.reservation_.valid() || !matches_original(*found->second))
+			return false;
+		owner.coordinator_generation_ = coordinator_generation;
+		found->second->publication_checkpointing = true;
+		++publication_checkpoints_inflight;
+		++guarded_publications_inflight;
+	}
+	catch (...)
+	{
+		return false;
+	}
+	// The private owner performs only original refusal cleanup under its held
+	// reservation. No coordinator mutex is held over native handlers or SQL.
+	const bool cleaned = native_cleanup(owner.command_, owner.completion_, context);
 	std::unique_lock<std::mutex> lock(coordinator_mutex);
-	const auto identity = operation_key(owner.completion_.operation_id);
+	const auto finish_guarded = [&]()
+	{
+		--guarded_publications_inflight;
+		--publication_checkpoints_inflight;
+		publication_checkpoint_finished.notify_all();
+	};
 	auto found = operations.find(identity);
-	if (found == operations.end() || !operation_is_admission_failed(*found->second) ||
-	    !found->second->owned_refusal_delivered || !found->second->retain_until_publication ||
-	    found->second->publication_checkpointing || !health.initialized || stop_requested ||
-	    !owner.reservation_.valid())
+	if (found == operations.end() || coordinator_generation != owner.coordinator_generation_)
+	{
+		finish_guarded();
 		return false;
-	const auto &receipt = found->second->admission_failure_completion;
-	std::vector<uint8_t> frozen;
-	if (critical_command_encode(found->second->command, &frozen) !=
-		    critical_command_codec_result::ok ||
-	    frozen != owner.frozen_ ||
-	    receipt.operation_id.bytes != owner.completion_.operation_id.bytes ||
-	    !critical_completion_disposition_valid(receipt) ||
-	    receipt.disposition != owner.completion_.disposition ||
-	    receipt.outcome != owner.completion_.outcome ||
-	    receipt.error_code != owner.completion_.error_code ||
-	    receipt.attempt != owner.completion_.attempt ||
-	    receipt.queued_at_usec != owner.completion_.queued_at_usec ||
-	    receipt.completed_at_usec != owner.completion_.completed_at_usec ||
-	    receipt.durable_revision != owner.completion_.durable_revision ||
-	    receipt.failure_stage != owner.completion_.failure_stage ||
-	    receipt.result_size != owner.completion_.result_size ||
-	    receipt.result_payload != owner.completion_.result_payload)
+	}
+	bool original = false;
+	try
+	{
+		original = found->second->publication_checkpointing &&
+			   matches_original(*found->second);
+	}
+	catch (...)
+	{
+	}
+	found->second->publication_checkpointing = false;
+	if (!cleaned || !original || !owner.reservation_.valid() || !health.initialized ||
+	    stop_requested || coordinator_generation_exhausted ||
+	    (lifecycle_guard_active && lifecycle_guard_thread != std::this_thread::get_id()))
+	{
+		// Keep the original command, refusal, native hold and all owner fences.
+		finish_guarded();
 		return false;
-	++guarded_publications_inflight;
+	}
 	remove_fences(identity, found->second->command);
 	operations.erase(found);
 	owner.acknowledged_ = true;
 	update_depth();
 	lock.unlock();
+	// No journal checkpoint, execution receipt, completed-operation cache or
+	// health.completed increment may be fabricated for a never-admitted command.
 	const bool consumed = owner.consume_acknowledged_hold();
 	lock.lock();
-	--guarded_publications_inflight;
-	publication_checkpoint_finished.notify_all();
+	finish_guarded();
 	work_available.notify_all();
 	return consumed;
 }
