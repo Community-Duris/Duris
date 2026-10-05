@@ -1,5 +1,15 @@
 # Plan 4: priced and compound gameplay domains
 
+## Original cold SHOP procedure bindings integrated — 2026-10-05
+
+[The reviewed binding repair](../SHOP_COLD_PROCEDURE_BINDING_INTEGRATION_2026-10-05.md) stages original switch/proclib chains
+before fresh SQL/world proof and nonfailing retained enrollment. Exact incumbent,
+catalog and literal identity stay; normal construction policy stays. Callbacks
+remain individually once-only with fresh exact lookup. Source checks/pins/census
+only; actual component link, cold recovery/ACK and flat parity remain in the
+original major-plan batch. Fresh SHOP and activation stay closed; R1–R8 and release
+remain BLOCKED.
+
 ## Original cold SHOP publication owner integrated — 2026-10-05
 
 [The reviewed SQL recovery owner](../SHOP_ORIGINAL_COLD_PUBLICATION_INTEGRATION_2026-10-05.md) retains the actual original command,

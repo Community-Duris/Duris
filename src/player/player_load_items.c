@@ -1086,9 +1086,12 @@ bool shop_trade_original_item_stage::reload_step(P_obj object, const object_temp
 		extern void event_random_exit(P_char, P_char, P_obj, void *);
 		if (!obj_index || object->R_num < 0 || object->R_num > top_of_objt)
 			return false;
+		if (find_recovery_object_template(obj_index[object->R_num].virtual_number) !=
+		    &prototype)
+			return false;
 		const auto proc = obj_index[object->R_num].func.obj;
-		// Prototype binding belongs to boot/current authority. Never mutate its
-		// sealed function identity or duplicate persisted proclib descriptions.
+		// Original binding was separately committed under the complete owner cut.
+		// Callback phases never bind procedures or duplicate saved descriptions.
 		if ((object->type == ITEM_SWITCH && !proc) ||
 		    (IS_SET(object->extra_flags, ITEM_PROCLIB) && proc != proclib_obj_cmd_bridge))
 			return false;
@@ -1144,6 +1147,12 @@ bool shop_trade_original_item_stage::proclib_probe(
 		return false;
 	try
 	{
+		extern P_index obj_index;
+		extern int top_of_objt;
+		if (!obj_index || object->R_num < 0 || object->R_num > top_of_objt ||
+		    find_recovery_object_template(obj_index[object->R_num].virtual_number) !=
+			    &prototype)
+			return false;
 		effect.started = true;
 		bool requested = false;
 		if (IS_SET(object->extra_flags, ITEM_PROCLIB) &&

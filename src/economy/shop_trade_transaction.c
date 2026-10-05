@@ -70,6 +70,7 @@ class shop_trade_native_publication_owner final
 						std::vector<player_item_snapshot> *) noexcept;
 	static bool cold_publish(const critical_command &, const critical_completion &,
 				 void *) noexcept;
+	static bool cold_prepare_selected(void *) noexcept;
 	static bool cold_enroll_selected(void *) noexcept;
 	static bool native_publish(const critical_command &, const critical_completion &,
 				   void *) noexcept;
@@ -169,6 +170,9 @@ struct cold_trade_restore
 	std::vector<player_item_snapshot> working_target;
 #ifndef __NO_MYSQL__
 	std::vector<shop_trade_original_item_stage> staged;
+	shop_trade_original_procedure_binding_stage bindings;
+	std::map<int, size_t> enrollment_counts;
+	bool binding_started = false, binding_returned = false;
 	struct reload_item
 	{
 		const object_template *prototype = nullptr;
@@ -1339,7 +1343,7 @@ bool cold_missing_owner(const shop_trade_payload &payload,
 }
 #endif
 
-bool shop_trade_native_publication_owner::cold_enroll_selected(void *opaque) noexcept
+bool shop_trade_native_publication_owner::cold_prepare_selected(void *opaque) noexcept
 {
 #ifdef __NO_MYSQL__
 	(void)opaque;
@@ -1377,10 +1381,20 @@ bool shop_trade_native_publication_owner::cold_enroll_selected(void *opaque) noe
 			    obj_index[number].number < 0 ||
 			    count > static_cast<size_t>(INT_MAX - obj_index[number].number))
 				return false;
+		std::vector<P_obj> objects;
+		objects.reserve(prepared.size());
+		for (const auto &stage : prepared)
+			objects.push_back(stage.object_);
+		shop_trade_original_procedure_binding_stage bindings;
+		if (!shop_trade_original_procedure_binding_stage::prepare(objects, cold.source,
+									  bindings))
+			return false;
 		// One complete strong allocation precedes any world enrollment. The
 		// independent stages own their nodes until all bounds/prototypes pass.
 		cold.staged = std::move(prepared);
 		cold.reload = std::move(reload);
+		cold.bindings = std::move(bindings);
+		cold.enrollment_counts = std::move(counts);
 		for (size_t index = cold.staged.size(); index-- > 1;)
 		{
 			P_obj child = cold.staged[index].object_;
@@ -1392,28 +1406,60 @@ bool shop_trade_native_publication_owner::cold_enroll_selected(void *opaque) noe
 			child->next_content = parent->contains;
 			parent->contains = child;
 		}
-		cold.enrollment_started = true;
-		// Allocation-free pointer/count enrollment, no normal constructor, UID
-		// issuer, prototype defaults, native callback or source-event adoption.
-		for (auto &stage : cold.staged)
-		{
-			P_obj object = stage.object_;
-			object->next = object_list;
-			if (object_list)
-				object_list->prev = object;
-			object_list = object;
-			++obj_index[object->R_num].number;
-			stage.object_ = nullptr;
-			stage.pool_ = nullptr;
-			stage.affect_pool_ = nullptr;
-		}
-		cold.enrolled = true;
 		return true;
 	}
 	catch (...)
 	{
 		return false;
 	}
+#endif
+}
+
+bool shop_trade_native_publication_owner::cold_enroll_selected(void *opaque) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)opaque;
+	return false;
+#else
+	if (!opaque || !nevent_is_game_thread())
+		return false;
+	auto &entry = *static_cast<pending_trade *>(opaque);
+	if (!entry.cold)
+		return false;
+	auto &cold = *entry.cold;
+	if (cold.enrollment_started || cold.enrolled || cold.binding_started ||
+	    cold.staged.size() != cold.source.size() || cold.reload.size() != cold.source.size() ||
+	    !cold.bindings.valid())
+		return false;
+	for (const auto &stage : cold.staged)
+		if (!stage.object_)
+			return false;
+	for (const auto &[number, count] : cold.enrollment_counts)
+		if (!obj_index || number < 0 || number > top_of_objt ||
+		    obj_index[number].number < 0 ||
+		    count > static_cast<size_t>(INT_MAX - obj_index[number].number))
+			return false;
+	// The caller re-proved the original held SQL/world cut after ALL allocation.
+	// No failure/callback/allocation follows this retained native-effect start.
+	cold.enrollment_started = cold.binding_started = true;
+	cold.bindings.commit_unchecked();
+	cold.binding_returned = true;
+	// Allocation-free pointer/count enrollment, no normal constructor, UID
+	// issuer, prototype defaults, native callback or source-event adoption.
+	for (auto &stage : cold.staged)
+	{
+		P_obj object = stage.object_;
+		object->next = object_list;
+		if (object_list)
+			object_list->prev = object;
+		object_list = object;
+		++obj_index[object->R_num].number;
+		stage.object_ = nullptr;
+		stage.pool_ = nullptr;
+		stage.affect_pool_ = nullptr;
+	}
+	cold.enrolled = true;
+	return true;
 #endif
 }
 
@@ -1462,6 +1508,7 @@ bool shop_trade_native_publication_owner::cold_publish(const critical_command &c
 	auto &cold = *entry.cold;
 	if ((cold.effect.started && (!cold.effect.returned || !cold.effect.succeeded)) ||
 	    (cold.enrollment_started && !cold.enrolled) ||
+	    (cold.binding_started && !cold.binding_returned) ||
 	    (cold.balances_started && !cold.balances_returned))
 		return false;
 	for (const auto &reload : cold.reload)
@@ -1893,7 +1940,9 @@ bool shop_trade_native_publication_owner::cold_publish(const critical_command &c
 							if (cold_object(observed, locations,
 									item.object_uid))
 								throw EAGAIN;
-						if (!session() || !cold_enroll_selected(&entry) ||
+						if (!session() || !cold_prepare_selected(&entry) ||
+						    !working_observe() || !session() ||
+						    !cold_enroll_selected(&entry) ||
 						    !working_observe())
 							throw EAGAIN;
 						selected = cold_object(
