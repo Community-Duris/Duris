@@ -420,3 +420,24 @@ witness admission-time field. Native SQL and coherent additive migration/metadat
 are primary-owned; independent readers and both-engine damage/cold restore are
 Plan5-owned. No fabricated timestamp, historical backfill, new store or gate is
 approved. Flat retained command evidence already supplies its preimage.
+
+### Independent price projection metadata source integration
+
+Peer0bb64bd64 now compares realized price, reason, outcome and result code across
+independently captured projections of the same selected-epoch root. The source
+import preserves three exact peer blobs, two Python AST inputs and all48 existing
+raw candidate source pins. Peer reports98 unit cases, both-engine SELECT-only
+native/disposable cuts and copied-export disagreements; all evidence remains
+bound to its frozen c89cd2618 native/schema0056 inputs, not authentic shop writer
+execution or the combined primary candidate. No native writer, schema, admission
+or activation changes in this import. Release stays BLOCKED and major-plan testing
+remains deferred.
+
+Primary private work now implements the explicit v6 shop runtime payload builder
+using the original player checkpoint stage and actual native shop revision, full
+literal item capture, existing source/custody/stock/container checks and accounted
+payload validation. The legacy/default v5 builder remains unchanged. This helper
+is under source review; exact preparation token/native keeper checkpoint, held
+publication/recovery integration and original backend journeys remain required.
+The independent baseline admission-time additive0058 draft proceeds separately,
+after pending0057; measured metadata is still required before coherent integration.
