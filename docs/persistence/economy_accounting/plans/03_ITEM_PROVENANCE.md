@@ -1,5 +1,12 @@
 # Plan 3: item supply, custody, and provenance
 
+## Integrated NPC native SQL participant — 2026-10-05
+
+[Borrowed native image/stock SQL participation](../QUEST_MOBILE_SQL_SOURCE_2026-10-05.md)
+is source-integrated and registered as a dormant definition. Admitted native
+birth/lifecycle/custody, schema0059, flat parity and qualification remain open.
+No gameplay route, activation or executed proof is added.
+
 ## Integrated NPC values and stock capture component — 2026-10-04
 
 The exact reviewed quest_mobile_native C871b2473/H2a149708 is now source-integrated

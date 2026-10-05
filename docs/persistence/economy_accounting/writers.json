@@ -46909,6 +46909,38 @@
           "pending claim or named domain state where applicable"
         ]
       }
+    },
+    {
+      "id": "quest.native_sql_image_participant",
+      "path": "src/persistence/quest_mobile_native_sql.c",
+      "symbol": "quest_mobile_native_sql_apply_locked",
+      "reason": "quest_cost",
+      "integration_issue": 482,
+      "owner": "primary / Plan3 native lifetime and quest integration",
+      "coverage": "legacy",
+      "classification": "Source-reviewed native NPC image and ordered stock SQL participant; defined with no production caller.",
+      "authority_boundary": "Borrowed original reconnect-disabled transaction only. Value/session facts grant no admitted birth, custody, accounting or ACK authority.",
+      "current_support": "Source integrated and registered; schema0059 and admitted native transition/lifecycle/custody caller remain pending. No native execution qualification; flat implementation returns ENOTSUP.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [],
+      "sites": [],
+      "evidence": [
+        "docs/persistence/economy_accounting/QUEST_MOBILE_SQL_SOURCE_2026-10-05.md"
+      ],
+      "reachability_evidence": "Source search finds only declarations/definitions of lock/apply_locked; no producer, coordinator, lifecycle or publication caller is installed."
     }
   ],
   "census": [
@@ -64020,9 +64052,9 @@
   "candidate_worktree_evidence": {
     "base_commit": "9155b623419b960c17f117ed8c87d8f783ce42a1",
     "status": "source_integrated_unqualified",
-    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled.",
+    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending.",
     "source_pins": {
-      "src/Makefile": "e967761020d956b13669253257d9a65f0e32308eacc9a6b37a266c132e4f94a0",
+      "src/Makefile": "7e435c8f06a4ac100603b5dab8f9c3549c1230f8721404622e26c99712c0114d",
       "src/economy/coin_physical_recovery.c": "0670e71865ebe3543ec18c4142653ed0ea6499cd93cc3bb36f06407f951e8397",
       "src/economy/coin_physical_recovery.h": "c68cc556958cc45b8e71260824f4ac717d060cd7750bd45d57a45b798bccaf9a",
       "src/economy/collector_purchase_publication.c": "51478b2dfadb97c5aa910735a0337238e8aee964a3150b97fe80b0f9912ba9d1",
@@ -64069,11 +64101,13 @@
       "src/economy/shop_trade_accounting.c": "db81ef03272058bb300ccfaba96a2df5afb5cb41bea67b2128ad01e7e7e4c35c",
       "src/economy/shop_trade_accounting.h": "60dbe36c5216ba4e72ad9d12e708ddac1ebb8b80c5d424a5748b502b8cfc9946",
       "scripts/validate_economy_accounting.py": "984d3170c3b4b17cb96dbcb6568a288b63a9db5278861d59cc860bf996f237be",
-      "scripts/generate_economy_writer_coverage.py": "407a87e2289fa9e29535bea9402647cf67059db7ec7678834535920a80dfd5d8",
+      "scripts/generate_economy_writer_coverage.py": "dd8dc8d31ec9d8eab3617a8333dcd36154337722a8618566354e3031b1462a6b",
       "src/world/quest_mobile_native.c": "871b247307723cbdae9e5aa29a21ed8f0f48bfb90ff5c1202b8f5b7bcfe8601d",
       "src/world/quest_mobile_native.h": "2a1497080811cc6e85ba58c89846a85fce6cd275d8812101dcb2a5e358b91dd4",
       "src/economy/shop_trade_world_witness.c": "ccbd95b7ef9cd8a25daf5fd71e3a2f2e52f54e50f177d77d4fddf329138f1c64",
-      "src/economy/shop_trade_world_witness.h": "2ad74c8c36a05c001af3d444464930eddbfebbc80a1cf575aa4df338221d90bd"
+      "src/economy/shop_trade_world_witness.h": "2ad74c8c36a05c001af3d444464930eddbfebbc80a1cf575aa4df338221d90bd",
+      "src/persistence/quest_mobile_native_sql.c": "461ecd26c1c0757587e063feb8c9851be7ff29ef654f6a756be9685511844e86",
+      "src/persistence/quest_mobile_native_sql.h": "5977e35428bb8c7a6b195b496ba1a4072d2fa18773bf73eb270f9c963354ec09"
     }
   },
   "pending_source_integration": {
