@@ -5865,6 +5865,14 @@ quest=(ROOT/'src/world/quest.c').read_text();offering=quest.split('static bool s
 assert 'roots[index] == item' in offering and 'actor->carrying' in offering and 'selected->obj_uid' not in offering
 assert 'goal->goal_type != QUEST_GOAL_ITEM' in offering and 'roots[index]->obj_uid' in offering
 
+# Storm Port Stronghold outside-path caption follows the existing reciprocal exits.
+spshold_direction_rooms=dawndale_bodies('spshold','wld')
+spshold_outside=re.sub(r'&(?:\+[A-Za-z]|[A-Za-z0-9])','',spshold_direction_rooms[22607].split('~')[1])
+assert re.search(r'outpost\s+lying just to\s+the west\.',spshold_outside), 'Stronghold outside caption must place the outpost west'
+assert re.search(r'path through the forest\s+is\s+just to the east\.',spshold_outside,re.I), 'Forest remains east'
+for source,direction,target in ((22607,3,22606),(22606,1,22607),(22607,1,22630),(22630,3,22607)):
+ assert re.search(r'\bD'+str(direction)+r'\s+[^~]*~[^~]*~\s+0 0 '+str(target)+r'\b',spshold_direction_rooms[source],re.S), 'Stronghold clue must follow an existing reciprocal route'
+
 for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone", "opalphoenix", "mira", "surfacekeeps", "icecrag", "cloister", "willem", "ixarkon", "mntcastl", "tundra", "fields_between", "goblinht", "ceothia", "brad", "desert", "ceopast", "basin_wa", "crypt", "val", "harrow", "mountaintracks", "shortc", "lavcav", "nomads", "undermountain", "desolateinv"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
