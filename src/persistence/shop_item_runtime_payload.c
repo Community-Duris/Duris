@@ -1627,14 +1627,14 @@ bool shop_item_runtime_refresh_image(MYSQL *connection, uint64_t keeper, uint32_
 					});
 				if (!needed)
 					return;
-				std::vector<player_item_snapshot> literal;
-				need(player_item_snapshot_tree_capture_literal(root, &literal,
+				std::vector<player_item_snapshot> tree_literal;
+				need(player_item_snapshot_tree_capture_literal(root, &tree_literal,
 									       nullptr) ==
 					     player_snapshot_capture_result::ok,
 				     EAGAIN);
-				for (size_t index = 0; index < literal.size(); ++index)
+				for (size_t index = 0; index < tree_literal.size(); ++index)
 				{
-					auto &item = literal[index];
+					auto &item = tree_literal[index];
 					const auto saved = original.find(item.object_uid);
 					const auto ordinary = std::find_if(
 						current.begin(), current.end(),
@@ -1654,8 +1654,8 @@ bool shop_item_runtime_refresh_image(MYSQL *connection, uint64_t keeper, uint32_
 					const uint64_t literal_parent =
 						item.parent_index < 0 ?
 							0 :
-							literal[static_cast<size_t>(
-									item.parent_index)]
+							tree_literal[static_cast<size_t>(
+									     item.parent_index)]
 								.object_uid;
 					const uint64_t ordinary_parent =
 						ordinary->parent_index < 0 ?
