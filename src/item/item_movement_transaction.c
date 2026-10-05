@@ -2576,7 +2576,8 @@ static bool submit_movement(P_char actor, P_obj root, P_obj target_container,
 		.item_blob = {},
 		.corpse = {},
 		.collector = {},
-		.continuation = continuation
+		.continuation = continuation,
+		.native_mobile = {}
 	};
 	for (size_t index = 0; index < items.size(); ++index)
 		payload.items[index] = items[index];
@@ -3078,7 +3079,8 @@ bool item_movement_transaction_submit_batch(
 		.item_blob = {},
 		.corpse = {},
 		.collector = {},
-		.continuation = {}
+		.continuation = {},
+		.native_mobile = {}
 	};
 	try
 	{
@@ -3400,7 +3402,8 @@ bool item_movement_transaction_submit_craft(
 					  .item_blob = {},
 					  .corpse = {},
 					  .collector = {},
-					  .continuation = std::move(pouch_continuation) };
+					  .continuation = std::move(pouch_continuation),
+					  .native_mobile = {} };
 	for (size_t index = 0; index < items.size(); ++index)
 		payload.items[index] = items[index];
 	std::copy(item_blob.begin(), item_blob.end(), payload.item_blob.begin());
