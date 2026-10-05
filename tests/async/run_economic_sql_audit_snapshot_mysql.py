@@ -30,6 +30,12 @@ ROOT_INSERT = ("INSERT INTO economic_accounting_operation(operation_id,lineage,e
                "realized_price_copper) VALUES ")
 POSTING_INSERT = ("INSERT INTO economic_accounting_coin_posting(operation_id,line_index,account_index,child_index,"
                   "delta_copper,delta_silver,delta_gold,delta_platinum,copper_value) VALUES ")
+REFERENCE_INSERT = ("INSERT INTO economic_accounting_item_reference(operation_id,event_index,child_index,"
+                    "item_uid,before_revision,after_revision,legacy_operation_id,legacy_event_index) VALUES ")
+LEDGER_INSERT = ("INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,root_item_uid,"
+                 "parent_item_uid,to_owner_type,to_owner_id,to_owner_context_id,item_revision,"
+                 "from_owner_revision,reason_type) VALUES ")
+CHILD_INSERT = ("INSERT INTO economic_accounting_child(operation_id,child_index,child_operation_id,parent_index) VALUES ")
 
 
 def bind_synthetic_baseline(cursor, blob):
@@ -98,10 +104,11 @@ TABLES = (
     "account_index INT,child_index INT,delta_copper BIGINT,delta_silver BIGINT,delta_gold BIGINT,"
     "delta_platinum BIGINT,copper_value BIGINT,event_index INT DEFAULT 0) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_child (operation_id BINARY(16),child_index INT,"
-    "child_operation_id BINARY(16),parent_index INT) ENGINE=InnoDB",
+    "child_operation_id BINARY(16),parent_index INT,domain_id INT UNSIGNED NULL,"
+    "discriminator BIGINT UNSIGNED NULL,relationship INT NULL,receipt_operation_id BINARY(16) NULL) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_item_reference (operation_id BINARY(16),event_index INT,"
     "child_index INT,item_uid BIGINT,before_revision BIGINT UNSIGNED,after_revision BIGINT UNSIGNED,"
-    "legacy_operation_id BINARY(16),legacy_event_index INT) ENGINE=InnoDB",
+    "legacy_operation_id BINARY(16),legacy_event_index INT,line_index INT DEFAULT 0) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_source_claim (lineage BINARY(16),source_event BINARY(48),"
     "operation_id BINARY(16)) ENGINE=InnoDB",
     "CREATE TABLE economic_account_mapping (mapping_id BIGINT,account_kind INT,locator_kind INT NOT NULL,context_id BIGINT,"
@@ -134,7 +141,9 @@ TABLES = (
     "CREATE TABLE item_ownership_ledger (operation_id BINARY(16),event_index INT,item_uid BIGINT,"
     "root_item_uid BIGINT,parent_item_uid BIGINT,to_owner_type INT,to_owner_id BIGINT,"
     "to_owner_context_id BIGINT,item_revision BIGINT UNSIGNED,from_owner_revision BIGINT,"
-    "reason_type INT) ENGINE=InnoDB",
+    "reason_type INT,from_owner_type INT NULL,from_owner_id BIGINT UNSIGNED NULL,"
+    "from_owner_context_id BIGINT UNSIGNED NULL,from_equipment_slot INT DEFAULT 0,"
+    "to_equipment_slot INT DEFAULT 0) ENGINE=InnoDB",
     "CREATE TABLE currency_ledger (operation_id BINARY(16)) ENGINE=InnoDB",
     "CREATE TABLE critical_outbox (operation_id BINARY(16)) ENGINE=InnoDB",
 )
@@ -301,9 +310,9 @@ try:
                             LINEAGE, consumer_source_event, consumer_root))
             cursor.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
                            (LINEAGE, creation_source_event, creation_root))
-            cursor.execute("INSERT INTO economic_accounting_item_reference VALUES "
+            cursor.execute(REFERENCE_INSERT +
                            "(%s,0,0,84,0,1,%s,0)", (creation_root, creation_root))
-            cursor.execute("INSERT INTO item_ownership_ledger VALUES "
+            cursor.execute(LEDGER_INSERT +
                            "(%s,0,84,84,NULL,1,7,0,1,0,2)", (creation_root,))
             cursor.execute("INSERT INTO economic_account_mapping VALUES "
                            "(7,1,1,0,7,%s,1,NULL,7,%s),(9,2,2,0,9,%s,1,NULL,9,%s),"
@@ -578,7 +587,12 @@ try:
             # a deposit root that cannot authorize creating a wallet mapping.
             expected_exceptions = {"evidence_loss": 1,
                                    "unmapped_native_wallet": 1,
-                                   "unauthorized_mapping_creation": 1}
+                                   "unauthorized_mapping_creation": 1,
+                                   "missing_original_plan": 3}
+            # These legacy model roots retain no original capsules or source
+            # custody facts. Do not reseal their projections into proof. Native
+            # original-plan authentication is covered by the canonical SQL class.
+            assert report["checked"]["original_plans_verified"] == 0
             assert report["exception_counts"] == expected_exceptions, report
             # Matching root/claim values can still be invalid native S48
             # identities, including retained roots outside the selected epoch.
@@ -674,9 +688,9 @@ try:
                                "(%s,0,%s,0,0,0,0,0,0,0,0,0,1)", (orphan, key(1, 7)))
                 writer.execute(POSTING_INSERT +
                                "(%s,0,0,0,1,0,0,0,1)", (orphan,))
-                writer.execute("INSERT INTO economic_accounting_child VALUES (%s,0,%s,0)",
+                writer.execute(CHILD_INSERT + "(%s,0,%s,0)",
                                (orphan, bytes.fromhex("02" * 16)))
-                writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
+                writer.execute(REFERENCE_INSERT +
                                "(%s,0,0,999,0,1,%s,0)", (orphan, orphan))
                 writer.execute("INSERT INTO economic_baseline_reservation VALUES (%s,%s,2,%s,%s)",
                                (bytes([77]) * 16, bytes([88]) * 16, 2**64 - 1, orphan))
@@ -836,15 +850,16 @@ try:
                 writer.execute("INSERT INTO critical_operation_inbox "
                                "(operation_id,status,result_code) VALUES (%s,1,0)",
                                (high_revision_root,))
-                writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
+                writer.execute(REFERENCE_INSERT +
                                "(%s,0,0,81,%s,%s,%s,0)",
                                (high_revision_root, maximum_revision - 1,
                                 maximum_revision, high_revision_root))
-                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                writer.execute(LEDGER_INSERT +
                                "(%s,0,81,81,NULL,1,7,0,%s,99,1)",
                                (high_revision_root, maximum_revision))
             high_snapshot = capture(audit, LINEAGE, EPOCH)
-            assert Reconciler().audit(high_snapshot)["exception_counts"] == expected_exceptions
+            assert Reconciler().audit(high_snapshot)["exception_counts"] == {
+                **expected_exceptions, "missing_original_plan": 4}
             high_event = next(row for row in high_snapshot["native"]["uid_history_events"]
                               if row["uid"] == 81)
             assert (high_event["before_revision"], high_event["revision"]) == (
@@ -928,11 +943,12 @@ try:
                                (duplicate_uid_root,))
                 writer.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
                                (LINEAGE, duplicate_uid_source, duplicate_uid_root))
-                writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
+                writer.execute(REFERENCE_INSERT +
                                "(%s,0,0,84,1,2,%s,0)", (duplicate_uid_root, duplicate_uid_root))
-                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                writer.execute(LEDGER_INSERT +
                                "(%s,0,84,84,NULL,1,7,0,2,1,2)", (duplicate_uid_root,))
                 writer.execute("UPDATE item_current_owner SET item_revision=2 WHERE item_uid=84")
+            expected_exceptions["missing_original_plan"] = 4
             duplicate_uid_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
             assert duplicate_uid_report["exception_counts"] == {
                 **expected_exceptions, "duplicate_uid": 1}, duplicate_uid_report
@@ -965,12 +981,13 @@ try:
                                "(operation_id,status,result_code) VALUES (%s,1,0)", (revived_uid_root,))
                 writer.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
                                (LINEAGE, revived_uid_source, revived_uid_root))
-                writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
+                writer.execute(REFERENCE_INSERT +
                                "(%s,0,0,84,2,3,%s,0)", (revived_uid_root, revived_uid_root))
-                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                writer.execute(LEDGER_INSERT +
                                "(%s,0,84,84,NULL,1,7,0,3,2,1)", (revived_uid_root,))
                 writer.execute("UPDATE item_current_owner SET item_revision=3,state=1,"
                                "owner_type=1,owner_id=7 WHERE item_uid=84")
+            expected_exceptions["missing_original_plan"] = 5
             revived_uid_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
             assert revived_uid_report["exception_counts"] == {
                 **expected_exceptions, "resurrected_item_uid": 1}, revived_uid_report
@@ -995,6 +1012,7 @@ try:
                                    (duplicate_uid_root, revived_uid_root))
                 writer.execute("UPDATE item_current_owner SET item_revision=1,state=1,"
                                "owner_type=1,owner_id=7 WHERE item_uid=84")
+            expected_exceptions["missing_original_plan"] = 3
             assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
                 expected_exceptions
             # A deep, unanchored native forest is still auditable. Its missing
@@ -1030,12 +1048,12 @@ try:
                                (prior_item_root,))
                 writer.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
                                (LINEAGE, prior_item_source, prior_item_root))
-                writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
+                writer.execute(REFERENCE_INSERT +
                                "(%s,0,0,86,0,1,%s,0)",
                                (prior_item_root, prior_item_root))
-                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                writer.execute(LEDGER_INSERT +
                                "(%s,0,86,86,NULL,1,7,0,1,0,2)", (prior_item_root,))
-                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                writer.execute(LEDGER_INSERT +
                                "(%s,0,86,86,NULL,8,0,0,2,1,3)",
                                (prior_unlinked_operation,))
                 writer.execute("INSERT INTO item_current_owner VALUES "
@@ -1147,16 +1165,16 @@ try:
                                (other_lineage_operation, other_lineage, EPOCH))
                 writer.execute("INSERT INTO item_current_owner VALUES "
                                "(85,85,NULL,1,7,0,1,1,1,NULL)")
-                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                writer.execute(LEDGER_INSERT +
                                "(%s,0,85,85,NULL,1,7,0,1,0,2)",
                                (unanchored_operation,))
-                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                writer.execute(LEDGER_INSERT +
                                "(%s,0,87,87,NULL,1,7,0,1,0,2)",
                                (unscoped_operation,))
-                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                writer.execute(LEDGER_INSERT +
                                "(%s,0,88,88,NULL,1,7,0,1,0,2)",
                                (unattributed_operation,))
-                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                writer.execute(LEDGER_INSERT +
                                "(%s,0,89,89,NULL,1,7,0,1,0,2)",
                                (other_lineage_operation,))
             unanchored_snapshot = capture(audit, LINEAGE, EPOCH)
@@ -1195,7 +1213,7 @@ try:
                                "WHERE operation_id=%s", (other_lineage_operation,))
             unlinked_operation = bytes.fromhex("98" * 16)
             with setup.cursor() as writer:
-                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                writer.execute(LEDGER_INSERT +
                                "(%s,0,84,84,NULL,8,0,0,2,1,3)", (unlinked_operation,))
             unlinked_snapshot = capture(audit, LINEAGE, EPOCH)
             assert unlinked_snapshot["native"]["uid_event_coverage"] == {

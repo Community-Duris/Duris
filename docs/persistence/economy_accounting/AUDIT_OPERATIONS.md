@@ -19,6 +19,41 @@ history before that opening and absent stores are not reconstructed. An empty
 result does not prove a UID never existed. Output remains ID-only and bounded;
 `--limit 0` retains the full count and coverage while omitting row details.
 
+Run `scripts/economic_sql_canonical_audit.py` with explicit SQL connection
+arguments and a SELECT-only account to authenticate original retained EAI1/EAP1
+capsules and their SQL projections. For example:
+
+```sh
+python3 scripts/economic_sql_canonical_audit.py \
+  --host 127.0.0.1 --user accounting_audit --database duris \
+  --password-env ACCOUNTING_AUDIT_PASSWORD
+```
+
+The command checks every retained root in the database, including inactive
+epochs and other lineages, in one read-only repeatable-read transaction. It
+always rolls back. Its independent decoder compares original metadata, hashes,
+counts, account effects, posting event/line indices, child derivation facts,
+item reference event/line indices and legacy custody projections. It requires
+InnoDB sources, including `economic_accounting_source_claim`, and refuses
+collections above 100,000 roots or source claims, 32 MiB of canonical capsules,
+or the per-query row/byte budget. Every committed root with a source identity
+requires its exact lineage/source/operation/success claim; orphan, foreign,
+changed, duplicate or rejected-root claims refuse across the entire database.
+Roots with no source identity and rejected roots require no source claim. Orphan details and
+details attached to rejected roots also refuse. It never repairs a discrepancy.
+
+Status 0 emits a small JSON report with database scope and verified root/byte
+counts. A discrepancy or missing/oversized source emits no report, prints a
+fixed diagnostic refusal on stderr, and exits 2. Capsule and command bodies,
+aliases and passwords are absent from that output. The JSON explicitly leaves
+complete command/receipt authentication, source capture and release
+qualification false. A successful check supplements the partial snapshot
+exporter: a saved version-1 projection retains original EAP1 plans and omits
+opaque EAI1 intent facts. Its reconciler authenticates projected plan fields
+against those retained plans; the canonical SQL check additionally authenticates
+the retained intent and its SQL binding. Capture the two checks under the release's
+quiescence procedure; independent runs do not constitute one combined cut.
+
 Every non-exception view includes the whole audited input's `coverage` object:
 `lineage`, `selected_epoch`, `complete`, `quiescent`, and `exception_count`.
 This includes unfiltered holdings, supply, prices, routes and provenance. The
@@ -91,6 +126,57 @@ Top-level fields are `schema_version`, `lineage`, `epoch`, `backend`, `complete`
 and `receipts`. Every collection is required and limited to 100,000 rows. A
 source snapshot larger than either limit needs a reviewed partitioning method;
 truncating and setting `complete: true` is prohibited.
+
+Every committed root also requires `canonical_plan`, the lowercase hex of its
+original retained EAP1 bytes, and `plan_digest`, `intent_digest`, and
+`domain_digest` as lowercase SHA-256 hex. Its metadata includes
+`original_operation_id` (null when absent), `accounting_version`, `writer_id`,
+`policy_version`, `compiler_version`, `actor_kind`, and `actor_id`, together with
+the existing lineage, epoch, operation ID, reason, and source event. Counts
+include `before_witness_count` and `after_witness_count`. Missing original plans
+produce `missing_original_plan` for every backend, including synthetic inputs;
+an internally balanced projection does not supply this proof. Old exports must
+be recaptured from retained authority rather than resealed from their projected
+rows. Rejected roots must have no canonical plan or plan digest.
+
+The independent reader decodes EAP1 without invoking a mutation codec. It checks
+root metadata, counts and digests, then compares original account effects,
+posting event/account/child links, child IDs and derivation facts, and item
+event/child/UID/revision links. Posting rows preserve `event_index`; item
+references preserve `line_index`. Linked ownership events preserve `from_owner`,
+`from_equipment_slot`, and `to_equipment_slot` as exact numeric facts. Original
+plan custody is compared with the linked ledger's source/destination owners,
+root, parent, UID revision, and equipment slots. Coherent rewrites of projected
+child derivations or reassignment of posting/item children produce specific
+`original_plan_*_mismatch` findings. These checks retain all earlier semantic
+findings and never change the supplied snapshot.
+
+All five detail projections require the exact decoded native representation,
+including nested coin and owner vectors. An integer-valued JSON float or a
+Boolean does not authenticate an integer field even when Python equality would
+consider them equal. UID, root, non-null parent and destination-owner members,
+posting scalar values, indices and revisions must be actual JSON integers equal
+to their bounded native originals. A null parent must remain null. Representation
+mismatches retain the corresponding `original_plan_*_mismatch` finding and do
+not increase `checked.original_plans_verified`.
+
+Each EAP1 is at most 4 MiB; their decoded input total is at most 32 MiB. The
+whole JSON file remains limited to 32 MiB, including hex expansion. Before
+fetching plans, the SQL exporter checks selected nonbaseline root count, total
+hex-expanded plan size, and maximum individual plan size within the same
+read-only consistent transaction. Exported EAP1 contains fixed-width numeric
+facts and non-personal IDs. Opaque EAI1 facts are not exported. Operator views
+omit canonical bytes and personal aliases; limits 0/1/100 preserve the global
+audit result. `checked.original_plans_verified` counts roots whose plan and
+captured projections passed these checks, including when no exception details
+are requested.
+
+This authenticates the captured projections against the supplied original plan
+and persisted digests. It does not authenticate opaque original intent facts,
+the complete command binding or receipt payload, attested native completeness,
+or uncollected historical roots. A model-authored plan remains synthetic
+evidence. SQL cuts remain `complete: false`; these checks do not qualify a
+writer, authorize correction/activation, or satisfy the release matrix.
 
 Native money and item revisions are exact JSON integers in 0..UINT64_MAX,
 matching their unsigned native schema and wire fields. Boolean, negative or
@@ -411,6 +497,21 @@ operation, a distinct durable source event, a policy-specific reason and an
 atomic new root receipt. It must reject a changed state before mutation and
 append new evidence rather than editing history. A manual SQL UPDATE, a missing
 original operation, or an unlinked credit cannot resolve an audit exception.
+
+## Native mobile custody grammar
+
+Original native-mobile custody uses owner type12 with a durable lifetime ID
+from1 through `UINT64_MAX-1` and context0. The independent EAP1 and EAB1 readers
+preserve that identity without inferring a runtime NPC ID or VNUM. Mobile live
+and quarantined custody remain distinct; a destroyed item has destruction
+ownership rather than native-mobile ownership.
+
+An equipped mobile item in EAP1 must be active, have no parent, be its own root
+UID, and use slot1 through43. Historical player equipment rules remain unchanged.
+EAB1 has no equipment field; its owner12 identity acceptance does not prove a
+complete equipped opening. Original EAP1 and the retained native boundary still
+provide the required equipment and authority evidence. Native decoder agreement
+and private SQL cuts remain component evidence, not quest producer completion.
 
 ## Qualification budgets
 

@@ -1,5 +1,15 @@
 # Plan 5: independent audit, lifecycle, and release qualification
 
+## Original-plan audit repair and central integration — 2026-10-05
+
+[The exact Plan5 closure](../PLAN5_ORIGINAL_PLAN_AUDIT_INTEGRATION_2026-10-05.md) resolves the saved integer-representation import
+blocker and imports bounded EAP1 capture, independent canonical/source-claim
+audit and repaired manual exporter fixture. Central inventory917owners/101rows
+keeps every prior policy and expands only child pure cases/new canonical owner.
+Peer native/SQL evidence stays frozen to its recorded schema56 scope. Local
+AST/pins/inventory only; combined major-plan qualification, EAB2 readers and full
+R1–R8/release remain open. Primary native/schema/inactive behavior stay.
+
 Start from add-double-entry HEAD 49af585c4. The reconciler and route inventory
 can be developed against current native rows and synthetic committed evidence
 while Plans 1-4 proceed. Final release certification consumes their results,
