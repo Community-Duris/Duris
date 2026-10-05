@@ -31,6 +31,7 @@
 #include "player/output_preferences.h"
 #include "net/command_latency.h"
 #include "world/db.h"
+#include "world/object_template.h"
 #include "world/events.h"
 #include "world/world_activity.h"
 #include "cmd/interp.h"
@@ -965,6 +966,13 @@ int run_the_game(int port, int sslport)
 	{
 		fprintf(stderr, "--  Skipping optional subsystems in mini mode.\r\n");
 	}
+	// Final SQL recovery binding provenance uses all existing optional startup
+	// assignments. Native stock restoration already used the parsed boot values.
+	// This pre-worker cut never reparses, prebinds instance procedures or grants
+	// accounting/publication authority; failure keeps recovery closed.
+	if (persistence_mode_requires_mysql() && !finalize_recovery_object_template_bindings())
+		logit(LOG_STATUS, "SQL recovery object-template final binding seal unavailable");
+
 	ssl_read_cert();
 
 	fprintf(stderr, "Assigning map glyph variations.\r\n");

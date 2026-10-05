@@ -1,5 +1,17 @@
 # Accounting review status — 2026-10-04
 
+## Recovery template binding order corrected — 2026-10-05
+
+[The two-cut source repair](RECOVERY_TEMPLATE_BINDING_SEAL_2026-10-05.md) parses complete prototypes after boot
+procedure binding and before populated sidecar restoration, then snapshots final
+existing bindings after optional initialization and before workers. It validates
+the whole catalog before allocation-free pointer updates and preserves parsed
+addresses/native indices; runtime/off-thread calls refuse before mutation.
+Source review/inverses/format/pins/census only; no execution. Lazy bindings and
+early-restoration staleness, cold integration and native qualification remain
+open. Earlier catalog cut descriptions below retain their historical scope.
+Inactive behavior and R1–R8/release gates remain.
+
 ## Original-plan audit repair and central integration — 2026-10-05
 
 [The exact Plan5 closure](PLAN5_ORIGINAL_PLAN_AUDIT_INTEGRATION_2026-10-05.md) resolves the saved integer-representation import
