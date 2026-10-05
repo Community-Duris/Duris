@@ -1,5 +1,25 @@
 # Plan 4: priced and compound gameplay domains
 
+## Retained SHOP producers and game-thread driver integrated — 2026-10-05
+
+[The source integration](../SHOP_RETAINED_PRODUCER_DRIVER_INTEGRATION_2026-10-05.md) connects the four original buy/sell selections
+to one retained checkpoint/admission/publication driver and sequential post-ACK
+produced continuation. Separate proved prejournal cancellation preserves literal
+cleanup and owner fences. Independent source review/pins/format only; no native
+execution. Regular-phase invocation excludes shutdown drain. Central availability
+remains closed; coherent schemas, cold recovery/ACK, flat parity, original
+major-plan qualification and full R1–R8 remain open/BLOCKED.
+
+## Retained SHOP v8 submission corrected — 2026-10-05
+
+[The source-proven version fix](../SHOP_V8_SUBMISSION_VERSION_FIX_2026-10-05.md)
+removes the v7-only guard that rejected every command produced by the v8
+recovery builder. Owned submission accepts exactly v7/v8 with all original
+decode, identity, native checkpoint and held-player checks retained. Source
+review/changed-line formatting only; no native qualification. Central admission,
+activation, producer driving and original major-plan gates remain open/closed
+as recorded in the owning report.
+
 ## Detached native mobile stage installed — 2026-10-05
 
 [The reviewed loader integration](../NATIVE_MOBILE_STAGE_INTEGRATION_2026-10-05.md)

@@ -8,13 +8,14 @@
     "Baseline/cutover, source-event dedupe, item UID lifetime, lifecycle retirement and restore/reconciliation remain activation blockers."
   ],
   "candidate_worktree_evidence": {
-    "base_commit": "30c9a30a6e0449dcdc58499d152f8e1061b9d8ad",
-    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified. Source-reviewed pure active-root custody census shares old root observation and preserves retained historical states; private shop consumer remains unintegrated and unqualified. Source-reviewed bounded canonical shop recovery forest binding codecs are integrated as pure value helpers; the explicit v8 command, producer, original SQL validation, cold replay/publication and final qualification remain private/unfinished. Existing journal limits, inactive shop versions and admission/ACK gates are unchanged. Maintained native reference/source-event codecs are extracted without changing original encoded bytes or image/capture policy; complete production and focused link recipes are updated. Native char_data now has zeroable runtime-only reference storage and a read-only accessor requiring the originally observed runtime generation before pointer access. No birth writer, durable restore record, UID issuance or ACK authority is installed by this slice; major-plan execution remains deferred. Reviewed SHOP v8 producer/checkpoint, literal runtime payload, complete destination weight, original SQL images, exact retained receipt verification and held live publication source are composed with all companion headers and production objects. Current cold image observation grants no startup/rebind/native publication or ACK authority. Central accounted SHOP admission remains closed and canonical schema0056 is unchanged; schema0057, real producer invocation, cold continuation, flat parity and major-plan native/gameplay/recovery qualification remain unfinished. Previously reviewed detached native-mobile loader is source integrated with both legacy overloads/probe kept on their original path. Preparation has no live list/count/runtime/event publication; consumption precedes room/special hooks. Private dormant stage grants no original source, durable UID or ACK, and adds no durable recovery format or NPC state ledger. Original issuer/birth/restore/retirement and major-plan qualification remain open.",
+    "base_commit": "43a2a0e3afd5759d22ce931efbbf6e8c905db5be",
+    "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
+    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified. Source-reviewed pure active-root custody census shares old root observation and preserves retained historical states; private shop consumer remains unintegrated and unqualified. Source-reviewed bounded canonical shop recovery forest binding codecs are integrated as pure value helpers; the explicit v8 command, producer, original SQL validation, cold replay/publication and final qualification remain private/unfinished. Existing journal limits, inactive shop versions and admission/ACK gates are unchanged. Maintained native reference/source-event codecs are extracted without changing original encoded bytes or image/capture policy; complete production and focused link recipes are updated. Native char_data now has zeroable runtime-only reference storage and a read-only accessor requiring the originally observed runtime generation before pointer access. No birth writer, durable restore record, UID issuance or ACK authority is installed by this slice; major-plan execution remains deferred. Reviewed SHOP v8 producer/checkpoint, literal runtime payload, complete destination weight, original SQL images, exact retained receipt verification and held live publication source are composed with all companion headers and production objects. Current cold image observation grants no startup/rebind/native publication or ACK authority. Central accounted SHOP admission remains closed and canonical schema0056 is unchanged; schema0057, real producer invocation, cold continuation, flat parity and major-plan native/gameplay/recovery qualification remain unfinished. Previously reviewed detached native-mobile loader is source integrated with both legacy overloads/probe kept on their original path. Preparation has no live list/count/runtime/event publication; consumption precedes room/special hooks. Private dormant stage grants no original source, durable UID or ACK, and adds no durable recovery format or NPC state ledger. Original issuer/birth/restore/retirement and major-plan qualification remain open. SHOP owned submission now accepts the original native v7 or recovery v8 command; the v8 builder was previously rejected by a v7-only guard. Decode, exact operation/checkpoint/held-player proof, all other version restrictions and admission/activation gates remain unchanged. Source-only correction; major-plan execution remains deferred. Four SHOP producers and the original retained driver are source integrated; central SHOP availability remains closed. Source review corrected actor-independent uncertain readback ordering and removed an unnecessary live-keeper gate after proven local cancellation. No native/SQL/services or major-plan tests ran; cold recovery, coherent schemas, flat parity and R1-R8 qualification remain open.",
     "source_pins": {
       "migrations/data_lifecycle_manifest.json": "b37efc35e5865e466a5623e11f1f43f587d63ffa3de25acfe769faec79508fbf",
-      "scripts/generate_economy_writer_coverage.py": "ca34dfdc7eebd0c9045f95f315e4f77f74c13d053a7aec6bc10f6c07639d861a",
+      "scripts/generate_economy_writer_coverage.py": "0e9170f5e6f8d83d9f6916137bdd47e7a3c766ad1dee510a46cd68f9172aa428",
       "scripts/validate_data_lifecycle.py": "948868127e84196d4998159c58e9114a8bdb0eaead2495d0d9da0f86d5f904ca",
-      "scripts/validate_economy_accounting.py": "984d3170c3b4b17cb96dbcb6568a288b63a9db5278861d59cc860bf996f237be",
+      "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
       "src/Makefile": "2ae8f1f3e8cba75233c75a5680e1ca423abf5e4cf5b4e1f1cf56b1b7f5a1d00e",
       "src/core/structs.h": "e1a9776be892d6a6ec1abccd3487cd5f86d0574f80c072164766a752cb976db9",
       "src/economy/coin_physical_recovery.c": "0670e71865ebe3543ec18c4142653ed0ea6499cd93cc3bb36f06407f951e8397",
@@ -30,13 +31,13 @@
       "src/economy/currency_transaction.h": "fa8fa610b7af6b485575cebb22d3fab61f7adc8abdd480585ce1549795516035",
       "src/economy/economic_accounting_plan.c": "7376ba1cbda03950d639686eabcd68aa0b78b1dc40863eefbd54332ab07dc9c9",
       "src/economy/economic_accounting_plan.h": "f3a6a57877b440c4772b0d2f6c4173834d683abdb9c37ce2c7f6f68cddad2c5e",
-      "src/economy/economic_command_admission.c": "4d19e7292b9da2286ef7149b78e301fd8f7e4678a6f4540e79fa7d32364f79d7",
-      "src/economy/economic_command_admission.h": "5ed371f12a0f6fa6764039c788c416ccacbc96a1435edad46ca5ec446e43e68d",
+      "src/economy/economic_command_admission.c": "1cdb4fe567f3aa4271360b36757733720848a65f9ce0beaa011d123d63bb3d9b",
+      "src/economy/economic_command_admission.h": "dc19a944f07fde080afd742b58f0cafeab6eca74fa850c980019391ca912c2ba",
       "src/economy/economic_gameplay_authority.c": "3ecf407a223f960291ea3e142b23128e2eefade0344f1264e4d5c2a5e57729be",
       "src/economy/economic_gameplay_authority.h": "9163499b28c38fa61099b8b66bbd09a42d533bf139c5c2256d51ce0a2cca080d",
       "src/economy/economic_source_event.c": "acefc0d801998c5bcc28c0841d774e423bb930bfc0992d3b443fec592ff0fd08",
       "src/economy/economic_source_event.h": "66bc66de2b214f0356ff7a585db320bb5300aacb6d88ac17ba53cd47f76cd2f4",
-      "src/economy/shop.c": "fe8b8951d0dba5a20100e37a1103c5084cfcbb1669443ff55dd5938e15b4666d",
+      "src/economy/shop.c": "59463fb56efe15a05b47b6ddea25b3c0bad8fbbe9e4cbeb9f32663db08e07175",
       "src/economy/shop_trade_accounting.c": "e9e428cdb65a30679a04e8ae044410c9fde042d82278045d441d0d66a2dabd5c",
       "src/economy/shop_trade_accounting.h": "60dbe36c5216ba4e72ad9d12e708ddac1ebb8b80c5d424a5748b502b8cfc9946",
       "src/economy/shop_trade_command.c": "7b69d34b9bc66078df9210a4563318d79d4867d9144223d8bbc32e313d651275",
@@ -49,8 +50,8 @@
       "src/economy/shop_trade_recovery_manifest.h": "9174ca1fac0372a0f36037ac2150f84355da9d3acff74fdbf71e0192c8809db9",
       "src/economy/shop_trade_runtime.c": "2a1362e7a2c9e73665e28335a80c1e2a1f901e0eeb92b0c117e90d3c90973a3d",
       "src/economy/shop_trade_runtime.h": "f15bcf72444ee351573feae8142260d2f9b0bc3f1700a1a4587143d4ff3c816d",
-      "src/economy/shop_trade_transaction.c": "c67a064e5e0c9ea555497a6d7f71bc72acabe1e13c74af63688a3b687bddcbc8",
-      "src/economy/shop_trade_transaction.h": "e34c47b6c3402a961be80e83d49a1428833957517bb11bf360625459fb26449f",
+      "src/economy/shop_trade_transaction.c": "b1ecbb96474886815585557c464973af85b101c44d95006de6b594edd9da3b1f",
+      "src/economy/shop_trade_transaction.h": "3aebdf9bcd9f394e003221204f27f9e58c5494a09e726a01d4ae00012764a8f3",
       "src/economy/shop_trade_world_witness.c": "7a7a95dcdc1c1cc747710fbc0fa587828e2be413c38fad0818815ff5caeb0240",
       "src/economy/shop_trade_world_witness.h": "9dcb14d9cb95aece5c738f2201a324c1339ad548cc593a19ab15a6c90509eed8",
       "src/flatfile/flatfile_accounting_authority.c": "887e40389a376bfc8ae635f9ea38b9fb2a24e4c7189d421fded745ad9644f00c",
@@ -68,7 +69,7 @@
       "src/flatfile/quest_mobile_native_flatfile.h": "9b47949ce5ed5b676f58ca430791709987159be1df96fff3ace8bbb84e101348",
       "src/item/item_ownership_runtime.c": "a0a58d74b75fdbc78d4987a83804bd23ffbcf7bea96fefb06b78ea8b13ad5a25",
       "src/item/item_ownership_runtime.h": "19ba1140abdb70406ebd4f351f230715c6b6b15405c44688f315e76e13d2cafb",
-      "src/net/comm.c": "0a74166be1f5e32248a672fa6029a7b4c51982aafbf203e1748b749c487aa103",
+      "src/net/comm.c": "e7962b3478908d055aa3947ddfa9628099904186331ac57b1e88b04e7b0f889c",
       "src/persistence/critical_command.c": "e3191d6c16d3121ef0870ab2345542068f86bf538aa49894dded7ea44c4f7f78",
       "src/persistence/critical_command_coordinator.c": "9f4ccc43c8b89d155c30227c1fa7cb8815edfa1f61f65e94d4de30b305123697",
       "src/persistence/critical_command_coordinator.h": "41e40357a553ed010658354098e5064c8915e5a671bc837edb54616c4366a05e",
@@ -101,12 +102,12 @@
     "status": "source_integrated_unqualified"
   },
   "counts": {
-    "dormant_writer_candidates": 16,
-    "draft_registry_rows": 891,
-    "function_definition_anchors_verified": 883,
-    "matrix_rows": 891,
+    "dormant_writer_candidates": 19,
+    "draft_registry_rows": 895,
+    "function_definition_anchors_verified": 887,
+    "matrix_rows": 895,
     "non_function_candidate_anchors": 8,
-    "non_writer_or_out_of_scope_candidates": 107,
+    "non_writer_or_out_of_scope_candidates": 108,
     "offline_operational_writer_routes": 4,
     "routes_with_current_schema_1_path": 85,
     "routes_with_schema_2_gameplay_producer": 15,
@@ -116,8 +117,8 @@
   },
   "coverage_complete": false,
   "disposition_counts": {
-    "dormant_writer_candidate": 16,
-    "non_writer_candidate": 107,
+    "dormant_writer_candidate": 19,
+    "non_writer_candidate": 108,
     "offline_operational_writer": 4,
     "runtime_mutation_route": 692,
     "runtime_projection_route": 72
@@ -132,33 +133,33 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 891 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The matrix reconciles 895 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
     "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2849,
-    "current_unique_path_line_family_sites": 2790,
+    "current_occurrences": 2862,
+    "current_unique_path_line_family_sites": 2803,
     "draft_registry_census_complete": false,
     "draft_source_commit": "a265a505385ef15a86276abd198a618d16685c6e",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2790,
+    "draft_unique_sites": 2803,
     "family_occurrences": {
       "coin_assignment": 176,
       "coin_bulk_mutation": 23,
       "direct_cash_assignment": 12,
-      "economic_submit": 193,
-      "item_lifecycle": 1153,
+      "economic_submit": 199,
+      "item_lifecycle": 1160,
       "item_publication": 1064,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
       "sql_economy": 56
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 891-row registry maps 2790 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2790,
-    "mapped_unique_sites_from_draft_rows": 2790,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 895-row registry maps 2803 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2803,
+    "mapped_unique_sites_from_draft_rows": 2803,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -38706,6 +38707,236 @@
     },
     {
       "blocking_policy_after_activation": {
+        "decision": "keep_unreachable_or_block_if_reactivated",
+        "must_block_on_activation": true,
+        "required_policy": "Original retained SHOP preparation owns one frozen selection through player/native checkpoint and exact admission. Its production entry remains unreachable while the central SHOP route is unregistered; source integration is not native qualification. Any reactivation must route through the typed schema-2 writer before native mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "none",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "dormant_writer_candidate",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "not_executed_in_tree",
+        "unified_operation_postings_observed": false
+      },
+      "id": "shop.accounted_preparation_start",
+      "native_effects": {
+        "custody_effect": "Original retained SHOP preparation owns one frozen selection through player/native checkpoint and exact admission. Its production entry remains unreachable while the central SHOP route is unregistered; source integration is not native qualification.",
+        "holding_effect": "Central SHOP availability is closed; the connected producer/driver cannot initiate active money mutation until the complete route is qualified.",
+        "native_state_targets": [
+          "original player/keeper checkpoint and held selection",
+          "future admitted SHOP money/item root and guarded publication"
+        ]
+      },
+      "reachability_evidence": "Regular game-thread retained owner and four-action producer source are integrated, but the maintained central SHOP availability query remains false. Original native qualification and cold recovery are unfinished.",
+      "reason": "shop_buy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          2334
+        ],
+        "file": "src/economy/shop_trade_transaction.c",
+        "function": "shop_trade_preparation_owner::start",
+        "original_draft_symbol": "shop_trade_preparation_owner::start"
+      },
+      "source_classification": "Original retained SHOP preparation owns one frozen selection through player/native checkpoint and exact admission. Its production entry remains unreachable while the central SHOP route is unregistered; source integration is not native qualification.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "keep_unreachable_or_block_if_reactivated",
+        "must_block_on_activation": true,
+        "required_policy": "Only post-publication/ACK completion selects the next produced copy with the same keeper, stock, destination and price. Original-copy retry never rerolls; central SHOP admission remains closed. Any reactivation must route through the typed schema-2 writer before native mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "none",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "dormant_writer_candidate",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "not_executed_in_tree",
+        "unified_operation_postings_observed": false
+      },
+      "id": "shop.accounted_produced_continuation",
+      "native_effects": {
+        "custody_effect": "Only post-publication/ACK completion selects the next produced copy with the same keeper, stock, destination and price. Original-copy retry never rerolls; central SHOP admission remains closed.",
+        "holding_effect": "Central SHOP availability is closed; the connected producer/driver cannot initiate active money mutation until the complete route is qualified.",
+        "native_state_targets": [
+          "original player/keeper checkpoint and held selection",
+          "future admitted SHOP money/item root and guarded publication"
+        ]
+      },
+      "reachability_evidence": "Regular game-thread retained owner and four-action producer source are integrated, but the maintained central SHOP availability query remains false. Original native qualification and cold recovery are unfinished.",
+      "reason": "shop_buy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          824
+        ],
+        "file": "src/economy/shop.c",
+        "function": "shop_trade_submit_accounted_produced_continuation",
+        "original_draft_symbol": "shop_trade_submit_accounted_produced_continuation"
+      },
+      "source_classification": "Only post-publication/ACK completion selects the next produced copy with the same keeper, stock, destination and price. Original-copy retry never rerolls; central SHOP admission remains closed.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "keep_unreachable_or_block_if_reactivated",
+        "must_block_on_activation": true,
+        "required_policy": "Four buy/sell front doors hand their original selection to the retained owner before any legacy split payment/grant path. Central availability is closed; source integration is not route qualification. Any reactivation must route through the typed schema-2 writer before native mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "none",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "dormant_writer_candidate",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "not_executed_in_tree",
+        "unified_operation_postings_observed": false
+      },
+      "id": "shop.accounted_producer_entry",
+      "native_effects": {
+        "custody_effect": "Four buy/sell front doors hand their original selection to the retained owner before any legacy split payment/grant path. Central availability is closed; source integration is not route qualification.",
+        "holding_effect": "Central SHOP availability is closed; the connected producer/driver cannot initiate active money mutation until the complete route is qualified.",
+        "native_state_targets": [
+          "original player/keeper checkpoint and held selection",
+          "future admitted SHOP money/item root and guarded publication"
+        ]
+      },
+      "reachability_evidence": "Regular game-thread retained owner and four-action producer source are integrated, but the maintained central SHOP availability query remains false. Original native qualification and cold recovery are unfinished.",
+      "reason": "shop_buy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          878
+        ],
+        "file": "src/economy/shop.c",
+        "function": "shop_trade_start_accounted",
+        "original_draft_symbol": "shop_trade_start_accounted"
+      },
+      "source_classification": "Four buy/sell front doors hand their original selection to the retained owner before any legacy split payment/grant path. Central availability is closed; source integration is not route qualification.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "After exact prejournal cancellation, disposes only the original unique NOWHERE produced candidate whose complete literal tree is unchanged; no admitted custody or holding is retired."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "After exact prejournal cancellation, disposes only the original unique NOWHERE produced candidate whose complete literal tree is unchanged; no admitted custody or holding is retired.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "After exact prejournal cancellation, disposes only the original unique NOWHERE produced candidate whose complete literal tree is unchanged; no admitted custody or holding is retired.",
+      "id": "shop.accounted_refusal_cleanup",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "Regular game-thread retained owner and four-action producer source are integrated, but the maintained central SHOP availability query remains false. Original native qualification and cold recovery are unfinished.",
+      "reason": "item_create",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1160
+        ],
+        "file": "src/economy/shop.c",
+        "function": "shop_trade_accounted_refusal",
+        "original_draft_symbol": "shop_trade_accounted_refusal"
+      },
+      "source_classification": "Exact local refusal cleanup of an unadmitted original produced stage after proved prejournal release; no receipt, economic retirement or native keeper mutation.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
         "decision": "block_until_typed_schema2_accounting",
         "must_block_on_activation": true,
         "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
@@ -38758,7 +38989,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1516
+          1781
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_buy",
@@ -38821,7 +39052,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          766
+          785
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_submit_produced_continuation",
@@ -38946,7 +39177,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1396
+          1661
         ],
         "file": "src/economy/shop.c",
         "function": "get_purchase_obj",
@@ -39009,7 +39240,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          448
+          457
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_publish_physical",
@@ -39070,7 +39301,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3245
+          3575
         ],
         "file": "src/economy/shop.c",
         "function": "transact",
@@ -39134,7 +39365,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1027
+          1033
         ],
         "file": "src/economy/shop_trade_transaction.c",
         "function": "shop_trade_native_publication_owner::native_publish",
@@ -39259,7 +39490,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2196
+          2523
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_peruse",
@@ -39322,7 +39553,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2451
+          2778
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_repair",
@@ -39385,7 +39616,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1914
+          2218
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -39448,7 +39679,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1914
+          2218
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -39510,7 +39741,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2565
+          2892
         ],
         "file": "src/economy/shop.c",
         "function": "shop_keeper",
@@ -39572,7 +39803,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2273
+          2600
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_list",
@@ -39763,7 +39994,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          815
+          941
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_route_invalid_cleanup",
@@ -39824,7 +40055,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1439
+          1445
         ],
         "file": "src/economy/shop_trade_transaction.c",
         "function": "shop_trade_transaction_submit",

@@ -15,6 +15,7 @@
 #include <climits>
 #include <chrono>
 #include "economy/shop_trade_accounting.h"
+#include "economy/economic_command_admission.h"
 #include <cstring>
 #include <memory>
 #include <limits>
@@ -129,7 +130,12 @@ struct pending_trade
 	uint32_t player_pid = 0;
 	std::unique_ptr<trade_preparation> preparation;
 	shop_trade_payload payload = {};
+
 	shop_trade_completion_fn completion = nullptr;
+	shop_trade_preparation_refusal_fn refusal = nullptr;
+	bool production_owned = false, driving = false;
+	bool local_refused = false, refusal_attempted = false;
+	unsigned int refusal_error = ECANCELED;
 	bool completion_ready = false;
 	// Exact never-journaled hold cancellation is independent of a live body.
 	// Keep this original domain/produced continuation until notification returns.
@@ -1456,7 +1462,8 @@ void shop_trade_transaction_handle_completions(const critical_completion *comple
 		if (found == pending.end())
 			continue;
 		auto &entry = found->second;
-		if (entry.preparation && !entry.preparation->submission_started)
+		if (entry.local_refused ||
+		    (entry.preparation && !entry.preparation->submission_started))
 			continue;
 		const bool changed_retired_timing =
 			entry.never_admitted_retired &&
@@ -2210,7 +2217,8 @@ critical_submit_result shop_trade_preparation_owner::submit_accounted(
 			return critical_submit_result::unavailable;
 		if (!shop_trade_command_decode_payload(command, &payload) ||
 		    command.operation_id.bytes != token.operation_id_.bytes ||
-		    command.payload_version != SHOP_TRADE_NATIVE_PAYLOAD_VERSION ||
+		    (command.payload_version != SHOP_TRADE_NATIVE_PAYLOAD_VERSION &&
+		     command.payload_version != SHOP_TRADE_RECOVERY_PAYLOAD_VERSION) ||
 		    payload.player_pid != entry.player_pid || !prepared.native_ready ||
 		    !prepared.native_sealed || !prepared.player_held)
 			return critical_submit_result::invalid;
@@ -2234,7 +2242,15 @@ critical_submit_result shop_trade_preparation_owner::submit_accounted(
 			// The pipeline proved synchronous refusal before journal admission and
 			// consumed its exact original execution generation. The keeper's durable
 			// checkpoint remains: retiring preparation is no economic rollback.
-			pending.erase(found);
+
+			if (entry.production_owned)
+			{
+				entry.local_refused = true;
+				entry.refusal_error = EAGAIN;
+				prepared.player_held = false;
+			}
+			else
+				pending.erase(found);
 			return submitted;
 		}
 		if (was_started)
@@ -2262,6 +2278,9 @@ bool shop_trade_preparation_owner::cancel(const shop_trade_preparation_token &to
 	    found->second.preparation->generation != token.generation_)
 		return false;
 	auto &prepared = *found->second.preparation;
+
+	if (found->second.local_refused)
+		return true;
 	if (prepared.destination_shell_started && !prepared.destination_shell_returned)
 		return false;
 #ifndef __NO_MYSQL__
@@ -2277,7 +2296,11 @@ bool shop_trade_preparation_owner::cancel(const shop_trade_preparation_token &to
 	{
 		// No checkpoint, SQL preparation or command admission exists. A normally
 		// returned probe can be abandoned; an uncertain native tail cannot.
-		pending.erase(found);
+
+		if (found->second.production_owned)
+			found->second.local_refused = true;
+		else
+			pending.erase(found);
 		return true;
 	}
 	const bool released =
@@ -2285,10 +2308,249 @@ bool shop_trade_preparation_owner::cancel(const shop_trade_preparation_token &to
 			player_save_pipeline_shop_checkpoint_release(prepared.player_token,
 								     token.operation_id_) :
 			player_save_pipeline_shop_checkpoint_cancel(prepared.player_token);
+
 	if (!released)
 		return false;
-	pending.erase(found);
+	if (found->second.production_owned)
+	{
+		found->second.local_refused = true;
+		prepared.player_held = false;
+	}
+	else
+		pending.erase(found);
 	return true;
+}
+
+bool shop_trade_preparation_owner::production_available() noexcept
+{
+#ifdef __NO_MYSQL__
+	return false;
+#else
+	return nevent_is_game_thread() && economic_gameplay_authority::active_regular_sql() &&
+	       economic_shop_trade_admission_available();
+#endif
+}
+
+bool shop_trade_preparation_owner::start(P_char actor, P_char keeper, P_obj selected, P_obj stock,
+					 P_obj destination, uint32_t shop, shop_trade_action action,
+					 int64_t price,
+					 shop_trade_accounted_publication_fn publication,
+					 shop_trade_completion_fn completion,
+					 shop_trade_preparation_refusal_fn refusal) noexcept
+{
+	if (!publication || !completion || !refusal || !production_available())
+		return false;
+	shop_trade_preparation_token token;
+	begin(actor, keeper, selected, stock, destination, shop, action, price, &token);
+	auto found = pending.find(token.operation_id_.bytes);
+	if (found == pending.end() || !found->second.preparation ||
+	    found->second.preparation->generation != token.generation_ ||
+	    found->second.production_owned)
+		return false;
+	// begin may retain an uncertain native probe tail. Ownership is the retained
+	// original entry, not its status enum; never let the caller free that stage.
+	auto &entry = found->second;
+	entry.accounted_publication = publication;
+	entry.completion = completion;
+	entry.refusal = refusal;
+	entry.production_owned = true;
+	return true;
+}
+
+void shop_trade_preparation_owner::notify_refusal(const shop_trade_preparation_token &token) noexcept
+{
+	auto found = pending.find(token.operation_id_.bytes);
+	if (found == pending.end() || !found->second.preparation ||
+	    found->second.preparation->generation != token.generation_)
+		return;
+	auto &entry = found->second;
+	if (!entry.production_owned || !entry.local_refused || entry.blocked || entry.publishing ||
+	    entry.refusal_attempted || !entry.refusal)
+		return;
+	// This is notification after proven cancellation, not rebinding a native
+	// checkpoint. A reconnect can receive its original PID/account cancellation.
+	P_char actor = find_player_by_pid(entry.player_pid);
+	if (!actor || !IS_PC(actor) || !actor->only.pc || GET_PID(actor) <= 0 ||
+	    static_cast<uint32_t>(GET_PID(actor)) != entry.player_pid ||
+	    GET_RACEWAR(actor) != entry.payload.racewar)
+		return;
+	const char *account = get_account_name_safe(actor);
+	if (!account || strcmp(account, entry.payload.account_name.data()))
+		return;
+	entry.refusal_attempted = entry.publishing = true;
+	++notifying;
+	bool finished = false;
+	try
+	{
+		// Keep the entry visible to PID/keeper/UID exclusions during callbacks.
+		// A partial/throwing cleanup cannot admit a second overlapping owner.
+		finished = entry.refusal(actor, entry.payload, entry.preparation->selected,
+					 entry.refusal_error);
+	}
+	catch (...)
+	{
+		finished = false;
+	}
+	--notifying;
+	found = pending.find(token.operation_id_.bytes);
+	if (found == pending.end() || !found->second.preparation ||
+	    found->second.preparation->generation != token.generation_)
+		return;
+	found->second.publishing = false;
+	if (finished)
+		pending.erase(found);
+	else
+		found->second.blocked = true;
+}
+
+void shop_trade_preparation_owner::drive(const shop_trade_preparation_token &token) noexcept
+{
+#ifndef __NO_MYSQL__
+	auto found = pending.find(token.operation_id_.bytes);
+	if (found == pending.end() || !found->second.preparation ||
+	    found->second.preparation->generation != token.generation_ ||
+	    !found->second.production_owned || found->second.driving || found->second.blocked ||
+	    found->second.publishing || found->second.completion_ready)
+		return;
+	if (found->second.local_refused)
+	{
+		notify_refusal(token);
+		return;
+	}
+	found->second.driving = true;
+	struct driving_scope
+	{
+		std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES> key;
+		uint64_t generation;
+		~driving_scope()
+		{
+			auto current = pending.find(key);
+			if (current != pending.end() && current->second.preparation &&
+			    current->second.preparation->generation == generation)
+				current->second.driving = false;
+		}
+	} scope{ token.operation_id_.bytes, token.generation_ };
+	// Submission retries use only the previously frozen command and callbacks.
+	// They never reselect a keeper/item, recreate a stage or reroll a copy.
+	if (found->second.preparation->submission_started)
+	{
+		submit_accounted(token, nullptr, nullptr, nullptr, nullptr, nullptr,
+				 found->second.accounted_publication, found->second.completion);
+		return;
+	}
+	// Resolve an existing uncertain checkpoint against its retained SQL stage
+	// before requiring any original live body. This retry API cannot issue a
+	// fresh write; a settled commit still needs full live proof below.
+	if (found->second.preparation->native_attempted && !found->second.preparation->native_ready)
+	{
+		const auto reconciled = shop_trade_native_checkpoint_owner::attempt(
+			token, nullptr, nullptr, nullptr, nullptr, nullptr);
+		found = pending.find(token.operation_id_.bytes);
+		if (found == pending.end() || !found->second.preparation ||
+		    found->second.preparation->generation != token.generation_ ||
+		    found->second.blocked || found->second.local_refused ||
+		    found->second.completion_ready)
+			return;
+		if (reconciled != shop_trade_preparation_state::ready)
+			return;
+	}
+	if (!production_available())
+	{
+		cancel(token);
+		return;
+	}
+	auto unique_object = [](uint64_t uid) -> P_obj
+	{
+		if (!uid)
+			return nullptr;
+		extern P_obj object_list;
+		P_obj result = nullptr;
+		size_t count = 0;
+		for (P_obj object = object_list; object; object = object->next)
+		{
+			if (++count > 262144)
+				return nullptr;
+			if (object->obj_uid != uid)
+				continue;
+			if (result)
+				return nullptr;
+			result = object;
+		}
+		return result;
+	};
+	// Reobserve all original identities after each native attempt. The helper
+	// merely produces transient pointers; poll owns full literal equality proof.
+	auto observe = [&](P_char &actor, P_char &keeper, P_obj &selected, P_obj &stock,
+			   P_obj &destination)
+	{
+		auto current = pending.find(token.operation_id_.bytes);
+		if (current == pending.end() || !current->second.preparation ||
+		    current->second.preparation->generation != token.generation_ ||
+		    current->second.blocked || current->second.local_refused ||
+		    current->second.completion_ready)
+			return false;
+		const auto &entry = current->second;
+		actor = find_character_by_runtime_id(entry.preparation->actor_runtime_id);
+		keeper = find_character_by_runtime_id(entry.preparation->keeper_runtime_id);
+		selected = unique_object(entry.payload.selected_item_uid);
+		stock = unique_object(entry.payload.stock_item_uid);
+		destination = unique_object(entry.payload.target_parent_item_uid);
+		return actor && keeper && selected && (!entry.payload.stock_item_uid || stock) &&
+		       (!entry.payload.target_parent_item_uid || destination);
+	};
+	P_char actor = nullptr, keeper = nullptr;
+	P_obj selected = nullptr, stock = nullptr, destination = nullptr;
+	if (!observe(actor, keeper, selected, stock, destination))
+	{
+		cancel(token);
+		return;
+	}
+	const auto player = poll(token, actor, keeper, selected, stock, destination);
+	if (player == shop_trade_preparation_state::pending)
+		return;
+	if (player != shop_trade_preparation_state::ready)
+	{
+		cancel(token);
+		return;
+	}
+	const auto native = shop_trade_native_checkpoint_owner::attempt(
+		token, actor, keeper, selected, stock, destination);
+	if (native == shop_trade_preparation_state::pending)
+		return;
+	if (native != shop_trade_preparation_state::ready)
+	{
+		// cancel refuses any uncertain native tail or committed checkpoint.
+		cancel(token);
+		return;
+	}
+	if (!observe(actor, keeper, selected, stock, destination))
+		return;
+	found = pending.find(token.operation_id_.bytes);
+	submit_accounted(token, actor, keeper, selected, stock, destination,
+			 found->second.accounted_publication, found->second.completion);
+#else
+	(void)token;
+#endif
+}
+
+void shop_trade_preparation_owner::pulse() noexcept
+{
+	if (!nevent_is_game_thread())
+		return;
+	std::array<shop_trade_preparation_token, SHOP_TRADE_PENDING_MAX> original{};
+	size_t count = 0;
+	for (const auto &[key, entry] : pending)
+	{
+		if (count == original.size())
+			break;
+		if (!entry.production_owned || !entry.preparation)
+			continue;
+		original[count].operation_id_.bytes = key;
+		original[count].generation_ = entry.preparation->generation;
+		++count;
+	}
+	for (size_t index = 0; index < count; ++index)
+		drive(original[index]);
 }
 
 bool shop_trade_preparation_owner::checkpoint_context(
