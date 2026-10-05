@@ -2889,3 +2889,36 @@ repair needs an isolated fix commit, trigger/before/after/proof and prominent
 news. Active, ready accounting is mandatory for new credit; frozen recovery is
 separate. Source and synthetic projection proof do not qualify actual source/
 access/travel/effects/group claims/services/settlement or daily renewal.
+
+
+## Past Ceothia: source alternatives, proof mismatches and scarce renewal
+
+The [complete dossier](zone-stories/PAST_CEOTHIA.md) and schema3 journal bind
+all six native recipes as four outcomes. Thirteen contacts retain21 aliases;
+ten optional current material/access checks and one earlier dryad receipt
+explain the route without enforcing personal history for supplied proof.
+Jamael's three exact pelt branches count once; all native receipts persist.
+
+| Requirement | Evidence | Implementation / qualification plan |
+| --- | --- | --- |
+| Multiple legitimate ingredient sources | Hair81101 starts carried by the dryad and is also her blossom reward; beast/hawk carry shard/feather; floor blossom is secret | Admit actual source/reset/parent/root and committed recovery/reward/transfer. Keep supplied material acceptance independent of earlier personal receipt. Cover search/visibility/capacity, gifts, duplicates, worn/nested/consumed roots and recovery. |
+| Versioned native proof correction | Wolfspeed asks for real skull81119 but accepts black pelt81108, shared with Jamael | **ZSQ-CEOPAST-WOLFSPEED-PROOF:** builder selects intended skull input or truthful pelt narration after balance review. Input changes require deliberate completion identity/mapping migration, retained legacy/frozen receipts and clear achievement/daily policy. Actual repair gets a separate named fix, original-fails/repaired-passes regression, played settlement and prominent news; none ships here. |
+| Confirmed access versus key reward | Three pickproof gates use breaking bluestone/bone/obsidian keys; fixed portal leaves for Future | Admit selected exit/object, actual SEARCH/UNLOCK/OPEN, reciprocal state, key destruction and committed arrival. Reject failed/replayed/wrong target and another player's opening as personal action. Preserve TAKE, weights, charges and native combat/access policy. |
+| Rare actor episodes | Wolf and Wolfspeed start at81390, with two progress exits and a sink;81392 has one forest outlet; prose claims roughly6% | **ZSQ-CEOPAST-RARE-AVAILABILITY:** qualify independent actor/reset generations, AI/timing/movement eligibility, dispersal and measured live availability. No journal-driven rarity, linking, always-spawn or player staging access change. Prefer truthful clues only after intent/evidence. |
+| Actual daily renewal | Reset mode0, cap1 sources, departing dryad and rare giver coexist with D0 static daily candidates | **ZSQ-CEOPAST-RENEWAL:** add source/recipient admission and availability policy; builder decides eligibility or supported renewal. Test scarcity, sink/death/retirement, season/day boundaries, concurrent offers, replay, rollback and cold recovery before relying on candidates. Do not silently enable reset mode. |
+| Multi-stage timeline and foreign ownership | Dryad→hair→Majelle→key→cave→Future; initial/supplied hair and open doors bypass personal earlier stages | Existing optional checks explain current routes. Builder defines personal all-stage predicates and shortcuts; larger timeline needs explicit actor/world/campaign facts and foreign ownership/referral without duplicate terminal credit. |
+
+Presentation should show four cards, missing/ready loose ingredients, optional
+earlier receipt/access and recorded accepted outcomes. Display the Wolfspeed
+mismatch directly; the skull is a clue, not accepted readiness. Keep static
+candidates distinct from qualified live availability. Asking aliases, holding
+an item, wearing loot, using a potion/wand or narrating lightning/time restoration
+does not create an additional achievement. Later ANSI/GMCP milestones require
+admitted source/gift/search/key/access/arrival and actual campaign transitions.
+
+No native repair ships. Preserve disabled/unplaced mechanics and intentional
+PvP hotfixes, including the owner-confirmed Fields replacement follow-up. An
+inactive second bracelet, copied shard clue or name spelling is builder evidence,
+not authorization to add a producer or alter mobility. Active, ready accounting
+is mandatory for new credit; frozen recovery remains separate. Source review
+and synthetic projection do not qualify played settlement or daily renewal.

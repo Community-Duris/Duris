@@ -1956,3 +1956,39 @@ and recovery qualification. Active, ready accounting is mandatory for all new
 tracking; frozen recovery is separate. No native repair ships. Proposed clue,
 inn/crew or orphan-template changes stay proposals until implemented in a
 separate named fix with regression and prominent PR/news wording.
+
+
+## Past Ceothia example: alternatives and a native mismatch
+
+The [dossier](../design/zone-stories/PAST_CEOTHIA.md) and
+[sidecar](../../areas/story/ceopast.story.json) use four cards for six recipes.
+Bind Jamael's black/white/brown payments to one outcome and a one-copy material
+check accepting any of those kinds. Keep all three canonical branch receipts;
+do not require all colors or award three copies of the same story achievement.
+
+The dryad's initial carried hair and blossom reward are two real sources.
+Majelle needs hair/shard/feather together but no personal earlier dryad history.
+Put the earlier receipt and onward breaking keys on optional checks. Describe
+the actual beast/hawk sources; a chipped-stone description does not implement
+mining. Present key80815 and Past reward key81105 are different bluestone keys.
+
+Wolfspeed's dialogue asks for skull81119 while the native recipe accepts black
+pelt81108. Map the actual accepted pelt; keep the skull a clearly labeled clue
+and add **ZSQ-CEOPAST-WOLFSPEED-PROOF** to builder work. Decide intended balance
+and version/recovery policy before altering the recipe. The pelt also feeds
+Jamael, so one consumed root cannot satisfy both. Any implemented repair must
+be isolated in a named fix with concrete before/after/proof and prominent news.
+
+Read staging geometry and actual wandering, not only rare-load room prose.
+The winter wolf and Wolfspeed can disperse independently; roughly6% is not a
+qualified availability rate. Reset mode0 and cap1 sources also require renewal
+policy before making a daily promise. Preserve native scarcity, reset mode,
+pickproof gates, breaking keys, fixed portal TAKE/weight/charges and PvP access.
+Do not activate an unplaced template or reverse an intentional hotfix to fit
+a story; the Fields inert-proof follow-up is the explicit design precedent.
+
+Schema3 supports current materials and historical receipts. First source versus
+gift, successful SEARCH/key/door/arrival and timeline restoration still need
+committed event qualification. Active, ready accounting is mandatory for all
+new tracking, with frozen recovery separate. This checkpoint ships guidance,
+not a native proof, rare-spawn, reset or mobility repair.

@@ -15,8 +15,8 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1446
-assert report['mapped_area_count'] == 99 and report['eligible_by_zone']['162'] == 4
+assert report["daily_unit_count"] == 1444
+assert report['mapped_area_count'] == 100 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -162,6 +162,15 @@ assert report['eligible_by_zone']['490']==8 and sum(len(c['topics']) for c in de
 assert sum(t.get('optional',False) for s in desert['stories'] for t in s['steps'])==11
 assert all(t.get('optional') for s in desert['stories'] for t in s['steps'][:-1])
 assert desert['stories'][5]['steps'][0]['contracts']==desert['stories'][7]['contracts']
+
+ceopast=next(m for m in catalog['story_mappings'] if m['source_area']=='ceopast')
+assert (ceopast['schema_version'],ceopast['revision'],ceopast['coverage'])==(3,1,'complete')
+assert len(ceopast['stories'])==4 and len(ceopast['contacts'])==13 and not ceopast['exclusions']
+assert report['eligible_by_zone']['811']==4 and sum(len(c['topics']) for c in ceopast['contacts'])==21
+assert sum(t.get('optional',False) for s in ceopast['stories'] for t in s['steps'])==11
+assert len(ceopast['stories'][2]['contracts'])==3 and ceopast['stories'][2]['steps'][0]['item_vnums']==[81108,81114,81115]
+assert ceopast['stories'][1]['steps'][0]['contracts']==ceopast['stories'][0]['contracts']
+assert ceopast['stories'][3]['steps'][0]['item_vnums']==[81108] and ceopast['stories'][3]['steps'][1]['item_vnums']==[81119]
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

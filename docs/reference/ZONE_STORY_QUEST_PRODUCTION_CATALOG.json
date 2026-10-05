@@ -101118,6 +101118,393 @@
     {
       "contacts": [
         {
+          "description": "Starts in the thinning forest, carrying green hair. Accepts the white blossom for hair and a wooden potion tube, then departs. Her carried hair is an alternative source for Majelle.",
+          "keyword": "dryad",
+          "mob_vnum": 81105,
+          "name": "a beautiful dryad",
+          "topics": [
+            "hello",
+            "hi",
+            "howdy",
+            "help"
+          ]
+        },
+        {
+          "description": "Starts in the run-down shack\u2019s workshop. Native command alias is majelle; dialogue spells her name Marjelle. Needs all three exact ingredients together; gives the bluestone key and vial. Her plea never to return does not make her leave after the exchange.",
+          "keyword": "majelle",
+          "mob_vnum": 81106,
+          "name": "Majelle",
+          "topics": [
+            "hello",
+            "hi",
+            "howdy",
+            "dream",
+            "dreams",
+            "prophecy",
+            "quest",
+            "components",
+            "potion"
+          ]
+        },
+        {
+          "description": "Starts in the grassy farm field with a sheep. Accepts any one exact black, white or brown pelt for 500,000 copper. His walking-away response does not retire the giver.",
+          "keyword": "jamael",
+          "mob_vnum": 81109,
+          "name": "Jamael",
+          "topics": [
+            "hello",
+            "howdy",
+            "hi"
+          ]
+        },
+        {
+          "description": "Starts in a rare wandering staging room. Current recipe accepts a black wolf pelt for the maw, while his dialogue asks for the actual winter-wolf skull. Exact behavior and repair proposal stay distinct; live presence is not guaranteed.",
+          "keyword": "wolfspeed",
+          "mob_vnum": 81142,
+          "name": "Wolfspeed the barbarian hunter",
+          "topics": [
+            "hello",
+            "hi",
+            "howdy",
+            "wolf",
+            "winter"
+          ]
+        },
+        {
+          "description": "Starts in the dense forest, carrying the exact bluestone shard and wearing a tiara. Prose about controlled firbolgs has no identified liberation endpoint; the shard is not a floor-mining reward.",
+          "keyword": "beast",
+          "mob_vnum": 81145,
+          "name": "a red-eyed beast",
+          "topics": []
+        },
+        {
+          "description": "Starts at the beginning of the bluestone rise, carrying the exact blood red feather. Its flight/combat behavior and personal recovery are separate from supplied ingredient acceptance.",
+          "keyword": "hawk",
+          "mob_vnum": 81107,
+          "name": "a blood hawk",
+          "topics": []
+        },
+        {
+          "description": "The black pack leader starts at the Past arrival, carrying the black pelt with three male and four young followers. Only this leader starts carrying that proof. Jamael and Wolfspeed compete for it.",
+          "keyword": "female",
+          "mob_vnum": 81100,
+          "name": "a powerful black female wolf",
+          "topics": []
+        },
+        {
+          "description": "The white pack leader starts at the bluestone rise, carrying the white pelt with three male and four young followers. It is a Jamael alternative, not the winter wolf or Wolfspeed\u2019s current input.",
+          "keyword": "female",
+          "mob_vnum": 81129,
+          "name": "a powerful white female wolf",
+          "topics": []
+        },
+        {
+          "description": "The brown pack leader starts in the dense forest, carrying the brown pelt with three male and four young followers. It supplies another Jamael alternative.",
+          "keyword": "female",
+          "mob_vnum": 81126,
+          "name": "a powerful brown female wolf",
+          "topics": []
+        },
+        {
+          "description": "Starts in the same rare wandering staging room as Wolfspeed, carrying the actual winter-wolf skull. Its authored staging/dispersal routes can remove it from ordinary access. The skull currently fails Wolfspeed\u2019s black-pelt recipe.",
+          "keyword": "winter",
+          "mob_vnum": 81141,
+          "name": "a winter wolf",
+          "topics": []
+        },
+        {
+          "description": "Starts before the large cavern, carrying the small bone key and wearing a blackened bracer, with two goblin and one magi follower. The key opens the inner WEST boulder and breaks on ordinary unlocking.",
+          "keyword": "shaman",
+          "mob_vnum": 81116,
+          "name": "a goblin shaman",
+          "topics": []
+        },
+        {
+          "description": "Starts inside the bluestone cavern, carrying the tiny obsidian key and wearing Dragon Past platemail. The key opens the secret DOWN vault trapdoor and breaks on ordinary unlocking; ordinary loot is not another quest receipt.",
+          "keyword": "dragon",
+          "mob_vnum": 81124,
+          "name": "the dragon of past and future",
+          "topics": []
+        },
+        {
+          "description": "Present Ceothia\u2019s Lenbrea accepts the Ceothian badge for the Present bluestone key to the time-portal storeroom. That exchange belongs to Present Ceothia. Its fixed portal arrives here; personal badge history is not a prerequisite of local supplied proofs.",
+          "keyword": "lenbrea",
+          "mob_vnum": 80803,
+          "name": "Lord Lenbrea",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Offer the dryad\u2019s blossom, gather Majelle\u2019s three ingredients, choose a wolf-pelt payment for Jamael, and understand Wolfspeed\u2019s current mismatched recipe. Follow the keyed cave route toward Future Ceothia while keeping exact proof, earlier history, source recovery and travel distinct.",
+      "orientation": [
+        "Arrive from Present Ceothia\u2019s fixed time portal in the manor storeroom. Lenbrea\u2019s badge reward supplies the Present bluestone key for that pickproof door. The Past arrival holds the black pack leader; woods, farms, Majelle\u2019s shack and the bluestone rise form separate routes. There is no ordinary local boundary exit or local return portal to Present.",
+        "Ask the dryad, Majelle, Jamael and Wolfspeed their listed topics. The eight response families have twenty-one aliases, which reveal native responses rather than separate achievements. Use the actual majelle command alias even though her dialogue says Marjelle.",
+        "The exact secret white bell blossom has a floor source in the thinner forest; SEARCH can reveal it. Give it to the dryad for hair and a wooden potion tube; she departs. Her initial carried hair is another source, and supplied hair needs no personal blossom exchange.",
+        "Majelle asks for one exact hair, shard and blood red feather together. The demonic beast carries the shard and the blood hawk the feather. Several copies of one kind cannot replace the other kinds. Her key and vial are rewards; a narrated prophecy or plea never to return does not establish a restored timeline or retire her.",
+        "For the onward route, SEARCH the secret DOWN slab on the bluestone rise, then UNLOCK it with Majelle\u2019s bluestone key and OPEN it. The outer cave leads WEST to the goblin shaman; his bone key opens the pickproof WEST boulder. The dragon inside carries the obsidian key for the secret DOWN trapdoor to the vault. All three keys break on successful ordinary unlocking; shared open routes or supplied keys do not prove your personal earlier quests.",
+        "The vault\u2019s fixed unlimited ENTER portal leads to Future Ceothia. The vault also holds ordinary treasure, a ring and the staff of illumination, whose actual type is WAND. The working portal remains fixed and non-takeable. Future Ceothia has its own return portal through the time vortex; this journal does not record traversal or complete that foreign zone.",
+        "Jamael accepts one black, white or brown pelt for 500,000 copper. The corresponding female pack leaders carry them; their followers do not. The three recipes form one journal outcome with individual receipts retained. Do not require all colors or treat ordinary wolf combat as permanent farm protection.",
+        "Wolfspeed\u2019s dialogue asks for a winter-wolf skull, but his current native recipe accepts the black pelt. The real winter wolf carries a distinct skull. The journal explains this mismatch without silently repairing it. A black pelt consumed by Jamael cannot also feed Wolfspeed; a supplied later copy still needs no personal kill.",
+        "Wolfspeed and the winter wolf start in rare wandering staging rooms with a dead-end dispersal sink and one one-way outlet into the forest. Room prose\u2019s roughly six-percent claim is not a qualified spawn probability. Neither staging room is an ordinary player entrance, and source/reset evidence does not guarantee either actor\u2019s live location.",
+        "The hair, feather, pelts, wooden tube and bluestone vial are distinct exact kinds. Two similarly named bracelet prototypes also differ. Drinking a potion, using the wand, wearing ordinary loot, killing the dragon or narrating a lightning ritual has no additional local accepted quest endpoint.",
+        "Current loose materials, historical accepted outcomes, first source recovery, gifts, access, combat, travel and effects remain separate. An old receipt never recreates a spent key or material. This area does not automatically reset. Fresh materials and recipient renewal are unqualified here; its three potential daily outcomes cannot yet be treated as reliably renewable.",
+        "Discovery has its own achievement, and meeting each terminal giver reveals its card. Active, ready accounting is mandatory for all new discovery, encounter, journal, achievement and daily credit; frozen recovery is separate. No native recipe, spawn, key, portal or PvP mobility repair is enabled by this map."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "ceopast",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:81102;receive=I:81101,I:81104;disappear=1",
+              "giver_vnum": 81105
+            }
+          ],
+          "id": "dryad-white-blossom",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "This exact secret flower has a floor reset in the thinner forest. SEARCH can reveal hidden objects; native visibility, capacity and fresh supply still apply. The herb garden is a different location and has no identified blossom access controller. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Possession does not prove first source recovery or who supplied the item.",
+              "id": "blossom",
+              "item_vnums": [
+                81102
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the white bell blossom"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:81102;receive=I:81101,I:81104;disappear=1",
+                  "giver_vnum": 81105
+                }
+              ],
+              "hint": "Only an exact accepted native exchange records this outcome. Dialogue, materials, personal recovery, access, combat, travel and reward settlement remain separate facts. Current recipient and fresh supply still govern availability.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete an accepted exchange for this outcome"
+            }
+          ],
+          "summary": "Offer the exact white bell blossom for a lock of green hair and tiny wooden tube. The dryad departs after acceptance. The hair also starts carried by the dryad, so Majelle does not require your personal earlier blossom exchange. The tube is a potion; drinking it is a separate effect.",
+          "title": "Dryad: offer the white bell blossom"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:81101,I:81103,I:81106;receive=I:81105,I:81107;disappear=0",
+              "giver_vnum": 81106
+            }
+          ],
+          "id": "majelle-three-components",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:81102;receive=I:81101,I:81104;disappear=1",
+                  "giver_vnum": 81105
+                }
+              ],
+              "hint": "The dryad gives the hair with a wooden potion tube and departs. She also starts carrying a hair. An exact supplied or recovered hair bypasses your own blossom history; an old receipt never restores spent materials.",
+              "id": "earlier-dryad",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: exchange the dryad\u2019s blossom"
+            },
+            {
+              "count": 1,
+              "hint": "The dryad starts carrying this hair in the thinning forest and also rewards an exact hair for the white blossom. Neither route requires your own earlier receipt at Majelle. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Possession does not prove first source recovery or who supplied the item.",
+              "id": "green-hair",
+              "item_vnums": [
+                81101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the lock of green hair"
+            },
+            {
+              "count": 1,
+              "hint": "The demonic beast starts carrying this exact shard in the dense forest. Object prose describes stone from the rise, but no floor reset or mining/chipping controller was identified for it. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Possession does not prove first source recovery or who supplied the item.",
+              "id": "bluestone-shard",
+              "item_vnums": [
+                81103
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the shard of bluestone"
+            },
+            {
+              "count": 1,
+              "hint": "The blood hawk starts carrying this exact feather at the start of the bluestone rise. A different feather or several copies of one ingredient do not replace the three requested kinds. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Possession does not prove first source recovery or who supplied the item.",
+              "id": "blood-red-feather",
+              "item_vnums": [
+                81106
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the blood red feather"
+            },
+            {
+              "count": 1,
+              "hint": "Majelle\u2019s reward opens the secret DOWN slab on the bluestone rise into the outer cave. SEARCH, UNLOCK and OPEN are separate actions; this pickproof lock consumes the key on a successful ordinary unlock. Supplied components need no personal access history. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Possession does not prove first source recovery or who supplied the item.",
+              "id": "onward-bluestone-key",
+              "item_vnums": [
+                81105
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional onward access: carry the bluestone key"
+            },
+            {
+              "count": 1,
+              "hint": "The goblin shaman starts carrying this key before the large cavern. It opens the pickproof WEST boulder into the inner cavern and breaks on successful ordinary unlocking. The boulder is a keyed exit, not a takeable object or PUSH switch. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Possession does not prove first source recovery or who supplied the item.",
+              "id": "onward-bone-key",
+              "item_vnums": [
+                81118
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional onward access: carry the small bone key"
+            },
+            {
+              "count": 1,
+              "hint": "The bluestone dragon starts carrying this key inside the cavern. SEARCH, UNLOCK and OPEN the secret DOWN trapdoor there to reach the vault\u2019s fixed ENTER portal to Future Ceothia. This key also breaks on successful ordinary unlocking. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Possession does not prove first source recovery or who supplied the item.",
+              "id": "onward-obsidian-key",
+              "item_vnums": [
+                81117
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional onward access: carry the tiny obsidian key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:81101,I:81103,I:81106;receive=I:81105,I:81107;disappear=0",
+                  "giver_vnum": 81106
+                }
+              ],
+              "hint": "Only an exact accepted native exchange records this outcome. Dialogue, materials, personal recovery, access, combat, travel and reward settlement remain separate facts. Current recipient and fresh supply still govern availability.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete an accepted exchange for this outcome"
+            }
+          ],
+          "summary": "Bring one exact green hair, bluestone shard and blood red feather together for the bluestone key and vial. The hair has a carried reset source and dryad reward route; the beast carries the shard and the blood hawk the feather. The key opens the secret outer cave slab, leading through two further keyed gates to the Future portal. Accepted ingredients do not prove personal source, combat or timeline restoration.",
+          "title": "Majelle: gather the three potion components"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:81108;receive=C:500000;disappear=0",
+              "giver_vnum": 81109
+            },
+            {
+              "completion_key": "give=I:81114;receive=C:500000;disappear=0",
+              "giver_vnum": 81109
+            },
+            {
+              "completion_key": "give=I:81115;receive=C:500000;disappear=0",
+              "giver_vnum": 81109
+            }
+          ],
+          "id": "jamael-wolf-pelt-choice",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The powerful female leaders of the black, white and brown packs each start carrying the corresponding pelt. Jamael wants one accepted color, not all three. The winter-wolf skull is different proof; the black pelt has a competing Wolfspeed use. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Possession does not prove first source recovery or who supplied the item.",
+              "id": "any-pelt",
+              "item_vnums": [
+                81108,
+                81114,
+                81115
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a black, white or brown wolf pelt"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:81108;receive=C:500000;disappear=0",
+                  "giver_vnum": 81109
+                },
+                {
+                  "completion_key": "give=I:81114;receive=C:500000;disappear=0",
+                  "giver_vnum": 81109
+                },
+                {
+                  "completion_key": "give=I:81115;receive=C:500000;disappear=0",
+                  "giver_vnum": 81109
+                }
+              ],
+              "hint": "Only an exact accepted native exchange records this outcome. Dialogue, materials, personal recovery, access, combat, travel and reward settlement remain separate facts. Current recipient and fresh supply still govern availability.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete an accepted exchange for this outcome"
+            }
+          ],
+          "summary": "Bring one exact black, white or brown wolf pelt for 500,000 copper. Each color is a separate accepted recipe, but any one records this shared outcome once. The pack leaders carry their corresponding pelts; pack followers do not. The black pelt also feeds Wolfspeed\u2019s current recipe, so one consumed copy cannot complete both exchanges.",
+          "title": "Jamael: bring a black, white or brown wolf pelt"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:81108;receive=I:81120;disappear=0",
+              "giver_vnum": 81142
+            }
+          ],
+          "id": "wolfspeed-current-black-pelt",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The black pack leader carries this exact pelt. The current recipe consumes it, despite Wolfspeed\u2019s skull request; Jamael separately accepts it for cash. White/brown pelts and the actual winter skull do not satisfy this recipe. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Possession does not prove first source recovery or who supplied the item.",
+              "id": "actual-black-pelt",
+              "item_vnums": [
+                81108
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the currently accepted black wolf pelt"
+            },
+            {
+              "count": 1,
+              "hint": "The winter wolf starts carrying this skull in the same rare staging room as Wolfspeed. The skull explains his dialogue but is not a currently accepted input. No journal step silently changes that recipe or proves the narrated kill or lightning ritual. Carry exact copies loose; equipped, nested, spent or handed-away copies do not count. Possession does not prove first source recovery or who supplied the item.",
+              "id": "skull-clue",
+              "item_vnums": [
+                81119
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional clue: carry the winter-wolf skull"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:81108;receive=I:81120;disappear=0",
+                  "giver_vnum": 81142
+                }
+              ],
+              "hint": "Only an exact accepted native exchange records this outcome. Dialogue, materials, personal recovery, access, combat, travel and reward settlement remain separate facts. Current recipient and fresh supply still govern availability.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete an accepted exchange for this outcome"
+            }
+          ],
+          "summary": "Current native behavior accepts the exact black wolf pelt for the blackened winter-wolf maw. Dialogue and reward prose ask for a winter-wolf skull, but that skull does not match the current recipe. This mismatch awaits a separately reviewed builder fix. Wolfspeed starts in a rare wandering staging room; a static reset is no guarantee of his live location or availability.",
+          "title": "Wolfspeed: check the current black-pelt exchange"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Roland can wander beyond his usual city houses. His local head offering has no declared reward; the Hunt\u2019s Roland offers a different exchange. His empty house contains the parchment chest.",
           "keyword": "roland",
           "mob_vnum": 82500,
