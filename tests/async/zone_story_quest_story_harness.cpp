@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 131 &&
+		require(catalog.story_mappings.size() == 132 &&
 				tracker.summary_for(7, 42).total == 1532,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7687,6 +7687,179 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "mansion"; });
+			const auto &music = story_for("mansion", "pianist-phoenix-rise");
+			const auto &rattle = story_for("mansion", "handmaid-missing-rattle");
+			const auto &proofs = story_for("mansion", "englehardt-two-proofs");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 35, 3500, 100, "arrival") ==
+					result::applied,
+				"Forgotten Mansion discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 35, 10, 1, 101, false, false);
+			require(journal.find(music.title) == std::string::npos &&
+					journal.find(proofs.title) == std::string::npos,
+				"Forgotten Mansion exposed unseen requests");
+			require(journey.meet_npc(7, 42, 3504, 3502, 102) == result::applied,
+				"Forgotten Mansion gardener encounter failed");
+			journal = journey.render_journal(7, 42, 35, 10, 1, 103, false, false);
+			require(journal.find(music.title) == std::string::npos &&
+					journey.progress_for_zone(7, 42, 35).completed == 0,
+				"Forgotten Mansion gardener clue inferred an accepted quest");
+			for (const auto &contact : mapping.contacts)
+				if (contact.mob_vnum != 3504)
+					require(journey.meet_npc(7, 42, contact.mob_vnum, 3664,
+								 104) == result::applied,
+						"Forgotten Mansion contact encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Forgotten Mansion journal card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry, size_t index) {
+				return section(entry).find("[Ready now] " +
+							   entry.steps[index].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry, size_t index) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[index].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			for (const auto v : { 3511, 3512, 3513, 3540, 3502, 3520, 3521, 3547, 3548,
+					      3549, 55415, 359, 67203 })
+				supplies.carried[v] = 1;
+			supplies.equipped[0] = 3505;
+			supplies.equipped[1] = 3509;
+			supplies.equipped[2] = 3529;
+			supplies.carried[3539] = 1;
+			journal = journey.render_journal(7, 42, 35, 10, 1, 105, false, false,
+							 &supplies);
+			require(missing(music, 0) && missing(rattle, 0) && missing(proofs, 0) &&
+					ready(proofs, 1) &&
+					journey.progress_for_zone(7, 42, 35).completed == 0,
+				"Forgotten Mansion equipment/reward/foreign memory/stone custody inferred acceptance or curse resolution");
+			supplies.equipped.clear();
+			supplies.carried[3505] = 1;
+			supplies.carried[3509] = 1;
+			supplies.carried[3529] = 1;
+			supplies.carried.erase(3539);
+			journal = journey.render_journal(7, 42, 35, 10, 1, 106, false, false,
+							 &supplies);
+			require(ready(music, 0) && ready(rattle, 0) && ready(proofs, 0) &&
+					missing(proofs, 1) &&
+					journey.progress_for_zone(7, 42, 35).completed == 0,
+				"Forgotten Mansion partial demon bundle inferred receipt");
+			supplies.carried[3539] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 35, 10, 1, 107, false, false,
+							 &supplies);
+			require(ready(proofs, 1) && before == journey.serialize_state(),
+				"Forgotten Mansion supplied proofs required personal kills/password/keys or rendering changed progress");
+			for (const auto *entry : { &music, &rattle, &proofs })
+			{
+				service independent(catalog);
+				require(independent.discover_zone(7, 42, 35, 3675, 100,
+								  "arrival") == result::applied,
+					"Forgotten Mansion alternate arrival failed");
+				record(independent, entry->contracts.front(),
+				       ("forgotten-one-" + entry->id).c_str(), 35, 3664);
+				require(independent.progress_for_zone(7, 42, 35).completed == 1 &&
+						independent.progress_for_zone(7, 42, 35).total == 3,
+					"Forgotten Mansion independent endpoint required another quest or multiple kill receipts");
+				for (const auto *other : { &music, &rattle, &proofs })
+					require(independent.evidence_for(other->contracts.front(),
+									 2)
+								.successful_attempts ==
+							(entry == other ? 1 : 0),
+						"Forgotten Mansion one endpoint fabricated another receipt");
+				service restored(catalog);
+				require(restored.deserialize_state(independent.serialize_state(),
+								   &error) &&
+						restored.progress_for_zone(7, 42, 35).completed ==
+							1,
+					"Forgotten Mansion independent cold recovery failed");
+			}
+			const auto &winter = *std::find_if(catalog.story_mappings.begin(),
+							   catalog.story_mappings.end(),
+							   [](const auto &m)
+							   { return m.source_area == "wh"; });
+			const auto &foreign = *std::find_if(
+				winter.stories.begin(), winter.stories.end(),
+				[](const auto &s)
+				{
+					return std::any_of(
+						s.contracts.begin(), s.contracts.end(),
+						[](const auto &b)
+						{ return b.starts_with("zone-story:qst:55135:"); });
+				});
+			require(journey.discover_zone(7, 42, 550, 55400, 108, "arrival") ==
+					result::applied,
+				"Forgotten Mansion foreign memory discovery failed");
+			record(journey, foreign.contracts.front(), "forgotten-foreign-memory", 550,
+			       55400);
+			require(journey.progress_for_zone(7, 42, 35).completed == 0,
+				"Forgotten Mansion duplicated Winterhaven memory receipt");
+			// Synthetic receipts qualify projection; actual issuance/access/effects remain pending.
+			for (const auto &entry : mapping.stories)
+				record(journey, entry.contracts.front(),
+				       ("forgotten-all-" + entry.id).c_str(), 35, 3664);
+			for (const auto v : { 3505, 3509, 3529, 3539 })
+				supplies.carried.erase(v);
+			journal = journey.render_journal(7, 42, 35, 10, 1, 109, false, false,
+							 &supplies);
+			require(missing(music, 0) && missing(rattle, 0) && missing(proofs, 0) &&
+					missing(proofs, 1) &&
+					journey.progress_for_zone(7, 42, 35).completed == 3 &&
+					journey.progress_for_zone(7, 42, 35).total == 3,
+				"Forgotten Mansion spent supplies reappeared or three accepted stories changed");
+			auto replay = completion(proofs.contracts.front(),
+						 ("forgotten-all-" + proofs.id).c_str(), 120);
+			replay.transaction.zone_number = 35;
+			replay.transaction.room_vnum = 3664;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Forgotten Mansion replay duplicated accepted bundle");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 35) &&
+					recovered.progress_for_zone(7, 42, 35).completed == 3,
+				"Forgotten Mansion cold recovery lost discovery or receipts");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 35, 3500, 100, "arrival") ==
+					result::applied,
+				"Historical Forgotten Mansion discovery failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("forgotten-old-" + entry.id).c_str(), 35, 3664);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 35).completed == 3 &&
+					authored.progress_for_zone(7, 42, 35).total == 3,
+				"Forgotten Mansion raw-to-authored history changed");
+			for (const auto &entry : mapping.stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1 &&
+						recovered.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1,
+					"Forgotten Mansion raw identity changed");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 35 && u.achievement &&
+							     u.daily_candidate;
+					      }) == 3,
+				"Forgotten Mansion repeatability changed");
 		}
 
 		{
