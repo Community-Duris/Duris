@@ -6,6 +6,7 @@ individual fixture lists drift as the production dispatcher grows.
 """
 
 SQL_DISPATCH_SOURCES = (
+    'world/quest_mobile_native.c', 'persistence/quest_mobile_native_sql.c',
     'item/item_transfer_command.c', 'world/quest_mobile_native_reference.c',
     'item/craft_pouch_mutation.c',
     'combat/chaos_pouch_ledger.c',

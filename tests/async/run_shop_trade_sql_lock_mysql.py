@@ -27,6 +27,7 @@ sources = [
     "src/persistence/critical_command.c",
 ]
 root_sources = [
+    'src/world/quest_mobile_native.c', 'src/persistence/quest_mobile_native_sql.c',
     "src/persistence/critical_command_repository.c",
     "src/persistence/economic_sql_bank_transaction.c",
     "src/persistence/economic_sql_collector_transaction.c",

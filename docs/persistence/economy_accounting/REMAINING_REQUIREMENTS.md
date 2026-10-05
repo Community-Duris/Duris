@@ -1,5 +1,16 @@
 # Double-entry economy: remaining requirements
 
+## Native quest borrowed item persistence integrated — 2026-10-05
+
+[The explicit SQL/flat participants](NATIVE_QUEST_PARTICIPANT_INTEGRATION_2026-10-05.md) preserve ordered native stock and
+existing cash/identity while mutating custody under the original borrowed root.
+Review corrected omitted-child cascade, forest/readback bounds and transient
+failure classification; focused recipe closure preserves original test policy.
+Source review/inverses/format/AST/syntax/pins/census only; no native execution.
+Original birth/source/lifecycle, admitted atomic root, producers/publication/
+restore/ACK and major-plan qualification remain open. Inactive behavior and
+safety gates stay; R1–R8, release and activation remain BLOCKED.
+
 ## Original cold SHOP world observation integrated — 2026-10-05
 
 [The pure sibling](SHOP_COLD_WORLD_OBSERVATION_2026-10-05.md) records unique addressed-body presence, account availability,
