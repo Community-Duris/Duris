@@ -1,5 +1,15 @@
 # Accounting implementation and qualification handoff
 
+## Retained SHOP v8 submission corrected — 2026-10-05
+
+[The source-proven version fix](SHOP_V8_SUBMISSION_VERSION_FIX_2026-10-05.md)
+removes the v7-only guard that rejected every command produced by the v8
+recovery builder. Owned submission accepts exactly v7/v8 with all original
+decode, identity, native checkpoint and held-player checks retained. Source
+review/changed-line formatting only; no native qualification. Central admission,
+activation, producer driving and original major-plan gates remain open/closed
+as recorded in the owning report.
+
 ## Detached native mobile stage installed — 2026-10-05
 
 [The reviewed loader integration](NATIVE_MOBILE_STAGE_INTEGRATION_2026-10-05.md)
