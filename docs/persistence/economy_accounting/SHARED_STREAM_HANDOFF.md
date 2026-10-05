@@ -1,5 +1,17 @@
 # Accounting implementation and qualification handoff
 
+## Integrated selected result-code representation repair — 2026-10-04
+
+[The independent result-code repair](PLAN5_SELECTED_ROOT_RESULT_TYPES_SLICE_2026-10-04.md)
+requires strict integer uint32 selected-operation results before duplicate indexing.
+Boolean/float/missing/negative/overflow representations refuse without coercion;
+valid integers retain existing outcome findings. All three peer d0d570113 blobs
+are imported exactly, with existing reader/test preimages matching14dff224b.
+Independent source review, two Python AST checks and whitespace pass.
+Peer106 units and both-engine component evidence remain frozen-input canonical0056
+reader qualification, not full native producers/gameplay or incoming private source.
+No local execution, schema/coordinator/activation change or waived release gate.
+
 ## Actorless shop refusal and v6 callback source checkpoint — 2026-10-04
 
 [Exact disconnected-player hold cancellation and literal callback matching](SHOP_ACTORLESS_REFUSAL_SOURCE_2026-10-04.md)
