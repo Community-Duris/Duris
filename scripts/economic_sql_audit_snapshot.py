@@ -229,13 +229,18 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
             "delta": [row[f"delta_{unit}"] for unit in ("copper", "silver", "gold", "platinum")],
             "copper_value": row["copper_value"]})
     children = scoped_rows(cursor, "economic_accounting_child",
-        "e.operation_id,e.child_index,e.child_operation_id,e.parent_index", lineage, epoch,
+        "e.operation_id,e.child_index,e.child_operation_id,e.parent_index,"
+        "e.domain_id,e.discriminator,e.relationship,e.receipt_operation_id", lineage, epoch,
         "e.operation_id,e.child_index")
     for row in children:
         result["children"].append({"operation_id": hex_id(row["operation_id"]),
                                     "child_index": row["child_index"],
                                     "child_operation_id": hex_id(row["child_operation_id"]),
-                                    "parent_index": row["parent_index"]})
+                                    "parent_index": row["parent_index"],
+                                    "domain_id": row["domain_id"],
+                                    "discriminator": row["discriminator"],
+                                    "relationship": row["relationship"],
+                                    "receipt_operation_id": hex_id(row["receipt_operation_id"])})
     references = scoped_rows(cursor, "economic_accounting_item_reference",
         "e.operation_id,e.event_index,e.child_index,e.item_uid,e.before_revision,"
         "e.after_revision,e.legacy_operation_id,e.legacy_event_index", lineage, epoch,

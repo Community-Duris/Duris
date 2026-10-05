@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter, defaultdict
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -467,6 +468,7 @@ class Reconciler:
                     value = row.get(field)
                     if type(value) is not int or not minimum <= value <= maximum:
                         raise SnapshotError("invalid " + name + " " + field)
+        self.audit_child_identities(tables["children"])
         operations = self.index(tables["operations"], ("operation_id",), "duplicate_operation")
         effects = self.index(tables["effects"], ("operation_id", "account_index"), "duplicate_effect")
         postings = self.index(tables["postings"], ("operation_id", "line_index"), "duplicate_posting")
@@ -605,14 +607,6 @@ class Reconciler:
                     (original,) not in operations):
                 self.emit("missing_original_operation", operation_id=op_id)
             child_indexes = {row.get("child_index") for row in by_op["children"][op_id]}
-            for row in by_op["children"][op_id]:
-                index = row.get("child_index")
-                parent = row.get("parent_index")
-                if type(index) is not int or not 1 <= index <= 64 or type(parent) is not int or not 0 <= parent < index:
-                    self.emit("invalid_child_link", operation_id=op_id, child_index=index)
-                child_id = row.get("child_operation_id")
-                if child_id == op_id or not isinstance(child_id, str):
-                    self.emit("invalid_child_link", operation_id=op_id, child_index=index)
             for name in ("postings", "item_references"):
                 for row in by_op[name][op_id]:
                     child_index = row.get("child_index", 0)
@@ -725,6 +719,58 @@ class Reconciler:
                 "exceptions": self.exceptions, "truncated": sum(self.counts.values()) > len(self.exceptions),
                 "checked": {name: len(tables[name]) for name in TABLES} |
                            {"native_holdings": len(holdings), "native_items": len(items)}}
+
+    def audit_child_identities(self, rows: list[dict]) -> None:
+        """Reconstruct original child identities without a mutation codec.
+
+        Check raw rows before slot indexing so a duplicate cannot hide invalid
+        identity evidence. Older exports lacking persisted derivation facts are
+        explicitly unverified; never infer a domain/discriminator from an ID.
+        """
+        indexed = {(row.get("operation_id"), row["child_index"]): row for row in rows}
+        seen: set[str] = set()
+        for row in rows:
+            root, index = row.get("operation_id"), row["child_index"]
+            ids = {"operation_id": root, "child_index": index}
+            try:
+                identity = require_id(row.get("child_operation_id"), "child operation ID")
+            except SnapshotError:
+                self.emit("invalid_child_link", **ids)
+                continue
+            if identity == root:
+                self.emit("invalid_child_link", **ids)
+                continue
+            if identity in seen:
+                self.emit("duplicate_child_operation", **ids)
+            seen.add(identity)
+            if not {"domain_id", "discriminator", "relationship", "receipt_operation_id"} <= row.keys():
+                self.emit("missing_child_identity_evidence", **ids)
+                continue
+            domain, discriminator = row["domain_id"], row["discriminator"]
+            parent, relationship = row["parent_index"], row["relationship"]
+            if (type(domain) is not int or not 1 <= domain < 2**32 or
+                    type(discriminator) is not int or not 0 <= discriminator < 2**64 or
+                    type(relationship) is not int or relationship != 1 or not 0 <= parent < index):
+                self.emit("invalid_child_link", **ids)
+                continue
+            parent_row = indexed.get((root, parent)) if parent else None
+            if parent and parent_row is None:
+                self.emit("invalid_child_link", **ids)
+                continue
+            try:
+                original_parent = require_id(parent_row["child_operation_id"] if parent else root,
+                                             "child parent operation ID")
+                if row["receipt_operation_id"] is not None:
+                    if require_id(row["receipt_operation_id"], "child receipt operation ID") != identity:
+                        raise SnapshotError("foreign child receipt operation ID")
+            except SnapshotError:
+                self.emit("invalid_child_link", **ids)
+                continue
+            expected = hashlib.sha256(bytes.fromhex(original_parent) +
+                                      domain.to_bytes(4, "little") +
+                                      discriminator.to_bytes(8, "little")).digest()[:16].hex()
+            if identity != expected:
+                self.emit("child_identity_mismatch", **ids)
 
     def audit_orphan_evidence(self, snapshot: dict) -> None:
         rows = snapshot.get("orphan_evidence")
