@@ -17,6 +17,8 @@ class flatfile_accounting_test_access
 	static constexpr auto retire = &flatfile_accounting_authority_storage::retire_mapping;
 	static constexpr auto append_epoch = &flatfile_accounting_authority_storage::append_epoch;
 	static constexpr auto initialize = &flatfile_accounting_baseline_storage::initialize;
+	static constexpr auto initialize_lifecycle =
+		&flatfile_accounting_baseline_storage::initialize_lifecycle_staged;
 	static constexpr auto evidence_bucket =
 		&flatfile_accounting_authority_storage::initialize_evidence_bucket;
 	static constexpr auto baseline = &flatfile_accounting_baseline_storage::stage;
@@ -136,9 +138,15 @@ int main(int argc, char **argv)
 	assert(access::append_epoch(root, lock, control().revision, value.epoch, &operations,
 				    &error) == 0);
 	commit();
-	assert(access::initialize(root, lock, request.lineage, request.epoch, value.opening,
-				  request.operation_id, &operations,
-				  &error) == flatfile_accounting_status::ok);
+	const auto initialized =
+		mode == "generic" ?
+			access::initialize(root, lock, request.lineage, request.epoch,
+					   value.opening, request.operation_id, &operations,
+					   &error) :
+			access::initialize_lifecycle(root, lock, request.lineage, request.epoch,
+						     value.opening, request.operation_id,
+						     &operations, &error, nullptr);
+	assert(initialized == flatfile_accounting_status::ok);
 	commit();
 	economic_baseline_batch batch;
 	batch.lineage = request.lineage;
@@ -189,6 +197,8 @@ int main(int argc, char **argv)
 	       stored.result.empty());
 	assert(flatfile_economic_epoch_read(root, lock, request.lineage, request.epoch,
 					    &value.epoch, &error) == 0);
+	assert(value.epoch.initialization_origin ==
+	       flatfile_baseline_initialization_origin::lifecycle_owner);
 	value.lineage_creating_operation = control().creating_operation;
 	value.selected_control_revision = control().revision;
 	auto &receipt = value.receipt;
