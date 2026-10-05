@@ -27,6 +27,8 @@ int quest_mobile_native_flatfile_read_locked(const std::string &root,
 // receipt/outbox and journal cleanup in ONE existing authority bundle.
 // No recovery, commit, directory creation, IDs, world mutation or ACK occurs.
 // RETIRED remains a durable image file, never a remove or implicit revival.
+// Cash-aware birth and ordinary transitions require known v2 cash with the
+// checked cash/mobile revision policy. Historical unknown cash is read-only here.
 int quest_mobile_native_flatfile_prepare_locked(
 	const std::string &root, const flatfile_authority_lock &,
 	const critical_operation_id &original_parent,

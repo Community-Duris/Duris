@@ -227,7 +227,9 @@ int quest_mobile_native_sql_apply_locked(MYSQL *connection, const critical_opera
 	if (!output || !before.mobile_instance_id || before.mobile_instance_id == UINT64_MAX ||
 	    !before.original_session || !nonzero(parent) ||
 	    after.reference.mobile_instance_id != before.mobile_instance_id ||
-	    after.last_transition_operation.bytes != parent.bytes)
+	    after.last_transition_operation.bytes != parent.bytes ||
+	    !quest_mobile_native_cash_transition_valid(before.present ? &before.image : nullptr,
+						       after))
 		return EINVAL;
 	try
 	{

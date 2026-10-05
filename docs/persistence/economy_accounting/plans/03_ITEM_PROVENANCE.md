@@ -1,5 +1,15 @@
 # Plan 3: item supply, custody, and provenance
 
+## Original NPC cash retained in native images — 2026-10-05
+
+[The source milestone](../NATIVE_MOBILE_CASH_IMAGE_2026-10-05.md) adds explicit v2 four-denomination cash/revision
+capture and shared checked SQL/flat transition policy. Historical v1 bytes and
+the 148-byte reference stay compatible; unknown cash is never adopted as zero.
+Source review/pins/format/inventory only, with no native execution. Original
+reset/spawn generation, birth/stock/source ownership, durable restore/retirement,
+coherent schemas and major-plan qualification remain open. Inactive safety gates
+are preserved; full R1–R8, release and activation remain BLOCKED.
+
 ## Detached native mobile stage installed — 2026-10-05
 
 [The reviewed loader integration](../NATIVE_MOBILE_STAGE_INTEGRATION_2026-10-05.md)
