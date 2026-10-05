@@ -234,6 +234,13 @@ that a present source identity describes the correct gameplay event.
   `source_claims`: lineage, 48-byte source event and owning root ID. `receipts`:
   retained root ID, committed status and result code.
 
+For each root, retained effect, posting and item-reference indexes cover exactly
+`0..count-1`; child indexes cover `1..count`. Export row order may vary. When
+the row count matches but these positions are sparse or offset, reconciliation
+reports `evidence_index_mismatch` with the root ID and table. Cardinality and
+duplicate findings retain their existing meanings. Ownership-event and legacy
+reference indexes keep their original positions in the ownership ledger.
+
 The source tables on SQL are `economic_accounting_*`, `economic_baseline_*`,
 `critical_operation_inbox`, `item_current_owner`, `item_ownership_ledger`,
 `player_data`, `account_banks`, auction/claim tables and any real treasury table.
