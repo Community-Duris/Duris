@@ -33,6 +33,7 @@ SOURCES = [
     rel("flatfile_accounting_store.c"),
     rel("economic_accounting_types.c"),
     rel("economic_baseline_codec.c"),
+    rel("economic_baseline_adapter.c"),
     rel("economic_accounting_plan.c"),
     rel("auction_listing_accounting.c"),
     rel("auction_accounting.c"),
