@@ -151,8 +151,8 @@ inline bytes frame(const std::filesystem::path &directory, const std::string &na
 	auto prefix = in.take(8);
 	auto version = in.number(4);
 	need(memcmp(prefix.data(), magic, 8) == 0 &&
-	     (version == 1 ||
-	      (catalog_version && memcmp(magic, "DURECE1", 8) == 0 && version == 2)) &&
+	     (version == 1 || (catalog_version && memcmp(magic, "DURECE1", 8) == 0 &&
+			       (version == 2 || version == 3))) &&
 	     in.number(4) == encoded.size() - 48);
 	auto body_digest = in.fixed<32>();
 	auto body = in.take(encoded.size() - 48);
@@ -167,6 +167,12 @@ enum class baseline_initialization : uint8_t
 	never_initialized = 1,
 	initialized = 2
 };
+enum class initialization_origin : uint8_t
+{
+	legacy_unknown = 0,
+	baseline_participant = 1,
+	lifecycle_owner = 2
+};
 struct epoch_marker
 {
 	identity epoch = {}, initializing_operation = {};
@@ -175,6 +181,7 @@ struct epoch_marker
 	uint16_t transition_kind = 0;
 	digest transition_digest = {};
 	baseline_initialization initialization = baseline_initialization::legacy_unknown;
+	initialization_origin origin = initialization_origin::legacy_unknown;
 	std::array<uint8_t, 40> opening = {};
 };
 struct epoch_catalog
@@ -194,6 +201,7 @@ inline epoch_catalog catalog(const std::filesystem::path &directory, const diges
 	auto count = in.number(4);
 	need(nonzero(result.lineage) && count <= 4096 && in.number(4) == 0);
 	std::set<identity> seen;
+	std::set<identity> lifecycle_operations;
 	for (size_t i = 0; i < count; ++i)
 	{
 		epoch_marker entry;
@@ -208,11 +216,19 @@ inline epoch_catalog catalog(const std::filesystem::path &directory, const diges
 		     entry.ordinal == i + 1 && entry.predecessor == result.last_epoch &&
 		     entry.transition_kind && nonzero(entry.transition_digest) &&
 		     nonzero(entry.creating_operation));
-		if (version == 2)
+		if (version >= 2)
 		{
 			auto state = in.number(1);
-			need(state <= 2 && in.number(7) == 0);
+			need(state <= 2);
 			entry.initialization = static_cast<baseline_initialization>(state);
+			if (version == 3)
+			{
+				auto origin = in.number(1);
+				need(origin <= 2 && in.number(6) == 0 && (!origin || state == 2));
+				entry.origin = static_cast<initialization_origin>(origin);
+			}
+			else
+				need(in.number(7) == 0);
 			entry.initializing_operation = in.fixed<16>();
 			entry.opening = in.fixed<40>();
 			if (entry.initialization == baseline_initialization::initialized)
@@ -229,6 +245,11 @@ inline epoch_catalog catalog(const std::filesystem::path &directory, const diges
 			else
 				need(!nonzero(entry.initializing_operation) &&
 				     !nonzero(entry.opening));
+			if (entry.origin == initialization_origin::lifecycle_owner)
+				need(entry.creating_operation == entry.initializing_operation &&
+				     entry.transition_kind == 1 &&
+				     lifecycle_operations.insert(entry.initializing_operation)
+					     .second);
 		}
 		result.last_epoch = entry.epoch;
 		result.entries.push_back(entry);
