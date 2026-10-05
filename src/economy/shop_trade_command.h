@@ -2,6 +2,8 @@
 #define SHOP_TRADE_COMMAND_H
 
 #include "economy/currency_command.h"
+#include "economy/shop_trade_destination_weight.h"
+#include "economy/shop_trade_recovery_manifest.h"
 #include "item/item_transfer_command.h"
 
 #include <array>
@@ -11,6 +13,17 @@ constexpr uint16_t SHOP_TRADE_PAYLOAD_VERSION = 5;
 // Explicit accounted-only capability; legacy builders continue to emit v5.
 constexpr uint16_t SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION = 6;
 constexpr size_t SHOP_TRADE_ACCOUNTED_TAIL_BYTES = 16;
+// Explicit new native witness capability; historical v1-v6 stay byte-exact.
+constexpr uint16_t SHOP_TRADE_NATIVE_PAYLOAD_VERSION = 7;
+constexpr size_t SHOP_TRADE_NATIVE_TAIL_BYTES = 32;
+// Exact whole-forest recovery bindings; v1-v7 encodings remain unchanged.
+constexpr uint16_t SHOP_TRADE_RECOVERY_PAYLOAD_VERSION = 8;
+constexpr bool shop_trade_payload_version_is_accounted(uint16_t version) noexcept
+{
+	return version == SHOP_TRADE_ACCOUNTED_PAYLOAD_VERSION ||
+	       version == SHOP_TRADE_NATIVE_PAYLOAD_VERSION ||
+	       version == SHOP_TRADE_RECOVERY_PAYLOAD_VERSION;
+}
 constexpr uint16_t SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION = 4;
 constexpr uint16_t SHOP_TRADE_CONTAINER_PAYLOAD_VERSION = 3;
 constexpr uint16_t SHOP_TRADE_STOCK_PAYLOAD_VERSION = 2;
@@ -70,6 +83,12 @@ struct shop_trade_payload
 	// the native player row lock. Frozen placement transforms never read today's level.
 	uint64_t expected_player_save_revision = 0;
 	uint32_t expected_player_level = 0;
+	// v7 only. Version determines presence; no facts are invented for v6.
+	bool native_destination_weight_recorded = false;
+	shop_trade_destination_weight destination_weight{};
+	// v8 only. Full bodies remain with native/recovery owners; these are value bindings.
+	bool recovery_manifest_recorded = false;
+	shop_trade_recovery_manifest recovery_manifest{};
 };
 
 struct shop_trade_result
@@ -93,6 +112,10 @@ bool shop_trade_command_encode_payload(const shop_trade_payload &payload,
 				       std::vector<uint8_t> *encoded);
 bool shop_trade_command_encode_accounted_payload(const shop_trade_payload &payload,
 						 std::vector<uint8_t> *encoded);
+bool shop_trade_command_encode_native_payload(const shop_trade_payload &payload,
+					      std::vector<uint8_t> *encoded);
+bool shop_trade_command_encode_recovery_payload(const shop_trade_payload &payload,
+						std::vector<uint8_t> *encoded);
 bool shop_trade_command_decode_payload(const critical_command &command,
 				       shop_trade_payload *payload);
 bool shop_trade_command_encode_result(const shop_trade_result &result,
@@ -110,5 +133,16 @@ bool shop_trade_command_build_accounted(critical_command *command,
 					const shop_trade_payload &payload,
 					critical_source_site source_site,
 					critical_deadline_class deadline_class);
+
+bool shop_trade_command_build_native(critical_command *command, critical_operation_id operation_id,
+				     const shop_trade_payload &payload,
+				     critical_source_site source_site,
+				     critical_deadline_class deadline_class);
+
+bool shop_trade_command_build_recovery(critical_command *command,
+				       critical_operation_id operation_id,
+				       const shop_trade_payload &payload,
+				       critical_source_site source_site,
+				       critical_deadline_class deadline_class);
 
 #endif

@@ -1238,7 +1238,7 @@ def main():
                 rel("currency_command.c"), rel("critical_command.c"),
                 rel("economic_currency_adapter.c"), rel("economic_accounting_intent.c"),
                 rel("economic_gameplay_authority.c"), rel("economic_command_admission.c"),
-                rel("economic_accounting_plan.c"), rel("economic_accounting_types.c"),
+                rel("economic_accounting_plan.c"), rel("economic_source_event.c"), rel("economic_accounting_types.c"),
                 rel("coin_transfer_command.c"), rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
                 rel("coin_transfer_accounting.c"),
                 rel("item_transfer_accounting.c"),

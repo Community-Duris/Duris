@@ -55,7 +55,7 @@ def main():
                 '-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie','-no-pie',
                 '-I'+str(ROOT/'src'),'-I'+str(temp)]
             if mode=='flatfile':command.append('-D__NO_MYSQL__')
-            command += [str(ROOT/name) for name in ('tests/async/economic_accounting_plan_test.cpp','src/economy/economic_accounting_plan.c',
+            command += [str(ROOT/name) for name in ('tests/async/economic_accounting_plan_test.cpp','src/economy/economic_accounting_plan.c', 'src/economy/economic_source_event.c',
                 'src/economy/economic_accounting_types.c','src/economy/economic_accounting_intent.c','src/persistence/critical_command.c','src/item/item_transfer_command.c', "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", 'src/player/player_snapshot_codec.c')]
             command += ['-lcrypto','-o',str(executable)]
             subprocess.run(command,check=True)

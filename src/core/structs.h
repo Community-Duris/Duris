@@ -27,6 +27,7 @@
 
 #include "core/defines.h"
 #include "world/epic_bonus_state.h"
+#include "world/quest_mobile_native_binding.h"
 #include "persistence/gameplay_read_state.h"
 #include "world/map.h"
 #include "player/player_log.h"
@@ -1567,6 +1568,9 @@ struct char_data
 	uint64_t telemetry_session_sequence;
 	uint64_t telemetry_session_producer_boot_id;
 	uint64_t telemetry_session_producer_process_id;
+	/* Runtime-only native reference; only the original birth owner may bind it.
+	 * Existing player/copyover codecs do not serialize this field. */
+	quest_mobile_native_binding native_mobile_binding;
 };
 
 /* ======================================================================== */

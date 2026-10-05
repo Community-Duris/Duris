@@ -2,6 +2,7 @@
 """Corrupted disposable snapshots for the read-only economic reconciler."""
 
 import copy
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -128,8 +129,10 @@ def rejected_snapshot():
 def linked_child_snapshot():
     snapshot = clean_snapshot()
     snapshot["operations"][0]["child_count"] = 1
+    identity = hashlib.sha256(bytes.fromhex(OP) + (474).to_bytes(4, "little") + bytes(8)).digest()[:16].hex()
     snapshot["children"] = [{"operation_id": OP, "child_index": 1, "parent_index": 0,
-                             "child_operation_id": "44" * 16}]
+                             "child_operation_id": identity, "domain_id": 474,
+                             "discriminator": 0, "relationship": 1, "receipt_operation_id": None}]
     snapshot["postings"][0]["child_index"] = 1
     snapshot["item_references"][0]["child_index"] = 1
     return snapshot
@@ -138,8 +141,11 @@ def linked_child_snapshot():
 def two_child_snapshot():
     snapshot = linked_child_snapshot()
     snapshot["operations"][0]["child_count"] = 2
+    identity = hashlib.sha256(bytes.fromhex(snapshot["children"][0]["child_operation_id"]) +
+                              (474).to_bytes(4, "little") + (1).to_bytes(8, "little")).digest()[:16].hex()
     snapshot["children"].append({"operation_id": OP, "child_index": 2, "parent_index": 1,
-                                 "child_operation_id": "55" * 16})
+                                 "child_operation_id": identity, "domain_id": 474,
+                                 "discriminator": 1, "relationship": 1, "receipt_operation_id": None})
     snapshot["postings"][1]["child_index"] = 2
     return snapshot
 
@@ -2926,7 +2932,7 @@ def native_stake_sql():
         }
     }
     ''')
-    sources=['src/economy/economic_accounting_plan.c','src/economy/economic_accounting_types.c',
+    sources=['src/economy/economic_accounting_plan.c', 'src/economy/economic_source_event.c','src/economy/economic_accounting_types.c',
              'src/economy/economic_accounting_intent.c','src/persistence/critical_command.c',
              'src/item/item_transfer_command.c','src/item/craft_pouch_mutation.c',
              'src/combat/chaos_pouch_ledger.c','src/player/player_snapshot_codec.c']

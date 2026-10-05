@@ -5,6 +5,7 @@
 #include "economy/collector_codec.h"
 #include <span>
 #include <string>
+#include <string_view>
 
 struct economic_gameplay_wallet_mapping
 {
@@ -17,6 +18,14 @@ struct economic_gameplay_bank_mapping
 	std::string name;
 	uint8_t racewar = 0;
 	economic_account_key account;
+};
+
+// Original read-only facts for the native shop checkpoint. These values grant
+// no storage or mutation authority; the writer locks their native mappings.
+struct economic_shop_checkpoint_projection
+{
+	critical_operation_id lineage, epoch;
+	economic_account_key wallet, bank;
 };
 
 // Read-only admission projection, never balance or storage authority. Only a
@@ -35,10 +44,19 @@ class economic_gameplay_authority
 	static economic_accounting_error
 	prepare_collector_purchase(critical_command *command,
 				   const collector::record &original_listing);
+	// v6 source status/item checkpoint must be established by the native producer.
+	// Pure resolution only: no coordinator admission, native mutation or ACK.
+	static economic_accounting_error prepare_shop_trade(critical_command *command);
 	static economic_accounting_error
 	prepare_item_transfer(critical_command *command, uint32_t actor_pid,
 			      economic_source_kind lifecycle_source = {});
 	static bool active();
+	// Existing native SQL scope only; excludes wallet-root qualification and flat.
+	// This observes admission state and does not grant native mutation authority.
+	static bool active_regular_sql();
+	static bool observe_shop_checkpoint(uint32_t pid, std::string_view account_name,
+					    uint8_t racewar,
+					    economic_shop_checkpoint_projection *output) noexcept;
 
     private:
 	friend class economic_sql_accounting_lifecycle_transaction;

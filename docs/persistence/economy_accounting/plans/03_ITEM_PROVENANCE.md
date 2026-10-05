@@ -1,5 +1,70 @@
 # Plan 3: item supply, custody, and provenance
 
+## Detached native mobile stage installed — 2026-10-05
+
+[The reviewed loader integration](../NATIVE_MOBILE_STAGE_INTEGRATION_2026-10-05.md)
+prepares an actual NPC outside live list/count/index/event publication and
+consumes its private retained stage before room/special callbacks. Both legacy
+overloads and probes keep their original path. Source/raw-preimage review only;
+no native execution or original birth/UID/source/restore/retirement owner is
+claimed. The actual reset/spawn issuer and explicit durable native reference
+restore remain unfinished. No full NPC state ledger or new gate is added;
+major-plan qualification, R1–R8, release and activation remain open/BLOCKED.
+
+## Coherent SHOP source installed — 2026-10-05
+
+[The composed source milestone](../SHOP_COHERENT_SOURCE_INTEGRATION_2026-10-05.md)
+installs 32 reviewed production inputs and 22 current-based recipe/Makefile
+inputs, including native checkpoint, literal payload, v8 recovery manifests,
+original current SQL images and exact retained receipt verification. Independent
+source review and raw-preimage/inverse/AST/include checks passed; no native
+execution occurred. Current accounted SHOP admission stays closed and canonical
+schema0056 is unchanged. Actual gameplay producer invocation, coherent0057,
+cold continuation/publication/ACK, flat parity and original major-plan
+qualification remain open. Source census/projection rows are unqualified;
+release and activation remain BLOCKED.
+
+## Native reference and original-generation observation — 2026-10-05
+
+[The coherent source integration](../NATIVE_REFERENCE_RUNTIME_INTEGRATION_2026-10-05.md)
+extracts the existing native/source-event codecs, updates all 63 focused link
+recipes and adds zeroable runtime reference storage. The read-only accessor
+checks the originally retained runtime generation before pointer access.
+Independent review corrected eleven invalid source-helper calls before import.
+Source/format/pins/inventory only; native birth/restore ownership, explicit
+durable reference records, major-plan execution and full R1–R8 remain open.
+Private cold shop value/receipt proof is reviewed but not installed or qualified.
+
+## Reviewed cold SHOP original SQL images — 2026-10-05
+
+[The frozen four-file source slice](../SHOP_COLD_SQL_SOURCE_CHECKPOINT_2026-10-05.md)
+reads actual canonical player values and authenticates complete BEFORE/AFTER
+player/keeper images inside the original SQL transaction. Review corrected
+keeper foreign-copy and extra-context/reference closure gaps; AFTER readback
+uses only original locked identities. Private source/format/pins only, without
+actual executable installation or qualification. Coherent dependencies, cold
+startup/publication/ACK, both backends and original R1–R8 acceptance stay open.
+
+## Plan 5 evidence and complete central inventory — 2026-10-05
+
+[Exact peer evidence and runner registration](../PLAN5_CENSUS_AND_INVENTORY_INTEGRATION_2026-10-05.md)
+imports frozen 71-contract pin-repair and 58-case pure custody evidence without
+promoting it to current native qualification. Eight existing test classifications
+and two existing SQL matrix omissions are repaired: 914 owners, 92 rows, all
+87 original rows unchanged. The [publication recipe path fix](../PUBLICATION_RECIPE_PATH_REPAIR_2026-10-05.md)
+is separately published as `7a5f9e97d`. Source/JSON/AST/inventory checks only;
+major-plan testing, full writer/player/recovery acceptance and R1–R8 stay open.
+The private staged NPC loader is frozen for review; the cold shop player reader
+continues in parallel. Existing inactive behavior and safety gates remain.
+
+## Native-mobile owner schema preparation — 2026-10-05
+
+The [current shared handoff](../SHOP_RECOVERY_BINDING_SOURCE_2026-10-05.md)
+records private 0060's exact three CHECK-range extensions to owner type 12.
+Its unchanged-column/row and partial-retry source contract is reviewed; coherent
+0057–0060 integration, measured engine metadata and native birth/custody/quest
+consumers remain open. No engine execution or Plan 3 qualification is claimed.
+
 ## Integrated NPC flat bundle preparation — 2026-10-05
 
 [Canonical flat image read and exact-before preparation](../QUEST_MOBILE_FLAT_SOURCE_2026-10-05.md)

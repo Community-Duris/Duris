@@ -31,7 +31,7 @@ def compile_bank(executable, real_pool=False):
               "src/economy/collector_accounting.c",
               "src/economy/economic_gameplay_authority.c",
               "src/economy/economic_currency_adapter.c", "src/economy/economic_accounting_types.c",
-              "src/economy/economic_accounting_plan.c", "src/economy/economic_accounting_intent.c",
+              "src/economy/economic_accounting_plan.c", "src/economy/economic_source_event.c", "src/economy/economic_accounting_intent.c",
               "src/sql/item_extra_descr_codec.c",
               "tests/async/item_extra_descr_codec_sql_escape_stub.cpp",
               "src/persistence/sql_room_item_payload.c"]
