@@ -1067,3 +1067,25 @@ directory. The central tools image definition adds its missing PyMySQL package;
 existing native origin rows remain registered. Source/JSON/AST checks only;
 container/native execution and combined qualification remain at major-plan
 readiness. Structural fixture audit evidence is not real writer completion.
+
+
+### October 4 maintained SQL collector publication compiler repair
+
+The [peer build handoff](PLAN5_SQL_COLLECTOR_ROW_BUILD_HANDOFF_2026-10-04.md)
+establishes a maintained SQL `-Werror=sign-compare` failure in the original
+collector publication translation unit. Its signed native row ID is now
+checked nonnegative before exact unsigned equality against the bounded result
+row. Native row bounds, full literal/custody proof, publication reservations,
+guarded ACK, inactive dispatch and refusal behavior retain their existing owners.
+No representation, schema, warning flags or gameplay rules change.
+
+The maintained raw file now exactly matches peer diagnostic candidate
+`51478b2dfadb97c5aa910735a0337238e8aee964a3150b97fe80b0f9912ba9d1`.
+That copied candidate passed the peer's strict SQL syntax check, while its
+unchanged control reproduced the error. Primary changed-line clang-format18,
+raw pin, JSON/source inventory and whitespace checks cover this actual repair;
+no new local build, tests, database or gameplay execution is claimed. The peer's
+543 unreached syntax passes remain syntax-only, input-specific evidence.
+Maintained SQL linking/service and actual collector publication/replay checks
+remain in the original major-plan qualification. This repair lets Plan5 resume
+its fresh managed SQL restore batch; it does not qualify full accounting.
