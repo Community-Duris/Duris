@@ -1,5 +1,16 @@
 # Double-entry economy: remaining requirements
 
+## Integrated evidence index representation repair — 2026-10-05
+
+[The independent index-validation slice](PLAN5_EVIDENCE_INDEX_TYPES_SLICE_2026-10-05.md)
+is imported as three exact82a44c3dd blobs after matching current preimages.
+All ten original evidence index fields require exact integers and native bounds
+before dictionary indexing; duplicate and semantic relationship findings remain.
+Peer110 units and both-engine money-index export evidence qualify their frozen
+e018/canonical0056 inputs, not native item/child producers or this combined tree.
+Independent source review, raw hashes, two Python AST checks and whitespace pass;
+no local tests/native/SQL execution or waived qualification gate.
+
 ## Integrated NPC flat bundle preparation — 2026-10-05
 
 [Canonical flat image read and exact-before preparation](QUEST_MOBILE_FLAT_SOURCE_2026-10-05.md)
