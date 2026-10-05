@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1441
-assert report['mapped_area_count'] == 104 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 105 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -209,6 +209,16 @@ assert sum(t.get('optional',False) for s in harrow['stories'] for t in s['steps'
 assert all(s['category']=='story' for s in harrow['stories'])
 assert all(harrow['stories'][i]['steps'][0]['contracts']==harrow['stories'][0]['contracts'] for i in range(1,5))
 assert harrow['stories'][5]['steps'][0]['item_vnums']==[29440] and harrow['stories'][7]['steps'][0]['item_vnums']==[29444]
+
+mountaintracks=next(m for m in catalog['story_mappings'] if m['source_area']=='mountaintracks')
+assert (mountaintracks['schema_version'],mountaintracks['revision'],mountaintracks['coverage'])==(3,1,'complete')
+assert len(mountaintracks['stories'])==4 and len(mountaintracks['contacts'])==8 and not mountaintracks['exclusions']
+assert report['eligible_by_zone']['209']==4 and sum(len(c['topics']) for c in mountaintracks['contacts'])==19
+assert sum(t.get('optional',False) for s in mountaintracks['stories'] for t in s['steps'])==6
+assert all(s['category']=='story' for s in mountaintracks['stories'])
+assert mountaintracks['stories'][3]['steps'][0]['contracts']==mountaintracks['stories'][2]['contracts']
+assert [t['item_vnums'][0] for t in mountaintracks['stories'][2]['steps'][:-1]]==[20947,20948]
+assert mountaintracks['stories'][0]['steps'][0]['item_vnums']==[20923] and mountaintracks['stories'][3]['steps'][1]['item_vnums']==[20949]
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

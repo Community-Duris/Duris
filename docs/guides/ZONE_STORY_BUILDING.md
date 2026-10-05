@@ -2104,3 +2104,33 @@ connecting anything. Non-door paint-set key field is not a locked magic gate.
 Native clue fixes must be separate named fixes/news; no repair ships here.
 Preserve Fields owner-confirmed PvP hotfix and required replacement follow-up.
 All new credit needs active, ready accounting; frozen recovery remains separate.
+
+
+## Mountain Tracts example: current commands, closed doors and consumed proof
+
+The [dossier](../design/zone-stories/MOUNTAIN_TRACTS_OF_THE_UNTAMED.md) and
+[sidecar](../../areas/story/mountaintracks.story.json) map four native outcomes.
+Check exact source objects:the wearable hidden miniature differs from the large
+stationary statue; the vampire tooth comes from one particular vampire. Two
+scales do not replace scale+tooth, and lore about killing an apprentice does not
+establish a personal-kill prerequisite. Nineteen aliases group into four responses.
+
+Keep current material distinct from history:Bumble consumes the potion. His
+gloves plus another fresh potion and moonstone heart belong to Ohnagra's separate
+Winterhaven recipe. Supplied potion fits without personal Futni history; an old
+receipt cannot restore a spent/drunk/spilled copy. Journal readiness does not
+reserve one item for competing uses or fabricate a crafting/learning receipt.
+
+Decode commands against current headers. Vine value65 is valid GRAB, while
+CLIMB556 is separate preparation; do not rename or repair a working dispatch
+from an assumed command. PUSH removes EX_BLOCKED, not EX_CLOSED, so tomb/boulder
+doors still need OPEN. Record actual selected control/actor and committed arrival
+before personal access credit; another player's opening or audience text differs.
+
+Unplaced portals/switches and missing212xx references remain builder design
+questions. Boot removes unresolved exits; this does not prove a live dangling
+exit crash or authorize new routes. Prefer truthful clues after intent review.
+Any actual repair needs a separate named fix, focused before/after proof and
+prominent news. Preserve pickup/charges/stock/terrain/PvP, especially the Fields
+intentional rift hotfix. All new credit requires active, ready accounting;
+frozen recovery remains separate.

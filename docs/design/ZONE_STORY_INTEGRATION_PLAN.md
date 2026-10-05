@@ -3020,3 +3020,25 @@ does not qualify played transactions/access/renewal. Existing schema3 cards ship
 without new runtime mechanisms or native repairs. All new credit needs active,
 ready accounting; frozen recovery separate. Fields deliberate escape hotfix and
 required replacement design remain protected.
+
+
+## Mountain Tracts: competing potion uses, shared controls and reserve boundaries
+
+The [complete dossier](zone-stories/MOUNTAIN_TRACTS_OF_THE_UNTAMED.md) closes four
+native exchanges and supporting controls. Native input/receipt, personal source,
+gift, control action, arrival and lore remain different evidence.
+
+| Requirement | Evidence | Plan and qualification |
+| --- | --- | --- |
+| Source and actual renewal | Hidden cap1 miniature/marble; hidden NORENT cap1 scale/tooth; mode2 | **ZSQ-MOUNTAINTRACKS-SOURCE-RENEWAL:** authoritative source/root/UID/custody/actor and gifts versus first source; qualify actual acquisition, worn/nested/consumed input, concurrency/retries/rollback/reward settlement/frozen recovery and actual renewal without changing scarcity. Static eligibility is insufficient. |
+| Honest material allocation | Potion can be offered to Bumble, drunk/spilled or included with gloves in Ohnagra's Winterhaven recipe | **ZSQ-MOUNTAINTRACKS-POTION-ALLOCATION:** explain two-copy Bumble→Ohnagra route, optional personal crafting history and current admitted quantity. Any reservation guidance needs selected use/live custody. Old receipt cannot replace spent material; no new mandatory source/QUAFF predicate or foreign credit. |
+| Accepted control and arrival | PUSH removes blocking but not closed doors; GRAB vine65 is valid current portal dispatch, CLIMB556 a separate preparation skill | **ZSQ-MOUNTAINTRACKS-ACCESS-RESULTS:** record selected target/actual actor/accepted unblock/open/committed arrival separately. Test already cleared, wrong/rejected command, other actor/audience, wrong object and terrain rejection; preserve native opcodes/pickup/charges/PvP. |
+| Explicit story endpoints | Three blank accepted responses; faith/apprentice/lost-tower lore; two empty S-only headers | **ZSQ-MOUNTAINTRACKS-STORY-ENDPOINTS:** builder chooses truthful response text or explicitly authors new lesson/search endpoints. Typed authoritative results are needed for learning/death/search; no per-alias or timer achievement. Native recipe does not require personal apprentice/source kills. |
+| Intended reserve/boundary design | Six unresolved raw exits removed at boot; isolated21127/21128/21149; unplaced portals/switches with absent directions | **ZSQ-MOUNTAINTRACKS-BOUNDARY-INTENT:** confirm reserve/retirement/connection before changing anything. Prefer explanation; new route/controller needs reciprocal/terrain/visibility/combat/PvP/scarcity review and a separate fix/news. No automatic activation/212xx room creation or portable travel. |
+| Accurate clues | Mild-current prose versus C50; DOWN-for-Lava-Caves at isolated21149 versus real21148 SOUTH; self-loop/numeric keywords/spelling | **ZSQ-MOUNTAINTRACKS-CLUE-CONSISTENCY:** confirm intended minimal text/metadata with original-fails/repaired-passes proof; actual repairs separate named fixes and prominent before/after news. Preserve item/quest mechanics. |
+
+Four existing-schema cards ship with no native repair or runtime extension.
+Source/projection does not qualify played transactions, QUAFF, controls, arrival
+or renewal. All new credit needs active, ready accounting; frozen recovery
+remains separate. Preserve Fields owner-confirmed escape hotfix and required
+replacement design, with the live portal stationary.

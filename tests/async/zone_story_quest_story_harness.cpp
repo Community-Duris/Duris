@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 104 &&
+		require(catalog.story_mappings.size() == 105 &&
 				tracker.summary_for(7, 42).total == 1585,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7547,6 +7547,135 @@ int main(int argc, char **argv)
 					recovered.has_discovered(7, 42, 5000) &&
 					!recovered.has_discovered(7, 42, 530),
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
+		}
+
+		{
+			const auto &monk = story_for("mountaintracks", "monk-carved-faith");
+			const auto &mage = story_for("mountaintracks", "mage-stolen-marble");
+			const auto &futni = story_for("mountaintracks", "futni-two-ingredients");
+			const auto &bumble = story_for("mountaintracks", "bumble-explorers-potion");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 209, 20900, 100, "arrival") ==
+					result::applied,
+				"Mountain Tracts discovery failed");
+			require(journey.render_journal(7, 42, 209, 10, 1, 101, false, false)
+						.find(futni.title) == std::string::npos,
+				"Mountain Tracts exposed unmet Futni");
+			for (const auto &[vnum, room] :
+			     { std::pair{ 20928, 21024 }, std::pair{ 20981, 21025 },
+			       std::pair{ 20983, 20945 }, std::pair{ 20984, 21015 } })
+				require(journey.meet_npc(7, 42, vnum, room, 102) == result::applied,
+					"Mountain Tracts encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Mountain Tracts section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[20949] = 1;
+			supplies.carried[20947] = 2;
+			supplies.carried[20907] = 1;
+			supplies.carried[20950] = 1;
+			supplies.equipped[19] = 20923;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 209, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(bumble).find("[Ready now] " + bumble.steps[1].text) !=
+						std::string::npos &&
+					section(bumble).find("[Pending] " + bumble.steps[0].text) !=
+						std::string::npos,
+				"Mountain Tracts supplied potion required personal Futni history");
+			require(section(futni).find("[Ready now] " + futni.steps[0].text) !=
+						std::string::npos &&
+					section(futni).find("[Missing now] " +
+							    futni.steps[1].text) !=
+						std::string::npos,
+				"Mountain Tracts two scales substituted for tooth");
+			require(section(monk).find("[Missing now] " + monk.steps[0].text) !=
+					std::string::npos,
+				"Mountain Tracts worn miniature or stationary statue became loose exact proof");
+			require(section(mage).find("[Missing now] " + mage.steps[0].text) !=
+					std::string::npos,
+				"Mountain Tracts other material substituted for marble");
+			require(section(bumble).find("[Pending] " + bumble.steps.back().text) !=
+					std::string::npos,
+				"Mountain Tracts reward ownership fabricated delivery");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 209).completed == 0,
+				"Mountain Tracts readiness fabricated source, access or outcomes");
+			record(journey, bumble.contracts.front(), "mountaintracks-supplied-potion",
+			       209, 21015);
+			require(journey.progress_for_zone(7, 42, 209).completed == 1 &&
+					journey.evidence_for(futni.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Mountain Tracts delivery fabricated Futni history or other outcomes");
+			supplies.carried.erase(20949);
+			journal = journey.render_journal(7, 42, 209, 10, 1, 107, false, false,
+							 &supplies);
+			require(section(bumble).find("[Missing now] " + bumble.steps[1].text) !=
+						std::string::npos &&
+					section(bumble).find("[Recorded] " +
+							     bumble.steps.back().text) !=
+						std::string::npos,
+				"Mountain Tracts accepted delivery restored spent potion");
+			for (int vnum : { 20923, 20954, 20948 })
+				supplies.carried[vnum] = 1;
+			journal = journey.render_journal(7, 42, 209, 10, 1, 109, false, false,
+							 &supplies);
+			for (const auto *entry : { &monk, &mage, &futni })
+				for (size_t step = 0; step + 1 < entry->steps.size(); step++)
+					require(section(*entry).find("[Ready now] " +
+								     entry->steps[step].text) !=
+							std::string::npos,
+						"Mountain Tracts exact supplied input did not fit");
+			// Synthetic receipts qualify projection, not source recovery, native
+			// consumption, QUAFF, control dispatch, combat or reward settlement.
+			for (const auto *entry : { &monk, &mage, &futni })
+			{
+				const auto id = std::string("mountaintracks-outcome-") + entry->id;
+				const int room = entry == &monk ? 21024 :
+						 entry == &mage ? 21025 :
+								  20945;
+				record(journey, entry->contracts.front(), id.c_str(), 209, room);
+			}
+			require(journey.progress_for_zone(7, 42, 209).completed == 4,
+				"Mountain Tracts distinct recipes collapsed");
+			supplies.carried.clear();
+			journal = journey.render_journal(7, 42, 209, 10, 1, 122, false, false,
+							 &supplies);
+			require(section(bumble).find("[Recorded] " + bumble.steps[0].text) !=
+						std::string::npos &&
+					section(bumble).find("[Missing now] " +
+							     bumble.steps[1].text) !=
+						std::string::npos,
+				"Mountain Tracts earlier Futni receipt restored spent potion");
+			for (const auto *entry : { &monk, &mage, &futni, &bumble })
+				require(section(*entry).find("[Recorded] " +
+							     entry->steps.back().text) !=
+						std::string::npos,
+					"Mountain Tracts accepted outcome lost");
+			auto replay = completion(bumble.contracts.front(),
+						 "mountaintracks-supplied-potion", 120);
+			replay.transaction.zone_number = 209;
+			replay.transaction.room_vnum = 21015;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Mountain Tracts replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 209).completed == 4 &&
+					recovered.progress_for_zone(7, 42, 209).total == 4 &&
+					!recovered.has_discovered(7, 42, 5000) &&
+					!recovered.has_discovered(7, 42, 550),
+				"Mountain Tracts recovery lost outcomes or fabricated foreign discovery");
+			for (const auto *entry : { &monk, &mage, &futni, &bumble })
+				require(recovered.evidence_for(entry->contracts.front(), 2)
+							.successful_attempts == 1,
+					"Mountain Tracts receipt lost in recovery");
 		}
 
 		{

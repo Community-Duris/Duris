@@ -160,9 +160,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 84 | Nakral's Crypt | [Comprehensive dossier](zone-stories/NAKRALS_CRYPT.md): all11 blocks/294 rooms/59 mobiles/201 objects/521 resets, F-current-holder and bounded imported/shared closure | Five cards/five recipes/nine contacts/21 aliases/14 optional checks; exact four/two wood, five same-name chunks, trophy→token→bracelet and distinct collar upgrade | No native repair. Learned words, four control actions, exact follower sources/renewal, collar presentation, stale surface exit and clue/epic investigation are builder follow-ups; preserve fixed mobility and Fields protection |
 | 85 | The Valoisian Castle | [Comprehensive dossier](zone-stories/THE_VALOISIAN_CASTLE.md): all13 blocks/174 rooms/93 mobiles/57 objects/320 resets, shared inn and bounded Surface/Verspin closure | Eight cards/eight recipes/18 contacts/26 aliases/15 optional checks; separate family/royal seals, four models, wine→dinner→token, two rose gifts and overdue note | No native repair. Personal sources/renewal/access/learning, political endpoints, blank flower responses, unfinished components and clue review require builder decisions; preserve Fields protection |
 | 86 | Harrow -The Gnome Village | [Comprehensive dossier](zone-stories/HARROW_THE_GNOME_VILLAGE.md): all29 blocks/82 rooms/59 mobiles/88 objects/280 resets, nine shops/shared dispatch and bounded imported/Surface closure | Eight cards/eight recipes/14 contacts/12 aliases/20 optional checks; ring→fresh tokens for four crafts, painting→fish, fish food→experience, pot item→clover/coins | No native repair. Source/renewal/token choice, committed travel, lucky-star entrance, clue consistency and learning remain builder work; preserve Fields hotfix |
-| 87–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 87 | Mountain Tracts of the Untamed | [Comprehensive dossier](zone-stories/MOUNTAIN_TRACTS_OF_THE_UNTAMED.md): all8 blocks/245 rooms/98 mobiles/63 objects/259 resets, shop/shared controls and bounded foreign/boundary closure | Four cards/four recipes/eight contacts/19 aliases/six optional checks; miniature→leggings, marble→bracer, scale+tooth→potion, fresh potion→gloves | No native repair. Source/renewal, potion allocation, accepted access, lore endpoints, boundary intent and clues remain builder work; preserve Fields hotfix |
+| 88–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Mountain Tracts of the Untamed (`mountaintracks`).
+The next area is The Orcish Slave Camp (`shortc`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -173,6 +174,7 @@ matches, or a candidate item graph was extracted.
 | --- | --- | --- |
 | ZSQ-BRAD-PHYSICAL-AFFILIATION / DISCOVERY / RENEWAL / EXPLORATION | Five Tower contracts retain Braddistock credit ownership; Tower encounters do not discover this journal, and owner reset mode differs from physical retiring recipients. Local exploration has no native terminal. | Keep canonical receipt identities. Add explicit physical affiliation/referrals and real source/actor renewal; admitted clue/access/custody and builder-designed lab/smuggler/campaign endpoints. Entry speech repair ships separately; missing key/weapon supply and copied prose remain proposals. |
 | ZSQ-CEOTHIA-CHOICE / TIMELINE / TARGETED-EFFECT / LEGACY-TRAINING | Four retiring guild alternatives, three independent Lenbrea rewards, breaking keys, two nested crates, foreign timeline proofs, imported agility pool and legacy tablet/scroll differ from modern epic purchases. | Six source-guided cards ship. Qualify source/recipient reset episodes, actual access/travel/targeted effects and shared-material ownership; define all-stage campaign and restore/retire legacy training only with builder intent. Pool target ambiguity is a pending shared repair, not shipped news. |
+| ZSQ-MOUNTAINTRACKS-SOURCE-RENEWAL / POTION-ALLOCATION / ACCESS-RESULTS / STORY-ENDPOINTS / BOUNDARY-INTENT / CLUE-CONSISTENCY | Hidden/NORENT cap1 proof; optional history versus consumed potion; valid GRAB vine and PUSH without OPEN; blank/lore endpoints; reserve/missing directions and misleading travel clues. | Four existing-schema cards ship. Authoritative sources/allocation/access/learning and intended boundary/text design remain builder work. No native repair, pickup, opcode change or activation. |
 | ZSQ-HARROW-SOURCE-RENEWAL / TOKEN-PROGRESSION / TRAVEL-ARRIVAL / LUCKY-STAR-ACCESS / CLUE-CONSISTENCY / LEARNED-CRAFTS | One consumed token per craft; finite alternate reward stock; exact hidden/worn sources; fixed travel and isolated lucky-star component; room echo versus ambient scenes. | Eight existing-schema cards ship; authoritative sources/reservation/access/learning and intended entrance/text need builder design. No native repair, pickup or route activation. |
 | ZSQ-VAL-SOURCE-RENEWAL / ACCESS-LEARNING / POLITICAL-ENDPOINTS / FLOWER-EXPLANATION / UNFINISHED-COMPONENTS / CLUE-CONSISTENCY | Exact F-held models, source alternatives, breaking keys, secret closed ladders, supplied dinner and two blank flower exchanges;15 isolated unfinished Veralis rooms. | Eight existing-schema cards ship. Plan authoritative source/learning/access and meaningful political endpoints; native copy/component/stock design remains builder work, no native repair or mobility activation. |
 | ZSQ-CRYPT-LEARNED-WORDS / CONTROL-ACCESS / SOURCE-RENEWAL / COLLAR-PRESENTATION / STALE-SURFACE-EXIT / CLUE-CONSISTENCY / EPIC-INVESTIGATION | Three-note magic word works; four fixed switches; F changes current proof holder; same-name chunk/collar identities differ; old surface target absent active. | Five guided cards ship. Plan authoritative learning/control/source/arrival/group facts and actual recipient renewal. Stale route/clue repairs remain builder proposals; no native fix or portability change. |
@@ -4676,3 +4678,64 @@ played source/gifts/stock/SEARCH/GET/worn recovery/teaching/portal dispatch/nati
 offer/consumption/reward settlement/combat/access/daily renewal or persistence.
 Active, ready accounting mandatory; frozen recovery separate. No accounting
 activation, DB/server operation, migration, deployment or merge.
+
+
+## Priority 87 checkpoint: Mountain Tracts of the Untamed
+
+The [complete dossier](zone-stories/MOUNTAIN_TRACTS_OF_THE_UNTAMED.md) closes all
+eight blocks(fourM/fourQ),245 rooms/86 full prose families/35 headers/578 exits/
+199 relative patterns/15 full exit texts/four complete non-exit metadata families,
+98 full mobiles/89 prose families/63 full objects and259 resets(230 exact/
+230 parent-aware families,144 expanded groups). One full shop, automatic shared
+type29 dispatch, fixed item travel, GRAB/CLIMB, QUAFF and room renumbering reviewed.
+No local literal special assignment, ACT_TEACHER, epic-teacher or ROOM_INN.
+No imported reset prototype or foreign reset group identified. Five recipes
+touch local items:four local plus Ohnagra's Winterhaven recipe; its complete
+bounded dialogue/input/reward remains foreign. Across713 active type25 objects,
+all seven fixed incoming destinations are local objects. Fifteen reciprocal
+foreign neighbor pairs and their full room records reviewed; six additional raw
+exits are unresolved. Exact numeric code scan found only ordinary chaos gear.
+
+Schema3/revision1 adds four cards/four recipes/eight contacts/19 aliases/six
+optional checks(five materials, one earlier Futni receipt). Miniature piece
+differs from the stationary large statue; Tronglodish holds exact hidden marble,
+but personal apprentice death is not required. Futni requires one exact hidden
+NORENT scale and tooth together; other vampires/decorative scales differ.
+Supplied potion fits Bumble without personal Futni history. The old receipt
+cannot restore a spent potion. Bumble consumes one; Ohnagra's foreign recipe
+needs the gloves and another fresh potion plus moonstone heart. Drinking/spilling
+also consumes potion and does not complete delivery. No faith/carving/alchemy/
+lost-tower endpoint or19 keyword achievements inferred. Three blank accepted
+responses and two S-only headers remain honest builder explanation questions.
+
+PUSH clears EX_BLOCKED but not EX_CLOSED:tomb/boulder routes still need OPEN.
+Existing **GRAB vine** at21121 uses current CMD_GRAB65→21144; CLIMB556 is a
+separate skill. No opcode repair, pickup or travel change. Two unplaced portals
+and two unplaced switches targeting absent directions stay unplaced. Five exits
+to absent212xx rooms and20999 SOUTH−1 are removed at boot; no live crash claimed.
+21127/21128 have no identified ordinary incoming route and lose their raw exits;
+21149 has no ordinary edges despite DOWN-for-Lava-Caves prose; actual connection
+is21148 SOUTH. C50 current contradicts mild-current prose; F100/F10 and fog
+sight rules remain native. New passages/activation require explicit builder intent.
+
+**No native repair ships.** Six builder-required follow-ups cover source/renewal,
+potion allocation, accepted control/arrival, lore endpoints, boundary intent and
+clue consistency. Prefer truthful explanations before mechanics. Actual repairs
+remain separate named fixes with original-fails/repaired-passes proof and
+prominent before/after news. Preserve owner-confirmed Fields escape hotfix and
+required replacement design; no mobile working-rift quest proof.
+
+Required checks:source/schema, all105 Python/C++ loader/projection journeys,
+full production regression, maintained build, changed/staged formatting,
+links/whitespace and preservation/publication proof. All104 prior journals,
+2668 native definitions/fingerprint/revision2/registry and original220 queue
+stay unchanged. Exact51117-byte previous Harrow PR body is archived with SHA-256;
+all ten repair/news/accounting sections retained verbatim. Catalog105 journals/
+1585 achievements/1441 potential dailies/2195 rows:four authored cards replace
+four fallback units without changing global counts.
+**87/220 source-comprehensive,133 pending; The Orcish Slave Camp (`shortc`) next.**
+Goal remains active. Synthetic receipts do not qualify played source/gifts/SEARCH/
+GET/worn recovery/native offers/consumption/QUAFF/control dispatch/arrival/combat/
+reward settlement/actual daily renewal or persistence. Active, ready accounting
+mandatory; frozen recovery separate. No accounting activation, DB/server
+operation, migration, deployment or merge.

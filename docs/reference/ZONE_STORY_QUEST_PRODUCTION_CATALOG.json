@@ -50897,6 +50897,285 @@
     {
       "contacts": [
         {
+          "description": "Starts in21024; seeks faith and accepts the miniature piece, not the large statue.",
+          "keyword": "monk",
+          "mob_vnum": 20928,
+          "name": "a tall monk",
+          "topics": [
+            "statue",
+            "astansus",
+            "underdark",
+            "hi"
+          ]
+        },
+        {
+          "description": "Starts in21025; accepts Tronglodish\u2019s exact marble. Dialogue about the apprentice\u2019s death is not a personal-kill predicate.",
+          "keyword": "mage",
+          "mob_vnum": 20981,
+          "name": "an old half-orc mage",
+          "topics": [
+            "hi",
+            "half",
+            "orc",
+            "half-orc"
+          ]
+        },
+        {
+          "description": "Starts in laboratory20945; one scale and one tooth make one potion.",
+          "keyword": "futni",
+          "mob_vnum": 20983,
+          "name": "Futni",
+          "topics": [
+            "hi",
+            "quest",
+            "elementalist",
+            "potion",
+            "drow",
+            "futni"
+          ]
+        },
+        {
+          "description": "Starts in21015; accepts a fresh potion for gloves. Lost-tower arrival has no implemented local endpoint.",
+          "keyword": "bumble",
+          "mob_vnum": 20984,
+          "name": "Bumble",
+          "topics": [
+            "hi",
+            "quest",
+            "bumble",
+            "explorer",
+            "potion"
+          ]
+        },
+        {
+          "description": "Starts in secret laboratory20952 carrying the hidden circular marble piece.",
+          "keyword": "tronglodish",
+          "mob_vnum": 20982,
+          "name": "Tronglodish",
+          "topics": []
+        },
+        {
+          "description": "Starts in cavern20979 carrying the exact hidden NORENT green scale.",
+          "keyword": "dragon",
+          "mob_vnum": 20978,
+          "name": "a green dragon",
+          "topics": []
+        },
+        {
+          "description": "Starts in crypt20978 carrying the exact hidden NORENT tooth; other local vampires differ.",
+          "keyword": "vampire",
+          "mob_vnum": 20979,
+          "name": "a bloodthirsty vampire",
+          "topics": []
+        },
+        {
+          "description": "Shop keeper in21025 produces five ordinary goods, not quest ingredients or finished quest receipts.",
+          "keyword": "riffleraffle",
+          "mob_vnum": 20972,
+          "name": "Riffleraffle",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Recover the monk\u2019s miniature and the mage\u2019s stolen marble, mix Futni\u2019s two-ingredient potion, then choose whether to offer a fresh potion to Bumble or keep it for another use. Exact materials, optional history and accepted exchanges remain distinct.",
+      "orientation": [
+        "Surface approaches enter20900,20942 and21042. The lower network also connects to connector passages, shafts, lava, labyrinth, underdark, nexus and Lava Caves. Existing fog, terrain, water, falls, doors, visibility and combat apply. Source locations do not guarantee safe access.",
+        "Ask the monk statue, astansus, underdark or hi; the mage hi, half, orc or half-orc; Futni hi, quest, elementalist, potion, drow or futni; Bumble hi, quest, bumble, explorer or potion. Nineteen aliases select four addressed response families. There are no local qc_action scenes or individual keyword achievements.",
+        "The monk\u2019s small piece20923 is a hidden floor item at20941 and may be worn; carry it loose. The large statue20907 remains stationary and non-takeable. Secret EAST from20933 leads to the chamber. The accepted leggings exchange does not prove carving, conversion or a deity choice.",
+        "Tronglodish20982 carries marble20954 in secret laboratory20952. The mage20981 at21025 accepts that item for bracer20955. His threat does not require a personal apprentice kill. Secret SOUTH from20933 has closed-door rules; the marble is not an entrance key or travel control.",
+        "Futni20983 at20945 needs scale20947 from the enormous green dragon20978/20979 and tooth20948 from the bloodthirsty vampire20979/20978. Both exact sources are hidden and NORENT with cap1. Other vampires and incidental scale prose do not substitute. One of each is required together, and gifts remain valid materials.",
+        "Potion20949 can be offered to Bumble20984 at21015 for gloves20950. Earlier Futni history is optional; spent history cannot restore the item. QUAFF uses native potion rules and can consume or spill it. Drinking is a different use, not a delivery step or quest achievement.",
+        "Ohnagra55127 in Winterhaven separately needs moonstone heart12001, explorer gloves20950 and a fresh potion20949 for reward55062. Completing Bumble first consumes one potion; the later foreign recipe needs another. Winterhaven remains the owner of that accepted outcome, with no automatic foreign discovery or credit.",
+        "PUSH fence20952 at20918 clears its blocked NORTH passage. PUSH earth20960 at20922 or earth20918 at20973 clears the paired blocked UP/DOWN route. PUSH tombstone20917 at20949 and boulder20935 at21139 clears blocking but does not OPEN their closed DOWN/SOUTH doors. Already cleared passage, room message and another actor\u2019s action do not prove your personal access.",
+        "Existing floor travel uses ENTER tower20900, cave20902, spring20903 or tunnel20925, and GRAB vine20936 at21121 leads to21144. Vine opcode65 is the current GRAB command; CLIMB556 is a separate preparation skill. All travel items remain non-takeable with original charges\u22121 and shared admission. Seeing a command or portal does not prove actual arrival.",
+        "Unplaced tower20919 and black-hole20943 travel items remain unplaced. Unplaced switches20941/20945 target directions absent from their rooms. No activation, pickup, replacement command or invented passage is supplied by this journal. Preserve the Fields Between intentional PvP escape hotfix and required replacement design.",
+        "Five raw exits point to absent21202/21204/21206/21208 rooms;20999 SOUTH uses\u22121. Boot renumbering removes unresolved exits. Rooms21127/21128 have no identified ordinary incoming route, and21149 has no exits despite its DOWN-for-Lava-Caves prose; the actual boundary is21148 SOUTH. Builder intent must precede any route repair.",
+        "Wild water20913 carries current metadata C50 1 despite its mild-current prose; waterfall20923\u201327 carries F100. Eleven other rooms carry F10. Fog\u2019s sight-blocking flag is not a flight requirement. Do not infer safe travel, water immunity, flying or a hidden-key prerequisite from room names.",
+        "All four recipes preserve exact native input/reward identities and do not make recipients depart. Three accepted responses are blank; the journal supplies a truthful recipe explanation without inventing an endpoint. Empty Putsie/farmer quest headers, barbarian lore, faith and lost-tower search have no additional implemented native outcome.",
+        "All new discovery, encounter, journal, achievement and daily credit requires active, ready accounting; frozen recovery remains separate. Daily candidates need actual live material/recipient renewal under mode2. No native zone or quest repair, mobility, stock, scarcity, potion, shop or PvP change ships."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "mountaintracks",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:20923;receive=I:20930;disappear=0",
+              "giver_vnum": 20928
+            }
+          ],
+          "id": "monk-carved-faith",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "It starts hidden on the floor of statue chamber20941, reached by the secret EAST exit from20933. The large non-takeable statue20907 is scenery, not this input. Remove the miniature from equipment if worn. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "carved-piece",
+              "item_vnums": [
+                20923
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small carved piece"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:20923;receive=I:20930;disappear=0",
+                  "giver_vnum": 20928
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Source recovery, addressed dialogue, access, combat, faith, potion use and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Bring the small carved piece of Astansus to the tall monk for enchanted mithril leggings. The large stationary statue is different. Returning the piece does not prove you carved it, chose a faith or personally found its hidden source.",
+          "title": "Tall monk: the small carved piece"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:20954;receive=I:20955;disappear=0",
+              "giver_vnum": 20981
+            }
+          ],
+          "id": "mage-stolen-marble",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Tronglodish20982 starts carrying the hidden piece in secret laboratory20952. The secret SOUTH door from20933 has native closed-door rules. The marble is a quest object, not a key or travel controller. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "marble",
+              "item_vnums": [
+                20954
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the circular marble piece"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:20954;receive=I:20955;disappear=0",
+                  "giver_vnum": 20981
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Source recovery, addressed dialogue, access, combat, faith, potion use and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Return Tronglodish\u2019s exact circular marble piece to the old half-orc mage for the golden serpent bracer. The mage threatens his apprentice, but the recipe requires the item rather than proof of your personal kill. A matching supplied piece also fits.",
+          "title": "Half-orc mage: reclaim the marble piece"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:20947,I:20948;receive=I:20949;disappear=0",
+              "giver_vnum": 20983
+            }
+          ],
+          "id": "futni-two-ingredients",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The enormous green dragon20978 starts carrying it in cavern20979. It is hidden and NORENT with cap1; incidental scales in room prose are not extra copies. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "scale",
+              "item_vnums": [
+                20947
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the green dragon scale"
+            },
+            {
+              "count": 1,
+              "hint": "The bloodthirsty vampire20979 starts carrying it in crypt20978. It is hidden and NORENT with cap1; the vampire noble20976 and other vampires do not have this exact tooth reset. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "tooth",
+              "item_vnums": [
+                20948
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the vampire\u2019s tooth"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:20947,I:20948;receive=I:20949;disappear=0",
+                  "giver_vnum": 20983
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Source recovery, addressed dialogue, access, combat, faith, potion use and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer one exact green dragon scale and one exact vampire tooth together for a glowing green potion. Two scales cannot replace the tooth. This exchange records mixing the potion; it does not prove your source kills, learned chemistry or later potion use.",
+          "title": "Futni: mix the explorer\u2019s potion"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:20949;receive=I:20950;disappear=0",
+              "giver_vnum": 20984
+            }
+          ],
+          "id": "bumble-explorers-potion",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:20947,I:20948;receive=I:20949;disappear=0",
+                  "giver_vnum": 20983
+                }
+              ],
+              "hint": "Futni\u2019s two-ingredient receipt explains the potion source. It is optional personal history; a supplied matching potion also fits. An earlier receipt cannot replace a potion already offered, drunk or spilled.",
+              "id": "earlier-mixture",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: mix Futni\u2019s potion"
+            },
+            {
+              "count": 1,
+              "hint": "Futni rewards this exact potion. Bumble consumes it. Ohnagra\u2019s separate Winterhaven recipe needs the gloves and another fresh copy, plus a moonstone heart; one potion cannot fund both exchanges. Native QUAFF can consume or spill it without completing delivery. Carry the exact item loose; worn or nested copies do not count. Current possession does not prove personal recovery or distinguish the original source from a gift.",
+              "id": "potion",
+              "item_vnums": [
+                20949
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a fresh glowing green potion"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:20949;receive=I:20950;disappear=0",
+                  "giver_vnum": 20984
+                }
+              ],
+              "hint": "An accepted native receipt records this exact exchange. Source recovery, addressed dialogue, access, combat, faith, potion use and reward settlement are separate facts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer a fresh glowing green potion to Bumble for the explorer\u2019s mithril mesh gloves. A supplied matching potion fits without personal Futni history. The lost tower is his search motive, not another implemented completion step.",
+          "title": "Bumble: a potion for the explorer"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Tired halfling starts at the shallow lagoon and accepts the exact ale kind. Tankard filling is an optional earlier service, not an additional required receipt.",
           "keyword": "halfling",
           "mob_vnum": 22225,
