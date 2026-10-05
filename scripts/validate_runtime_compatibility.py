@@ -152,7 +152,7 @@ def load() -> dict:
             "runtime compatibility manifest fields differ"
         )
     if value["manifest_version"] != 1 or value["baseline_table_count"] != 170 or \
-            value["current_table_count"] != 226:
+            value["current_table_count"] != 228:
         raise migration_runner.MigrationContractError("runtime manifest version/count drift")
     if not isinstance(value["runtime_table_sql_list"], str) or not re.fullmatch(
             r"'[A-Za-z0-9_]+'(?:,'[A-Za-z0-9_]+')*",
@@ -164,6 +164,11 @@ def load() -> dict:
                                                                  value[field]):
             raise migration_runner.MigrationContractError("runtime fingerprint is invalid")
     fingerprints = value["normalized_metadata_fingerprints"]
+    if isinstance(fingerprints, dict) and set(fingerprints) == {
+            "mysql8", "mariadb10_11"} and any(
+                item is None for item in fingerprints.values()):
+        raise migration_runner.MigrationContractError(
+            "0061 runtime metadata fingerprints await actual engine measurement")
     if not isinstance(fingerprints, dict) or set(fingerprints) != {
             "mysql8", "mariadb10_11"} or any(
                 not isinstance(item, str) or not re.fullmatch(r"[0-9a-f]{64}", item)
@@ -203,7 +208,7 @@ def validate() -> dict:
         raise migration_runner.MigrationContractError("runtime and migration baseline drift")
     staging = migration_runner.load_manifest(
         ROOT / "migrations/migration_manifest.staging_0045.json")
-    if len(migration.migrations) != 56 or len(staging.migrations) != 56 or \
+    if len(migration.migrations) != 61 or len(staging.migrations) != 61 or \
             staging.baseline_id != migration.baseline_id or \
             staging.required_tables != migration.required_tables or \
             staging.migrations[:44] != migration.migrations[:44] or \
@@ -220,7 +225,7 @@ def validate() -> dict:
         ROOT / "migrations/migration_manifest.master_0031.json")
     # Receipt IDs are immutable names; sequence is the declared application order.
     # Reuse 0051's identical SQL/verifier bytes without renaming master's receipt.
-    if len(master.migrations) != 56 or master.baseline_id != migration.baseline_id or \
+    if len(master.migrations) != 61 or master.baseline_id != migration.baseline_id or \
             master.required_tables != migration.required_tables or \
             master.migrations[:30] != migration.migrations[:30] or \
             master.migrations[30] != replace(migration.migrations[50], sequence=31,

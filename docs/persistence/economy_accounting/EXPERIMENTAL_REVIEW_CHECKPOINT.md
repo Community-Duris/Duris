@@ -1,5 +1,14 @@
 # Experimental accounting review checkpoint
 
+## Current combined source qualification — 2026-10-05
+
+[Current source and evidence](PLAN1_CURRENT_COMBINED_QUALIFICATION_2026-10-05.md) supersede earlier installation/build status.
+Reviewed native/schema61 is installed; both production builds and the reviewed54
+both-engine audit pass. Latest original-diagnostic qualification passes both engines; SHOP74
+rerun remains in progress. Restore fixture milestone3e93d4cb8 is pushed. Private
+quest ownership/root work continues; no full plan, R1–R8, release or activation
+completion is claimed. Original requirements and inactive gates stay.
+
 Date: 2026-09-30. Review branch: `Community-Duris/Duris:experimental-accounting`.
 
 **This branch is an implementation checkpoint for public code review.

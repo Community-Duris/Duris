@@ -243,6 +243,20 @@ class Reconciler:
         self.audit_guild_treasuries(snapshot.get("backend"), native)
         holdings = self.table(native, "holdings")
         items = self.table(native, "items")
+        # Validate before indexing: Python considers float/bool UID aliases the
+        # same dictionary key as native integers. These are immutable position
+        # projections, not values to coerce into an opening or current owner.
+        for positions in (tables["item_origins"], items):
+            for row in positions:
+                owner = row.get("owner")
+                if (not unsigned_revision(row.get("uid")) or not row["uid"] or
+                        not unsigned_revision(row.get("root")) or "parent" not in row or
+                        (row["parent"] is not None and
+                         (not unsigned_revision(row["parent"]) or not row["parent"])) or
+                        not isinstance(owner, list) or len(owner) != 3 or
+                        type(owner[0]) is not int or not 0 <= owner[0] <= 12 or
+                        any(not unsigned_revision(value) for value in owner[1:])):
+                    raise SnapshotError("invalid item position")
         unreferenced_uid_events = native.get("unreferenced_uid_events")
         uid_event_coverage = native.get("uid_event_coverage")
         if unreferenced_uid_events is None and snapshot.get("backend") == "sql_partial":

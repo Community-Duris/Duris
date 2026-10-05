@@ -1,5 +1,14 @@
 # Double-entry economy: remaining requirements
 
+## Current combined source qualification — 2026-10-05
+
+[Current source and evidence](PLAN1_CURRENT_COMBINED_QUALIFICATION_2026-10-05.md) supersede earlier installation/build status.
+Reviewed native/schema61 is installed; both production builds and the reviewed54
+both-engine audit pass. Latest original-diagnostic qualification passes both engines; SHOP74
+rerun remains in progress. Restore fixture milestone3e93d4cb8 is pushed. Private
+quest ownership/root work continues; no full plan, R1–R8, release or activation
+completion is claimed. Original requirements and inactive gates stay.
+
 ## Original baseline qualification and narrow reader handoff — 2026-10-05
 
 [The retained original-owner evidence](PLAN1_BASELINE_NATIVE_QUALIFICATION_HANDOFF_2026-10-05.md) records both-engine genuineC05

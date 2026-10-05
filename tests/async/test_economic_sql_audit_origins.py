@@ -788,7 +788,7 @@ class BaselineVersionTests(unittest.TestCase):
         if valid:
             result = capture(connection, LINEAGE, EPOCH)
         else:
-            with self.assertRaises(ValueError):
+            with self.assertRaises(OriginError):
                 capture(connection, LINEAGE, EPOCH)
             result = None
         self.assertEqual(row, before)
@@ -876,6 +876,31 @@ class BaselineVersionTests(unittest.TestCase):
         for offset, value in ((248, struct.pack("<H", 1)), (344, struct.pack("<H", 43))):
             with self.subTest(offset=offset):
                 self.read(self.changed(row, offset, value), False)
+
+    def test_invalid_positions_preserve_retained_claim_origin_refusals(self):
+        row = self.row()
+        damaged = [self.changed(row, offset, b"\x01") for offset in range(250, 256)]
+        damaged += [self.row(positions=[(81, (1, 1, 7, 0, 82, 0, 2, 0))]),
+                    self.row(positions=[(81, (1, 1, 7, 0, 81, 82, 2, 0))])]
+        for row in damaged:
+            with self.subTest(witness_digest=row["witness_digest"].hex()):
+                before = copy.deepcopy(row)
+                with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                    decode_witness(row, LINEAGE, EPOCH, OPENING)
+                self.read(row, False)
+                claims = [{"operation_reason": 38, "operation_id": OP.hex(),
+                           "operation_lineage": LINEAGE.hex(), "operation_epoch": EPOCH.hex()}
+                          for _ in range(2)]
+                cursor = mock.Mock()
+                cursor.fetchone.return_value = {"row_count": 1, "blob_bytes": 1000, "projection_rows": 6}
+                with mock.patch.object(snapshot_exporter, "read_origins_in_transaction",
+                        side_effect=lambda *args: decode_witness(row, LINEAGE, EPOCH, OPENING)) as read:
+                    snapshot_exporter.bind_baseline_claim_witnesses(cursor, LINEAGE, bytes.fromhex("33" * 16),
+                        claims, {"baseline_source_events": {}})
+                    read.assert_called_once_with(cursor, LINEAGE, EPOCH)
+                self.assertEqual([claim["baseline_witness"] for claim in claims], [None, None])
+                self.assertEqual(row, before)
+                self.assertTrue(all(call.args[0].startswith("SELECT ") for call in cursor.execute.call_args_list))
 
     def test_native_mobile_invalid_slot_state_owner_and_forest_refuse(self):
         invalid = [(12, 1, 42, 0, 81, 0, 2, 44), (12, 1, 42, 0, 81, 0, 2, 65535),
@@ -1029,12 +1054,13 @@ class NativeSQLOriginTests(unittest.TestCase):
                 fields.update(zip(("delta_copper", "delta_silver", "delta_gold", "delta_platinum", "copper_value"),
                                   struct.unpack_from("<5q", plan, offset + 8)))
                 insert("economic_accounting_coin_posting", fields)
+            witness_version, item_stride = origin_exporter.witness_layout(blob)
             holdings, items = struct.unpack_from("<II", blob, 184)
             insert("economic_baseline_witness", dict(operation_id=op, lineage=lineage, epoch=epoch,
-                   book_revision=revision, witness_version=1, holding_count=holdings, item_count=items,
+                   book_revision=revision, witness_version=witness_version, holding_count=holdings, item_count=items,
                    witness_digest=hashlib.sha256(blob).digest(), canonical_witness=blob))
             identities = [(1, struct.unpack_from("<Q", blob, 192 + n * 112 + 20)[0]) for n in range(holdings)]
-            identities += [(2, struct.unpack_from("<Q", blob, 192 + holdings * 112 + n * 88)[0]) for n in range(items)]
+            identities += [(2, struct.unpack_from("<Q", blob, 192 + holdings * 112 + n * item_stride)[0]) for n in range(items)]
             for kind, identity in identities:
                 insert("economic_baseline_reservation", dict(lineage=lineage, epoch=epoch,
                        identity_kind=kind, identity_id=identity, operation_id=op))
@@ -1062,7 +1088,7 @@ class NativeSQLOriginTests(unittest.TestCase):
             # run_pending closes its owned SQL session; inspect history in a new private one.
             terminal = sql(env, "SELECT sequence_number,migration_id FROM mud_schema_history "
                                 "ORDER BY sequence_number DESC LIMIT 1")
-            self.assertEqual(terminal, "56\t0056_spell_ward_durability")
+            self.assertEqual(terminal, "61\t0061_economic_baseline_equipment")
             print("ORIGIN_SQL_SCHEMA " + engine + " " + version + " through=" + terminal.replace("\t", " "), flush=True)
             owner = pymysql.connect(unix_socket=env["DB_SOCKET"], user="root", database="duris_restore",
                                     autocommit=True, cursorclass=pymysql.cursors.DictCursor)
@@ -1168,6 +1194,70 @@ class NativeSQLOriginTests(unittest.TestCase):
                     self.assertEqual(reads, {"captures": 7, "refusals": 7, "rollbacks": 14})
                     print("PASS native-origin " + engine + " " + json.dumps(reads, sort_keys=True) +
                           " SELECT-only bytes-unchanged inactive", flush=True)
+                    # Negative SELECT projections preserve the actual input
+                    # version's layout before corrupting v2 positions. These
+                    # projections do not establish complete native capture.
+                    item_count, = struct.unpack_from("<I", blob, 188)
+                    item_offset = 192 + holdings * 112
+                    version, stride = origin_exporter.witness_layout(blob)
+                    if version == 1:
+                        projected = bytearray(blob[:item_offset])
+                        for index in range(item_count):
+                            start = item_offset + index * stride
+                            projected += blob[start:start + 56] + bytes(8) + blob[start + 56:start + stride]
+                        projected[:4] = b"EAB2"
+                        struct.pack_into("<H", projected, 4, 2)
+                        struct.pack_into("<I", projected, 8, len(projected))
+                    else:
+                        self.assertEqual(version, 2)
+                        projected = bytearray(blob)
+                    uid, = struct.unpack_from("<Q", projected, item_offset)
+                    self.assertEqual(struct.unpack_from("<Q", projected, item_offset + 32)[0], uid)
+                    self.assertEqual(struct.unpack_from("<Q", projected, item_offset + 40)[0], 0)
+                    uids = {struct.unpack_from("<Q", projected, item_offset + index * 96)[0]
+                            for index in range(item_count)}
+                    missing = 1
+                    while missing in uids:
+                        missing += 1
+                    cuts = [("padding-" + str(offset), item_offset + offset, b"\x01")
+                            for offset in range(58, 64)]
+                    cuts += [("root", item_offset + 32, struct.pack("<Q", missing)),
+                             ("parent", item_offset + 40, struct.pack("<Q", missing))]
+                    observations = []
+                    for label, offset, value in cuts:
+                        damaged = projected.copy()
+                        damaged[offset:offset + len(value)] = value
+                        for exporter in (origin_exporter, snapshot_exporter):
+                            before = database_rows()
+                            actual = reader.cursor()
+                            cursor = mock.Mock(wraps=actual)
+                            connection = mock.Mock(wraps=reader)
+                            connection.cursor.return_value = cursor
+
+                            def projected_rows():
+                                rows = copy.deepcopy(actual.fetchall())
+                                for row in rows:
+                                    if row.get("operation_id") == op and "canonical_witness" in row:
+                                        row.update(canonical_witness=bytes(damaged), witness_version=2,
+                                                   witness_digest=hashlib.sha256(damaged).digest())
+                                return rows
+
+                            cursor.fetchall.side_effect = projected_rows
+                            with self.subTest(engine=engine, label=label, exporter=exporter.__name__):
+                                with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                                    exporter.capture(connection, blob[16:32], blob[32:48])
+                            connection.rollback.assert_called_once_with()
+                            cursor.close.assert_called_once_with()
+                            self.assertTrue(all(call.args[0].startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
+                                                for call in cursor.execute.call_args_list))
+                            self.assertEqual(database_rows(), before)
+                            observations.append(dict(label=label, exporter=exporter.__name__,
+                                refused="EAB1 committed root mismatch", rollback_calls=1, cursor_closed=True,
+                                read_only=True, database_unchanged=True, negative_projection=True))
+                    self.assertEqual(len(observations), 16)
+                    (candidate/"position-refusals.json").write_text(json.dumps(observations,indent=2)+'\n')
+                    print("PASS projected-origin-position " + engine + " " + str(len(observations)) +
+                          " controlled-refusals SELECT-only bytes-unchanged full-native-capture-unqualified", flush=True)
                 finally:
                     reader.close()
             finally:

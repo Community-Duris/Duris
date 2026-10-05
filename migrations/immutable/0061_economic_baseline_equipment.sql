@@ -1,20 +1,30 @@
-#!/usr/bin/env python3
-"""Read-only exact baseline retention metadata verification; no checkout .env."""
-import argparse
-import re
-import sys
-from verify_economy_accounting_schema import Client, VerificationError
-
-TABLES = ('economic_baseline_control', 'economic_baseline_witness', 'economic_baseline_reservation')
-HISTORICAL_0032_EXPECTED = {'mysql8': 'f0551ebf630d1e18f4bdec863f239da3d974f783f3acafbc243483b8e67bf3bc', 'mariadb10_11': '778e7d3815bc4c66d2bb13072c9bc6689df9008a332bee02b5fd3c84548e0e3e'}
-
-# Current0061 metadata measured on both owned engines; original hashes stay historical.
-EXPECTED = {'mysql8': '858f37fb10734428601d4a10bacb1892154d6fb77cd656fe8a90a004ef00016d', 'mariadb10_11': '31f31065ee4e95d08049748eb49372a71ab7569f2f775aaaa9b1dbebf0978272'}
-
-# The accepted0061 canonical reader preserves phase ordering (ordinary T/C/I/F/K,
-# then MySQL enforcement E), counts NULL rows, and refuses truncated GROUP_CONCAT.
-METADATA_QUERY = """SET @baseline_v2_engine = CASE WHEN VERSION() LIKE '10.11.%MariaDB%' THEN 'mariadb'
+-- Exact PRE/POST fingerprints measured on owned MySQL8 and MariaDB10.11 clones.
+-- New0061 follows0058; immutable0032 and its historical v1 CHECK stay exact.
+-- No historical row rewrite. Exact preimage -> one ALTER; exact post -> no-op.
+SET @baseline_v2_engine = CASE WHEN VERSION() LIKE '10.11.%MariaDB%' THEN 'mariadb'
     WHEN VERSION() LIKE '8.0.%' AND LOCATE('MariaDB',VERSION())=0 THEN 'mysql' ELSE NULL END;
+SET @baseline_v2_pre = CASE @baseline_v2_engine
+    WHEN 'mysql' THEN '49fec7b149d1731df804f048b4eac966fb7013d652a446eb627638f93ad67ee9' WHEN 'mariadb' THEN '5e2b9758c2bb0776b13f007f991f2ddf74d9cb57612426270a2b54df30d9c409' ELSE NULL END;
+SET @baseline_v2_post = CASE @baseline_v2_engine
+    WHEN 'mysql' THEN '858f37fb10734428601d4a10bacb1892154d6fb77cd656fe8a90a004ef00016d' WHEN 'mariadb' THEN '31f31065ee4e95d08049748eb49372a71ab7569f2f775aaaa9b1dbebf0978272' ELSE NULL END;
+SET @baseline_v2_sql = IF(@baseline_v2_engine IS NOT NULL
+    AND OCTET_LENGTH(@baseline_v2_pre)=64 AND @baseline_v2_pre REGEXP '^[0-9a-f]{64}$'
+    AND OCTET_LENGTH(@baseline_v2_post)=64 AND @baseline_v2_post REGEXP '^[0-9a-f]{64}$',
+    'SELECT 1', 'DURIS_0061_REFUSE_UNMEASURED_OR_UNSUPPORTED_METADATA');
+PREPARE baseline_v2_stmt FROM @baseline_v2_sql;
+EXECUTE baseline_v2_stmt;
+DEALLOCATE PREPARE baseline_v2_stmt;
+SET @baseline_v2_sql = IF(@baseline_v2_engine='mariadb',
+    'SELECT @@SESSION.check_constraint_checks INTO @baseline_v2_checks_enabled',
+    'SELECT 1 INTO @baseline_v2_checks_enabled');
+PREPARE baseline_v2_stmt FROM @baseline_v2_sql;
+EXECUTE baseline_v2_stmt;
+DEALLOCATE PREPARE baseline_v2_stmt;
+SET @baseline_v2_sql = IF(@baseline_v2_checks_enabled=1,
+    'SELECT 1', 'DURIS_0061_REFUSE_DISABLED_CHECKS');
+PREPARE baseline_v2_stmt FROM @baseline_v2_sql;
+EXECUTE baseline_v2_stmt;
+DEALLOCATE PREPARE baseline_v2_stmt;
 SET @baseline_v2_previous_concat = @@SESSION.group_concat_max_len;
 SET SESSION group_concat_max_len=65536;
 SET @baseline_v2_read = IF(@baseline_v2_engine='mysql',
@@ -74,49 +84,34 @@ WHERE t.constraint_schema=DATABASE() AND t.table_name IN (''economic_baseline_co
 PREPARE baseline_v2_stmt FROM @baseline_v2_read;
 EXECUTE baseline_v2_stmt;
 DEALLOCATE PREPARE baseline_v2_stmt;
+-- Check complete bounded byte count as well as digest, never a truncated prefix.
+SET @baseline_v2_complete = @baseline_v2_row_count BETWEEN 1 AND 4096
+    AND @baseline_v2_nonnull_rows=@baseline_v2_row_count
+    AND @baseline_v2_expected_bytes BETWEEN 1 AND 65536
+    AND @baseline_v2_expected_bytes=@baseline_v2_actual_bytes;
+SET @baseline_v2_alter = IF(@baseline_v2_engine='mysql',
+'ALTER TABLE economic_baseline_witness DROP CHECK ck_economic_baseline_witness_shape, ADD CONSTRAINT ck_economic_baseline_witness_shape CHECK (holding_count<=3071 AND item_count<=6000 AND (
+        (witness_version=1 AND OCTET_LENGTH(canonical_witness)=192+112*holding_count+88*item_count AND SUBSTRING(canonical_witness,1,4)=X''45414231'') OR
+        (witness_version=2 AND OCTET_LENGTH(canonical_witness)=192+112*holding_count+96*item_count AND SUBSTRING(canonical_witness,1,4)=X''45414232'' AND SUBSTRING(canonical_witness,5,2)=X''0200'' AND SUBSTRING(canonical_witness,7,2)=X''C000'')))',
+'ALTER TABLE economic_baseline_witness DROP CONSTRAINT ck_economic_baseline_witness_shape, ADD CONSTRAINT ck_economic_baseline_witness_shape CHECK (holding_count<=3071 AND item_count<=6000 AND (
+        (witness_version=1 AND OCTET_LENGTH(canonical_witness)=192+112*holding_count+88*item_count AND SUBSTRING(canonical_witness,1,4)=X''45414231'') OR
+        (witness_version=2 AND OCTET_LENGTH(canonical_witness)=192+112*holding_count+96*item_count AND SUBSTRING(canonical_witness,1,4)=X''45414232'' AND SUBSTRING(canonical_witness,5,2)=X''0200'' AND SUBSTRING(canonical_witness,7,2)=X''C000'')))');
+SET @baseline_v2_sql = IF(@baseline_v2_complete AND BINARY @baseline_v2_actual=BINARY @baseline_v2_post,
+    'SELECT 1', IF(@baseline_v2_complete AND BINARY @baseline_v2_actual=BINARY @baseline_v2_pre,
+    @baseline_v2_alter, 'DURIS_0061_REFUSE_DIVERGENT_BASELINE_METADATA'));
+PREPARE baseline_v2_stmt FROM @baseline_v2_sql;
+EXECUTE baseline_v2_stmt;
+DEALLOCATE PREPARE baseline_v2_stmt;
+PREPARE baseline_v2_stmt FROM @baseline_v2_read;
+EXECUTE baseline_v2_stmt;
+DEALLOCATE PREPARE baseline_v2_stmt;
 SET SESSION group_concat_max_len=@baseline_v2_previous_concat;
-SELECT @baseline_v2_row_count,@baseline_v2_nonnull_rows,@baseline_v2_expected_bytes,
-       @baseline_v2_actual_bytes,@baseline_v2_actual;
-"""
-
-def fingerprint(client):
-    version = client.sql('SELECT VERSION();').strip()
-    if version.startswith('10.11.') and 'MariaDB' in version:
-        engine = 'mariadb10_11'
-        if client.sql('SELECT @@SESSION.check_constraint_checks;').strip() != '1':
-            raise VerificationError('baseline equipment schema metadata fingerprint mismatch: disabled checks')
-    elif version.startswith('8.0.') and 'MariaDB' not in version:
-        engine = 'mysql8'
-    else:
-        raise VerificationError('unsupported database engine for baseline equipment schema')
-    metadata = client.sql(METADATA_QUERY).strip()
-    if not re.fullmatch(r'[0-9]+\t[0-9]+\t[0-9]+\t[0-9]+\t[0-9a-f]{64}', metadata):
-        raise VerificationError('baseline equipment schema metadata fingerprint mismatch: invalid aggregate')
-    rows, nonnull, expected_bytes, actual_bytes, actual = metadata.split('\t')
-    if len(rows) > 4 or len(nonnull) > 4 or len(expected_bytes) > 5 or len(actual_bytes) > 5:
-        raise VerificationError('baseline equipment schema metadata fingerprint mismatch: unbounded aggregate')
-    if not (1 <= int(rows) <= 4096 and int(nonnull) == int(rows) and
-            1 <= int(expected_bytes) <= 65536 and int(actual_bytes) == int(expected_bytes)):
-        raise VerificationError('baseline equipment schema metadata fingerprint mismatch: NULL or truncated aggregate')
-    return engine, actual
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--print-fingerprint', action='store_true')
-    args = parser.parse_args()
-    engine, actual = fingerprint(Client())
-    if args.print_fingerprint:
-        print(engine + ' ' + actual)
-    elif EXPECTED[engine] is None:
-        raise VerificationError('0061 baseline metadata awaits actual engine measurement')
-    elif actual != EXPECTED[engine]:
-        raise VerificationError('baseline retention metadata fingerprint mismatch')
-    else:
-        print('baseline retention schema verified: 3 InnoDB tables, exact metadata')
-
-if __name__ == '__main__':
-    try:
-        main()
-    except (VerificationError, OSError) as error:
-        print('baseline schema verification failed: ' + str(error), file=sys.stderr)
-        raise SystemExit(1)
+SET @baseline_v2_sql = IF(@baseline_v2_row_count BETWEEN 1 AND 4096
+    AND @baseline_v2_nonnull_rows=@baseline_v2_row_count
+    AND @baseline_v2_expected_bytes BETWEEN 1 AND 65536
+    AND @baseline_v2_expected_bytes=@baseline_v2_actual_bytes
+    AND BINARY @baseline_v2_actual=BINARY @baseline_v2_post,
+    'SELECT 1', 'DURIS_0061_REFUSE_POST_ALTER_BASELINE_METADATA');
+PREPARE baseline_v2_stmt FROM @baseline_v2_sql;
+EXECUTE baseline_v2_stmt;
+DEALLOCATE PREPARE baseline_v2_stmt;

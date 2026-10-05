@@ -149,6 +149,7 @@ def native_source():
 ''' + rows + r'''
     };
     economic_baseline_batch batch;
+    batch.witness_version=1; // Preserve this original 280-byte EAB1 fixture.
     batch.lineage=meta.lineage; batch.epoch=meta.epoch; batch.preparation_id=id(0x44);
     batch.actor_id=7; batch.batch_index=1;
     batch.opening_account={meta.lineage,economic_account_kind::opening,99,0};

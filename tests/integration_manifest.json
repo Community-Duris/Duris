@@ -2239,7 +2239,10 @@
         "ChildIdentityTests.test_original_plan_shape_digest_metadata_and_counts_are_strict",
         "ChildIdentityTests.test_original_plan_account_and_custody_projections_are_exact",
         "ChildIdentityTests.test_original_plan_sql_source_is_bounded_before_fetch",
-        "ChildIdentityTests.test_original_plan_cli_preserves_global_findings_and_omits_capsules"
+        "ChildIdentityTests.test_original_plan_cli_preserves_global_findings_and_omits_capsules",
+        "ChildIdentityTests.test_native_and_origin_positions_require_exact_integer_representations",
+        "ChildIdentityTests.test_native_and_origin_positions_preserve_widths_and_nullable_controls",
+        "ChildIdentityTests.test_native_position_cli_refuses_every_view_without_changing_input"
       ],
       "arguments": [
         "ChildIdentityTests",
@@ -2489,7 +2492,8 @@
         "BaselineVersionTests.test_reserved_bytes_and_source_digest_fail_even_after_rehash",
         "BaselineVersionTests.test_equipment_only_change_without_original_plan_refuses",
         "BaselineVersionTests.test_native_mobile_invalid_slot_state_owner_and_forest_refuse",
-        "BaselineVersionTests.test_exact_versioned_maxima_and_count_bounds"
+        "BaselineVersionTests.test_exact_versioned_maxima_and_count_bounds",
+        "BaselineVersionTests.test_invalid_positions_preserve_retained_claim_origin_refusals"
       ],
       "arguments": [
         "BaselineVersionTests",

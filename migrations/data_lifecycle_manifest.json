@@ -8427,6 +8427,70 @@
         ],
         "shared_fields": []
       }
+    },
+    {
+      "id": "database:shopkeeper_item_runtime_state",
+      "kind": "database_table",
+      "locator": "shopkeeper_item_runtime_state",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "Complete current physical keeper item payload; UID/custody remain in shopkeeper_items and item_current_owner",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "shared_security",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "payload"
+        ],
+        "shared_fields": []
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": [
+        "database:shopkeeper_items"
+      ]
+    },
+    {
+      "id": "database:quest_mobile_native",
+      "kind": "database_table",
+      "locator": "quest_mobile_native",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "mobile_instance_id_and_original_transition_operation",
+      "technical_purpose": "Retain canonical native NPC lifetime and ordered stock for transactional quest offering and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "canonical_image"
+        ],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
     }
   ]
 }

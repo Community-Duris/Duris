@@ -8,6 +8,7 @@ harnesses and schema-drift probes as the Docker runner.
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 import re
@@ -85,6 +86,24 @@ def main() -> None:
         apply("migrations/immutable/0040_economic_sql_global_activation.sql")
         subprocess.run(["bash", "migrations/immutable/0040_economic_sql_global_activation.sh"],
                        cwd=ROOT, env=env, check=True)
+        # Historical schema replay/drift probes above retain their original cut.
+        # Current native witnesses require the complete sealed EAB2 schema head.
+        manifest = json.loads((ROOT / "migrations/migration_manifest.json").read_text())
+        history = manifest["migrations"]
+        if len(history) != 61 or history[-1]["sequence"] != 61 or \
+                history[-1]["id"] != "0061_economic_baseline_equipment":
+            raise RuntimeError("current lifecycle qualification requires sealed canonical schema61")
+        migration_env = dict(env, RUNTIME_COMPATIBILITY_MANIFEST=str(
+            ROOT / "migrations/runtime_compatibility_manifest.json"))
+        subprocess.run(["python3", "scripts/migration_runner.py", "adopt", "--kind", "fresh_bootstrap"],
+                       cwd=ROOT, env=migration_env, check=True)
+        subprocess.run(["python3", "scripts/migration_runner.py", "run"],
+                       cwd=ROOT, env=migration_env, check=True)
+        if sql("SELECT COUNT(*),MAX(sequence_number),SUM(sequence_number=61 AND "
+               "migration_id='0061_economic_baseline_equipment') FROM mud_schema_history") != "61\t61\t1":
+            raise RuntimeError("current lifecycle qualification did not reach the original schema61 head")
+        subprocess.run(["bash", "migrations/verify_runtime_compatibility.sh"],
+                       cwd=ROOT, env=migration_env, check=True)
         # Reuse the maintained compile/run section verbatim, including the
         # composed lease-transfer faults and all sanitizer settings.
         runner = (ROOT / "tests/async/run_economic_sql_lifecycle_owner_mysql.sh").read_text()
