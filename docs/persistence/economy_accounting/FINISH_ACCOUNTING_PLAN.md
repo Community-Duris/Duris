@@ -1,5 +1,14 @@
 # Finish accounting implementation plan
 
+## Actorless shop refusal and v6 callback source checkpoint — 2026-10-04
+
+[Exact disconnected-player hold cancellation and literal callback matching](SHOP_ACTORLESS_REFUSAL_SOURCE_2026-10-04.md)
+are implemented and independently source reviewed. Original notification/produced
+cleanup stays retained for player return; changed retired receipts block and
+legacy v5 behavior stays intact. These private inputs have not run native checks.
+Successful original-lease publication, whole-world witness/current projections,
+replay, producer/lifecycle integration and major-plan qualification remain open.
+
 ## Quest native values/stock source checkpoint — 2026-10-04
 
 [Private canonical mobile values and full ordered stock capture](QUEST_MOBILE_VALUES_SOURCE_2026-10-04.md)
