@@ -51,6 +51,13 @@ backend limitations and the tested revision before checking off acceptance.
 
 ## Current implementation and qualification checkpoint
 
+The [October 4 current census repair](WRITER_CENSUS_REANCHOR_2026-10-04.md)
+reanchors stale source locations and recognizes guarded shop submit calls;
+zero unmapped lexical sites does not qualify runtime writers. Complete source
+semantics, executable coverage, Plans2–4 and release remain open. A reviewed
+private native shop payload/shared-v6 candidate awaits producer/status/keeper
+checkpoint, migration fingerprints, publication and original major-plan checks.
+
 Plan1 independent acceptance is published in8586ba589; Plan5 baseline-marker
 readers and its lifecycle handoff are imported in db682ade5. Reviewed31-file
 coin/collector/shared-owner source integration now follows that qualified base.

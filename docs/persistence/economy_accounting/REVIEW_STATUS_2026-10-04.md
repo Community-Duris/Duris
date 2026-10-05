@@ -388,5 +388,23 @@ SQL, foreign and unrepresentable rows refuse; existing body/UID/materializer and
 hold checks remain. Source review and clang18 changed-line formatting only; native
 compilation and original publication cases remain at the major-plan batch.
 Peer also identified stale central lifecycle test counts and a retained historical
-writer-census gap; these remain separate primary-owned follow-ups. No warning
+writer-census gap; counts are source-corrected in a265a5053 and the current census
+repair is described below. No warning
 suppression, production mutation or activation is performed.
+
+### October 4 current writer census source repair
+
+[Current source-inventory evidence](WRITER_CENSUS_REANCHOR_2026-10-04.md) preserves
+the previous published registry and reanchors460 identical-excerpt shifts,
+fourteen changed/coalesced/retired sites and eleven remaining current assignments.
+The scanner now includes guarded shop submit calls. Current inventory has2843
+occurrences/2784 mapped unique sites and886 rows; zero unmapped sites does not
+establish accounting completion. Census completeness, executable coverage and
+release remain false/blocked. Native/gameplay/recovery qualification and existing
+regression execution remain at original major-plan readiness.
+
+The private five-source shop slice passes independent source review, including
+payload retention, dirty-save foreign-cascade refusal, produced UID exclusion,
+destructive full preimages and shared-v6 native/retained-plan mapping. It remains
+private/unqualified pending producer/status/keeper checkpoint, migration
+fingerprints and publication seams.
