@@ -1,5 +1,14 @@
 # Plan 5: independent audit, lifecycle, and release qualification
 
+## Exact restore projection representations integrated — 2026-10-05
+
+[The exact Plan5 repair](../PLAN5_RESTORE_REPRESENTATION_INTEGRATION_2026-10-05.md) refuses noninteger aliases throughout independent
+restore evidence. Six mandatory pure cases make105 central rows; all104 prior
+policies remain exact. Peer zero-skip native/clone evidence stays its canonical56
+and original EAB1 scope. Primary AST/pins/static inventory only; current combined
+and nativeEAB2/schema61 qualification remain open. R1–R8, coverage, release and
+activation stay incomplete; inactive behavior and safety gates stay.
+
 ## Exact baseline projection representations integrated — 2026-10-05
 
 [The exact Plan5 repair](../PLAN5_BASELINE_REPRESENTATION_INTEGRATION_2026-10-05.md) refuses numerically equal noncanonical types in
