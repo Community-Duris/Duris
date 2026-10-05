@@ -18,7 +18,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tests/async'))
 from test_reconcile_economy_accounting import (OP, clean_snapshot, linked_child_snapshot,
-                                               two_child_snapshot)
+                                               two_child_snapshot, bind_original_plans)
 from reconcile_economy_accounting import Reconciler, view
 
 
@@ -36,10 +36,67 @@ def identity_snapshot(two=False):
     if two:
         snapshot['children'][1] = child(snapshot['children'][0]['child_operation_id'], 2, 1,
                                         2**32 - 1, 2**64 - 1)
-    return snapshot
+    return bind_original_plans(snapshot)
 
 
 class ChildIdentityTests(unittest.TestCase):
+    def integer_snapshot(self, nested=False):
+        snapshot = identity_snapshot()
+        for rows in (snapshot['native']['items'], snapshot['item_origins'], snapshot['ownership_events']):
+            rows[0]['uid'] = 1
+            rows[0]['root'] = 1
+            if rows is not snapshot['item_origins']:
+                rows[0]['owner'] = [1, 1, 0]
+        snapshot['item_references'][0]['uid'] = 1
+        for index, amount in enumerate((-1, 1)):
+            snapshot['postings'][index].update(delta=[amount, 0, 0, 0], copper_value=amount)
+            snapshot['effects'][index]['after'] = [9 if index == 0 else 1, 0, 0, 0]
+            snapshot['native']['holdings'][index]['balance'] = snapshot['effects'][index]['after'].copy()
+        if nested:
+            for rows in (snapshot['native']['items'], snapshot['item_origins'], snapshot['ownership_events']):
+                rows[0].update(root=2, parent=2)
+                root = {**rows[0], 'uid': 2, 'parent': None}
+                if rows is snapshot['ownership_events']:
+                    root['event_index'] = 1
+                rows.append(root)
+            snapshot['item_references'].append({**snapshot['item_references'][0],
+                'uid': 2, 'event_index': 1, 'legacy_event_index': 1, 'line_index': 1})
+            snapshot['operations'][0]['item_event_count'] = 2
+        return bind_original_plans(snapshot)
+
+    def test_original_posting_value_requires_native_integer_representation(self):
+        snapshot = self.integer_snapshot()
+        self.assertEqual(Reconciler().audit(snapshot)['exception_count'], 0)
+        for value in (1.0, True):
+            damaged = copy.deepcopy(snapshot)
+            damaged['postings'][1]['copper_value'] = value
+            with self.subTest(value=value):
+                self.check(damaged, 'original_plan_posting_mismatch')
+                self.assertEqual(Reconciler().audit(damaged)['checked']['original_plans_verified'], 0)
+
+    def test_original_uid_root_and_destination_owner_require_native_integer_representation(self):
+        snapshot = self.integer_snapshot()
+        self.assertEqual(Reconciler().audit(snapshot)['exception_count'], 0)
+        for name, field, index in (('item_references', 'uid', None), ('ownership_events', 'uid', None),
+                ('ownership_events', 'root', None), ('ownership_events', 'owner', 0),
+                ('ownership_events', 'owner', 1), ('ownership_events', 'owner', 2)):
+            original = snapshot[name][0][field] if index is None else snapshot[name][0][field][index]
+            for value in (float(original), bool(original)):
+                damaged = copy.deepcopy(snapshot)
+                if index is None: damaged[name][0][field] = value
+                else: damaged[name][0][field][index] = value
+                with self.subTest(table=name, field=field, index=index, value=value):
+                    self.check(damaged, 'original_plan_item_mismatch' if name == 'item_references'
+                               else 'original_plan_custody_mismatch')
+                    self.assertEqual(Reconciler().audit(damaged)['checked']['original_plans_verified'], 0)
+
+    def test_original_nullable_parent_requires_native_integer_representation(self):
+        snapshot = self.integer_snapshot(nested=True)
+        self.assertEqual(Reconciler().audit(snapshot)['exception_count'], 0)
+        snapshot['ownership_events'][0]['parent'] = 2.0
+        self.check(snapshot, 'original_plan_custody_mismatch')
+        self.assertEqual(Reconciler().audit(snapshot)['checked']['original_plans_verified'], 0)
+
     def check(self, snapshot, code, count=1):
         before = copy.deepcopy(snapshot)
         for limit in (0, 1, 100):
@@ -144,6 +201,108 @@ class ChildIdentityTests(unittest.TestCase):
                         self.assertGreater(output['coverage']['exception_count'], 0)
                     self.assertEqual(path.read_bytes(), before)
 
+    def test_coherent_child_rewrite_is_bound_to_original_plan(self):
+        snapshot = identity_snapshot(two=True)
+        snapshot['children'][0] = child(OP, 1, domain=475)
+        snapshot['children'][1] = child(snapshot['children'][0]['child_operation_id'], 2, 1,
+                                        2**32 - 1, 2**64 - 1)
+        self.check(snapshot, 'original_plan_child_mismatch')
+        self.assertNotIn('child_identity_mismatch', Reconciler().audit(snapshot)['exception_counts'])
+
+    def test_posting_and_item_child_associations_bind_original_plan(self):
+        for name, code in (('postings', 'original_plan_posting_mismatch'),
+                           ('item_references', 'original_plan_item_mismatch')):
+            snapshot = identity_snapshot(two=True)
+            snapshot[name][0]['child_index'] = 0
+            self.check(snapshot, code)
+
+    def test_missing_original_plan_is_unverified_for_every_backend_and_limit(self):
+        for backend in ('disposable', 'sql_partial', 'flatfile', 'unknown'):
+            for value in (None, 'missing'):
+                snapshot = identity_snapshot()
+                snapshot['backend'] = backend
+                if value is None:
+                    snapshot['operations'][0]['canonical_plan'] = None
+                else:
+                    del snapshot['operations'][0]['canonical_plan']
+                self.check(snapshot, 'missing_original_plan')
+                self.assertEqual(Reconciler().audit(snapshot)['checked']['original_plans_verified'], 0)
+
+    def test_original_plan_shape_digest_metadata_and_counts_are_strict(self):
+        for value in (True, 7, {}, [], '', 'EAP1', 'private-alias', '00'*256,
+                      identity_snapshot()['operations'][0]['canonical_plan'].upper()):
+            snapshot = identity_snapshot()
+            snapshot['operations'][0]['canonical_plan'] = value
+            self.check(snapshot, 'invalid_original_plan')
+        for field in ('plan_digest', 'intent_digest', 'domain_digest'):
+            for value in (None, True, 'aa'*32, 'private-alias'):
+                snapshot = identity_snapshot()
+                snapshot['operations'][0][field] = value
+                self.check(snapshot, 'original_plan_digest_mismatch')
+        for field in ('accounting_version', 'writer_id', 'policy_version', 'compiler_version',
+                      'actor_kind', 'actor_id'):
+            for value in (None, True, 1.0, 'private-alias'):
+                snapshot = identity_snapshot()
+                snapshot['operations'][0][field] = value
+                self.check(snapshot, 'original_plan_metadata_mismatch')
+        for field in ('before_witness_count', 'after_witness_count'):
+            for value in (None, True, 1.0, -1, 6001, 'private-alias'):
+                snapshot = identity_snapshot()
+                snapshot['operations'][0][field] = value
+                self.check(snapshot, 'original_plan_count_mismatch')
+
+    def test_original_plan_account_and_custody_projections_are_exact(self):
+        snapshot = identity_snapshot()
+        snapshot['effects'][0]['before_revision'] = 0
+        self.check(snapshot, 'original_plan_account_mismatch')
+        for field, value in (('from_owner', [1,7,0]), ('from_equipment_slot', True),
+                             ('from_owner', [2,8,False]), ('to_equipment_slot', 1)):
+            snapshot = identity_snapshot()
+            snapshot['ownership_events'][0][field] = value
+            self.check(snapshot, 'original_plan_custody_mismatch')
+        for name, field, code in (('postings', 'event_index', 'original_plan_posting_mismatch'),
+                                  ('item_references', 'line_index', 'original_plan_item_mismatch')):
+            snapshot = identity_snapshot()
+            snapshot[name][0][field] = False
+            self.check(snapshot, code)
+
+    def test_original_plan_sql_source_is_bounded_before_fetch(self):
+        import economic_sql_audit_snapshot as exporter
+        from reconcile_economy_accounting import MAX_INPUT_BYTES, MAX_ROWS
+        from economic_restore_evidence import MAX_PLAN
+        for changed in ({'root_count':MAX_ROWS+1}, {'plan_bytes':MAX_INPUT_BYTES//2+1},
+                         {'max_plan_bytes':MAX_PLAN+1}):
+            cursor = mock.Mock()
+            cursor.fetchone.return_value = {'root_count':1, 'plan_bytes':512, 'max_plan_bytes':512, **changed}
+            with mock.patch.object(exporter, 'bounded') as fetch:
+                with self.assertRaisesRegex(exporter.ExportError, 'original plan source exceeds audit input limit'):
+                    exporter.operation_rows(cursor, bytes.fromhex('11'*16), bytes.fromhex('22'*16), True)
+                fetch.assert_not_called()
+            self.assertTrue(cursor.execute.call_args.args[0].startswith('SELECT '))
+
+    def test_original_plan_cli_preserves_global_findings_and_omits_capsules(self):
+        with tempfile.TemporaryDirectory(prefix='original-plan-cli-') as directory:
+            path = Path(directory)/'snapshot.json'
+            snapshot = identity_snapshot(two=True)
+            snapshot['postings'][0]['child_index'] = 0
+            snapshot['operations'][0]['personal_alias'] = 'private-original-plan-alias'
+            path.write_text(json.dumps(snapshot))
+            before = path.read_bytes()
+            for limit in (0, 1, 100):
+                for name, filters in (('exceptions', []), ('operation', ['--operation-id', '77'*16]),
+                                      ('operation', ['--operation-id', OP]), ('provenance', ['--uid','81'])):
+                    command = [sys.executable, str(ROOT/'scripts/reconcile_economy_accounting.py'), str(path),
+                               '--view',name,'--limit',str(limit),*filters]
+                    result = subprocess.run(command, capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 1, result.stdout+result.stderr)
+                    self.assertEqual(result.stderr, '')
+                    output = json.loads(result.stdout)
+                    self.assertEqual(output.get('coverage', output)['exception_count'], 1)
+                    self.assertNotIn('canonical_plan', result.stdout)
+                    self.assertNotIn(snapshot['operations'][0]['canonical_plan'], result.stdout)
+                    self.assertNotIn('private-original-plan-alias', result.stdout)
+                    self.assertEqual(path.read_bytes(), before)
+
 
 NATIVE_PROBE = r'''#include "economy/economic_accounting_intent.h"
 #include <cassert>
@@ -167,6 +326,12 @@ int main() {
     assert(critical_operation_id_derive(meta.operation_id,474,0,&plan.children[0].operation_id));
     plan.children[1].domain=UINT32_MAX; plan.children[1].discriminator=UINT64_MAX; plan.children[1].parent_index=1;
     assert(critical_operation_id_derive(plan.children[0].operation_id,UINT32_MAX,UINT64_MAX,&plan.children[1].operation_id));
+    economic_item_position old;
+    old.owner={item_owner_type::player,8,0}; old.root_uid=81; old.revision=1;
+    old.state=item_custody_state::active;
+    auto next=old; next.owner.id=7; next.revision=2;
+    plan.items_before={{81,old}}; plan.items_after={{81,next}};
+    plan.item_events={{0,1,81,old,next}};
     economic_frozen_intent intent;
     intent.admission.metadata=meta; intent.command_binding[0]=21; intent.domain_digest[0]=22;
     std::vector<uint8_t> frozen,encoded;
@@ -355,6 +520,14 @@ class NativeChildIdentityTests(unittest.TestCase):
                     for row in native['children']:
                         insert('economic_accounting_child', {**row, 'operation_id': operation,
                                'child_operation_id': bytes.fromhex(row['child_operation_id'])})
+                    insert('item_ownership_ledger', dict(operation_id=operation, event_index=0, item_uid=81,
+                           root_item_uid=81, parent_item_uid=None, from_owner_type=1, from_owner_id=8,
+                           from_owner_context_id=0, to_owner_type=1, to_owner_id=7, to_owner_context_id=0,
+                           item_revision=2, from_owner_revision=1, to_owner_revision=2, reason_type=8,
+                           source_site=1, from_equipment_slot=0, to_equipment_slot=0))
+                    insert('economic_accounting_item_reference', dict(operation_id=operation, line_index=0,
+                           event_index=0, child_index=1, item_uid=81, before_revision=1, after_revision=2,
+                           legacy_operation_id=operation, legacy_event_index=0))
                     with owner.cursor() as cursor:
                         cursor.execute("CREATE USER 'child_reader'@'localhost' IDENTIFIED BY 'disposable-child-reader'")
                         cursor.execute("GRANT SELECT ON duris_restore.* TO 'child_reader'@'localhost'")
@@ -372,7 +545,8 @@ class NativeChildIdentityTests(unittest.TestCase):
                                 rows = []
                                 for table in ('economic_lineage_state', 'economic_epoch', 'critical_operation_inbox',
                                               'economic_accounting_operation', 'economic_accounting_account_effect',
-                                              'economic_accounting_coin_posting', 'economic_accounting_child'):
+                                              'economic_accounting_coin_posting', 'economic_accounting_child',
+                                              'economic_accounting_item_reference', 'item_ownership_ledger'):
                                     cursor.execute('SELECT * FROM '+table+' ORDER BY 1,2')
                                     rows.append(cursor.fetchall())
                                 return rows
@@ -395,10 +569,11 @@ class NativeChildIdentityTests(unittest.TestCase):
                             self.assertEqual(before_rows, inventory())
                             modeled = clean_snapshot()
                             modeled_origins = modeled['account_origins']
+                            modeled_item_origins = modeled['item_origins']
                             modeled.update(result)
                             modeled['account_origins'] = modeled_origins
-                            modeled['item_origins'] = []
-                            modeled['native']['items'] = []
+                            modeled['item_origins'] = modeled_item_origins
+                            modeled['item_origins'][0]['owner'] = [1,8,0]
                             (work/(engine+'-'+label+'-snapshot.json')).write_text(json.dumps(modeled, indent=2)+'\n')
                             captures.append({'engine': engine, 'label': label, 'read_only': True,
                                              'rollback_calls': 1, 'queries': [call.args[0] for call in cursor.execute.call_args_list]})
@@ -409,7 +584,8 @@ class NativeChildIdentityTests(unittest.TestCase):
                         self.assertEqual(Reconciler().audit(original)['exception_count'], 0)
                         legacy_cut = capture(baseline['economic_sql_audit_snapshot'], 'legacy-projection')
                         self.assertEqual(baseline['reconcile_economy_accounting'].Reconciler().audit(legacy_cut)['exception_count'], 0)
-                        self.assertEqual(Reconciler(0).audit(legacy_cut)['exception_counts'], {'missing_child_identity_evidence': 2})
+                        self.assertEqual(Reconciler(0).audit(legacy_cut)['exception_counts'],
+                                         {'missing_child_identity_evidence': 2, 'missing_original_plan': 1})
                         cuts.append({'engine': engine, 'kind': 'legacy_projection', 'red_clean': True, 'green_code': 'missing_child_identity_evidence'})
                         child_receipt = bytes.fromhex(native['children'][0]['child_operation_id'])
                         insert('critical_operation_inbox', dict(operation_id=child_receipt, command_hash=bytes([6])*32,
@@ -461,6 +637,45 @@ class NativeChildIdentityTests(unittest.TestCase):
                         self.assertEqual(baseline['reconcile_economy_accounting'].Reconciler().audit(corrupt_export)['exception_count'], 0)
                         cuts.append({'engine': engine, 'kind': 'duplicate_export', 'red_clean': True, 'green_code': 'duplicate_child_operation'})
                         self.assertEqual(Reconciler().audit(capture(exporter, 'restored'))['exception_count'], 0)
+                        for label, code in (('coherent_children', 'original_plan_child_mismatch'),
+                                             ('posting_child', 'original_plan_posting_mismatch'),
+                                             ('item_child', 'original_plan_item_mismatch')):
+                            saved_rows = inventory()
+                            try:
+                                with owner.cursor() as cursor:
+                                    if label == 'coherent_children':
+                                        first = child(OP,1,domain=475)
+                                        second = child(first['child_operation_id'],2,1,2**32-1,2**64-1)
+                                        for row in (first,second):
+                                            cursor.execute('UPDATE economic_accounting_child SET domain_id=%s,child_operation_id=%s '
+                                                           'WHERE operation_id=%s AND child_index=%s',
+                                                           (row['domain_id'],bytes.fromhex(row['child_operation_id']),operation,row['child_index']))
+                                    elif label == 'posting_child':
+                                        cursor.execute('UPDATE economic_accounting_coin_posting SET child_index=0 '
+                                                       'WHERE operation_id=%s AND line_index=0',(operation,))
+                                    else:
+                                        cursor.execute('UPDATE economic_accounting_item_reference SET child_index=0 '
+                                                       'WHERE operation_id=%s AND line_index=0',(operation,))
+                                changed = capture(exporter,label)
+                                self.assertEqual(baseline['reconcile_economy_accounting'].Reconciler().audit(changed)['exception_count'],0)
+                                self.assertEqual(Reconciler(0).audit(changed)['exception_counts'],{code:1})
+                                self.cli_check(changed,work/(engine+'-'+label+'-snapshot.json'),code,1)
+                                cuts.append({'engine':engine,'kind':label,'red_clean':True,'green_code':code,'green_count':1})
+                            finally:
+                                with owner.cursor() as cursor:
+                                    if label == 'coherent_children':
+                                        for row in native['children']:
+                                            cursor.execute('UPDATE economic_accounting_child SET domain_id=%s,child_operation_id=%s '
+                                                           'WHERE operation_id=%s AND child_index=%s',
+                                                           (row['domain_id'],bytes.fromhex(row['child_operation_id']),operation,row['child_index']))
+                                    elif label == 'posting_child':
+                                        cursor.execute('UPDATE economic_accounting_coin_posting SET child_index=1 '
+                                                       'WHERE operation_id=%s AND line_index=0',(operation,))
+                                    else:
+                                        cursor.execute('UPDATE economic_accounting_item_reference SET child_index=1 '
+                                                       'WHERE operation_id=%s AND line_index=0',(operation,))
+                            self.assertEqual(saved_rows,inventory())
+                            self.assertEqual(Reconciler().audit(capture(exporter,label+'-repaired'))['exception_count'],0)
                         (work/(engine+'-results.json')).write_text(json.dumps({'engine': engine, 'version': version,
                             'schema_sequence': 56, 'active_epoch': None, 'unique_constraint_enforced': True,
                             'native_parent_plan': True, 'modeled_native_holdings': True,
@@ -472,11 +687,11 @@ class NativeChildIdentityTests(unittest.TestCase):
         (work/'sql-captures.json').write_text(json.dumps(captures, indent=2)+'\n')
         (work/'fault-results.json').write_text(json.dumps(cuts, indent=2)+'\n')
         (work/'cli-results.json').write_text(json.dumps(self.cli_results, indent=2)+'\n')
-        self.assertEqual(len(captures), 18)
-        self.assertEqual(len(cuts), 14)
-        self.assertEqual(len(self.cli_results), 60)
+        self.assertEqual(len(captures), 30)
+        self.assertEqual(len(cuts), 20)
+        self.assertEqual(len(self.cli_results), 96)
         print('PLAN5_CHILD_IDENTITY '+json.dumps({'native_configurations': 2, 'native_contract_cases': 14,
-              'sql_engines': 2, 'read_only_captures': 18, 'red_clean_faults': 14,
+              'sql_engines': 2, 'read_only_captures': 30, 'red_clean_faults': 20,
               'schema': 'canonical0056', 'modeled_native_holdings': True, 'release_qualified': False}), flush=True)
 
     def cli_check(self, snapshot, path, code, count):
@@ -546,6 +761,7 @@ class ChildIdentityBudgetTests(unittest.TestCase):
                 snapshot['postings'].append({'operation_id': root, 'line_index': number,
                     'account_index': 0, 'child_index': number+1,
                     'delta': [amount, 0, 0, 0], 'copper_value': amount})
+        bind_original_plans(snapshot)
         snapshot['padding'] = ''
         payload = json.dumps(snapshot, separators=(',', ':')).encode()
         self.assertLess(len(payload), MAX_INPUT_BYTES)
