@@ -356,3 +356,17 @@ v1/v2 readers do not yet qualify v3; original compatibility/fault/gameplay check
 stay deferred to major-plan readiness. Central flat coin admission stays closed,
 inactive behavior and SQL qualification scope are preserved, and remaining money,
 item/domain writers plus activation-owner and release evidence remain required.
+
+
+### October 4 accounted shop source prerequisite
+
+The [shop contract source milestone](SHOP_ACCOUNTED_CONTRACTS_2026-10-04.md)
+freezes v6 original status and exact item after-image facts and the agreed shared
+sink/issuance capability. Source review and formatting pass; native/runtime
+qualification is deferred to major-plan readiness. Complete native payload
+loading/saving, migration, producer/admission/publication and cold recovery remain
+open; active shop refusal remains. No complete writer or release proof is claimed.
+Plan5 backup/cold-restart slice94e81480b is imported and pushed in4c2abb329, with
+three exact peer blobs and Python AST checked; its native evidence remains tied
+to the peer's frozen older source. Matching v3 discovery and combined qualification
+remain pending.
