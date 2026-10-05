@@ -1,5 +1,15 @@
 # Plan 1: authority, admission, and cutover
 
+## Baseline component collector linkage verified — 2026-10-05
+
+[The real-provider recipe repair](../BASELINE_COMPONENT_COLLECTOR_LINKAGE_2026-10-05.md) passes original SQL and client-free
+native modes with ASan/UBSan in 518.455 seconds. The exact original 25-source
+prefix, cases, flags, wrappers and limits remain. Evidence belongs to the frozen
+EAB2/schema61 candidate; those native/schema changes remain pending. The broader
+batch failed the next flatfile mutation-count assertion. Independent audit padding
+exception and genuine historical C05/schema35 compatibility remain open. No full
+Plan 1/R1–R8/coverage/release completion or activation; inactive gates stay.
+
 ## Exact restore projection representations integrated — 2026-10-05
 
 [The exact Plan5 repair](../PLAN5_RESTORE_REPRESENTATION_INTEGRATION_2026-10-05.md) refuses noninteger aliases throughout independent
