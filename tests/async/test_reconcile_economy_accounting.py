@@ -125,6 +125,16 @@ def rejected_snapshot():
     return snapshot
 
 
+def linked_child_snapshot():
+    snapshot = clean_snapshot()
+    snapshot["operations"][0]["child_count"] = 1
+    snapshot["children"] = [{"operation_id": OP, "child_index": 1, "parent_index": 0,
+                             "child_operation_id": "44" * 16}]
+    snapshot["postings"][0]["child_index"] = 1
+    snapshot["item_references"][0]["child_index"] = 1
+    return snapshot
+
+
 def set_operation_source(snapshot, kind):
     source = source_identity(kind=kind)
     snapshot["operations"][0]["source_event"] = source
@@ -429,6 +439,98 @@ class ReconciliationTests(unittest.TestCase):
                                 self.assertEqual(result.stderr.strip(), "reconciliation failed: invalid operation result_code")
                                 self.assertNotIn("private-result-alias", result.stderr)
                                 self.assertEqual(path.read_bytes(), payload)
+
+    def test_evidence_index_types_missing_fields_and_native_bounds_refuse(self):
+        ranges = {"effects": {"account_index": (0, 3071)},
+                  "postings": {"line_index": (0, 6143), "account_index": (0, 3071), "child_index": (0, 64)},
+                  "children": {"child_index": (1, 64), "parent_index": (0, 63)},
+                  "item_references": {"event_index": (0, 2999), "child_index": (0, 64),
+                                      "legacy_event_index": (0, 65535)},
+                  "ownership_events": {"event_index": (0, 65535)}}
+        for table, fields in ranges.items():
+            for field, (minimum, maximum) in fields.items():
+                for limit in (0, 1, 100):
+                    for value in (None, True, False, 0.0, 1.0, minimum - 1, maximum + 1,
+                                  "private-index-alias", [], {}, float("inf"), float("nan")):
+                        snapshot = linked_child_snapshot()
+                        snapshot[table][0][field] = value
+                        before = json.dumps(snapshot, sort_keys=True)
+                        with self.subTest(table=table, field=field, value=value, limit=limit):
+                            with self.assertRaisesRegex(SnapshotError, "invalid " + table + " " + field):
+                                Reconciler(limit).audit(snapshot)
+                            self.assertEqual(json.dumps(snapshot, sort_keys=True), before)
+                    snapshot = linked_child_snapshot()
+                    del snapshot[table][0][field]
+                    before = json.dumps(snapshot, sort_keys=True)
+                    with self.subTest(table=table, field=field, missing=True, limit=limit):
+                        with self.assertRaisesRegex(SnapshotError, "invalid " + table + " " + field):
+                            Reconciler(limit).audit(snapshot)
+                        self.assertEqual(json.dumps(snapshot, sort_keys=True), before)
+
+    def test_evidence_index_boundaries_keep_semantic_audit_and_input(self):
+        ranges = {"effects": {"account_index": (0, 3071)},
+                  "postings": {"line_index": (0, 6143), "account_index": (0, 3071), "child_index": (0, 64)},
+                  "children": {"child_index": (1, 64), "parent_index": (0, 63)},
+                  "item_references": {"event_index": (0, 2999), "child_index": (0, 64),
+                                      "legacy_event_index": (0, 65535)},
+                  "ownership_events": {"event_index": (0, 65535)}}
+        for limit in (0, 1, 100):
+            self.assertEqual(Reconciler(limit).audit(linked_child_snapshot())["exception_count"], 0)
+            for table, fields in ranges.items():
+                for field, bounds in fields.items():
+                    for value in bounds:
+                        snapshot = linked_child_snapshot()
+                        snapshot[table][0][field] = value
+                        before = json.dumps(snapshot, sort_keys=True)
+                        report = Reconciler(limit).audit(snapshot)
+                        self.assertIsInstance(report["exception_counts"], dict)
+                        self.assertEqual(json.dumps(snapshot, sort_keys=True), before)
+            snapshot = linked_child_snapshot()
+            snapshot["children"][0]["parent_index"] = 1
+            self.assertIn("invalid_child_link", Reconciler(limit).audit(snapshot)["exception_counts"])
+
+    def test_duplicate_evidence_cannot_hide_malformed_key_index(self):
+        for table, field in (("effects", "account_index"), ("postings", "line_index"),
+                             ("children", "child_index"), ("item_references", "event_index"),
+                             ("ownership_events", "event_index")):
+            snapshot = linked_child_snapshot()
+            duplicate = dict(snapshot[table][0])
+            duplicate[field] = float(duplicate[field])
+            snapshot[table].append(duplicate)
+            before = json.dumps(snapshot, sort_keys=True)
+            with self.subTest(table=table):
+                with self.assertRaisesRegex(SnapshotError, "invalid " + table + " " + field):
+                    Reconciler(0).audit(snapshot)
+                self.assertEqual(json.dumps(snapshot, sort_keys=True), before)
+
+    def test_evidence_index_cli_refusal_is_bounded_private_and_global(self):
+        fields = {"effects": ("account_index",), "postings": ("line_index", "account_index", "child_index"),
+                  "children": ("child_index", "parent_index"),
+                  "item_references": ("event_index", "child_index", "legacy_event_index"),
+                  "ownership_events": ("event_index",)}
+        with tempfile.TemporaryDirectory(prefix="duris-index-types-") as directory:
+            path = Path(directory) / "snapshot.json"
+            for table, names in fields.items():
+                for field in names:
+                    for value in (float(linked_child_snapshot()[table][0][field]), ["private-index-alias"]):
+                        snapshot = linked_child_snapshot()
+                        snapshot[table][0][field] = value
+                        snapshot[table][0]["personal_alias"] = "private-index-alias"
+                        payload = json.dumps(snapshot, sort_keys=True).encode()
+                        path.write_bytes(payload)
+                        for limit in (0, 1, 100):
+                            for name in ("exceptions", "operation"):
+                                command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                           str(path), "--view", name, "--limit", str(limit)]
+                                if name == "operation": command.extend(("--operation-id", OP))
+                                with self.subTest(table=table, field=field, value=value, limit=limit, view=name):
+                                    result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                                    self.assertEqual(result.returncode, 2, result)
+                                    self.assertEqual(result.stdout, "")
+                                    self.assertEqual(result.stderr.strip(), "reconciliation failed: invalid " + table + " " + field)
+                                    self.assertNotIn("private-index-alias", result.stderr)
+                                    self.assertNotIn("Traceback", result.stderr)
+                                    self.assertEqual(path.read_bytes(), payload)
 
     def test_mapping_creation_effect_comparison_scans_evidence_once(self):
         class MeasuredEffects(dict):
@@ -2811,8 +2913,13 @@ def native_stake_sql():
     result_types_only=os.environ.get('DURIS_PLAN5_RESULT_TYPES_ONLY')=='1'
     assert not result_types_red or result_types_only
     assert not (count_types_only and result_types_only)
+    index_types_red=os.environ.get('DURIS_PLAN5_INDEX_TYPES_RED')=='1'
+    index_types_only=os.environ.get('DURIS_PLAN5_INDEX_TYPES_ONLY')=='1'
+    assert not index_types_red or index_types_only
+    assert sum((count_types_only,result_types_only,index_types_only))<=1
     count_type_results=[]
     result_type_results=[]
+    index_type_results=[]
     projection_results=[]
     with tempfile.TemporaryDirectory(prefix='duris-stake-audit-sql-') as directory:
         base=Path(directory)
@@ -2888,6 +2995,40 @@ def native_stake_sql():
                             assert set(report['exception_counts'])==set(expected),report
                             assert snapshot==snapshot_before
                             if captures==1:
+                                def verify_type_cut(table,row_index,field,kind,corrupt,red,label,records):
+                                    altered=copy.deepcopy(snapshot)
+                                    altered[table][row_index][field]=corrupt
+                                    payload=json.dumps(altered,sort_keys=True,separators=(',',':')).encode()
+                                    path=work/(label+engine+'-'+field+'-'+kind+'.json')
+                                    path.write_bytes(payload)
+                                    altered=json.loads(payload)
+                                    original_bytes=json.dumps(altered,sort_keys=True)
+                                    error_label='invalid '+('operation' if table=='operations' else table)+' '+field
+                                    operation_id=snapshot[table][row_index]['operation_id']
+                                    for limit in (0,1,100):
+                                        if red:
+                                            assert Reconciler(limit).audit(altered)['exception_count']==0
+                                        else:
+                                            try: Reconciler(limit).audit(altered)
+                                            except SnapshotError as error: assert str(error)==error_label
+                                            else: raise AssertionError('malformed native index/header admitted: '+field)
+                                        assert json.dumps(altered,sort_keys=True)==original_bytes
+                                        for name in ('exceptions','operation'):
+                                            command=[sys.executable,str(root/'scripts/reconcile_economy_accounting.py'),
+                                                     str(path),'--view',name,'--limit',str(limit)]
+                                            if name=='operation': command.extend(('--operation-id',operation_id))
+                                            result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+                                            if red:
+                                                assert result.returncode==0 and not result.stderr,result
+                                                json.loads(result.stdout)
+                                            else:
+                                                assert result.returncode==2 and not result.stdout,result
+                                                assert result.stderr.strip()=='reconciliation failed: '+error_label
+                                            assert path.read_bytes()==payload
+                                    assert rows()==before and snapshot==snapshot_before
+                                    records.append(dict(engine=engine,table=table,row=row_index,field=field,kind=kind,
+                                        input_sha256=hashlib.sha256(payload).hexdigest(),api_checks=3,cli_checks=6,
+                                        source_tables_unchanged=7,RED=red))
                                 selected=snapshot['operations'][0]
                                 fields=('account_count','posting_count','child_count','item_event_count')
                                 if not count_types_only: fields+=('result_code',)
@@ -2899,39 +3040,20 @@ def native_stake_sql():
                                     values=[('float',float(value))]
                                     if value in (0,1): values.append(('boolean',bool(value)))
                                     for kind,corrupt in values:
-                                        altered=copy.deepcopy(snapshot)
-                                        altered['operations'][0][field]=corrupt
-                                        payload=json.dumps(altered,sort_keys=True,separators=(',',':')).encode()
                                         label='result-type-' if is_result else 'count-type-'
-                                        path=work/(label+engine+'-'+field+'-'+kind+'.json')
-                                        path.write_bytes(payload)
-                                        altered=json.loads(payload)
-                                        original_bytes=json.dumps(altered,sort_keys=True)
-                                        for limit in (0,1,100):
-                                            if red:
-                                                assert Reconciler(limit).audit(altered)['exception_count']==0
-                                            else:
-                                                try: Reconciler(limit).audit(altered)
-                                                except SnapshotError as error: assert str(error)=='invalid operation '+field
-                                                else: raise AssertionError('malformed native header admitted: '+field)
-                                            assert json.dumps(altered,sort_keys=True)==original_bytes
-                                            for name in ('exceptions','operation'):
-                                                command=[sys.executable,str(root/'scripts/reconcile_economy_accounting.py'),
-                                                         str(path),'--view',name,'--limit',str(limit)]
-                                                if name=='operation': command.extend(('--operation-id',selected['operation_id']))
-                                                result=subprocess.run(command,capture_output=True,text=True,timeout=30)
-                                                if red:
-                                                    assert result.returncode==0 and not result.stderr,result
-                                                    json.loads(result.stdout)
-                                                else:
-                                                    assert result.returncode==2 and not result.stdout,result
-                                                    assert result.stderr.strip()=='reconciliation failed: invalid operation '+field
-                                                assert path.read_bytes()==payload
-                                        assert rows()==before and snapshot==snapshot_before
                                         records=result_type_results if is_result else count_type_results
-                                        records.append(dict(engine=engine,field=field,kind=kind,
-                                            input_sha256=hashlib.sha256(payload).hexdigest(),api_checks=3,cli_checks=6,
-                                            source_tables_unchanged=7,RED=red))
+                                        verify_type_cut('operations',0,field,kind,corrupt,red,label,records)
+                                if not (count_types_only or result_types_only):
+                                    for table,names in (('effects',('account_index',)),
+                                                        ('postings',('line_index','account_index','child_index'))):
+                                        assert len(snapshot[table])==2
+                                        for row_index,row in enumerate(snapshot[table]):
+                                            for field in names:
+                                                value=row[field]
+                                                assert type(value) is int and value in (0,1)
+                                                for kind,corrupt in (('float',float(value)),('boolean',bool(value))):
+                                                    verify_type_cut(table,row_index,field,kind,corrupt,index_types_red,
+                                                        'index-type-'+table+'-'+str(row_index)+'-',index_type_results)
                             if prices:
                                 assert price_coverage['column_available'] and price_coverage['candidate_rows']==4
                                 assert len(price_rows)==4 and {row['epoch'] for row in price_rows}=={EPOCH,'77'*16}
@@ -3037,8 +3159,8 @@ def native_stake_sql():
                                 insert('economic_accounting_coin_posting',fields)
                             insert('economic_accounting_source_claim',dict(lineage=plan[8:24],source_event=plan[104:152],operation_id=op,outcome=1))
                             audit(bool(index))
-                            if count_types_only or result_types_only: break
-                        if count_types_only or result_types_only:
+                            if count_types_only or result_types_only or index_types_only: break
+                        if count_types_only or result_types_only or index_types_only:
                             with owner.cursor() as cursor:
                                 cursor.execute('SELECT active_epoch FROM economic_lineage_state')
                                 assert cursor.fetchall()==[{'active_epoch':None}]
@@ -3167,7 +3289,13 @@ def native_stake_sql():
         print(('NATIVE_RESULT_TYPES_RED_ADMITTED ' if result_types_red else 'NATIVE_RESULT_TYPES_REFUSED ')+
               json.dumps({'cuts':len(result_type_results),'api_checks':12,'cli_checks':24,
                           'source_tables_unchanged':7,'engines':2,'inactive':True},sort_keys=True),flush=True)
-    if count_types_only or result_types_only: return
+    if not (count_types_only or result_types_only):
+        (work/'index-type-results.json').write_text(json.dumps(index_type_results,indent=2,sort_keys=True)+'\n')
+        assert len(index_type_results)==32
+        print(('NATIVE_INDEX_TYPES_RED_ADMITTED ' if index_types_red else 'NATIVE_INDEX_TYPES_REFUSED ')+
+              json.dumps({'cuts':len(index_type_results),'api_checks':96,'cli_checks':192,
+                          'source_tables_unchanged':7,'engines':2,'inactive':True},sort_keys=True),flush=True)
+    if count_types_only or result_types_only or index_types_only: return
     (work/'price-scope-results.json').write_text(json.dumps(projection_results,indent=2,sort_keys=True)+'\n')
     print('NATIVE_PRICE_SCOPE '+json.dumps(projection_results,sort_keys=True),flush=True)
     assert len(projection_results)==16 and all(row['expected']==row['observed'] for row in projection_results)

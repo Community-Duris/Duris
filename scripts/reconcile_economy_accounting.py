@@ -23,6 +23,15 @@ OPERATION_COUNT_LIMITS = {
     "account_count": 3072, "posting_count": 6144,
     "child_count": 64, "item_event_count": 3000,
 }
+EVIDENCE_INDEX_RANGES = {
+    "effects": {"account_index": (0, 3071)},
+    "postings": {"line_index": (0, 6143), "account_index": (0, 3071),
+                 "child_index": (0, 64)},
+    "children": {"child_index": (1, 64), "parent_index": (0, 63)},
+    "item_references": {"event_index": (0, 2999), "child_index": (0, 64),
+                        "legacy_event_index": (0, 65535)},
+    "ownership_events": {"event_index": (0, 65535)},
+}
 MAPPED_KINDS = {1, 2, 3, 4, 5, 6}
 ORDINARY_KINDS = MAPPED_KINDS | {11}
 UNITS = (1, 10, 100, 1000)
@@ -452,6 +461,12 @@ class Reconciler:
                 value = operation.get(field)
                 if type(value) is not int or not 0 <= value <= maximum:
                     raise SnapshotError("invalid operation " + field)
+        for name, fields in EVIDENCE_INDEX_RANGES.items():
+            for row in tables[name]:
+                for field, (minimum, maximum) in fields.items():
+                    value = row.get(field)
+                    if type(value) is not int or not minimum <= value <= maximum:
+                        raise SnapshotError("invalid " + name + " " + field)
         operations = self.index(tables["operations"], ("operation_id",), "duplicate_operation")
         effects = self.index(tables["effects"], ("operation_id", "account_index"), "duplicate_effect")
         postings = self.index(tables["postings"], ("operation_id", "line_index"), "duplicate_posting")
