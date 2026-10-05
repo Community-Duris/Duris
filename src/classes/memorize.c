@@ -1,3 +1,4 @@
+#include "classes/summoner_pet.h"
 /*
  ***************************************************************************
  *  File: memorize.c                                         Part of Duris *
@@ -682,8 +683,8 @@ int get_circle_memtime(P_char ch, int circle, bool bStatOnly)
 	// int      lowlvlcap = (int)get_property("memorize.lowlvl.cap", 30);
 	// int      lowlvlbottom = (int)get_property("memorize.lowlvl.bottom", 40);
 
-	if (IS_PUNDEAD(ch) || GET_CLASS(ch, CLASS_WARLOCK) || IS_UNDEADRACE(ch) || IS_ANGEL(ch) ||
-	    is_wearing_necroplasm(ch))
+	if (summoner_owned_pet(ch) || IS_PUNDEAD(ch) || GET_CLASS(ch, CLASS_WARLOCK) ||
+	    IS_UNDEADRACE(ch) || IS_ANGEL(ch) || is_wearing_necroplasm(ch))
 	{
 		return calculate_undead_time(ch, circle, bStatOnly);
 	}
@@ -996,14 +997,16 @@ void handle_undead_mem(P_char ch)
 			continue;
 		}
 
-		if ((USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)) &&
-		    (IS_CASTING(ch) || (!IS_DRAGOON(ch) && GET_OPPONENT(ch))))
+		if (summoner_pet_recovery_blocked(ch) ||
+		    ((USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)) &&
+		     (IS_CASTING(ch) || (!IS_DRAGOON(ch) && GET_OPPONENT(ch)))))
 		{
 			highest_empty = i;
 			break;
 		}
 
 		ch->specials.undead_spell_slots[i]++;
+		summoner_pet_sync_resources(ch);
 
 		if (IS_PUNDEAD(ch) || is_wearing_necroplasm(ch) || GET_CLASS(ch, CLASS_WARLOCK) ||
 		    IS_UNDEADRACE(ch))
@@ -2003,6 +2006,18 @@ void *has_memorized(P_char ch, int spell)
 	return NULL;
 }
 
+void summoner_pet_resume_slots(P_char ch)
+{
+	if (!summoner_owned_pet(ch) || get_scheduled(ch, event_memorize))
+		return;
+	for (int circle = get_max_circle(ch); circle >= 1; --circle)
+		if (ch->specials.undead_spell_slots[circle] < max_spells_in_circle(ch, circle))
+		{
+			schedule_memorize(ch, get_circle_memtime(ch, circle));
+			return;
+		}
+}
+
 void use_spell(P_char ch, int spell)
 {
 	struct affected_type *af;
@@ -2031,6 +2046,7 @@ void use_spell(P_char ch, int spell)
 			GET_MANA(ch) -= get_spell_circle(ch, spell) * MANA_PER_CIRCLE;
 			StartRegen(ch, regen_resource::mana);
 		}
+		summoner_pet_sync_resources(ch);
 	}
 	else if (USES_SPELL_SLOTS(ch))
 	{
@@ -2055,6 +2071,7 @@ void use_spell(P_char ch, int spell)
 		if (ch->specials.undead_spell_slots[get_spell_circle(ch, spell)] > 0)
 		{
 			ch->specials.undead_spell_slots[get_spell_circle(ch, spell)] -= 1;
+			summoner_pet_sync_resources(ch);
 		}
 
 		if ((USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)) &&

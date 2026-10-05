@@ -1369,6 +1369,11 @@ struct npc_only_data
 
 	int idnum; /* Given only to pets, used for crashsave */
 	uint32_t summon_kind; // stable summoned_pet_kind; zero for ordinary area mobs
+	int summoner_resource_slot; // owner-side prepared resource bank, 1..4
+	int summoner_hp_ceiling;
+	int summoner_expected_mana;
+	int summoner_expected_slots[MAX_CIRCLE + 1];
+	unsigned long long summoner_flight_tick;
 	bool alchemist_vial_roll_done; // one decision for a finalized fresh world spawn
 	unsigned long long alchemist_action_until_pulse; // both NPC AI entry points
 	bool summoned_instance; // survives loss of charm/ownership until extraction
@@ -1536,6 +1541,7 @@ struct char_data
 	P_nevent character_maintenance_event;
 	unsigned long long character_maintenance_event_sequence;
 	unsigned long long character_maintenance_body_due;
+	unsigned long long summoner_last_move_tick;
 	bool character_maintenance_in_world;
 
 	struct char_player_data player; /* Normal data               */

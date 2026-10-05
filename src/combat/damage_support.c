@@ -4,6 +4,7 @@
 #include "core/utils.h"
 #include "core/safe_format.h"
 #include "classes/paladins.h"
+#include "classes/summoner_pet.h"
 #include "combat/damage.h"
 #include "combat/dam_mods.h"
 #include "net/comm.h"
@@ -283,7 +284,7 @@ int vamp(P_char ch, double fhits, double fcap)
 {
 	struct affected_type *af;
 	static char buf[100];
-	int hits = (int)fhits, cap = (int)fcap, blocked;
+	int hits = (int)fhits, cap = summoner_pet_heal_cap(ch, (int)fcap), blocked;
 
 	if (!IS_ALIVE(ch))
 		return 0;
@@ -585,7 +586,9 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	if ((flags & PHSDAM_TOUCH) && IS_AFFECTED2(ch, AFF2_VAMPIRIC_TOUCH) && IS_NPC(ch) &&
 	    !IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM))
 	{
-		vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_TOUCHVAMP],
+		vamped = vamp(ch,
+			      static_cast<double>(dam) *
+				      summoner_pet_vamp_rate(ch, dam_factor[DF_TOUCHVAMP]),
 			      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 	}
 	// end TOUCHVAMP
@@ -607,9 +610,15 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 		}
 		else
 		{
-			temp_dam = static_cast<double>(dam) *
-				   get_property("vamping.self.NPCbattleEcstasy", 0.050);
-			vamp(ch, temp_dam, static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
+			temp_dam =
+				static_cast<double>(dam) *
+				summoner_pet_vamp_rate(
+					ch, get_property("vamping.self.NPCbattleEcstasy", 0.050));
+			const int healed =
+				vamp(ch, temp_dam,
+				     static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
+			if (summoner_capture(ch))
+				vamped = healed;
 		}
 	}
 
@@ -657,7 +666,9 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	if (!vamped && IS_AFFECTED2(ch, AFF2_VAMPIRIC_TOUCH) && (flags & RAWDAM_TRANCEVAMP) &&
 	    (IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM)))
 	{
-		vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_TRANCEVAMP],
+		vamped = vamp(ch,
+			      static_cast<double>(dam) *
+				      summoner_pet_vamp_rate(ch, dam_factor[DF_TRANCEVAMP]),
 			      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 	}
 
@@ -673,7 +684,9 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 			wdam = MIN(dam, dice(weapon->value[1], MAX(1, weapon->value[2])));
 		if (wdam)
 		{
-			vamped = vamp(ch, static_cast<double>(wdam) * dam_factor[DF_HFIREVAMP],
+			vamped = vamp(ch,
+				      static_cast<double>(wdam) *
+					      summoner_pet_vamp_rate(ch, dam_factor[DF_HFIREVAMP]),
 				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 	}
@@ -696,7 +709,7 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	if (!vamped && (flags & RAWDAM_TRANCEVAMP) && (IS_UNDEADRACE(ch) || IS_ANGEL(ch)) &&
 	    !IS_AFFECTED4(ch, AFF4_BATTLE_ECSTASY))
 	{
-		if (IS_DRACOLICH(ch))
+		if (IS_DRACOLICH(ch) && !summoner_capture(ch))
 		{
 			fhits = static_cast<double>(dam) * dam_factor[DF_DRACOLICHVAMP];
 			vamped = vamp(ch, fhits,
@@ -704,7 +717,8 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 		}
 		if (IS_NPC(ch))
 		{
-			fhits = static_cast<double>(dam) * dam_factor[DF_NPCVAMP];
+			fhits = static_cast<double>(dam) *
+				summoner_pet_vamp_rate(ch, dam_factor[DF_NPCVAMP], true);
 			vamped = vamp(ch, fhits,
 				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}

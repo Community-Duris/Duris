@@ -1,3 +1,4 @@
+#include "classes/summoner_pet.h"
 #include "player/player_load_pets.h"
 
 #include "player/player_load_items.h"
@@ -5,6 +6,7 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
+#include "sql/sql_spellbook.h"
 
 #include <algorithm>
 #include <new>
@@ -66,6 +68,7 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 	}
 	std::unordered_set<uint64_t> database_ids;
 	std::unordered_set<int32_t> orders;
+	int capture_count = 0, capture_levels = 0, greater_captures = 0;
 	int remaining_power = summoned_pet_capacity(owner);
 	int remaining_golem_power = IS_TRUSTED(owner) ? remaining_power : GET_LEVEL(owner) / 3;
 	try
@@ -119,6 +122,37 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 		const int cost = has_state ? summoned_pet_cost(state.kind) : 0;
 		const auto kind = static_cast<uint32_t>(state.kind);
 		const bool golem = has_state && kind >= 15 && kind <= 18;
+		const bool legacy_capture =
+			reason == pet_hold_reason::none && !has_state &&
+			GET_CLASS(owner, CLASS_SUMMONER) &&
+			sql_has_spellbook_mob(GET_PID(owner), snapshot.mob_vnum);
+		const bool capture =
+			(has_state && state.kind == summoned_pet_kind::summoner_capture) ||
+			legacy_capture;
+		int capture_level = state.level;
+		if (reason == pet_hold_reason::none && capture)
+		{
+			P_char probe = read_mobile(mobile_number, REAL, false);
+			if (!probe)
+			{
+				player_load_pets_discard(pets);
+				return fail(
+					metrics,
+					player_load_pet_materialize_outcome::allocation_failure);
+			}
+			if (has_state)
+				summoned_pet_apply(probe, state);
+			capture_level = std::min(GET_LEVEL(probe), GET_LEVEL(owner));
+			if (!valid_conjure(owner, probe))
+				reason = pet_hold_reason::invalid_state;
+			extract_char(probe);
+		}
+		if (reason == pet_hold_reason::none && capture &&
+		    (!GET_CLASS(owner, CLASS_SUMMONER) || capture_level > GET_LEVEL(owner) ||
+		     capture_count >= 4 ||
+		     capture_levels + capture_level > GET_LEVEL(owner) * 2 + 10 ||
+		     (greater_captures && capture_level >= 50)))
+			reason = pet_hold_reason::over_capacity;
 		const int64_t now = time(nullptr);
 		if (reason == pet_hold_reason::none && has_state &&
 		    ((state.charm_expires_at && state.charm_expires_at <= now) ||
@@ -148,6 +182,12 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 					player_load_pet_materialize_outcome::allocation_failure);
 			}
 			continue;
+		}
+		if (capture)
+		{
+			++capture_count;
+			capture_levels += capture_level;
+			greater_captures += capture_level >= 50;
 		}
 		remaining_power -= cost;
 		if (golem)
@@ -223,6 +263,10 @@ void player_load_pets_commit(P_char owner, std::vector<P_char> *pets,
 		P_char pet = (*pets)[index];
 		if (!pet)
 			continue;
+		if (summoner_capture(pet) ||
+		    (GET_CLASS(owner, CLASS_SUMMONER) && !pet->only.npc->summon_kind &&
+		     sql_has_spellbook_mob(GET_PID(owner), result.snapshot.pets[index].mob_vnum)))
+			summoner_pet_configure(pet, owner, false, true);
 		pet_restore_state state;
 		if (pet_restore_state_decode(result.snapshot.pets[index].restore_state, &state))
 			summoned_pet_restore_lifetime(pet, owner, state);
@@ -230,7 +274,11 @@ void player_load_pets_commit(P_char owner, std::vector<P_char> *pets,
 			setup_pet(pet, owner, result.snapshot.pets[index].charm_duration,
 				  PET_NOAGGRO | PET_RESTORE);
 		add_follower(pet, owner);
+		summoner_pet_sync_resources(pet);
+		summoner_pet_resume_slots(pet);
 	}
+	// Saved prepared slots recover even when every pet was dismissed before logout.
+	summoner_pet_start_recovery(owner);
 	if (owner->only.pc->held_pets && !owner->only.pc->held_pets->pets.empty())
 	{
 		logit(LOG_FILE, "pet recovery held pid=%d pets=%zu; saved equipment retained",

@@ -1,3 +1,4 @@
+#include "classes/summoner_pet.h"
 /*
  * ***************************************************************************
  * *  File: mobact.c                                           Part of Duris *
@@ -653,7 +654,12 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 	 * a precautionary measure. - SKB 21 Mar 1995
 	 */
 
-	if (!GET_CLASS(ch, CLASS_PSIONICIST) && !GET_CLASS(ch, CLASS_MINDFLAYER) && (lvl < 60))
+	if (summoner_owned_pet(ch))
+	{
+		if (!summoner_pet_spell_ready(ch, get_spell_circle(ch, spl)))
+			return FALSE;
+	}
+	else if (!GET_CLASS(ch, CLASS_PSIONICIST) && !GET_CLASS(ch, CLASS_MINDFLAYER) && (lvl < 60))
 	{
 		if (ch->specials.undead_spell_slots[circle] <= 0)
 		{
@@ -5302,7 +5308,8 @@ bool MobMonk(P_char ch)
 			if (isSpringable(ch, GET_OPPONENT(ch)))
 			{
 				do_kneel(ch, 0, CMD_KNEEL);
-				do_springleap(ch, buf, 0);
+				if (summoner_pet_skill(ch, CMD_SPRINGLEAP))
+					do_springleap(ch, buf, 0);
 				return TRUE;
 			}
 		default:
@@ -5311,7 +5318,8 @@ bool MobMonk(P_char ch)
 
 		if (*buf)
 		{
-			do_chant(ch, buf, 0);
+			if (summoner_pet_skill(ch, CMD_CHANT))
+				do_chant(ch, buf, 0);
 			return TRUE;
 		}
 	}
@@ -5577,7 +5585,8 @@ bool MobWarrior(P_char ch)
 			}
 			else
 			{
-				bash(ch, tch);
+				if (summoner_pet_skill(ch, CMD_BASH))
+					bash(ch, tch);
 			}
 			return TRUE;
 		}
@@ -5585,13 +5594,15 @@ bool MobWarrior(P_char ch)
 
 	if (isKickable(ch, GET_OPPONENT(ch)) && number(0, 2))
 	{
-		do_kick(ch, 0, 0);
+		if (summoner_pet_skill(ch, CMD_KICK))
+			do_kick(ch, 0, 0);
 		return TRUE;
 	}
 	else if (!number(0, 3) && GET_OPPONENT(ch) && (GET_POS(GET_OPPONENT(ch)) == POS_STANDING) &&
 		 isBashable(ch, GET_OPPONENT(ch)))
 	{
-		do_bash(ch, 0, 0);
+		if (summoner_pet_skill(ch, CMD_BASH))
+			do_bash(ch, 0, 0);
 
 		if (!IS_ALIVE(ch) || !IS_ALIVE(GET_OPPONENT(ch)) || (GET_POS(ch) < POS_STANDING) ||
 		    (GET_POS(GET_OPPONENT(ch)) < POS_STANDING))
@@ -5601,6 +5612,8 @@ bool MobWarrior(P_char ch)
 	}
 	else if ((n_atkr > 2) && (GET_LEVEL(ch) > 14) && number(0, 2))
 	{
+		if (!summoner_pet_skill(ch, CMD_HITALL))
+			return TRUE;
 		/*
 		 * psuedo hitall func, takes a swing at all chars fighting 'ch'
 		 */
@@ -5711,13 +5724,15 @@ bool MobRanger(P_char ch)
 	if (number(0, 2) && GET_OPPONENT(ch) && isSpringable(ch, GET_OPPONENT(ch)))
 	{
 		do_kneel(ch, 0, CMD_KNEEL);
-		do_springleap(ch, NULL, 0);
+		if (summoner_pet_skill(ch, CMD_SPRINGLEAP))
+			do_springleap(ch, NULL, 0);
 	}
 
 	if (GET_CHAR_SKILL(ch, SKILL_WHIRLWIND) > 0 && !affected_by_spell(ch, SKILL_WHIRLWIND) &&
 	    GET_OPPONENT(ch) && !number(0, 2))
 	{
-		do_whirlwind(ch, 0, 0);
+		if (summoner_pet_skill(ch, CMD_WHIRLWIND))
+			do_whirlwind(ch, 0, 0);
 		return true;
 	}
 
@@ -5777,8 +5792,10 @@ bool MobMercenary(P_char ch)
 				{
 					if (af->modifier == HOLD_IMPROVED)
 					{
-						do_groundslam(ch, 0, CMD_GROUNDSLAM);
-						do_leglock(ch, 0, CMD_LEGLOCK);
+						if (summoner_pet_skill(ch, CMD_GROUNDSLAM))
+							do_groundslam(ch, 0, CMD_GROUNDSLAM);
+						if (summoner_pet_skill(ch, CMD_LEGLOCK))
+							do_leglock(ch, 0, CMD_LEGLOCK);
 						return TRUE;
 					}
 				}
@@ -5789,18 +5806,21 @@ bool MobMercenary(P_char ch)
 				     CLASS_BARD | CLASS_DRUID | CLASS_ETHERMANCER | CLASS_SHAMAN |
 				     CLASS_NECROMANCER | CLASS_THEURGIST | CLASS_SUMMONER))
 				{
-					do_headlock(ch, 0, CMD_HEADLOCK);
+					if (summoner_pet_skill(ch, CMD_HEADLOCK))
+						do_headlock(ch, 0, CMD_HEADLOCK);
 				}
 				else
 				{
-					do_bearhug(ch, 0, CMD_BEARHUG);
+					if (summoner_pet_skill(ch, CMD_BEARHUG))
+						do_bearhug(ch, 0, CMD_BEARHUG);
 				}
 				return TRUE;
 			}
 			else if ((GET_POS(vict) != POS_STANDING))
 			{
 				do_kneel(ch, 0, CMD_KNEEL);
-				do_leglock(ch, 0, CMD_KNEEL);
+				if (summoner_pet_skill(ch, CMD_LEGLOCK))
+					do_leglock(ch, 0, CMD_KNEEL);
 				return TRUE;
 			}
 		}
@@ -5812,14 +5832,16 @@ bool MobMercenary(P_char ch)
 		      (GET_ALT_SIZE(vict) < GET_ALT_SIZE(ch) - 1)) &&
 		    HAS_FOOTING(ch) && (GET_POS(vict) == POS_STANDING))
 		{
-			do_tackle(ch, 0, CMD_TACKLE);
+			if (summoner_pet_skill(ch, CMD_TACKLE))
+				do_tackle(ch, 0, CMD_TACKLE);
 		}
 		else if (!affected_by_spell_flagged(vict, SKILL_THROAT_CRUSH, AFFTYPE_CUSTOM1) &&
 			 number(0, 1) && GET_CHAR_SKILL_P(ch, SKILL_THROAT_CRUSH))
 		{
-			do_throat_crush(ch, 0, CMD_THROAT_CRUSH);
+			if (summoner_pet_skill(ch, CMD_THROAT_CRUSH))
+				do_throat_crush(ch, 0, CMD_THROAT_CRUSH);
 		}
-		else
+		else if (summoner_pet_skill(ch, CMD_HEADBUTT))
 			do_headbutt(ch, 0, CMD_HEADBUTT);
 		return TRUE;
 	}
@@ -5998,7 +6020,8 @@ bool MobThief(P_char ch)
 	if (IS_FIGHTING(ch) && !IS_AFFECTED(GET_OPPONENT(ch), AFF_BLIND) &&
 	    GET_CHAR_SKILL(ch, SKILL_DIRTTOSS) && !number(0, 6))
 	{
-		do_dirttoss(ch, GET_NAME(GET_OPPONENT(ch)), CMD_DIRTTOSS);
+		if (summoner_pet_skill(ch, CMD_DIRTTOSS))
+			do_dirttoss(ch, GET_NAME(GET_OPPONENT(ch)), CMD_DIRTTOSS);
 		return TRUE;
 	}
 
@@ -6007,7 +6030,8 @@ bool MobThief(P_char ch)
 	    get_takedown_size(ch) <= get_takedown_size(GET_OPPONENT(ch)))
 
 	{
-		do_trip(ch, GET_NAME(GET_OPPONENT(ch)), CMD_TRIP);
+		if (summoner_pet_skill(ch, CMD_TRIP))
+			do_trip(ch, GET_NAME(GET_OPPONENT(ch)), CMD_TRIP);
 		return TRUE;
 	}
 	/* now we be cooking with gas, escaped, got bs weapon in hand */
@@ -6108,7 +6132,8 @@ void MobCombat(P_char ch)
 	if (number(0, 2) && GET_OPPONENT(ch) && isSpringable(ch, GET_OPPONENT(ch)))
 	{
 		do_kneel(ch, 0, CMD_KNEEL);
-		do_springleap(ch, NULL, 0);
+		if (summoner_pet_skill(ch, CMD_SPRINGLEAP))
+			do_springleap(ch, NULL, 0);
 		return;
 	}
 
@@ -6750,7 +6775,8 @@ void MobStartFight(P_char ch, P_char vict)
 	    (GET_ALT_SIZE(ch) <= (GET_ALT_SIZE(vict) + 1)) &&
 	    ((GET_ALT_SIZE(ch) + 1) >= GET_ALT_SIZE(vict)))
 	{
-		backstab(ch, vict);
+		if (summoner_pet_skill(ch, CMD_BACKSTAB))
+			backstab(ch, vict);
 		return;
 	}
 	if (!fudge_flag && GET_CLASS(ch, CLASS_WARRIOR) && has_innate(ch, INNATE_BODYSLAM) &&
@@ -6758,14 +6784,16 @@ void MobStartFight(P_char ch, P_char vict)
 	    get_takedown_size(ch) >= get_takedown_size(vict) - 2 && !IS_BACKRANKED(vict) &&
 	    !number(0, 3) && HAS_FOOTING(ch))
 	{
-		bodyslam(ch, vict);
+		if (summoner_pet_skill(ch, CMD_BODYSLAM))
+			bodyslam(ch, vict);
 		return;
 	}
 	if (!fudge_flag && IS_WARRIOR(ch) && !IS_IMMATERIAL(ch) &&
 	    (GET_CHAR_SKILL(ch, SKILL_BASH) > 0) && (GET_POS(ch) == POS_STANDING) &&
 	    (GET_POS(vict) == POS_STANDING) && isBashable(ch, vict) && !number(0, 2))
 	{
-		bash(ch, vict);
+		if (summoner_pet_skill(ch, CMD_BASH))
+			bash(ch, vict);
 		// Due to certain cleverness in bash (if not likely to succeed, mob doesn't)
 		//   return only if bashed (success/fail matters not). Let's make sure nobody died too.
 		if (!IS_ALIVE(ch) || !IS_ALIVE(vict) || GET_OPPONENT(ch))
@@ -10286,26 +10314,30 @@ void event_agg_attack(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 		{
 			if (GOOD_FOR_GAZING(ch, victim) && number(0, 2))
 			{
-				gaze(ch, victim);
+				if (summoner_pet_skill(ch, CMD_GAZE))
+					gaze(ch, victim);
 				return;
 			}
 			else if (isMaulable(ch, victim) && GET_CHAR_SKILL(ch, SKILL_MAUL) > 40 &&
 				 number(0, 2))
 			{
-				do_maul(ch, GET_NAME(victim), CMD_MAUL);
+				if (summoner_pet_skill(ch, CMD_MAUL))
+					do_maul(ch, GET_NAME(victim), CMD_MAUL);
 				return;
 			}
 			else if (isSpringable(ch, victim) &&
 				 GET_CHAR_SKILL(ch, SKILL_SPRINGLEAP) > 40 && number(0, 2))
 			{
 				do_kneel(ch, NULL, CMD_KNEEL);
-				do_springleap(ch, GET_NAME(victim), 0);
+				if (summoner_pet_skill(ch, CMD_SPRINGLEAP))
+					do_springleap(ch, GET_NAME(victim), 0);
 				return;
 			}
 			else if (isBashable(ch, victim) && GET_CHAR_SKILL(ch, SKILL_BASH) > 40 &&
 				 number(0, 2))
 			{
-				bash(ch, victim);
+				if (summoner_pet_skill(ch, CMD_BASH))
+					bash(ch, victim);
 				return;
 			}
 			else if (GET_CHAR_SKILL(ch, SKILL_SWITCH_OPPONENTS))

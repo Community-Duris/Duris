@@ -114,6 +114,12 @@ template <typename IO, typename State> void fields(IO &io, State &s)
 	io.number(s.sex);
 	io.number(s.size);
 	io.number(s.alignment);
+	if (s.version == 2)
+	{
+		io.number(s.specialization);
+		io.number(s.resource_slot);
+		io.number(s.hp_ceiling);
+	}
 }
 
 bool valid(const pet_restore_state &s)
@@ -123,16 +129,22 @@ bool valid(const pet_restore_state &s)
 		return !v.empty() && v.size() <= PET_RESTORE_STATE_MAX_TEXT &&
 		       v.find('\0') == std::string::npos;
 	};
-	return s.version == 1 && static_cast<uint32_t>(s.kind) <= 22 && s.charm_expires_at >= 0 &&
-	       s.death_expires_at >= 0 && s.charm_expires_at <= INT64_MAX / 16 &&
-	       s.death_expires_at <= INT64_MAX / 16 && text_ok(s.name) &&
-	       text_ok(s.short_description) && text_ok(s.long_description) && s.level > 0 &&
-	       s.level <= 255 && s.race >= 0 && s.race <= 255 && s.sex >= 0 && s.sex <= 3 &&
-	       s.size >= 0 && s.size <= 255 && s.alignment >= -1000 && s.alignment <= 1000 &&
-	       s.base_points[0] > 0 && s.base_points[1] >= 0 && s.base_points[1] <= INT16_MAX &&
-	       s.base_points[2] >= 0 && s.base_points[2] <= INT16_MAX &&
-	       s.base_points[3] >= INT16_MIN && s.base_points[3] <= INT16_MAX &&
-	       s.base_points[6] >= 0 && s.base_points[6] <= INT16_MAX &&
+	return (s.version == 1 || s.version == 2) &&
+	       static_cast<uint32_t>(s.kind) <= (s.version == 1 ? 22u : 24u) &&
+	       s.specialization >= 0 && s.specialization <= 255 && s.resource_slot >= 0 &&
+	       s.resource_slot <= 4 && s.hp_ceiling >= 0 &&
+	       (s.kind != summoned_pet_kind::summoner_capture ||
+		(s.resource_slot >= 1 && s.hp_ceiling > 0)) &&
+	       s.charm_expires_at >= 0 && s.death_expires_at >= 0 &&
+	       s.charm_expires_at <= INT64_MAX / 16 && s.death_expires_at <= INT64_MAX / 16 &&
+	       text_ok(s.name) && text_ok(s.short_description) && text_ok(s.long_description) &&
+	       s.level > 0 && s.level <= 255 && s.race >= 0 && s.race <= 255 && s.sex >= 0 &&
+	       s.sex <= 3 && s.size >= 0 && s.size <= 255 && s.alignment >= -1000 &&
+	       s.alignment <= 1000 && s.base_points[0] > 0 && s.base_points[1] >= 0 &&
+	       s.base_points[1] <= INT16_MAX && s.base_points[2] >= 0 &&
+	       s.base_points[2] <= INT16_MAX && s.base_points[3] >= INT16_MIN &&
+	       s.base_points[3] <= INT16_MAX && s.base_points[6] >= 0 &&
+	       s.base_points[6] <= INT16_MAX &&
 	       std::all_of(s.damage_dice.begin(), s.damage_dice.end(),
 			   [](int32_t v) { return v >= 0 && v <= INT8_MAX; }) &&
 	       std::all_of(s.base_stats.begin(), s.base_stats.end(),
@@ -205,6 +217,12 @@ bool legacy_summon_prototype(int vnum)
 bool summoned_pet_matches_prototype(summoned_pet_kind kind, int vnum)
 {
 	const auto value = static_cast<uint32_t>(kind);
+	if (kind == summoned_pet_kind::summoner_capture)
+		return vnum > 0;
+	if (kind == summoned_pet_kind::conjurer_elemental)
+		return (vnum >= 1100 && vnum <= 1103) || (vnum >= 41 && vnum <= 44) ||
+		       (vnum >= 1110 && vnum <= 1112) || (vnum >= 1120 && vnum <= 1122) ||
+		       (vnum >= 1130 && vnum <= 1132) || (vnum >= 1140 && vnum <= 1142);
 	if (value >= 1 && value <= 14)
 		return vnum == 1201;
 	constexpr int golems[] = { 34, 35, 33, 77 };

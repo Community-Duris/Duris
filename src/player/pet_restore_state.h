@@ -16,6 +16,8 @@ enum class summoned_pet_kind : uint32_t
 	dracolich = 20,
 	avatar = 21,
 	greater_dracolich = 22,
+	summoner_capture = 23,
+	conjurer_elemental = 24,
 };
 
 enum class pet_hold_reason : uint32_t
@@ -49,6 +51,8 @@ struct pet_restore_state
 	uint64_t act = 0;
 	uint32_t primary_class = 0, secondary_class = 0;
 	int32_t level = 0, race = 0, sex = 0, size = 0, alignment = 0;
+	// Version 2 extends the existing payload; version 1 remains readable.
+	int32_t specialization = 0, resource_slot = 0, hp_ceiling = 0;
 };
 
 // Bounded, endian-independent ASCII payload: safe in SQL text and binary
