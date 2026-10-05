@@ -1463,6 +1463,64 @@ class ReconciliationTests(unittest.TestCase):
                     "realized_price_copper"] = 3001
                 self.assertIn("realized_price_scope_mismatch", self.codes(snapshot))
 
+    def test_realized_price_scope_compares_all_shared_root_fields(self):
+        for field in ("reason", "outcome", "result_code", "realized_price_copper"):
+            for limit in (0, 1, 100):
+                with self.subTest(field=field, limit=limit):
+                    snapshot = price_snapshot()
+                    row = snapshot["native"]["lineage_realized_prices"][0]
+                    current = snapshot["operations"][0]
+                    expected = {"realized_price_scope_mismatch": 1}
+                    if field == "reason":
+                        row[field] = 22
+                    elif field == "outcome":
+                        row.update(outcome="rejected", result_code=9)
+                        row["inbox_receipt"]["result_code"] = 9
+                        expected["rejected_realized_price"] = 1
+                    elif field == "result_code":
+                        current.update(outcome="rejected", result_code=9,
+                                       realized_price_copper=None)
+                        row.update(outcome="rejected", result_code=10,
+                                   realized_price_copper=None)
+                        row["inbox_receipt"]["result_code"] = 10
+                        snapshot["native"]["realized_price_coverage"]["missing_price_rows"] = 1
+                    else:
+                        row[field] = 3001
+                    before = copy.deepcopy(snapshot)
+                    reconciler = Reconciler(limit=limit)
+                    reconciler.audit_lineage_realized_prices(
+                        LINEAGE, EPOCH, snapshot["backend"], snapshot["native"],
+                        {(OP,): current})
+                    self.assertEqual(dict(reconciler.counts), expected)
+                    self.assertEqual(snapshot, before)
+                    self.assertEqual(len(reconciler.exceptions), min(limit, sum(expected.values())))
+
+    def test_price_view_reports_same_amount_conflicting_reasons_at_every_limit(self):
+        snapshot = price_snapshot()
+        snapshot["native"]["lineage_realized_prices"][0]["reason"] = 22
+        before = copy.deepcopy(snapshot)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "prices.json"
+            path.write_text(json.dumps(snapshot), encoding="utf-8")
+            original = path.read_bytes()
+            for limit in (0, 1, 100):
+                with self.subTest(limit=limit):
+                    report = Reconciler(limit=limit).audit(snapshot)
+                    self.assertEqual(report["exception_counts"], {"realized_price_scope_mismatch": 1})
+                    output = view(snapshot, report, "prices", limit)
+                    self.assertEqual(output["count"], 5)
+                    self.assertEqual(output["coverage"]["exception_count"], 1)
+                    self.assertEqual(output["truncated"], 5 > limit)
+                    result = subprocess.run(
+                        [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                         str(path), "--view", "prices", "--limit", str(limit)],
+                        capture_output=True, text=True, timeout=30)
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertEqual(result.stderr, "")
+                    self.assertEqual(json.loads(result.stdout), output)
+                    self.assertEqual(path.read_bytes(), original)
+                    self.assertEqual(snapshot, before)
+
     def test_realized_price_roots_require_durable_inbox_receipts(self):
         snapshot = clean_snapshot()
         snapshot["operations"][0].update(reason=24, realized_price_copper=3000)
@@ -2376,8 +2434,12 @@ def native_stake_sql():
     from test_persistence_backup_integration import sql
     read_evidence = exporter.read_evidence
     root = ROOT
-    work=root/'bin/tests/plan5-price-view-sql'
-    work.mkdir(mode=0o700,parents=True,exist_ok=True)
+    default_work=root/'bin/tests/plan5-price-view-sql'
+    selected_work=os.environ.get('DURIS_PLAN5_PRICE_AUDIT_ARTIFACTS')
+    work=Path(selected_work).resolve() if selected_work else default_work
+    if selected_work and (work.exists() or not work.is_relative_to(default_work.resolve())):
+        raise RuntimeError('select a fresh price artifact directory below bin/tests/plan5-price-view-sql')
+    work.mkdir(mode=0o700,parents=True,exist_ok=not selected_work)
     source=work/'probe.cpp'
     source.write_text('''#include "economy/economic_accounting_intent.h"
     #include <cassert>
@@ -2582,6 +2644,7 @@ def native_stake_sql():
     assert [struct.unpack_from('<H',plan,96)[0] for _,plan in price_batches]==[21,22,24,27]
     print('NATIVE_PRICE_ROOTS modes=2 roots=4 epochs=2 zero_effect_structural_only=True',flush=True)
 
+    projection_results=[]
     with tempfile.TemporaryDirectory(prefix='duris-stake-audit-sql-') as directory:
         base=Path(directory)
         for engine in ('mariadb','mysql'):
@@ -2676,6 +2739,36 @@ def native_stake_sql():
                                     assert json.loads(result.stdout)==output
                                     assert path.read_bytes()==original_bytes and snapshot==snapshot_before
                                 if not expected:
+                                    # Compare independent projections of actual native roots.
+                                    # Corrupt only copied export data; retain the SQL cut and
+                                    # exercise result codes with two terminal rejection rows.
+                                    for field in ('reason','outcome','result_code','realized_price_copper'):
+                                        altered=copy.deepcopy(snapshot)
+                                        row=next(row for row in altered['native']['lineage_realized_prices']
+                                                 if row['epoch']==EPOCH)
+                                        current=next(root_row for root_row in altered['operations']
+                                                     if root_row['operation_id']==row['operation_id'])
+                                        wanted={'realized_price_scope_mismatch':1}
+                                        if field=='reason': row[field]=22
+                                        elif field=='outcome':
+                                            row.update(outcome='rejected',result_code=9)
+                                            row['inbox_receipt']['result_code']=9
+                                            wanted['rejected_realized_price']=1
+                                        elif field=='result_code':
+                                            current.update(outcome='rejected',result_code=9,realized_price_copper=None)
+                                            row.update(outcome='rejected',result_code=10,realized_price_copper=None)
+                                            row['inbox_receipt']['result_code']=10
+                                            altered['native']['realized_price_coverage']['missing_price_rows']=1
+                                        else: row[field]+=1
+                                        altered_before=copy.deepcopy(altered)
+                                        checker=Reconciler(limit=0)
+                                        checker.audit_lineage_realized_prices(
+                                            LINEAGE,EPOCH,altered['backend'],altered['native'],
+                                            {(root_row['operation_id'],):root_row
+                                             for root_row in altered['operations']})
+                                        assert altered==altered_before and snapshot==snapshot_before and rows()==before
+                                        projection_results.append(dict(engine=engine,field=field,
+                                            expected=wanted,observed=dict(checker.counts)))
                                     snapshot.update(complete=False,quiescent=False)
                                     partial=Reconciler().audit(snapshot)
                                     for limit in (0,1,100):
@@ -2841,9 +2934,13 @@ def native_stake_sql():
                         print('PASS stake-read-only '+engine+' captures=45 rollback=45 SQL-tables=7 unchanged inactive source-refusals=9 source-kind-refusals=22 original-self-refusals=2',flush=True)
                     finally: reader.close()
                 finally: owner.close()
+    (work/'price-scope-results.json').write_text(json.dumps(projection_results,indent=2,sort_keys=True)+'\n')
+    print('NATIVE_PRICE_SCOPE '+json.dumps(projection_results,sort_keys=True),flush=True)
+    assert len(projection_results)==16 and all(row['expected']==row['observed'] for row in projection_results)
     print('STAKE_SQL_QUALIFIED '+json.dumps({'engines':2,'native_modes':2,'plans':2,'intents':2,
           'read_only_captures':90,'fault_captures':72,'source_fault_captures':62,'source_kind_fault_captures':44,
           'price_roots':4,'price_epochs':2,'price_captures':8,'price_CLI_cases':24,
+          'price_projection_scope_cases':16,
           'original_link_fault_captures':4,'native_original_link_cases':6,
           'native_source_cases':104,'native_policy_cases':1107,
           'permission_denials':2,'full_mutation_or_gameplay':False},sort_keys=True),flush=True)

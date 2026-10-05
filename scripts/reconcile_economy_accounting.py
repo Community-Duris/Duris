@@ -2002,7 +2002,9 @@ class Reconciler:
                 self.emit("unknown_outcome", operation_id=operation_id)
             if row_epoch == epoch:
                 current = current_ids.get(operation_id)
-                if current is None or current.get("realized_price_copper") != price:
+                if current is None or any(
+                        current.get(field) != row.get(field) for field in
+                        ("reason", "outcome", "result_code", "realized_price_copper")):
                     self.emit("realized_price_scope_mismatch", operation_id=operation_id)
                 current_ids.pop(operation_id, None)
             by_operation[operation_id] = row
