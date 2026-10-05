@@ -111,6 +111,7 @@ struct Fixture {
         for (int i = 0; i < 10; ++i) ch.base_stats[i] = ch.curr_stats[i] = 100;
         ch.in_room = 1;
         ch.points.hit = ch.points.max_hit = ch.points.base_hit = 90000;
+        ch.points.base_damroll = ch.points.damroll = level >= 51 ? 30 + level / 2 : 20 + level / 2;
         ch.points.mana = ch.points.max_mana = ch.points.base_mana = 30000;
     }
     ~Fixture() { while (ch.affected) { auto *af = ch.affected; ch.affected = af->next; delete af; } }
@@ -139,6 +140,49 @@ int main() {
     assert(!(bran.ch.specials.act & (ACT_ELITE | ACT_NO_BASH | ACT_IGNORE)));
     assert(GET_MAX_MANA(&bran.ch) == 448 && GET_MAX_HIT(&bran.ch) <= necro_hp_ceiling(&owner.ch));
     const int bran_hp = GET_MAX_HIT(&bran.ch);
+    assert(bran.ch.points.base_damroll == 60); // retain the formerly summonable level-61 body's base
+    bran.ch.points.damroll = 200;
+    summoner_pet_finish_affects(&bran.ch);
+    assert(bran.ch.points.damroll == 100 && bran.ch.points.base_damroll == 60);
+    bran.ch.points.damroll = 88;
+    summoner_pet_finish_affects(&bran.ch);
+    assert(bran.ch.points.damroll == 88); // the cap does not grant damage
+    bran.ch.curr_stats.Pow = 500;
+    assert(summoner_pet_heal_cap(&bran.ch, bran_hp * 3) == bran_hp * 11 / 10);
+    assert(summoner_pet_heal_cap(&bran.ch, bran_hp) == bran_hp);
+    bran.ch.points.hit = bran_hp * 3;
+    summoner_pet_finish_affects(&bran.ch);
+    assert(GET_HIT(&bran.ch) == bran_hp * 11 / 10);
+    assert(summoner_pet_vamp_rate(&bran.ch, .8) == .25);
+    assert(summoner_pet_vamp_rate(&bran.ch, .5, true) == .10);
+    assert(summoner_pet_vamp_rate(&bran.ch, .05) == .05);
+    Fixture untouched(true, RACE_F_ELEMENTAL, CLASS_WARRIOR, 55);
+    untouched.npc.summon_kind = static_cast<uint32_t>(summoned_pet_kind::conjurer_elemental);
+    untouched.ch.points.damroll = 150;
+    summoner_pet_finish_affects(&untouched.ch);
+    assert(!summoner_balanced_body(&untouched.ch));
+    assert(untouched.ch.points.damroll == 150 && GET_MAX_HIT(&untouched.ch) == 90000);
+    assert(summoner_pet_heal_cap(&untouched.ch, 270000) == 270000);
+    assert(summoner_pet_vamp_rate(&untouched.ch, .8) == .8);
+    assert(summoner_pet_heal_cap(&owner.ch, 270000) == 270000);
+    assert(summoner_pet_vamp_rate(&owner.ch, .7) == .7);
+    Fixture aden(true, RACE_GREY, CLASS_BARD, 56);
+    Fixture xavier(true, RACE_HUMAN, CLASS_WARLOCK | CLASS_ETHERMANCER, 56);
+    owner.ch.curr_stats.Cha = 130;
+    Fixture actual_bran(true, RACE_WIGHT, CLASS_WARRIOR | CLASS_CLERIC | CLASS_ANTIPALADIN, 56);
+    summoner_pet_configure(&actual_bran.ch, &owner.ch, true);
+    assert(GET_MAX_HIT(&actual_bran.ch) == 1603);
+    assert(actual_bran.ch.points.base_damroll == 58);
+    summoner_pet_configure(&aden.ch, &owner.ch, true);
+    summoner_pet_configure(&xavier.ch, &owner.ch, true);
+    assert(GET_MAX_HIT(&aden.ch) == 835); // racial profile alone would have raised this to 973
+    assert(GET_MAX_HIT(&xavier.ch) == 974); // racial profile alone would have raised this to 1317
+    assert(GET_MAX_HIT(&aden.ch) == normal_capture_hp(&aden.ch, &owner.ch));
+    chaos = true;
+    summoner_pet_configure(&aden.ch, &owner.ch, true);
+    assert(GET_MAX_HIT(&aden.ch) == 835); // no wild Chaos division by ten
+    chaos = false;
+    owner.ch.curr_stats.Cha = 100;
     bran.ch.points.base_hit = GET_MAX_HIT(&bran.ch) = 999999;
     summoner_pet_configure(&bran.ch, &owner.ch, true);
     assert(GET_MAX_HIT(&bran.ch) == bran_hp); // prototype difficulty does not change trained body
@@ -157,22 +201,15 @@ int main() {
     for (int habitat : {-1, 0, 1}) {
         terrain = habitat;
         Fixture elemental(true, RACE_E_ELEMENTAL, CLASS_WARRIOR | CLASS_CLERIC, 56);
-        Fixture conjured(true, RACE_E_ELEMENTAL, CLASS_WARRIOR, 56);
         Fixture heater(true, RACE_F_ELEMENTAL, CLASS_WARRIOR, 56);
-        summoner_pet_configure(&elemental.ch, &owner.ch, true);
-        // Preview intentionally uses neutral terrain; live creation uses the shared builder.
-        summoner_elemental_body(&elemental.ch, &owner.ch, true, habitat, 800, 30);
-        summoner_elemental_body(&conjured.ch, &owner.ch, true, habitat, 800, 30);
+        // Live capture uses terrain and the legacy ceiling; the heater builder is an upper benchmark.
+        summoner_pet_configure(&elemental.ch, &owner.ch);
         summoner_elemental_body(&heater.ch, &owner.ch, true, habitat, 700, 25);
         assert(GET_MAX_HIT(&elemental.ch) <= necro_hp_ceiling(&owner.ch));
         assert(GET_MAX_HIT(&elemental.ch) <= GET_MAX_HIT(&heater.ch));
         assert(elemental.ch.points.base_damroll <= heater.ch.points.base_damroll);
         assert(GET_LEVEL((&elemental.ch)) == 55);
-        assert(GET_MAX_HIT(&elemental.ch) == GET_MAX_HIT(&conjured.ch));
-        assert(elemental.ch.points.base_damroll == conjured.ch.points.base_damroll);
-        assert(elemental.ch.points.damnodice == conjured.ch.points.damnodice);
-        assert(elemental.ch.points.damsizedice == conjured.ch.points.damsizedice);
-        assert(GET_SIZE(&elemental.ch) == GET_SIZE(&conjured.ch));
+        assert(GET_MAX_HIT(&elemental.ch) <= normal_capture_hp(&elemental.ch, &owner.ch));
         assert(elemental.ch.player.m_class == (CLASS_WARRIOR | CLASS_CLERIC));
     }
     terrain = 0;
@@ -285,7 +322,7 @@ int main() {
         for (int vnum : recipes) assert(approved.contains(vnum));
         summoner_chaos_recipes(&owner.ch); assert(recipes.size() == 3);
     }
-    std::puts("summoner class preservation, body caps, elemental parity, mana, useful songs, 60-second flight, swaps/restoration, recovery and Chaos passed");
+    std::puts("summoner class preservation, legacy HP/DR ceilings, capture-only vamp, elemental benchmarks, mana, useful songs, 60-second flight, swaps/restoration, recovery and Chaos passed");
 }
 '''
 
@@ -327,4 +364,13 @@ assert "summoner_pet_sync_resources(ch)" in function("src/classes/memorize.c", "
 assert (ROOT / "src/classes/bard.c").read_text().count("summoner_pet_song(") == 3
 assert "summoner_chaos_recipes(ch)" in function("src/classes/drannak.c", "void do_conjure(")
 assert "summoner_pet_start_recovery(owner)" in function("src/player/player_load_pets.c", "void player_load_pets_commit(")
-print("summoner order, spell, song, recovery and Chaos integration gates passed")
+conjuration = (ROOT / "src/magic/spell_conjuration.c").read_text()
+assert "summoner_elemental_body(" not in conjuration
+assert "summoned_pet_mark(" not in conjuration
+assert "pets[summoned].damroll + number(20, 30)" in conjuration
+assert "dice(GET_LEVEL(mob) / 2, 12)" in conjuration
+vamp_source = (ROOT / "src/combat/damage_support.c").read_text()
+assert "cap = summoner_pet_heal_cap(ch, (int)fcap)" in function("src/combat/damage_support.c", "int vamp(")
+assert "IS_DRACOLICH(ch) && !summoner_capture(ch)" in vamp_source
+assert "summoner_pet_vamp_rate(ch, dam_factor[DF_NPCVAMP], true)" in vamp_source
+print("summoner order, spell, song, recovery, Chaos, vamp and conjurer-isolation integration gates passed")

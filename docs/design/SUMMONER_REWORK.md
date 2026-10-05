@@ -17,11 +17,34 @@ For a non-elemental of trained level L, start with `120 + 0.30 * L²`. Multiply 
 | Dragon, dragonkin, dracolich, quadruped, carnivore, herbivore, centaur, purple worm | 1.20–1.65 |
 | Plant, slime | 1.45–1.90 |
 
-Role factors, in priority order: bard 0.85; multiclass 0.90; other caster 0.80; rogue/thief/assassin 0.90; other 1.00. HP, including equipment and buffs, is bounded by the upper end of that racial profile and the strongest level-appropriate necromancer body. That benchmark uses existing undead/golem recipes, mean HP dice, actual spell unlock levels, and Infuse Life; it excludes artifact bonuses. Non-elemental melee uses necromancer-style dice, 0.70L hitroll and 0.55L damroll, with base armor -L.
+Role factors, in priority order: bard 0.85; multiclass 0.90; other caster 0.80; rogue/thief/assassin 0.90; other 1.00. HP, including equipment and buffs, is bounded by the upper end of that racial profile, the strongest level-appropriate necromancer body, and the old ordinary captured-body allowance. The necromancer benchmark uses existing undead/golem recipes, mean HP dice, actual spell unlock levels, and Infuse Life; it excludes artifact bonuses.
 
-Elementals use the same body builder as conjurer-created elementals, including terrain bonuses and innate earth skin/air flight. Lesser bodies cap at level 45; greater bodies cap at 53, or 55 for a level-56 owner. The heater's template HP/damroll (700/25) bounds greater elemental bodies, and the necromancer HP ceiling still applies. Conjurer creation also uses this deterministic builder, so matching trained elementals have matching bodies; this replaces the old random HP rolls. Full captured classes remain available, subject to resources.
+The old-body ceiling freezes the checked-in normal-mode racial Constitution and class HP factors. It uses the trained level, the old conversion formula and Infuse Life, without the random Charisma or elite bonuses. This conservative ceiling prevents low-HP races from gaining HP through the new profiles. Wild NPC property changes, zone difficulty and Chaos's wild HP division do not change this allowance. For example, at owner level 56, CHA 130 and Infuse Life 100, Bran receives 1,603 HP, A’den 835 and Xavier 974; Bran is not reduced to his 228-HP wild Chaos body.
+
+Non-elemental melee uses necromancer-style dice, 0.70L hitroll, the captured prototype's existing base damroll (up to 100), and base armor -L. Final damroll, including equipment and buffs, caps at 100. The cap grants no extra damage: a level-56 hard-hitting body normally retains its old base damroll of 58.
+
+Captured elementals use a deterministic body based on existing conjurer formulas, including terrain bonuses and innate earth skin/air flight. Lesser bodies cap at level 45; greater bodies cap at 53, or 55 for a level-56 owner. The heater's template HP/damroll (700/25) bounds greater captured elemental bodies, and the necromancer and old-body HP ceilings still apply. Conjurer creation retains its existing random HP rolls, templates and combat behavior. Full captured classes remain available, subject to resources.
 
 Trained pets use neutral base attributes and a damage multiplier of 1 rather than wild NPC racial/zone stat tuning. Capture removes authored elite/ignore/no-bash/paralysis-immunity and automatic breath flags. Class buffs and equipment can still change combat stats within the HP and mana bounds. Captured non-elemental immaterial bodies use the player-style 10% takedown dodge; elemental defenses remain.
+
+Only Summoner captures receive the new lifesteal limits: passive undead drain at most 10%, other supported lifesteal such as Vampiric Touch at most 25%, and healing/overheal at most 110% of maximum HP. Captured dracoliches do not stack the ordinary dracolich drain with undead drain. Existing lower lifesteal rates stay lower. Players, necromancer summons, conjurer elementals and other NPCs retain their existing rules.
+
+### Historical captured HP limits
+
+The old base-HP cap was 8,000. The following calculations use the checked-in normal configuration (`conFactor = 1`, `NpcPcRatio = 1`, elite multiplier 1.05), Infuse Life 100, and active world prototypes. Ordinary HP has no random Charisma adjustment; best-roll HP adds the maximum 40% Charisma bonus before Infuse Life. These are calculated summon bodies, not a measurement of historical production settings or buffed total HP. Authored HP dice and zone-loaded encounter HP are not the summoned-body formula.
+
+| Capture | Wild level | Ordinary HP | Best old roll |
+| --- | --- | --- | --- |
+| Snow ogre tribal guard/guardian (87701, 87705, 87707) | 56 | 5,427 | 7,598 |
+| Snow ogre tribeswoman/tribesman (87703, 87731) | 57 | 5,718 | 8,000 |
+| Snow ogre search party guardian (87738) | 59 | 6,330 | 8,000 |
+| Elite snow ogre guardian (87708) | 60 | 6,652 | 8,000 |
+| Insane snow ogre berserker (87700) | 61 | 6,168 | 8,000 |
+| Snow ogre deathknight (87704) | 61 | 6,667 | 8,000 |
+| Huge ancient walking tree (42236; Naturalist) | 56 | 3,342 | 4,677 |
+| Living current / large water elemental (45521, 71225; Mentalist) | 56 | 2,986 | 4,180 |
+
+Level-57–61 captures require a greater orb for a level-56 owner; captures above level 56 cannot be conjured without one. The accounting branch blocks orb summoning while item accounting is active, so those 8,000-HP examples are unavailable through the orb path in active accounting mode. In the active prototype survey, the largest level-56 body was 7,598 on the best roll. The rework uses the lower trained-body ceilings above; 8,000 is historical context, not the new trained HP budget.
 
 ## Resources
 
@@ -58,7 +81,7 @@ When Chaos is enabled, a level-56 summoner learns the approved recipes for their
 | Mentalist | Earth Library sentry (35543; 53), Air Library sentry (35542; 53), small pech (30623; 56) |
 | Naturalist | dragonkin seer (135214; 56), black scorpion (42204; 54), huge black warg (78483; 52) |
 
-For example, Bran retains Warrior/Cleric/Antipaladin and his specialization, but loses his encounter body/immunities, gets 448 mana, and shares his casting circles. A level-31 Harrow bard retains Bard and its specialization with 186 mana and useful-pulse costs. Plane elementals retain their complete classes but receive the matching conjurer body, bounded by heater and necromancer HP benchmarks, plus 4L mana and shared casting slots.
+For example, Bran retains Warrior/Cleric/Antipaladin and his specialization, but loses his encounter body/immunities, gets 448 mana, and shares his casting circles. A level-31 Harrow bard retains Bard and its specialization with 186 mana and useful-pulse costs. Plane elementals retain their complete classes but receive a trained elemental body, bounded by heater, necromancer and old-body HP benchmarks, plus 4L mana and shared casting slots.
 
 ## Persistence and validation
 

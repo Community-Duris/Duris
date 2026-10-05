@@ -177,6 +177,33 @@ std::pair<double, double> racial_range(int race)
 	}
 }
 
+// Frozen normal-mode body values from the pre-rework configuration. The old
+// ordinary summon (before its random Charisma bonus and elite multiplier) is
+// a conservative ceiling; wild NPC properties, zone dials and Chaos cannot
+// change it. Infuse Life still uses the owner's skill as the old summon did.
+int normal_capture_hp(P_char pet, P_char owner)
+{
+	constexpr int racial_con[LAST_RACE + 1] = {
+		100, 100, 165, 90,  90,	 120, 135, 95,	90,  200, 160, 102, 85,	 125, 105, 155, 100,
+		170, 100, 169, 100, 70,	 100, 120, 106, 150, 155, 97,  109, 170, 100, 115, 95,	82,
+		140, 135, 200, 100, 110, 82,  100, 150, 100, 165, 150, 150, 150, 120, 100, 100, 110,
+		170, 105, 165, 95,  170, 140, 120, 110, 90,  100, 100, 100, 120, 115, 110, 120, 175,
+		100, 100, 60,  140, 155, 130, 140, 100, 100, 130, 225, 70,  140, 90,  130, 85,	95,
+		195, 120, 150, 100, 130, 90,  155, 155, 110, 85,  185, 100, 100, 100, 170, 95
+	};
+	constexpr float class_hp[CLASS_COUNT + 1] = { 1,   1.2, .9, .55, 1,  1,	  .8, .7,
+						      .7,  .7,	.6, .5,	 .5, .8,  .8, .9,
+						      .85, .8,	.8, .4,	 1,  .85, .9, .5,
+						      .7,  1,	.8, 1,	 .5, .5,  1 };
+	const int level = GET_LEVEL(pet);
+	const int con = racial_con[std::clamp<int>(GET_RACE(pet), 0, LAST_RACE)];
+	const int type = std::clamp(flag2idx(pet->player.m_class), 0, CLASS_COUNT);
+	int hp = static_cast<int>((0.00000045 * con * con * level * level + 2) * level);
+	hp -= static_cast<int>(0.5 * hp * (1.0 - class_hp[type]));
+	const int life = std::clamp(GET_CHAR_SKILL(owner, SKILL_INFUSE_LIFE), 0, 100);
+	return std::clamp(static_cast<int>(hp * (1 + life / 500.0)), 1, 8000);
+}
+
 double role_factor(P_char pet)
 {
 	if (GET_CLASS(pet, CLASS_BARD))
@@ -299,15 +326,22 @@ bool summoner_capture(P_char pet)
 
 bool summoner_balanced_body(P_char pet)
 {
-	return summoner_capture(pet) ||
-	       (pet && IS_NPC(pet) &&
-		pet->only.npc->summon_kind ==
-			static_cast<uint32_t>(summoned_pet_kind::conjurer_elemental));
+	return summoner_capture(pet);
 }
 
 bool summoner_owned_pet(P_char pet)
 {
 	return summoner_capture(pet) && IS_PC_PET(pet);
+}
+
+int summoner_pet_heal_cap(P_char pet, int requested)
+{
+	return summoner_capture(pet) ? std::min(requested, GET_MAX_HIT(pet) * 11 / 10) : requested;
+}
+
+double summoner_pet_vamp_rate(P_char pet, double requested, bool undead)
+{
+	return summoner_capture(pet) ? std::min(requested, undead ? 0.10 : 0.25) : requested;
 }
 
 void summoner_pet_start_recovery(P_char owner)
@@ -536,6 +570,7 @@ void summoner_pet_configure(P_char pet, P_char owner, bool preview, bool restori
 {
 	const uint32_t classes = pet->player.m_class;
 	const int spec = pet->player.spec;
+	const int old_damroll = pet->points.base_damroll;
 	const int hit = GET_HIT(pet), mana = GET_MANA(pet);
 	int slots[MAX_CIRCLE + 1];
 	std::copy(std::begin(pet->specials.undead_spell_slots),
@@ -591,8 +626,13 @@ void summoner_pet_configure(P_char pet, P_char owner, bool preview, bool restori
 		pet->points.damnodice = pet->points.damnodice / 2 + 2;
 		pet->points.damsizedice = std::max(1, (GET_LEVEL(owner) - 1) / 11);
 		pet->points.base_hitroll = level * 7 / 10;
-		pet->points.base_damroll = level * 55 / 100;
+		pet->points.base_damroll = std::min(old_damroll, 100);
 	}
+	const int old_hp_ceiling = normal_capture_hp(pet, owner);
+	pet->points.base_hit = std::min(pet->points.base_hit, old_hp_ceiling);
+	pet->only.npc->summoner_hp_ceiling =
+		std::min(pet->only.npc->summoner_hp_ceiling, old_hp_ceiling);
+	GET_MAX_HIT(pet) = GET_HIT(pet) = pet->points.base_hit;
 	pet->points.base_armor = -GET_LEVEL(pet);
 	pet->points.base_mana = GET_MAX_MANA(pet) = GET_MANA(pet) = mana_capacity(pet);
 	pet->player.m_class = classes;
@@ -655,7 +695,9 @@ void summoner_pet_finish_affects(P_char pet)
 	if (pet->only.npc->summoner_hp_ceiling > 0)
 		GET_MAX_HIT(pet) =
 			std::min<int>(GET_MAX_HIT(pet), pet->only.npc->summoner_hp_ceiling);
-	GET_HIT(pet) = GET_MAX_HIT(pet) - missing_hp;
+	GET_HIT(pet) = std::min(GET_MAX_HIT(pet) - missing_hp,
+				summoner_pet_heal_cap(pet, GET_MAX_HIT(pet) * 11 / 10));
+	pet->points.damroll = std::min<int>(pet->points.damroll, 100);
 	if (summoner_capture(pet))
 	{
 		GET_MAX_MANA(pet) = mana_capacity(pet);

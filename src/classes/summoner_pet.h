@@ -9,6 +9,8 @@ bool summoner_balanced_body(P_char pet);
 bool summoner_owned_pet(P_char pet);
 void summoner_pet_configure(P_char pet, P_char owner, bool preview = false, bool restoring = false);
 void summoner_pet_finish_affects(P_char pet);
+int summoner_pet_heal_cap(P_char pet, int requested);
+double summoner_pet_vamp_rate(P_char pet, double requested, bool undead = false);
 void summoner_pet_sync_resources(P_char pet);
 bool summoner_pet_recovery_blocked(P_char pet);
 void summoner_pet_note_command(P_char ch, int command);
