@@ -4,7 +4,7 @@
 #include "economy/economic_gameplay_authority.h"
 #include "persistence/persistence_mode.h"
 #include "persistence/critical_command_coordinator.h"
-#include "player/player_save_execution_guard.h"
+#include "player/player_save_replay_ownership.h"
 #include <string>
 #include <unistd.h>
 

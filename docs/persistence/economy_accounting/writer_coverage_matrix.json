@@ -44,7 +44,7 @@
       "src/flatfile/flatfile_accounting_coin_transaction.h": "5748b372071de1d681b2d81886439b3975382454462aa95f00451d034c483329",
       "src/flatfile/flatfile_accounting_lifecycle_transaction.c": "f5828b2fdb91ab66ba95928a34fefae4182a0b37b204fd9c2d71ba6e41bce098",
       "src/flatfile/flatfile_accounting_lifecycle_transaction.h": "fe491f88ad0fa3bd9f64077345c226d039c1b022c928f8b405c135199b0d273b",
-      "src/flatfile/flatfile_economic_runtime.c": "a0ced8bfd8d6e1611086388c0e5fe4987aaea7c96c0ffd2e7c27401574c7363c",
+      "src/flatfile/flatfile_economic_runtime.c": "0361c613879b7ea4bfd4c5dca5fe441a1ea77558753a87db88cdc72a2434e6b9",
       "src/flatfile/flatfile_economic_runtime.h": "68ec558f35fb45e539fa3269cd0523af6c4d1facb7ea7f70281d45ff6c294cdf",
       "src/flatfile/flatfile_player_repository.c": "efc58eb49106a20d0a533d5a71592b8c257fcbf7b17ced077a4421c409f9c93a",
       "src/net/comm.c": "0a74166be1f5e32248a672fa6029a7b4c51982aafbf203e1748b749c487aa103",

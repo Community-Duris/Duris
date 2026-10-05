@@ -383,3 +383,40 @@ and still rejects removing protection, changing reset action or deactivating
 retained evidence. Peer observed the exact two stale-count failures; this changes
 only those counts. Python AST/diff checks pass; execution remains at the original
 major-plan batch. No store policy, native schema or release permission changes.
+
+### October 4 independent baseline command binding integration
+
+Peer1afe82fb6 and build handoff8d9ce039a are imported through the history-preserving
+local integration. Six exact peer blobs, four Python AST inputs and all48 existing
+raw candidate source pins match. The independent reader now reconstructs the
+native normalized baseline CCM1 binding rather than accepting arbitrary nonzero
+binding bytes. Peer native RED and both-engine GREEN (147 damage cuts per engine,
+cold dump/import/replay) remain proof for its frozen152acc1cd inputs only. No
+combined primary native qualification or full world capture is claimed.
+
+The refreshed peer build compiled the corrected collector but exposed missing
+replay-ownership header visibility in flatfile_economic_runtime.c. Primary owns
+that narrow repair; actual managed v3 service qualification remains unexecuted.
+Its stale census observations precede published e1e3028cd and do not supersede
+that current source-inventory evidence. Complete baseline inbox authentication
+still needs the exact original admission timestamp or equivalent retained full
+command; the primary is inspecting existing authority before selecting a new
+persisted field. Shops, sequential quests, remaining writers and activation/
+release qualification stay open. Major-plan testing remains deferred; accounting
+is inactive and no requirement or release gate is waived.
+
+### Flat runtime header visibility and retained baseline command handoff
+
+[The header repair](FLAT_RUNTIME_HEADER_REPAIR_2026-10-04.md) changes only the
+flat runtime include to the existing replay-ownership header. Peer established
+the actual maintained compiler failure and injected-header diagnostic success;
+primary source review preserves every shutdown refusal predicate. Candidate
+registry/matrix pins are updated; source inventory and release status do not
+change. Both backend builds and managed v3 service qualification remain deferred
+to major-plan readiness. This is a source repair, not combined runtime proof.
+
+The same report records the reviewed SQL baseline preimage gap and narrow existing
+witness admission-time field. Native SQL and coherent additive migration/metadata
+are primary-owned; independent readers and both-engine damage/cold restore are
+Plan5-owned. No fabricated timestamp, historical backfill, new store or gate is
+approved. Flat retained command evidence already supplies its preimage.
