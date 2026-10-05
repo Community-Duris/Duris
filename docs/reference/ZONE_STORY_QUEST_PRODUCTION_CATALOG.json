@@ -48089,6 +48089,405 @@
       ]
     },
     {
+      "contacts": [
+        {
+          "description": "Starts in his cabin and requests four kindling sticks plus two branches. The native thanks gives a key-location clue and makes him depart; the cabin\u2019s rent service is separate.",
+          "keyword": "hermit",
+          "mob_vnum": 14302,
+          "name": "an old hermit",
+          "topics": [
+            "hello",
+            "hi",
+            "howdy",
+            "name",
+            "hunting",
+            "hunt",
+            "graveyard",
+            "strange",
+            "scared",
+            "tomb"
+          ]
+        },
+        {
+          "description": "Starts in the morgue and exchanges five distinct same-named adamantite chunks for gloves, then departs. His four-or-five dialogue does not reduce the required bundle.",
+          "keyword": "surok",
+          "mob_vnum": 14432,
+          "name": "a dwarven conjurer",
+          "topics": [
+            "hello",
+            "hi",
+            "name",
+            "crypt",
+            "dungeon",
+            "catacomb",
+            "catacombs"
+          ]
+        },
+        {
+          "description": "Starts in the small room and accepts three different exchanges. Four trophies yield a token without departure; the token or original collar each selects a different reward and makes the statue depart.",
+          "keyword": "jade",
+          "mob_vnum": 14438,
+          "name": "a squat statue",
+          "topics": [
+            "hello",
+            "hi",
+            "howdy",
+            "name"
+          ]
+        },
+        {
+          "description": "The iron butterfly follows the iron golem at the small chamber and starts carrying the exact wings. The golem\u2019s equipment is separate from the follower\u2019s quest proof.",
+          "keyword": "butterfly",
+          "mob_vnum": 14420,
+          "name": "a tiny iron butterfly",
+          "topics": []
+        },
+        {
+          "description": "The black imp follows the hyena at the obsidian chamber and starts carrying the exact tail. The hyena\u2019s obsidian collar is a different item.",
+          "keyword": "imp",
+          "mob_vnum": 14421,
+          "name": "a grinning imp",
+          "topics": []
+        },
+        {
+          "description": "The magma devil follows the formless mass in the pumice chamber and starts carrying the magma horn and warm key, wearing a pumice ring. Only the horn is statue proof; the key opens the pumice chest.",
+          "keyword": "devil",
+          "mob_vnum": 14431,
+          "name": "a small magma devil",
+          "topics": []
+        },
+        {
+          "description": "The white wolf follows the frost dervish in the small chamber and starts carrying its ear and an iron collar. Only the exact ear enters the trophy bundle.",
+          "keyword": "wolf",
+          "mob_vnum": 14434,
+          "name": "a snow-white wolf",
+          "topics": []
+        },
+        {
+          "description": "The imprisoned hell hound starts wearing the original glowing mithril collar. Recovery, removal and personal kill proof remain separate.",
+          "keyword": "hound",
+          "mob_vnum": 14449,
+          "name": "a chained hellhound",
+          "topics": []
+        },
+        {
+          "description": "Theodeus Nak\u2019ral starts in the laboratory carrying an imported epic stone and potion, equipped with robe, bracelet and staff. His research journal is a separate fixed island-container source. Combat and a committed group epic claim are not extra native item-quest receipts.",
+          "keyword": "nakral",
+          "mob_vnum": 14407,
+          "name": "Nak'ral, keeper of the crypt",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Help the hermit, follow the tomb and word-puzzle clues, collect Surok\u2019s five distinct adamantite chunks, and choose the jade statue\u2019s trophy, token and collar exchanges. Keep personal investigation, current proof and recorded outcomes distinct.",
+      "orientation": [
+        "The northern passage of the Undead Outpost leads EAST onto the Crypt\u2019s forest trail. WEST from the trail returns there. Follow the trail around the graveyard to the hermit\u2019s cabin. Burned bridge, river, lake, underwater passage and waterfall are real terrain; source metadata is not a promise of safe access.",
+        "Ask the hermit hello, hi, howdy or name for his request, hunting or hunt about game, and graveyard, strange, scared or tomb about the danger. Ask Surok hello, hi or name, or crypt, dungeon, catacomb or catacombs. The jade statue answers hello, hi, howdy or name without explaining its recipes. These six response families have twenty-one aliases; keywords are not individual achievements.",
+        "The hermit needs exactly four kindling sticks and two branches, all loose together. The many trail floor sources are different from the log, charred timber and other wood. He reveals a key-location clue and departs. The rusted tomb key already starts hidden on the eastern trail; no item reward, campfire action or personal hermit receipt is required to recover it.",
+        "The rusted key unlocks the northern tomb door. Inspect and PUSH the fixed gargoyle head to open the blocked downward slab. A loose-stone switch at the staircase opens the upward slab. These are actual shared controls, but the journal does not yet record personal operation or passage clearance.",
+        "The banquet-hall torch is a fixed PULL switch for the east wall into the scat pit. Nakral\u2019s fixed bone throne is a PUSH switch opening the north passage into the earthen tunnel. The controls open their declared blocked exits; looking at a torch or throne, another player\u2019s operation or an already-open passage is not your recorded action.",
+        "Three note fragments contain parts of the word puzzle: the mostly burnt note in charred embers, the scrap carried by the orc shaman, and the scrap carried by the tall dark creature. Read their descriptions and combine the fragments. SAY the combined word near the special iron door; the real magic-door handler unlocks it. Reading and successful unlocking currently have no personal durable journal milestone.",
+        "Surok in the morgue needs all five distinct adamantite chunks, one from each of the mapped sites. They look identical. Four are floor sources; the fifth is inside a locked wooden chest in a secret ironwood alcove. Same-name duplicates from another site cannot replace a missing kind. His four-or-five dialogue is only a clue; the accepted recipe is exactly five.",
+        "The jade statue\u2019s first exchange uses iron butterfly wings, a black imp tail, a magma horn and a white wolf ear together for a stone token. The token can then be exchanged for a moss-covered bracelet. A supplied token fits without personal earlier trophy history; the earlier receipt never replaces the current token.",
+        "The imprisoned hell hound\u2019s original mithril collar is a separate statue input for an enhanced collar. Input and reward have identical names but different identities. Token-to-bracelet and collar enhancement each make the statue depart. They are distinct outcomes that need a fresh recipient episode if you want both; the four-trophy exchange alone keeps it present.",
+        "Nakral\u2019s journal has separate page17 and page24 descriptions explaining his research and moral decline. Other papers, formulae, corpses, scratchings, the imported father-spirit object and ordinary combat provide context. Reading, rescuing a prisoner, defeating a mutant or ending all experiments is not an invented accepted quest endpoint. The magical fountain has an existing shared drinking effect, separate from story credit.",
+        "The cavern\u2019s authored UP exit points to an old surface room absent from the active world; the loader removes unresolved exits. Do not rely on that surface route. The fixed glowing orb near the old skeleton is an existing TOUCH return to the graveyard trail, subject to the shared travel rules. It remains non-takeable; no portable escape capability is added.",
+        "Current loose materials, earlier accepted receipts, original source, gifts, learned words, keys, switches, movement, combat, epic claims and final rewards are distinct facts. Five static daily candidates depend on real material and recipient renewal under native mode1; reset declarations do not prove availability. All new discovery, encounter, journal, achievement and daily credit requires active, ready accounting; frozen recovery is separate. No native zone repair or mobility change ships."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "crypt",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:14305,I:14305,I:14305,I:14305,I:14315,I:14315;receive=;disappear=1",
+              "giver_vnum": 14302
+            }
+          ],
+          "id": "hermit-firewood",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "Twelve kindling floor resets surround the graveyard trail. A log, charred timber or ordinary weapon does not match. Carry the exact copies loose. Worn, nested, spent or handed-away copies do not count. Possession does not prove personal source recovery or who supplied them.",
+              "id": "kindling",
+              "item_vnums": [
+                14305
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry four kindling sticks"
+            },
+            {
+              "count": 2,
+              "hint": "Seven branch floor resets surround the trail. Four sticks cannot substitute for either exact branch. Carry the exact copies loose. Worn, nested, spent or handed-away copies do not count. Possession does not prove personal source recovery or who supplied them.",
+              "id": "branches",
+              "item_vnums": [
+                14315
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry two branches"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:14305,I:14305,I:14305,I:14305,I:14315,I:14315;receive=;disappear=1",
+                  "giver_vnum": 14302
+                }
+              ],
+              "hint": "An exact accepted native receipt records this outcome. Source recovery, dialogue, learned clues, switches, travel, combat and reward settlement remain separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Bring four kindling sticks and two branches together. The hermit thanks you, reveals where he threw a tomb key, and departs. The recipe gives a clue, not a key item or a stove-lighting outcome. The key already has its own floor source; hearing the clue is not required to recover it.",
+          "title": "Hermit: bring the exact firewood bundle"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:14494,I:14501,I:14521,I:14536,I:14540;receive=I:14531;disappear=1",
+              "giver_vnum": 14432
+            }
+          ],
+          "id": "surok-adamantite-gloves",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "This exact chunk starts on the floor at room14458. Other same-named chunks do not substitute. Carry the exact copies loose. Worn, nested, spent or handed-away copies do not count. Possession does not prove personal source recovery or who supplied them.",
+              "id": "chunk-14494",
+              "item_vnums": [
+                14494
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the adamantite chunk from the first secret alcove"
+            },
+            {
+              "count": 1,
+              "hint": "This exact chunk starts on the floor at room14475. Other same-named chunks do not substitute. Carry the exact copies loose. Worn, nested, spent or handed-away copies do not count. Possession does not prove personal source recovery or who supplied them.",
+              "id": "chunk-14501",
+              "item_vnums": [
+                14501
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the adamantite chunk from the hidden southern alcove"
+            },
+            {
+              "count": 1,
+              "hint": "This exact chunk starts inside the fixed locked wooden chest at room14491. Other same-named chunks do not substitute. Carry the exact copies loose. Worn, nested, spent or handed-away copies do not count. Possession does not prove personal source recovery or who supplied them.",
+              "id": "chunk-14521",
+              "item_vnums": [
+                14521
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the adamantite chunk from the locked ironwood secret alcove chest"
+            },
+            {
+              "count": 1,
+              "hint": "This exact chunk starts on the floor at room14550. Other same-named chunks do not substitute. Carry the exact copies loose. Worn, nested, spent or handed-away copies do not count. Possession does not prove personal source recovery or who supplied them.",
+              "id": "chunk-14536",
+              "item_vnums": [
+                14536
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the adamantite chunk from the later secret alcove"
+            },
+            {
+              "count": 1,
+              "hint": "This exact chunk starts on the floor at room14539. Other same-named chunks do not substitute. Carry the exact copies loose. Worn, nested, spent or handed-away copies do not count. Possession does not prove personal source recovery or who supplied them.",
+              "id": "chunk-14540",
+              "item_vnums": [
+                14540
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the adamantite chunk from the small southern chamber"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:14494,I:14501,I:14521,I:14536,I:14540;receive=I:14531;disappear=1",
+                  "giver_vnum": 14432
+                }
+              ],
+              "hint": "An exact accepted native receipt records this outcome. Source recovery, dialogue, learned clues, switches, travel, combat and reward settlement remain separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Bring one exact chunk from each of five sources for adamantite gloves. All five chunks have the same visible name, but are different item kinds; five copies from one site do not fit. Surok\u2019s four-or-five dialogue is imprecise: the recipe requires all five and makes him depart. Supplied matching proof needs no personal reading, exploration or kills.",
+          "title": "Surok: collect the five distinct adamantite chunks"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:14498,I:14500,I:14526,I:14534;receive=I:14539;disappear=0",
+              "giver_vnum": 14438
+            }
+          ],
+          "id": "statue-four-trophies",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The iron butterfly following the iron golem at the small chamber starts carrying these exact wings. Carry the exact copies loose. Worn, nested, spent or handed-away copies do not count. Possession does not prove personal source recovery or who supplied them.",
+              "id": "wings",
+              "item_vnums": [
+                14498
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the iron butterfly wings"
+            },
+            {
+              "count": 1,
+              "hint": "The black imp following the hyena at the obsidian chamber starts carrying this exact tail. Carry the exact copies loose. Worn, nested, spent or handed-away copies do not count. Possession does not prove personal source recovery or who supplied them.",
+              "id": "imp-tail",
+              "item_vnums": [
+                14500
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the black imp tail"
+            },
+            {
+              "count": 1,
+              "hint": "The magma devil following the formless mass in the pumice chamber starts carrying this exact horn. Its warm key opens a different chest and is not one of the four trophies. Carry the exact copies loose. Worn, nested, spent or handed-away copies do not count. Possession does not prove personal source recovery or who supplied them.",
+              "id": "magma-horn",
+              "item_vnums": [
+                14526
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the magma horn"
+            },
+            {
+              "count": 1,
+              "hint": "The white wolf following the frost dervish in the small chamber starts carrying this exact ear. Carry the exact copies loose. Worn, nested, spent or handed-away copies do not count. Possession does not prove personal source recovery or who supplied them.",
+              "id": "wolf-ear",
+              "item_vnums": [
+                14534
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the white wolf ear"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:14498,I:14500,I:14526,I:14534;receive=I:14539;disappear=0",
+                  "giver_vnum": 14438
+                }
+              ],
+              "hint": "An exact accepted native receipt records this outcome. Source recovery, dialogue, learned clues, switches, travel, combat and reward settlement remain separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Bring iron butterfly wings, a black imp tail, a magma horn and a white wolf ear together for the stone token. The statue stays after this exchange. The exact components start on the corresponding follower creatures; the recipe accepts supplied matching trophies without personal kill proof.",
+          "title": "Jade statue: exchange the four trophies"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:14539;receive=I:14542;disappear=1",
+              "giver_vnum": 14438
+            }
+          ],
+          "id": "statue-token-bracelet",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:14498,I:14500,I:14526,I:14534;receive=I:14539;disappear=0",
+                  "giver_vnum": 14438
+                }
+              ],
+              "hint": "Your earlier receipt explains one token source. A supplied matching token also fits, and an old receipt cannot replace a spent token.",
+              "id": "earlier-four-trophies",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional earlier route: exchange the four trophies"
+            },
+            {
+              "count": 1,
+              "hint": "The four-trophy exchange rewards this exact token. Remove it from equipment before offering it; its neck wear does not make a worn copy a loose input. Carry the exact copies loose. Worn, nested, spent or handed-away copies do not count. Possession does not prove personal source recovery or who supplied them.",
+              "id": "stone-token",
+              "item_vnums": [
+                14539
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact stone token"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:14539;receive=I:14542;disappear=1",
+                  "giver_vnum": 14438
+                }
+              ],
+              "hint": "An exact accepted native receipt records this outcome. Source recovery, dialogue, learned clues, switches, travel, combat and reward settlement remain separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer the exact stone token for the moss-covered wooden bracelet. The four-trophy exchange supplies the token, but a matching supplied token also fits without your earlier receipt. The statue departs after this outcome; the collar exchange competes for the same live recipient episode.",
+          "title": "Jade statue: trade the stone token"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:14556;receive=I:14557;disappear=1",
+              "giver_vnum": 14438
+            }
+          ],
+          "id": "statue-collar-upgrade",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The hell hound in the corridor starts wearing the original collar. The enhanced reward cannot be offered again for this recipe, despite sharing the same name. Remove the original from equipment. Carry the exact copies loose. Worn, nested, spent or handed-away copies do not count. Possession does not prove personal source recovery or who supplied them.",
+              "id": "original-collar",
+              "item_vnums": [
+                14556
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the original glowing mithril collar"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:14556;receive=I:14557;disappear=1",
+                  "giver_vnum": 14438
+                }
+              ],
+              "hint": "An exact accepted native receipt records this outcome. Source recovery, dialogue, learned clues, switches, travel, combat and reward settlement remain separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the accepted exchange"
+            }
+          ],
+          "summary": "Offer the exact original glowing mithril collar for the stronger collar. Input and reward look identical but are different item kinds. The original starts worn by the imprisoned hell hound. The statue departs after this outcome; complete other intended statue business before choosing a departure reward.",
+          "title": "Jade statue: enhance the mithril collar"
+        }
+      ]
+    },
+    {
       "contacts": [],
       "coverage": "complete",
       "exclusions": [],

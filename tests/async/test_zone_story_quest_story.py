@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1441
-assert report['mapped_area_count'] == 101 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 102 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -181,6 +181,16 @@ assert len(basin['stories'][5]['contracts'])==4 and basin['stories'][5]['steps']
 assert basin['stories'][0]['steps'][0]['contracts']==basin['stories'][1]['contracts']
 assert basin['stories'][6]['category']=='service'
 assert [s['steps'][1]['item_vnums'] for s in basin['stories'][1:5]]==[[34002],[34001],[34000],[34003]]
+
+crypt=next(m for m in catalog['story_mappings'] if m['source_area']=='crypt')
+assert (crypt['schema_version'],crypt['revision'],crypt['coverage'])==(3,1,'complete')
+assert len(crypt['stories'])==5 and len(crypt['contacts'])==9 and not crypt['exclusions']
+assert report['eligible_by_zone']['143']==5 and sum(len(c['topics']) for c in crypt['contacts'])==21
+assert sum(t.get('optional',False) for s in crypt['stories'] for t in s['steps'])==14
+assert [t['count'] for t in crypt['stories'][0]['steps'][:-1]]==[4,2]
+assert [t['item_vnums'] for t in crypt['stories'][1]['steps'][:-1]]==[[14494],[14501],[14521],[14536],[14540]]
+assert crypt['stories'][3]['steps'][0]['contracts']==crypt['stories'][2]['contracts']
+assert crypt['stories'][4]['steps'][0]['item_vnums']==[14556]
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

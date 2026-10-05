@@ -2022,3 +2022,33 @@ return barrier are not authorization to add an exit or bypass. Treat copy/clue
 mismatches fairly and isolate any real repairs in named fixes/news. Preserve
 the owner-confirmed Fields PvP hotfix; all new credit requires active, ready
 accounting with frozen recovery separate. No native repair ships here.
+
+
+## Nakral's Crypt example: do not infer identity or holder from appearance
+
+The [dossier](../design/zone-stories/NAKRALS_CRYPT.md) and
+[sidecar](../../areas/story/crypt.story.json) show five exact outcomes. Four
+sticks plus two branches is not any six wooden items. Five same-name adamantite
+chunks are five different prototypes. Original and enhanced collars have the
+same name but different identities. Label sources/reward change clearly while
+keeping native contract matching exact.
+
+Trace reset execution, not only nearest M: F loads a follower and replaces the
+current mob for subsequent G/E. Statue trophies belong to butterfly/imp/devil/
+wolf, not their leaders. Qualify live parent/root/custody and reset generation.
+Optional earlier trophy receipt explains a token route without blocking valid
+supplied token. Statue bracelet/collar both retire it; avoid a promise that one
+encounter suffices for both or that static daily eligibility proves renewal.
+
+The three-fragment magic word and four fixed switches have real shared handlers.
+Explain those controls now, but carrying notes or seeing an open door is not
+personal learned/action credit. **ZSQ-CRYPT-LEARNED-WORDS / CONTROL-ACCESS** plan
+reader/passage/revision, selected target, actual before/after and committed
+arrival. Distinguish source, gifts, reading, successful unlock and travel.
+
+A stale active exit to an old absent surface room requires builder intent,
+not reactivating an obsolete map. Quantity/direction discrepancies are fair
+clue-only repair proposals. Isolate actual repairs with before/after proof and
+prominent named fix/news. Preserve fixed orb TAKE/charges and the owner-confirmed
+Fields PvP hotfix. New credit requires active, ready accounting; frozen recovery
+stays separate. No native zone or quest repair ships in this example.

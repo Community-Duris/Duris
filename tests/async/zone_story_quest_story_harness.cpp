@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 101 &&
+		require(catalog.story_mappings.size() == 102 &&
 				tracker.summary_for(7, 42).total == 1585,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7547,6 +7547,136 @@ int main(int argc, char **argv)
 					recovered.has_discovered(7, 42, 5000) &&
 					!recovered.has_discovered(7, 42, 530),
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
+		}
+
+		{
+			const auto &wood = story_for("crypt", "hermit-firewood");
+			const auto &chunks = story_for("crypt", "surok-adamantite-gloves");
+			const auto &trophies = story_for("crypt", "statue-four-trophies");
+			const auto &bracelet = story_for("crypt", "statue-token-bracelet");
+			const auto &collar = story_for("crypt", "statue-collar-upgrade");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 143, 14300, 100, "arrival") ==
+					result::applied,
+				"Crypt discovery failed");
+			require(journey.render_journal(7, 42, 143, 10, 1, 101, false, false)
+						.find(wood.title) == std::string::npos,
+				"Crypt exposed unmet hermit");
+			for (const auto &[vnum, room] :
+			     { std::pair{ 14302, 14362 }, std::pair{ 14432, 14516 },
+			       std::pair{ 14438, 14536 } })
+				require(journey.meet_npc(7, 42, vnum, room, 102) == result::applied,
+					"Crypt encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Crypt section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[14305] = 3;
+			supplies.carried[14315] = 2;
+			supplies.carried[14494] = 5;
+			supplies.carried[14557] = 1;
+			supplies.equipped[3] = 14556;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 143, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(wood).find("[Missing now] " + wood.steps[0].text) !=
+						std::string::npos &&
+					section(wood).find("[Ready now] " + wood.steps[1].text) !=
+						std::string::npos,
+				"Crypt exact four/two quantities lost");
+			for (size_t step = 1; step < 5; step++)
+				require(section(chunks).find("[Missing now] " +
+							     chunks.steps[step].text) !=
+						std::string::npos,
+					"Crypt same-name duplicate chunk substituted for another kind");
+			require(section(collar).find("[Missing now] " + collar.steps[0].text) !=
+					std::string::npos,
+				"Crypt enhanced or worn collar became original loose input");
+			supplies.carried[14305] = 4;
+			supplies.carried[14315] = 1;
+			journal = journey.render_journal(7, 42, 143, 10, 1, 106, false, false,
+							 &supplies);
+			require(section(wood).find("[Ready now] " + wood.steps[0].text) !=
+						std::string::npos &&
+					section(wood).find("[Missing now] " + wood.steps[1].text) !=
+						std::string::npos,
+				"Crypt excess sticks replaced missing branch");
+			supplies.carried[14315] = 2;
+			supplies.carried[14539] = 1;
+			supplies.carried[14556] = 1;
+			for (int vnum : { 14501, 14521, 14536, 14540, 14498, 14500, 14526, 14534 })
+				supplies.carried[vnum] = 1;
+			journal = journey.render_journal(7, 42, 143, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto *entry : { &wood, &chunks, &trophies, &collar })
+				for (size_t step = 0; step + 1 < entry->steps.size(); step++)
+					require(section(*entry).find("[Ready now] " +
+								     entry->steps[step].text) !=
+							std::string::npos,
+						"Crypt exact supplied materials did not fit");
+			require(section(bracelet).find("[Ready now] " + bracelet.steps[1].text) !=
+						std::string::npos &&
+					section(bracelet).find("[Pending] " +
+							       bracelet.steps[0].text) !=
+						std::string::npos,
+				"Crypt supplied token required personal earlier receipt");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 143).completed == 0,
+				"Crypt readiness fabricated receipts, clues or controls");
+			// Synthetic receipts qualify projection, not native actor renewal,
+			// source recovery, F spawning, learned words, travel or settlement.
+			record(journey, bracelet.contracts.front(), "crypt-supplied-token", 143,
+			       14536);
+			require(journey.progress_for_zone(7, 42, 143).completed == 1 &&
+					journey.evidence_for(trophies.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Crypt bracelet fabricated trophy history");
+			for (const auto *entry : { &wood, &chunks, &trophies, &collar })
+			{
+				const auto id = std::string("crypt-outcome-") + entry->id;
+				record(journey, entry->contracts.front(), id.c_str(), 143,
+				       entry == &wood	? 14362 :
+				       entry == &chunks ? 14516 :
+							  14536);
+			}
+			require(journey.progress_for_zone(7, 42, 143).completed == 5,
+				"Crypt distinct outcomes collapsed or inflated");
+			supplies.carried.clear();
+			journal = journey.render_journal(7, 42, 143, 10, 1, 122, false, false,
+							 &supplies);
+			require(section(bracelet).find("[Recorded] " + bracelet.steps[0].text) !=
+						std::string::npos &&
+					section(bracelet).find("[Missing now] " +
+							       bracelet.steps[1].text) !=
+						std::string::npos,
+				"Crypt old trophy receipt restored spent token");
+			for (const auto *entry : { &wood, &chunks, &trophies, &bracelet, &collar })
+				require(section(*entry).find("[Recorded] " +
+							     entry->steps.back().text) !=
+						std::string::npos,
+					"Crypt canonical outcome lost");
+			auto replay =
+				completion(bracelet.contracts.front(), "crypt-supplied-token", 120);
+			replay.transaction.zone_number = 143;
+			replay.transaction.room_vnum = 14536;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Crypt replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 143).completed == 5 &&
+					recovered.progress_for_zone(7, 42, 143).total == 5 &&
+					!recovered.has_discovered(7, 42, 987),
+				"Crypt cold recovery fabricated Outpost discovery or lost progress");
+			for (const auto *entry : { &wood, &chunks, &trophies, &bracelet, &collar })
+				require(recovered.evidence_for(entry->contracts.front(), 2)
+							.successful_attempts == 1,
+					"Crypt receipt lost in recovery");
 		}
 
 		{

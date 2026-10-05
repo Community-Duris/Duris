@@ -157,9 +157,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 81 | The Desert City of Venan'Trut | [Comprehensive dossier](zone-stories/DESERT_CITY_OF_VENAN_TRUT.md): all16 blocks/677 rooms/245 mobiles/194 objects/1256 resets/ten shops and shared/imported closure | Eight independent exchanges;22 contacts/46 aliases/11 optional checks explain mine, rival signets, compass, contraband and Queen→Goranon→Eriic→Winterhaven | No native repair ships. First source/gift, actual switch/door/river travel, computed services/group claims, foreign memory/fabrics and actor renewal remain plans; orphan portals/clue/inn overlap need builder intent |
 | 82 | Past Ceothia | [Comprehensive dossier](zone-stories/PAST_CEOTHIA.md): all14 blocks/293 rooms/46 mobiles/25 objects/129 resets and bounded timeline/shared closure | Four cards bind six recipes: blossom, three components, any-color pelt and current black-pelt mismatch;13 contacts/21 aliases/11 optional checks explain actual sources and three breaking-key gates | No native repair ships. Wolfspeed proof mismatch, rare staging probability/availability and mode0 renewal are builder follow-ups; source/gifts, committed access/travel and timeline campaigns remain plans |
 | 83 | The Basin Wastes | [Comprehensive dossier](zone-stories/THE_BASIN_WASTES.md): all16 blocks/200 rooms/15 mobiles/32 objects/204 resets and bounded imported/shared closure | Seven cards bind ten recipes: ring ritual, four distinct crafts, any-one cash sale and zero-credit heartstone refusal;8 contacts/14 aliases/14 optional checks explain sources and offered-item dispatch | No native repair ships. Dispatch choice, learned books, source renewal, same-kind refusal semantics and clue consistency are builder follow-ups; no new Crystal City exit or spider bypass |
-| 84–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 84 | Nakral's Crypt | [Comprehensive dossier](zone-stories/NAKRALS_CRYPT.md): all11 blocks/294 rooms/59 mobiles/201 objects/521 resets, F-current-holder and bounded imported/shared closure | Five cards/five recipes/nine contacts/21 aliases/14 optional checks; exact four/two wood, five same-name chunks, trophy→token→bracelet and distinct collar upgrade | No native repair. Learned words, four control actions, exact follower sources/renewal, collar presentation, stale surface exit and clue/epic investigation are builder follow-ups; preserve fixed mobility and Fields protection |
+| 85–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Nakral's Crypt (`crypt`).
+The next area is The Valoisian Castle (`val`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -170,6 +171,7 @@ matches, or a candidate item graph was extracted.
 | --- | --- | --- |
 | ZSQ-BRAD-PHYSICAL-AFFILIATION / DISCOVERY / RENEWAL / EXPLORATION | Five Tower contracts retain Braddistock credit ownership; Tower encounters do not discover this journal, and owner reset mode differs from physical retiring recipients. Local exploration has no native terminal. | Keep canonical receipt identities. Add explicit physical affiliation/referrals and real source/actor renewal; admitted clue/access/custody and builder-designed lab/smuggler/campaign endpoints. Entry speech repair ships separately; missing key/weapon supply and copied prose remain proposals. |
 | ZSQ-CEOTHIA-CHOICE / TIMELINE / TARGETED-EFFECT / LEGACY-TRAINING | Four retiring guild alternatives, three independent Lenbrea rewards, breaking keys, two nested crates, foreign timeline proofs, imported agility pool and legacy tablet/scroll differ from modern epic purchases. | Six source-guided cards ship. Qualify source/recipient reset episodes, actual access/travel/targeted effects and shared-material ownership; define all-stage campaign and restore/retire legacy training only with builder intent. Pool target ambiguity is a pending shared repair, not shipped news. |
+| ZSQ-CRYPT-LEARNED-WORDS / CONTROL-ACCESS / SOURCE-RENEWAL / COLLAR-PRESENTATION / STALE-SURFACE-EXIT / CLUE-CONSISTENCY / EPIC-INVESTIGATION | Three-note magic word works; four fixed switches; F changes current proof holder; same-name chunk/collar identities differ; old surface target absent active. | Five guided cards ship. Plan authoritative learning/control/source/arrival/group facts and actual recipient renewal. Stale route/clue repairs remain builder proposals; no native fix or portability change. |
 | ZSQ-BASIN-DISPATCH-CHOICE / LEARNED-BOOKS / SOURCE-RENEWAL / HEARTSTONE-REFUSAL / CLUE-CONSISTENCY / CAVE-ACCESS | Part offers select cash before crafting; cap-one elixir serves four crafts; book reading has no durable milestone; same-kind refusal replaces identity; false-city cave is a deliberate dead end with spider return barrier. | Seven source-guided cards ship. Explain actual selection and sources; builder chooses qualified selection, reading, source/renewal and identity policy. Clue-only repairs remain proposals; preserve existing scarcity, barrier and disabled mobility. No native repair ships. |
 | ZSQ-CEOPAST-WOLFSPEED-PROOF / RARE-AVAILABILITY / RENEWAL | Native skull dialogue differs from black-pelt recipe; two initial hair sources, three breaking-key gates, rare staging geometry and reset mode0 affect progression/availability. | Four source-guided cards ship; any pelt counts once with all branch receipts retained. Builder decides proof repair/versioning, measured rare availability and actual renewal before changing native mechanics. Qualify source/gifts, access/arrival and campaign facts; no native repair ships. |
 | ZSQ-VENAN-TRUT-SOURCE / REMOTE-ACCESS / REFERRAL / COMPUTED-SERVICE | Eight exact hand-ins coexist with a fixed remote boulder, falling/river routes, pickproof gates, secret floor loot, computed epic teachers, imported group stone and foreign memories/fabrics. | Eight source-guided cards ship. Qualify source/custody, actual target/transition/arrival, committed group/service settlement, explicit cross-zone referral and renewal. Orphan templates/clue/inn-handler overlap remain proposals; native mobility unchanged. |
@@ -4519,3 +4521,48 @@ is separate. Synthetic receipts do not qualify played recovery/gifts/SEARCH/
 READ/GET/native dispatch/consumption/reward settlement/replacement identity/
 combat/access/teaching/database persistence/renewal. No accounting activation,
 DB/server operation, migration, deployment or merge occurred.
+
+
+## Priority 84 checkpoint: Nakral's Crypt
+
+The [comprehensive dossier](zone-stories/NAKRALS_CRYPT.md) closes all11 native
+blocks(M6/Q5)/294 rooms/191 complete prose families/28 headers/653 exits/177
+relative patterns/113 full exit texts/23 non-exit metadata families,59 full
+mobiles(56 prose families),201 full objects and521 resets/439 exact/447
+M-parent-aware families(288 expanded groups). F resets replace the current
+holder: butterfly, imp, magma devil and white wolf carry statue proof, distinct
+from their M leaders. Three imported prototypes and full Undead Outpost boundary
+are bounded context. Five touching local recipes are local; no foreign local
+material source identified across active resets, or foreign incoming portal
+across713 active type25 prototypes. Local fixed TOUCH orb remains non-takeable.
+
+Schema3/revision1 adds five cards/five recipes/nine contacts/21 aliases/14
+optional checks(13 current materials, one earlier trophy receipt). Exact wood
+quantities, five same-name distinct chunks, four trophies/token/bracelet and
+original→enhanced same-name collar are explained. Supplied token needs no
+personal prior trophy receipt; bracelet/collar each retire the statue. Real
+three-note SAY magic-door and four PUSH/PULL controls are explained without
+invented personal milestones. Learned pages, combat, rent/fountain/group epic
+claim remain separate. Active cavern exit points to missing old surface target;
+loader removes it. Do not infer an intended modern destination from old maps.
+
+**No native repair ships.** Seven builder follow-ups cover learned words,
+control/access, follower source/renewal, collar presentation, stale surface exit,
+clue consistency and epic investigation. Any actual native fix needs separate
+named commit, before/after proof and prominent PR/news. Preserve original
+pickup/charges/mobility/reset/recipe policy and Fields owner-confirmed hotfix.
+
+Required checks: focused source/schema, all102 Python/C++ loader/projection
+journeys, full production regression, maintained build, changed/staged format,
+links/whitespace and preservation/publication proof. All101 prior journals,
+all2668 definitions/fingerprint/revision2/registry and original220 queue stay
+unchanged. Exact50089-byte previous Basin Wastes PR description is archived with
+SHA-256 and ten repair/news/accounting sections retained verbatim. Catalog:
+102 journals/1585 achievements/1441 potential dailies/2195 rows; five authored
+cards replace five fallback units without changing global unit counts.
+**84/220 source-comprehensive,136 pending; The Valoisian Castle (`val`) next.**
+Goal remains active. Synthetic receipts do not qualify played source/gifts,
+F spawning, learning/SAY/switches/keys, native offer/consumption/rewards,
+same-name collar identity, actual travel/combat/group claims, persistence or
+renewal. Active, ready accounting mandatory; frozen recovery separate. No
+accounting activation, DB/server operation, migration, deployment or merge.

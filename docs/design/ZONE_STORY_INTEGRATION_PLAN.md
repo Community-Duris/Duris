@@ -2949,3 +2949,27 @@ ANSI/GMCP milestones. All new tracking requires active, ready accounting; frozen
 recovery is separate. No native repair ships. Any actual fix requires a separate
 named commit, concrete before/after proof and prominent PR/news. The Fields
 intentional escape hotfix and inert-proof replacement follow-up remain intact.
+
+
+## Nakral's Crypt: learned words, follower holders and exact identities
+
+The [complete dossier](zone-stories/NAKRALS_CRYPT.md) maps five independent
+native outcomes, with exact quantities and an optional token-source receipt.
+Four trophies load on F followers; F replaces the current mob for following
+G/E resets, so M-parent inventory grouping alone cannot identify actual custody.
+
+| Requirement | Evidence | Plan and qualification |
+| --- | --- | --- |
+| Learned pages/word and real unlock | Three separate note fragments form the final keyword of key−2 door; SAY unlocks it; Nakral has page17/page24 | **ZSQ-CRYPT-LEARNED-WORDS:** admit delivered reading/actor/target/passage/revision and actual door transition separately; supplied knowledge, wrong word, repeated no-op, shared reset and cold recovery must be distinguished. No dialogue-keyword achievements. |
+| Personal controls/access | Four fixed PUSH/PULL switches, rusty key break chance, terrain and non-takeable TOUCH orb | **ZSQ-CRYPT-CONTROL-ACCESS:** record selected controller/generation, before/after/reciprocal aperture and committed arrival; wrong target/command, another player's clearance, failure/no-op and arena rejection give no personal action credit. Preserve PvP mobility. |
+| Exact source and recipient episode | F-loaded trophy holders; five identical named chunk kinds; scarce proofs; departing hermit/Surok/statue | **ZSQ-CRYPT-SOURCE-RENEWAL:** preserve leader/follower/current holder/root/UID/reset/custody and supplied policy. Qualify stock, exact quantities, worn/nested proof, concurrent claims, replay, frozen reward recovery and separate statue episodes. Five static candidates are not unlimited renewal proof. |
+| Identical display, different contract identity | Original14556 and enhanced14557 collar share name but differ mechanically | **ZSQ-CRYPT-COLLAR-PRESENTATION:** explain original→enhanced, retain exact input UID/prototype and reward terms, test equipped recovery/removal/consumption/settlement/replay. Enhanced input must not match original by name. |
+| Fair native repair proposals | Missing active UP destination265588; old reciprocal belongs elsewhere; four-or-five and wrong north-door clues | **ZSQ-CRYPT-STALE-SURFACE-EXIT / CLUE-CONSISTENCY:** builder establishes intended destination or retirement, and confirms copy versus authored lore. Prefer minimal caption/reference repair; new route needs reciprocal/terrain/PvP review. Preserve disabled maps/portals. Actual fix separate named commit/news. |
+| Larger investigation and group credit | Lab/journal/creatures/imported epic stone/father-spirit and fountain are supporting context | **ZSQ-CRYPT-EPIC-INVESTIGATION:** define meaningful campaign endpoints and committed group claim/beneficiary/revision. No personal rescue, research-ending or duplicate item-quest credit from narration, observation, corpse/item name or touch alone. |
+
+The existing journal shows five cards and exact missing/ready current inputs,
+optional earlier token history and recorded outcomes. Richer learned-word,
+control, source/gift, investigation and group milestones need authoritative
+events before ANSI/GMCP progress. All new tracking requires active, ready
+accounting; frozen recovery separate. No native repair ships. The Fields
+intentional escape hotfix and required replacement follow-up remain intact.
