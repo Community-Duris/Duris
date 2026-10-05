@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Source-paired native marker-v2 fixtures and independent read-only restore cuts.
+"""Source-paired native marker fixtures and independent read-only restore cuts.
 
 Pass the complete native checkout explicitly while its shared implementation is
 being integrated. This does not qualify an installer, activation or release.
@@ -119,7 +119,9 @@ int main(int argc, char **argv) {
                 assert json.loads(operator.stdout) == {
                     "legacy_unknown_epochs": expected[0], "never_initialized_epochs": expected[1],
                     "initialized_epochs": expected[2], "baseline_provenance_complete": bool(expected[3]),
-                    "lifecycle_receipts": 0}
+                    "lifecycle_receipts": 0, "unknown_initialized_origins": 0,
+                    "baseline_participant_epochs": expected[2], "lifecycle_owner_epochs": 0,
+                    "lifecycle_provenance_complete": bool(expected[3])}
                 assert not operator.stderr
             else:
                 assert not operator.stdout and operator.stderr == "native_restore_qualification_failed\n"
@@ -144,7 +146,7 @@ int main(int argc, char **argv) {
             print(("QUALIFIED " if qualified else "READABLE_UNQUALIFIED " if valid else "REFUSED ")
                   + label, flush=True)
 
-        def native_store(mode, producer=fixture, version=2):
+        def native_store(mode, producer=fixture, version=3):
             if evidence.exists():
                 for path in evidence.iterdir():
                     path.unlink()
@@ -217,9 +219,9 @@ int main(int argc, char **argv) {
         for state_value in (3, 255):
             cut("invalid marker state " + str(state_value),
                 lambda f, s=state_value: catalog_change(f, 168, bytes([s])))
-        for byte in range(7):
+        for byte in range(6):
             cut("marker reserved byte " + str(byte),
-                lambda f, b=byte: catalog_change(f, 169 + b, b"\x01"))
+                lambda f, b=byte: catalog_change(f, 170 + b, b"\x01"))
         for state_value in (0, 1):
             cut("nonzero proof in state " + str(state_value),
                 lambda f, s=state_value: catalog_change(f, 168, bytes([s])))
@@ -282,7 +284,7 @@ int main(int argc, char **argv) {
             (0, 4096, 0, 1))
         assert results[-1]["encoded_bytes"] >= 655432
         cut("4097-row marker catalog refuses", lambda f: maximum(f, 4097), never)
-        cut("version 3 catalog refuses", lambda f: catalog_change(f, 8, struct.pack("<I", 3)))
+        cut("version 4 catalog refuses", lambda f: catalog_change(f, 8, struct.pack("<I", 4)))
         cut("v2 extension truncation", lambda f: catalog_change(f, 12, struct.pack("<I", len(f["epochs.eae"])-49)))
         cut("non-catalog version2 remains refused", lambda f: change(f, "authority.eal", 8, struct.pack("<I", 2)))
         cut("catalog duplicate epoch", lambda f: catalog_change(f, 232, f["epochs.eae"][72:88]))

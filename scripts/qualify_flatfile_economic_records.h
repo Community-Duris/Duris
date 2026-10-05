@@ -11,7 +11,10 @@ struct initialization_provenance
 {
 	size_t legacy_unknown_epochs = 0, never_initialized_epochs = 0, initialized_epochs = 0;
 	size_t lifecycle_receipts = 0;
+	size_t unknown_initialized_origins = 0, baseline_participant_epochs = 0,
+	       lifecycle_owner_epochs = 0;
 	bool complete() const { return legacy_unknown_epochs == 0; }
+	bool lifecycle_complete() const { return complete() && unknown_initialized_origins == 0; }
 };
 using namespace restore_economic_authority;
 constexpr size_t index_limit = 80 + 4096 * 64, segment_limit = 8 * 1024 * 1024;
@@ -302,7 +305,16 @@ class checker
 			else if (entry.initialization == baseline_initialization::never_initialized)
 				++provenance.never_initialized_epochs;
 			else
+			{
 				++provenance.initialized_epochs;
+				if (entry.origin == initialization_origin::legacy_unknown)
+					++provenance.unknown_initialized_origins;
+				else if (entry.origin ==
+					 initialization_origin::baseline_participant)
+					++provenance.baseline_participant_epochs;
+				else
+					++provenance.lifecycle_owner_epochs;
+			}
 		}
 		for (size_t index = 0; index < 256; ++index)
 			if (control[16520 + index / 8] & (1u << (index % 8)))
