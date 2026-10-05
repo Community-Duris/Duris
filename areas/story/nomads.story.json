@@ -1,0 +1,203 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "nomads",
+  "coverage": "complete",
+  "introduction": "Investigate why Septimus’s tribe has stopped travelling. Present the two other-planar shards for his collateral ring, then return the two distinct heads and that ring for the crown of Winduin. The journal separates clues, current supplies and accepted exchanges.",
+  "orientation": [
+    "The camp connects to four Surface rooms in Calimshan: go SOUTH from 582095 to 6203, EAST from 582494 to 6221, WEST from 582496 to 6227, or NORTH from 582895 to 6246. The reverse exits return to the Surface. The wagons form a circle around the bonfire; closed wagon doors still need OPEN under the game’s existing rules.",
+    "Ask the wandering Cimmerian purpose or cimmerian; ask the blacksmith work; ask Septimus fate or future. These five existing keywords select three responses. Septimus’s response is heard around the room; hearing it does not record an exchange or teach a fighting skill.",
+    "The blacksmith in wagon 6210 starts asleep. WAKE blacksmith may let you ask about work if the game permits it. Waking or speaking to him is a clue route, not a required journal achievement. Septimus waits in wagon 6212, reached NORTHEAST from 6218.",
+    "Rellius’s hidden journal is declared on the floor of storage wagon 6236. When present and revealed by native SEARCH, LOOK page1 and LOOK page2 provide his suspicions and last investigation. READ page1/page2 uses the same inspection path. Carrying the journal alone does not prove you read those pages, and this journal does not award reading or rescue credit.",
+    "For Septimus’s first exchange, gather one exact other-planar wood shard and one exact other-planar iron shard. The tree-like creature in 6208 and the iron creature in 6240 are their native holders. The shards are hidden items; reveal and obtain actual live stock under the game’s rules. Having a wooden training sword, examining the bonfire or holding Rellius’s body does not supply either shard.",
+    "Have both shards loose together, then offer a matching shard to Septimus. The accounting hand-in selects and consumes the complete exact bundle for the hallowed Cimmerian ring. Gifts of matching legitimate materials fit without your own creature-kill or clue-reading history. The receipt records the exchange, not how you obtained the evidence.",
+    "For the second exchange, carry the shaman’s exact head, the conjurer’s different head and the exact collateral ring loose together. Offer a matching head or the ring to Septimus; the accounting hand-in selects and consumes the whole bundle for the diamond crown of Winduin. A blue or green camp ring does not substitute. Remove a worn collateral ring before offering it.",
+    "The shaman in 6208 and the conjurer in 6240 are declared carrying their respective heads even while alive. These are supplied quest items, not a CARVE recipe. Matching supplied heads and ring fit without your own first-exchange or combat record. Both heads share the keyword head, but two copies of one head do not replace the other exact head.",
+    "The heads are hidden, transient and no-rent-marked. Dropping them on the floor can arm immediate decay under the game’s item rules. Keep actual materials available for the offering; earlier receipts never replace heads or a ring that were spent, dropped, lost or given away.",
+    "Septimus’s crown exchange narrates the camp’s relief and removes that NPC instance. It does not record a personal stranger kill, creature liberation, Rellius recovery or the camp moving away. A crown can also come from a CHAOS starter kit; owning one does not prove this exchange.",
+    "Rellius’s hidden body at 6240 is a fixed container prop with a declared training sword inside, not a normal corpse or a rescue endpoint. The blacksmith’s vanished-weapons story, ancient instructors, infirmary and training wagon have no additional local accepted craft, healing, escort or lesson quest. The bonfire’s unburning logs are an inspectable clue, not an implemented new producer or survival objective.",
+    "Native resets declare possible materials, not guaranteed live stock. Active accounting currently refuses zone item reset issuance; both exchanges need legitimate existing or supplied materials. Actual renewal still needs qualification before these potential daily quests can promise reliable availability."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 6220,
+      "name": "Septimus",
+      "keyword": "septimus",
+      "description": "In leader wagon 6212. Accepts the two complete exact bundles, then departs after the crown exchange.",
+      "topics": [
+        "fate",
+        "future"
+      ]
+    },
+    {
+      "mob_vnum": 6200,
+      "name": "a wandering Cimmerian",
+      "keyword": "wandering",
+      "description": "Starts at 6200 and follows native movement. Talks about the tribe’s lost purpose.",
+      "topics": [
+        "purpose",
+        "cimmerian"
+      ]
+    },
+    {
+      "mob_vnum": 6214,
+      "name": "a Cimmerian blacksmith",
+      "keyword": "blacksmith",
+      "description": "In wagon 6210, initially asleep. Native WAKE may enable his work clue; he has no local craft exchange.",
+      "topics": [
+        "work"
+      ]
+    },
+    {
+      "mob_vnum": 6215,
+      "name": "a tree-like creature",
+      "keyword": "tree",
+      "description": "In wooden horror wagon 6208. Native holder of the hidden wood shard; bound-creature lore adds no liberation endpoint.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6216,
+      "name": "a half-orc shaman",
+      "keyword": "shaman",
+      "description": "In wooden horror wagon 6208, initially asleep. Native holder of the shaman’s hidden, transient head; possessing it is not personal kill proof.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6217,
+      "name": "a dark-robed conjurer",
+      "keyword": "conjurer",
+      "description": "In metal horror wagon 6240. Native holder of the conjurer’s different hidden, transient head.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6218,
+      "name": "an iron creature",
+      "keyword": "iron",
+      "description": "In metal horror wagon 6240. Native holder of the hidden iron shard; no separate freeing or escort quest is implemented.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "septimus-planar-evidence",
+      "title": "Septimus: present the other-planar evidence",
+      "category": "story",
+      "summary": "Present one exact wood shard and one exact iron shard together for Septimus’s collateral ring. This records the evidence exchange; reading Rellius’s pages or personally defeating the creatures is not required by the native offering.",
+      "contracts": [
+        {
+          "giver_vnum": 6220,
+          "completion_key": "give=I:6217,I:6218;receive=I:6221;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "wood-shard",
+          "text": "Carry the other-planar wood shard",
+          "kind": "carried_item",
+          "item_vnums": [
+            6217
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The tree-like creature at 6208 is the native holder of this hidden shard. The living wood in the wagon and ordinary training swords do not substitute. Carry it loose for this inventory check; worn or nested copies do not count. Possession does not show whether you acquired it yourself or received it from another player."
+        },
+        {
+          "id": "iron-shard",
+          "text": "Carry the other-planar iron shard",
+          "kind": "carried_item",
+          "item_vnums": [
+            6218
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The iron creature at 6240 is the native holder of this hidden shard. Ordinary metal, the conjurer’s head and a page-reading record do not substitute. Carry it loose for this inventory check; worn or nested copies do not count. Possession does not show whether you acquired it yourself or received it from another player."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted evidence exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6220,
+              "completion_key": "give=I:6217,I:6218;receive=I:6221;disappear=0"
+            }
+          ],
+          "hint": "Recorded after the game accepts the complete exact offering. Clues, current materials, another player’s story or owning the reward do not record this exchange."
+        }
+      ]
+    },
+    {
+      "id": "septimus-heads-and-collateral",
+      "title": "Septimus: return both heads and the collateral ring",
+      "category": "story",
+      "summary": "Present both distinct heads and the hallowed Cimmerian ring together for the diamond crown of Winduin and Septimus’s departure. Matching supplied materials fit without your own earlier evidence or kill record. This records the accepted exchange, not a personal kill, rescue or camp relocation.",
+      "contracts": [
+        {
+          "giver_vnum": 6220,
+          "completion_key": "give=I:6219,I:6220,I:6221;receive=I:6222;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-evidence",
+          "text": "Optional earlier route: earn the collateral ring",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6220,
+              "completion_key": "give=I:6217,I:6218;receive=I:6221;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Your earlier accepted evidence exchange can be shown here. A matching supplied ring also fits, so this history is not required. The receipt cannot restore a ring consumed by a later offering or lost from your inventory."
+        },
+        {
+          "id": "shaman-head",
+          "text": "Carry the shaman’s exact head",
+          "kind": "carried_item",
+          "item_vnums": [
+            6219
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The shaman at 6208 is declared carrying this hidden, transient head. The conjurer’s head, Rellius prop or a generic carved head does not substitute. Dropping this item can trigger immediate decay. Carry it loose for this inventory check; worn or nested copies do not count. Possession does not show whether you acquired it yourself or received it from another player."
+        },
+        {
+          "id": "conjurer-head",
+          "text": "Carry the conjurer’s exact head",
+          "kind": "carried_item",
+          "item_vnums": [
+            6220
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The conjurer at 6240 is declared carrying this different hidden, transient head. Both native heads use the keyword head; inspect which exact head you have. Two shaman heads do not supply this one. Carry it loose for this inventory check; worn or nested copies do not count. Possession does not show whether you acquired it yourself or received it from another player."
+        },
+        {
+          "id": "collateral-ring",
+          "text": "Carry the exact hallowed Cimmerian ring",
+          "kind": "carried_item",
+          "item_vnums": [
+            6221
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Septimus’s evidence exchange is its only identified native producer. A matching supplied ring fits; ordinary blue/green camp rings do not. Remove it if you are wearing it, and have both exact heads loose at the same time. Carry it loose for this inventory check; worn or nested copies do not count. Possession does not show whether you acquired it yourself or received it from another player."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Record the accepted crown exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6220,
+              "completion_key": "give=I:6219,I:6220,I:6221;receive=I:6222;disappear=1"
+            }
+          ],
+          "hint": "Recorded after the game accepts the complete exact offering. Clues, current materials, another player’s story or owning the reward do not record this exchange."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 107 &&
+		require(catalog.story_mappings.size() == 108 &&
 				tracker.summary_for(7, 42).total == 1583,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7549,6 +7549,132 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &evidence = story_for("nomads", "septimus-planar-evidence");
+			const auto &trophies = story_for("nomads", "septimus-heads-and-collateral");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 62, 6203, 100, "arrival") ==
+					result::applied,
+				"Nomad camp discovery failed");
+			require(journey.render_journal(7, 42, 62, 10, 1, 101, false, false)
+						.find(trophies.title) == std::string::npos,
+				"Nomad camp exposed unmet Septimus");
+			for (const auto &[vnum, room] :
+			     { std::pair{ 6200, 6200 }, std::pair{ 6214, 6210 },
+			       std::pair{ 6220, 6212 } })
+				require(journey.meet_npc(7, 42, vnum, room, 102) == result::applied,
+					"Nomad camp clue encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Nomad camp section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			supplies = {};
+			supplies.carried[6217] = 2;
+			supplies.carried[6219] = 2;
+			supplies.carried[6213] = 1;
+			supplies.carried[6216] = 1;
+			supplies.carried[6205] = 1;
+			supplies.carried[6215] = 1;
+			supplies.carried[6222] = 1;
+			supplies.equipped[1] = 6221;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 62, 10, 1, 105, false, false,
+							 &supplies);
+			require(section(evidence).find("[Missing now] " + evidence.steps[1].text) !=
+					std::string::npos,
+				"Nomad camp duplicate wood or sword became exact iron");
+			require(section(trophies).find("[Missing now] " + trophies.steps[2].text) !=
+					std::string::npos,
+				"Nomad camp duplicate shaman head or Rellius body became conjurer head");
+			require(section(trophies).find("[Missing now] " + trophies.steps[3].text) !=
+					std::string::npos,
+				"Nomad camp worn collateral or ordinary ring became loose offering");
+			for (const auto *entry : { &evidence, &trophies })
+				require(section(*entry).find("[Pending] " +
+							     entry->steps.back().text) !=
+						std::string::npos,
+					"Nomad camp clues/book/crown ownership fabricated exchange");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 62).completed == 0 &&
+					journey.progress_for_zone(7, 42, 62).total == 2,
+				"Nomad camp readiness fabricated reading/waking or exchange credit");
+			supplies.carried[6218] = 1;
+			journal = journey.render_journal(7, 42, 62, 10, 1, 107, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 2; ++i)
+				require(section(evidence).find("[Ready now] " +
+							       evidence.steps[i].text) !=
+						std::string::npos,
+					"Nomad camp complete supplied evidence did not fit");
+			supplies.equipped.clear();
+			supplies.carried[6220] = 1;
+			supplies.carried[6221] = 1;
+			journal = journey.render_journal(7, 42, 62, 10, 1, 109, false, false,
+							 &supplies);
+			for (size_t i = 1; i < 4; ++i)
+				require(section(trophies).find("[Ready now] " +
+							       trophies.steps[i].text) !=
+						std::string::npos,
+					"Nomad camp exact supplied final bundle did not fit");
+			require(section(trophies).find("[Pending] " + trophies.steps[0].text) !=
+					std::string::npos,
+				"Nomad camp supplied ring invented own earlier evidence");
+			service supplied(catalog);
+			require(supplied.discover_zone(7, 42, 62, 6203, 100, "arrival") ==
+					result::applied,
+				"Nomad camp supplied-material discovery failed");
+			record(supplied, trophies.contracts.front(), "nomads-supplied-bundle", 62,
+			       6212);
+			require(supplied.progress_for_zone(7, 42, 62).completed == 1 &&
+					supplied.evidence_for(evidence.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Nomad camp supplied final bundle required or fabricated first exchange");
+			// Synthetic receipts test projection, not native hidden source/GET,
+			// page reading, waking, death, transient decay or recipient retirement.
+			record(journey, evidence.contracts.front(), "nomads-planar-evidence", 62,
+			       6212);
+			supplies.carried.erase(6217);
+			supplies.carried.erase(6218);
+			record(journey, trophies.contracts.front(), "nomads-heads-and-ring", 62,
+			       6212);
+			supplies.carried.erase(6219);
+			supplies.carried.erase(6220);
+			supplies.carried.erase(6221);
+			journal = journey.render_journal(7, 42, 62, 10, 1, 122, false, false,
+							 &supplies);
+			require(section(trophies).find("[Recorded] " + trophies.steps[0].text) !=
+						std::string::npos &&
+					section(trophies).find("[Missing now] " +
+							       trophies.steps[3].text) !=
+						std::string::npos,
+				"Nomad camp earlier receipt restored consumed collateral");
+			for (const auto *entry : { &evidence, &trophies })
+				require(section(*entry).find("[Recorded] " +
+							     entry->steps.back().text) !=
+						std::string::npos,
+					"Nomad camp accepted independent outcome lost");
+			auto replay = completion(trophies.contracts.front(),
+						 "nomads-heads-and-ring", 120);
+			replay.transaction.zone_number = 62;
+			replay.transaction.room_vnum = 6212;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Nomad camp replay duplicated credit");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 62).completed == 2 &&
+					recovered.progress_for_zone(7, 42, 62).total == 2 &&
+					!recovered.has_discovered(7, 42, 5000),
+				"Nomad camp recovery lost exchanges or invented Surface discovery");
+			for (const auto *entry : { &evidence, &trophies })
+				require(recovered.evidence_for(entry->contracts.front(), 2)
+							.successful_attempts == 1,
+					"Nomad camp exact receipt lost in recovery");
+		}
 		{
 			const auto &lieutenant = story_for("lavcav", "lieutenant-platinum-horns");
 			const auto &map = *std::find_if(catalog.story_mappings.begin(),

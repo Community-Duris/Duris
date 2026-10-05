@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1441
-assert report['mapped_area_count'] == 107 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 108 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -239,6 +239,16 @@ assert lavcav['stories'][0]['category']=='story'
 assert lavcav['stories'][0]['steps'][0]['contracts']==lavcav['exclusions'][0]['contracts']
 assert [t['item_vnums'][0] for t in lavcav['stories'][0]['steps'][1:-1]]==[35505,35515]
 assert lavcav['exclusions'][0]['contracts']==[{'giver_vnum':35535,'completion_key':'give=C:100000;receive=I:35515;disappear=1'}]
+
+nomads=next(m for m in catalog['story_mappings'] if m['source_area']=='nomads')
+assert (nomads['schema_version'],nomads['revision'],nomads['coverage'])==(3,1,'complete')
+assert len(nomads['stories'])==2 and len(nomads['contacts'])==7 and not nomads['exclusions']
+assert report['eligible_by_zone']['62']==2 and sum(len(c['topics']) for c in nomads['contacts'])==5
+assert sum(t.get('optional',False) for s in nomads['stories'] for t in s['steps'])==6
+assert all(s['category']=='story' for s in nomads['stories'])
+assert nomads['stories'][1]['steps'][0]['contracts']==nomads['stories'][0]['contracts']
+assert [t['item_vnums'][0] for t in nomads['stories'][0]['steps'][:-1]]==[6217,6218]
+assert [t['item_vnums'][0] for t in nomads['stories'][1]['steps'][1:-1]]==[6219,6220,6221]
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

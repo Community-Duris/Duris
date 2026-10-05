@@ -163,9 +163,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 87 | Mountain Tracts of the Untamed | [Comprehensive dossier](zone-stories/MOUNTAIN_TRACTS_OF_THE_UNTAMED.md): all8 blocks/245 rooms/98 mobiles/63 objects/259 resets, shop/shared controls and bounded foreign/boundary closure | Four cards/four recipes/eight contacts/19 aliases/six optional checks; miniature→leggings, marble→bracer, scale+tooth→potion, fresh potion→gloves | No native repair. Source/renewal, potion allocation, accepted access, lore endpoints, boundary intent and clues remain builder work; preserve Fields hotfix |
 | 88 | The Orcish Slave Camp | [Comprehensive dossier](zone-stories/THE_ORCISH_SLAVE_CAMP.md): all 7 blocks/14 rooms/31 mobiles/18 objects/64 resets and shared key/quest/retirement/food/boundary closure | Two cards/three classified recipes/one typed-food exclusion/five contacts/13 aliases/four optional checks; key→coins+steak, exact steak→mace+XP+tragic departure | No native repair. Source/renewal, fragile-key access/allocation, type admission, selected recipient retirement, steak-type intent and clues remain builder work; preserve Fields hotfix |
 | 89 | The Underground Lava Caves | [Comprehensive dossier](zone-stories/THE_UNDERGROUND_LAVA_CAVES.md): all6 blocks/142 rooms/48 mobiles/33 objects/163 resets and shared coin/reset/key/control/fire/wandering/boundary closure | One card/two classified recipes/one coin-purchase exclusion/seven contacts/six aliases/three optional checks; supplied horns→wrist chain+XP | No native repair. Sole producer/renewal, coin debit, moving recipient, access/fire evidence, unusual onyx-key intent, services and clues need builder work; preserve Fields hotfix |
-| 90–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 90 | The Cimmerian Nomad Encampment | [Comprehensive dossier](zone-stories/THE_CIMMERIAN_NOMAD_ENCAMPMENT.md): all5 blocks/49 rooms/21 mobiles/23 objects/102 resets and shared ALL roots/echo/wake/page/decay/custody/kit/arrival closure | Two cards/two QA/seven contacts/five aliases/six optional checks; shards→collateral ring; distinct heads+ring→crown+Septimus departure | No native repair. Sources/renewal, hidden transient proof, collateral allocation, investigation evidence, recipient retirement, prop/services and geography/clues need builder work; preserve Fields hotfix |
+| 91–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Cimmerian Nomad Encampment (`nomads`).
+The next area is The Ruins of Undermountain (`undermountain`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -176,6 +177,7 @@ matches, or a candidate item graph was extracted.
 | --- | --- | --- |
 | ZSQ-BRAD-PHYSICAL-AFFILIATION / DISCOVERY / RENEWAL / EXPLORATION | Five Tower contracts retain Braddistock credit ownership; Tower encounters do not discover this journal, and owner reset mode differs from physical retiring recipients. Local exploration has no native terminal. | Keep canonical receipt identities. Add explicit physical affiliation/referrals and real source/actor renewal; admitted clue/access/custody and builder-designed lab/smuggler/campaign endpoints. Entry speech repair ships separately; missing key/weapon supply and copied prose remain proposals. |
 | ZSQ-CEOTHIA-CHOICE / TIMELINE / TARGETED-EFFECT / LEGACY-TRAINING | Four retiring guild alternatives, three independent Lenbrea rewards, breaking keys, two nested crates, foreign timeline proofs, imported agility pool and legacy tablet/scroll differ from modern epic purchases. | Six source-guided cards ship. Qualify source/recipient reset episodes, actual access/travel/targeted effects and shared-material ownership; define all-stage campaign and restore/retire legacy training only with builder intent. Pool target ambiguity is a pending shared repair, not shipped news. |
+| ZSQ-NOMADS-SOURCE-RENEWAL / HIDDEN-TRANSIENT-PROOF / COLLATERAL-ALLOCATION / INVESTIGATION-EVIDENCE / RECIPIENT-RETIREMENT / SERVICE-PROP-INTENT / BOUNDARY-CLUE-CONSISTENCY | Hidden/transient heads are carried while NPCs live; collateral ring is consumed; page/wake clues and room narration are separate from accepted bundles; crown has CHAOS source. | Two existing-schema cards ship. Qualify source/decay/custody, exact current ALL roots, optional actor/page/status facts and NPC instance/epoch. Builder decides material-only trophies versus true kill prerequisite; no pickup/type/flag/stock/mobility repair. |
 | ZSQ-LAVCAV-SOURCE-RENEWAL / COIN-PURCHASE / WANDERING-RECIPIENT / ACCESS-EVIDENCE / ONYX-KEY-INTENT / SERVICE-ENDPOINTS / CLUE-CONSISTENCY | Sole horns producer is refused active coin purchase; seller can wander from isolated spawn into lake or trap; native gates/control/fire and unusual key need precise evidence. | One supplied-horns return card and explicit purchase exclusion ship. Qualify actual payer wallet/item issuance, selected NPC instance/epoch, legitimate current material/renewal and admitted prerequisites. Preserve spawn trap, rarity, types, locks and PvP. No native repair. |
 | ZSQ-SHORTC-SOURCE-RENEWAL / KEY-ACCESS-ALLOCATION / TYPED-FOOD-ADMISSION / RECIPIENT-RETIREMENT / STEAK-TYPE-INTENT / CLUE-CONSISTENCY | Hidden cap1 key;20-percent break versus exact hand-in; TRASH steak tragic departure versus refused T19 food; template/room recipient reselection and stale clues. | Two existing-schema cards and one explicit unsupported exclusion ship. Define qualified type roots and recipient instance/epoch; review prop/clue intent before mechanics. No native repair, edible-prop conversion or access bypass. |
 | ZSQ-MOUNTAINTRACKS-SOURCE-RENEWAL / POTION-ALLOCATION / ACCESS-RESULTS / STORY-ENDPOINTS / BOUNDARY-INTENT / CLUE-CONSISTENCY | Hidden/NORENT cap1 proof; optional history versus consumed potion; valid GRAB vine and PUSH without OPEN; blank/lore endpoints; reserve/missing directions and misleading travel clues. | Four existing-schema cards ship. Authoritative sources/allocation/access/learning and intended boundary/text design remain builder work. No native repair, pickup, opcode change or activation. |
@@ -4875,3 +4877,75 @@ issuance/worn removal/fire/picking/key destruction/control/OPEN/arrival/
 wandering/selected retirement/reward settlement/renewal or database persistence.
 Active, ready accounting mandatory; frozen recovery separate. No accounting
 activation, DB/server operation, migration, deployment or merge.
+
+
+## Priority 90 checkpoint: The Cimmerian Nomad Encampment
+
+The [complete dossier](zone-stories/THE_CIMMERIAN_NOMAD_ENCAMPMENT.md) closes all
+five blocks (two M/one MA/two QA), 49 physical rooms/36 full prose families/five
+headers/124 exits/31 relative patterns/two full exit texts/four complete non-exit
+metadata families, 21 full mobiles/21 full prose families/23 full objects and
+102 resets (55 M/22 E/16 D/four O/four G/one P;90 exact/95 parent-aware families;
+60 expanded groups). All 21 mobiles are placed; all chances are100 but caps and
+conditional chains matter. Four reciprocal Surface boundaries/full foreign
+records reviewed; both item recipes are local, no foreign reset group/consumer
+or imported proof. Across713 active type25 prototypes none targets local rooms.
+No shop/literal special/ACT_TEACHER/epic-teacher/ROOM_INN binding. Direct leads:
+Githzerai prime shift can choose bonfire6224; CHAOS starter profiles grant
+crown6222 through durable starter issuance. Shared quest echo/ALL roots/wake/
+LOOK/READ/spellbook/SEARCH/NPC corpse/transient decay/snapshot/mode2 reviewed.
+
+Schema3/revision1 adds two cards/two recipes/seven contacts/five aliases/six
+optional checks (five exact materials, one earlier evidence receipt). Wood+iron
+shards→collateral ring; distinct shaman head+conjurer head+ring→crown and
+Septimus departure. All complete current roots must be loose together for
+native atomic batch consumption. Both heads use keyword head; duplicates of
+one do not supply the other. Worn/nested ring or ordinary blue/green ring does
+not fit. Supplied matching bundle fits without own evidence or kill history;
+a first receipt never restores collateral consumed later. MA/QA A denotes
+room echo, not an ALL-goals opcode or listener credit. D removes Septimus,
+not the camp; crown can separately come from CHAOS kit, so possession is not
+accepted exchange evidence.
+
+Shards/heads/book/body are hidden; heads also TRANSIENT/NORENT. G places heads
+on living strangers; no CARVE producer or death-state/personal-killer predicate
+in exact hand-in. Qualify hidden source/reveal/GET/gift/steal/corpse/floor/
+non-death removal/transient decay and actual snapshot/recovery rather than
+invent personal death credit or strip flags. Snapshot preserves active durable
+custody despite legacy no-rent omission. Blacksmith starts prone/sleeping and
+quester refuses sleeping status; native WAKE has ordinary admission, not a
+new mandatory stage. Rellius page1/page2 are visible extra-description clues;
+READ delegates to LOOK and no page-specific story fact is recorded. Journal
+is SPELLBOOK33 with108-page capacity, not spell108. Rellius body is fixed
+hidden CONTAINER15/TAKE0/weight165, not normal combat corpse or recovery quest.
+Preserve source/P sword roles. Instructors, infirmary, vanished weapons, bound
+creatures, horses and prophecy have no extra local service/quest endpoint.
+Bonfire is MAGIC_LIGHT/CITY, not elemental-fire terrain. Doors reset closed/
+unlocked; OPEN and arrival differ. Plains prose versus desert Surface borders
+needs intent review. Mode2 can reset while occupied; current template/room
+recipient reselection lacks NPC instance/epoch. All zone item reset issuance
+is refused during active accounting; actual source availability/renewal is
+required before promising reliable dailies.
+
+**No native repair ships.** Seven required follow-ups cover sources/renewal,
+hidden transient proof, collateral allocation, optional investigation evidence,
+recipient retirement, service/prop intent and boundary/clue consistency. Builder
+chooses material-only trophies versus real death prerequisite before changes.
+Any repair needs separate named fix, original-fails/repaired-passes proof and
+prominent before/after news. Preserve pickup, hidden/decay flags, scarcity, types,
+closed doors, existing travel and PvP; Fields old escape hotfix unchanged.
+
+Required checks:source/schema, all108 Python/C++ loader/projection journeys,
+full production regression, maintained build, changed/staged formatting,
+links/whitespace and preservation/publication proof. All107 prior journals,
+2668 native definitions/fingerprint/revision2/registry and original220 queue
+stay unchanged. Exact52600-byte prior Lava Caves PR body is archived with SHA-256;
+all ten repair/news/accounting sections retained verbatim. Catalog108 journals/
+1583 achievements/1441 potential dailies/2193 rows; two native fallback outcomes
+become two authored cards without changing aggregate achievement/daily/row counts.
+**90/220 source-comprehensive,130 pending; The Ruins of Undermountain (`undermountain`) next.**
+Goal remains active. Synthetic receipts do not qualify played wake/page reading/
+SEARCH/GET/source/gifts/steal/death/looting/CARVE/decay/save/plane shift/OPEN/
+exact native batch/reward settlement/selected retirement/renewal or database
+persistence. Active, ready accounting mandatory; frozen recovery separate.
+No accounting activation, DB/server operation, migration, deployment or merge.

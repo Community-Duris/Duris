@@ -2195,3 +2195,38 @@ endpoints before credit. Actual stock/empty-mode1 renewal and source-qualified
 daily availability require qualification with active, ready accounting. Keep
 builder intent questions distinct from proven repairs; actual fixes get separate
 commits/tests/news, preserving Fields hotfix and PvP.
+
+
+## Nomad Encampment example: a receipt does not supply consumed collateral
+
+The [dossier](../design/zone-stories/THE_CIMMERIAN_NOMAD_ENCAMPMENT.md) and
+[sidecar](../../areas/story/nomads.story.json) show two independent accepted
+outcomes linked by current material: wood+iron shards give the ring, then the
+ring and two distinct heads give the crown. Require the complete exact bundle
+loose together for native accounting admission. Both heads use keyword head;
+two of one are not both. A worn ring must be removed. Supplied matching ring
+fits without personal first-stage history, while earlier history never restores
+a ring spent in the final exchange.
+
+MA/QA A means room narration, not an ALL-goals opcode or listener awards. Clues,
+Rellius page possession and the crown itself are not accepted completion proof.
+The crown also appears in CHAOS starter kits. Heads are G inventory on living
+NPCs; do not infer CARVE or personal killer requirements from item names. Keep
+SECRET/TRANSIENT/NORENT rules, and qualify actual custody/decay/recovery before
+promising source availability. Durable snapshot custody can preserve a no-rent
+item, so the flag alone cannot predict logout loss.
+
+For optional investigation facts, native WAKE admission differs from seeing an
+awake blacksmith. LOOK/READ page1/page2 differs from owning the journal or another
+book with the same page alias. Bind future facts to selected NPC generation or
+journal UID/page/content revision and actual accepted output/state. Keep these
+as guidance until the capability exists; no invented learned objectives.
+The journal is SPELLBOOK33 with108-page capacity, not spell108. Rellius body is
+a fixed hidden container, not a normal corpse or pickup/resurrection endpoint.
+Teaching/crafting/healing/prophecy needs explicit contracts before credit.
+
+Qualify occupied-mode2 renewal and original Septimus retirement versus a later
+replacement before claiming reliable dailies. Keep builder intent questions
+separate from verified failures; actual repairs get named fix commits/proof/news.
+Preserve sources, flags, doors, travel/PvP and Fields escape hotfix. Active,
+ready accounting is mandatory for every new credit; frozen recovery separate.

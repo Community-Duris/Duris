@@ -3091,3 +3091,27 @@ runtime repair. The unsupported fallback achievement/row is removed while its
 definition/history remain. Every new credit requires active, ready accounting;
 frozen recovery remains separate. Preserve Fields intentional escape hotfix and
 required replacement design.
+
+
+## Nomad Encampment: investigation clues, transient trophies and consumed collateral
+
+The [complete dossier](zone-stories/THE_CIMMERIAN_NOMAD_ENCAMPMENT.md) maps the
+native two-stage material chain without requiring personal first-stage history.
+A supplied exact ring fits; a receipt is never reusable collateral. Clue reading,
+waking, hidden-source acquisition and killing need explicit admitted facts if a
+builder later chooses them as prerequisites. Current native exchanges do not
+impose those histories.
+
+| Requirement | Evidence | Plan and qualification |
+| --- | --- | --- |
+| Sources and actual renewal | Cap1 hidden G proofs, sole ring producer, active reset refusal, occupied-mode2 renewal | **ZSQ-NOMADS-SOURCE-RENEWAL:** qualify actual source/root/UID/custody, gifts versus rewards, stocks/conditional caps and repeated full offerings. Daily availability depends on legitimate current material or qualified producer/renewal; no free restock or accounting bypass. |
+| Hidden/transient proof semantics | Heads are on living NPCs, same alias, SECRET/TRANSIENT/NORENT; native offering has no death predicate | **ZSQ-NOMADS-HIDDEN-TRANSIENT-PROOF:** distinguish source/loot/reveal/GET/gift/steal from personal kill/CARVE. Qualify corpse/floor/no-corpse/non-death extraction, owned transient destruction, snapshot durable no-rent exception and recovery. Builder decides material-only proof versus actual admitted death before changing flags or prerequisites; version new semantics deliberately. |
+| Collateral and ALL allocation | Ring is wearable and consumed with two distinct heads; exact roots collected atomically | **ZSQ-NOMADS-COLLATERAL-ALLOCATION:** qualify loose/worn/nested/duplicate roots, same-name different heads, complete batch, supplied ring without own first stage, concurrency/retry/rollback, fresh-ring repeat and retained receipts. No NPC deposits, instalments or history-as-material shortcut. |
+| Universal optional investigation facts | Sleeping blacksmith cannot answer until awake; journal page1/page2 are native extra-description output; MA aliases broadcast | **ZSQ-NOMADS-INVESTIGATION-EVIDENCE:** bind accepted waking to actor/selected NPC generation and status transition, and reading to actual selected journal UID/page/content revision/admitted visible output. Qualify blocked/magical versus ordinary wake, already/other-player awake, hidden/wrong-book/denied reads, READ alias/LOOK, replay/cold recovery and accounting readiness. Aliases/listeners/possession do not establish learned facts. Keep optional unless builder defines a true native prerequisite. |
+| Recipient and narration | D extracts Septimus; occupied reset/reselection lacks captured NPC instance/epoch | **ZSQ-NOMADS-RECIPIENT-RETIREMENT:** qualify original target versus mode2 replacement/removal/delayed settlement/disconnect/replay, and eligible actor/group credit versus room listeners. No automatic whole-camp relocation/rescue. Confirmed shared repair separate fix/tests/news. |
+| Prop/services intent | Lore journal is SPELLBOOK with108-page capacity; Rellius is fixed hidden container; teaching/crafting/healing/prophecy lack endpoints | **ZSQ-NOMADS-SERVICE-PROP-INTENT:** prefer truthful inspection guidance; no spell108 lesson, body pickup/type conversion or new service from prose. Real endpoint requires explicit prerequisites, actor/outcome/rewards/source and accounting qualification. Actual data repairs separate named fixes/proof/news. |
+| Boundaries and alternate reward source | Four Surface desert/dune borders versus plains prose; Githzerai prime-shift can enter; CHAOS kit grants crown | **ZSQ-NOMADS-BOUNDARY-CLUE-CONSISTENCY:** qualify accepted physical arrival, source provenance and quest receipt independently of travel intent/neighbour discovery/reward ownership. Builder confirms geography and minimal clue wording; preserve existing entrances/travel/kit issuance/PvP. Actual repair separate commit/proof/news. |
+
+Two existing-schema cards ship without runtime/native repair or new schema.
+Every new credit requires active, ready accounting; frozen recovery separate.
+Preserve Fields intentional escape hotfix and required replacement design.
