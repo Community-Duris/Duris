@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1421
-assert report['mapped_area_count'] == 120 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 121 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -379,6 +379,19 @@ assert ws['wilms-armor']['steps'][2]['count'] == 3
 assert ws['wilms-helmet']['steps'][0]['item_vnums'] == [6900] and ws['wilms-eyepatch']['steps'][0]['item_vnums'] == [6901]
 assert all(t['optional'] and t['kind'] == 'carried_item' for s in worms['stories'] for t in s['steps'][:-1])
 
+
+ravenloft = next(m for m in catalog['story_mappings'] if m['source_area'] == 'ravenloft')
+assert (ravenloft['schema_version'],ravenloft['revision'],ravenloft['coverage']) == (3,1,'complete')
+assert len(ravenloft['stories']) == 4 and len(ravenloft['contacts']) == 5 and len(ravenloft['exclusions']) == 1
+assert report['eligible_by_zone']['583'] == 4 and sum(len(c['topics']) for c in ravenloft['contacts']) == 42
+rv = {s['id']:s for s in ravenloft['stories']}
+assert [t['item_vnums'] for t in rv['vey-temporal-essences']['steps'][:-1]] == [[58393],[58407]]
+assert [t['item_vnums'] for t in rv['megosh-holy-relics']['steps'][:-1]] == [[58346],[58410]]
+assert rv['perganan-lenience']['steps'][0]['item_vnums'] == [58370] and rv['wizard-indulgence']['steps'][0]['item_vnums'] == [58369]
+assert all(t['optional'] and t['kind'] == 'carried_item' and t['count'] == 1 for s in ravenloft['stories'] for t in s['steps'][:-1])
+assert all(s['category'] == 'story' and s['steps'][-1]['contracts'] == s['contracts'] for s in ravenloft['stories'])
+assert ravenloft['exclusions'][0]['contracts'] == [{'giver_vnum':58343,'completion_key':'give=I:58427;receive=I:58427;disappear=0'}]
+assert sum(u['daily_candidate'] for u in module.story_units(catalog) if u['zone_number'] == 583) == 1
 
 tower = next(m for m in catalog['story_mappings'] if m['source_area'] == 'trnsptow')
 assert tower['schema_version'] == 3 and tower['coverage'] == 'complete'

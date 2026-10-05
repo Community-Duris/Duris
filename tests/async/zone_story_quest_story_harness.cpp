@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 120 &&
-				tracker.summary_for(7, 42).total == 1549,
+		require(catalog.story_mappings.size() == 121 &&
+				tracker.summary_for(7, 42).total == 1548,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7551,6 +7551,146 @@ int main(int argc, char **argv)
 				"Turolopolis cold recovery lost independent outcomes, doubled memorial or invented zoo travel");
 		}
 
+		{
+			const auto &vey = story_for("ravenloft", "vey-temporal-essences");
+			const auto &perganan = story_for("ravenloft", "perganan-lenience");
+			const auto &wizard = story_for("ravenloft", "wizard-indulgence");
+			const auto &megosh = story_for("ravenloft", "megosh-holy-relics");
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "ravenloft"; });
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 583, 58568, 100, "arrival") ==
+						result::applied &&
+					journey.meet_npc(7, 42, 58347, 58320, 101) ==
+						result::applied,
+				"Castle discovery/contact failed");
+			std::string journal;
+			journal = journey.render_journal(7, 42, 583, 10, 1, 102, false, false);
+			require(journal.find(perganan.title) != std::string::npos &&
+					journal.find(vey.title) == std::string::npos &&
+					journal.find(wizard.title) == std::string::npos &&
+					journal.find(megosh.title) == std::string::npos,
+				"Castle unencountered contacts exposed reward cards");
+			require(journey.meet_npc(7, 42, 58312, 58324, 102) == result::applied &&
+					journey.meet_npc(7, 42, 58367, 58544, 102) ==
+						result::applied &&
+					journey.meet_npc(7, 42, 58381, 58459, 102) ==
+						result::applied,
+				"Castle independent contact encounters failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Castle story card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry, size_t step) {
+				return section(entry).find("[Ready now] " +
+							   entry.steps[step].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry, size_t step) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[step].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[58408] = 1;
+			supplies.carried[58411] = 1;
+			supplies.carried[58401] = 1;
+			supplies.carried[58427] = 1;
+			supplies.equipped[1] = 58393;
+			supplies.equipped[2] = 58369;
+			journal = journey.render_journal(7, 42, 583, 10, 1, 102, false, false,
+							 &supplies);
+			require(missing(vey, 0) && missing(vey, 1) && missing(perganan, 0) &&
+					missing(wizard, 0) && missing(megosh, 0) &&
+					missing(megosh, 1),
+				"Castle held/worn/reward-only/mallet stock substituted for quest materials");
+			supplies.equipped.clear();
+			supplies.carried[58393] = 1;
+			supplies.carried[58370] = 1;
+			supplies.carried[58346] = 1;
+			journal = journey.render_journal(7, 42, 583, 10, 1, 103, false, false,
+							 &supplies);
+			require(ready(vey, 0) && missing(vey, 1) && ready(perganan, 0) &&
+					missing(wizard, 0) && ready(megosh, 0) &&
+					missing(megosh, 1),
+				"Castle temporal/relic bundles or distinct documents merged");
+			supplies.carried[58407] = 1;
+			supplies.carried[58369] = 1;
+			supplies.carried[58410] = 1;
+			journal = journey.render_journal(7, 42, 583, 10, 1, 104, false, false,
+							 &supplies);
+			require(ready(vey, 1) && ready(wizard, 0) && ready(megosh, 1) &&
+					journey.progress_for_zone(7, 42, 583).completed == 0,
+				"Castle supplied bundles required personal source/access history or manufactured acceptance");
+			// Synthetic settled receipts qualify projection, not bell consumption or native accounting settlement.
+			record(journey, perganan.contracts.front(), "castle-perganan", 583, 58320);
+			supplies.carried.erase(58370);
+			supplies.carried[58416] = 1;
+			journal = journey.render_journal(7, 42, 583, 10, 1, 106, false, false,
+							 &supplies);
+			require(missing(perganan, 0) && ready(wizard, 0) &&
+					journey.progress_for_zone(7, 42, 583).completed == 1 &&
+					journey.evidence_for(wizard.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Castle note possession/spent Lenience merged independent document deliveries");
+			for (const auto &entry : mapping.stories)
+				if (entry.id != perganan.id)
+					record(journey, entry.contracts.front(),
+					       ("castle-" + entry.id).c_str(), 583, 58320);
+			const auto &prop = mapping.exclusions.begin()->first;
+			record(journey, prop, "castle-lizard", 583, 58402);
+			require(journey.progress_for_zone(7, 42, 583).completed == 4 &&
+					journey.progress_for_zone(7, 42, 583).total == 4 &&
+					journey.evidence_for(prop, 2).successful_attempts == 1,
+				"Castle prop counted as reward story or lost native receipt");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u)
+					      { return u.zone_number == 583; }) == 4 &&
+					std::count_if(units.begin(), units.end(),
+						      [](const auto &u) {
+							      return u.zone_number == 583 &&
+								     u.daily_candidate;
+						      }) == 1,
+				"Castle retiring stories/prop became additional dailies");
+			auto replay = completion(prop, "castle-lizard", 120);
+			replay.transaction.zone_number = 583;
+			replay.transaction.room_vnum = 58402;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Castle prop replay duplicated acceptance");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 583).completed == 4 &&
+					recovered.evidence_for(prop, 2).successful_attempts == 1 &&
+					!recovered.has_discovered(7, 42, 588) &&
+					!recovered.has_discovered(7, 42, 590),
+				"Castle cold recovery lost history or manufactured onward discovery");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 583, 58568, 100, "arrival") ==
+					result::applied,
+				"Historical Castle discovery failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("castle-old-" + entry.id).c_str(), 583, 58320);
+			record(historical, prop, "castle-old-lizard", 583, 58402);
+			require(historical.progress_for_zone(7, 42, 583).completed == 5,
+				"Historical raw Castle five outcomes changed");
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 583).completed == 4 &&
+					authored.has_discovered(7, 42, 583) &&
+					authored.evidence_for(prop, 2).successful_attempts == 1,
+				"Castle raw5-to-authored4 reclassification lost prop/discovery history");
+			for (const auto &entry : mapping.stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+							.successful_attempts == 1,
+					"Castle independent accepted receipt lost during reclassification");
+		}
 		{
 			const auto &shield = story_for("worms", "wilms-shield");
 			const auto &armor = story_for("worms", "wilms-armor");

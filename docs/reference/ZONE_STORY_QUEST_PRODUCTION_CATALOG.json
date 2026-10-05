@@ -86499,6 +86499,293 @@
     {
       "contacts": [
         {
+          "description": "Lady Vey Rallen starts in the Hall of Planning. Ask about the evil presence and the obyrith.",
+          "keyword": "vey",
+          "mob_vnum": 58312,
+          "name": "Lady Vey Rallen",
+          "topics": [
+            "hi",
+            "presence",
+            "obyrith",
+            "hello"
+          ]
+        },
+        {
+          "description": "Perganan starts at the end of the crawlspace. Ask about urik for Lenience and the onward note.",
+          "keyword": "perganan",
+          "mob_vnum": 58347,
+          "name": "Perganan the rogue Vistani",
+          "topics": [
+            "hi",
+            "vistani",
+            "witch",
+            "vampire",
+            "strahd",
+            "barovia",
+            "hossa",
+            "valesta",
+            "shresta",
+            "bram",
+            "urik",
+            "hello",
+            "witches",
+            "baba",
+            "zelenna",
+            "drowned",
+            "lady",
+            "madam",
+            "eva",
+            "fane",
+            "fanes",
+            "witchs",
+            "vampires",
+            "zarovich",
+            "bildrath",
+            "orbitian",
+            "parriwimple",
+            "stram",
+            "etush",
+            "danovich",
+            "mathilda",
+            "ghorvax"
+          ]
+        },
+        {
+          "description": "The Sabbath Wizard can appear with the other adventurers. Ask about indulgence or lucian. His initial placement has a chance limit.",
+          "keyword": "wizard",
+          "mob_vnum": 58367,
+          "name": "the sabbath Wizard",
+          "topics": [
+            "hi",
+            "indulgence",
+            "hello",
+            "lucian"
+          ]
+        },
+        {
+          "description": "The inner Megosh starts outside the Court of the Count. He wants the Idol and Dayheart; the outer Megosh is a different contact.",
+          "keyword": "megosh",
+          "mob_vnum": 58381,
+          "name": "Megosh, the Thief",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Cristofor's shocker lizard has no listed ASK topics. Its same-mallet squeak exchange is separate from the bell puzzle.",
+          "keyword": "lizard",
+          "mob_vnum": 58343,
+          "name": "a shocker lizard",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [
+        {
+          "contracts": [
+            {
+              "completion_key": "give=I:58427;receive=I:58427;disappear=0",
+              "giver_vnum": 58343
+            }
+          ],
+          "reason": "The shocker lizard accepts and returns the same copper mallet with a squeak. This prop is not a distinct reward quest, personal bell solve or first-source acquisition. Preserve its native accepted receipt without adding a quest achievement or daily."
+        }
+      ],
+      "introduction": "Explore Castle Ravenloft, its temporal demon realms and hidden passages. Four independent reward quests sit alongside the bell puzzle, prisoner leads and the wider Barovian story. New discovery and progress require active, ready accounting.",
+      "orientation": [
+        "Begin with the castle approach and nearby contacts. The outer gates use the long black castle key obtainable in Barovia Continued. Lady Vey Rallen, Perganan, the Sabbath Wizard and the inner Megosh describe separate requests. ASK their listed topics to hear the native replies; individual keywords are not separate achievements. Contacts can move or depart.",
+        "Lady Vey Rallen needs both an abyssal essence and a Zionyn essence together. The two Obox-Ob appearances are independent sources in the past and future demon realms. Their travel routes, guardians and return passages are useful exploration guidance, rather than an enforced personal order. Exact supplied essences fit without your own earlier visits or kills.",
+        "Lucian carries a container with a small key for his locked desk. The document of Lenience and the document of Indulgence are different papers inside that desk. Perganan wants Lenience; the Sabbath Wizard wants Indulgence. Bring the exact paper loose in inventory. Neither paper nor its reward substitutes for the other request.",
+        "Perganan hides in a crawlspace reached through the jail area and its loose-brick control. Ask about urik to hear his request. His accepted Lenience delivery gives a note for Sir Urik in Barovia Continued. The note is a separate onward hand-in; Perganan does not actually depart or escort you after the local delivery.",
+        "The Sabbath Wizard accepts Indulgence for a black belt with a fiery skull buckle, then departs. The copper mallet comes from the Treasury and belongs to a separate puzzle. The soul release does not award the mallet or unlock the bell sequence.",
+        "Megosh outside the Court of the Count wants the Idol of Ravenloft and the Dayheart together for a barbed raven-talon key. The Idol starts at the chapel altar; the Dayheart starts in the tower beyond the garden and its guarded approach. Watch the native traps, doors and falling hazards. Delivering these relics does not record that you personally took them or defeated their guardians.",
+        "The castle has another Megosh at the outer approach, with a separate request owned by Barovia Continued. The inner Megosh's completion text reveals Strahd and makes Megosh disappear. It does not spawn or transform the separately placed Strahd, or prove the Count was defeated.",
+        "For the bell puzzle, find the copper mallet in the true Treasury and wield it before striking the large bell. A successful native strike destroys the mallet and unlocks a remote sword case. The case stays closed until opened. A tapestry control reveals its alcove. This shared puzzle has no accepted quest receipt yet; someone else opening the case does not prove your own solve.",
+        "The shocker lizard accepts and returns a copper mallet with a squeak. This same-item prop is not a reward quest or a source of the first mallet, and it is not required before striking the bell. Its native accepted history remains separate from the four journal stories.",
+        "Look at inscriptions and controls for passage clues. The SouthTower plaque asks for the demon prince's name. Different tapestries, statues, a loose brick, a torch, an altar and a throne affect different shared exits. Opening a shared passage does not require your own earlier solve. Use the native commands and preserve access, trap and movement restrictions.",
+        "Gertruda, the dracolich skull and the old catacomb key lead to other zones: Mad Mary in Barovia, and Rahadin or Gevin in the Ravenloft Catacombs. These are separate recipients and receipts. The catacomb entrances and paired wall handprints have their own routes. The existing Doru\u2013Chernovog\u2013Strahd kill achievement is also separate from local item deliveries.",
+        "Carry every item for the chosen request loose and together. Held, worn, nested, consumed or handed-away materials are not current preparation. Exact supplied proof fits without previous dialogue, source, combat, puzzle or gate history. A reward alone is not an accepted delivery. Scarce stock and departing contacts limit availability; new credit requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "ravenloft",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:58393,I:58407;receive=I:58408;disappear=1",
+              "giver_vnum": 58312
+            }
+          ],
+          "id": "vey-temporal-essences",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Obox-Ob in the past lair carries this essence. Keep the complete bundle loose together; source and readiness do not prove acceptance.",
+              "id": "material-58393",
+              "item_vnums": [
+                58393
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry an abyssal essence"
+            },
+            {
+              "count": 1,
+              "hint": "The independently placed Obox-Ob on Zionyn carries this essence. Keep the complete bundle loose together; source and readiness do not prove acceptance.",
+              "id": "material-58407",
+              "item_vnums": [
+                58407
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a Zionyn essence"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:58393,I:58407;receive=I:58408;disappear=1",
+                  "giver_vnum": 58312
+                }
+              ],
+              "hint": "Only the accepted exact hand-in records this independent quest. Reward possession, questions, shared-open passages and earlier personal kills are separate facts. New progress requires active, ready accounting.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete Vey Rallen: two temporal essences"
+            }
+          ],
+          "summary": "Bring the abyssal and Zionyn essences together for the royal courtyard key. The spirit departs after acceptance.",
+          "title": "Vey Rallen: two temporal essences"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:58370;receive=I:58416;disappear=0",
+              "giver_vnum": 58347
+            }
+          ],
+          "id": "perganan-lenience",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The Office of Vengeance desk contains Lenience. Lucian's container holds its small key. Supplied Lenience fits without earlier combat or access history. Keep the complete bundle loose together; source and readiness do not prove acceptance.",
+              "id": "material-58370",
+              "item_vnums": [
+                58370
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a document of Ravenloft Lenience"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:58370;receive=I:58416;disappear=0",
+                  "giver_vnum": 58347
+                }
+              ],
+              "hint": "Only the accepted exact hand-in records this independent quest. Reward possession, questions, shared-open passages and earlier personal kills are separate facts. New progress requires active, ready accounting.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete Perganan: a way out"
+            }
+          ],
+          "summary": "Bring the document of Lenience for a note to Sir Urik. The local delivery and the onward Barovian delivery are separate quests.",
+          "title": "Perganan: a way out"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:58369;receive=I:58401;disappear=1",
+              "giver_vnum": 58367
+            }
+          ],
+          "id": "wizard-indulgence",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The Office of Vengeance desk contains Indulgence beside the separate Lenience document. Supplied Indulgence fits without earlier source or access history. Keep the complete bundle loose together; source and readiness do not prove acceptance.",
+              "id": "material-58369",
+              "item_vnums": [
+                58369
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a document of Ravenloft Indulgence"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:58369;receive=I:58401;disappear=1",
+                  "giver_vnum": 58367
+                }
+              ],
+              "hint": "Only the accepted exact hand-in records this independent quest. Reward possession, questions, shared-open passages and earlier personal kills are separate facts. New progress requires active, ready accounting.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete The Sabbath Wizard: release from bondage"
+            }
+          ],
+          "summary": "Bring the document of Indulgence for a fiery skull-buckled belt and the wizard's departure. This is separate from the copper mallet puzzle.",
+          "title": "The Sabbath Wizard: release from bondage"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:58346,I:58410;receive=I:58411;disappear=1",
+              "giver_vnum": 58381
+            }
+          ],
+          "id": "megosh-holy-relics",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The Idol starts at the chapel altar. Its trap and access are separate from delivery; exact supplied proof fits. Keep the complete bundle loose together; source and readiness do not prove acceptance.",
+              "id": "material-58346",
+              "item_vnums": [
+                58346
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the idol of Ravenloft"
+            },
+            {
+              "count": 1,
+              "hint": "The Dayheart starts beyond the guarded garden approach and tower. Actual doors and falling hazards remain; supplied proof does not require personal recovery. Keep the complete bundle loose together; source and readiness do not prove acceptance.",
+              "id": "material-58410",
+              "item_vnums": [
+                58410
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the Dayheart"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:58346,I:58410;receive=I:58411;disappear=1",
+                  "giver_vnum": 58381
+                }
+              ],
+              "hint": "Only the accepted exact hand-in records this independent quest. Reward possession, questions, shared-open passages and earlier personal kills are separate facts. New progress requires active, ready accounting.",
+              "id": "accepted-delivery",
+              "kind": "completion",
+              "text": "Complete Megosh: the two forbidden relics"
+            }
+          ],
+          "summary": "Bring the Idol of Ravenloft and the Dayheart together for the raven-talon key. The native reply narrates Strahd's appearance and Megosh departs.",
+          "title": "Megosh: the two forbidden relics"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Exethanter wanders from the Amber Temple holding passage. Ask about his name and the crypts; Dostron is addressed by the native spelling dostran. His ash exchange and Thredra's ash exchange are independent choices.",
           "keyword": "exethanter",
           "mob_vnum": 59035,
