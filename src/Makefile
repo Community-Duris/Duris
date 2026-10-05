@@ -571,6 +571,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_death_conflict_repository.o \
 				 player/output_preferences.o player/output_message.o player/player_snapshot_capture.o \
 				 player/player_snapshot_codec.o \
+				 world/quest_mobile_native.o \
 				 persistence/persistence_queue.o \
 				 persistence/latency_trace.o \
 				 sql/sql_persistence_raw.o \
