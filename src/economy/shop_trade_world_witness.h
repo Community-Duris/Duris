@@ -1,0 +1,61 @@
+#ifndef SHOP_TRADE_WORLD_WITNESS_H
+#define SHOP_TRADE_WORLD_WITNESS_H
+
+#include "player/player_snapshot.h"
+#include <span>
+
+struct char_data;
+struct obj_data;
+
+enum class shop_trade_world_location : uint8_t
+{
+	absent,
+	actor_inventory,
+	actor_equipment,
+	keeper_inventory,
+	keeper_equipment,
+	inside,
+	detached
+};
+struct shop_trade_world_uid_expectation
+{
+	uint64_t uid = 0;
+	shop_trade_world_location location = shop_trade_world_location::absent;
+	uint64_t parent_uid = 0;
+	int16_t equipment_slot = 0; // Existing snapshot convention: equipment slot + 1.
+	int32_t native_item_id = -1; // -1 makes no row-ID assertion; zero is exact staged zero.
+};
+struct shop_trade_world_expectation
+{
+	uint32_t actor_pid = 0;
+	uint64_t actor_runtime_id =
+		0; // Zero requires complete PID-body absence and empty player list.
+	uint64_t keeper_runtime_id = 0;
+	uint32_t shop_id = 0;
+	int32_t keeper_vnum = 0;
+	std::span<const player_item_snapshot> player_items;
+	std::span<const player_item_snapshot> keeper_items;
+	std::span<const player_item_snapshot> detached_items;
+	// Explicit original subtree policy, never inferred from incoming masks.
+	// A selected subtree may be nested beneath a generic destination container.
+	std::span<const uint64_t> literal_player_root_uids;
+	std::span<const shop_trade_world_uid_expectation> uid_locations;
+};
+struct shop_trade_world_witness
+{
+	char_data *actor = nullptr;
+	char_data *keeper = nullptr;
+	std::vector<player_item_snapshot> player_items;
+	std::vector<player_item_snapshot> keeper_items;
+	std::vector<player_item_snapshot> detached_items;
+	// Same order as uid_locations; absent requirements produce nullptr.
+	std::vector<obj_data *> objects;
+};
+// Already-bound game thread only. Strong output; no world mutation, native SQL,
+// custody authority, native-handler-tail proof or ACK capability. Pointers are
+// transient and must be reobserved after callbacks; never retain across pulses.
+// Player list uses existing saved NORENT/string policies plus explicit literal
+// roots; every omitted physical sibling is still included in the world census.
+bool shop_trade_world_witness_observe(const shop_trade_world_expectation &,
+				      shop_trade_world_witness *) noexcept;
+#endif

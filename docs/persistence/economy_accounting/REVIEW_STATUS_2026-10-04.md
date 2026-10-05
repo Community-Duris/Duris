@@ -1,5 +1,89 @@
 # Accounting review status — 2026-10-04
 
+## Integrated NPC native SQL participant — 2026-10-05
+
+[Borrowed native image/stock SQL participation](QUEST_MOBILE_SQL_SOURCE_2026-10-05.md)
+is source-integrated and registered as a dormant definition. Admitted native
+birth/lifecycle/custody, schema0059, flat parity and qualification remain open.
+No gameplay route, activation or executed proof is added.
+
+## Integrated shop world witness — 2026-10-04
+
+[Complete read-only world observation](SHOP_WORLD_WITNESS_SOURCE_2026-10-04.md)
+is source-integrated and registered. Original-lease publication, current native
+projections, native placement order, recovery and guarded ACK remain unfinished.
+Source checks only; major-plan build/runtime qualification remains deferred.
+
+## Integrated NPC values and stock capture component — 2026-10-04
+
+The exact reviewed quest_mobile_native C871b2473/H2a149708 is now source-integrated
+and registered in the maintained Makefile. It supplies canonical values and pure
+complete ordered NPC EQ/INV capture, including the corrected shared size estimate.
+This changes no birth, ID allocator, native custody, quest/lifecycle route, activation
+or inactive behavior. Current candidate source pins are refreshed; no coverage
+completion is inferred. Builds/tests remain deferred to major-plan readiness.
+The previous e018 SQL build/restore evidence remains valid for that historical
+tree and does not qualify this newly extended native candidate. Actual native SQL/
+flat participant, owner/source authority, rebind, producer and guarded ACK remain
+required. See [the detailed source checkpoint](QUEST_MOBILE_VALUES_SOURCE_2026-10-04.md).
+
+## Integrated selected result-code representation repair — 2026-10-04
+
+[The independent result-code repair](PLAN5_SELECTED_ROOT_RESULT_TYPES_SLICE_2026-10-04.md)
+requires strict integer uint32 selected-operation results before duplicate indexing.
+Boolean/float/missing/negative/overflow representations refuse without coercion;
+valid integers retain existing outcome findings. All three peer d0d570113 blobs
+are imported exactly, with existing reader/test preimages matching14dff224b.
+Independent source review, two Python AST checks and whitespace pass.
+Peer106 units and both-engine component evidence remain frozen-input canonical0056
+reader qualification, not full native producers/gameplay or incoming private source.
+No local execution, schema/coordinator/activation change or waived release gate.
+
+## Actorless shop refusal and v6 callback source checkpoint — 2026-10-04
+
+[Exact disconnected-player hold cancellation and literal callback matching](SHOP_ACTORLESS_REFUSAL_SOURCE_2026-10-04.md)
+are implemented and independently source reviewed. Original notification/produced
+cleanup stays retained for player return; changed retired receipts block and
+legacy v5 behavior stays intact. These private inputs have not run native checks.
+Successful original-lease publication, whole-world witness/current projections,
+replay, producer/lifecycle integration and major-plan qualification remain open.
+
+## Quest native values/stock source checkpoint — 2026-10-04
+
+[Private canonical mobile values and full ordered stock capture](QUEST_MOBILE_VALUES_SOURCE_2026-10-04.md)
+are implemented and source reviewed. Shared capture overhead is counted once;
+existing bounds and actual equipment/carry order remain. Native birth/custody,
+SQL/flat participant, lifecycle/rebind, sequential quest/reward, publication/ACK
+and major-plan qualification remain unfinished. No production route or Plan3
+completion is claimed.
+
+## Maintained SQL build and managed cold restore — 2026-10-04
+
+The [fresh Plan5 qualification](PLAN5_SQL_MANAGED_RESTORE_QUALIFICATION_2026-10-04.md)
+reports716 strict maintained C++20 objects and a complete SQL server link, then
+both canonical0056 databases pass the original managed dump/cold-import/service
+boot checks with zero skips. This closes the earlier collector compiler blocker
+for native treee0185879. Current published native/migration trees and the six
+named backup/restore harness inputs match its frozen31751b706 inputs exactly;
+the peer report is imported byte-for-byte froma592aa177 after source review.
+No local rerun or qualification of incoming private source is claimed.
+Synthetic history fixtures, inactive boots and these two restore cases do not
+prove real producer/gameplay journeys, full-world accounting, retention policy
+or R1–R8 release acceptance. Major-plan qualification remains required.
+
+## Integrated selected operation count validation — 2026-10-04
+
+The [independent Plan5 repair](PLAN5_SELECTED_ROOT_COUNT_TYPES_SLICE_2026-10-04.md)
+now rejects boolean, float, missing and out-of-range selected-root count fields
+before indexing, using the existing native limits. Valid integer disagreements
+retain cardinality findings. Three exact peer blobs from71d09ae160 are imported;
+reader/test preimages match this candidate and independent source review plus
+two Python AST checks pass. Native/schema/activation behavior is unchanged.
+Peer reports102 units and both-engine malformed-export refusal on frozen6a2428c
+inputs; its modeled holdings/origin oracle and canonical0056 component evidence
+do not qualify actual runtime producers or this combined candidate. Major-plan
+execution remains deferred; coverage and full release acceptance remain open.
+
 ## Full-player shop source proof — 2026-10-04
 
 See [the full-player native proof checkpoint](SHOP_FULL_PLAYER_NATIVE_PROOF_2026-10-04.md): the original whole-player body is retained

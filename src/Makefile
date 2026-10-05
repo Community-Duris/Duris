@@ -461,6 +461,7 @@ OBJS =  $(SHIP_OBJS) \
 				 item/item_movement_transaction.o \
 				 economy/shop_trade_transaction.o \
 				 economy/shop_trade_runtime.o \
+				 economy/shop_trade_world_witness.o \
 				 item/item_transfer_repository.o \
 				 item/economic_accounting_item_reference.o \
 				 item/item_transfer_synthetic.o \
@@ -571,6 +572,8 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_death_conflict_repository.o \
 				 player/output_preferences.o player/output_message.o player/player_snapshot_capture.o \
 				 player/player_snapshot_codec.o \
+				 world/quest_mobile_native.o \
+				 persistence/quest_mobile_native_sql.o \
 				 persistence/persistence_queue.o \
 				 persistence/latency_trace.o \
 				 sql/sql_persistence_raw.o \

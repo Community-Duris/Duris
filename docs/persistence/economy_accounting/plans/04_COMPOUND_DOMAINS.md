@@ -1,5 +1,21 @@
 # Plan 4: priced and compound gameplay domains
 
+## Integrated shop world witness — 2026-10-05
+
+[Complete read-only world observation](../SHOP_WORLD_WITNESS_SOURCE_2026-10-04.md)
+is source-integrated and registered. Original-lease publication, current native
+projections, native placement order, recovery and guarded ACK remain unfinished.
+Source checks only; major-plan build/runtime qualification remains deferred.
+
+## Actorless shop refusal and v6 callback source checkpoint — 2026-10-04
+
+[Exact disconnected-player hold cancellation and literal callback matching](SHOP_ACTORLESS_REFUSAL_SOURCE_2026-10-04.md)
+are implemented and independently source reviewed. Original notification/produced
+cleanup stays retained for player return; changed retired receipts block and
+legacy v5 behavior stays intact. These private inputs have not run native checks.
+Successful original-lease publication, whole-world witness/current projections,
+replay, producer/lifecycle integration and major-plan qualification remain open.
+
 Start from add-double-entry HEAD 49af585c4. Build each domain as a standalone
 inactive typed transaction and journey, using current money and item codecs
 directly; do not wait for Plans 2 or 3 to activate. This plan owns shop,
