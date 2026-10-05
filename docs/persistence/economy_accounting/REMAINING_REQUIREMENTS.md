@@ -1,5 +1,14 @@
 # Double-entry economy: remaining requirements
 
+## SHOP frozen epoch field corrected — 2026-10-05
+
+[The one-expression repair](SHOP_FROZEN_EPOCH_FIELD_REPAIR_2026-10-05.md) reads the decoded original epoch from the existing
+frozen admission metadata before checking the retained SHOP mapping. The prior
+direct field did not exist and blocked the peer maintained SQL build. All other
+guards and source bodies are unchanged. Source inverse/format/pins only; native
+build and gameplay qualification remain deferred to major-plan readiness.
+Admission/inactive behavior stay unchanged; full R1–R8/release remain BLOCKED.
+
 ## Native quest borrowed item persistence integrated — 2026-10-05
 
 [The explicit SQL/flat participants](NATIVE_QUEST_PARTICIPANT_INTEGRATION_2026-10-05.md) preserve ordered native stock and
