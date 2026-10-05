@@ -91220,6 +91220,407 @@
     {
       "contacts": [
         {
+          "description": "Malok asks for the exact dead rat Parka; returning the item does not revive it.",
+          "keyword": "halfling",
+          "mob_vnum": 66400,
+          "name": "a halfling",
+          "topics": [
+            "hi",
+            "quest",
+            "rat",
+            "parka",
+            "malok",
+            "halfling"
+          ]
+        },
+        {
+          "description": "Two distinct exact snakeskins make one vest; this is a service.",
+          "keyword": "blacksmith",
+          "mob_vnum": 66418,
+          "name": "a blacksmith",
+          "topics": [
+            "snakeskin",
+            "snake",
+            "skin",
+            "quest",
+            "hi",
+            "hello",
+            "eq"
+          ]
+        },
+        {
+          "description": "The spirit accepts four exact offerings for Righteous, then departs.",
+          "keyword": "spirit",
+          "mob_vnum": 66428,
+          "name": "a shimmering spirit",
+          "topics": [
+            "hi",
+            "spirit",
+            "shimmering",
+            "quest",
+            "ghost",
+            "mist",
+            "sacred",
+            "cross",
+            "skull",
+            "cloth",
+            "material",
+            "abominable"
+          ]
+        },
+        {
+          "description": "The corporal accepts the exact deserter scalp for the declared reward.",
+          "keyword": "corporal",
+          "mob_vnum": 66451,
+          "name": "the corporal",
+          "topics": [
+            "deserter",
+            "quest",
+            "hi"
+          ]
+        },
+        {
+          "description": "Justunian accepts three independent exact trophies, in any order.",
+          "keyword": "justunian",
+          "mob_vnum": 66464,
+          "name": "Justunian",
+          "topics": [
+            "book",
+            "black",
+            "minanupoli",
+            "unholy",
+            "crystal",
+            "medallion",
+            "hammer",
+            "large"
+          ]
+        },
+        {
+          "description": "Grungish's jewelry-forging service is separate from the blacksmith's vest request and is currently unavailable.",
+          "keyword": "grungish",
+          "mob_vnum": 66410,
+          "name": "Grungish",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Help Malok recover Parka, gather four offerings for the spirit's weapon, bring the corporal the deserter's scalp, and consider Justunian's three independent trophy exchanges. The blacksmith's two-skin vest is a service. Exact materials prepare a turn-in; acceptance records its outcome. New progress requires active, ready accounting.",
+      "orientation": [
+        "The Battlefield contains the military outpost, castle and cavern approaches, old temple, ruins and the separate demon-lord passages. Entering the zone discovers it; it does not guarantee that every giver or route is accessible. These requests can be pursued independently, using actual doors and fixed portals.",
+        "ASK halfling about parka, rat or quest. Malok accepts the exact dead rat named Parka for a leather quilt. A minotaur soldier declares limited rat-item stock. Supplied exact custody also fits. Returning Parka is an accepted item request; the native item is food, and the exchange does not revive, escort or rescue a living animal. Eating the item is a different action and spends the offering.",
+        "ASK blacksmith about snakeskin, skin or eq. Two distinct copies of the exact snakeskin together make one snakeskin vest. The two king cobras declare stock with a shared cap of two. Carry both skins loose; one skin, a different skin or the finished vest cannot complete this service. Making this armor contributes no story achievement or daily quest credit.",
+        "ASK spirit about quest, mist, cross, skull or cloth. Bring all FOUR exact offerings together: swirling mist, a holy cross, a skull and abominable cloth. The spirit gives the holy longsword Righteous and departs. Its words about protecting the temple and defeating demon lords explain the story; the recipe checks four objects rather than three personal kills or a completed rescue.",
+        "The humming orb carries the exact mist; a skeleton warrior carries the skull; the cloth is declared loose in the ruins. The holy cross is inside a locked static-charge container, with its exact key carried by a cleric zombie nearby. The container also permits native PICK or KNOCK attempts under their actual rules. A supplied key, permitted alternate opening or another player's prior opening can provide access; your personal key-recovery or unlocking history is not an extra turn-in requirement.",
+        "ASK corporal about deserter or quest. The corporal takes the exact soldier's scalp for the declared bloody scalp reward. The deserter carries the scalp, but matching supplied custody also fits. The item exchange does not require your own kill or establish a separate battlefield victory.",
+        "ASK justunian about book, medallion or hammer. His three requests are independent: Minanupoli's black magic book gives a white magic book; the unholy crystal medallion gives a holy medallion; the large war hammer gives SkullSplitter. Any one can be accepted without the other two. The three rewards are not steps required to finish one larger mandatory quest.",
+        "The black magic book is carried by Minanupoli, the unholy medallion by Bor'Vongonkiliu, and the large hammer is equipped by Kalisteritax. Exact trophy identities matter. Remove worn or held trophies into loose carrying before offering them. Gifts fit without personal demon-lord kills, and a reward received from another source does not prove Justunian accepted a trophy.",
+        "Use TOUCH for the altar, the paired demon-lord statues and the cosmic orb. Use ENTER for the spiraling portal, secret sphere, beam of light and swirling vortex. Their fixed destinations form distinct approaches and return routes. The local tower's spoken-word descriptions do not define a native magic-word lock; no invented password or portal-use achievement is required.",
+        "The outpost's north gate uses a solid steel key with a break chance. Its declared stock belongs to an orc sentry following the minotaur captain; it is not carried by the captain. Already-open shared routes and native permitted alternatives remain valid. Doors, search clues, travel and the waterfall hazard explain access without becoming quest receipts.",
+        "Grungish offers a separate jewelry-forging service with eight choices and a coin fee. That service is currently unavailable. The blacksmith's two-skin vest uses its own request and materials.",
+        "Current exact loose custody is preparation. Worn, held, nested, eaten, spent or handed-away materials do not satisfy those preparation rows. Reward possession, spoken keywords and weapon effects do not prove acceptance. Six stories contribute achievements and potential dailies; the vest remains a service. A departing spirit still needs a qualified later return and fresh offerings. New discovery and progress require active, ready accounting; shared access and scarce stock determine played availability."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "battlefi",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:66400;receive=I:66462;disappear=0",
+              "giver_vnum": 66400
+            }
+          ],
+          "id": "malok-return-parka",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The minotaur soldier at the tower declares one exact dead-rat item. Supplied custody fits. This FOOD object is not a living rat or an internal corpse; eating it spends the offering.",
+              "id": "carry-66400",
+              "item_vnums": [
+                66400
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a dead rat named 'Parka' loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66400;receive=I:66462;disappear=0",
+                  "giver_vnum": 66400
+                }
+              ],
+              "hint": "Return the exact dead rat for a leather quilt. This accepted return does not revive a pet. Exact acceptance records the outcome; current supplies and reward ownership do not. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Malok: return Parka"
+            }
+          ],
+          "summary": "Return the exact dead rat for a leather quilt. This accepted return does not revive a pet.",
+          "title": "Malok: return Parka"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66427,I:66427;receive=I:66426;disappear=0",
+              "giver_vnum": 66418
+            }
+          ],
+          "id": "blacksmith-two-skin-vest",
+          "steps": [
+            {
+              "count": 2,
+              "hint": "Two king cobras each declare the exact skin with a shared cap of two. You need TWO distinct loose copies together; the vest reward is not material.",
+              "id": "carry-66427",
+              "item_vnums": [
+                66427
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 2 \u00d7 some snakeskin loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66427,I:66427;receive=I:66426;disappear=0",
+                  "giver_vnum": 66418
+                }
+              ],
+              "hint": "Offer two distinct exact snakeskins together for one vest. Exact acceptance records the outcome; current supplies and reward ownership do not. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Blacksmith: two-skin vest"
+            }
+          ],
+          "summary": "Offer two distinct exact snakeskins together for one vest.",
+          "title": "Blacksmith: two-skin vest"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:66415,I:66416,I:66417,I:66425;receive=I:66419;disappear=1",
+              "giver_vnum": 66428
+            }
+          ],
+          "id": "spirit-four-offerings",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The humming orb in the ruined temple passage declares cap-one swirling mist. Supplied exact evidence fits without a personal kill.",
+              "id": "carry-66415",
+              "item_vnums": [
+                66415
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 some swirling mist loose"
+            },
+            {
+              "count": 1,
+              "hint": "The exact holy cross is inside the closed, locked static-charge container in the Death shrine. Cleric zombie66427 declares its key66414. Native PICK/KNOCK or already-open shared access may also work under their rules; a personal key receipt is not required.",
+              "id": "carry-66416",
+              "item_vnums": [
+                66416
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a holy cross loose"
+            },
+            {
+              "count": 1,
+              "hint": "The skeleton warrior in the mine cavern declares the exact cap-one skull. This is not proof of defeating all demon lords.",
+              "id": "carry-66425",
+              "item_vnums": [
+                66425
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a skull loose"
+            },
+            {
+              "count": 1,
+              "hint": "The exact abominable cloth is declared loose in the ruins. A matching gift also fits the four-item offering.",
+              "id": "carry-66417",
+              "item_vnums": [
+                66417
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 some abominable cloth loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66415,I:66416,I:66417,I:66425;receive=I:66419;disappear=1",
+                  "giver_vnum": 66428
+                }
+              ],
+              "hint": "Offer mist, cross, skull and cloth together for Righteous and the spirit's departure. Exact acceptance records the outcome; current supplies and reward ownership do not. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Spirit: four offerings for Righteous"
+            }
+          ],
+          "summary": "Offer mist, cross, skull and cloth together for Righteous and the spirit's departure.",
+          "title": "Spirit: four offerings for Righteous"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:66430;receive=I:66458;disappear=0",
+              "giver_vnum": 66451
+            }
+          ],
+          "id": "corporal-deserter-scalp",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The deserter declares cap-one exact soldier scalp. The accepted turn-in does not require your own kill.",
+              "id": "carry-66430",
+              "item_vnums": [
+                66430
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 scalp of a soldier loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66430;receive=I:66458;disappear=0",
+                  "giver_vnum": 66451
+                }
+              ],
+              "hint": "Offer the exact scalp for the declared bloody scalp reward. Exact acceptance records the outcome; current supplies and reward ownership do not. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Corporal: deserter scalp"
+            }
+          ],
+          "summary": "Offer the exact scalp for the declared bloody scalp reward.",
+          "title": "Corporal: deserter scalp"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:66451;receive=I:66452;disappear=0",
+              "giver_vnum": 66464
+            }
+          ],
+          "id": "justunian-black-book",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Minanupoli declares this exact black magic book. It is one independent Justunian trophy, not a prerequisite for the other two.",
+              "id": "carry-66451",
+              "item_vnums": [
+                66451
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 Minanupoli's black magic book loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66451;receive=I:66452;disappear=0",
+                  "giver_vnum": 66464
+                }
+              ],
+              "hint": "Exchange the exact black magic book for the white magic book, independently of his other trophies. Exact acceptance records the outcome; current supplies and reward ownership do not. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Justunian: black magic book"
+            }
+          ],
+          "summary": "Exchange the exact black magic book for the white magic book, independently of his other trophies.",
+          "title": "Justunian: black magic book"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:66453;receive=I:66454;disappear=0",
+              "giver_vnum": 66464
+            }
+          ],
+          "id": "justunian-unholy-medallion",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bor'Vongonkiliu declares this exact unholy medallion. A supplied trophy fits; a holy reward medallion from another source is not acceptance.",
+              "id": "carry-66453",
+              "item_vnums": [
+                66453
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 an unholy crystal medallion loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66453;receive=I:66454;disappear=0",
+                  "giver_vnum": 66464
+                }
+              ],
+              "hint": "Exchange the exact unholy medallion for the holy medallion, independently of his other trophies. Exact acceptance records the outcome; current supplies and reward ownership do not. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Justunian: unholy medallion"
+            }
+          ],
+          "summary": "Exchange the exact unholy medallion for the holy medallion, independently of his other trophies.",
+          "title": "Justunian: unholy medallion"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:66455;receive=I:66456;disappear=0",
+              "giver_vnum": 66464
+            }
+          ],
+          "id": "justunian-large-hammer",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Kalisteritax equips this exact large war hammer. Carry it loose to offer it. It is independent of the book and medallion; SkullSplitter is the declared reward.",
+              "id": "carry-66455",
+              "item_vnums": [
+                66455
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a large war hammer loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66455;receive=I:66456;disappear=0",
+                  "giver_vnum": 66464
+                }
+              ],
+              "hint": "Exchange the exact large war hammer for SkullSplitter, independently of his other trophies. Exact acceptance records the outcome; current supplies and reward ownership do not. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Justunian: large war hammer"
+            }
+          ],
+          "summary": "Exchange the exact large war hammer for SkullSplitter, independently of his other trophies.",
+          "title": "Justunian: large war hammer"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "End of the city pier. Ask song or wounded. Accepts the engagement ring for a mermaid locket and leaves; no escort or actual sailor healing is implemented.",
           "keyword": "aineila",
           "mob_vnum": 66631,

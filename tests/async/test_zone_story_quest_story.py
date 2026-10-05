@@ -15,8 +15,8 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1413
-assert report['mapped_area_count'] == 130 and report['eligible_by_zone']['162'] == 4
+assert report["daily_unit_count"] == 1412
+assert report['mapped_area_count'] == 131 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,15 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+battle=next(m for m in catalog['story_mappings'] if m['source_area']=='battlefi')
+assert (battle['schema_version'],battle['revision'],battle['coverage'])==(3,1,'complete')
+assert len(battle['stories'])==7 and len(battle['contacts'])==6 and not battle['exclusions']
+assert report['eligible_by_zone']['664']==6 and sum(len(c['topics']) for c in battle['contacts'])==36
+assert [s['category'] for s in battle['stories']]==['story','service','story','story','story','story','story']
+assert [len(s['steps']) for s in battle['stories']]==[2,2,5,2,2,2,2] and battle['stories'][1]['steps'][0]['count']==2
+assert all(len(s['contracts'])==len(s['steps'][-1]['contracts'])==1 for s in battle['stories'])
+units=[u for u in module.story_units(catalog) if u['zone_number']==664];assert len(units)==7 and sum(u['achievement'] for u in units)==sum(u['daily_candidate'] for u in units)==6
 
 realm=next(m for m in catalog['story_mappings'] if m['source_area']=='connectorzones')
 assert (realm['schema_version'],realm['revision'],realm['coverage'])==(3,1,'complete')

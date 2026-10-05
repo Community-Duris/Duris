@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 130 &&
-				tracker.summary_for(7, 42).total == 1533,
+		require(catalog.story_mappings.size() == 131 &&
+				tracker.summary_for(7, 42).total == 1532,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7687,6 +7687,186 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "battlefi"; });
+			const auto &rat = story_for("battlefi", "malok-return-parka");
+			const auto &vest = story_for("battlefi", "blacksmith-two-skin-vest");
+			const auto &spirit = story_for("battlefi", "spirit-four-offerings");
+			const auto &book = story_for("battlefi", "justunian-black-book");
+			const auto &medallion = story_for("battlefi", "justunian-unholy-medallion");
+			const auto &hammer = story_for("battlefi", "justunian-large-hammer");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 664, 66400, 100, "arrival") ==
+					result::applied,
+				"Battlefield discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 664, 10, 1, 101, false, false);
+			require(journal.find(rat.title) == std::string::npos &&
+					journal.find(spirit.title) == std::string::npos,
+				"Battlefield exposed unseen requests");
+			require(journey.meet_npc(7, 42, 66410, 66425, 102) == result::applied,
+				"Battlefield forge contact failed");
+			journal = journey.render_journal(7, 42, 664, 10, 1, 103, false, false);
+			require(journal.find(rat.title) == std::string::npos &&
+					journey.progress_for_zone(7, 42, 664).completed == 0,
+				"Battlefield forge encounter inferred a static request");
+			for (const auto &contact : mapping.contacts)
+				if (contact.mob_vnum != 66410)
+					require(journey.meet_npc(7, 42, contact.mob_vnum, 66500,
+								 104) == result::applied,
+						"Battlefield contact encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Battlefield journal card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry, size_t index) {
+				return section(entry).find("[Ready now] " +
+							   entry.steps[index].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry, size_t index) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[index].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[66427] = 1;
+			for (const auto v : { 66462, 66426, 66419, 66458, 66452, 66454, 66456,
+					      66414, 66408, 1255 })
+				supplies.carried[v] = 1;
+			supplies.equipped[0] = 66400;
+			supplies.equipped[1] = 66416;
+			supplies.equipped[2] = 66455;
+			journal = journey.render_journal(7, 42, 664, 10, 1, 105, false, false,
+							 &supplies);
+			require(missing(rat, 0) && missing(vest, 0) && missing(spirit, 1) &&
+					missing(hammer, 0) &&
+					journey.progress_for_zone(7, 42, 664).completed == 0,
+				"Battlefield worn/held/partial/reward/generic forged item inferred acceptance");
+			supplies.equipped.clear();
+			supplies.carried[66427] = 2;
+			supplies.carried[66400] = 1;
+			supplies.carried[66415] = 1;
+			supplies.carried[66416] = 1;
+			supplies.carried[66425] = 1;
+			journal = journey.render_journal(7, 42, 664, 10, 1, 106, false, false,
+							 &supplies);
+			require(ready(vest, 0) && ready(rat, 0) && ready(spirit, 0) &&
+					ready(spirit, 1) && ready(spirit, 2) &&
+					missing(spirit, 3) &&
+					journey.progress_for_zone(7, 42, 664).completed == 0,
+				"Battlefield two skins or partial temple bundle inferred a receipt");
+			supplies.carried[66417] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 664, 10, 1, 107, false, false,
+							 &supplies);
+			require(ready(spirit, 3) && before == journey.serialize_state(),
+				"Battlefield supplied offerings needed personal kills/keys/ASK history or rendering mutated progress");
+			supplies.carried.erase(66400);
+			journal = journey.render_journal(7, 42, 664, 10, 1, 108, false, false,
+							 &supplies);
+			require(missing(rat, 0) &&
+					journey.progress_for_zone(7, 42, 664).completed == 0,
+				"Battlefield eaten/spent rat still prepared return or fabricated revival");
+			// Synthetic receipts qualify projection, not played issuance/access/consumption.
+			record(journey, vest.contracts.front(), "battle-vest", 664, 66412);
+			supplies.carried.erase(66427);
+			journal = journey.render_journal(7, 42, 664, 10, 1, 109, false, false,
+							 &supplies);
+			require(missing(vest, 0) &&
+					journey.progress_for_zone(7, 42, 664).completed == 0,
+				"Battlefield vest service credited story or spent skins reappeared");
+			for (const auto *entry : { &book, &medallion, &hammer })
+			{
+				service independent(catalog);
+				require(independent.discover_zone(7, 42, 664, 66400, 100,
+								  "arrival") == result::applied,
+					"Battlefield trophy discovery failed");
+				record(independent, entry->contracts.front(),
+				       ("battle-one-" + entry->id).c_str(), 664, 66500);
+				require(independent.progress_for_zone(7, 42, 664).completed == 1 &&
+						independent.progress_for_zone(7, 42, 664).total ==
+							6,
+					"Battlefield one trophy required another trophy or counted a larger campaign");
+				for (const auto *other : { &book, &medallion, &hammer })
+					require(independent.evidence_for(other->contracts.front(),
+									 2)
+								.successful_attempts ==
+							(entry == other ? 1 : 0),
+						"Battlefield independent trophy fabricated another receipt");
+				service restored(catalog);
+				require(restored.deserialize_state(independent.serialize_state(),
+								   &error) &&
+						restored.progress_for_zone(7, 42, 664).completed ==
+							1,
+					"Battlefield independent trophy cold recovery failed");
+			}
+			record(journey, spirit.contracts.front(), "battle-spirit", 664, 66562);
+			for (const auto v : { 66415, 66416, 66425, 66417 })
+				supplies.carried.erase(v);
+			journal = journey.render_journal(7, 42, 664, 10, 1, 110, false, false,
+							 &supplies);
+			require(missing(spirit, 0) && missing(spirit, 1) && missing(spirit, 2) &&
+					missing(spirit, 3) &&
+					journey.progress_for_zone(7, 42, 664).completed == 1,
+				"Battlefield spent offerings fabricated continuing supplies or multiple temple outcomes");
+			for (const auto &entry : mapping.stories)
+				if (entry.category == "story" && entry.id != spirit.id)
+					record(journey, entry.contracts.front(),
+					       ("battle-all-" + entry.id).c_str(), 664, 66500);
+			require(journey.progress_for_zone(7, 42, 664).completed == 6 &&
+					journey.progress_for_zone(7, 42, 664).total == 6,
+				"Battlefield independent requests/service changed six story units");
+			auto replay = completion(spirit.contracts.front(), "battle-spirit", 120);
+			replay.transaction.zone_number = 664;
+			replay.transaction.room_vnum = 66562;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Battlefield replay duplicated accepted offering");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 664) &&
+					recovered.progress_for_zone(7, 42, 664).completed == 6,
+				"Battlefield cold recovery lost discovery/receipt history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 664, 66400, 100, "arrival") ==
+					result::applied,
+				"Historical Battlefield discovery failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("battle-old-" + entry.id).c_str(), 664, 66500);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 664).completed == 6 &&
+					authored.progress_for_zone(7, 42, 664).total == 6,
+				"Battlefield raw-to-authored history lost service classification");
+			for (const auto &entry : mapping.stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1 &&
+						recovered.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1,
+					"Battlefield raw story/service identity lost");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 664 &&
+							     u.achievement && u.daily_candidate;
+					      }) == 6 &&
+					std::count_if(units.begin(), units.end(),
+						      [](const auto &u) {
+							      return u.zone_number == 664 &&
+								     !u.achievement &&
+								     !u.daily_candidate;
+						      }) == 1,
+				"Battlefield reset-mode repeatability/services changed");
 		}
 
 		{
