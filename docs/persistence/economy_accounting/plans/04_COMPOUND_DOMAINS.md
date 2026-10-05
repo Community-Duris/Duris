@@ -1,5 +1,17 @@
 # Plan 4: priced and compound gameplay domains
 
+## Original cold SHOP publication owner integrated — 2026-10-05
+
+[The reviewed SQL recovery owner](../SHOP_ORIGINAL_COLD_PUBLICATION_INTEGRATION_2026-10-05.md) retains the actual original command,
+receipt/refusal, literal forest and uncertainty stages across actor-independent
+pulses. It uses complete locked SQL/world/cache proof, original UID staging and
+confirmed original-session rollback before guarded ACK or cancellation. Existing
+live behavior and final boot binding seal stay. Eight new sites/two unqualified
+projection rows are conservatively mapped; no executable checks ran. Flat cold
+parity, missing lazy bindings, component fixture closure and original major-plan
+qualification remain open. Fresh SHOP availability and activation stay closed;
+full R1–R8/release remain BLOCKED.
+
 ## Maintained SQL checkpoint shadowing repaired — 2026-10-05
 
 [The five-identifier source repair](../SHOP_CHECKPOINT_LITERAL_SHADOW_REPAIR_2026-10-05.md) closes the exact inner-vector

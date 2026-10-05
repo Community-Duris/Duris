@@ -172,6 +172,8 @@ NON_WRITERS = {
     "special.flying_citadel_unreachable_move": "flying_citadel returns FALSE unconditionally before the room-to-room object movement; the two calls cannot execute in this build.",
 }
 PROJECTION_ROUTES = {
+    "shop.cold_physical_publication": "Original held cold SHOP owner applies one literal-fenced native detach/place/cleanup/destroy leg only after full original SQL/world proof. Started/unreturned tails remain held; callbacks grant no independent economic or ACK authority. Flat cold parity and complete original native qualification remain open.",
+    "shop.cold_keeper_cash_projection": "Original cold SHOP owner projects observed locked keeper cash only after original command/receipt-or-refusal and full native BEFORE/AFTER proof. No new posting or NPC authority; signed values and original-session cleanup remain required. Native qualification remains open.",
     "shop.native_current_publication": "Original held SHOP native publication projects complete current SQL images only after exact retained receipt and whole-world proof; cold continuation and real native journeys remain unqualified.",
     "shop.native_current_runtime": "Friend-only native owner projects current custody, owner and shop revision caches from its original locked SQL session; observed values alone grant no publication or ACK authority.",
     "recovery.ordinary_drop_retained_live_publication": "After exact retained SQL drop receipt, current custody/literal/session and live graph proof, relinks the existing UID tree from player to original room and hydrates its committed runtime revision. It creates no new economic root, supply event or publication ACK; interrupted native tails remain held.",

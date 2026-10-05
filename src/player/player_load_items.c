@@ -1,6 +1,13 @@
 #include "player/player_load_items.h"
 
 #include "net/comm.h"
+#include "world/object_template.h"
+#include "core/mm.h"
+#include "item/objmisc.h"
+#include "world/events.h"
+#include "cmd/interp.h"
+#include "mob/studioproclib.h"
+#include <utility>
 #include "item/item_ownership_runtime.h"
 #include "item/encumbrance_policy.h"
 #include "player/player_snapshot_codec.h"
@@ -958,4 +965,196 @@ bool player_load_item_snapshot_metadata_valid(const player_item_snapshot &item)
 	identity.item_uid = item.object_uid;
 	identity.override_mask = PLAYER_LOAD_ITEM_OVERRIDE_ALL;
 	return valid_item_metadata(item, identity, true) == metadata_validation_outcome::valid;
+}
+
+// Private original SHOP counterpart of the existing persisted-load metadata
+// and spellbook policy. It never calls read_object, normal instantiation,
+// set_obj_affected, UID issuance, property conversion or a native callback.
+// All persisted dynamic-node ordering and timer bytes are literal, not rerolled.
+bool shop_trade_original_item_stage::prepare(const object_template &prototype,
+					     const player_item_snapshot &literal,
+					     shop_trade_original_item_stage &output) noexcept
+{
+	try
+	{
+		if (!literal.object_uid || !std::in_range<unsigned long>(literal.object_uid) ||
+		    !std::in_range<long>(literal.generated_key) || literal.vnum <= 0 ||
+		    literal.type < ITEM_LOWEST || literal.type > ITEM_LAST ||
+		    literal.equipment_slot ||
+		    literal.string_mask !=
+			    (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3) ||
+		    !player_load_item_snapshot_metadata_valid(literal))
+			return false;
+		// Complete full-literal SHOP capture uses these exact four strings. No
+		// prototype default is substituted for a missing original string.
+		for (const auto *text : { &literal.name, &literal.short_description,
+					  &literal.description, &literal.action_description })
+			if (text->size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
+			    text->find('\0') != std::string::npos)
+				return false;
+		for (const auto &affect : literal.affects)
+			if (!std::in_range<decltype(std::declval<obj_data &>().affected[0].location)>(
+				    affect[0]) ||
+			    !std::in_range<decltype(std::declval<obj_data &>().affected[0].modifier)>(
+				    affect[1]))
+				return false;
+		for (auto value : literal.bitvectors)
+			if (!std::in_range<unsigned long>(value))
+				return false;
+		for (auto timer : literal.timers)
+			if (!std::in_range<time_t>(timer))
+				return false;
+		player_item_snapshot decoded = literal;
+		for (auto &description : decoded.extra_descriptions)
+		{
+			if (description.spellbook)
+			{
+				std::array<char, (MAX_SKILLS + 1) / 8 + 1> bits{};
+				if (!decode_saved_spellbook(description, bits.data()))
+					return false;
+				description.keyword.assign("\3\1\3", 3);
+				description.description.assign(bits.data(), bits.size());
+			}
+			else if (description.keyword.find('\0') != std::string::npos ||
+				 description.description.find('\0') != std::string::npos)
+				return false;
+		}
+		inert_item_stage raw;
+		if (inert_item_stage::allocate_literal(prototype, decoded, raw) !=
+		    inert_item_stage_result::ok)
+			return false;
+		shop_trade_original_item_stage candidate;
+		candidate.object_ = std::exchange(raw.object_, nullptr);
+		candidate.pool_ = std::exchange(raw.pool_, nullptr);
+		// Trap machinery is omitted by the existing persisted snapshot policy.
+		// Keep its established sealed-template reload policy, never asserting
+		// these defaults are original economic/source/runtime-state evidence.
+		candidate.object_->trap_eff = prototype.trap_eff;
+		candidate.object_->trap_dam = prototype.trap_dam;
+		candidate.object_->trap_charge = prototype.trap_charge;
+		candidate.object_->trap_level = prototype.trap_level;
+		if (!literal.dynamic_affects.empty())
+		{
+			// Keep native pool ownership: obj_affect_remove returns consumed nodes
+			// to this existing pool. All creation/growth happens before enrollment.
+			extern mm_ds *dead_obj_affect_pool;
+			if (!dead_obj_affect_pool)
+				dead_obj_affect_pool = mm_create("OBJ_AFFECTS", sizeof(obj_affect),
+								 offsetof(obj_affect, next), 100);
+			candidate.affect_pool_ = dead_obj_affect_pool;
+			obj_affect **tail = &candidate.object_->affects;
+			for (const auto &saved : literal.dynamic_affects)
+			{
+				auto *node =
+					static_cast<obj_affect *>(mm_get(candidate.affect_pool_));
+				if (!node)
+					return false;
+				node->type = saved.type;
+				node->data = saved.data;
+				node->extra2 = static_cast<ulong>(saved.extra2);
+				node->next = nullptr;
+				*tail = node;
+				tail = &node->next;
+			}
+		}
+		output = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+// Four individually retained post-consumption native steps. Full allocating
+// literal forest consumption precedes every call, and the caller re-censuses
+// original identities/SQL/world after each one. Existing saved-policy ephemeral
+// scheduling does not provide UID/economic/source authority or change literals.
+bool shop_trade_original_item_stage::reload_step(P_obj object, const object_template &prototype,
+						 unsigned int step,
+						 shop_trade_original_reload_effect &effect) noexcept
+{
+	if (!nevent_is_game_thread() || !object || object->R_num != prototype.R_num ||
+	    effect.started || step > 3)
+		return false;
+	try
+	{
+		extern P_index obj_index;
+		extern int top_of_objt;
+		extern void event_object_proc(P_char, P_char, P_obj, void *);
+		extern void proclib_obj_event(P_char, P_char, P_obj, void *);
+		extern void event_random_exit(P_char, P_char, P_obj, void *);
+		if (!obj_index || object->R_num < 0 || object->R_num > top_of_objt)
+			return false;
+		const auto proc = obj_index[object->R_num].func.obj;
+		// Prototype binding belongs to boot/current authority. Never mutate its
+		// sealed function identity or duplicate persisted proclib descriptions.
+		if ((object->type == ITEM_SWITCH && !proc) ||
+		    (IS_SET(object->extra_flags, ITEM_PROCLIB) && proc != proclib_obj_cmd_bridge))
+			return false;
+		effect.started = true;
+		switch (step)
+		{
+		case 0:
+			effect.periodic = proc && invoke_object_special(object, nullptr,
+									CMD_SET_PERIODIC, nullptr);
+			effect.succeeded = true;
+			break;
+		case 1:
+			effect.succeeded =
+				!effect.periodic || get_scheduled(object, event_object_proc) ||
+				add_event(event_object_proc, PULSE_MOBILE + number(-4, 4), nullptr,
+					  nullptr, object, 0, nullptr, 0)
+					.was_scheduled();
+			break;
+		case 2:
+			// Restored saved proclib parameter descriptions are already literal.
+			// Each saved library's normal eligibility probe was retained before
+			// this separate schedule step. No parser/new description is invoked.
+			// Command-only proclibs do not gain periodic events.
+			effect.succeeded =
+				!effect.periodic || get_scheduled(object, proclib_obj_event) ||
+				add_event(proclib_obj_event, PULSE_MOBILE + number(-4, 4), nullptr,
+					  nullptr, object, 0, nullptr, 0)
+					.was_scheduled();
+			break;
+		case 3:
+			effect.succeeded = !isname("random_exit", object->name) ||
+					   get_scheduled(object, event_random_exit) ||
+					   add_event(event_random_exit, 3, nullptr, nullptr, object,
+						     0, nullptr, 0)
+						   .was_scheduled();
+			break;
+		}
+		effect.returned = true;
+		return effect.succeeded;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_original_item_stage::proclib_probe(
+	P_obj object, const object_template &prototype, size_t description_index,
+	shop_trade_original_reload_effect &effect) noexcept
+{
+	if (!nevent_is_game_thread() || !object || object->R_num != prototype.R_num ||
+	    effect.started)
+		return false;
+	try
+	{
+		effect.started = true;
+		bool requested = false;
+		if (IS_SET(object->extra_flags, ITEM_PROCLIB) &&
+		    !proclib_saved_periodic_probe(object, description_index, &requested))
+			return false;
+		effect.periodic = requested;
+		effect.returned = effect.succeeded = true;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
 }

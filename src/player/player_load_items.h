@@ -2,6 +2,7 @@
 #define PLAYER_LOAD_ITEMS_H
 
 #include "player/player_load_repository.h"
+#include "player/inert_item_stage.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -11,6 +12,7 @@ typedef struct char_data *P_char;
 struct obj_data;
 typedef struct obj_data *P_obj;
 
+// Original SHOP staging uses the separate private capability in inert_item_stage.h.
 enum class player_load_item_materialize_outcome : uint8_t
 {
 	applied,

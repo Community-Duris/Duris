@@ -27,6 +27,7 @@
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "mob/studioproclib.h"
+#include "player/player_snapshot.h"
 #include "world/weather.h"
 
 /*
@@ -304,6 +305,44 @@ struct ObjProcLib
 	{ proclibobj_transporter, proclibobj_parse_transporter, "transporter",
 	  "'enter <keyword>' teleports the actor to a room.", PROCLIB_TRANSPORTER_HELP },
 };
+
+bool proclib_saved_periodic_probe(P_obj object, size_t description_index, bool *periodic) noexcept
+{
+	if (!object || !periodic || description_index >= PLAYER_SNAPSHOT_MAX_ROWS)
+		return false;
+	try
+	{
+		// The native owner has just proved the exact ordered literal descriptions
+		// in its complete fresh world/SQL cut. This helper supplies no authority.
+		const extra_descr_data *description = object->ex_description;
+		for (size_t index = 0; index < description_index && description; ++index)
+			description = description->next;
+		if (!description)
+			return false;
+		bool requested = false;
+		if (description->keyword && description->description &&
+		    !strn_cmp(description->keyword, "_proclib_", 9))
+			for (size_t index = 0; index < ARRAY_SIZE(object_proc_libs); ++index)
+				if (object_proc_libs[index].func &&
+				    !strn_cmp(description->keyword + 9,
+					      object_proc_libs[index].procName,
+					      strlen(object_proc_libs[index].procName)))
+				{
+					// Exactly the existing constructor eligibility probe. In particular
+					// command-only sayresponse/transporter return FALSE. Already saved
+					// parsed parameters are never parsed again or added to the object.
+					requested = object_proc_libs[index].func(
+						object, nullptr, CMD_SET_PERIODIC, nullptr);
+					break;
+				}
+		*periodic = requested;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
 
 int proclib_obj_proc(P_obj obj, P_char ch, int cmd, char *argument);
 

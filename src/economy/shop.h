@@ -47,3 +47,14 @@
 #define LIST_PRODUCE 0
 #define LIST_TRADE 1
 #define LIST_ROOM 2
+
+// Called only by the integrated original cold SQL SHOP publication owner after
+// a complete fresh world census. Pointers last through this one handler leg;
+// this function grants neither durable authority nor publication ACK.
+struct char_data;
+struct obj_data;
+struct shop_trade_payload;
+struct shop_trade_cold_native_effect;
+bool shop_trade_cold_native_step_execute(char_data *, char_data *, obj_data *, obj_data *,
+					 const shop_trade_payload &,
+					 shop_trade_cold_native_effect &) noexcept;
