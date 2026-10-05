@@ -1,5 +1,9 @@
 # Native shop checkpoint and admission handoff
 
+The later [the full-player native proof checkpoint](SHOP_FULL_PLAYER_NATIVE_PROOF_2026-10-04.md) supplies the reviewed full-player/native
+receipt reader foundation. Actual publication/ACK and qualification remain
+unfinished; source pins below retain this earlier admission checkpoint.
+
 2026-10-04. Primary owns this implementation. **Private source integration;
 not a completed gameplay route or native qualification.** Published source is
 `103fd07c384ac84ba104cbbc0d90167f6b57db5f` after the collector SQL compiler repair.
