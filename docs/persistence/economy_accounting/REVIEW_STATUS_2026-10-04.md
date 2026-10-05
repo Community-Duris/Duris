@@ -1,5 +1,15 @@
 # Accounting review status — 2026-10-04
 
+## Reviewed cold SHOP original SQL images — 2026-10-05
+
+[The frozen four-file source slice](SHOP_COLD_SQL_SOURCE_CHECKPOINT_2026-10-05.md)
+reads actual canonical player values and authenticates complete BEFORE/AFTER
+player/keeper images inside the original SQL transaction. Review corrected
+keeper foreign-copy and extra-context/reference closure gaps; AFTER readback
+uses only original locked identities. Private source/format/pins only, without
+actual executable installation or qualification. Coherent dependencies, cold
+startup/publication/ACK, both backends and original R1–R8 acceptance stay open.
+
 ## Plan 5 evidence and complete central inventory — 2026-10-05
 
 [Exact peer evidence and runner registration](PLAN5_CENSUS_AND_INVENTORY_INTEGRATION_2026-10-05.md)
