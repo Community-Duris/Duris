@@ -1,5 +1,7 @@
 #include "economy/shop_trade_world_witness.h"
 #include "economy/shop_trade_command.h"
+#include "account/account.h"
+#include "world/world_singletons.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
 #include "player/player_snapshot_capture.h"
@@ -7,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <climits>
+#include <cstring>
 #include <new>
 #include <map>
 #include <set>
@@ -21,6 +24,8 @@ extern P_room world;
 extern const int top_of_world;
 extern P_index mob_index;
 extern int top_of_mobt;
+extern struct shop_data *shop_index;
+extern int number_of_shops;
 
 namespace
 {
@@ -857,4 +862,375 @@ bool shop_trade_world_expected_keeper_order(const shop_trade_payload &payload, P
 	    payload.action != shop_trade_action::sell_store || payload.target_parent_item_uid)
 		return false;
 	return expected_native_order(payload, keeper, selected, nullptr, values, output);
+}
+
+namespace
+{
+// Encode failures are refusals, not successful current-state mismatches.
+bool cold_bytes(std::span<const player_item_snapshot> values, std::vector<uint8_t> &bytes)
+{
+	std::vector<player_item_snapshot> copy(values.begin(), values.end());
+	return player_item_snapshot_list_encode(copy, &bytes) == player_snapshot_codec_result::ok &&
+	       bytes.size() <= PLAYER_SNAPSHOT_MAX_BYTES;
+}
+bool cold_bind(std::span<const player_item_snapshot> values,
+	       shop_trade_recovery_forest_role before_role,
+	       shop_trade_recovery_forest_binding &before,
+	       shop_trade_recovery_forest_role after_role,
+	       shop_trade_recovery_forest_binding &after)
+{
+	std::vector<uint8_t> bytes;
+	return cold_bytes(values, bytes) &&
+	       shop_trade_recovery_forest_freeze(bytes, before_role, &before) &&
+	       shop_trade_recovery_forest_freeze(bytes, after_role, &after);
+}
+// Follow only the already-censused reciprocal physical edges. No loc-union or
+// UID-only inference may turn a foreign placement into an addressed body.
+P_char cold_owner(census &world_census, P_obj object)
+{
+	for (size_t depth = 0; object && depth < PLAYER_SNAPSHOT_MAX_DEPTH; ++depth)
+	{
+		const auto found = world_census.objects.find(object);
+		if (found == world_census.objects.end() ||
+		    !world_census.reciprocal(object, found->second))
+			return nullptr;
+		const auto &link = found->second;
+		if (link.kind == link_kind::carried || link.kind == link_kind::equipment)
+			return link.body;
+		if (link.kind != link_kind::inside)
+			return nullptr;
+		object = link.parent;
+	}
+	return nullptr;
+}
+bool cold_literal(P_obj root, std::vector<player_item_snapshot> &out)
+{
+	size_t estimate = 0;
+	if (player_item_snapshot_tree_capture_literal(root, &out, &estimate) !=
+		    player_snapshot_capture_result::ok ||
+	    estimate > PLAYER_SNAPSHOT_MAX_BYTES)
+		return false;
+	std::unordered_set<uint64_t> identities;
+	std::vector<uint8_t> bytes;
+	return validate_forest(out, true, true, identities) && cold_bytes(out, bytes);
+}
+bool cold_requirement_shape(const shop_trade_world_uid_expectation &request)
+{
+	if (!request.uid || request.uid == UINT64_MAX || request.native_item_id < -1 ||
+	    request.equipment_slot < 0 || request.equipment_slot > MAX_WEAR)
+		return false;
+	switch (request.location)
+	{
+	case shop_trade_world_location::absent:
+		return !request.parent_uid && !request.equipment_slot &&
+		       request.native_item_id == -1;
+	case shop_trade_world_location::actor_inventory:
+	case shop_trade_world_location::keeper_inventory:
+	case shop_trade_world_location::detached:
+		return !request.parent_uid && !request.equipment_slot;
+	case shop_trade_world_location::actor_equipment:
+	case shop_trade_world_location::keeper_equipment:
+		return !request.parent_uid && request.equipment_slot;
+	case shop_trade_world_location::inside:
+		return request.parent_uid && request.parent_uid != UINT64_MAX &&
+		       request.parent_uid != request.uid && !request.equipment_slot;
+	default:
+		return false;
+	}
+}
+}
+
+bool shop_trade_world_cold_observe(const shop_trade_world_cold_request &request,
+				   shop_trade_world_cold_observation *output) noexcept
+{
+	if (!output || !nevent_is_game_thread() || !request.original ||
+	    request.uid_locations.size() > 3 * PLAYER_SNAPSHOT_MAX_OBJECTS)
+		return false;
+	try
+	{
+		const auto &original = *request.original;
+		// This validates pure original v8 shape, not its admission/native authority.
+		std::vector<uint8_t> original_bytes;
+		if (!original.recovery_manifest_recorded ||
+		    !shop_trade_command_encode_recovery_payload(original, &original_bytes) ||
+		    !original.player_pid || original.player_pid > INT_MAX ||
+		    original.shop_id > INT_MAX || original.keeper_vnum < 0 || !shop_index ||
+		    number_of_shops <= 0 ||
+		    original.shop_id >= static_cast<uint32_t>(number_of_shops) || !mob_index ||
+		    shop_index[original.shop_id].keeper < 0 ||
+		    shop_index[original.shop_id].keeper > top_of_mobt ||
+		    mob_index[shop_index[original.shop_id].keeper].virtual_number !=
+			    original.keeper_vnum ||
+		    static_cast<bool>(shop_index[original.shop_id].shop_is_roaming) !=
+			    static_cast<bool>(original.keeper_roaming))
+			return false;
+		std::unordered_set<uint64_t> expected_ids;
+		if (!validate_forest(request.player_items, false, false, expected_ids) ||
+		    !validate_forest(request.keeper_items, true, false, expected_ids))
+			return false;
+		std::unordered_set<uint64_t> required_ids;
+		for (const auto &requirement : request.uid_locations)
+			if (!cold_requirement_shape(requirement) ||
+			    !required_ids.insert(requirement.uid).second ||
+			    (requirement.location == shop_trade_world_location::absent &&
+			     expected_ids.count(requirement.uid)))
+				return false;
+
+		census world_census;
+		if (!world_census.scan())
+			return false;
+		shop_trade_world_cold_observation candidate;
+		// Count identity claims first. Wrong race/account/VNUM is never absence.
+		for (P_char body : world_census.bodies)
+		{
+			if (IS_PC(body) && GET_PID(body) > 0 &&
+			    static_cast<uint32_t>(GET_PID(body)) == original.player_pid)
+			{
+				if (candidate.actor)
+					return false;
+				candidate.actor = body;
+			}
+			if (IS_NPC(body) && body->only.npc->shopkeeper_shop_id >= 0 &&
+			    static_cast<uint32_t>(body->only.npc->shopkeeper_shop_id) ==
+				    original.shop_id)
+			{
+				if (candidate.keeper)
+					return false;
+				candidate.keeper = body;
+			}
+		}
+		// A prototype/room fallback is unresolved identity, not a durable binding.
+		for (P_char body : world_census.bodies)
+		{
+			if (!IS_NPC(body) || GET_MASTER(body) ||
+			    GET_RNUM(body) != shop_index[original.shop_id].keeper)
+				continue;
+			const int bound = body->only.npc->shopkeeper_shop_id;
+			if (bound >= 0)
+			{
+				// A coherent other-shop owner is unrelated; a stale binding
+				// cannot disguise an unresolved same-template body as absence.
+				if (bound >= number_of_shops ||
+				    shop_index[bound].keeper != GET_RNUM(body))
+					return false;
+				continue;
+			}
+			const int fallback = singleton_shop_id(body);
+			if (fallback < 0 || fallback == static_cast<int>(original.shop_id))
+				return false;
+			// An unambiguous other-shop fallback is unrelated, never adopted.
+		}
+		if (candidate.keeper &&
+		    (GET_MASTER(candidate.keeper) || !candidate.keeper->runtime_id ||
+		     GET_RNUM(candidate.keeper) != shop_index[original.shop_id].keeper))
+			return false;
+		if (candidate.actor && (!candidate.actor->runtime_id ||
+					GET_RACEWAR(candidate.actor) != original.racewar))
+			return false;
+		// Runtime IDs are observations; duplicate identities cannot be rebound.
+		for (P_char body : world_census.bodies)
+			if ((candidate.actor && body != candidate.actor &&
+			     body->runtime_id == candidate.actor->runtime_id) ||
+			    (candidate.keeper && body != candidate.keeper &&
+			     body->runtime_id == candidate.keeper->runtime_id))
+				return false;
+		candidate.actor_present = candidate.actor != nullptr;
+		candidate.keeper_present = candidate.keeper != nullptr;
+		candidate.actor_runtime_id = candidate.actor ? candidate.actor->runtime_id : 0;
+		candidate.keeper_runtime_id = candidate.keeper ? candidate.keeper->runtime_id : 0;
+		if (candidate.actor && candidate.actor->desc)
+		{
+			// Establish descriptor membership before dereferencing the body backlink.
+			P_desc descriptor = nullptr;
+			for (P_desc d = descriptor_list; d; d = d->next)
+			{
+				if (!world_census.charge())
+					return false;
+				if (d == candidate.actor->desc)
+					descriptor = d;
+			}
+			if (!descriptor || (descriptor->character != candidate.actor &&
+					    descriptor->original != candidate.actor &&
+					    (!descriptor->character ||
+					     GET_PLYR(descriptor->character) != candidate.actor)))
+				return false;
+			if (descriptor->account && descriptor->account->acct_name)
+			{
+				candidate.actor_account_available = true;
+				candidate.actor_account_matched =
+					std::strcmp(descriptor->account->acct_name,
+						    original.account_name.data()) == 0;
+				if (!candidate.actor_account_matched)
+					return false;
+			}
+		}
+		if ((candidate.actor &&
+		     !world_census.forest(candidate.actor,
+					  &candidate.player_physical_item_count)) ||
+		    (candidate.keeper &&
+		     !world_census.forest(candidate.keeper, &candidate.keeper_physical_item_count)))
+			return false;
+		P_obj selected = world_census.unique(original.selected_item_uid);
+		if (world_census.uids.count(original.selected_item_uid) && !selected)
+			return false;
+		std::array<uint64_t, 1> literal_selected{ original.selected_item_uid };
+		const bool selected_on_actor =
+			selected && cold_owner(world_census, selected) == candidate.actor &&
+			candidate.actor;
+		if ((candidate.actor &&
+		     !capture_body(candidate.actor, false,
+				   selected_on_actor ? std::span<const uint64_t>(literal_selected) :
+						       std::span<const uint64_t>{},
+				   candidate.player_items)) ||
+		    (candidate.keeper &&
+		     !capture_body(candidate.keeper, true, {}, candidate.keeper_items)))
+			return false;
+		// The full physical forest audit includes saved-policy omitted NORENT nodes.
+		std::unordered_set<uint64_t> observed_ids;
+		if (!validate_forest(candidate.player_items, false, false, observed_ids) ||
+		    !validate_forest(candidate.keeper_items, true, false, observed_ids))
+			return false;
+
+		std::unordered_set<P_obj> selected_nodes;
+		if (selected)
+		{
+			const auto &link = world_census.objects.at(selected);
+			const auto owner = cold_owner(world_census, selected);
+			const bool addressed = (candidate.actor && owner == candidate.actor) ||
+					       (candidate.keeper && owner == candidate.keeper);
+			const bool detached = !link.count && selected->loc_p == LOC_NOWHERE &&
+					      !selected->next_content;
+			if ((!addressed && !detached) ||
+			    !world_census.tree(selected, nullptr, 1, selected_nodes) ||
+			    !cold_literal(selected, candidate.selected_items))
+				return false;
+		}
+		// Every expected-current UID is observed globally even if its owner is absent.
+		// Placement on the other addressed body is a wellformed BEFORE mismatch.
+		auto covered = [&](uint64_t uid) -> bool
+		{
+			const auto occurrence = world_census.uids.find(uid);
+			if (occurrence == world_census.uids.end())
+				return true;
+			if (occurrence->second.count != 1)
+				return false;
+			P_obj object = occurrence->second.object;
+			const auto owner = cold_owner(world_census, object);
+			return (candidate.actor && owner == candidate.actor) ||
+			       (candidate.keeper && owner == candidate.keeper) ||
+			       selected_nodes.count(object);
+		};
+		for (uint64_t uid : expected_ids)
+			if (!covered(uid))
+				return false;
+		for (size_t index = 0; index < original.item_count; ++index)
+			if (!covered(original.items[index].item_uid))
+				return false;
+		if (original.target_parent_item_uid)
+		{
+			P_obj target = world_census.unique(original.target_parent_item_uid);
+			if (world_census.uids.count(original.target_parent_item_uid) && !target)
+				return false;
+			if (target)
+			{
+				if (!candidate.actor ||
+				    cold_owner(world_census, target) != candidate.actor ||
+				    !cold_literal(target, candidate.target_items))
+					return false;
+				candidate.target_present = true;
+			}
+		}
+		std::vector<uint8_t> actual_player, actual_keeper, expected_player, expected_keeper;
+		if (!cold_bytes(candidate.player_items, actual_player) ||
+		    !cold_bytes(candidate.keeper_items, actual_keeper) ||
+		    !cold_bytes(request.player_items, expected_player) ||
+		    !cold_bytes(request.keeper_items, expected_keeper))
+			return false;
+		candidate.player_current_match = candidate.actor_present &&
+						 actual_player == expected_player;
+		candidate.keeper_current_match = candidate.keeper_present &&
+						 actual_keeper == expected_keeper;
+		if ((candidate.actor && !cold_bind(candidate.player_items,
+						   shop_trade_recovery_forest_role::player_before,
+						   candidate.observed_bindings.player_before,
+						   shop_trade_recovery_forest_role::player_after,
+						   candidate.observed_bindings.player_after)) ||
+		    (candidate.keeper && !cold_bind(candidate.keeper_items,
+						    shop_trade_recovery_forest_role::keeper_before,
+						    candidate.observed_bindings.keeper_before,
+						    shop_trade_recovery_forest_role::keeper_after,
+						    candidate.observed_bindings.keeper_after)) ||
+		    (candidate.target_present &&
+		     !cold_bind(candidate.target_items,
+				shop_trade_recovery_forest_role::live_target_before,
+				candidate.observed_bindings.live_target_before,
+				shop_trade_recovery_forest_role::live_target_after,
+				candidate.observed_bindings.live_target_after)))
+			return false;
+
+		candidate.uid_locations_current_match = true;
+		for (const auto &requirement : request.uid_locations)
+		{
+			if (!covered(requirement.uid))
+				return false;
+			P_obj object = world_census.unique(requirement.uid);
+			if (requirement.location == shop_trade_world_location::absent)
+			{
+				// Count, not unique(), proves absence in the complete global census.
+				if (world_census.uids.count(requirement.uid))
+					return false;
+				candidate.objects.push_back(nullptr);
+				continue;
+			}
+			candidate.objects.push_back(object);
+			if (!object)
+			{
+				candidate.uid_locations_current_match = false;
+				continue;
+			}
+			const auto &link = world_census.objects.at(object);
+			bool match = false;
+			switch (requirement.location)
+			{
+			case shop_trade_world_location::actor_inventory:
+			case shop_trade_world_location::keeper_inventory:
+				match = link.kind == link_kind::carried &&
+					link.body ==
+						(requirement.location == shop_trade_world_location::
+										 actor_inventory ?
+							 candidate.actor :
+							 candidate.keeper);
+				break;
+			case shop_trade_world_location::actor_equipment:
+			case shop_trade_world_location::keeper_equipment:
+				match = link.kind == link_kind::equipment &&
+					link.slot == requirement.equipment_slot &&
+					link.body ==
+						(requirement.location == shop_trade_world_location::
+										 actor_equipment ?
+							 candidate.actor :
+							 candidate.keeper);
+				break;
+			case shop_trade_world_location::inside:
+				match = link.kind == link_kind::inside && link.parent &&
+					link.parent->obj_uid == requirement.parent_uid;
+				break;
+			case shop_trade_world_location::detached:
+				match = !link.count && object->loc_p == LOC_NOWHERE &&
+					!object->next_content && selected_nodes.count(object);
+				break;
+			default:
+				return false;
+			}
+			if (!match || (requirement.native_item_id != -1 &&
+				       object->db_item_id != requirement.native_item_id))
+				candidate.uid_locations_current_match = false;
+		}
+		*output = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
 }
