@@ -1,5 +1,14 @@
 # Accounting review status — 2026-10-04
 
+## Quest native values/stock source checkpoint — 2026-10-04
+
+[Private canonical mobile values and full ordered stock capture](QUEST_MOBILE_VALUES_SOURCE_2026-10-04.md)
+are implemented and source reviewed. Shared capture overhead is counted once;
+existing bounds and actual equipment/carry order remain. Native birth/custody,
+SQL/flat participant, lifecycle/rebind, sequential quest/reward, publication/ACK
+and major-plan qualification remain unfinished. No production route or Plan3
+completion is claimed.
+
 ## Maintained SQL build and managed cold restore — 2026-10-04
 
 The [fresh Plan5 qualification](PLAN5_SQL_MANAGED_RESTORE_QUALIFICATION_2026-10-04.md)
