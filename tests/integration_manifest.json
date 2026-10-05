@@ -2026,6 +2026,35 @@
         "test_economic_sql_audit_origins.py"
       ],
       "required_markers": []
+    },
+    {
+      "id": "native_sql_stake_audit",
+      "path": "tests/async/test_reconcile_economy_accounting.py",
+      "provider": "self-sql",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "NativeStakeSQLTests.test_native_stake_sql_both_engines"
+      ],
+      "arguments": [
+        "NativeStakeSQLTests",
+        "-v"
+      ],
+      "environment": {
+        "DURIS_RUN_STAKE_SQL_INTEGRATION": "1",
+        "DURIS_PLAN5_PRICE_AUDIT_ARTIFACTS": "bin/tests/plan5-price-view-sql/matrix-{token}"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_reconcile_economy_accounting.py"
+      ],
+      "required_markers": [
+        "STAKE_SQL_QUALIFIED",
+        "PASS stake-read-only mysql",
+        "PASS stake-read-only mariadb"
+      ]
     }
   ]
 }

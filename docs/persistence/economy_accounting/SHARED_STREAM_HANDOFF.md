@@ -452,3 +452,13 @@ index, preserving valid graph refusal semantics and all native/publication holds
 Source review, changed-line formatting and candidate-pin/source metadata checks
 only; new native builds and actual v3 restore/retained-pile recovery remain at
 the original major-plan qualification batch. Coverage and release remain blocked.
+
+
+### Native stake audit central registration
+
+[The existing native stake case is registered](PLAN5_NATIVE_STAKE_REGISTRATION_2026-10-04.md)
+with both-engine markers, zero-skip enforcement and a fresh token-named artifact
+directory. The central tools image definition adds its missing PyMySQL package;
+existing native origin rows remain registered. Source/JSON/AST checks only;
+container/native execution and combined qualification remain at major-plan
+readiness. Structural fixture audit evidence is not real writer completion.
