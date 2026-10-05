@@ -214,6 +214,13 @@ int main(int argc, char **argv)
 				  << result.never_initialized_epochs
 				  << ",\"initialized_epochs\":" << result.initialized_epochs
 				  << ",\"lifecycle_receipts\":" << result.lifecycle_receipts
+				  << ",\"unknown_initialized_origins\":"
+				  << result.unknown_initialized_origins
+				  << ",\"baseline_participant_epochs\":"
+				  << result.baseline_participant_epochs
+				  << ",\"lifecycle_owner_epochs\":" << result.lifecycle_owner_epochs
+				  << ",\"lifecycle_provenance_complete\":"
+				  << (result.lifecycle_complete() ? "true" : "false")
 				  << ",\"baseline_provenance_complete\":"
 				  << (result.complete() ? "true" : "false") << "}\n";
 			return 0;
@@ -241,7 +248,7 @@ int main(int argc, char **argv)
 			flatfile_player_domain_result::ok);
 		// Recovery is complete on this copied candidate. Audit retained authority
 		// without invoking the storage readers, which also perform recovery.
-		require(restore_economic_records::checker(root).run().complete());
+		require(restore_economic_records::checker(root).run().lifecycle_complete());
 		// Mini-world boot does not materialize every persistent world domain.
 		// Exercise their native decoders before any qualification receipt.
 		require(flatfile_corpse_repository_validate(root, &error));

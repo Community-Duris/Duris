@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Independent present-receipt audit against native codec/common-baseline fixtures.
+"""Independent origin/receipt audit against native codec/common-baseline fixtures.
 
 The primitive fixture never calls lifecycle install, native source capture or
-activation. It cannot authenticate a cutover or prove required-file discovery.
+activation. Known v3 origins prove required-file discovery within this modeled
+fixture; they do not authenticate native source capture or a complete cutover.
 """
 import argparse
 import hashlib
@@ -77,6 +78,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifacts", required=True, type=Path)
     parser.add_argument("--previous-qualifier", type=Path)
+    parser.add_argument("--legacy-artifacts", type=Path,
+                        help="preserved actual v2 native receipt fixture artifacts")
     parser.add_argument("--state-parent", type=Path,
                         help="disposable native fixture filesystem (for example /dev/shm)")
     args = parser.parse_args()
@@ -86,6 +89,7 @@ def main():
     os.umask(0o077)
     artifacts.mkdir(parents=True)
     native_inputs = fingerprint(ROOT / "src")
+    legacy_inputs = fingerprint(args.legacy_artifacts) if args.legacy_artifacts else None
     names = ["scripts/qualify_flatfile_economic_authority.h",
              "scripts/qualify_flatfile_economic_baseline.h",
              "scripts/qualify_flatfile_economic_records.h",
@@ -110,7 +114,9 @@ int main(int argc, char **argv) {
         auto result = restore_economic_records::checker(argv[1]).run();
         std::cout << result.legacy_unknown_epochs << " " << result.never_initialized_epochs
                   << " " << result.initialized_epochs << " " << result.complete()
-                  << " " << result.lifecycle_receipts << "\\n";
+                  << " " << result.lifecycle_receipts << " " << result.unknown_initialized_origins
+                  << " " << result.baseline_participant_epochs << " " << result.lifecycle_owner_epochs
+                  << " " << result.lifecycle_complete() << "\\n";
         return 0;
     } catch (...) { std::cerr << "native_restore_qualification_failed\\n"; return 1; }
 }
@@ -140,7 +146,8 @@ int main(int argc, char **argv) {
             return subprocess.run([str(tool), *map(str, arguments)], capture_output=True,
                                   text=True, timeout=30, env=environment if sanitized else None)
 
-        def check(label, files, valid=False, receipts=1, unsafe=None, limitation=None, never=0):
+        def check(label, files, valid=False, receipts=1, unsafe=None, limitation=None, never=0,
+                  origins=(0, 0, 1, True)):
             install(files)
             if unsafe:
                 unsafe(evidence)
@@ -148,7 +155,9 @@ int main(int argc, char **argv) {
             parsed = run(audit, [state], True)
             assert parsed.returncode == (0 if valid else 1), (label, parsed.stdout, parsed.stderr)
             assert parsed.stderr == ("" if valid else "native_restore_qualification_failed\n")
-            assert parsed.stdout == (f"0 {never} 1 1 {receipts}\n" if valid else ""), label
+            unknown, generic, lifecycle, complete = origins
+            assert parsed.stdout == (f"0 {never} 1 1 {receipts} {unknown} {generic} {lifecycle} {int(complete)}\n"
+                                     if valid else ""), (label, parsed.stdout)
             assert retained(state) == before, label + ": independent audit wrote state"
             operator = run(binary, ["--economic-evidence-audit", state])
             assert operator.returncode == (0 if valid else 1), (label, operator.stderr)
@@ -156,16 +165,19 @@ int main(int argc, char **argv) {
                 assert json.loads(operator.stdout) == {
                     "legacy_unknown_epochs": 0, "never_initialized_epochs": never,
                     "initialized_epochs": 1, "baseline_provenance_complete": True,
-                    "lifecycle_receipts": receipts}
+                    "lifecycle_receipts": receipts, "unknown_initialized_origins": unknown,
+                    "baseline_participant_epochs": generic, "lifecycle_owner_epochs": lifecycle,
+                    "lifecycle_provenance_complete": complete}
                 assert not operator.stderr
             else:
                 assert not operator.stdout and operator.stderr == "native_restore_qualification_failed\n"
             assert retained(state) == before, label + ": operator audit wrote state"
             economic_before = retained(evidence)
+            qualified = valid and complete
             for arguments in (["--state-preflight", state], [state]):
                 result = run(binary, arguments)
-                assert result.returncode == (0 if valid else 1), (label, result.stderr)
-                if valid:
+                assert result.returncode == (0 if qualified else 1), (label, result.stderr)
+                if qualified:
                     assert json.loads(result.stdout) == {
                         "accounts": 0, "identities": 0, "players_loaded": 0, "snapshots": 0}
                     assert not result.stderr
@@ -173,6 +185,7 @@ int main(int argc, char **argv) {
                     assert not result.stdout and result.stderr == "native_restore_qualification_failed\n"
                 assert retained(evidence) == economic_before, label + ": restore wrote retained evidence"
             results.append({"label": label, "accepted": valid, "lifecycle_receipts": receipts if valid else None,
+                            "lifecycle_provenance_complete": qualified,
                             "files": len(files), "bytes": sum(map(len, files.values())),
                             "limitation": limitation})
             print(("ACCEPTED " if valid else "REFUSED ") + label, flush=True)
@@ -181,6 +194,7 @@ int main(int argc, char **argv) {
             install({})
             subprocess.run([str(fixture), str(state), mode], env=environment, check=True, timeout=600)
             files = inventory(evidence)
+            assert struct.unpack_from("<I", files["epochs.eae"], 8)[0] == 3
             assert files["authority.eal"][112:128] == bytes(16), "fixture selected an active epoch"
             frozen = artifacts / ("native-" + mode)
             frozen.mkdir(mode=0o700)
@@ -191,32 +205,43 @@ int main(int argc, char **argv) {
         mixed = produce("mixed")
         receipt = next(name for name in mixed if name.endswith(".elr"))
         mappings, counts, sources, blobs = layout(mixed[receipt])
-        # Execute the original defect against a preserved, source-paired reader.
+        # An older v1/v2 reader must refuse the new healthy format. This is a
+        # compatibility refusal, not a semantic RED for lifecycle installation.
         if args.previous_qualifier:
-            for label, files in (
-                ("invalid lifecycle filename", {**mixed, "lifecycle-bad.elr": b"invalid"}),
-                ("corrupt lifecycle envelope", {**mixed, receipt: b"invalid"}),
-                ("contradictory lifecycle flags", {**mixed, receipt: rehash(
-                    mixed[receipt][:208] + b"\0" + mixed[receipt][209:])})):
-                install(files)
-                before = retained(evidence)
-                for arguments in (["--economic-evidence-audit", state], ["--state-preflight", state], [state]):
-                    result = run(args.previous_qualifier, arguments)
-                    assert result.returncode == 0 and not result.stderr, (label, result.stderr)
-                    assert retained(evidence) == before
-                    red.append({"label": label, "arguments": list(map(str, arguments)), "exit": result.returncode})
-            print("RED: original reader admitted three damaged receipts at all three gates", flush=True)
+            before = retained(evidence)
+            for arguments in (["--economic-evidence-audit", state], ["--state-preflight", state], [state]):
+                result = run(args.previous_qualifier, arguments)
+                assert result.returncode == 1 and not result.stdout
+                assert result.stderr == "native_restore_qualification_failed\n"
+                assert retained(evidence) == before
+                red.append({"label": "previous reader refuses healthy native v3", "arguments": list(map(str, arguments)),
+                            "exit": result.returncode, "semantic_RED": False})
+            print("ESTABLISHED: previous reader refuses healthy native v3 at all three gates", flush=True)
         check("native mixed codec/common-baseline receipt", mixed, True)
         for mode in ("empty", "renamed", "retired", "maximum"):
             check("native " + mode + " codec/common-baseline receipt", produce(mode), True)
         check("native old retained receipt, newer inactive epoch and explicit requested coverage",
               produce("retained"), True, never=1)
         check("native generic coincident initialization IDs", produce("generic"), True, 0,
-              limitation="Generic append/baseline history does not establish lifecycle ownership.")
+              origins=(0, 1, 0, True))
         missing = dict(mixed)
         missing.pop(receipt)
-        check("entire lifecycle file absence remains a discovery gate", missing, True, 0,
-              limitation="Required lifecycle receipt discovery needs primary-owned authoritative origin; acceptance is not release qualification.")
+        check("entire required lifecycle file loss", missing)
+        for mode in ("retained", "renamed", "retired"):
+            files = inventory(artifacts/("native-"+mode))
+            files.pop(receipt)
+            check("required old receipt loss after " + mode, files)
+        if args.legacy_artifacts:
+            for mode in ("mixed", "generic", "retained"):
+                files = inventory(args.legacy_artifacts/("native-"+mode))
+                assert struct.unpack_from("<I", files["epochs.eae"], 8)[0] == 2
+                check("actual native v2 " + mode + " remains origin unknown", files, True,
+                      0 if mode == "generic" else 1, never=int(mode == "retained"), origins=(1, 0, 0, False))
+                if mode != "generic":
+                    files = dict(files)
+                    files.pop(receipt)
+                    check("actual native v2 " + mode + " missing receipt stays unknown", files, True, 0,
+                          never=int(mode == "retained"), origins=(1, 0, 0, False))
 
         def cut(label, offset=None, value=None, mutate=None):
             files = dict(mixed)
@@ -228,6 +253,38 @@ int main(int argc, char **argv) {
 
         def number_cut(label, offset, number, width=8):
             cut(label, offset, number.to_bytes(width, "little"))
+
+        def catalog_change(files, offset, value):
+            change(files, "epochs.eae", offset, value, 152)
+        for origin in (3, 255):
+            cut("invalid origin enum " + str(origin),
+                mutate=lambda f, o=origin: catalog_change(f, 169, bytes([o])))
+        cut("known baseline origin conflicts with present lifecycle receipt",
+            mutate=lambda f: catalog_change(f, 169, b"\1"))
+        for initialization_state in (0, 1):
+            for origin in (1, 2):
+                cut(f"known origin {origin} in noninitialized state {initialization_state}",
+                    mutate=lambda f, s=initialization_state, o=origin: catalog_change(f, 168, bytes([s, o])+bytes(62)))
+        for offset in range(170, 176):
+            cut("origin reserved byte " + str(offset),
+                mutate=lambda f, o=offset: catalog_change(f, o, b"\1"))
+        cut("lifecycle origin creator differs from initializer",
+            mutate=lambda f: catalog_change(f, 152, b"\x63"))
+        cut("lifecycle origin transition is not initialization",
+            mutate=lambda f: catalog_change(f, 112, b"\2"))
+        unknown = dict(mixed)
+        catalog_change(unknown, 169, b"\0")
+        check("v3 unknown origin with valid receipt does not promote provenance", unknown, True,
+              origins=(1, 0, 0, False))
+        unknown.pop(receipt)
+        check("v3 unknown origin without receipt does not infer generic origin", unknown, True, 0,
+              origins=(1, 0, 0, False))
+        duplicate = inventory(artifacts/"native-retained")
+        catalog_change(duplicate, 312, duplicate["epochs.eae"][152:168])
+        catalog_change(duplicate, 328, duplicate["epochs.eae"][168:232])
+        check("duplicate lifecycle initializer across retained epochs", duplicate)
+        cut("duplicate original receipt under foreign operation filename", mutate=lambda f: f.__setitem__(
+            "lifecycle-"+"63"*16+".elr", f[receipt]))
 
         cut("invalid lifecycle filename", mutate=lambda f: f.__setitem__("lifecycle-bad.elr", b"invalid"))
         cut("upper-case operation filename", mutate=lambda f: f.__setitem__(
@@ -332,14 +389,19 @@ int main(int argc, char **argv) {
             ("FIFO receipt", lambda d: ((d/receipt).unlink(), os.mkfifo(d/receipt, 0o600)))):
             check(label, mixed, unsafe=unsafe)
     assert fingerprint(ROOT / "src") == native_inputs, "native source changed during test"
+    if args.legacy_artifacts:
+        assert fingerprint(args.legacy_artifacts) == legacy_inputs, "legacy fixture artifacts changed"
     for name, checksum in owned_inputs.items():
         assert hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == checksum, name + " changed during test"
     report = {"format": 1, "native_raw_inputs": native_inputs, "owned_inputs": owned_inputs,
               "cases": results, "case_count": len(results), "refused": sum(not row["accepted"] for row in results),
               "accepted": sum(row["accepted"] for row in results), "skips": 0,
-              "original_reader_red": red, "source_capture_executed": False,
+              "previous_reader_compatibility_refusals": red, "legacy_inputs": legacy_inputs,
+              "source_capture_executed": False,
               "lifecycle_install_executed": False, "activation_executed": False,
-              "required_file_discovery_qualified": False, "release_qualified": False,
+              "required_file_discovery_qualified": True,
+              "qualification_scope": "known lifecycle origins in modeled native participant/codec fixtures",
+              "release_qualified": False,
               "read_only_checks": "bytes, mode, links, inode, size, mtime_ns",
               "state_filesystem": str(args.state_parent) if args.state_parent else "system temporary directory",
               "binary_sha256": {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
@@ -347,7 +409,8 @@ int main(int argc, char **argv) {
                                              *((args.previous_qualifier,) if args.previous_qualifier else ()))}}
     (artifacts/"evidence.json").write_text(json.dumps(report, indent=2, sort_keys=True)+"\n")
     print(json.dumps({key: value for key, value in report.items()
-                      if key not in ("native_raw_inputs", "owned_inputs", "cases", "original_reader_red")}))
+                      if key not in ("native_raw_inputs", "owned_inputs", "cases", "legacy_inputs",
+                                     "previous_reader_compatibility_refusals")}))
 
 
 if __name__ == "__main__":

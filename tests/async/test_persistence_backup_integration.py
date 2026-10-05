@@ -705,7 +705,10 @@ class FlatfileLifecycleRecoveryIntegration(unittest.TestCase):
                       "runtime_inputs": cls.runtime_inputs, "owned_inputs": cls.owned_inputs,
                       "source_capture_executed": False, "lifecycle_install_executed": False,
                       "accounting_activated": False, "full_R8_qualified": False,
-                      "required_file_discovery_qualified": False,
+                      "required_file_discovery_qualified": any(
+                          row.get("required_receipt_missing_before_capture_refused_before_boot")
+                          for row in cls.outcomes),
+                      "qualification_scope": "modeled known-native origins; source capture and lifecycle installation unqualified",
                       "completed": len(cls.outcomes) == 1,
                       "binary_sha256": {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
                                         for path in (cls.qualifier, cls.fixture, cls.lifecycle, cls.server)}}
@@ -751,6 +754,8 @@ class FlatfileLifecycleRecoveryIntegration(unittest.TestCase):
             result = json.loads(backup.run([str(self.qualifier), "--economic-evidence-audit", str(root)]))
             self.assertEqual(result, {"legacy_unknown_epochs": 0, "never_initialized_epochs": 1,
                                      "initialized_epochs": 1, "lifecycle_receipts": 1,
+                                     "unknown_initialized_origins": 0, "baseline_participant_epochs": 0,
+                                     "lifecycle_owner_epochs": 1, "lifecycle_provenance_complete": True,
                                      "baseline_provenance_complete": True})
             self.assertEqual(retained(root/"economic-evidence"), before)
             control = (root/"economic-evidence/authority.eal").read_bytes()
@@ -879,12 +884,29 @@ class FlatfileLifecycleRecoveryIntegration(unittest.TestCase):
             self.assertEqual(backup.inventory(live, exclude_locks=True), corrupt_source_before)
             self.assertEqual(backup.inventory(newest/"state/economic-evidence")[receipt], meta["files"]["state/economic-evidence/"+receipt])
 
+            # Loss before capture has no manifest checksum discrepancy. The
+            # authority-bound original lifecycle origin still requires its file.
+            path.unlink()
+            missing_source_before = backup.inventory(live, exclude_locks=True)
+            result = backup.backup(self.p, "flatfile-primary")
+            missing = self.p["root"]/result["generation"]
+            backup.verify(missing)
+            self.assertFalse((missing/"state/economic-evidence"/receipt).exists())
+            missing_before = backup.inventory(missing)
+            with mock.patch.object(restore, "service_load") as service:
+                with self.assertRaises(backup.BackupError):
+                    restore.restore(self.p, missing.name, self.ledger())
+                service.assert_not_called()
+            self.assertEqual(backup.inventory(missing), missing_before)
+            self.assertEqual(backup.inventory(live, exclude_locks=True), missing_source_before)
+
         self.outcomes.append({"native_pending_transaction_replayed": True, "native_journals_drained": True,
                               "actual_service_boots": 2, "old_inactive_receipt_preserved": True,
                               "cold_boot_uid_high_water": {"before": before_uid, "after": after_uid},
                               "retained_generations": 2, "unretained_generation_pruned": True,
                               "manifest_loss_and_corruption_refused_before_boot": 2,
                               "checksum_valid_corrupt_receipt_refused_before_boot": True,
+                              "required_receipt_missing_before_capture_refused_before_boot": True,
                               "capture_restore_and_fault_audits_preserve_sources_and_generations": True,
                               "modeled_native_sources": True, "inactive": True})
         print("PLAN5_LIFECYCLE_BACKUP_RESTORE " + json.dumps(self.outcomes[-1], sort_keys=True), flush=True)
