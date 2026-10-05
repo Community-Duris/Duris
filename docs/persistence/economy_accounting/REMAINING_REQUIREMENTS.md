@@ -1,5 +1,13 @@
 # Double-entry economy: remaining requirements
 
+## Native shop source checkpoint — 2026-10-04
+
+The [shared native admission handoff](SHOP_NATIVE_ADMISSION_HANDOFF_2026-10-04.md)
+records the source-reviewed private keeper/player/producer and guarded refusal
+ownership slices. Successful publication, replay, writer/lifecycle integration,
+coherent schema measurement and original major-plan qualification remain open.
+This private source progress does not complete R1–R8 or change activation gates.
+
 ## Integrated independent baseline fence-digest repair — 2026-10-04
 
 Peer slice `3c8ba021a7dd8b3ac9048651672c9a456774c5d7` is imported with all

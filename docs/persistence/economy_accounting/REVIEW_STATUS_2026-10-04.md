@@ -1,5 +1,14 @@
 # Accounting review status — 2026-10-04
 
+## Reviewed private shop checkpoint/admission — 2026-10-04
+
+The [shared handoff](SHOP_NATIVE_ADMISSION_HANDOFF_2026-10-04.md) records frozen
+source acceptance for original native keeper/player preparation, complete marked
+ordinary saves, immutable v6 producer and same-slot guarded admission/refusal.
+Allocation-free coordinator refusal retention preserves original held ownership.
+Successful native publication/replay and remaining route integration are open;
+source acceptance is not execution or current-candidate qualification.
+
 ## Integrated independent baseline fence-digest repair — 2026-10-04
 
 Peer slice `3c8ba021a7dd8b3ac9048651672c9a456774c5d7` is imported with all

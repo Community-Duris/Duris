@@ -1,5 +1,15 @@
 # Accounting implementation and qualification handoff
 
+## Current native shop interface handoff — 2026-10-04
+
+See [the reviewed private native admission interfaces](SHOP_NATIVE_ADMISSION_HANDOFF_2026-10-04.md)
+for the original checkpoint/producer/guarded refusal ownership and pending
+0057/0058 schema fields. Exact source pins and source-review limits are retained.
+Native successful publication/replay, actorless refusal, writer/lifecycle/gameplay
+integration and original major-plan qualification remain unfinished. Plan5 can
+continue unaffected published-0056 work after collector SQL build repair
+`103fd07c3`; no private schema or code is represented as integrated here.
+
 ## Current source handoff: writer census repair
 
 Published native parent:a265a5053. See

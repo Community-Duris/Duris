@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## Native shop checkpoint and guarded admission source handoff — 2026-10-04
+
+The [current shared handoff](SHOP_NATIVE_ADMISSION_HANDOFF_2026-10-04.md) records
+reviewed private native checkpoint, complete marked-keeper save, immutable v6
+producer and same-slot guarded admission/refusal cleanup. It specifies the
+pending 0057/0058 fields for Plan5 without promoting historical fingerprints.
+Successful native publication, replay routing, actorless refusal, writer fences,
+lifecycle and gameplay integration remain unfinished. These inputs are source
+accepted only; no new shop native execution or major-plan qualification is claimed.
+
 ## Integrated independent baseline fence-digest repair — 2026-10-04
 
 Peer slice `3c8ba021a7dd8b3ac9048651672c9a456774c5d7` is imported with all
