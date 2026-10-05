@@ -1,5 +1,26 @@
 # Double-entry economy: remaining requirements
 
+## Shared keeper sale insertion order — 2026-10-05
+
+[Keeper sell-store native order](SHOP_KEEPER_NATIVE_ORDER_SOURCE_2026-10-05.md)
+now shares the reviewed player ordering body with typed NPC/action checks.
+Private successful shop publication and recovery are still being implemented.
+Source review/format/pins/census only; major-plan native qualification stays open.
+
+## Writer coverage source-contract reconciliation — 2026-10-05
+
+[Strict operation identity and provenance repair](WRITER_CONTRACT_RECONCILIATION_2026-10-05.md)
+addresses the three peer-established contract failures and a further stale restore
+anchor. Original owner exceptions and unqualified coverage are preserved.
+AST/pins/census/whitespace checks only; repaired contract execution remains deferred.
+
+## NPC capture compiler-blocker source repair — 2026-10-05
+
+[Existing corruption-guard declaration inclusion](QUEST_MOBILE_CAPTURE_INCLUDE_REPAIR_2026-10-05.md)
+addresses the peer-established both-backend compiler defect without changing the
+guard. Peer copied-source probes compiled; no local major-plan execution ran.
+Current maintained builds, native qualification and coverage-contract repairs remain.
+
 ## Integrated evidence index representation repair — 2026-10-05
 
 [The independent index-validation slice](PLAN5_EVIDENCE_INDEX_TYPES_SLICE_2026-10-05.md)

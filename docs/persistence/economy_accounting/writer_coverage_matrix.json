@@ -9,10 +9,10 @@
   ],
   "candidate_worktree_evidence": {
     "base_commit": "9155b623419b960c17f117ed8c87d8f783ce42a1",
-    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished.",
+    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified.",
     "source_pins": {
       "migrations/data_lifecycle_manifest.json": "b37efc35e5865e466a5623e11f1f43f587d63ffa3de25acfe769faec79508fbf",
-      "scripts/generate_economy_writer_coverage.py": "dd8dc8d31ec9d8eab3617a8333dcd36154337722a8618566354e3031b1462a6b",
+      "scripts/generate_economy_writer_coverage.py": "e994675ba66641bbe8eb702770b5b73af53221f82952cdb801bd16a69e95ef5f",
       "scripts/validate_data_lifecycle.py": "948868127e84196d4998159c58e9114a8bdb0eaead2495d0d9da0f86d5f904ca",
       "scripts/validate_economy_accounting.py": "984d3170c3b4b17cb96dbcb6568a288b63a9db5278861d59cc860bf996f237be",
       "src/Makefile": "6f051f7701bc3ad543cffb1130fa193c0311e323c5f6a5035cdf4584d3700652",
@@ -36,8 +36,8 @@
       "src/economy/shop_trade_command.c": "69530099a3860fab95978bfe6cf85fa72d5adc2e3ed256d02015e5e1d706eff6",
       "src/economy/shop_trade_command.h": "0277aac9fb2131677117b03f62cc5511e6e94d4448897d6096a9a6f92afd8553",
       "src/economy/shop_trade_item_payload.h": "5b51dac40ca524e3ec0d8c2b97d38e8812996f2f46ab91d149ecd6d012a66227",
-      "src/economy/shop_trade_world_witness.c": "8a6a28419d80eb7242ade1d60aeedd7de7623bd514565932f41bc5a2bd3ccdb5",
-      "src/economy/shop_trade_world_witness.h": "b74ee118418cef75cc9fbb6a73a647a203565f778736115eac9706cccde21bbb",
+      "src/economy/shop_trade_world_witness.c": "ec18020bd840a71a66b0d759a1be9ee5ac729c2ac31651585321d2f7680e5d14",
+      "src/economy/shop_trade_world_witness.h": "f3f0d24fb8a3afaa655e155fdf101afa7f4e6ea393701a5de86061eff38b2e3c",
       "src/flatfile/flatfile_accounting_authority.c": "887e40389a376bfc8ae635f9ea38b9fb2a24e4c7189d421fded745ad9644f00c",
       "src/flatfile/flatfile_accounting_authority.h": "cc0d3ac9580c5ec586b1809818160e15725370eeea98c7b7d6abf2d5e53149c7",
       "src/flatfile/flatfile_accounting_baseline.c": "477745c7587704b9c644578b00cfe7dd35f41a1eadeb7c60935543d676213c6b",
@@ -65,7 +65,7 @@
       "src/player/player_save_pipeline.c": "694a72833a14d72c59ab313d17d818ffede3104cbf2e35fd6c56847d6cfad50d",
       "src/player/player_save_pipeline.h": "890d36897cde73775541704051b5fe33115a28a350aff2150c5de54ee66f39e0",
       "src/player/player_snapshot_repository.c": "58d5bbd01c3b48d496369b92b64178d6d5e0ec3ce4c30efca22eed3d09e8eb8f",
-      "src/world/quest_mobile_native.c": "871b247307723cbdae9e5aa29a21ed8f0f48bfb90ff5c1202b8f5b7bcfe8601d",
+      "src/world/quest_mobile_native.c": "c6062851c70d8d54e4677c3763ba6452c6af140aaa37eab6ba7f2b2c003400e5",
       "src/world/quest_mobile_native.h": "2a1497080811cc6e85ba58c89846a85fce6cd275d8812101dcb2a5e358b91dd4"
     },
     "status": "source_integrated_unqualified"
@@ -52484,7 +52484,7 @@
     }
   ],
   "schema_version": 1,
-  "source_state": "published_base_with_unpublished_candidate_worktree",
+  "source_state": "source_integrated_unqualified",
   "top_dependencies": [
     {
       "dependency": "Freeze the complete writer registry, account/reason policy, actor/source provenance and typed intent facts; resolve all unclassified writer candidates.",

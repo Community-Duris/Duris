@@ -2,6 +2,7 @@
 """Negative activation contract for a real, currently unguarded economy writer."""
 from __future__ import annotations
 
+import hashlib
 import json
 from collections import Counter
 from pathlib import Path
@@ -110,12 +111,23 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertEqual(self.artifact["repository_head"], inventory["source_commit"])
         candidate = inventory.get("candidate_worktree_evidence")
         self.assertEqual(self.artifact["candidate_worktree_evidence"], candidate)
-        if candidate:
-            self.assertEqual(candidate["status"], "unpublished_candidate_worktree")
+        if candidate and candidate["status"] == "unpublished_candidate_worktree":
             self.assertTrue(candidate["dirty_candidate"])
             self.assertEqual(candidate["published_base_commit"], inventory["source_commit"])
             self.assertRegex(candidate["scanned_source_tree_sha256"], r"^[0-9a-f]{64}$")
             self.assertEqual(self.artifact["source_state"], "published_base_with_unpublished_candidate_worktree")
+        elif candidate:
+            self.assertEqual(candidate["status"], "source_integrated_unqualified")
+            self.assertRegex(candidate["base_commit"], r"^[0-9a-f]{40}$")
+            self.assertTrue(candidate["scope"])
+            self.assertTrue(candidate["source_pins"])
+            for path, digest in candidate["source_pins"].items():
+                self.assertRegex(digest, r"^[0-9a-f]{64}$")
+                self.assertEqual(hashlib.sha256((ROOT / path).read_bytes()).hexdigest(),
+                                 digest, path)
+            self.assertEqual(self.artifact["source_state"], "source_integrated_unqualified")
+            self.assertFalse(self.artifact["coverage_complete"])
+            self.assertEqual(self.artifact["playable_release_status"], "BLOCKED")
         else:
             self.assertEqual(self.artifact["source_state"], "registry_source_commit")
 
@@ -148,14 +160,28 @@ class SplitEconomyActivationContract(unittest.TestCase):
         checked = [row for row in self.census
                    if row["family"] == "item_publication" and
                    "obj_to_char_checked(" in row["excerpt"]]
-        self.assertEqual(len({(row["path"], row["line"]) for row in checked}), 9)
         expected = {
-            ("src/cmd/actobj.c", 481): "item.command_publication",
-            ("src/cmd/actobj.c", 709): "item.command_publication",
-            ("src/cmd/actobj.c", 768): "item.pet_give_publication",
-            ("src/cmd/actobj.c", 1336): "item.legacy_get",
-            ("src/cmd/actobj.c", 6278): "item.legacy_give",
-            ("src/cmd/actobj.c", 7908): "item.equipment_remove",
+            self.source_site("src/cmd/actobj.c", "static get_outcome publish_container_get(",
+                             "item_publication", "obj_to_char_checked(o_obj, ch)")[:2]:
+                "item.command_publication",
+            self.source_site("src/cmd/actobj.c", "void item_give_completion(",
+                             "item_publication", "obj_to_char_checked(object, recipient)")[:2]:
+                "item.command_publication",
+            self.source_site("src/cmd/actobj.c", "void pet_give_completion(",
+                             "item_publication", "obj_to_char_checked(object, destination)")[:2]:
+                "item.pet_give_publication",
+            self.source_site("src/cmd/actobj.c", "static get_outcome get_with_phase(P_char ch, P_obj o_obj",
+                             "item_publication", "obj_to_char_checked(o_obj, ch)")[:2]:
+                "item.legacy_get",
+            self.source_site("src/cmd/actobj.c", "void do_give(",
+                             "item_publication", "obj_to_char_checked(obj, vict)")[:2]:
+                "item.legacy_give",
+            self.source_site("src/cmd/actobj.c", "int remove_item(",
+                             "item_publication", "obj_to_char_checked(unequip_char(ch, position), ch)")[:2]:
+                "item.equipment_remove",
+            self.source_site("src/economy/shop.c", "static bool shop_trade_publish_physical(",
+                             "item_publication", "obj_to_char_checked(object, buying ? ch : keeper)")[:2]:
+                "shop.buy_produced",
             self.source_site("src/world/handler.c", "obj_to_char_result obj_to_char_checked(",
                              "item_publication")[:2]: "item.obj_to_char_admission",
             self.source_site("src/world/handler.c", "void obj_to_char(", "item_publication",
@@ -163,6 +189,8 @@ class SplitEconomyActivationContract(unittest.TestCase):
             self.source_site("src/world/handler.h", "obj_to_char_result obj_to_char_checked(",
                              "item_publication")[:2]: "macro.checked_item_publication_declaration",
         }
+        self.assertEqual({(row["path"], row["line"]) for row in checked}, set(expected),
+                         "review added, removed or relocated checked-placement operations")
         for row in checked:
             site = (row["path"], row["line"], row["family"])
             self.assertEqual(owners[site], {expected[(row["path"], row["line"])]})
@@ -1265,14 +1293,20 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new legacy file item calls")
-        shared_finish = {("src/core/files.c", line, "item_lifecycle")
-                         for line in (1764, 1770)}
+        shared_finish = {
+            self.source_site("src/core/files.c", "static void finish_saved_character_inventory(",
+                             "item_lifecycle", expression)
+            for expression in ("extract_obj(save_equip[i]);", "extract_obj(obj);")
+        }
+        self.assertEqual(len(shared_finish), 2)
+        self.assertTrue(shared_finish <= current)
         self.assertTrue(all(len(owners[site]) == (2 if site in shared_finish else 1)
                             for site in current))
         for site in shared_finish:
             self.assertEqual(owners[site], {"player.flat_terminal_inventory_unload",
                                             "player.sql_terminal_inventory_unload"})
-        self.assertEqual(owners[("src/core/files.c", 3731, "item_publication")],
+        self.assertEqual(owners[self.source_site("src/core/files.c", "P_obj restoreObjects(",
+                                                "item_publication", "obj_to_char(obj, ch);")],
                          {"recovery.legacy_object_restore"})
         for route_id in ("player.object_save_template_probe",
                          "player.single_item_save_template_probe",

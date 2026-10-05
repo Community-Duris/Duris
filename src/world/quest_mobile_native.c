@@ -1,5 +1,6 @@
 #include "world/quest_mobile_native.h"
 
+#include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
 
