@@ -4,15 +4,22 @@
 #include "economy/economic_accounting_intent.h"
 #include "economy/shop_trade_command.h"
 
-// Inactive typed capability for the native shop trade transaction.
+// Typed capability for the native shop trade transaction; gameplay admission
+// and native publication are separate owners. The legacy treasury form remains
+// available only for exact retained/inactive compatibility.
 constexpr uint32_t ECONOMIC_WRITER_SHOP_TRADE = 14;
 constexpr uint64_t ECONOMIC_SHOP_UNFUNDED_SALE_ISSUANCE_ID = 25;
+// Existing version-1 shop policies already permit these virtual counterparty kinds.
+// Their identities are fixed by policy, independent of keeper/shop lifetimes.
+constexpr uint64_t ECONOMIC_SHOP_BUY_SINK_ID = 21;
+constexpr uint64_t ECONOMIC_SHOP_SELL_ISSUANCE_ID = 22;
 
 struct shop_trade_accounting_authority
 {
 	critical_operation_id epoch = {};
 	economic_account_key wallet_account = {};
 	economic_account_key bank_account = {};
+	// Legacy treasury or the exact shared sink/issuance derived from this action.
 	economic_account_key keeper_account = {};
 	currency_command_result balances_before = {};
 	uint32_t shop_id = 0;
@@ -34,6 +41,15 @@ economic_accounting_error
 shop_trade_accounting_intent(const critical_command &command, const critical_operation_id &epoch,
 			     const economic_account_key &wallet, const economic_account_key &bank,
 			     const economic_account_key &keeper, std::vector<uint8_t> *encoded);
+
+// v6 only: freeze native wallet/bank lifetimes. Shop ID and keeper VNUM remain in
+// the immutable command; no keeper treasury mapping or holding is admitted.
+// Buy payments use the fixed shop sink; sale proceeds use fixed issuance.
+economic_accounting_error shop_trade_shared_accounting_intent(const critical_command &command,
+							      const critical_operation_id &epoch,
+							      const economic_account_key &wallet,
+							      const economic_account_key &bank,
+							      std::vector<uint8_t> *encoded);
 
 // Decode only an exact, self-consistent schema-2 shop intent. Outputs are
 // unchanged on refusal.

@@ -1,4 +1,5 @@
 #include "persistence/critical_command.h"
+#include "economy/shop_trade_command.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -160,7 +161,10 @@ bool critical_command_normalize(critical_command *command)
 bool critical_command_legacy_execution_supported(const critical_command &command)
 {
 	return command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
-	       command.accounting_intent.empty() && command.type >= critical_command_type::test &&
+	       command.accounting_intent.empty() &&
+	       (command.type != critical_command_type::shop_trade ||
+		command.payload_version <= SHOP_TRADE_PAYLOAD_VERSION) &&
+	       command.type >= critical_command_type::test &&
 	       command.type <= critical_command_type::player_death_restitution;
 }
 
