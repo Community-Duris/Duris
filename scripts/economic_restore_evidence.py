@@ -90,13 +90,18 @@ def valid_position(uid, value):
     if state == 0:
         need(not any(value))
         return
-    need(1 <= owner_type <= 11)
+    need(1 <= owner_type <= 12)
     if owner_type in (7, 8):
         need(owner == context == 0)
     else:
         need(owner and (owner_type != 10 or not context) and
-             (owner_type != 11 or 0 < context <= 2147483647))
-    need(not slot or (owner_type == 1 and not parent and state == 1))
+             (owner_type != 11 or 0 < context <= 2147483647) and
+             (owner_type != 12 or (owner < 2**64 - 1 and not context)))
+    # Original native-mobile lifetime IDs have no runtime/VNUM context. Their
+    # equipment is bounded and belongs to an active, uncontained root UID.
+    need(owner_type != 12 or slot <= 43)
+    need(not slot or (owner_type in (1, 12) and not parent and state == 1 and
+                     (owner_type != 12 or root == uid)))
     if state == 2:
         need(owner_type == 8 and root and parent != uid and revision)
     else:

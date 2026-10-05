@@ -144,6 +144,11 @@ class NativeCanonicalAuditTests(unittest.TestCase):
         source = work/'canonical-probe.cpp'
         # The shared independent probe now includes the custody transition.
         native_source = NATIVE_PROBE
+        if os.environ.get('DURIS_PLAN5_CANONICAL_MOBILE') == '1':
+            native_source = native_source.replace('old.owner={item_owner_type::player,8,0};',
+                'old.owner={item_owner_type::native_mobile,42,0}; old.equipment_slot=43;')
+            native_source = native_source.replace('next.owner.id=7;',
+                'next.owner={item_owner_type::player,7,0}; next.equipment_slot=0;')
         source.write_text(native_source)
         builds, native = [], None
         sources = [str(source), 'src/economy/economic_accounting_types.c',
@@ -253,11 +258,12 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                     for row in native['children']:
                         insert('economic_accounting_child', {**row, 'operation_id': operation,
                             'child_operation_id': bytes.fromhex(row['child_operation_id'])})
+                    native_before, native_after = plan['events'][0][3:]
                     insert('item_ownership_ledger', dict(operation_id=legacy, event_index=0, item_uid=81,
-                        root_item_uid=81, parent_item_uid=None, from_owner_type=1, from_owner_id=8,
-                        from_owner_context_id=0, to_owner_type=1, to_owner_id=7, to_owner_context_id=0,
+                        root_item_uid=81, parent_item_uid=None, from_owner_type=native_before[0], from_owner_id=native_before[2],
+                        from_owner_context_id=native_before[3], to_owner_type=native_after[0], to_owner_id=native_after[2], to_owner_context_id=native_after[3],
                         item_revision=2, from_owner_revision=1, to_owner_revision=2, reason_type=8,
-                        source_site=1, from_equipment_slot=0, to_equipment_slot=0))
+                        source_site=1, from_equipment_slot=native_before[7], to_equipment_slot=native_after[7]))
                     insert('economic_accounting_item_reference', dict(operation_id=operation, line_index=0,
                         event_index=0, child_index=1, item_uid=81, before_revision=1, after_revision=2,
                         legacy_operation_id=legacy, legacy_event_index=0))
@@ -338,7 +344,7 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                             (474,bytes.fromhex(native['children'][0]['child_operation_id'])),'canonical_child'),
                             ('posting_child','economic_accounting_coin_posting','child_index=%s','line_index=0',(2,),(1,),'canonical_posting'),
                             ('item_child','economic_accounting_item_reference','child_index=%s','event_index=0',(2,),(1,),'canonical_item'),
-                            ('custody_owner','item_ownership_ledger','from_owner_id=%s','event_index=0',(9,),(8,),'canonical_custody'),
+                            ('custody_owner','item_ownership_ledger','from_owner_id=%s','event_index=0',(9,),(native_before[2],),'canonical_custody'),
                             ('root_actor','economic_accounting_operation','actor_id=%s','1=1',(9,),(7,),'metadata'),
                             ('plan_digest','economic_accounting_operation','plan_digest=%s','1=1',(bytes(32),),(plan['plan_digest'],),'plan'),
                             ('corrupt_intent','economic_accounting_operation','canonical_intent=%s','1=1',(b'\0'+frozen[1:],),(frozen,),'intent')]
@@ -358,7 +364,7 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                                         cut = exporter.read_evidence(cursor,encoded[8:24],encoded[24:40],True)
                                     modeled = clean_snapshot()
                                     origins, items = modeled['account_origins'], modeled['item_origins']
-                                    items[0]['owner'] = [1,8,0]
+                                    items[0]['owner'] = [native_before[0], native_before[2], native_before[3]]
                                     modeled.update(cut)
                                     modeled['account_origins'] = origins
                                     modeled['item_origins'] = items

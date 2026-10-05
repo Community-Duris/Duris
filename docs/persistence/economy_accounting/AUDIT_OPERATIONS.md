@@ -483,6 +483,21 @@ atomic new root receipt. It must reject a changed state before mutation and
 append new evidence rather than editing history. A manual SQL UPDATE, a missing
 original operation, or an unlinked credit cannot resolve an audit exception.
 
+## Native mobile custody grammar
+
+Original native-mobile custody uses owner type12 with a durable lifetime ID
+from1 through `UINT64_MAX-1` and context0. The independent EAP1 and EAB1 readers
+preserve that identity without inferring a runtime NPC ID or VNUM. Mobile live
+and quarantined custody remain distinct; a destroyed item has destruction
+ownership rather than native-mobile ownership.
+
+An equipped mobile item in EAP1 must be active, have no parent, be its own root
+UID, and use slot1 through43. Historical player equipment rules remain unchanged.
+EAB1 has no equipment field; its owner12 identity acceptance does not prove a
+complete equipped opening. Original EAP1 and the retained native boundary still
+provide the required equipment and authority evidence. Native decoder agreement
+and private SQL cuts remain component evidence, not quest producer completion.
+
 ## Qualification budgets
 
 These are release gates to measure on each backend and the final integrated
