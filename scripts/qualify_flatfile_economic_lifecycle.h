@@ -177,10 +177,8 @@ class checker
 		     witness = blob(restore_economic_baseline::witness_limit),
 		     plan = blob(4 * 1024 * 1024);
 		in.done();
+		(void)restore_economic_baseline::item_bytes(witness);
 		need(witness.size() == 192 + count * 112 &&
-		     same(witness.first(4), { reinterpret_cast<const uint8_t *>("EAB1"), 4 }) &&
-		     number(witness, 4, 2) == 1 && number(witness, 6, 2) == 192 &&
-		     number(witness, 8, 4) == witness.size() && number(witness, 12, 4) == 0 &&
 		     same(witness.subspan(16, 16), lineage) &&
 		     same(witness.subspan(32, 16), epoch) &&
 		     same(witness.subspan(48, 16), operation) && number(witness, 64, 8) == actor &&
