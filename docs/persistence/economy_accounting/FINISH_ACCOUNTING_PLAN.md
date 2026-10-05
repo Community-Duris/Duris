@@ -1,5 +1,23 @@
 # Finish accounting implementation plan
 
+## Retained SHOP fixture source linkage — 2026-10-05
+
+[The bounded component recipe repair](SHOP_RETENTION_FIXTURE_LINKAGE_2026-10-05.md) restores actual pure providers and
+complete abort boundaries for outside-scope cold authority. Original21/16 cases,
+four jobs, flags and limits stay exact; physical character_list is an unavailable
+null root. Independent source review/format/pins only, no LINK_PASS. Original74
+executions and positive cold SQL/world/ACK/restart remain in Plan4 qualification.
+Coverage, R1–R8/release and activation remain incomplete; inactive gates stay.
+
+## Exact restore projection representations integrated — 2026-10-05
+
+[The exact Plan5 repair](PLAN5_RESTORE_REPRESENTATION_INTEGRATION_2026-10-05.md) refuses noninteger aliases throughout independent
+restore evidence. Six mandatory pure cases make105 central rows; all104 prior
+policies remain exact. Peer zero-skip native/clone evidence stays its canonical56
+and original EAB1 scope. Primary AST/pins/static inventory only; current combined
+and nativeEAB2/schema61 qualification remain open. R1–R8, coverage, release and
+activation stay incomplete; inactive behavior and safety gates stay.
+
 ## Exact baseline projection representations integrated — 2026-10-05
 
 [The exact Plan5 repair](PLAN5_BASELINE_REPRESENTATION_INTEGRATION_2026-10-05.md) refuses numerically equal noncanonical types in

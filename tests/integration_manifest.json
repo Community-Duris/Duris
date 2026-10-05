@@ -2555,6 +2555,38 @@
         "test_economic_sql_audit_origins.py"
       ],
       "required_markers": []
+    },
+    {
+      "id": "plan5_restore_projection_representations_pure",
+      "path": "tests/async/test_economic_sql_canonical_audit.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "RestoreProjectionTests.test_all_normalized_projection_families_require_exact_integers",
+        "RestoreProjectionTests.test_baseline_reservations_require_exact_integers",
+        "RestoreProjectionTests.test_committed_counts_and_status_require_exact_integers",
+        "RestoreProjectionTests.test_intact_ordinary_baseline_and_rejected_controls",
+        "RestoreProjectionTests.test_rejected_controls_require_unsigned_integer_status_and_zero_counts",
+        "RestoreProjectionTests.test_root_metadata_requires_exact_integers"
+      ],
+      "arguments": [
+        "RestoreProjectionTests.test_all_normalized_projection_families_require_exact_integers",
+        "RestoreProjectionTests.test_baseline_reservations_require_exact_integers",
+        "RestoreProjectionTests.test_committed_counts_and_status_require_exact_integers",
+        "RestoreProjectionTests.test_intact_ordinary_baseline_and_rejected_controls",
+        "RestoreProjectionTests.test_rejected_controls_require_unsigned_integer_status_and_zero_counts",
+        "RestoreProjectionTests.test_root_metadata_requires_exact_integers",
+        "-v"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_economic_sql_canonical_audit.py"
+      ],
+      "required_markers": []
     }
   ]
 }
