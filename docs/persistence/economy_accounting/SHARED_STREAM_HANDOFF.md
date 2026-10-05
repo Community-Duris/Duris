@@ -1,5 +1,15 @@
 # Accounting implementation and qualification handoff
 
+## Maintained SQL checkpoint shadowing repaired — 2026-10-05
+
+[The five-identifier source repair](SHOP_CHECKPOINT_LITERAL_SHADOW_REPAIR_2026-10-05.md) closes the exact inner-vector
+shadowing diagnosed by the peer refreshed SQL build. Outer capture/output,
+literal/parent/slot/budget policy and guards remain exact. The frozen peer report
+records a passing full flat build and separate SQL build failure at its stated
+7cd9/schema56 scope. Local inverse/format/pins/static checks only; current combined
+SQL/both-policy/native qualification remains in the major-plan batch. Inactive
+behavior and R1–R8/release gates remain.
+
 ## Recovery template binding order corrected — 2026-10-05
 
 [The two-cut source repair](RECOVERY_TEMPLATE_BINDING_SEAL_2026-10-05.md) parses complete prototypes after boot
