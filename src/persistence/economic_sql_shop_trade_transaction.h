@@ -62,6 +62,8 @@ struct economic_sql_shop_trade_publication
 	int64_t keeper_cash = 0;
 	uint64_t shop_revision = 0;
 	bool keeper_roaming = false, payload_checkpoint_recorded = false, rejected = false;
+	// Separate no-execution BEFORE phase, never an execution rejection receipt.
+	bool never_admitted = false;
 	uint64_t payload_checkpoint_revision = 0;
 	// Result's primary/counterparty identities (discard/production differ).
 	uint64_t player_owner_revision = 0, counterparty_owner_revision = 0;
@@ -107,5 +109,19 @@ unsigned int
 economic_sql_shop_trade_lock_publication(MYSQL *, const critical_command &,
 					 const critical_completion &,
 					 economic_sql_shop_trade_publication *) noexcept;
+
+// Explicit SELECT-only original never-admitted v8 BEFORE cut. No completion or
+// result is accepted/synthesized. Locks original inbox absence, authority/native
+// exact bound revisions and whole BEFORE forests, then root/source/evidence/
+// outbox absence. Missing owner revisions are observed zero, never inserted.
+// Monetary vectors and aggregate owner revisions absent from the command remain
+// observed values under the exact locks; no historical values are invented.
+// Caller owns the reconnect-disabled original transaction and authenticated
+// refusal/held-publication reservation. This supplies no native cleanup or ACK
+// authority. Caller retains the cut through native cleanup and confirmed SQL
+// rollback/idle or verified lease retirement. Failure leaves output unchanged.
+unsigned int
+economic_sql_shop_trade_lock_never_admitted_before(MYSQL *, const critical_command &,
+						   economic_sql_shop_trade_publication *) noexcept;
 
 #endif

@@ -2305,14 +2305,14 @@ shop_item_runtime_row publication_player_row(MYSQL *connection, const shop_trade
 #endif
 
 static unsigned int shop_trade_lock_publication_image(
-	MYSQL *connection, const critical_command &command, const critical_completion &sealed,
+	MYSQL *connection, const critical_command &command, const critical_completion *execution,
 	std::span<const player_item_snapshot> expected_current_player_items, bool cold,
 	economic_sql_shop_trade_publication *output) noexcept
 {
 #ifdef __NO_MYSQL__
 	(void)connection;
 	(void)command;
-	(void)sealed;
+	(void)execution;
 	(void)expected_current_player_items;
 	(void)cold;
 	(void)output;
@@ -2324,6 +2324,8 @@ static unsigned int shop_trade_lock_publication_image(
 	{
 		const unsigned long session = mysql_thread_id(connection);
 		publication_session(connection, session);
+		const bool never_admitted = !execution;
+		require(!never_admitted || cold, EINVAL);
 		require(expected_current_player_items.size() <= PLAYER_SNAPSHOT_MAX_OBJECTS, E2BIG);
 		const std::vector<player_item_snapshot> expected_player(
 			expected_current_player_items.begin(), expected_current_player_items.end());
@@ -2358,41 +2360,63 @@ static unsigned int shop_trade_lock_publication_image(
 					shop_trade_recovery_manifest_shape_valid(
 						payload.recovery_manifest),
 				EPROTONOSUPPORT);
-		const bool rejected = sealed.outcome == critical_apply_outcome::terminal_failure;
-		require(sealed.operation_id.bytes == command.operation_id.bytes &&
-				sealed.disposition == critical_completion_disposition::execution &&
-				sealed.failure_stage == critical_failure_stage::none &&
-				(rejected ?
-					 sealed.error_code != 0 :
-					 !sealed.error_code &&
-						 (sealed.outcome ==
-							  critical_apply_outcome::applied ||
-						  sealed.outcome ==
-							  critical_apply_outcome::already_applied)) &&
-				sealed.result_size == encoded.size() &&
-				shop_trade_command_decode_result(sealed.result_payload.data(),
-								 sealed.result_size, &receipt) &&
-				shop_trade_command_encode_result(receipt, &encoded) &&
-				std::equal(encoded.begin(), encoded.end(),
-					   sealed.result_payload.begin()) &&
-				std::all_of(sealed.result_payload.begin() + encoded.size(),
-					    sealed.result_payload.end(),
-					    [](uint8_t byte) { return !byte; }) &&
-				receipt.action == payload.action &&
-				sealed.durable_revision ==
-					std::max({ receipt.wallet_revision, receipt.bank_revision,
-						   receipt.shop_revision,
-						   receipt.player_owner_revision,
-						   receipt.counterparty_owner_revision,
-						   *std::max_element(
-							   receipt.item_revisions.begin(),
-							   receipt.item_revisions.end()) }),
-			EILSEQ);
+		const bool rejected = execution && execution->outcome ==
+							   critical_apply_outcome::terminal_failure;
+		const bool before_cut = never_admitted || rejected;
+		if (execution)
+		{
+			const auto &sealed = *execution;
+			require(sealed.operation_id.bytes == command.operation_id.bytes &&
+					sealed.disposition ==
+						critical_completion_disposition::execution &&
+					sealed.failure_stage == critical_failure_stage::none &&
+					(rejected ?
+						 sealed.error_code != 0 :
+						 !sealed.error_code &&
+							 (sealed.outcome ==
+								  critical_apply_outcome::applied ||
+							  sealed.outcome ==
+								  critical_apply_outcome::
+									  already_applied)) &&
+					sealed.result_size == encoded.size() &&
+					shop_trade_command_decode_result(
+						sealed.result_payload.data(), sealed.result_size,
+						&receipt) &&
+					shop_trade_command_encode_result(receipt, &encoded) &&
+					std::equal(encoded.begin(), encoded.end(),
+						   sealed.result_payload.begin()) &&
+					std::all_of(sealed.result_payload.begin() + encoded.size(),
+						    sealed.result_payload.end(),
+						    [](uint8_t byte) { return !byte; }) &&
+					receipt.action == payload.action &&
+					sealed.durable_revision ==
+						std::max({ receipt.wallet_revision,
+							   receipt.bank_revision,
+							   receipt.shop_revision,
+							   receipt.player_owner_revision,
+							   receipt.counterparty_owner_revision,
+							   *std::max_element(
+								   receipt.item_revisions.begin(),
+								   receipt.item_revisions.end()) }),
+				EILSEQ);
+		}
+		else
+		{
+			// Match parent lock order: the absent original inbox identity precedes
+			// authority/native locks. No row, result or receipt is synthesized.
+			require(one(connection,
+				    "SELECT operation_id FROM critical_operation_inbox WHERE operation_id=" +
+					    id(command.operation_id) + " LIMIT 1 FOR UPDATE",
+				    1, true)
+					.empty(),
+				EEXIST);
+		}
 		std::vector<player_item_snapshot> after;
 		require(shop_trade_accounted_after_items(payload, &after), EAGAIN);
 		economic_sql_shop_trade_publication current;
 		current.session_id = session;
 		current.rejected = rejected;
+		current.never_admitted = never_admitted;
 		current.bank_id = native_id(connection, bank.authority_id);
 		const std::array<economic_sql_mapping_request, 2> mappings = {
 			economic_sql_mapping_request{ wallet, PLAYER_LOCATOR, payload.player_pid },
@@ -2414,8 +2438,13 @@ static unsigned int shop_trade_lock_publication_image(
 		current.player_level = number<uint32_t>(player[7]);
 		current.player_save_revision = number<uint64_t>(player[8]);
 		require(current.player_level && current.player_level <= UINT8_MAX &&
-				current.player_save_revision >=
-					payload.expected_player_save_revision,
+				(never_admitted ?
+					 current.player_save_revision ==
+							 payload.expected_player_save_revision &&
+						 current.player_level ==
+							 payload.expected_player_level :
+					 current.player_save_revision >=
+						 payload.expected_player_save_revision),
 			ESTALE);
 		for (size_t coin = 0; coin < 4; ++coin)
 		{
@@ -2443,15 +2472,26 @@ static unsigned int shop_trade_lock_publication_image(
 				ERANGE);
 		}
 		current.bank_revision = number<uint64_t>(bank_row[7]);
-		// Later legitimate revisions are current values, never overwritten by
-		// this historical operation. At the same revision the vectors are exact.
-		require(current.wallet_revision >= receipt.wallet_revision &&
-				current.bank_revision >= receipt.bank_revision &&
-				(current.wallet_revision != receipt.wallet_revision ||
-				 current.wallet.amount == receipt.wallet.amount) &&
-				(current.bank_revision != receipt.bank_revision ||
-				 current.bank.amount == receipt.bank.amount),
-			ESTALE);
+		if (never_admitted)
+		{
+			// These original revisions bind the observed current vectors. The
+			// command does not contain historical vectors or owner revisions.
+			require(current.wallet_revision == payload.expected_wallet_revision &&
+					current.bank_revision == payload.expected_bank_revision,
+				ESTALE);
+		}
+		else
+		{
+			// Later legitimate revisions are current values, never overwritten by
+			// this historical operation. At the same revision the vectors are exact.
+			require(current.wallet_revision >= receipt.wallet_revision &&
+					current.bank_revision >= receipt.bank_revision &&
+					(current.wallet_revision != receipt.wallet_revision ||
+					 current.wallet.amount == receipt.wallet.amount) &&
+					(current.bank_revision != receipt.bank_revision ||
+					 current.bank.amount == receipt.bank.amount),
+				ESTALE);
+		}
 		const auto keeper_row = one(
 			connection,
 			"SELECT id,shop_id,mob_vnum,cash,shop_revision,keeper_roaming,runtime_payload_checkpoint_revision "
@@ -2469,16 +2509,20 @@ static unsigned int shop_trade_lock_publication_image(
 		const auto roaming = number<uint8_t>(keeper_row[5]);
 		require(current.keeper_cash >= 0 && current.keeper_cash <= INT_MAX &&
 				roaming <= 1 && roaming == payload.keeper_roaming &&
-				current.shop_revision >= (rejected ?
+				current.shop_revision >= (before_cut ?
 								  payload.expected_shop_revision :
 								  receipt.shop_revision),
 			ESTALE);
+		if (never_admitted)
+			require(current.shop_revision == payload.expected_shop_revision &&
+					current.keeper_cash == payload.expected_keeper_cash,
+				ESTALE);
 		current.keeper_roaming = roaming != 0;
-		require(rejected ? (current.shop_revision != payload.expected_shop_revision ||
-				    current.keeper_cash == payload.expected_keeper_cash) :
-				   (receipt.keeper_cash_recorded &&
-				    (current.shop_revision != receipt.shop_revision ||
-				     current.keeper_cash == receipt.keeper_cash)),
+		require(before_cut ? (current.shop_revision != payload.expected_shop_revision ||
+				      current.keeper_cash == payload.expected_keeper_cash) :
+				     (receipt.keeper_cash_recorded &&
+				      (current.shop_revision != receipt.shop_revision ||
+				       current.keeper_cash == receipt.keeper_cash)),
 			ESTALE);
 		current.payload_checkpoint_recorded = keeper_row[6].has_value();
 		require(current.payload_checkpoint_recorded, ENODATA);
@@ -2508,7 +2552,7 @@ static unsigned int shop_trade_lock_publication_image(
 			if (item_owner_identity_equal(owner, shop_owner(payload)))
 				current.keeper_owner_revision = revision;
 		}
-		require(rejected ||
+		require(before_cut ||
 				(current.player_owner_revision >= receipt.player_owner_revision &&
 				 current.counterparty_owner_revision >=
 					 receipt.counterparty_owner_revision),
@@ -2517,8 +2561,9 @@ static unsigned int shop_trade_lock_publication_image(
 			publication_keeper_routes(connection, current.keeper_id, false);
 		std::vector<uint64_t> expected_player_uids;
 		if (cold)
-			expected_player_uids = (rejected ? payload.recovery_manifest.player_before :
-							   payload.recovery_manifest.player_after)
+			expected_player_uids = (before_cut ?
+							payload.recovery_manifest.player_before :
+							payload.recovery_manifest.player_after)
 						       .ordered_item_uids;
 		else
 		{
@@ -2529,7 +2574,7 @@ static unsigned int shop_trade_lock_publication_image(
 		const auto custody = publication_custody(connection, payload, expected_player_uids,
 							 keeper_routes);
 		if (payload.recovery_manifest_recorded)
-			recovery_keeper_closure(payload, custody, !rejected);
+			recovery_keeper_closure(payload, custody, !before_cut);
 		for (const auto &[row_id, uid] : keeper_routes)
 		{
 			(void)row_id;
@@ -2543,7 +2588,7 @@ static unsigned int shop_trade_lock_publication_image(
 				ESTALE);
 		}
 		economic_accounting_plan retained_plan;
-		if (!rejected)
+		if (!before_cut)
 		{
 			const auto plan_row = one(
 				connection,
@@ -2610,14 +2655,15 @@ static unsigned int shop_trade_lock_publication_image(
 			const auto &manifest = payload.recovery_manifest;
 			std::vector<player_item_snapshot> player_values, keeper_values;
 			require(shop_trade_recovery_image_reconstruct(
-					rejected ? manifest.player_before : manifest.player_after,
-					rejected ? shop_trade_recovery_forest_role::player_before :
-						   shop_trade_recovery_forest_role::player_after,
+					before_cut ? manifest.player_before : manifest.player_after,
+					before_cut ?
+						shop_trade_recovery_forest_role::player_before :
+						shop_trade_recovery_forest_role::player_after,
 					current.whole_player_items, &player_values) &&
 					shop_trade_recovery_image_reconstruct(
-						rejected ? manifest.keeper_before :
-							   manifest.keeper_after,
-						rejected ?
+						before_cut ? manifest.keeper_before :
+							     manifest.keeper_after,
+						before_cut ?
 							shop_trade_recovery_forest_role::
 								keeper_before :
 							shop_trade_recovery_forest_role::keeper_after,
@@ -2633,7 +2679,7 @@ static unsigned int shop_trade_lock_publication_image(
 		{
 			const auto &original = payload.items[index];
 			const auto found = custody.find(original.item_uid);
-			if (rejected && payload.action == shop_trade_action::buy_produced)
+			if (before_cut && payload.action == shop_trade_action::buy_produced)
 			{
 				require(found == custody.end(), ESTALE);
 				publication_absence(connection, original.item_uid);
@@ -2644,8 +2690,12 @@ static unsigned int shop_trade_lock_publication_image(
 			const auto &entry = found->second;
 			const auto &position = entry.snapshot.position;
 			const player_item_snapshot *literal = nullptr;
-			if (rejected)
+			if (before_cut)
 			{
+				if (never_admitted)
+					require(position.revision ==
+							original.expected_item_revision,
+						ESTALE);
 				const bool from_shop =
 					payload.action == shop_trade_action::buy_existing ||
 					payload.action == shop_trade_action::discard_invalid;
@@ -2744,7 +2794,11 @@ static unsigned int shop_trade_lock_publication_image(
 						payload.expected_stock_item_revision &&
 					current.keeper_items.count(payload.stock_item_uid),
 				ESTALE);
-			if (!rejected)
+			if (never_admitted)
+				require(stock->second.snapshot.position.revision ==
+						payload.expected_stock_item_revision,
+					ESTALE);
+			if (!before_cut)
 			{
 				const auto witness = std::find_if(
 					retained_plan.items_after.begin(),
@@ -2773,7 +2827,11 @@ static unsigned int shop_trade_lock_publication_image(
 						ancestor->second.snapshot.position.root_uid ==
 							payload.target_root_item_uid,
 					ESTALE);
-				if (!rejected)
+				if (never_admitted && uid == payload.target_parent_item_uid)
+					require(ancestor->second.snapshot.position.revision ==
+							payload.expected_target_parent_revision,
+						ESTALE);
+				if (!before_cut)
 				{
 					const auto witness =
 						std::find_if(retained_plan.items_after.begin(),
@@ -2816,7 +2874,7 @@ static unsigned int shop_trade_lock_publication_image(
 									      current.keeper_items;
 			const auto parent = image.find(uid);
 			if (parent == image.end())
-				continue; // A rejected production or a destroyed tree has no rows.
+				continue; // A before_cut production or a destroyed tree has no rows.
 			const bool player_domain = &image == &current.player_items;
 			execute(connection,
 				"SELECT obj_uid FROM " +
@@ -2850,6 +2908,53 @@ static unsigned int shop_trade_lock_publication_image(
 				});
 			require(count == expected, ESTALE);
 		}
+		if (never_admitted)
+		{
+			// Match normal parent order: native cut precedes root/source/outbox.
+			// Each indexed existence query is bounded and SELECT-only.
+			for (const char *table :
+			     { "economic_accounting_operation", "economic_accounting_source_claim",
+			       "economic_accounting_account_effect",
+			       "economic_accounting_coin_posting", "economic_accounting_child",
+			       "economic_accounting_item_reference", "item_ownership_ledger",
+			       "critical_outbox" })
+				require(one(connection,
+					    "SELECT operation_id FROM " + std::string(table) +
+						    " WHERE operation_id=" +
+						    id(command.operation_id) +
+						    " LIMIT 1 FOR UPDATE",
+					    1, true)
+						.empty(),
+					EEXIST);
+			require(one(connection,
+				    "SELECT operation_id FROM economic_accounting_item_reference WHERE legacy_operation_id=" +
+					    id(command.operation_id) + " LIMIT 1 FOR UPDATE",
+				    1, true)
+					.empty(),
+				EEXIST);
+			require(one(connection,
+				    "SELECT operation_id FROM economic_accounting_child WHERE child_operation_id=" +
+					    id(command.operation_id) + " LIMIT 1 FOR UPDATE",
+				    1, true)
+					.empty(),
+				EEXIST);
+			const auto &metadata = intent.admission.metadata;
+			if (metadata.source_event)
+			{
+				std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> source{};
+				require(economic_source_event_encode(*metadata.source_event,
+								     &source) ==
+						economic_accounting_error::ok,
+					EILSEQ);
+				require(one(connection,
+					    "SELECT operation_id FROM economic_accounting_source_claim WHERE lineage=" +
+						    id(metadata.lineage) + " AND source_event=" +
+						    hex(source) + " LIMIT 1 FOR UPDATE",
+					    1, true)
+						.empty(),
+					EEXIST);
+			}
+		}
 		publication_session(connection, session);
 		*output = std::move(current);
 		return 0;
@@ -2874,7 +2979,7 @@ unsigned int economic_sql_shop_trade_lock_publication(
 	std::span<const player_item_snapshot> expected_current_player_items,
 	economic_sql_shop_trade_publication *output) noexcept
 {
-	return shop_trade_lock_publication_image(connection, command, sealed,
+	return shop_trade_lock_publication_image(connection, command, &sealed,
 						 expected_current_player_items, false, output);
 }
 
@@ -2883,6 +2988,16 @@ economic_sql_shop_trade_lock_publication(MYSQL *connection, const critical_comma
 					 const critical_completion &sealed,
 					 economic_sql_shop_trade_publication *output) noexcept
 {
-	return shop_trade_lock_publication_image(
-		connection, command, sealed, std::span<const player_item_snapshot>{}, true, output);
+	return shop_trade_lock_publication_image(connection, command, &sealed,
+						 std::span<const player_item_snapshot>{}, true,
+						 output);
+}
+
+unsigned int economic_sql_shop_trade_lock_never_admitted_before(
+	MYSQL *connection, const critical_command &command,
+	economic_sql_shop_trade_publication *output) noexcept
+{
+	return shop_trade_lock_publication_image(connection, command, nullptr,
+						 std::span<const player_item_snapshot>{}, true,
+						 output);
 }

@@ -1,5 +1,15 @@
 # Plan 3: item supply, custody, and provenance
 
+## Ordinary movement native-context initializer repair — 2026-10-05
+
+[The three-site source repair](../ITEM_MOVEMENT_NATIVE_CONTEXT_INITIALIZERS_2026-10-05.md) explicitly initializes absent native-mobile
+context in ordinary movement, batch and craft payloads. Plan5 reproduced three
+missing-field diagnostics in both maintained builds; its exact failed-build
+report is preserved. Defaults/member order, forward/inverse, changed-line format,
+pins/census and static validators pass locally. Both-policy builds and relevant
+native/inactive-path checks remain in the original major-plan qualification batch.
+Inactive behavior and admission gates stay; R1–R8/release remain BLOCKED.
+
 ## Independent native-mobile grammar integrated — 2026-10-05
 
 [The four-file peer slice](../PLAN5_NATIVE_MOBILE_GRAMMAR_INTEGRATION_2026-10-05.md) accepts original owner12 lifetime/context/state and
