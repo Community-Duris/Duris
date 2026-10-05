@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <climits>
 #include <cstring>
 #include <new>
 #include <openssl/crypto.h>
@@ -26,6 +27,21 @@ bool nonzero(const critical_operation_id &id)
 {
 	return std::any_of(id.bytes.begin(), id.bytes.end(),
 			   [](uint8_t value) { return value != 0; });
+}
+
+bool cash_valid(const quest_mobile_native_image &image) noexcept
+{
+	if (!image.cash)
+		return true; // Historical absence remains unknown.
+	if (!image.cash->revision)
+		return false;
+	return std::all_of(
+		image.cash->denominations.amount.begin(), image.cash->denominations.amount.end(),
+		[&](int64_t amount)
+		{
+			return amount >= 0 && amount <= INT_MAX &&
+			       (image.state != quest_mobile_lifetime_state::retired || amount == 0);
+		});
 }
 
 template <typename T> void put(uint8_t *bytes, size_t &offset, T value)
@@ -167,7 +183,7 @@ player_snapshot_codec_result
 quest_mobile_native_image_encode(const quest_mobile_native_image &image,
 				 std::vector<uint8_t> *output) noexcept
 {
-	if (!output || !nonzero(image.last_transition_operation) ||
+	if (!output || !nonzero(image.last_transition_operation) || !cash_valid(image) ||
 	    (image.state != quest_mobile_lifetime_state::live &&
 	     image.state != quest_mobile_lifetime_state::retired) ||
 	    (image.state == quest_mobile_lifetime_state::retired && !image.items.empty()))
@@ -185,12 +201,16 @@ quest_mobile_native_image_encode(const quest_mobile_native_image &image,
 		result = player_item_snapshot_list_encode(image.items, &blob);
 		if (result != player_snapshot_codec_result::ok)
 			return result;
-		if (blob.size() > PLAYER_SNAPSHOT_MAX_BYTES - QUEST_MOBILE_NATIVE_IMAGE_OVERHEAD)
+		const size_t overhead = image.cash ? QUEST_MOBILE_NATIVE_CASH_IMAGE_OVERHEAD :
+						     QUEST_MOBILE_NATIVE_IMAGE_OVERHEAD;
+		if (blob.size() > PLAYER_SNAPSHOT_MAX_BYTES - overhead)
 			return player_snapshot_codec_result::limit_exceeded;
-		std::vector<uint8_t> candidate(QUEST_MOBILE_NATIVE_IMAGE_OVERHEAD + blob.size(), 0);
+		std::vector<uint8_t> candidate(overhead + blob.size(), 0);
 		std::copy(image_magic.begin(), image_magic.end(), candidate.begin());
 		size_t offset = image_magic.size();
-		put<uint16_t>(candidate.data(), offset, QUEST_MOBILE_NATIVE_VERSION);
+		put<uint16_t>(candidate.data(), offset,
+			      image.cash ? QUEST_MOBILE_NATIVE_CASH_IMAGE_VERSION :
+					   QUEST_MOBILE_NATIVE_VERSION);
 		put<uint8_t>(candidate.data(), offset, static_cast<uint8_t>(image.state));
 		put<uint8_t>(candidate.data(), offset, 0);
 		put<uint32_t>(candidate.data(), offset, candidate.size());
@@ -199,6 +219,12 @@ quest_mobile_native_image_encode(const quest_mobile_native_image &image,
 		std::copy(image.last_transition_operation.bytes.begin(),
 			  image.last_transition_operation.bytes.end(), candidate.begin() + offset);
 		offset += image.last_transition_operation.bytes.size();
+		if (image.cash)
+		{
+			put<uint64_t>(candidate.data(), offset, image.cash->revision);
+			for (int64_t amount : image.cash->denominations.amount)
+				put<int64_t>(candidate.data(), offset, amount);
+		}
 		put<uint32_t>(candidate.data(), offset, blob.size());
 		std::copy(blob.begin(), blob.end(), candidate.begin() + offset);
 		offset += blob.size();
@@ -229,8 +255,13 @@ quest_mobile_native_image_decode(std::span<const uint8_t> bytes,
 	try
 	{
 		size_t offset = image_magic.size();
-		if (get<uint16_t>(bytes.data(), offset) != QUEST_MOBILE_NATIVE_VERSION)
+		const uint16_t version = get<uint16_t>(bytes.data(), offset);
+		if (version != QUEST_MOBILE_NATIVE_VERSION &&
+		    version != QUEST_MOBILE_NATIVE_CASH_IMAGE_VERSION)
 			return player_snapshot_codec_result::unsupported_version;
+		if (version == QUEST_MOBILE_NATIVE_CASH_IMAGE_VERSION &&
+		    bytes.size() < QUEST_MOBILE_NATIVE_CASH_IMAGE_OVERHEAD)
+			return player_snapshot_codec_result::truncated;
 		quest_mobile_native_image candidate;
 		candidate.state = static_cast<quest_mobile_lifetime_state>(
 			get<uint8_t>(bytes.data(), offset));
@@ -246,6 +277,13 @@ quest_mobile_native_image_decode(std::span<const uint8_t> bytes,
 		std::copy_n(bytes.data() + offset, candidate.last_transition_operation.bytes.size(),
 			    candidate.last_transition_operation.bytes.begin());
 		offset += candidate.last_transition_operation.bytes.size();
+		if (version == QUEST_MOBILE_NATIVE_CASH_IMAGE_VERSION)
+		{
+			candidate.cash.emplace();
+			candidate.cash->revision = get<uint64_t>(bytes.data(), offset);
+			for (auto &amount : candidate.cash->denominations.amount)
+				amount = get<int64_t>(bytes.data(), offset);
+		}
 		const uint32_t length = get<uint32_t>(bytes.data(), offset);
 		if (length != bytes.size() - offset - SHA256_DIGEST_LENGTH)
 			return player_snapshot_codec_result::invalid_value;
@@ -267,6 +305,25 @@ quest_mobile_native_image_decode(std::span<const uint8_t> bytes,
 	{
 		return player_snapshot_codec_result::allocation_failure;
 	}
+}
+
+bool quest_mobile_native_cash_transition_valid(const quest_mobile_native_image *before,
+					       const quest_mobile_native_image &after) noexcept
+{
+	if (!after.cash || !cash_valid(after))
+		return false;
+	if (!before)
+		return after.state == quest_mobile_lifetime_state::live &&
+		       after.cash->revision == 1 && after.reference.mobile_revision == 1;
+	if (!before->cash || !cash_valid(*before))
+		return false;
+	if (before->cash->denominations.amount == after.cash->denominations.amount)
+		return after.cash->revision == before->cash->revision &&
+		       after.reference.mobile_revision >= before->reference.mobile_revision;
+	return before->cash->revision != UINT64_MAX &&
+	       before->reference.mobile_revision != UINT64_MAX &&
+	       after.cash->revision == before->cash->revision + 1 &&
+	       after.reference.mobile_revision == before->reference.mobile_revision + 1;
 }
 
 player_snapshot_capture_result
@@ -328,6 +385,42 @@ quest_mobile_native_capture(P_char mob, const quest_mobile_native_reference &ref
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}
+		std::vector<uint8_t> canonical;
+		const auto result = quest_mobile_native_image_encode(candidate, &canonical);
+		if (result == player_snapshot_codec_result::allocation_failure)
+			return player_snapshot_capture_result::retryable_allocation_failure;
+		if (result == player_snapshot_codec_result::limit_exceeded)
+			return player_snapshot_capture_result::limit_exceeded;
+		if (result != player_snapshot_codec_result::ok)
+			return player_snapshot_capture_result::malformed_source;
+		*output = std::move(candidate);
+		return player_snapshot_capture_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_capture_result::retryable_allocation_failure;
+	}
+}
+
+player_snapshot_capture_result
+quest_mobile_native_capture(P_char mob, const quest_mobile_native_reference &reference,
+			    quest_mobile_lifetime_state state,
+			    const critical_operation_id &last_transition, uint64_t cash_revision,
+			    quest_mobile_native_image *output) noexcept
+{
+	if (!output || !cash_revision)
+		return player_snapshot_capture_result::invalid_identity;
+	quest_mobile_native_image candidate;
+	const auto captured =
+		quest_mobile_native_capture(mob, reference, state, last_transition, &candidate);
+	if (captured != player_snapshot_capture_result::ok)
+		return captured;
+	try
+	{
+		candidate.cash.emplace();
+		candidate.cash->revision = cash_revision;
+		candidate.cash->denominations.amount = { GET_COPPER(mob), GET_SILVER(mob),
+							 GET_GOLD(mob), GET_PLATINUM(mob) };
 		std::vector<uint8_t> canonical;
 		const auto result = quest_mobile_native_image_encode(candidate, &canonical);
 		if (result == player_snapshot_codec_result::allocation_failure)

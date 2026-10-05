@@ -28,8 +28,11 @@ int quest_mobile_native_sql_lock(MYSQL *, uint64_t mobile_instance_id,
 // transition/increment validation and the entire item-custody atomic operation.
 // Birth requires actual missing locked row and original parent == birth operation;
 // bare values/session never authenticate an admitted birth. Existing birth facts
-// cannot change and RETIRED cannot revive. Failure after DML requires caller's
-// transaction rollback/retirement; output preservation is not native rollback.
+// cannot change and RETIRED cannot revive.
+// Cash-aware birth and ordinary transitions require known v2 cash with the
+// checked cash/mobile revision policy. Historical unknown cash is read-only here.
+// Failure after DML requires caller transaction rollback/retirement;
+// output preservation is not native rollback.
 int quest_mobile_native_sql_apply_locked(MYSQL *, const critical_operation_id &parent,
 					 const quest_mobile_native_sql_row &original_before,
 					 const quest_mobile_native_image &after,
