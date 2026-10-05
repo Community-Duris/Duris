@@ -275,7 +275,8 @@ bool publish_offline_projection(const collector_command_payload &payload,
 
 bool literal_matches(P_obj selected, const collector_command_payload &payload, uint32_t row)
 {
-	if (!selected || selected->db_item_id != row)
+	if (!selected || selected->db_item_id < 0 ||
+	    static_cast<uint32_t>(selected->db_item_id) != row)
 		return false;
 	std::vector<player_item_snapshot> actual;
 	size_t estimated = 0;

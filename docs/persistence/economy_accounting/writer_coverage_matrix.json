@@ -8,8 +8,8 @@
     "Baseline/cutover, source-event dedupe, item UID lifetime, lifecycle retirement and restore/reconciliation remain activation blockers."
   ],
   "candidate_worktree_evidence": {
-    "base_commit": "bd222e282d9f20e4798b0420e54aac1dc4ec7441",
-    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification.",
+    "base_commit": "9155b623419b960c17f117ed8c87d8f783ce42a1",
+    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification.",
     "source_pins": {
       "migrations/data_lifecycle_manifest.json": "b37efc35e5865e466a5623e11f1f43f587d63ffa3de25acfe769faec79508fbf",
       "scripts/generate_economy_writer_coverage.py": "407a87e2289fa9e29535bea9402647cf67059db7ec7678834535920a80dfd5d8",
@@ -18,7 +18,7 @@
       "src/Makefile": "a1001cc386ac461f54dbf98b03b5b177eae378529333ee87c15ac32f9c54ef6d",
       "src/economy/coin_physical_recovery.c": "0670e71865ebe3543ec18c4142653ed0ea6499cd93cc3bb36f06407f951e8397",
       "src/economy/coin_physical_recovery.h": "c68cc556958cc45b8e71260824f4ac717d060cd7750bd45d57a45b798bccaf9a",
-      "src/economy/collector_purchase_publication.c": "7ca24ec6b64fb1a1a12517d39efa26bf39629f01b475ac972c507a98a9800f36",
+      "src/economy/collector_purchase_publication.c": "51478b2dfadb97c5aa910735a0337238e8aee964a3150b97fe80b0f9912ba9d1",
       "src/economy/collector_repository.c": "4a4467a8330a9b25e3d417b147834ed231558acceeafe4736754d0681acf57fd",
       "src/economy/collector_repository.h": "2b5cea486a07731dd3066231d0b8eead7781a5d047d25e6c066ea9b79b791866",
       "src/economy/collector_service.c": "73721e2182bfbd25b32d42df42574a01c4aef5b26812c0e8695d275479f7136e",
