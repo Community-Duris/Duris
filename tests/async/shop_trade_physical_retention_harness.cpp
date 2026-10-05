@@ -1,3 +1,17 @@
+#include "core/prototypes.h"
+#include "economy/economic_command_admission.h"
+#include "player/player_snapshot_capture.h"
+#include "economy/shop.h"
+#include "economy/shop_trade_world_witness.h"
+#include "player/inert_item_stage.h"
+#include "world/object_template.h"
+#include "persistence/economic_sql_shop_trade_transaction.h"
+#include "persistence/critical_command_repository.h"
+#include "persistence/persistence_mode.h"
+#ifndef __NO_MYSQL__
+#include "sql/sql_pool.h"
+#endif
+
 // Actual shop callback/producer code with explicit native-placement seams.
 // This component fixture does not qualify handler physics or durable replay.
 #include "../../src/economy/shop.c"
@@ -468,3 +482,296 @@ int main(int argc, char **argv)
 	produced_purchase_sequences.clear();
 	return passed ? 0 : 1;
 }
+
+// These original v5 component cases never construct a native preparation or cold
+// restored owner. New retained call graphs must not grant that missing authority.
+// Any unexpected call fails the fixture immediately, including empty staging.
+namespace
+{
+[[noreturn]] void unavailable_shop_native_capability(const char *name) noexcept
+{
+	std::fprintf(stderr, "UNEXPECTED outside-scope SHOP capability: %s\n", name);
+	std::abort();
+}
+}
+bool player_save_restored_publication_owner::publish_shop(
+	const critical_command &, const critical_completion &,
+	bool (*)(const critical_command &, const critical_completion &, void *) noexcept,
+	void *) noexcept
+{
+	unavailable_shop_native_capability("player_save_restored_publication_owner::publish_shop");
+}
+bool nevent_is_game_thread()
+{
+	unavailable_shop_native_capability("nevent_is_game_thread");
+}
+P_char find_character_by_runtime_id(uint64_t)
+{
+	unavailable_shop_native_capability("find_character_by_runtime_id");
+}
+const char *get_account_name_safe(P_char)
+{
+	unavailable_shop_native_capability("*get_account_name_safe");
+}
+bool economic_gameplay_authority::active()
+{
+	unavailable_shop_native_capability("economic_gameplay_authority::active");
+}
+bool economic_gameplay_authority::active_regular_sql()
+{
+	unavailable_shop_native_capability("economic_gameplay_authority::active_regular_sql");
+}
+bool economic_gameplay_authority::observe_shop_checkpoint(
+	uint32_t, std::string_view, uint8_t, economic_shop_checkpoint_projection *) noexcept
+{
+	unavailable_shop_native_capability("economic_gameplay_authority::observe_shop_checkpoint");
+}
+economic_accounting_error economic_gameplay_authority::prepare_shop_trade(critical_command *)
+{
+	unavailable_shop_native_capability("economic_gameplay_authority::prepare_shop_trade");
+}
+bool economic_shop_trade_admission_available() noexcept
+{
+	unavailable_shop_native_capability("economic_shop_trade_admission_available");
+}
+persistence_mode persistence_mode_get()
+{
+	unavailable_shop_native_capability("persistence_mode_get");
+}
+bool obj_capture_container_shell_weight(P_obj, int32_t *)
+{
+	unavailable_shop_native_capability("obj_capture_container_shell_weight");
+}
+bool obj_to_obj_shop_frozen_weight(P_obj, P_obj, const shop_trade_destination_weight &)
+{
+	unavailable_shop_native_capability("obj_to_obj_shop_frozen_weight");
+}
+bool shop_item_runtime_capture_keeper_literal(char_data *,
+					      std::vector<player_item_snapshot> *) noexcept
+{
+	unavailable_shop_native_capability("shop_item_runtime_capture_keeper_literal");
+}
+bool player_save_pipeline_restore_sql_shop_obligation(const critical_command &)
+{
+	unavailable_shop_native_capability("player_save_pipeline_restore_sql_shop_obligation");
+}
+player_literal_inventory_state
+player_save_pipeline_shop_checkpoint_begin(P_char, P_obj, int, player_shop_checkpoint_token *)
+{
+	unavailable_shop_native_capability("player_save_pipeline_shop_checkpoint_begin");
+}
+player_literal_inventory_state
+player_save_pipeline_shop_checkpoint_poll(const player_shop_checkpoint_token &, P_char,
+					  player_shop_checkpoint_stage *)
+{
+	unavailable_shop_native_capability("player_save_pipeline_shop_checkpoint_poll");
+}
+bool player_save_pipeline_shop_checkpoint_hold(const player_shop_checkpoint_token &,
+					       const critical_operation_id &)
+{
+	unavailable_shop_native_capability("player_save_pipeline_shop_checkpoint_hold");
+}
+bool player_save_pipeline_shop_checkpoint_release(const player_shop_checkpoint_token &,
+						  const critical_operation_id &)
+{
+	unavailable_shop_native_capability("player_save_pipeline_shop_checkpoint_release");
+}
+bool player_save_pipeline_shop_checkpoint_cancel(const player_shop_checkpoint_token &)
+{
+	unavailable_shop_native_capability("player_save_pipeline_shop_checkpoint_cancel");
+}
+bool player_save_shop_checkpoint_owner::observe_held(const player_shop_checkpoint_token &, P_char,
+						     const critical_operation_id &,
+						     player_shop_checkpoint_stage *,
+						     std::vector<player_item_snapshot> *) noexcept
+{
+	unavailable_shop_native_capability("player_save_shop_checkpoint_owner::observe_held");
+}
+critical_submit_result
+player_save_shop_checkpoint_owner::submit_owned(const player_shop_checkpoint_token &,
+						critical_command, bool *) noexcept
+{
+	unavailable_shop_native_capability("player_save_shop_checkpoint_owner::submit_owned");
+}
+bool player_save_shop_checkpoint_owner::original_held_body(const player_shop_checkpoint_token &,
+							   const critical_command &,
+							   std::vector<player_item_snapshot> *,
+							   player_shop_checkpoint_stage *) noexcept
+{
+	unavailable_shop_native_capability("player_save_shop_checkpoint_owner::original_held_body");
+}
+shop_trade_preparation_state
+shop_trade_native_checkpoint_owner::attempt(const shop_trade_preparation_token &, P_char, P_char,
+					    P_obj, P_obj, P_obj) noexcept
+{
+	unavailable_shop_native_capability("shop_trade_native_checkpoint_owner::attempt");
+}
+bool shop_trade_world_witness_observe(const shop_trade_world_expectation &,
+				      shop_trade_world_witness *) noexcept
+{
+	unavailable_shop_native_capability("shop_trade_world_witness_observe");
+}
+bool shop_trade_world_player_values_supported(std::span<const player_item_snapshot>) noexcept
+{
+	unavailable_shop_native_capability("shop_trade_world_player_values_supported");
+}
+bool shop_trade_world_expected_player_order(const shop_trade_payload &, char_data *, obj_data *,
+					    obj_data *, const std::vector<player_item_snapshot> &,
+					    std::vector<player_item_snapshot> *) noexcept
+{
+	unavailable_shop_native_capability("shop_trade_world_expected_player_order");
+}
+bool shop_trade_world_expected_keeper_order(const shop_trade_payload &, char_data *, obj_data *,
+					    const std::vector<player_item_snapshot> &,
+					    std::vector<player_item_snapshot> *) noexcept
+{
+	unavailable_shop_native_capability("shop_trade_world_expected_keeper_order");
+}
+bool shop_trade_world_cold_observe(const shop_trade_world_cold_request &,
+				   shop_trade_world_cold_observation *) noexcept
+{
+	unavailable_shop_native_capability("shop_trade_world_cold_observe");
+}
+void publish_account_bank_balances_revision(const char *, int, const AccountBankBalances *,
+					    uint64_t)
+{
+	unavailable_shop_native_capability("publish_account_bank_balances_revision");
+}
+
+#ifndef __NO_MYSQL__
+critical_apply_result
+critical_command_repository_verify_shop_trade_in_transaction(MYSQL *,
+							     const critical_command &) noexcept
+{
+	unavailable_shop_native_capability(
+		"critical_command_repository_verify_shop_trade_in_transaction");
+}
+unsigned int economic_sql_shop_trade_lock_publication(
+	MYSQL *, const critical_command &, const critical_completion &,
+	std::span<const player_item_snapshot>, economic_sql_shop_trade_publication *) noexcept
+{
+	unavailable_shop_native_capability("economic_sql_shop_trade_lock_publication");
+}
+unsigned int
+economic_sql_shop_trade_lock_publication(MYSQL *, const critical_command &,
+					 const critical_completion &,
+					 economic_sql_shop_trade_publication *) noexcept
+{
+	unavailable_shop_native_capability("economic_sql_shop_trade_lock_publication");
+}
+unsigned int
+economic_sql_shop_trade_lock_never_admitted_before(MYSQL *, const critical_command &,
+						   economic_sql_shop_trade_publication *) noexcept
+{
+	unavailable_shop_native_capability("economic_sql_shop_trade_lock_never_admitted_before");
+}
+bool shop_trade_current_runtime_owner::publish(st_mysql *, const shop_trade_payload &,
+					       const economic_sql_shop_trade_publication &) noexcept
+{
+	unavailable_shop_native_capability("shop_trade_current_runtime_owner::publish");
+}
+const object_template *find_recovery_object_template(int) noexcept
+{
+	unavailable_shop_native_capability("*find_recovery_object_template");
+}
+bool shop_trade_original_item_stage::prepare(const object_template &, const player_item_snapshot &,
+					     shop_trade_original_item_stage &) noexcept
+{
+	unavailable_shop_native_capability("shop_trade_original_item_stage::prepare");
+}
+bool shop_trade_original_item_stage::reload_step(P_obj, const object_template &, unsigned int,
+						 shop_trade_original_reload_effect &) noexcept
+{
+	unavailable_shop_native_capability("shop_trade_original_item_stage::reload_step");
+}
+bool shop_trade_original_item_stage::proclib_probe(P_obj, const object_template &, size_t,
+						   shop_trade_original_reload_effect &) noexcept
+{
+	unavailable_shop_native_capability("shop_trade_original_item_stage::proclib_probe");
+}
+void shop_trade_original_item_stage::reset() noexcept
+{
+	unavailable_shop_native_capability("shop_trade_original_item_stage::reset");
+}
+shop_trade_original_item_stage::~shop_trade_original_item_stage() noexcept
+{
+	unavailable_shop_native_capability(
+		"shop_trade_original_item_stage::~shop_trade_original_item_stage");
+}
+shop_trade_original_item_stage::shop_trade_original_item_stage(
+	shop_trade_original_item_stage &&) noexcept
+{
+	unavailable_shop_native_capability(
+		"shop_trade_original_item_stage::shop_trade_original_item_stage");
+}
+shop_trade_original_item_stage &
+shop_trade_original_item_stage::operator=(shop_trade_original_item_stage &&) noexcept
+{
+	unavailable_shop_native_capability("&shop_trade_original_item_stage::operator=");
+}
+bool shop_trade_original_procedure_binding_stage::prepare(
+	std::span<const P_obj>, std::span<const player_item_snapshot>,
+	shop_trade_original_procedure_binding_stage &) noexcept
+{
+	unavailable_shop_native_capability("shop_trade_original_procedure_binding_stage::prepare");
+}
+bool shop_trade_original_procedure_binding_stage::valid() const noexcept
+{
+	unavailable_shop_native_capability("shop_trade_original_procedure_binding_stage::valid");
+}
+void shop_trade_original_procedure_binding_stage::commit_unchecked() noexcept
+{
+	unavailable_shop_native_capability(
+		"shop_trade_original_procedure_binding_stage::commit_unchecked");
+}
+proclib_recovery_chain_stage::~proclib_recovery_chain_stage() noexcept
+{
+	unavailable_shop_native_capability(
+		"proclib_recovery_chain_stage::~proclib_recovery_chain_stage");
+}
+proclib_recovery_chain_stage::proclib_recovery_chain_stage(proclib_recovery_chain_stage &&) noexcept
+{
+	unavailable_shop_native_capability(
+		"proclib_recovery_chain_stage::proclib_recovery_chain_stage");
+}
+proclib_recovery_chain_stage &
+proclib_recovery_chain_stage::operator=(proclib_recovery_chain_stage &&) noexcept
+{
+	unavailable_shop_native_capability("&proclib_recovery_chain_stage::operator=");
+}
+MYSQL *sql_pool_acquire(void)
+{
+	unavailable_shop_native_capability("*sql_pool_acquire");
+}
+void sql_pool_discard_connection(MYSQL *)
+{
+	unavailable_shop_native_capability("sql_pool_discard_connection");
+}
+void sql_pool_release(MYSQL *)
+{
+	unavailable_shop_native_capability("sql_pool_release");
+}
+bool sql_pool_retire_owned_connection(MYSQL *)
+{
+	unavailable_shop_native_capability("sql_pool_retire_owned_connection");
+}
+MYSQL *sql_pool_replace_connection(MYSQL *)
+{
+	unavailable_shop_native_capability("*sql_pool_replace_connection");
+}
+#endif
+
+shop_trade_payload_build_result shop_trade_runtime_build_accounted_payload(
+	P_char, P_char, P_obj, P_obj, P_obj, uint32_t, shop_trade_action, int64_t,
+	const player_shop_checkpoint_stage &, uint64_t, shop_trade_payload *)
+{
+	unavailable_shop_native_capability("shop_trade_runtime_build_accounted_payload");
+}
+bool shop_trade_runtime_object_matches_accounted_payload(P_obj, const shop_trade_payload &)
+{
+	unavailable_shop_native_capability("shop_trade_runtime_object_matches_accounted_payload");
+}
+
+// Unavailable original-runtime keeper root; this grants no native/world census authority.
+// The original v5 cases use their addressed room keeper; every cold capability aborts.
+P_char character_list = nullptr;
