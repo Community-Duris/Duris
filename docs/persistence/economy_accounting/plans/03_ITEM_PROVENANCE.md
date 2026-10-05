@@ -1,5 +1,16 @@
 # Plan 3: item supply, custody, and provenance
 
+## Native quest borrowed item persistence integrated — 2026-10-05
+
+[The explicit SQL/flat participants](../NATIVE_QUEST_PARTICIPANT_INTEGRATION_2026-10-05.md) preserve ordered native stock and
+existing cash/identity while mutating custody under the original borrowed root.
+Review corrected omitted-child cascade, forest/readback bounds and transient
+failure classification; focused recipe closure preserves original test policy.
+Source review/inverses/format/AST/syntax/pins/census only; no native execution.
+Original birth/source/lifecycle, admitted atomic root, producers/publication/
+restore/ACK and major-plan qualification remain open. Inactive behavior and
+safety gates stay; R1–R8, release and activation remain BLOCKED.
+
 ## Native quest identity and final-giver contracts integrated — 2026-10-05
 
 [The source prerequisite](../NATIVE_QUEST_CONTRACT_INTEGRATION_2026-10-05.md) adds explicit native owner/key/v11 item contexts,

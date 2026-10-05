@@ -10,6 +10,7 @@ import shutil
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 sources = [
+  rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'), 'tests/async/native_quest_world_unavailable.cpp',
   "tests/async/flatfile_craft_conservation_harness.cpp",
   rel("flatfile_item_repository.c"),
   rel("flatfile_item_accounting_reference.c"),

@@ -14,6 +14,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
     temporary_path = pathlib.Path(temporary)
     binary = temporary_path / "flatfile_character_delete_test"
     sources = [
+        rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'),
         "tests/async/flatfile_character_delete_harness.cpp",
         rel("flatfile_account_delete.c"),
         rel("flatfile_account_repository.c"),

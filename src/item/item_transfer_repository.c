@@ -1,4 +1,6 @@
 #include "persistence/death_recovery_visibility.h"
+#include "persistence/quest_mobile_native_sql.h"
+#include "persistence/shop_item_runtime_payload.h"
 #include "item/item_transfer_repository.h"
 #include "item/craft_pouch_mutation.h"
 #include "item/craft_recipe_continuation.h"
@@ -3275,3 +3277,473 @@ bool item_transfer_repository_revoke_roots_preserving_children(MYSQL *connection
 	}
 	return true;
 }
+
+#ifndef __NO_MYSQL__
+namespace
+{
+bool native_lock_owner_custody(MYSQL *connection, const item_owner_identity &owner,
+			       const item_owner_identity &other, size_t maximum_items,
+			       std::span<const player_item_snapshot> other_items,
+			       std::vector<current_item> *items)
+{
+	if (!items || !maximum_items || maximum_items > 2 * PLAYER_SNAPSHOT_MAX_OBJECTS ||
+	    other_items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+		return false;
+	std::string ordinary_policy;
+	if (other.type == item_owner_type::player)
+	{
+		ordinary_policy = " AND (coin_payload IS NULL";
+		if (!other_items.empty())
+		{
+			ordinary_policy += " OR item_uid IN(";
+			for (size_t i = 0; i < other_items.size(); ++i)
+				ordinary_policy +=
+					(i ? "," : "") + std::to_string(other_items[i].object_uid);
+			ordinary_policy += ")";
+		}
+		ordinary_policy += ")";
+	}
+	const std::string SQL =
+		"SELECT item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,"
+		"item_revision,vnum,state,equipment_slot FROM item_current_owner WHERE (owner_type=? AND owner_id=? "
+		"AND owner_context_id=?) OR (owner_type=? AND owner_id=? AND owner_context_id=?" +
+		ordinary_policy + ") ORDER BY item_uid LIMIT " + std::to_string(maximum_items + 1) +
+		" FOR UPDATE";
+	items->clear();
+	try
+	{
+		items->reserve(maximum_items + 1);
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	MYSQL_STMT *statement = nullptr;
+	if (!prepare(&statement, connection, SQL.c_str()))
+		return false;
+	uint8_t owner_type = static_cast<uint8_t>(owner.type);
+	MYSQL_BIND parameters[6] = {};
+	parameters[0].buffer_type = MYSQL_TYPE_TINY;
+	parameters[0].buffer = &owner_type;
+	parameters[0].is_unsigned = true;
+	parameters[1].buffer_type = MYSQL_TYPE_LONGLONG;
+	parameters[1].buffer = const_cast<uint64_t *>(&owner.id);
+	parameters[1].is_unsigned = true;
+	parameters[2].buffer_type = MYSQL_TYPE_LONGLONG;
+	parameters[2].buffer = const_cast<uint64_t *>(&owner.context_id);
+	parameters[2].is_unsigned = true;
+	uint8_t other_type = static_cast<uint8_t>(other.type);
+	parameters[3].buffer_type = MYSQL_TYPE_TINY;
+	parameters[3].buffer = &other_type;
+	parameters[3].is_unsigned = true;
+	parameters[4].buffer_type = MYSQL_TYPE_LONGLONG;
+	parameters[4].buffer = const_cast<uint64_t *>(&other.id);
+	parameters[4].is_unsigned = true;
+	parameters[5].buffer_type = MYSQL_TYPE_LONGLONG;
+	parameters[5].buffer = const_cast<uint64_t *>(&other.context_id);
+	parameters[5].is_unsigned = true;
+	if (mysql_stmt_bind_param(statement, parameters) != 0 ||
+	    mysql_stmt_execute(statement) != 0 || mysql_stmt_store_result(statement) != 0)
+		return statement_ok(statement, false);
+	current_item item = {};
+	mysql_null_indicator parent_null = 0;
+	MYSQL_BIND output[10] = {};
+	output[0].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[0].buffer = &item.item_uid;
+	output[0].is_unsigned = true;
+	output[1].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[1].buffer = &item.root_item_uid;
+	output[1].is_unsigned = true;
+	output[2].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[2].buffer = &item.parent_item_uid;
+	output[2].is_unsigned = true;
+	output[2].is_null = &parent_null;
+	output[3].buffer_type = MYSQL_TYPE_TINY;
+	output[3].buffer = &item.owner_type;
+	output[3].is_unsigned = true;
+	output[4].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[4].buffer = &item.owner_id;
+	output[4].is_unsigned = true;
+	output[5].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[5].buffer = &item.owner_context_id;
+	output[5].is_unsigned = true;
+	output[6].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[6].buffer = &item.item_revision;
+	output[6].is_unsigned = true;
+	output[7].buffer_type = MYSQL_TYPE_LONG;
+	output[7].buffer = &item.vnum;
+	output[8].buffer_type = MYSQL_TYPE_TINY;
+	output[8].buffer = &item.state;
+	output[8].is_unsigned = true;
+	output[9].buffer_type = MYSQL_TYPE_SHORT;
+	output[9].buffer = &item.equipment_slot;
+	output[9].is_unsigned = true;
+	if (mysql_stmt_bind_result(statement, output) != 0)
+		return statement_ok(statement, false);
+	int fetched = 0;
+	while ((fetched = mysql_stmt_fetch(statement)) == 0)
+	{
+		item.parent_item_uid = parent_null ? 0 : item.parent_item_uid;
+		items->push_back(item);
+		if (items->size() > maximum_items)
+			break;
+		item = {};
+		parent_null = 0;
+	}
+	const bool complete = fetched == MYSQL_NO_DATA;
+	const bool within_limit = items->size() <= maximum_items;
+	if (!within_limit)
+		errno = EMSGSIZE;
+	return statement_ok(statement, complete && within_limit);
+}
+
+bool native_custody_matches(const quest_mobile_native_image &image,
+			    const std::vector<current_item> &custody)
+{
+	if (custody.size() != image.items.size())
+		return false;
+	std::vector<uint64_t> roots(image.items.size());
+	for (size_t i = 0; i < image.items.size(); ++i)
+	{
+		const auto &item = image.items[i];
+		const bool root = item.parent_index == PLAYER_SNAPSHOT_NO_PARENT;
+		roots[i] = root ? item.object_uid : roots[item.parent_index];
+		const auto row = std::lower_bound(custody.begin(), custody.end(), item.object_uid,
+						  [](const auto &entry, uint64_t uid)
+						  { return entry.item_uid < uid; });
+		if (row == custody.end() || row->item_uid != item.object_uid ||
+		    row->root_item_uid != roots[i] ||
+		    row->parent_item_uid !=
+			    (root ? 0 : image.items[item.parent_index].object_uid) ||
+		    row->owner_type != static_cast<uint8_t>(item_owner_type::native_mobile) ||
+		    row->owner_id != image.reference.mobile_instance_id || row->owner_context_id ||
+		    !row->item_revision || row->item_revision == UINT64_MAX ||
+		    row->vnum != item.vnum ||
+		    row->state != static_cast<uint8_t>(item_custody_state::active) ||
+		    row->equipment_slot != item.equipment_slot)
+			return false;
+	}
+	return true;
+}
+bool native_acceptance_player_tree(const item_transfer_payload &payload,
+				   std::span<const player_item_snapshot> full,
+				   const shop_item_runtime_image &physical,
+				   std::vector<uint64_t> *delete_ids)
+{
+	std::vector<player_item_snapshot> selected;
+	auto code = player_item_snapshot_list_decode(payload.item_blob.data(),
+						     payload.item_blob_size, &selected);
+	if (code != player_snapshot_codec_result::ok)
+	{
+		errno = code == player_snapshot_codec_result::allocation_failure ? ENOMEM : EILSEQ;
+		return false;
+	}
+	std::vector<player_item_snapshot> observed;
+	std::vector<int32_t> indexes(full.size(), PLAYER_SNAPSHOT_NO_PARENT);
+	std::unordered_set<uint64_t> uids;
+	for (size_t i = 0; i < payload.item_count; ++i)
+		uids.insert(payload.items[i].item_uid);
+	for (size_t i = 0; i < full.size(); ++i)
+	{
+		auto item = full[i];
+		const bool included = uids.count(item.object_uid) != 0;
+		if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT &&
+		    (item.parent_index < 0 || static_cast<size_t>(item.parent_index) >= i ||
+		     (uids.count(full[item.parent_index].object_uid) != 0) != included))
+		{
+			errno = ESTALE;
+			return false; // No omitted descendant may be removed by the SQL cascade.
+		}
+		if (!included)
+			continue;
+		if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+		{
+			if (item.parent_index < 0 || static_cast<size_t>(item.parent_index) >= i ||
+			    indexes[item.parent_index] == PLAYER_SNAPSHOT_NO_PARENT)
+				return false;
+			item.parent_index = indexes[item.parent_index];
+		}
+		indexes[i] = static_cast<int32_t>(observed.size());
+		observed.push_back(std::move(item));
+	}
+	std::vector<uint8_t> a, b;
+	code = player_item_snapshot_list_encode(observed, &a);
+	if (code == player_snapshot_codec_result::ok)
+		code = player_item_snapshot_list_encode(selected, &b);
+	if (code != player_snapshot_codec_result::ok || a != b)
+	{
+		errno = code == player_snapshot_codec_result::allocation_failure ? ENOMEM : ESTALE;
+		return false;
+	}
+	for (const auto &item : selected)
+	{
+		const auto row = physical.find(item.object_uid);
+		if (row == physical.end())
+			return false;
+		if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+			delete_ids->push_back(row->second.id);
+	}
+	return true;
+}
+}
+
+bool item_transfer_repository_execute_native_mobile(
+	MYSQL *connection, const critical_command &command,
+	std::span<const player_item_snapshot> original_player_items, item_transfer_result *result,
+	unsigned int *result_code, bool *mutation_applied, item_transfer_custody_delta *delta,
+	quest_mobile_native_image *after)
+{
+	if (!connection || !result || !result_code || !mutation_applied || !delta || !after)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	*mutation_applied = false;
+	*result_code = 0;
+	item_transfer_payload payload{};
+	if (command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION ||
+	    !id_is_nonzero(command.operation_id) ||
+	    !item_transfer_command_decode_payload(command, &payload) ||
+	    !item_transfer_native_mobile_shape_valid(payload))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	const bool acceptance = payload.native_mobile.action ==
+				item_native_mobile_action::acceptance;
+	if ((!acceptance && !original_player_items.empty()) ||
+	    original_player_items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	*result = { item_transfer_result_root(payload), payload.item_count, 0, 0, 0, 0 };
+	try
+	{
+		// First lock: original addressed lifetime. This read also refuses reconnect/IN_TRANS drift.
+		quest_mobile_native_sql_row native;
+		int code = quest_mobile_native_sql_lock(
+			connection, payload.native_mobile.reference.mobile_instance_id, &native);
+		if (code)
+		{
+			errno = code;
+			return false;
+		}
+		quest_mobile_native_image next;
+		if (!native.present)
+		{
+			*result_code = ESTALE;
+			return true;
+		}
+		const auto transformed = quest_mobile_native_item_transition(
+			native.image, payload, command.operation_id, &next);
+		if (transformed == player_snapshot_codec_result::allocation_failure)
+		{
+			errno = ENOMEM;
+			return false;
+		}
+		if (transformed != player_snapshot_codec_result::ok)
+		{
+			*result_code = transformed == player_snapshot_codec_result::limit_exceeded ?
+					       E2BIG :
+					       ESTALE;
+			return true;
+		}
+		uint64_t from_revision = 0, to_revision = 0;
+		if (owner_identity_less(payload.from_owner, payload.to_owner))
+		{
+			if (!lock_owner(connection, payload.from_owner, &from_revision) ||
+			    !lock_owner(connection, payload.to_owner, &to_revision))
+				return false;
+		}
+		else if (!lock_owner(connection, payload.to_owner, &to_revision) ||
+			 !lock_owner(connection, payload.from_owner, &from_revision))
+			return false;
+		result->from_owner_revision = from_revision;
+		result->to_owner_revision = to_revision;
+		if (from_revision != payload.expected_from_revision ||
+		    to_revision != payload.expected_to_revision ||
+		    (acceptance ? to_revision : from_revision) !=
+			    native.image.reference.stock_revision)
+		{
+			*result_code = ESTALE;
+			return true;
+		}
+		if (from_revision == UINT64_MAX || to_revision == UINT64_MAX)
+		{
+			*result_code = ERANGE;
+			return true;
+		}
+		const auto &native_owner = acceptance ? payload.to_owner : payload.from_owner;
+		std::vector<current_item> native_rows, current;
+		// One ascending UID cut across both participating source forests; never
+		// scan the destruction owner's unbounded historical tombstones.
+		if (!native_lock_owner_custody(connection, native_owner,
+					       acceptance ? payload.from_owner : native_owner,
+					       acceptance ? 2 * PLAYER_SNAPSHOT_MAX_OBJECTS :
+							    PLAYER_SNAPSHOT_MAX_OBJECTS,
+					       original_player_items, &current))
+			return false;
+		for (const auto &row : current)
+			if (row.owner_type == static_cast<uint8_t>(item_owner_type::native_mobile))
+				native_rows.push_back(row);
+		if (!native_custody_matches(native.image, native_rows))
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		std::sort(current.begin(), current.end(),
+			  [](const auto &a, const auto &b) { return a.item_uid < b.item_uid; });
+		std::vector<current_item> selected;
+		selected.reserve(payload.item_count);
+		for (size_t i = 0; i < payload.item_count; ++i)
+		{
+			const auto &expected = payload.items[i];
+			const auto row = std::lower_bound(current.begin(), current.end(),
+							  expected.item_uid,
+							  [](const auto &item, uint64_t uid)
+							  { return item.item_uid < uid; });
+			if (row == current.end() || row->item_uid != expected.item_uid ||
+			    row->root_item_uid != expected.root_item_uid ||
+			    row->parent_item_uid != expected.parent_item_uid ||
+			    row->item_revision != expected.expected_item_revision ||
+			    row->vnum != expected.vnum ||
+			    row->owner_type != static_cast<uint8_t>(payload.from_owner.type) ||
+			    row->owner_id != payload.from_owner.id ||
+			    row->owner_context_id != payload.from_owner.context_id ||
+			    row->state != static_cast<uint8_t>(item_custody_state::active))
+			{
+				*result_code = ESTALE;
+				return true;
+			}
+			selected.push_back(*row);
+		}
+		item_transfer_custody_delta effects;
+		if (!build_custody_delta(payload, selected, &effects))
+			return false;
+		shop_item_runtime_image physical;
+		std::vector<uint64_t> delete_ids;
+		if (acceptance)
+		{
+			if (!shop_item_runtime_lock_player_image(
+				    connection, static_cast<uint32_t>(payload.from_owner.id),
+				    original_player_items, &physical))
+				return false; // Preserve SQL/sidecar/allocation failure diagnostics.
+			if (!native_acceptance_player_tree(payload, original_player_items, physical,
+							   &delete_ids))
+				return false;
+		}
+		if (mysql_thread_id(connection) != native.original_session ||
+		    !(connection->server_status & SERVER_STATUS_IN_TRANS))
+		{
+			errno = ESTALE;
+			return false;
+		}
+		// Conservative attempt marker: even a failed first DML cannot claim a clean refusal.
+		*mutation_applied = true;
+		quest_mobile_native_sql_row verified;
+		code = quest_mobile_native_sql_apply_locked(connection, command.operation_id,
+							    native, next, &verified);
+		if (code)
+		{
+			errno = code;
+			return false;
+		}
+		for (size_t i = 0; i < payload.item_count; ++i)
+		{
+			uint64_t root = 0, parent = 0;
+			if (!item_transfer_target_topology(payload, payload.items[i].item_uid,
+							   &root, &parent) ||
+			    !update_item(connection, payload.items[i], root, parent,
+					 payload.to_owner, selected[i].item_revision,
+					 acceptance ? item_custody_state::active :
+						      item_custody_state::destroyed,
+					 0) ||
+			    !insert_ledger(connection, command, payload, i, 0,
+					   selected[i].item_revision + 1, from_revision + 1,
+					   to_revision + 1, selected[i].equipment_slot, 0))
+				return false;
+			result->max_item_revision =
+				std::max(result->max_item_revision, selected[i].item_revision + 1);
+		}
+		for (uint64_t id : delete_ids)
+			if (!run_sql(connection,
+				     "DELETE FROM player_items WHERE id=" + std::to_string(id) +
+					     " AND pid=" + std::to_string(payload.from_owner.id)) ||
+			    mysql_affected_rows(connection) != 1)
+			{
+				errno = EILSEQ;
+				return false;
+			}
+		if (!update_owner_revision(connection, payload.from_owner, from_revision) ||
+		    !update_owner_revision(connection, payload.to_owner, to_revision))
+			return false;
+		result->from_owner_revision = from_revision + 1;
+		result->to_owner_revision = to_revision + 1;
+		std::vector<current_item> current_native_after;
+		if (!native_lock_owner_custody(connection, native_owner, native_owner,
+					       PLAYER_SNAPSHOT_MAX_OBJECTS, {},
+					       &current_native_after))
+			return false; // Original read failure requires rollback, preserving its diagnostic.
+		if (!native_custody_matches(verified.image, current_native_after))
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		for (const auto &row : current_native_after)
+		{
+			const auto prior = std::lower_bound(current.begin(), current.end(),
+							    row.item_uid,
+							    [](const auto &item, uint64_t uid)
+							    { return item.item_uid < uid; });
+			if (prior == current.end() || prior->item_uid != row.item_uid)
+			{
+				errno = EILSEQ;
+				return false;
+			}
+			const auto moved_item = std::lower_bound(
+				payload.items.begin(), payload.items.begin() + payload.item_count,
+				row.item_uid,
+				[](const auto &item, uint64_t uid) { return item.item_uid < uid; });
+			const bool moved = moved_item !=
+						   payload.items.begin() + payload.item_count &&
+					   moved_item->item_uid == row.item_uid;
+			if (row.item_revision != prior->item_revision + (moved ? 1 : 0))
+			{
+				errno = EILSEQ;
+				return false;
+			}
+		}
+
+		if (mysql_thread_id(connection) != native.original_session ||
+		    !(connection->server_status & SERVER_STATUS_IN_TRANS))
+		{
+			errno = ESTALE;
+			return false;
+		}
+		*delta = std::move(effects);
+		*after = std::move(verified.image);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+}
+
+#else
+bool item_transfer_repository_execute_native_mobile(
+	MYSQL *, const critical_command &, std::span<const player_item_snapshot>,
+	item_transfer_result *, unsigned int *result_code, bool *mutation_applied,
+	item_transfer_custody_delta *, quest_mobile_native_image *)
+{
+	if (mutation_applied)
+		*mutation_applied = false;
+	if (result_code)
+		*result_code = ENOTSUP;
+	errno = ENOTSUP;
+	return false;
+}
+#endif

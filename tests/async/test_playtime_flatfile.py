@@ -71,6 +71,7 @@ int main(int argc, char **argv) {
 '''
 
 SOURCES = [
+    'quest_mobile_native.c', 'quest_mobile_native_flatfile.c',
     "flatfile_player_repository.c", "player_load_topology.c", "flatfile_identity_repository.c",
     "flatfile_item_repository.c", "coin_transfer_command.c", "flatfile_player_snapshot_file.c",
     "flatfile_corpse_repository.c", "flatfile_locker_repository.c", "flatfile_world_item_repository.c",

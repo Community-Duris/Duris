@@ -17,6 +17,7 @@ with tempfile.TemporaryDirectory(prefix='run-',dir=work) as temporary:
         '-Wl,--wrap=mysql_server_init,--wrap=mysql_thread_init','-pthread','-I'+str(ROOT/'src')]
     command+=shlex.split(subprocess.check_output(['mysql_config','--cflags'],text=True))
     command += [str(ROOT/name) for name in (
+        'src/world/quest_mobile_native.c', 'src/persistence/quest_mobile_native_sql.c',
         'tests/async/economic_accounting_sql_gate_test.cpp',
         'src/persistence/critical_command.c','src/persistence/economic_accounting_repository.c','src/persistence/economic_sql_bank_transaction.c','src/persistence/economic_sql_collector_transaction.c','src/economy/economic_currency_adapter.c','src/economy/economic_accounting_types.c','src/economy/economic_accounting_plan.c', 'src/economy/economic_source_event.c','src/economy/economic_accounting_intent.c','src/persistence/economic_sql_lifecycle_guard.c','src/persistence/critical_command_repository.c',
         'src/economy/currency_command.c','src/item/item_transfer_command.c', 'src/world/quest_mobile_native_reference.c', "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",'src/world/epic_command.c',

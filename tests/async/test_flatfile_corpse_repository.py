@@ -23,6 +23,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
     binary = temporary_path / "flatfile_corpse_test"
     compile_result = subprocess.run(
         [
+            rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'), 'tests/async/native_quest_world_unavailable.cpp',
             "g++",
             "-std=c++20",
             "-Wall",

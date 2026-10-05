@@ -12,6 +12,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-auction-") as temporary:
     temporary_path = pathlib.Path(temporary)
     binary = temporary_path / "flatfile_auction_test"
     sources = [
+        rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'), 'tests/async/native_quest_world_unavailable.cpp',
         "tests/async/flatfile_auction_repository_harness.cpp",
         rel("flatfile_auction_repository.c"),
         rel("flatfile_boon_repository.c"),
