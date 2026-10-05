@@ -1,5 +1,15 @@
 # Accounting implementation and qualification handoff
 
+## Original baseline qualification and narrow reader handoff — 2026-10-05
+
+[The retained original-owner evidence](PLAN1_BASELINE_NATIVE_QUALIFICATION_HANDOFF_2026-10-05.md) records both-engine genuineC05
+and same populated35→61 upgrade, plus private proposed-reader nativeaudit161cuts/
+161restorerefusals per engine. Original cases/flags/limits stay; complete capture
+remains false. The maintained SQL candidate build passes; flatfile is in progress.
+Native/schema61 installation and Plan5-owned exception-diff integration remain
+pending. Exact peer report-only imports retain canonical56 scope. Original full
+Plan1/R1–R8/coverage/release gates stay open; inactive behavior and activation stay.
+
 ## Retained SHOP fixture source linkage — 2026-10-05
 
 [The bounded component recipe repair](SHOP_RETENTION_FIXTURE_LINKAGE_2026-10-05.md) restores actual pure providers and
