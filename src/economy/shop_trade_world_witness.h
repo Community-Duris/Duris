@@ -2,6 +2,7 @@
 #define SHOP_TRADE_WORLD_WITNESS_H
 
 #include "player/player_snapshot.h"
+#include "economy/shop_trade_recovery_manifest.h"
 #include <span>
 
 struct char_data;
@@ -83,5 +84,57 @@ bool shop_trade_world_expected_keeper_order(const shop_trade_payload &, char_dat
 					    obj_data *selected,
 					    const std::vector<player_item_snapshot> &values,
 					    std::vector<player_item_snapshot> *output) noexcept;
+
+// Original decoded v8 values and current native forests are expectations only.
+// The observer neither authenticates them nor rebinds/adopts a loaded body.
+struct shop_trade_world_cold_request
+{
+	const shop_trade_payload *original = nullptr;
+	std::span<const player_item_snapshot> player_items;
+	std::span<const player_item_snapshot> keeper_items;
+	std::span<const shop_trade_world_uid_expectation> uid_locations;
+};
+struct shop_trade_world_cold_observation
+{
+	char_data *actor = nullptr;
+	char_data *keeper = nullptr;
+	uint64_t actor_runtime_id = 0;
+	uint64_t keeper_runtime_id = 0;
+	bool actor_present = false;
+	bool keeper_present = false;
+	// A disconnected body is present, but its account identity is unavailable.
+	bool actor_account_available = false;
+	bool actor_account_matched = false;
+	bool player_current_match = false;
+	bool keeper_current_match = false;
+	bool uid_locations_current_match = false;
+	bool target_present = false;
+	size_t player_physical_item_count = 0;
+	size_t keeper_physical_item_count = 0;
+	std::vector<player_item_snapshot> player_items;
+	std::vector<player_item_snapshot> keeper_items;
+	// Only the original target_parent_item_uid, under the audited actor.
+	std::vector<player_item_snapshot> target_items;
+	// Original selected tree if physically held by either addressed body or
+	// exactly detached. This is an observed literal, never a fabricated BEFORE.
+	std::vector<player_item_snapshot> selected_items;
+	// Actual role-specific bindings; absent bodies leave absent bindings, while
+	// present-empty bodies have canonical empty bindings. Caller compares these
+	// with the immutable original manifest before deciding any publication.
+	shop_trade_recovery_manifest observed_bindings;
+	// Request order, nullptr means globally absent. Never retain these pointers.
+	std::vector<obj_data *> objects;
+};
+// Pure bounded game-thread observation, strong output. True can report a valid
+// BEFORE placement with current_match=false, or a truly absent owner body.
+// Explicit location::absent still requires complete global UID absence.
+// Malformed/aliased/foreign graphs, identity conflict, codec/budget/allocation
+// refusal return false. No SQL, native/runtime authority, mutation or ACK.
+// Player strings use saved policy plus the original selected literal subtree
+// only when actually on the actor; keeper and optional target are literal.
+// Account-unavailable, transient runtime IDs and value bindings grant no new
+// authority. Reobserve every pointer and graph after native callbacks.
+bool shop_trade_world_cold_observe(const shop_trade_world_cold_request &,
+				   shop_trade_world_cold_observation *) noexcept;
 
 #endif

@@ -1,5 +1,15 @@
 # Plan 4: priced and compound gameplay domains
 
+## Original cold SHOP world observation integrated — 2026-10-05
+
+[The pure sibling](../SHOP_COLD_WORLD_OBSERVATION_2026-10-05.md) records unique addressed-body presence, account availability,
+complete physical forests, current mismatches and actual original-role bindings.
+Independent review corrected stale foreign shop bindings that could disguise an
+unresolved keeper as absent. Existing live source is byte-exact; no native/SQL,
+rebind, mutation or ACK authority is added. Source review/format/pins/census only;
+original replay/publication/ACK, flat parity and major-plan qualification remain
+open. Accounting stays inactive; R1–R8, release and activation remain BLOCKED.
+
 ## SQL SHOP missing revision cache corrected — 2026-10-05
 
 [The private owner fix](../SHOP_SQL_REVISION_CACHE_2026-10-05.md) initializes a missing runtime revision only from

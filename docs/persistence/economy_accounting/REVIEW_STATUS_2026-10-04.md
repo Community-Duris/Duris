@@ -1,5 +1,15 @@
 # Accounting review status — 2026-10-04
 
+## Original cold SHOP world observation integrated — 2026-10-05
+
+[The pure sibling](SHOP_COLD_WORLD_OBSERVATION_2026-10-05.md) records unique addressed-body presence, account availability,
+complete physical forests, current mismatches and actual original-role bindings.
+Independent review corrected stale foreign shop bindings that could disguise an
+unresolved keeper as absent. Existing live source is byte-exact; no native/SQL,
+rebind, mutation or ACK authority is added. Source review/format/pins/census only;
+original replay/publication/ACK, flat parity and major-plan qualification remain
+open. Accounting stays inactive; R1–R8, release and activation remain BLOCKED.
+
 ## Native quest identity and final-giver contracts integrated — 2026-10-05
 
 [The source prerequisite](NATIVE_QUEST_CONTRACT_INTEGRATION_2026-10-05.md) adds explicit native owner/key/v11 item contexts,
