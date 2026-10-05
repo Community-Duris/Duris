@@ -198,7 +198,8 @@ at limit zero, without rewriting the supplied snapshot.
 
 The SQL opening-origin reader also contains EAB2 position and forest decoder
 refusals within its `OriginError` boundary, using the fixed
-`invalid EAB2 item position` diagnostic. A malformed selected book refuses
+`EAB1 committed root mismatch` diagnostic used by original baseline qualification.
+A malformed selected book refuses
 capture and still rolls back and closes the cursor. A malformed retained-epoch
 book cannot authenticate a baseline claim; the existing claim consumer leaves
 its witness unbound for reconciliation. Neither path repairs or reseals the

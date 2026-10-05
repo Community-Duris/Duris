@@ -134,14 +134,14 @@ def decode_witness(row: dict, lineage: bytes, epoch: bytes, opening: bytes) -> t
             try:
                 positions[uid] = position(blob[offset + 8:offset + 64])
             except EvidenceError as error:
-                raise OriginError("invalid EAB2 item position") from error
+                raise OriginError("EAB1 committed root mismatch") from error
             items[-1]["equipment_slot"] = positions[uid][-1]
         offset += stride
     if version == 2:
         try:
             forest(positions)
         except EvidenceError as error:
-            raise OriginError("invalid EAB2 item position") from error
+            raise OriginError("EAB1 committed root mismatch") from error
     return holdings, items
 
 

@@ -885,7 +885,7 @@ class BaselineVersionTests(unittest.TestCase):
         for row in damaged:
             with self.subTest(witness_digest=row["witness_digest"].hex()):
                 before = copy.deepcopy(row)
-                with self.assertRaisesRegex(OriginError, "invalid EAB2 item position"):
+                with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
                     decode_witness(row, LINEAGE, EPOCH, OPENING)
                 self.read(row, False)
                 claims = [{"operation_reason": 38, "operation_id": OP.hex(),
@@ -1238,7 +1238,7 @@ class NativeSQLOriginTests(unittest.TestCase):
 
                             cursor.fetchall.side_effect = projected_rows
                             with self.subTest(engine=engine, label=label, exporter=exporter.__name__):
-                                with self.assertRaisesRegex(OriginError, "invalid EAB2 item position"):
+                                with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
                                     exporter.capture(connection, blob[16:32], blob[32:48])
                             connection.rollback.assert_called_once_with()
                             cursor.close.assert_called_once_with()
@@ -1246,7 +1246,7 @@ class NativeSQLOriginTests(unittest.TestCase):
                                                 for call in cursor.execute.call_args_list))
                             self.assertEqual(database_rows(), before)
                             observations.append(dict(label=label, exporter=exporter.__name__,
-                                refused="invalid EAB2 item position", rollback_calls=1, cursor_closed=True,
+                                refused="EAB1 committed root mismatch", rollback_calls=1, cursor_closed=True,
                                 read_only=True, database_unchanged=True, negative_projection=True))
                     self.assertEqual(len(observations), 16)
                     (candidate/"position-refusals.json").write_text(json.dumps(observations,indent=2)+'\n')
