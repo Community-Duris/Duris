@@ -1,5 +1,16 @@
 # Double-entry economy: remaining requirements
 
+## Baseline equipment/schema61 source closure reviewed — 2026-10-05
+
+[The primary/Plan5 interface](BASELINE_EQUIPMENT_SCHEMA61_SOURCE_HANDOFF_2026-10-05.md) fixes the versioned equipment contract and
+current61-head consumer handoff while preserving historicalEAB1/0056 cuts.
+Private native/schema compositions pass independent source review;28 schema
+inputs have exact inverses/checksums/heads and matching bounded metadata readers.
+Unmeasured engine fingerprints remain failclosed; candidates are not installed.
+Actual both-engine sealing, independent EAB2 readers and original Plan1 native
+qualification remain required. This is source closure, not completed acceptance;
+inactive behavior and all original R1–R8/release gates stay.
+
 ## Original cold SHOP publication owner integrated — 2026-10-05
 
 [The reviewed SQL recovery owner](SHOP_ORIGINAL_COLD_PUBLICATION_INTEGRATION_2026-10-05.md) retains the actual original command,

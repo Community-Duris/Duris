@@ -1,5 +1,16 @@
 # Plan 5: independent audit, lifecycle, and release qualification
 
+## Baseline equipment/schema61 source closure reviewed — 2026-10-05
+
+[The primary/Plan5 interface](../BASELINE_EQUIPMENT_SCHEMA61_SOURCE_HANDOFF_2026-10-05.md) fixes the versioned equipment contract and
+current61-head consumer handoff while preserving historicalEAB1/0056 cuts.
+Private native/schema compositions pass independent source review;28 schema
+inputs have exact inverses/checksums/heads and matching bounded metadata readers.
+Unmeasured engine fingerprints remain failclosed; candidates are not installed.
+Actual both-engine sealing, independent EAB2 readers and original Plan1 native
+qualification remain required. This is source closure, not completed acceptance;
+inactive behavior and all original R1–R8/release gates stay.
+
 ## Original-plan audit repair and central integration — 2026-10-05
 
 [The exact Plan5 closure](../PLAN5_ORIGINAL_PLAN_AUDIT_INTEGRATION_2026-10-05.md) resolves the saved integer-representation import
