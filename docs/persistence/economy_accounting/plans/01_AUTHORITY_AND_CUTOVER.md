@@ -1,5 +1,16 @@
 # Plan 1: authority, admission, and cutover
 
+## Baseline equipment defect and versioned repair handoff — 2026-10-05
+
+[The exact peer evidence and reviewed native interface](../BASELINE_EQUIPMENT_V2_SOURCE_HANDOFF_2026-10-05.md) establish that
+EAB1 loses an accepted equipment slot and cannot regenerate its original plan.
+Original baseline/replay acceptance is reopened; earlier results remain their
+recorded historical scope. Private EAB2 retains the full position and both
+equipment fingerprints; five core inputs and three native fixture updates pass
+source review/inverse/format only, with no execution or installation. Primary
+schema/compatibility and Plan5 independent readers meet on that exact contract.
+Current inactive behavior stays; R1–R8, release and activation remain BLOCKED.
+
 Start from add-double-entry HEAD 49af585c4. This plan can run while Plans 2-5
 are unfinished because it keeps the epoch inactive and uses isolated fixtures.
 It owns the common coordinator, SQL/flatfile transaction boundary, lifecycle
