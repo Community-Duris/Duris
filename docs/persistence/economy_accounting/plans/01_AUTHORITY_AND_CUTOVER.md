@@ -1,5 +1,26 @@
 # Plan 1: authority, admission, and cutover
 
+## Original baseline qualification and narrow reader handoff — 2026-10-05
+
+[The retained original-owner evidence](../PLAN1_BASELINE_NATIVE_QUALIFICATION_HANDOFF_2026-10-05.md) records both-engine genuineC05
+and same populated35→61 upgrade, plus private proposed-reader nativeaudit161cuts/
+161restorerefusals per engine. Original cases/flags/limits stay; complete capture
+remains false. The maintained SQL candidate build passes; flatfile is in progress.
+Native/schema61 installation and Plan5-owned exception-diff integration remain
+pending. Exact peer report-only imports retain canonical56 scope. Original full
+Plan1/R1–R8/coverage/release gates stay open; inactive behavior and activation stay.
+
+## Flat baseline marker recovery fixture verified — 2026-10-05
+
+[The exact marker fixture correction](../FLAT_BASELINE_MARKER_RECOVERY_FIXTURE_2026-10-05.md) passes the unchanged native owner
+with ASan/UBSan: all19 initialization and20 batch after-image recovery cuts,
+626 staging/421 lookup allocation failures and original replay/corruption limits.
+Production initialization/retry behavior is unchanged. Both original baseline
+component owners have now passed separately on the frozen EAB2/schema61 candidate;
+pending native/schema sources are not installed here. Maintained builds, independent
+audit and historical C05/populated upgrade remain open. Plan1/R1–R8/coverage/release
+are incomplete; inactive behavior and activation gates stay.
+
 ## Baseline component collector linkage verified — 2026-10-05
 
 [The real-provider recipe repair](../BASELINE_COMPONENT_COLLECTOR_LINKAGE_2026-10-05.md) passes original SQL and client-free

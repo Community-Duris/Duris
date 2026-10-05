@@ -106,13 +106,21 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
             manifest.runner_version) for step in manifest.migrations]
         for complete in (True, False):
             executor = FakeExecutor(rows if complete else rows[:-1])
-            executor.sql = mock.Mock(return_value="0")
+            baseline_tables_query = (
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+                "AND ENGINE='InnoDB' AND table_name IN ('economic_baseline_control',"
+                "'economic_baseline_witness','economic_baseline_reservation');")
+            def empty_restore_sql(query):
+                self.assertTrue(query.startswith("SELECT "))
+                return "3" if query == baseline_tables_query else "0"
+            executor.sql = mock.Mock(side_effect=empty_restore_sql)
             with self.subTest(complete=complete), mock.patch.dict(os.environ, {
                     "DB_NAME": "duris_restore", "DB_SOCKET": "/tmp/disposable.sock"}), \
                     mock.patch.object(runner, "MysqlExecutor", return_value=executor):
                 if complete:
                     restore_qualifier.main()
                     self.assertGreater(executor.sql.call_count, 0)
+                    self.assertIn(mock.call(baseline_tables_query), executor.sql.call_args_list)
                 else:
                     with self.assertRaisesRegex(RuntimeError, "incomplete_or_unknown"):
                         restore_qualifier.main()

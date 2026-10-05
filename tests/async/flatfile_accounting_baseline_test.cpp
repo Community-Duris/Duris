@@ -165,7 +165,11 @@ struct fixture
 		ops changes;
 		assert(access_store::initialize(root, lock, id(1), id(value), opening(), id(97),
 						&changes, nullptr) == status::ok);
-		assert(changes.size() == 17);
+		// The complete empty book and its authority-bound marker publish together.
+		assert(changes.size() == 19);
+		for (const auto *name : { "epochs.eae", "authority.eal" })
+			assert(std::count_if(changes.begin(), changes.end(), [name](const auto &op)
+					     { return op.filename == name; }) == 1);
 		commit(changes);
 	}
 	void setup(bool book = true)
@@ -574,7 +578,7 @@ void crashes(const fs::path &root, bool initialization)
 	}
 	auto prepared = prepare(batch());
 	auto cmd = command(*prepared);
-	const int count = initialization ? 17 : 20;
+	const int count = initialization ? 19 : 20;
 	for (int boundary = -1; boundary <= count; ++boundary)
 	{
 		auto target = root / ("boundary-" + std::to_string(boundary));
@@ -629,9 +633,10 @@ void crashes(const fs::path &root, bool initialization)
 			if (boundary < 0)
 				f.initialize();
 			else
-				assert(access_store::initialize(f.root, f.lock, id(1), id(2),
-								opening(), id(97), &changes,
-								nullptr) == status::conflict);
+				assert(access_store::initialize(
+					       f.root, f.lock, id(1), id(2), opening(), id(97),
+					       &changes, nullptr) == status::already_exists &&
+				       changes.empty());
 			assert(access_store::stage(f.root, f.lock, cmd, *prepared, &changes,
 						   nullptr) == status::ok);
 			f.commit(changes);
