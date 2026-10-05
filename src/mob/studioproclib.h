@@ -20,6 +20,8 @@
 
 #include "core/structs.h"
 #include <cstddef>
+#include <span>
+#include <vector>
 
 char *proclibobj_parse_sayresponse(char *argument);
 int proclibobj_sayresponse(P_obj obj, P_char ch, int cmd, char *argument);
@@ -37,6 +39,41 @@ int proclib_obj_cmd_bridge(P_obj obj, P_char ch, int cmd, char *argument);
    bridge can call it first instead of the vnum having to choose between
    its existing proc and its instance proclibs. */
 void proclib_chain_install(int rnum, int (*prev)(P_obj, P_char, int, char *));
+
+// Value-only eligibility for original saved post-parse descriptions. No parser,
+// special callback, description/flag mutation, binding or periodic scheduling.
+bool proclib_saved_binding_eligible(P_obj, bool *eligible) noexcept;
+
+class shop_trade_original_procedure_binding_stage;
+// Private allocation/chain bookkeeping capability, never SQL/native authority.
+// Only the original cold binding owner may prepare/validate/commit its batch.
+class proclib_recovery_chain_stage
+{
+    public:
+	proclib_recovery_chain_stage() noexcept = default;
+	~proclib_recovery_chain_stage() noexcept;
+	proclib_recovery_chain_stage(proclib_recovery_chain_stage &&) noexcept;
+	proclib_recovery_chain_stage &operator=(proclib_recovery_chain_stage &&) noexcept;
+	proclib_recovery_chain_stage(const proclib_recovery_chain_stage &) = delete;
+	proclib_recovery_chain_stage &operator=(const proclib_recovery_chain_stage &) = delete;
+
+    private:
+	friend class shop_trade_original_procedure_binding_stage;
+	struct request
+	{
+		int rnum;
+		obj_proc_type previous;
+	};
+	static bool prepare(std::span<const request>, proclib_recovery_chain_stage &) noexcept;
+	static bool predecessor_matches(int, obj_proc_type) noexcept;
+	bool valid() const noexcept;
+	void commit_unchecked() noexcept;
+	void reset() noexcept;
+	void *allocation_ = nullptr, *expected_ = nullptr;
+	int expected_top_ = 0, expected_cap_ = 0, next_top_ = 0, next_cap_ = 0;
+	bool prepared_ = false;
+	std::vector<request> requests_;
+};
 
 // Probe one already-restored saved description through the existing registry.
 // No parameter parser, description mutation, template binding or event schedule.
