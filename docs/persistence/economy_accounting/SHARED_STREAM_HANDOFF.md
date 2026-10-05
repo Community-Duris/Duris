@@ -1,5 +1,17 @@
 # Accounting implementation and qualification handoff
 
+## Shop recovery binding foundation and parallel NPC schema — 2026-10-05
+
+[Canonical recovery bindings and producer preparation](SHOP_RECOVERY_BINDING_SOURCE_2026-10-05.md)
+integrates the independently reviewed pure forest-binding codecs and maintained
+object registration. The private next shop command retains ordered BEFORE/AFTER
+player/keeper bindings within existing journal limits; its producer also checks
+the keeper's native budget and all physical player items, including omitted
+NORENT. Private NPC migration 0060 extends the three existing owner-type ranges
+for native-mobile custody. Source/format/pins/inventory checks only; command,
+producer, coherent schema chain, cold SQL/replay/publication, major-plan tests
+and R1–R8 acceptance remain unfinished. Existing inactive behavior and gates stay.
+
 ## Private shop weight/retry and parallel NPC checkpoint — 2026-10-05
 
 [Original destination weight and complete prospective inventory](SHOP_DESTINATION_WEIGHT_SOURCE_CHECKPOINT_2026-10-05.md)

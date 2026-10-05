@@ -1,5 +1,13 @@
 # Plan 3: item supply, custody, and provenance
 
+## Native-mobile owner schema preparation — 2026-10-05
+
+The [current shared handoff](../SHOP_RECOVERY_BINDING_SOURCE_2026-10-05.md)
+records private 0060's exact three CHECK-range extensions to owner type 12.
+Its unchanged-column/row and partial-retry source contract is reviewed; coherent
+0057–0060 integration, measured engine metadata and native birth/custody/quest
+consumers remain open. No engine execution or Plan 3 qualification is claimed.
+
 ## Integrated NPC flat bundle preparation — 2026-10-05
 
 [Canonical flat image read and exact-before preparation](../QUEST_MOBILE_FLAT_SOURCE_2026-10-05.md)
