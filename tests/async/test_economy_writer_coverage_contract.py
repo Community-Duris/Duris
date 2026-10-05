@@ -179,7 +179,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
             self.source_site("src/cmd/actobj.c", "int remove_item(",
                              "item_publication", "obj_to_char_checked(unequip_char(ch, position), ch)")[:2]:
                 "item.equipment_remove",
-            self.source_site("src/economy/shop.c", "static bool shop_trade_publish_physical(",
+            self.source_site("src/economy/shop.c", "static bool shop_trade_publish_physical_impl(",
                              "item_publication", "obj_to_char_checked(object, buying ? ch : keeper)")[:2]:
                 "shop.buy_produced",
             self.source_site("src/world/handler.c", "obj_to_char_result obj_to_char_checked(",
@@ -648,10 +648,14 @@ class SplitEconomyActivationContract(unittest.TestCase):
                                                  "DELETE FROM saved_items WHERE id=%d AND item_key=")],
                          {"recovery.saved_sql"})
         shop_path = "src/persistence/economic_sql_shop_trade_transaction.c"
-        for line in (887, 907, 940):
-            self.assertEqual(owners[(shop_path, line, "sql_economy")],
+        for expression in ("INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,",
+                           "UPDATE item_current_owner SET root_item_uid=",
+                           "INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,root_item_uid,"):
+            self.assertEqual(owners[self.source_site(shop_path, "void apply_item_events(",
+                                                     "sql_economy", expression)],
                              {"shop.sql_native_item_events"})
-        self.assertEqual(owners[(shop_path, 1074, "sql_economy")],
+        self.assertEqual(owners[self.source_site(shop_path, "void apply_native_trade(",
+                                                "sql_economy", "UPDATE account_banks SET bank_revision=")],
                          {"shop.sql_native_balances"})
         for route_id in ("shop.sql_native_item_events", "shop.sql_native_balances"):
             route = self.routes[route_id]
