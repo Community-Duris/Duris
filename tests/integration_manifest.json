@@ -2212,6 +2212,85 @@
       "schema_prefix": "economic_schema_test_se_",
       "schema_identity_bytes": 4,
       "migrated": true
+    },
+    {
+      "id": "plan5_child_identity_pure",
+      "path": "tests/async/test_plan5_child_identity.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "ChildIdentityTests.test_valid_chain_is_independent_of_row_order_and_limits",
+        "ChildIdentityTests.test_malformed_child_ids_do_not_inherit_string_validity",
+        "ChildIdentityTests.test_derivation_binds_original_parent_domain_and_discriminator",
+        "ChildIdentityTests.test_child_derivation_metadata_requires_native_types_and_ranges",
+        "ChildIdentityTests.test_missing_child_identity_evidence_is_not_a_verified_legacy_child",
+        "ChildIdentityTests.test_duplicate_child_identity_is_separate_from_child_slot",
+        "ChildIdentityTests.test_duplicate_identity_across_roots_is_not_hidden_by_root_filter",
+        "ChildIdentityTests.test_cli_mismatch_is_global_bounded_and_read_only"
+      ],
+      "arguments": [
+        "ChildIdentityTests",
+        "-v"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_plan5_child_identity.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "plan5_child_identity_native",
+      "path": "tests/async/run_plan5_child_identity_matrix.py",
+      "provider": "self-sql",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "NativeChildIdentityTests.test_native_child_plan_and_sql_cuts"
+      ],
+      "arguments": [
+        "NativeChildIdentityTests",
+        "-v"
+      ],
+      "environment": {
+        "DURIS_PLAN5_CHILD_IDENTITY_NATIVE": "1",
+        "DURIS_PLAN5_CHILD_IDENTITY_ARTIFACTS": "bin/cid-{token}/n"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_plan5_child_identity.py"
+      ],
+      "required_markers": []
+    },
+    {
+      "id": "plan5_child_identity_budget",
+      "path": "tests/async/test_plan5_child_identity.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "ChildIdentityBudgetTests.test_near_limit_child_snapshot_is_bounded_and_limit_invariant"
+      ],
+      "arguments": [
+        "ChildIdentityBudgetTests",
+        "-v"
+      ],
+      "environment": {
+        "DURIS_PLAN5_CHILD_IDENTITY_BUDGET": "1",
+        "DURIS_PLAN5_CHILD_IDENTITY_BUDGET_ARTIFACTS": "{evidence}/budget"
+      },
+      "timeout_seconds": 900,
+      "covers": [
+        "test_plan5_child_identity.py"
+      ],
+      "required_markers": []
     }
   ]
 }

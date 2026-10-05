@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## Independent child identity audit integrated — 2026-10-05
+
+[The exact peer fix and class-specific registration](PLAN5_CHILD_IDENTITY_INTEGRATION_2026-10-05.md)
+detect malformed, wrong-derived or reused child IDs from original stored facts.
+The frozen peer report records 220 selected passing methods with component-only
+scope. Central inventory now has 915 owners and 95 matrix rows; all 92 earlier
+rows and engine policy are preserved. Local AST/inventory/source checks only;
+major-plan execution, complete original-plan/receipt authentication, actual
+writers/gameplay/recovery and R1–R8 remain open. No activation or safety change.
+
 ## Reviewed cold SHOP original SQL images — 2026-10-05
 
 [The frozen four-file source slice](SHOP_COLD_SQL_SOURCE_CHECKPOINT_2026-10-05.md)

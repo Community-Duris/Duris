@@ -226,7 +226,19 @@ that a present source identity describes the correct gameplay event.
 - `effects`: operation/account index, account key, before/after four-vectors and
   native revisions. `postings`: operation/line/account/child indexes, signed
   four-vector delta and checked copper value. `children`: root/child indexes,
-  child operation ID and parent index.
+  child operation ID and parent index, plus the original persisted `domain_id`
+  (nonzero uint32), `discriminator` (uint64), `relationship` (integer 1), and
+  explicit nullable `receipt_operation_id`. The independent reader derives the
+  child ID as the first 16 bytes of SHA-256 over the original parent ID followed
+  by the domain and discriminator in little-endian order. A nonzero parent
+  index names an earlier child of the same root. Child IDs must be canonical,
+  nonzero, distinct from their root and unique throughout the captured rows.
+  A supplied receipt ID must equal its child. Missing derivation/receipt fields
+  produce `missing_child_identity_evidence`; malformed facts produce
+  `invalid_child_link`; a derived disagreement produces
+  `child_identity_mismatch`; reused IDs produce `duplicate_child_operation`.
+  Older child projections are unverified, never silently completed from the
+  ID. These checks do not authenticate a child receipt's command or status.
 - `item_references`: root/event index, UID, after revision, exact legacy
   ownership operation/event index, before and after revisions, and child
   index. `ownership_events`: the
